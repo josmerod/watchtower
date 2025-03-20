@@ -37,7 +37,7 @@ FUTURETOOLS_NEWS_FILE = os.path.join(FUTURETOOLS_NEWS_DATA_DIR, "futuretoolsnews
 YCOMBINATOR_NEWS_FILE = os.path.join(YCOMBINATOR_NEWS_DATA_DIR, "hackernews.json")
 MEDIUM_NEWS_FILE = os.path.join(MEDIUM_NEWS_DATA_DIR, "medium_genai.json")
 
-VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "youtube_videos.json")
+DEV_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "dev", "youtube_videos.json")
 
 # Log application startup
 logger.info("Starting Watchtower Dashboard")
@@ -52,6 +52,7 @@ st.set_page_config(
 
 
 # Helper functions
+@st.cache_data(ttl=3600)
 def load_data(file_path):
     """Load data from JSON file with error handling"""
     try:
@@ -70,6 +71,21 @@ def load_data(file_path):
         logger.error(f"Error loading data from {file_path}: {str(e)}")
         st.error(f"Error al cargar datos desde {file_path}: {str(e)}")
         return pd.DataFrame()
+
+# Load videos data
+@st.cache_data(ttl=3600)
+def get_videos_data(file_path):
+    """Fetch and process videos data"""
+    logger.info("Loading videos data")
+    videos_df = load_data(file_path)
+
+    if not videos_df.empty:
+        videos_df["published_date"] = pd.to_datetime(videos_df["published_at"])
+        # Add thumbnail URLs if available
+        if "thumbnail_url" in videos_df.columns:
+            videos_df["thumbnail"] = videos_df["thumbnail_url"]
+
+    return videos_df
 
 
 def format_timestamp(timestamp):
@@ -559,22 +575,9 @@ with tab3:
     logger.info("Rendering Videos tab")
     st.header("📺 Videos de Youtube")
 
-    # Load videos data
-    @st.cache_data(ttl=3600)
-    def get_videos_data():
-        """Fetch and process videos data"""
-        logger.info("Loading videos data")
-        videos_df = load_data(VIDEOS_FILE)
 
-        if not videos_df.empty:
-            videos_df["published_date"] = pd.to_datetime(videos_df["published_at"])
-            # Add thumbnail URLs if available
-            if "thumbnail_url" in videos_df.columns:
-                videos_df["thumbnail"] = videos_df["thumbnail_url"]
 
-        return videos_df
-
-    videos_df = get_videos_data()
+    videos_df = get_videos_data(DEV_VIDEOS_FILE)
     logger.info(f"Loaded {len(videos_df)} videos")
 
     if videos_df.empty:
