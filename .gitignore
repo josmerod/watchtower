@@ -7,3 +7,11 @@
 /build
 /.VSCodeCounter
 /.VSCodeCounter/*
+src/web/fullstreamlit/logs/*
+src/web/demo/games/logs/*
+src/web/demo/genai/logs/*
+src/web/demo/goldigging/logs/*
+src/web/demo/news/logs/*
+src/web/demo/videos/logs/*
+src/web/fullstreamlit/logs/*
+src/web/fullstreamlit/data/*

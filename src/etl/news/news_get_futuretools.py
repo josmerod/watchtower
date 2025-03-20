@@ -176,6 +176,4 @@ if __name__ == "__main__":
     logger.info("futuretools ETL script started")
     # Run the main function
     main()
-    logger.info("futuretools ETL script completed")
-
-
+    logger.info("futuretools ETL script completed") 

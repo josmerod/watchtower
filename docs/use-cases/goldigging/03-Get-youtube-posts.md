@@ -29,7 +29,7 @@
 
 La implementación consta de los siguientes componentes:
 
-1. **Proceso ETL** (`src/etl/genai/genai_get_futurenews.py`):
+1. **Proceso ETL** (`src/etl/news/news_get_futurenews.py`):
     - Obtener los últimos videos de una serie de canales de Youtube
     - Aplicar un filtro para seleccionar los videos que cumplen con ciertas características (edad máxima, incluir/excluir shorts, etc)
     - Guardar los videos en un archivo JSON y CSV

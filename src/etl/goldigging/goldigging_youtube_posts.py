@@ -202,8 +202,7 @@ def main():
 
         # Define date range for videos
         published_after = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat()
-        published_before = datetime.now().isoformat()
-
+        
         processed_videos = process_youtube_channels(channels, published_after)
 
         if not processed_videos:
