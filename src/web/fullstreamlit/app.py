@@ -9,13 +9,10 @@ from urllib.parse import unquote
 import sys
 
 # Add the project root to the path to ensure imports work correctly
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 
 from src.utils.logging import get_logger
-
 
 
 # Import centralized logging utility
@@ -25,15 +22,21 @@ logger = get_logger("GameDealsApp")
 
 # Define data paths
 GAMES_DATA_DIR = "../../../data/games"
+
 FUTURETOOLS_NEWS_DATA_DIR = "../../../data/futuretools"
 YCOMBINATOR_NEWS_DATA_DIR = "../../../data/hackernews"
+MEDIUM_NEWS_DATA_DIR = "../../../data/medium_genai"
+
 VIDEOS_DATA_DIR = "../../../data/youtube"
 
 DEALS_FILE = os.path.join(GAMES_DATA_DIR, "deals.json")
 BUNDLES_FILE = os.path.join(GAMES_DATA_DIR, "bundles.json")
 GIVEAWAYS_FILE = os.path.join(GAMES_DATA_DIR, "giveaways.json")
+
 FUTURETOOLS_NEWS_FILE = os.path.join(FUTURETOOLS_NEWS_DATA_DIR, "futuretoolsnews.json")
 YCOMBINATOR_NEWS_FILE = os.path.join(YCOMBINATOR_NEWS_DATA_DIR, "hackernews.json")
+MEDIUM_NEWS_FILE = os.path.join(MEDIUM_NEWS_DATA_DIR, "medium_genai.json")
+
 VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "youtube_videos.json")
 
 # Log application startup
@@ -41,8 +44,8 @@ logger.info("Starting Watchtower Dashboard")
 
 # Set page configuration
 st.set_page_config(
-    page_title="Panel watchtower",
-    page_icon="🔭",
+    page_title="Watchtower: Monitor de Tendencias y Noticias",
+    page_icon="🗼",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -103,12 +106,11 @@ def make_clickable(link, text=None):
 
 
 # Title and introduction
-st.title("🎮 Panel de Ofertas de Juegos")
+st.title("🗼 Watchtower: Monitor de Tendencias y Noticias")
 st.markdown(
     """
 <div class="card">
-    <p>Este panel muestra información sobre ofertas de juegos, bundles y regalos de <a href="https://isthereanydeal.com/" target="_blank">IsThereAnyDeal</a>. 
-    Navega por las pestañas para explorar diferentes tipos de ofertas de juegos.</p>
+    <p>Las paridas de Josele presentan el panel de Watchtower, un monitor de tendencias y noticias en el mundo del Generative AI y Dev. Si, se me ha ido un poco de las manos...</p>
 </div>
 """,
     unsafe_allow_html=True,
@@ -191,11 +193,9 @@ logger.info(
 )
 
 # Create tabs for different data views
-tab3, tab2, tab1 = st.tabs(
-    ["📺 Videos", "📰 Noticias", "🎮 Juegos" ]
-)
+tab3, tab2, tab1 = st.tabs(["📺 Videos", "📰 Noticias", "🎮 Juegos"])
 
-with tab1: # Juegos
+with tab1:  # Juegos
     logger.info("Rendering Summary subtab")
     st.header("Resumen de Ofertas")
 
@@ -205,7 +205,7 @@ with tab1: # Juegos
         # Call the script to scrape the data and wait until it is finished
         subprocess.run(["python3", "../../../src/etl/games/games_get_deals.py"])
         # Wait until the script is finished
-        
+
         logger.info("Data scraped successfully")
         st.success("Data scraped successfully")
         # Refresh the data
@@ -227,19 +227,28 @@ with tab1: # Juegos
         # Display summary statistics
         col1, col2, col3 = st.columns(3)
         # Set column height to 400º
-        col2.markdown("<style>div.stDataFrame {height: 400px;}</style>", unsafe_allow_html=True)
-        col3.markdown("<style>div.stDataFrame {height: 400px;}</style>", unsafe_allow_html=True)
+        col2.markdown(
+            "<style>div.stDataFrame {height: 400px;}</style>", unsafe_allow_html=True
+        )
+        col3.markdown(
+            "<style>div.stDataFrame {height: 400px;}</style>", unsafe_allow_html=True
+        )
 
         with col1:
-            col1.markdown("<style>div.stDataFrame {height: 400px;}</style>", unsafe_allow_html=True)
-        
+            col1.markdown(
+                "<style>div.stDataFrame {height: 400px;}</style>",
+                unsafe_allow_html=True,
+            )
+
             # Apply filters
             filtered_deals_df = deals_df.copy()
 
             st.header("Ofertas de Juegos")
 
             # Order by discount value
-            filtered_deals_df = filtered_deals_df.sort_values(by="discount_value", ascending=False)
+            filtered_deals_df = filtered_deals_df.sort_values(
+                by="discount_value", ascending=False
+            )
 
             # Prepare display dataframe
             display_deals_df = filtered_deals_df[
@@ -258,17 +267,21 @@ with tab1: # Juegos
                 )
 
             # Change column names to spanish
-            display_deals_df.rename(columns={
-                "title": "Título",
-                "price": "Precio",
-                "discount": "Descuento",
-                "store": "Tienda",
-                "published_date": "Fecha de Publicación"
-            }, inplace=True)
-            
+            display_deals_df.rename(
+                columns={
+                    "title": "Título",
+                    "price": "Precio",
+                    "discount": "Descuento",
+                    "store": "Tienda",
+                    "published_date": "Fecha de Publicación",
+                },
+                inplace=True,
+            )
+
             # Display the dataframe with clickable links
             st.markdown(
-                display_deals_df.to_html(escape=False, index=False), unsafe_allow_html=True
+                display_deals_df.to_html(escape=False, index=False),
+                unsafe_allow_html=True,
             )
 
         with col2:
@@ -283,8 +296,9 @@ with tab1: # Juegos
                 filtered_bundles_df = bundles_df.copy()
 
             # Order by published date
-            filtered_bundles_df = filtered_bundles_df.sort_values(by="published_date", ascending=False)
-
+            filtered_bundles_df = filtered_bundles_df.sort_values(
+                by="published_date", ascending=False
+            )
 
             logger.info(
                 f"Bundles filtered: {len(filtered_bundles_df)} results after applying filters"
@@ -296,7 +310,9 @@ with tab1: # Juegos
                     ["title", "price", "game_count", "published_date"]
                 ].copy()
             else:
-                display_bundles_df = filtered_bundles_df[["title", "price", "published_date"]].copy()
+                display_bundles_df = filtered_bundles_df[
+                    ["title", "price", "published_date"]
+                ].copy()
 
             # Add clickable links
             display_bundles_df["Ver Paquete"] = filtered_bundles_df["link"].apply(
@@ -310,18 +326,21 @@ with tab1: # Juegos
                 )
 
             # Change column names to spanish
-            display_bundles_df.rename(columns={
-                "title": "Título",
-                "price": "Precio",
-                "game_count": "Juegos en el Paquete",
-                "published_date": "Fecha de Publicación"
-            }, inplace=True)
+            display_bundles_df.rename(
+                columns={
+                    "title": "Título",
+                    "price": "Precio",
+                    "game_count": "Juegos en el Paquete",
+                    "published_date": "Fecha de Publicación",
+                },
+                inplace=True,
+            )
 
             # Display the dataframe with clickable links
             st.markdown(
-                display_bundles_df.to_html(escape=False, index=False), unsafe_allow_html=True
+                display_bundles_df.to_html(escape=False, index=False),
+                unsafe_allow_html=True,
             )
-
 
         with col3:
             logger.info("Rendering Giveaways subtab")
@@ -332,14 +351,14 @@ with tab1: # Juegos
                 st.warning("No hay datos de juegos gratuitos disponibles.")
             else:
                 # Filter for active giveaways
-                
+
                 filtered_giveaways_df = giveaways_df.copy()
                 # Fix the filtering for active giveaways
-                
+
                 # Display data
                 if filtered_giveaways_df.empty:
-                        logger.warning("No giveaways data available")
-                        st.warning("No hay datos de juegos gratuitos disponibles.")
+                    logger.warning("No giveaways data available")
+                    st.warning("No hay datos de juegos gratuitos disponibles.")
                 else:
                     # Prepare display dataframe
                     if "expires_date" in filtered_giveaways_df.columns:
@@ -347,147 +366,212 @@ with tab1: # Juegos
                             ["title", "published_date", "expires_date"]
                         ].copy()
                     else:
-                        display_giveaways_df = filtered_giveaways_df[["title", "published_date"]].copy()
+                        display_giveaways_df = filtered_giveaways_df[
+                            ["title", "published_date"]
+                        ].copy()
 
                     # Add clickable links
-                    display_giveaways_df["Obtener Juego"] = filtered_giveaways_df["link"].apply(
-                        lambda x: make_clickable(x, "Reclamar")
-                    )
+                    display_giveaways_df["Obtener Juego"] = filtered_giveaways_df[
+                        "link"
+                    ].apply(lambda x: make_clickable(x, "Reclamar"))
 
                     # Change column names to spanish
-                    display_giveaways_df.rename(columns={
-                        "title": "Título",
-                        "published_date": "Fecha de Publicación",
-                        "expires_date": "Fecha de Expiración"
-                    }, inplace=True)
-    
+                    display_giveaways_df.rename(
+                        columns={
+                            "title": "Título",
+                            "published_date": "Fecha de Publicación",
+                            "expires_date": "Fecha de Expiración",
+                        },
+                        inplace=True,
+                    )
+
                     # Display the dataframe with clickable links
                     st.markdown(
-                        display_giveaways_df.to_html(escape=False, index=False), unsafe_allow_html=True
+                        display_giveaways_df.to_html(escape=False, index=False),
+                        unsafe_allow_html=True,
                     )
 
 
 with tab2:
+
     @st.cache_data(ttl=3600)
     def get_news_data():
         """Fetch and process news data"""
         logger.info("Loading news data")
         futuretools_news_df = load_data(FUTURETOOLS_NEWS_FILE)
         ycombinator_news_df = load_data(YCOMBINATOR_NEWS_FILE)
-        
+        medium_news_df = load_data(MEDIUM_NEWS_FILE)
+
         if not futuretools_news_df.empty:
-            futuretools_news_df['published_date'] = pd.to_datetime(futuretools_news_df['published_at'])
+            futuretools_news_df["published_date"] = pd.to_datetime(
+                futuretools_news_df["published_at"]
+            )
 
         if not ycombinator_news_df.empty:
-            ycombinator_news_df['published_date'] = pd.to_datetime(ycombinator_news_df['published_at'])
-            
-        return futuretools_news_df, ycombinator_news_df
-    
+            ycombinator_news_df["published_date"] = pd.to_datetime(
+                ycombinator_news_df["published_at"]
+            )
 
+        return futuretools_news_df, ycombinator_news_df, medium_news_df
 
     logger.info("Rendering News tab")
     st.header("📰 Noticias Generative AI")
-    
+
     # Add a button to call the script to scrape the data
     if st.button("(Re)cargar datos de noticias"):
         logger.info("Cargando datos de noticias...")
         # Call the script to scrape the data and wait until it is finished
         subprocess.run(["python3", "../../../src/etl/news/news_get_futuretools.py"])
         subprocess.run(["python3", "../../../src/etl/news/news_get_ycombinator.py"])
+        subprocess.run(["python3", "../../../src/etl/news/news_get_genai_medium.py"])
         # Wait until the script is finished
         logger.info("Datos de noticias cargados correctamente")
         st.success("Datos de noticias cargados correctamente")
         # Refresh the data
-        futuretools_news_df, ycombinator_news_df = get_news_data()
+        futuretools_news_df, ycombinator_news_df, medium_news_df = get_news_data()
         logger.info("Datos de noticias actualizados correctamente")
         # Refresh the page
         st.rerun()
 
-
     # Load news data
-    futuretools_news_df, ycombinator_news_df = get_news_data()
+    futuretools_news_df, ycombinator_news_df, medium_news_df = get_news_data()
 
     logger.info(f"Loaded {len(futuretools_news_df)} futuretools news articles")
     logger.info(f"Loaded {len(ycombinator_news_df)} ycombinator news articles")
-    
+    logger.info(f"Loaded {len(medium_news_df)} medium news articles")
+
+    # Display news data
     if futuretools_news_df.empty and ycombinator_news_df.empty:
         logger.warning("No news data available")
         st.warning("No hay datos de noticias disponibles.")
     else:
-        news_futuretools_col, news_ycombinator_col = st.columns([3, 2])
+        news_futuretools_col, news_ycombinator_col, news_medium_genai_col = st.columns(
+            [3, 3, 3]
+        )
         with news_futuretools_col:
             # Display results
             if futuretools_news_df.empty:
                 logger.warning("No matches found")
-                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
+                st.warning(
+                    "No hay noticias que coincidan con los filtros seleccionados."
+                )
             else:
                 # Prepare display data
-                display_news_df = futuretools_news_df[['title', 'published_at', 'source']].copy()
-            
+                display_news_df = futuretools_news_df[
+                    ["title", "published_at", "source"]
+                ].copy()
+
                 # Add clickable links
-                display_news_df['Ver Noticia'] = futuretools_news_df['url'].apply(
+                display_news_df["Ver Noticia"] = futuretools_news_df["url"].apply(
                     lambda x: make_clickable(x, "Leer más")
                 )
-                
+
                 # Rename columns to Spanish
-                display_news_df.rename(columns={
-                    'title': 'Título',
-                    'published_at': 'Fecha de Publicación',
-                    'source': 'Fuente'
-                }, inplace=True)
-            
+                display_news_df.rename(
+                    columns={
+                        "title": "Título",
+                        "published_at": "Fecha de Publicación",
+                        "source": "Fuente",
+                    },
+                    inplace=True,
+                )
+
                 # Sort by published_date
-                display_news_df = display_news_df.sort_values(by='Fecha de Publicación', ascending=False)
+                display_news_df = display_news_df.sort_values(
+                    by="Fecha de Publicación", ascending=False
+                )
                 # Show table
                 st.markdown(
                     display_news_df.to_html(escape=False, index=False),
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
-            
+
         with news_ycombinator_col:
             # Display results
             if ycombinator_news_df.empty:
                 logger.warning("No matches found")
-                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
+                st.warning(
+                    "No hay noticias que coincidan con los filtros seleccionados."
+                )
             else:
                 # Prepare display data
-                display_news_df = ycombinator_news_df[['title', 'published_at', 'source']].copy()
+                display_news_df = ycombinator_news_df[
+                    ["title", "published_at", "source"]
+                ].copy()
 
                 # Add clickable links
-                display_news_df['Ver Noticia'] = ycombinator_news_df['url'].apply(
+                display_news_df["Ver Noticia"] = ycombinator_news_df["url"].apply(
                     lambda x: make_clickable(x, "Leer más")
                 )
 
                 # Rename columns to Spanish
-                display_news_df.rename(columns={
-                    'title': 'Título',
-                    'published_at': 'Fecha de Publicación',
-                    'source': 'Fuente'
-                }, inplace=True)
+                display_news_df.rename(
+                    columns={
+                        "title": "Título",
+                        "published_at": "Fecha de Publicación",
+                        "source": "Fuente",
+                    },
+                    inplace=True,
+                )
 
                 # Show table
                 st.markdown(
                     display_news_df.to_html(escape=False, index=False),
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
+
+        with news_medium_genai_col:
+            # Display results
+            if medium_news_df.empty:
+                logger.warning("No matches found")
+                st.warning(
+                    "No hay noticias que coincidan con los filtros seleccionados."
+                )
+            else:
+                # Prepare display data
+                display_news_df = medium_news_df[
+                    ["title", "published_at", "source"]
+                ].copy()
+
+                # Add clickable links
+                display_news_df["Ver Noticia"] = medium_news_df["url"].apply(
+                    lambda x: make_clickable(x, "Leer más")
+                )
+
+                # Rename columns to Spanish
+                display_news_df.rename(
+                    columns={
+                        "title": "Título",
+                        "published_at": "Fecha de Publicación",
+                        "source": "Fuente",
+                    },
+                    inplace=True,
+                )
+
+                # Show table
+                st.markdown(
+                    display_news_df.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+
 
 with tab3:
     logger.info("Rendering Videos tab")
     st.header("📺 Videos de Youtube")
-    
+
     # Load videos data
     @st.cache_data(ttl=3600)
     def get_videos_data():
         """Fetch and process videos data"""
         logger.info("Loading videos data")
         videos_df = load_data(VIDEOS_FILE)
-        
+
         if not videos_df.empty:
-            videos_df['published_date'] = pd.to_datetime(videos_df['published_at'])
+            videos_df["published_date"] = pd.to_datetime(videos_df["published_at"])
             # Add thumbnail URLs if available
-            if 'thumbnail_url' in videos_df.columns:
-                videos_df['thumbnail'] = videos_df['thumbnail_url']
-            
+            if "thumbnail_url" in videos_df.columns:
+                videos_df["thumbnail"] = videos_df["thumbnail_url"]
+
         return videos_df
 
     videos_df = get_videos_data()
@@ -499,31 +583,33 @@ with tab3:
     else:
         # Filters
         search_term = st.text_input("🔍 Buscar en títulos de videos", "")
-        
+
         # Date range filter
         date_range = st.date_input(
             "Rango de fechas para videos",
-            [videos_df['published_date'].min(), videos_df['published_date'].max()],
-            min_value=videos_df['published_date'].min().date(),
-            max_value=videos_df['published_date'].max().date()
+            [videos_df["published_date"].min(), videos_df["published_date"].max()],
+            min_value=videos_df["published_date"].min().date(),
+            max_value=videos_df["published_date"].max().date(),
         )
 
         # Apply filters
         filtered_videos_df = videos_df.copy()
-        
+
         if search_term:
             filtered_videos_df = filtered_videos_df[
-                filtered_videos_df['title'].str.contains(search_term, case=False, na=False)
+                filtered_videos_df["title"].str.contains(
+                    search_term, case=False, na=False
+                )
             ]
 
         if len(date_range) == 2:
             filtered_videos_df = filtered_videos_df[
-                (filtered_videos_df['published_date'].dt.date >= date_range[0]) &
-                (filtered_videos_df['published_date'].dt.date <= date_range[1])
+                (filtered_videos_df["published_date"].dt.date >= date_range[0])
+                & (filtered_videos_df["published_date"].dt.date <= date_range[1])
             ]
 
         logger.info(f"Filtered to {len(filtered_videos_df)} video results")
-        
+
         # Display results
         if filtered_videos_df.empty:
             logger.warning("No video matches found")
@@ -531,29 +617,35 @@ with tab3:
         else:
             # Display videos in a grid format
             num_cols = 8  # Number of columns in the grid
-            rows = [filtered_videos_df.iloc[i:i+num_cols] for i in range(0, len(filtered_videos_df), num_cols)]
-            
+            rows = [
+                filtered_videos_df.iloc[i : i + num_cols]
+                for i in range(0, len(filtered_videos_df), num_cols)
+            ]
+
             for row_data in rows:
                 cols = st.columns(num_cols)
-                
+
                 for i, (_, video) in enumerate(row_data.iterrows()):
                     if i < len(cols):
                         with cols[i]:
-                            st.subheader(video['title'])
+                            st.subheader(video["title"])
                             st.write(f"**Canal:** {video.get('channel', 'N/A')}")
-                            st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
-                            if 'url' in video and pd.notna(video['url']):
-                                st.markdown(make_clickable(video['url'], "Ver en YouTube"), unsafe_allow_html=True)
+                            st.write(
+                                f"**Publicado:** {video.get('published_at', 'N/A')}"
+                            )
+                            if "url" in video and pd.notna(video["url"]):
+                                st.markdown(
+                                    make_clickable(video["url"], "Ver en YouTube"),
+                                    unsafe_allow_html=True,
+                                )
                             st.markdown("---")
-
-
 
 
 # Footer
 st.markdown(
     """
 <div style="text-align: center; margin-top: 30px; padding: 20px; opacity: 0.7;">
-    <p>Datos obtenidos de <a href="https://isthereanydeal.com/" target="_blank">IsThereAnyDeal</a>, <a href="https://futuretools.io/news" target="_blank">FutureTools.io</a> y <a href="https://www.youtube.com/" target="_blank">Youtube</a></p>
+    <p>Datos obtenidos de <a href="https://isthereanydeal.com/" target="_blank">IsThereAnyDeal</a>, <a href="https://futuretools.io/news" target="_blank">FutureTools.io</a>, <a href="https://www.medium.com/" target="_blank">Medium</a> y <a href="https://www.youtube.com/" target="_blank">Youtube</a></p>
 </div>
 """,
     unsafe_allow_html=True,
