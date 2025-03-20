@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 import inspect
 import datetime
 
-from src.utils.file_system import ensure_directories
+from src.utils.file_system import ensure_directories, get_project_root
 
 
 def get_logger(name=None):
@@ -28,6 +28,9 @@ def get_logger(name=None):
 
     # Only configure the logger once
     if not logger.handlers:
+        # Get project root and ensure logs directory exists
+        project_root = get_project_root()
+        logs_dir = os.path.join(project_root, "logs")
         ensure_directories(["logs"])
 
         logger.setLevel(logging.INFO)
@@ -46,7 +49,7 @@ def get_logger(name=None):
         # Use the module name to isolate logs by execution class
         module_name = name.split(".")[-1]
         today = datetime.datetime.now().strftime("%Y-%m-%d")
-        log_file = os.path.join("logs", f"{module_name}_{today}.log")
+        log_file = os.path.join(logs_dir, f"{module_name}_{today}.log")
 
         file_handler = RotatingFileHandler(
             log_file,
@@ -59,7 +62,5 @@ def get_logger(name=None):
         # Add handlers to logger
         logger.addHandler(console_handler)
         logger.addHandler(file_handler)
-
-
 
     return logger

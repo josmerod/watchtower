@@ -1,3 +1,4 @@
+**/__pycache__/*
 /.vscode
 /data
 /data/*
@@ -7,6 +8,8 @@
 /build
 /.VSCodeCounter
 /.VSCodeCounter/*
+/venv
+/venv/*
 src/web/fullstreamlit/logs/*
 src/web/demo/games/logs/*
 src/web/demo/genai/logs/*
@@ -15,3 +18,9 @@ src/web/demo/news/logs/*
 src/web/demo/videos/logs/*
 src/web/fullstreamlit/logs/*
 src/web/fullstreamlit/data/*
+**/.DS_Store
+**/data/*
+**/logs/*
+src/utils/__pycache__/*
+src/utils/__pycache__/file_system.cpython-313.pyc
+src/utils/__pycache__/logging.cpython-313.pyc
