@@ -28,7 +28,7 @@
 
 La implementación consta de los siguientes componentes:
 
-1. **Proceso ETL** (`src/etl/genai/genai_get_futurenews.py`):
+1. **Proceso ETL** (`src/etl/news/news_get_futurenews.py`):
     - Obtener las noticias más recientes del portal futurenews.io/news
     - Guardar las noticias en un archivo JSON y CSV
 

@@ -32,7 +32,7 @@ def run_futuretools_etl():
 
         # Build the absolute path to the ETL script
         etl_script_path = os.path.join(
-            project_root, "src", "etl", "genai", "genai_get_futuretools.py"
+            project_root, "src", "etl", "news", "news_get_futuretools.py"
         )
 
         # Verify the script exists before running
