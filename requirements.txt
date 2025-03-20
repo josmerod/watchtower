@@ -1,9 +1,21 @@
-tabulate
-feedparser
-pandas
-streamlit
-plotly
-schedule
-pytube
-google-api-python-client
-isodate
+# Data processing and analysis
+pandas>=2.0.0
+numpy>=1.20.0
+
+# Web scraping and API interaction
+requests>=2.25.0
+beautifulsoup4>=4.9.0
+yt-dlp>=2024.3.10
+feedparser>=6.0.0
+
+# Data visualization
+streamlit>=1.10.0
+plotly>=5.0.0
+tabulate>=0.8.0
+
+# Scheduling
+schedule>=1.0.0
+
+# YouTube API utilities
+google-api-python-client>=2.0.0
+isodate>=0.6.0

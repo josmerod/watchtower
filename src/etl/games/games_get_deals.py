@@ -14,12 +14,16 @@ Generar alertas si aplica, guardarlos y triggerear notificaciones.
 
 """
 
+import sys
 import feedparser
 from datetime import datetime, timedelta
 import pandas as pd
 import re
 import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from src.utils.logging import get_logger
+
+# Add the project root to the path to ensure imports work correctly
 
 # Configurar el logger centralizado
 logger = get_logger("Games_ETL")
