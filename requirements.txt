@@ -1,0 +1,9 @@
+tabulate
+feedparser
+pandas
+streamlit
+plotly
+schedule
+pytube
+google-api-python-client
+isodate

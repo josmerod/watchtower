@@ -1,0 +1,106 @@
+2025-03-03 02:34:30,112 - GameDealsApp - INFO - Starting Game Deals Dashboard
+2025-03-03 02:34:30,115 - GameDealsApp - INFO - Loading and preparing data
+2025-03-03 02:34:30,116 - GameDealsApp - INFO - Fetching and processing game deals data
+2025-03-03 02:34:30,116 - GameDealsApp - ERROR - File not found: data/games\deals.json
+2025-03-03 02:34:30,118 - GameDealsApp - ERROR - File not found: data/games\bundles.json
+2025-03-03 02:34:30,118 - GameDealsApp - ERROR - File not found: data/games\giveaways.json
+2025-03-03 02:34:30,119 - GameDealsApp - INFO - Data processing completed
+2025-03-03 02:34:30,120 - GameDealsApp - INFO - Data loaded: 0 deals, 0 bundles, 0 giveaways
+2025-03-03 02:34:30,121 - GameDealsApp - INFO - Rendering Overview tab
+2025-03-03 02:34:30,122 - GameDealsApp - INFO - Rendering Deals tab
+2025-03-03 02:34:30,123 - GameDealsApp - WARNING - No deals data available to display
+2025-03-03 02:34:30,123 - GameDealsApp - INFO - Rendering Bundles tab
+2025-03-03 02:34:30,124 - GameDealsApp - WARNING - No bundles data available to display
+2025-03-03 02:34:30,125 - GameDealsApp - INFO - Rendering Giveaways tab
+2025-03-03 02:34:30,125 - GameDealsApp - WARNING - No giveaways data available to display
+2025-03-03 02:34:30,126 - GameDealsApp - INFO - Dashboard rendering completed
+2025-03-03 02:35:29,977 - GameDealsApp - INFO - Starting Game Deals Dashboard
+2025-03-03 02:35:29,980 - GameDealsApp - INFO - Loading and preparing data
+2025-03-03 02:35:29,982 - GameDealsApp - INFO - Data loaded: 0 deals, 0 bundles, 0 giveaways
+2025-03-03 02:35:29,983 - GameDealsApp - INFO - Rendering Overview tab
+2025-03-03 02:35:29,985 - GameDealsApp - INFO - Rendering Deals tab
+2025-03-03 02:35:29,987 - GameDealsApp - WARNING - No deals data available to display
+2025-03-03 02:35:29,987 - GameDealsApp - INFO - Rendering Bundles tab
+2025-03-03 02:35:29,988 - GameDealsApp - WARNING - No bundles data available to display
+2025-03-03 02:35:29,989 - GameDealsApp - INFO - Rendering Giveaways tab
+2025-03-03 02:35:29,990 - GameDealsApp - WARNING - No giveaways data available to display
+2025-03-03 02:35:29,991 - GameDealsApp - INFO - Dashboard rendering completed
+2025-03-03 02:35:31,863 - GameDealsApp - INFO - Starting Game Deals Dashboard
+2025-03-03 02:35:31,866 - GameDealsApp - INFO - Loading and preparing data
+2025-03-03 02:35:31,867 - GameDealsApp - INFO - Data loaded: 0 deals, 0 bundles, 0 giveaways
+2025-03-03 02:35:31,869 - GameDealsApp - INFO - Rendering Overview tab
+2025-03-03 02:35:31,870 - GameDealsApp - INFO - Rendering Deals tab
+2025-03-03 02:35:31,871 - GameDealsApp - WARNING - No deals data available to display
+2025-03-03 02:35:31,872 - GameDealsApp - INFO - Rendering Bundles tab
+2025-03-03 02:35:31,873 - GameDealsApp - WARNING - No bundles data available to display
+2025-03-03 02:35:31,874 - GameDealsApp - INFO - Rendering Giveaways tab
+2025-03-03 02:35:31,874 - GameDealsApp - WARNING - No giveaways data available to display
+2025-03-03 02:35:31,875 - GameDealsApp - INFO - Dashboard rendering completed
+2025-03-03 02:36:12,621 - GameDealsApp - INFO - Starting Game Deals Dashboard
+2025-03-03 02:36:12,624 - GameDealsApp - INFO - Loading and preparing data
+2025-03-03 02:36:12,626 - GameDealsApp - INFO - Data loaded: 0 deals, 0 bundles, 0 giveaways
+2025-03-03 02:36:12,627 - GameDealsApp - INFO - Rendering Overview tab
+2025-03-03 02:36:12,628 - GameDealsApp - INFO - Rendering Deals tab
+2025-03-03 02:36:12,629 - GameDealsApp - WARNING - No deals data available to display
+2025-03-03 02:36:12,630 - GameDealsApp - INFO - Rendering Bundles tab
+2025-03-03 02:36:12,631 - GameDealsApp - WARNING - No bundles data available to display
+2025-03-03 02:36:12,632 - GameDealsApp - INFO - Rendering Giveaways tab
+2025-03-03 02:36:12,632 - GameDealsApp - WARNING - No giveaways data available to display
+2025-03-03 02:36:12,633 - GameDealsApp - INFO - Dashboard rendering completed
+2025-03-03 02:36:45,538 - GameDealsApp - INFO - Starting Game Deals Dashboard
+2025-03-03 02:36:45,542 - GameDealsApp - INFO - Loading and preparing data
+2025-03-03 02:36:45,544 - GameDealsApp - INFO - Fetching and processing game deals data
+2025-03-03 02:36:45,544 - GameDealsApp - INFO - Loading data from ../../../../data/games\deals.json
+2025-03-03 02:36:45,567 - GameDealsApp - INFO - Successfully loaded 150 records from ../../../../data/games\deals.json
+2025-03-03 02:36:45,567 - GameDealsApp - INFO - Loading data from ../../../../data/games\bundles.json
+2025-03-03 02:36:45,584 - GameDealsApp - INFO - Successfully loaded 19 records from ../../../../data/games\bundles.json
+2025-03-03 02:36:45,585 - GameDealsApp - INFO - Loading data from ../../../../data/games\giveaways.json
+2025-03-03 02:36:45,601 - GameDealsApp - INFO - Successfully loaded 2 records from ../../../../data/games\giveaways.json
+2025-03-03 02:36:45,601 - GameDealsApp - INFO - Processing deals data
+2025-03-03 02:36:45,603 - GameDealsApp - INFO - Processing bundles data
+2025-03-03 02:36:45,604 - GameDealsApp - INFO - Processing giveaways data
+2025-03-03 02:36:45,606 - GameDealsApp - INFO - Found 2 active giveaways
+2025-03-03 02:36:45,606 - GameDealsApp - INFO - Data processing completed
+2025-03-03 02:36:45,607 - GameDealsApp - INFO - Data loaded: 150 deals, 19 bundles, 2 giveaways
+2025-03-03 02:36:45,609 - GameDealsApp - INFO - Rendering Overview tab
+2025-03-03 02:36:45,611 - GameDealsApp - INFO - Generating top discounts visualization
+2025-03-03 02:36:58,652 - GameDealsApp - INFO - Generating store distribution visualization
+2025-03-03 02:36:58,882 - GameDealsApp - INFO - Rendering Deals tab
+2025-03-03 02:36:58,886 - GameDealsApp - INFO - Deals filtered: 150 results after applying filters
+2025-03-03 02:36:58,913 - GameDealsApp - INFO - Rendering Bundles tab
+2025-03-03 02:36:58,916 - GameDealsApp - INFO - Bundles filtered: 19 results after applying filters
+2025-03-03 02:36:58,920 - GameDealsApp - INFO - Displaying games for bundle: California Fire Relief Bundle by Itch.io
+2025-03-03 02:36:58,923 - GameDealsApp - INFO - Found 187 games in the selected bundle
+2025-03-03 02:36:58,958 - GameDealsApp - INFO - Rendering Giveaways tab
+2025-03-03 02:36:58,960 - GameDealsApp - INFO - Filtering for active giveaways only: 2 results
+2025-03-03 02:36:58,964 - GameDealsApp - INFO - Dashboard rendering completed
+2025-03-03 02:47:59,289 - GameDealsApp - INFO - Starting Game Deals Dashboard
+2025-03-03 02:47:59,291 - GameDealsApp - INFO - Loading and preparing data
+2025-03-03 02:47:59,293 - GameDealsApp - INFO - Data loaded: 150 deals, 19 bundles, 2 giveaways
+2025-03-03 02:47:59,295 - GameDealsApp - INFO - Rendering Overview tab
+2025-03-03 02:47:59,297 - GameDealsApp - INFO - Generating top discounts visualization
+2025-03-03 02:47:59,318 - GameDealsApp - INFO - Generating store distribution visualization
+2025-03-03 02:47:59,330 - GameDealsApp - INFO - Rendering Deals tab
+2025-03-03 02:47:59,332 - GameDealsApp - INFO - Deals filtered: 150 results after applying filters
+2025-03-03 02:47:59,340 - GameDealsApp - INFO - Rendering Bundles tab
+2025-03-03 02:47:59,343 - GameDealsApp - INFO - Bundles filtered: 19 results after applying filters
+2025-03-03 02:47:59,346 - GameDealsApp - INFO - Displaying games for bundle: Diamond Collection - Build your own Bundle (February 2025) by Fanatical
+2025-03-03 02:47:59,347 - GameDealsApp - INFO - Found 16 games in the selected bundle
+2025-03-03 02:47:59,350 - GameDealsApp - INFO - Rendering Giveaways tab
+2025-03-03 02:47:59,351 - GameDealsApp - INFO - Filtering for active giveaways only: 2 results
+2025-03-03 02:47:59,354 - GameDealsApp - INFO - Dashboard rendering completed
+2025-03-03 02:48:03,708 - GameDealsApp - INFO - Starting Game Deals Dashboard
+2025-03-03 02:48:03,711 - GameDealsApp - INFO - Loading and preparing data
+2025-03-03 02:48:03,713 - GameDealsApp - INFO - Data loaded: 150 deals, 19 bundles, 2 giveaways
+2025-03-03 02:48:03,714 - GameDealsApp - INFO - Rendering Overview tab
+2025-03-03 02:48:03,715 - GameDealsApp - INFO - Generating top discounts visualization
+2025-03-03 02:48:03,738 - GameDealsApp - INFO - Generating store distribution visualization
+2025-03-03 02:48:03,749 - GameDealsApp - INFO - Rendering Deals tab
+2025-03-03 02:48:03,752 - GameDealsApp - INFO - Deals filtered: 150 results after applying filters
+2025-03-03 02:48:03,759 - GameDealsApp - INFO - Rendering Bundles tab
+2025-03-03 02:48:03,762 - GameDealsApp - INFO - Bundles filtered: 19 results after applying filters
+2025-03-03 02:48:03,765 - GameDealsApp - INFO - Displaying games for bundle: California Fire Relief Bundle by Itch.io
+2025-03-03 02:48:03,765 - GameDealsApp - INFO - Found 187 games in the selected bundle
+2025-03-03 02:48:03,767 - GameDealsApp - INFO - Rendering Giveaways tab
+2025-03-03 02:48:03,768 - GameDealsApp - INFO - Filtering for active giveaways only: 2 results
+2025-03-03 02:48:03,771 - GameDealsApp - INFO - Dashboard rendering completed

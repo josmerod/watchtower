@@ -1,0 +1,13 @@
+2025-03-04 21:15:49,020 - Meta_Orchestrator - INFO - Starting Meta Orchestrator
+2025-03-04 21:15:49,020 - Meta_Orchestrator - INFO - Verified required directories exist: logs
+2025-03-04 21:15:49,023 - Meta_Orchestrator - INFO - Found 3 orchestrator scripts: ['etl_orchestrator.py', 'genai_orchestrator.py', 'golddigging_orchestrator.py']
+2025-03-04 21:15:49,024 - Meta_Orchestrator - INFO - Starting orchestrator: etl_orchestrator.py
+2025-03-04 21:15:49,024 - Meta_Orchestrator - INFO - Started thread for etl_orchestrator.py
+2025-03-04 21:15:49,025 - Meta_Orchestrator - INFO - Starting orchestrator: genai_orchestrator.py
+2025-03-04 21:15:49,026 - Meta_Orchestrator - INFO - Started thread for genai_orchestrator.py
+2025-03-04 21:15:49,029 - Meta_Orchestrator - INFO - Starting orchestrator: golddigging_orchestrator.py
+2025-03-04 21:15:49,029 - Meta_Orchestrator - INFO - Started thread for golddigging_orchestrator.py
+2025-03-04 21:15:49,029 - Meta_Orchestrator - INFO - All orchestrators started. Meta Orchestrator is now monitoring...
+2025-03-04 21:15:49,059 - Meta_Orchestrator - INFO - Started golddigging_orchestrator.py with PID 11144
+2025-03-04 21:15:49,059 - Meta_Orchestrator - INFO - Started etl_orchestrator.py with PID 3292
+2025-03-04 21:15:49,060 - Meta_Orchestrator - INFO - Started genai_orchestrator.py with PID 16188
