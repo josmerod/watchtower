@@ -13,7 +13,7 @@ import re
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Initialize logger for this module
 logger = get_logger("YCombinatorETL")
@@ -169,8 +169,9 @@ def main():
     logger.info("Starting Hacker News ETL process")
     try:
         # Ensure output directory exists
-        output_dir = "data/hackernews"
-        ensure_directories([output_dir])
+        project_root = get_project_root()
+        output_dir = os.path.join(project_root, "data/hackernews")
+        ensure_directories(["data/hackernews"])
 
         # Get articles from the RSS feeds
         articles = get_ycombinator_data()
@@ -183,13 +184,13 @@ def main():
         processed_articles = process_ycombinator_articles(articles)
 
         # Save to JSON file
-        output_file = f"{output_dir}/hackernews.json"
+        output_file = os.path.join(output_dir, "hackernews.json")
         with open(output_file, "w") as f:
             json.dump(processed_articles, f, indent=2)
         logger.debug(f"Saved JSON data to {output_file}")
 
         # Also save as CSV for easier viewing
-        csv_file = f"{output_dir}/hackernews.csv"
+        csv_file = os.path.join(output_dir, "hackernews.csv")
         import pandas as pd
 
         pd.DataFrame(processed_articles).to_csv(csv_file, index=False)

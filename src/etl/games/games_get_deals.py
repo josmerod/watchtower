@@ -22,8 +22,7 @@ import re
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from src.utils.logging import get_logger
-
-# Add the project root to the path to ensure imports work correctly
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Configurar el logger centralizado
 logger = get_logger("Games_ETL")
@@ -92,18 +91,22 @@ def get_deals():
     deals_df = deals_df.sort_values(by="discount", ascending=False)
 
     # Create output directory if it doesn't exist
-    os.makedirs("data/games", exist_ok=True)
+    project_root = get_project_root()
+    output_dir = os.path.join(project_root, "data/games")
+    ensure_directories(["data/games"])
+
     # Replace current csv file if exists
-    if os.path.exists("data/games/deals.csv"):
-        os.remove("data/games/deals.csv")
+    deals_csv = os.path.join(output_dir, "deals.csv")
+    if os.path.exists(deals_csv):
+        os.remove(deals_csv)
         logger.debug("Removed existing deals.csv file")
 
     # Save deals to json
-    deals_df.to_json("data/games/deals.json", orient="records")
+    deals_df.to_json(os.path.join(output_dir, "deals.json"), orient="records")
     logger.info("Deals saved to json")
 
     # Save deals to csv
-    deals_df.to_csv("data/games/deals.csv", index=False, sep="|")
+    deals_df.to_csv(deals_csv, index=False, sep="|")
     logger.info("Deals saved to csv")
 
 
@@ -167,13 +170,15 @@ def get_bundles():
     bundles_df = bundles_df.sort_values(by="published", ascending=False)
 
     # Create output directory if it doesn't exist
-    os.makedirs("data/games", exist_ok=True)
+    project_root = get_project_root()
+    output_dir = os.path.join(project_root, "data/games")
+    ensure_directories(["data/games"])
 
     # Save bundles to json
-    bundles_df.to_json("data/games/bundles.json", orient="records")
+    bundles_df.to_json(os.path.join(output_dir, "bundles.json"), orient="records")
     logger.info("Bundles saved to json")
 
-    bundles_df.to_csv("data/games/bundles.csv", index=False, sep="|")
+    bundles_df.to_csv(os.path.join(output_dir, "bundles.csv"), index=False, sep="|")
     logger.info("Bundles saved to csv")
 
 
@@ -240,18 +245,21 @@ def get_giveaways():
     giveaways_df = pd.DataFrame(giveaways_list)
     logger.debug(f"Created DataFrame with {len(giveaways_df)} active giveaways")
 
-    # Sort giveaways by publication date (newest first)
-    giveaways_df = giveaways_df.sort_values(by="published", ascending=False)
+    # If there is at least one giveaway, sort giveaways by publication date (newest first)
+    if len(giveaways_df) > 0:
+        giveaways_df = giveaways_df.sort_values(by="published", ascending=False)
 
     # Create output directory if it doesn't exist
-    os.makedirs("data/games", exist_ok=True)
+    project_root = get_project_root()
+    output_dir = os.path.join(project_root, "data/games")
+    ensure_directories(["data/games"])
 
     # Save giveaways to json
-    giveaways_df.to_json("data/games/giveaways.json", orient="records")
+    giveaways_df.to_json(os.path.join(output_dir, "giveaways.json"), orient="records")
     logger.info("Giveaways saved to json")
 
     # Save giveaways to csv
-    giveaways_df.to_csv("data/games/giveaways.csv", index=False, sep="|")
+    giveaways_df.to_csv(os.path.join(output_dir, "giveaways.csv"), index=False, sep="|")
     logger.info("Giveaways saved to csv")
 
 

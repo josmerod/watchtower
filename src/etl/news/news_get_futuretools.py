@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Initialize logger for this module
 logger = get_logger("FuturetoolsETL")
@@ -136,8 +136,9 @@ def main():
     logger.info("Starting futuretools ETL process")
     try:
         # Ensure output directory exists
-        output_dir = "data/futuretools"
-        ensure_directories([output_dir])
+        project_root = get_project_root()
+        output_dir = os.path.join(project_root, "data/futuretools")
+        ensure_directories(["data/futuretools"])
 
         # Get articles from the website
         articles = get_futuretools_data()
@@ -150,15 +151,13 @@ def main():
         processed_articles = process_futuretools_articles(articles)
 
         # Save to JSON file
-        output_file = (
-            f"{output_dir}/futuretoolsnews.json"
-        )
+        output_file = os.path.join(output_dir, "futuretoolsnews.json")
         with open(output_file, "w") as f:
             json.dump(processed_articles, f, indent=2)
         logger.debug(f"Saved JSON data to {output_file}")
 
         # Also save as CSV for easier viewing
-        csv_file = f"{output_dir}/futuretoolsnews.csv"
+        csv_file = os.path.join(output_dir, "futuretoolsnews.csv")
         import pandas as pd
 
         pd.DataFrame(processed_articles).to_csv(csv_file, index=False)

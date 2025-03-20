@@ -12,7 +12,7 @@ import pandas as pd
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 sys.path.append(project_root)
 
-from src.utils.file_system import ensure_directories
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
 logger = logging.getLogger("goldigging_youtube_posts")
@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 
 BASE_OUTPUT_DIR = "data/youtube"
 MAX_VIDEOS_PER_CHANNEL = 50
-DEFAULT_DAYS_LOOKBACK = 14
+DEFAULT_DAYS_LOOKBACK = 21 # 3 weekscd 
 
 # Channel configurations by topic
 CHANNEL_TOPICS = {
@@ -71,7 +71,6 @@ CHANNEL_TOPICS = {
             "ByteByteGo",
             "TechLead",
             "techwithsoleyman",
-            #"amazonwebservices", # This channel sends a lot of videos, we need to filter them...
         ]
     },
     "economics": {
@@ -98,9 +97,7 @@ CHANNEL_TOPICS = {
             "SUCCESSCHASERS"
         ]
     }
-        
 }
-
 
 def get_channel_videos_by_id(channel_handle: str, published_after: str = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat()) -> List[Dict]:
     """Fetch videos from a channel using yt-dlp."""
@@ -210,8 +207,9 @@ def process_topic(topic: str, channels: List[str], published_after: str = None):
     logger.info(f"Procesando tema: {topic}")
     
     # Create topic-specific output directory
-    output_dir = os.path.join(BASE_OUTPUT_DIR, topic)
-    ensure_directories([output_dir])
+    project_root = get_project_root()
+    output_dir = os.path.join(project_root, BASE_OUTPUT_DIR, topic)
+    ensure_directories([os.path.join(BASE_OUTPUT_DIR, topic)])
     
     # Process channels for this topic
     processed_videos = process_youtube_channels(channels, published_after)
@@ -226,13 +224,13 @@ def process_topic(topic: str, channels: List[str], published_after: str = None):
     )
     
     # Save to JSON file
-    json_file = f"{output_dir}/youtube_videos.json"
+    json_file = os.path.join(output_dir, "youtube_videos.json")
     with open(json_file, "w") as f:
         json.dump(processed_videos, f, indent=2)
     logger.debug(f"Datos JSON guardados en {json_file}")
     
     # Also save as CSV for easier viewing (drop description to avoid CSV formatting issues)
-    csv_file = f"{output_dir}/youtube_videos.csv"
+    csv_file = os.path.join(output_dir, "youtube_videos.csv")
     pd.DataFrame(processed_videos).drop(columns=["description"]).to_csv(
         csv_file, index=False
     )

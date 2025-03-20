@@ -462,7 +462,7 @@ with tab2:
         st.warning("No hay datos de noticias disponibles.")
     else:
         news_futuretools_col, news_ycombinator_col, news_medium_genai_col = st.columns(
-            [3, 3, 3]
+            3
         )
         with news_futuretools_col:
             # Display results
