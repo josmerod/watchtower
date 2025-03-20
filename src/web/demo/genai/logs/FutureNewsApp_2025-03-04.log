@@ -1,0 +1,36 @@
+2025-03-04 17:20:34,976 - FutureNewsApp - INFO - Starting Future News Dashboard
+2025-03-04 17:20:35,171 - FutureNewsApp - INFO - Loading and preparing data
+2025-03-04 17:20:35,173 - FutureNewsApp - INFO - Fetching and processing news data
+2025-03-04 17:20:35,173 - FutureNewsApp - ERROR - File not found: ../../../../data/futuretools\futuretools.json
+2025-03-04 17:20:35,175 - FutureNewsApp - INFO - Data processing completed
+2025-03-04 17:20:35,176 - FutureNewsApp - INFO - Data loaded: 0 news articles
+2025-03-04 17:20:35,177 - FutureNewsApp - INFO - Rendering News section
+2025-03-04 17:20:35,178 - FutureNewsApp - WARNING - No news data available to display
+2025-03-04 17:20:35,179 - FutureNewsApp - INFO - Dashboard rendering completed
+2025-03-04 17:20:54,452 - FutureNewsApp - INFO - Starting Future News Dashboard
+2025-03-04 17:20:54,454 - FutureNewsApp - INFO - Loading and preparing data
+2025-03-04 17:20:54,456 - FutureNewsApp - INFO - Data loaded: 0 news articles
+2025-03-04 17:20:54,456 - FutureNewsApp - INFO - Rendering News section
+2025-03-04 17:20:54,457 - FutureNewsApp - WARNING - No news data available to display
+2025-03-04 17:20:54,457 - FutureNewsApp - INFO - Dashboard rendering completed
+2025-03-04 17:21:31,953 - FutureNewsApp - INFO - Starting Future News Dashboard
+2025-03-04 17:21:31,957 - FutureNewsApp - INFO - Loading news data
+2025-03-04 17:21:31,958 - FutureNewsApp - ERROR - File not found: ../../../../data/futuretools\futuretools.json
+2025-03-04 17:21:31,960 - FutureNewsApp - INFO - Loaded 0 articles
+2025-03-04 17:21:31,961 - FutureNewsApp - WARNING - No news data available
+2025-03-04 17:21:31,962 - FutureNewsApp - INFO - Dashboard rendering completed
+2025-03-04 17:21:35,769 - FutureNewsApp - INFO - Starting Future News Dashboard
+2025-03-04 17:21:35,772 - FutureNewsApp - INFO - Loaded 0 articles
+2025-03-04 17:21:35,773 - FutureNewsApp - WARNING - No news data available
+2025-03-04 17:21:35,775 - FutureNewsApp - INFO - Dashboard rendering completed
+2025-03-04 17:27:48,514 - FutureNewsApp - INFO - Iniciando Panel de Noticias
+2025-03-04 17:27:48,692 - FutureNewsApp - INFO - Cargando datos de noticias
+2025-03-04 17:27:48,693 - FutureNewsApp - INFO - Cargando datos desde ../../../../data/futuretools\futuretoolsnews.json
+2025-03-04 17:27:48,712 - FutureNewsApp - INFO - Se cargaron 100 registros
+2025-03-04 17:27:48,727 - FutureNewsApp - INFO - Se cargaron 100 artículos
+2025-03-04 17:27:48,734 - FutureNewsApp - INFO - Filtrado a 100 resultados
+2025-03-04 17:27:48,757 - FutureNewsApp - INFO - Renderizado del panel completado
+2025-03-04 17:27:49,291 - FutureNewsApp - INFO - Iniciando Panel de Noticias
+2025-03-04 17:27:49,301 - FutureNewsApp - INFO - Se cargaron 100 artículos
+2025-03-04 17:27:49,309 - FutureNewsApp - INFO - Filtrado a 100 resultados
+2025-03-04 17:27:49,328 - FutureNewsApp - INFO - Renderizado del panel completado

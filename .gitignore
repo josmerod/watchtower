@@ -1,0 +1,9 @@
+/.vscode
+/data
+/data/*
+/logs
+/logs/*
+/node_modules
+/build
+/.VSCodeCounter
+/.VSCodeCounter/*
