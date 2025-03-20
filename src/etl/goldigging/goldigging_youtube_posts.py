@@ -5,8 +5,7 @@ import sys
 from datetime import datetime, timedelta
 from typing import Dict, List
 
-import googleapiclient.discovery
-import isodate
+import yt_dlp
 import pandas as pd
 
 # Add project root to Python path
@@ -24,149 +23,104 @@ MAX_VIDEOS_PER_CHANNEL = 50
 DEFAULT_DAYS_LOOKBACK = 14
 
 
-def get_youtube_client():
-    """Initialize and return a YouTube API client."""
-    api_service_name = "youtube"
-    api_version = "v3"
-    api_key = os.environ.get("YOUTUBE_API_KEY")
-
-    if not api_key:
-        logger.error("Clave API de YouTube no encontrada en variables de entorno")
-        raise ValueError("La variable de entorno YOUTUBE_API_KEY es requerida")
-
-    return googleapiclient.discovery.build(
-        api_service_name, api_version, developerKey=api_key
-    )
-
-
-def get_channel_id(youtube, channel_id_or_handle: str) -> str:
-    """Convert a channel handle to a channel ID if needed."""
-    if channel_id_or_handle.startswith("UC") or channel_id_or_handle.startswith("HC"):
-        return channel_id_or_handle
-
-    # If it's a handle, we need to find the channel ID
-    handle = channel_id_or_handle.replace("@", "")
-
+def get_channel_videos_by_id(channel_handle: str, published_after: str = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat()) -> List[Dict]:
+    """Fetch videos from a channel using yt-dlp."""
     try:
-        # Try to find channel by handle
-        request = youtube.search().list(
-            part="snippet", q=f"@{handle}", type="channel", maxResults=1
-        )
-        response = request.execute()
-
-        if response.get("items"):
-            return response["items"][0]["snippet"]["channelId"]
-        else:
-            logger.error(f"No se pudo encontrar ID del canal para el handle: {channel_id_or_handle}")
-            return None
-    except Exception as e:
-        logger.error(f"Error al buscar ID del canal para {channel_id_or_handle}: {str(e)}")
-        return None
-
-
-def get_channel_videos_by_id(
-    youtube, channel_id_or_handle: str, published_after: str = None
-) -> List[Dict]:
-    """Fetch videos by a channel ID or handle using YouTube Data API."""
-    try:
-        channel_id = get_channel_id(youtube, channel_id_or_handle)
-        if not channel_id:
-            return []
-
-        # Set cutoff date for videos
-        if published_after is None:
-            published_after = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat()
-
-        # Get channel uploads playlist ID
-        request = youtube.channels().list(part="contentDetails", id=channel_id)
-        response = request.execute()
-
-        if not response.get("items"):
-            logger.error(f"No se encontró canal para el ID: {channel_id}")
-            return []
-
-        uploads_playlist_id = response["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
-
-        # Get videos from uploads playlist
+        ydl_opts = {
+            'extract_flat': True,  # Do not download videos
+            'quiet': True,
+            'no_warnings': True,
+            'ignoreerrors': True,
+            'playlist_items': f'1-{MAX_VIDEOS_PER_CHANNEL}'  # Limit number of videos to fetch
+        }
+        
         videos = []
-        next_page_token = None
-        remaining_results = MAX_VIDEOS_PER_CHANNEL
-        video_ids_batch = []
-
-        while True:
-            playlist_request = youtube.playlistItems().list(
-                part="snippet,contentDetails",
-                playlistId=uploads_playlist_id,
-                maxResults=min(50, remaining_results),  # API allows max 50 per request
-                pageToken=next_page_token,
-            )
-            playlist_response = playlist_request.execute()
-
-            # Collect video IDs for batch processing
-            for item in playlist_response["items"]:
-                published_at = item["snippet"]["publishedAt"]
-                if published_at >= published_after:
-                    video_ids_batch.append(item["contentDetails"]["videoId"])
-
-            next_page_token = playlist_response.get("nextPageToken")
-            remaining_results -= len(playlist_response["items"])
-
-            if not next_page_token or remaining_results <= 0:
-                break
-
-        # Process video IDs in batches of 50 (API limit)
-        for i in range(0, len(video_ids_batch), 50):
-            batch = video_ids_batch[i:i+50]
-            if not batch:
-                continue
-                
-            video_request = youtube.videos().list(
-                part="snippet,contentDetails,statistics", id=",".join(batch)
-            )
-            video_response = video_request.execute()
-
-            for video in video_response.get("items", []):
-                duration = isodate.parse_duration(
-                    video["contentDetails"]["duration"]
-                ).total_seconds()
-
-                video_info = {
-                    "title": video["snippet"]["title"],
-                    "url": f"https://www.youtube.com/watch?v={video['id']}",
-                    "channel": video["snippet"]["channelTitle"],
-                    "published_at": video["snippet"]["publishedAt"],
-                    "description": video["snippet"]["description"],
-                    "views": int(video["statistics"].get("viewCount", 0)),
-                    "length": duration,
-                    "metadata": {
-                        "api_source": "youtube_data_api",
-                        "processed_at": datetime.now().isoformat(),
-                    },
-                }
-                videos.append(video_info)
-                logger.debug(f"Video procesado: {video_info['title']}")
-
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Get channel URL - try both @ handle and direct channel URL formats
+            channel_urls = [
+                f"https://www.youtube.com/@{channel_handle}/videos",
+                f"https://www.youtube.com/c/{channel_handle}/videos",
+                f"https://www.youtube.com/channel/{channel_handle}/videos"
+            ]
+            
+            channel_info = None
+            for url in channel_urls:
+                try:
+                    channel_info = ydl.extract_info(url, download=False)
+                    if channel_info:
+                        break
+                except Exception:
+                    continue
+            
+            if not channel_info:
+                logger.error(f"No se pudo encontrar el canal: {channel_handle}")
+                return []
+            
+            # Process videos
+            for entry in channel_info.get('entries', []):
+                try:
+                    if not entry:
+                        continue
+                        
+                    # Get detailed video information
+                    video_info = ydl.extract_info(
+                        f"https://www.youtube.com/watch?v={entry['id']}", 
+                        download=False
+                    )
+                    
+                    if not video_info:
+                        continue
+                    
+                    # Convert timestamp to ISO format
+                    published_at = datetime.fromtimestamp(
+                        video_info.get('timestamp', 0)
+                    ).isoformat() + "Z"
+                    
+                    # Skip if video is older than published_after or newer than published_before
+                    if published_at < published_after:
+                        break
+                        
+                    video_data = {
+                        "title": video_info.get('title', ''),
+                        "url": video_info.get('webpage_url', ''),
+                        "channel": video_info.get('channel', ''),
+                        "published_at": published_at,
+                        "description": video_info.get('description', ''),
+                        "views": video_info.get('view_count', 0),
+                        "length": video_info.get('duration', 0),
+                        "metadata": {
+                            "api_source": "yt_dlp",
+                            "processed_at": datetime.now().isoformat(),
+                        },
+                    }
+                    videos.append(video_data)
+                    logger.debug(f"Video procesado: {video_data['title']}")
+                    
+                except Exception as e:
+                    logger.error(f"Error processing video {entry.get('id', 'unknown')}: {str(e)}")
+                    continue
+                    
         return videos
 
     except Exception as e:
-        logger.error(f"Error al obtener videos para {channel_id_or_handle}: {str(e)}")
+        logger.error(f"Error al obtener videos para {channel_handle}: {str(e)}")
         return []
 
 
-def process_youtube_channels(channel_ids_or_handles: List[str]) -> List[Dict]:
+def process_youtube_channels(channel_handles: List[str], published_after: str = None) -> List[Dict]:
     """Process multiple YouTube channels and combine their videos."""
     all_videos = []
-    youtube = get_youtube_client()
 
-    for channel_id_or_handle in channel_ids_or_handles:
+    for handle in channel_handles:
         try:
-            channel_videos = get_channel_videos_by_id(youtube, channel_id_or_handle)
+            logger.info(f"Procesando canal {handle}")
+            channel_videos = get_channel_videos_by_id(handle, published_after)
             all_videos.extend(channel_videos)
             logger.info(
-                f"Procesados con éxito {len(channel_videos)} videos de {channel_id_or_handle}"
+                f"Procesados con éxito {len(channel_videos)} videos de {handle}"
             )
         except Exception as e:
-            logger.error(f"Error al procesar el canal {channel_id_or_handle}: {str(e)}")
+            logger.error(f"Error al procesar el canal {handle}: {str(e)}")
             continue
 
     return all_videos
@@ -200,12 +154,10 @@ def main():
             "CodeEmporium",
 
             # GenAI Focus
-
             "mreflow",
             "DaveShap",
             "Deeplearningai",
             "Augmented_AI",
-
             
             # Software Architecture/Design
             "CodeOpinion",
@@ -235,7 +187,7 @@ def main():
             "slow_start",
             "companyman114",            
 
-            # Data Science / aData Engineering / Databricks
+            # Data Science / Data Engineering / Databricks
             "SeattleDataGuy",
             "nataindata",
             "DataWithBaraa",
@@ -246,10 +198,13 @@ def main():
             "TechLead",
             "techwithsoleyman",
             #"amazonwebservices", # This channel sends a lot of videos, we need to filter them...
-
         ]
 
-        processed_videos = process_youtube_channels(channels)
+        # Define date range for videos
+        published_after = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat()
+        published_before = datetime.now().isoformat()
+
+        processed_videos = process_youtube_channels(channels, published_after)
 
         if not processed_videos:
             logger.warning("No se recuperaron videos, el proceso ETL no puede continuar")
@@ -259,12 +214,6 @@ def main():
         processed_videos = sorted(
             processed_videos, key=lambda x: x["published_at"], reverse=True
         )
-
-        # Filter out videos that are older than the lookback period
-        cutoff_date = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat()
-        processed_videos = [
-            video for video in processed_videos if video["published_at"] > cutoff_date
-        ]
 
         # Save to JSON file
         json_file = f"{OUTPUT_DIR}/youtube_videos.json"
