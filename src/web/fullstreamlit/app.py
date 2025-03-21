@@ -50,6 +50,185 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Apply custom styling
+st.markdown("""
+<style>
+    /* Import Google Fonts - Poppins */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    
+    /* Main app background and text */
+    .stApp {
+        background-color: #1E1E2E !important;
+        color: #E2E8F0;
+        font-family: 'Poppins', sans-serif !important;
+    }
+    
+    /* Headers */
+    h1, h2, h3, h4, h5, h6 {
+        color: #A37FFF !important;
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Body text */
+    p, div, span, li {
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 400;
+        line-height: 1.6;
+        color: #E2E8F0;
+    }
+    
+    /* Tabs styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2px;
+        background-color: #2D2B55;
+        border-radius: 8px 8px 0 0;
+        padding: 5px 5px 0 5px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #2D2B55;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 20px;
+        color: #CCC6F2;
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #A37FFF !important;
+        color: #1E1E2E !important;
+        font-weight: 600;
+        box-shadow: 0 4px 6px rgba(163, 127, 255, 0.2);
+    }
+    
+    /* Sidebar */
+    .css-1d391kg, .css-1lcbmhc {
+        background-color: #2D2B55 !important;
+    }
+    
+    /* Buttons */
+    .stButton button {
+        background-color: #A37FFF !important;
+        color: #1E1E2E !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 500 !important;
+        padding: 8px 16px !important;
+        transition: all 0.3s ease;
+    }
+    .stButton button:hover {
+        background-color: #B792FF !important;
+        box-shadow: 0 4px 8px rgba(163, 127, 255, 0.3);
+        transform: translateY(-2px);
+    }
+    
+    /* Cards and tables */
+    .card, div.stDataFrame {
+        background-color: #2D2B55 !important;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        border-left: 3px solid #A37FFF;
+    }
+    
+    /* Table styling */
+    table {
+        background-color: #2D2B55 !important;
+        border-collapse: collapse;
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        font-family: 'Poppins', sans-serif !important;
+    }
+    th {
+        background-color: #3C3970 !important;
+        color: #E2E8F0 !important;
+        padding: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85em;
+        letter-spacing: 0.5px;
+    }
+    td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #3C3970;
+        vertical-align: middle;
+        color: #E2E8F0;
+    }
+    tr:nth-child(even) {
+        background-color: #252343 !important;
+    }
+    tr:hover {
+        background-color: #34325A !important;
+    }
+    
+    /* Input fields */
+    .stTextInput input, .stDateInput input, .stSelectbox select {
+        border-radius: 6px !important;
+        border: 1px solid #3C3970 !important;
+        background-color: #252343 !important;
+        color: #E2E8F0 !important;
+        font-family: 'Poppins', sans-serif !important;
+    }
+    
+    /* Links */
+    a {
+        color: #A37FFF !important;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    a:hover {
+        color: #B792FF !important;
+        text-decoration: underline;
+    }
+    
+    /* Custom scrollbar for better UX */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #1E1E2E;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #3C3970;
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #A37FFF;
+    }
+    
+    /* Warning messages */
+    .stAlert {
+        background-color: #3C3970 !important;
+        color: #E2E8F0 !important;
+    }
+    
+    /* Dropdown elements */
+    .stSelectbox > div[data-baseweb="select"] > div {
+        background-color: #252343 !important;
+        color: #E2E8F0 !important;
+    }
+    
+    /* Date input */
+    .stDateInput > div[data-baseweb="input"] > div {
+        background-color: #252343 !important;
+        color: #E2E8F0 !important;
+    }
+    
+    /* Success messages */
+    div[data-testid="stSuccessMessage"] {
+        background-color: #2D2B55 !important;
+        color: #A5FFAF !important;
+        border-color: #A5FFAF !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 
 # Helper functions
 @st.cache_data(ttl=3600)
@@ -125,8 +304,8 @@ def make_clickable(link, text=None):
 st.title("🗼 Watchtower: Monitor de Tendencias y Noticias")
 st.markdown(
     """
-<div class="card">
-    <p>Las paridas de Josele presentan el panel de Watchtower, un monitor de tendencias y noticias en el mundo del Generative AI y Dev. Si, se me ha ido un poco de las manos...</p>
+<div class="card" style="background-color: #2D2B55; padding: 18px; border-radius: 8px; border-left: 5px solid #A37FFF; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);">
+    <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #E2E8F0;">Las paridas de Josele presentan el panel de Watchtower, un monitor de tendencias y noticias en el mundo del Generative AI y Dev. Si, se me ha ido un poco de las manos...</p>
 </div>
 """,
     unsafe_allow_html=True,
@@ -647,8 +826,8 @@ with tab3:
 # Footer
 st.markdown(
     """
-<div style="text-align: center; margin-top: 30px; padding: 20px; opacity: 0.7;">
-    <p>Datos obtenidos de <a href="https://isthereanydeal.com/" target="_blank">IsThereAnyDeal</a>, <a href="https://futuretools.io/news" target="_blank">FutureTools.io</a>, <a href="https://www.medium.com/" target="_blank">Medium</a> y <a href="https://www.youtube.com/" target="_blank">Youtube</a></p>
+<div style="text-align: center; margin-top: 30px; padding: 20px; opacity: 0.9; background-color: #2D2B55; border-radius: 8px; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3); border-top: 3px solid #A37FFF;">
+    <p style="font-family: 'Poppins', sans-serif; color: #E2E8F0; font-size: 14px;">Datos obtenidos de <a href="https://isthereanydeal.com/" target="_blank">IsThereAnyDeal</a>, <a href="https://futuretools.io/news" target="_blank">FutureTools.io</a>, <a href="https://www.medium.com/" target="_blank">Medium</a> y <a href="https://www.youtube.com/" target="_blank">Youtube</a></p>
 </div>
 """,
     unsafe_allow_html=True,
