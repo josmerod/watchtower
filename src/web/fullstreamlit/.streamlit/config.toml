@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#A37FFF"       # Bright Purple 
+backgroundColor = "#1E1E2E"    # Dark background (Monokai Pro-like)
+secondaryBackgroundColor = "#2D2B55"  # Dark Purple-Blue (matching VS Code theme)
+textColor = "#E2E8F0"          # Light gray/white text for readability
+font = "Poppins"               # Keep the stylish font 
