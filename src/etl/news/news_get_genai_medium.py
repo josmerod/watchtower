@@ -21,7 +21,7 @@ def get_medium_genai_data(
     max_retries: int = 3, retry_delay: int = 5
 ) -> List[Dict[str, Any]]:
     """
-    Fetches generative AI articles from Medium by parsing RSS feed.
+    Fetches generative AI articles from Medium by parsing multiple RSS feeds.
 
     Args:
         max_retries: Maximum number of retry attempts on connection failure
@@ -30,63 +30,95 @@ def get_medium_genai_data(
     Returns:
         List of news article dictionaries
     """
-    rss_url = "https://medium.com/feed/tag/generative-ai"
+    rss_urls = [
+        "https://medium.com/feed/tag/generative-ai",
+        "https://medium.com/feed/tag/llm",
+        "https://medium.com/feed/tag/genai",
+        "https://medium.com/feed/tag/agents",
+        "https://medium.com/feed/tag/ai",
+        "https://medium.com/feed/tag/prompt-engineering",
+        "https://medium.com/feed/tag/data-science",
+        "https://medium.com/feed/tag/machine-learning",
+        "https://medium.com/feed/tag/deep-learning",
+        "https://medium.com/feed/tag/natural-language-processing",
+        "https://medium.com/feed/tag/computer-vision",
+        "https://medium.com/feed/tag/nlp"
+
+    ]
     articles = []
     
-    for attempt in range(max_retries):
-        try:
-            logger.info(f"Fetching RSS feed from {rss_url}")
-            feed = feedparser.parse(rss_url)
-            
-            if not feed.entries:
-                logger.warning(f"No entries found in RSS feed from {rss_url}")
+    for rss_url in rss_urls:
+        logger.info(f"Processing RSS feed: {rss_url}")
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Fetching RSS feed from {rss_url}")
+                feed = feedparser.parse(rss_url)
+                
+                if not feed.entries:
+                    logger.warning(f"No entries found in RSS feed from {rss_url}")
+                    break
+                
+                logger.debug(f"Found {len(feed.entries)} entries in RSS feed from {rss_url}")
+                
+                for entry in feed.entries:
+                    try:
+                        # Extract article data from the entry
+                        article = {
+                            "title": entry.title if hasattr(entry, 'title') else "",
+                            "url": entry.link if hasattr(entry, 'link') else "",
+                            "published_at": entry.published if hasattr(entry, 'published') else "",
+                            "source": "medium.com",
+                            "author": entry.author if hasattr(entry, 'author') else "",
+                            "summary": entry.summary if hasattr(entry, 'summary') else "",
+                            "medium_id": entry.id if hasattr(entry, 'id') else "",
+                            "feed_source": rss_url
+                        }
+                        
+                        # Extract tags/categories if available
+                        if hasattr(entry, 'tags'):
+                            article["tags"] = [tag.term for tag in entry.tags if hasattr(tag, 'term')]
+                        
+                        # Extract source domain from entry
+                        if hasattr(entry, 'link'):
+                            source_match = re.search(r'https?://([^/]+)', entry.link)
+                            if source_match:
+                                article["source"] = source_match.group(1)
+                        
+                        articles.append(article)
+                        logger.debug(f"Extracted article: {article['title']}")
+                    except Exception as e:
+                        logger.error(f"Error parsing RSS entry: {str(e)}")
+                        continue
+                
+                # Break out of retry loop if successful
                 break
-            
-            logger.debug(f"Found {len(feed.entries)} entries in RSS feed from {rss_url}")
-            
-            for entry in feed.entries:
-                try:
-                    # Extract article data from the entry
-                    article = {
-                        "title": entry.title if hasattr(entry, 'title') else "",
-                        "url": entry.link if hasattr(entry, 'link') else "",
-                        "published_at": entry.published if hasattr(entry, 'published') else "",
-                        "source": "medium.com",
-                        "author": entry.author if hasattr(entry, 'author') else "",
-                        "summary": entry.summary if hasattr(entry, 'summary') else "",
-                        "medium_id": entry.id if hasattr(entry, 'id') else ""
-                    }
-                    
-                    # Extract tags/categories if available
-                    if hasattr(entry, 'tags'):
-                        article["tags"] = [tag.term for tag in entry.tags if hasattr(tag, 'term')]
-                    
-                    # Extract source domain from entry
-                    if hasattr(entry, 'link'):
-                        source_match = re.search(r'https?://([^/]+)', entry.link)
-                        if source_match:
-                            article["source"] = source_match.group(1)
-                    
-                    articles.append(article)
-                    logger.debug(f"Extracted article: {article['title']}")
-                except Exception as e:
-                    logger.error(f"Error parsing RSS entry: {str(e)}")
-                    continue
-            
-            # Break out of retry loop if successful
-            break
-            
-        except Exception as e:
-            logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {str(e)}")
-            if attempt < max_retries - 1:
-                logger.info(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                logger.error(
-                    f"Error fetching data from RSS feed after {max_retries} attempts: {str(e)}"
-                )
+                
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {str(e)}")
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    logger.error(
+                        f"Error fetching data from RSS feed {rss_url} after {max_retries} attempts: {str(e)}"
+                    )
     
-    logger.info(f"Retrieved {len(articles)} articles from Medium Generative AI RSS feed")
+    # Remove duplicates based on medium_id and title
+    unique_articles = {}
+    unique_titles = set()
+    
+    for article in articles:
+        # First check if we've seen this title before
+        title = article.get("title", "").strip()
+        medium_id = article.get("medium_id", "")
+        
+        if title and title not in unique_titles and medium_id not in unique_articles:
+            unique_titles.add(title)
+            unique_articles[medium_id] = article
+    
+    articles = list(unique_articles.values())
+    logger.info(f"Retrieved {len(articles)} unique articles from Medium RSS feeds")
     return articles
 
 
@@ -118,7 +150,8 @@ def process_medium_articles(
                     "medium_id": article.get("medium_id", ""),
                     "author": article.get("author", ""),
                     "tags": article.get("tags", []),
-                    "summary": article.get("summary", "")
+                    "summary": article.get("summary", ""),
+                    "feed_source": article.get("feed_source", "")
                 },
             }
             processed_articles.append(processed_article)
@@ -140,7 +173,7 @@ def main():
         output_dir = os.path.join(project_root, "data/medium_genai")
         ensure_directories(["data/medium_genai"])
 
-        # Get articles from the RSS feed
+        # Get articles from the RSS feeds
         articles = get_medium_genai_data()
 
         if not articles:

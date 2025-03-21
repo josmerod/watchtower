@@ -38,7 +38,8 @@ YCOMBINATOR_NEWS_FILE = os.path.join(YCOMBINATOR_NEWS_DATA_DIR, "hackernews.json
 MEDIUM_NEWS_FILE = os.path.join(MEDIUM_NEWS_DATA_DIR, "medium_genai.json")
 
 DEV_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "dev", "youtube_videos.json")
-
+PERSONAL_DEV_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "personal_development", "youtube_videos.json")
+ECONOMICS_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "economics", "youtube_videos.json")
 # Log application startup
 logger.info("Starting Watchtower Dashboard")
 
@@ -388,7 +389,7 @@ logger.info(
 )
 
 # Create tabs for different data views
-tab3, tab2, tab1 = st.tabs(["📺 Videos", "📰 Noticias", "🎮 Juegos"])
+tab3, tab2, tab1, tab4, tab5 = st.tabs(["📺 Videos Programación e IA", "📰 Noticias", "🎮 Juegos", "📺 Videos Desarrollo personal", "📺 Videos Ecopolitica"])
 
 with tab1:  # Juegos
     logger.info("Rendering Summary subtab")
@@ -645,6 +646,7 @@ with tab2:
         )
         with news_futuretools_col:
             # Display results
+            st.header("Noticias de Futuretools")
             if futuretools_news_df.empty:
                 logger.warning("No matches found")
                 st.warning(
@@ -671,10 +673,6 @@ with tab2:
                     inplace=True,
                 )
 
-                # Sort by published_date
-                display_news_df = display_news_df.sort_values(
-                    by="Fecha de Publicación", ascending=False
-                )
                 # Show table
                 st.markdown(
                     display_news_df.to_html(escape=False, index=False),
@@ -682,6 +680,7 @@ with tab2:
                 )
 
         with news_ycombinator_col:
+            st.header("Noticias de Hacker News")
             # Display results
             if ycombinator_news_df.empty:
                 logger.warning("No matches found")
@@ -717,6 +716,7 @@ with tab2:
 
         with news_medium_genai_col:
             # Display results
+            st.header("Noticias de Medium sobre IA")
             if medium_news_df.empty:
                 logger.warning("No matches found")
                 st.warning(
@@ -752,7 +752,7 @@ with tab2:
 
 with tab3:
     logger.info("Rendering Videos tab")
-    st.header("📺 Videos de Youtube")
+    st.header("📺 Videos de Youtube sobre Desarrollo (informática)")
 
 
 
@@ -822,6 +822,149 @@ with tab3:
                                 )
                             st.markdown("---")
 
+with tab4:
+    logger.info("Rendering Videos tab")
+    st.header("📺 Videos de Youtube sobre Desarrollo (personal)")
+
+
+
+    videos_df = get_videos_data(PERSONAL_DEV_VIDEOS_FILE)
+    logger.info(f"Loaded {len(videos_df)} videos")
+
+    if videos_df.empty:
+        logger.warning("No videos data available")
+        st.warning("No hay datos de videos disponibles.")
+    else:
+        # Filters
+        search_term_personal = st.text_input("🔍 Buscar en títulos de videos de desarrollo personal", "")
+
+        # Date range filter
+        date_range = st.date_input(
+            "Rango de fechas para videos",
+            [videos_df["published_date"].min(), videos_df["published_date"].max()],
+            min_value=videos_df["published_date"].min().date(),
+            max_value=videos_df["published_date"].max().date(),
+        )
+
+        # Apply filters
+        filtered_videos_df = videos_df.copy()
+
+        if search_term_personal:
+            filtered_videos_df = filtered_videos_df[
+                filtered_videos_df["title"].str.contains(
+                    search_term_personal, case=False, na=False
+                )
+            ]
+
+        if len(date_range) == 2:
+            filtered_videos_df = filtered_videos_df[
+                (filtered_videos_df["published_date"].dt.date >= date_range[0])
+                & (filtered_videos_df["published_date"].dt.date <= date_range[1])
+            ]
+
+        logger.info(f"Filtered to {len(filtered_videos_df)} video results")
+
+        # Display results
+        if filtered_videos_df.empty:
+            logger.warning("No video matches found")
+            st.warning("No hay videos que coincidan con los filtros seleccionados.")
+        else:
+            # Display videos in a grid format
+            num_cols = 8  # Number of columns in the grid
+            rows = [
+                filtered_videos_df.iloc[i : i + num_cols]
+                for i in range(0, len(filtered_videos_df), num_cols)
+            ]
+
+            for row_data in rows:
+                cols = st.columns(num_cols)
+
+                for i, (_, video) in enumerate(row_data.iterrows()):
+                    if i < len(cols):
+                        with cols[i]:
+                            st.subheader(video["title"])
+                            st.write(f"**Canal:** {video.get('channel', 'N/A')}")
+                            st.write(
+                                f"**Publicado:** {video.get('published_at', 'N/A')}"
+                            )
+                            if "url" in video and pd.notna(video["url"]):
+                                st.markdown(
+                                    make_clickable(video["url"], "Ver en YouTube"),
+                                    unsafe_allow_html=True,
+                                )
+                            st.markdown("---")
+
+with tab5:
+    logger.info("Rendering Videos tab")
+    st.header("📺 Videos de Youtube sobre Economía y Política")
+
+
+
+    videos_df = get_videos_data(ECONOMICS_VIDEOS_FILE)
+    logger.info(f"Loaded {len(videos_df)} videos")
+
+    if videos_df.empty:
+        logger.warning("No videos data available")
+        st.warning("No hay datos de videos disponibles.")
+    else:
+        # Filters
+        search_term_economics = st.text_input("🔍 Buscar en títulos de videos de economía y política", "")
+
+        # Date range filter
+        date_range = st.date_input(
+            "Rango de fechas para videos",
+            [videos_df["published_date"].min(), videos_df["published_date"].max()],
+            min_value=videos_df["published_date"].min().date(),
+            max_value=videos_df["published_date"].max().date(),
+        )
+
+        # Apply filters
+        filtered_videos_df = videos_df.copy()
+
+        if search_term_economics:
+            filtered_videos_df = filtered_videos_df[
+                filtered_videos_df["title"].str.contains(
+                    search_term_economics, case=False, na=False
+                )
+            ]
+
+        if len(date_range) == 2:
+            filtered_videos_df = filtered_videos_df[
+                (filtered_videos_df["published_date"].dt.date >= date_range[0])
+                & (filtered_videos_df["published_date"].dt.date <= date_range[1])
+            ]
+
+        logger.info(f"Filtered to {len(filtered_videos_df)} video results")
+
+        # Display results
+        if filtered_videos_df.empty:
+            logger.warning("No video matches found")
+            st.warning("No hay videos que coincidan con los filtros seleccionados.")
+        else:
+            # Display videos in a grid format
+            num_cols = 8  # Number of columns in the grid
+            rows = [
+                filtered_videos_df.iloc[i : i + num_cols]
+                for i in range(0, len(filtered_videos_df), num_cols)
+            ]
+
+            for row_data in rows:
+                cols = st.columns(num_cols)
+
+                for i, (_, video) in enumerate(row_data.iterrows()):
+                    if i < len(cols):
+                        with cols[i]:
+                            st.subheader(video["title"])
+                            st.write(f"**Canal:** {video.get('channel', 'N/A')}")
+                            st.write(
+                                f"**Publicado:** {video.get('published_at', 'N/A')}"
+                            )
+                            if "url" in video and pd.notna(video["url"]):
+                                st.markdown(
+                                    make_clickable(video["url"], "Ver en YouTube"),
+                                    unsafe_allow_html=True,
+                                )
+                            st.markdown("---")
 
 # Footer
 st.markdown(
