@@ -71,6 +71,9 @@ CHANNEL_TOPICS = {
             "ByteByteGo",
             "TechLead",
             "techwithsoleyman",
+            # Generative AI automation
+            "nateherk"
+            "leonardogrig"
         ]
     },
     "economics": {

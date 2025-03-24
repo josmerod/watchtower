@@ -1,0 +1,37 @@
+{
+  "id": "20230615120530_ms_applied_skills_changed",
+  "type": "ms_applied_skills_changed",
+  "timestamp": "2023-06-15T12:05:30.123456",
+  "watcher": "ms_applied_skills",
+  "url": "https://learn.microsoft.com/es-es/credentials/browse/?credential_types=applied%20skills",
+  "old_value": {
+    "count": 35,
+    "skills": [
+      "Microsoft 365 Copilot",
+      "Azure Virtual Desktop",
+      "Windows Server Hybrid Administrator",
+      "Azure Support Engineer for Connectivity Specialty",
+      "Implementing and Managing Microsoft 365 Security Solutions"
+    ]
+  },
+  "new_value": {
+    "count": 37,
+    "skills": [
+      "Microsoft 365 Copilot",
+      "Azure Virtual Desktop",
+      "Windows Server Hybrid Administrator",
+      "Azure Support Engineer for Connectivity Specialty",
+      "Implementing and Managing Microsoft 365 Security Solutions",
+      "Building Natural Language Solutions with Azure OpenAI Service",
+      "Microsoft Entra ID Governance Administration"
+    ]
+  },
+  "details": {
+    "change_type": "count_changed",
+    "added_skills": [
+      "Building Natural Language Solutions with Azure OpenAI Service",
+      "Microsoft Entra ID Governance Administration"
+    ],
+    "removed_skills": []
+  }
+} 
