@@ -9,6 +9,7 @@ start /B python src/etl/games/games_get_deals.py
 start /B python src/etl/news/news_get_ycombinator.py
 start /B python src/etl/news/news_get_futuretools.py
 start /B python src/etl/news/news_get_genai_medium.py
+start /B python src/etl/news/news_get_bensbites.py
 start /B python src/etl/goldigging/goldigging_youtube_posts.py
 
 echo All ETL processes started in parallel
