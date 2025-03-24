@@ -26,6 +26,7 @@ GAMES_DATA_DIR = "../../../data/games"
 FUTURETOOLS_NEWS_DATA_DIR = "../../../data/futuretools"
 YCOMBINATOR_NEWS_DATA_DIR = "../../../data/hackernews"
 MEDIUM_NEWS_DATA_DIR = "../../../data/medium_genai"
+BENSBITES_NEWS_DATA_DIR = "../../../data/bensbites"
 
 VIDEOS_DATA_DIR = "../../../data/youtube"
 
@@ -38,6 +39,7 @@ GIVEAWAYS_FILE = os.path.join(GAMES_DATA_DIR, "giveaways.json")
 FUTURETOOLS_NEWS_FILE = os.path.join(FUTURETOOLS_NEWS_DATA_DIR, "futuretoolsnews.json")
 YCOMBINATOR_NEWS_FILE = os.path.join(YCOMBINATOR_NEWS_DATA_DIR, "hackernews.json")
 MEDIUM_NEWS_FILE = os.path.join(MEDIUM_NEWS_DATA_DIR, "medium_genai.json")
+BENSBITES_NEWS_FILE = os.path.join(BENSBITES_NEWS_DATA_DIR, "bensbites_news.json")
 
 DEV_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "dev", "youtube_videos.json")
 PERSONAL_DEV_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "personal_development", "youtube_videos.json")
@@ -599,6 +601,7 @@ with tab2:
         futuretools_news_df = load_data(FUTURETOOLS_NEWS_FILE)
         ycombinator_news_df = load_data(YCOMBINATOR_NEWS_FILE)
         medium_news_df = load_data(MEDIUM_NEWS_FILE)
+        bensbites_news_df = load_data(BENSBITES_NEWS_FILE)
 
         if not futuretools_news_df.empty:
             futuretools_news_df["published_date"] = pd.to_datetime(
@@ -610,7 +613,12 @@ with tab2:
                 ycombinator_news_df["published_at"]
             )
 
-        return futuretools_news_df, ycombinator_news_df, medium_news_df
+        if not bensbites_news_df.empty:
+            bensbites_news_df["published_date"] = pd.to_datetime(
+                bensbites_news_df["published_at"]
+            )
+
+        return futuretools_news_df, ycombinator_news_df, medium_news_df, bensbites_news_df
 
     logger.info("Rendering News tab")
     st.header("📰 Noticias Generative AI")
@@ -622,51 +630,61 @@ with tab2:
         subprocess.run(["python3", "../../../src/etl/news/news_get_futuretools.py"])
         subprocess.run(["python3", "../../../src/etl/news/news_get_ycombinator.py"])
         subprocess.run(["python3", "../../../src/etl/news/news_get_genai_medium.py"])
+        subprocess.run(["python3", "../../../src/etl/news/news_get_bensbites.py"])  # Add Ben's Bites refresh
         # Wait until the script is finished
         logger.info("Datos de noticias cargados correctamente")
         st.success("Datos de noticias cargados correctamente")
         # Refresh the data
-        futuretools_news_df, ycombinator_news_df, medium_news_df = get_news_data()
+        futuretools_news_df, ycombinator_news_df, medium_news_df, bensbites_news_df = get_news_data()
         logger.info("Datos de noticias actualizados correctamente")
         # Refresh the page
         st.rerun()
 
     # Load news data
-    futuretools_news_df, ycombinator_news_df, medium_news_df = get_news_data()
+    futuretools_news_df, ycombinator_news_df, medium_news_df, bensbites_news_df = get_news_data()
 
     logger.info(f"Loaded {len(futuretools_news_df)} futuretools news articles")
     logger.info(f"Loaded {len(ycombinator_news_df)} ycombinator news articles")
     logger.info(f"Loaded {len(medium_news_df)} medium news articles")
+    logger.info(f"Loaded {len(bensbites_news_df)} bensbites news articles")
 
     # Display news data
-    if futuretools_news_df.empty and ycombinator_news_df.empty:
+    if futuretools_news_df.empty and ycombinator_news_df.empty and bensbites_news_df.empty:
         logger.warning("No news data available")
         st.warning("No hay datos de noticias disponibles.")
     else:
-        news_futuretools_col, news_ycombinator_col, news_medium_genai_col = st.columns(
-            3
-        )
+        news_futuretools_col, news_ycombinator_col, news_medium_genai_col = st.columns(3)
         with news_futuretools_col:
             # Display results
-            st.header("Noticias de Futuretools")
-            if futuretools_news_df.empty:
+            st.header("Noticias de FutureTools y Ben's Bites")
+            if futuretools_news_df.empty and bensbites_news_df.empty:
                 logger.warning("No matches found")
-                st.warning(
-                    "No hay noticias que coincidan con los filtros seleccionados."
-                )
+                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
             else:
-                # Prepare display data
-                display_news_df = futuretools_news_df[
-                    ["title", "published_at", "source"]
-                ].copy()
-
-                # Add clickable links
-                display_news_df["Ver Noticia"] = futuretools_news_df["url"].apply(
-                    lambda x: make_clickable(x, "Leer más")
-                )
-
+                # Debug logging for data combination
+                logger.info("Combining FutureTools and Ben's Bites news")
+                logger.info(f"FutureTools columns: {futuretools_news_df.columns.tolist()}")
+                logger.info(f"Ben's Bites columns: {bensbites_news_df.columns.tolist()}")
+                
+                # Prepare display data for both sources
+                futuretools_display = futuretools_news_df[["title", "published_at", "source", "url"]].copy() if not futuretools_news_df.empty else pd.DataFrame(columns=["title", "published_at", "source", "url"])
+                bensbites_display = bensbites_news_df[["title", "published_at", "source", "url"]].copy() if not bensbites_news_df.empty else pd.DataFrame(columns=["title", "published_at", "source", "url"])
+                
+                # Combine FutureTools and Ben's Bites news
+                combined_news_df = pd.concat([futuretools_display, bensbites_display])
+                logger.info(f"Combined DataFrame shape: {combined_news_df.shape}")
+                
+                # Sort by published_at
+                combined_news_df = combined_news_df.sort_values("published_at", ascending=False)
+                
+                # Add clickable links using the URL column
+                combined_news_df["Ver Noticia"] = combined_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+                
+                # Drop the URL column as it's no longer needed
+                combined_news_df = combined_news_df.drop(columns=["url"])
+                
                 # Rename columns to Spanish
-                display_news_df.rename(
+                combined_news_df.rename(
                     columns={
                         "title": "Título",
                         "published_at": "Fecha de Publicación",
@@ -674,10 +692,11 @@ with tab2:
                     },
                     inplace=True,
                 )
-
+                
+                logger.info("Displaying combined news table")
                 # Show table
                 st.markdown(
-                    display_news_df.to_html(escape=False, index=False),
+                    combined_news_df.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
 
@@ -774,7 +793,7 @@ with tab3:
             [videos_df["published_date"].min(), videos_df["published_date"].max()],
             min_value=videos_df["published_date"].min().date(),
             max_value=videos_df["published_date"].max().date(),
-            key="date_input_dev_videos"
+            key="dev_videos_date_range"
         )
 
         # Apply filters
