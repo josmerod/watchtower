@@ -88,6 +88,7 @@ CHANNEL_TOPICS = {
             "PolyMatter",
             "slow_start",
             "companyman114",
+            "MagnatesMedia"
         ]
     },
     "personal_development": {
