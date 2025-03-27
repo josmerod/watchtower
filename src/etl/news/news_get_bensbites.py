@@ -82,7 +82,7 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
             for page_num in range(max_pages):
                 # Add a variable delay between pages to appear more human-like
                 if page_num > 0:
-                    delay = 5 + (page_num * 2)  # Increasing delay for each subsequent page
+                    delay = 15  # Increasing delay for each subsequent page
                     logger.info(f"Waiting {delay} seconds before fetching page {page_num + 1}")
                     time.sleep(delay)
                 
