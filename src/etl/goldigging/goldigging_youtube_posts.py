@@ -97,7 +97,8 @@ CHANNEL_TOPICS = {
             "Burnout.Recovery",
             "WiseSleep",
             "TED",
-            "SUCCESSCHASERS"
+            "SUCCESSCHASERS",
+            "HowtoADHD"
         ]
     }
 }
