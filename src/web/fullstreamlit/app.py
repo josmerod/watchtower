@@ -329,6 +329,93 @@ st.markdown("""
         color: #A5FFAF !important;
         border-color: #A5FFAF !important;
     }
+
+    /* Deals container */
+    .deals-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        width: 100%;
+        padding: 1rem;
+    }
+
+    @media (max-width: 1200px) {
+        .deals-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .deals-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .deals-column {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .deals-card {
+        background-color: #2D2B55;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        border-left: 3px solid #A37FFF;
+        height: 100%;
+        overflow-x: auto;
+    }
+
+    /* News container */
+    .news-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        width: 100%;
+        padding: 1rem;
+    }
+
+    @media (max-width: 1200px) {
+        .news-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .news-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .news-column {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .news-card {
+        background-color: #2D2B55;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        border-left: 3px solid #A37FFF;
+        height: 100%;
+        overflow-x: auto;
+    }
+
+    /* Table responsiveness */
+    .stDataFrame {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        width: 100%;
+        min-width: 100%;
+        margin-bottom: 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -515,92 +602,62 @@ with tab1:  # Juegos
     if deals_df.empty:
         logger.warning("No deals data available to display")
         st.warning("No hay datos de ofertas disponibles.")
-
     else:
         # Calculate summary statistics
         total_deals = len(deals_df)
         total_bundles = len(bundles_df)
         total_giveaways = len(giveaways_df)
 
-        # Add responsive container CSS for deals
-        st.markdown("""
-            <style>
-            .deals-container {
-                display: flex;
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            @media (min-width: 992px) {
-                .deals-container {
-                    flex-direction: row;
-                }
-                
-                .deals-column {
-                    flex: 1;
-                    min-width: 0;
-                }
-            }
-            
-            .deals-card {
-                background-color: #2D2B55;
-                border-radius: 8px;
-                padding: 15px;
-                margin-bottom: 15px;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-                border-left: 3px solid #A37FFF;
-            }
-            
-            @media (max-width: 992px) {
-                .deals-card {
-                    margin: 10px 0;
-                }
-                
-                .stDataFrame {
-                    max-height: none !important;
-                }
-            }
-            </style>
-        """, unsafe_allow_html=True)
+        # Add table selector
+        selected_tables = st.multiselect(
+            "Selecciona las tablas a mostrar",
+            ["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
+            default=["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
+            help="Elige qué tablas quieres ver en el panel"
+        )
 
         st.markdown('<div class="deals-container">', unsafe_allow_html=True)
 
         # Display deals in responsive columns
-        st.markdown('<div class="deals-column">', unsafe_allow_html=True)
-        with st.container():
+        if "Ofertas de Juegos" in selected_tables:
+            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
+            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
             st.header("Ofertas de Juegos")
-            filtered_deals_df = deals_df.copy()
-            filtered_deals_df = filtered_deals_df.sort_values(by="discount_value", ascending=False)
-            display_deals_df = filtered_deals_df[["title", "price", "discount", "store", "published_date"]].copy()
-            display_deals_df["Ver Oferta"] = filtered_deals_df["link"].apply(lambda x: make_clickable(x, "Ver"))
-            
-            if "price" in display_deals_df.columns:
-                display_deals_df["price"] = display_deals_df["price"].apply(
-                    lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
+            if not deals_df.empty:
+                filtered_deals_df = deals_df.copy()
+                filtered_deals_df = filtered_deals_df.sort_values(by="discount_value", ascending=False)
+                display_deals_df = filtered_deals_df[["title", "price", "discount", "store", "published_date"]].copy()
+                display_deals_df["Ver Oferta"] = filtered_deals_df["link"].apply(lambda x: make_clickable(x, "Ver"))
+                
+                if "price" in display_deals_df.columns:
+                    display_deals_df["price"] = display_deals_df["price"].apply(
+                        lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
+                    )
+                
+                display_deals_df.rename(
+                    columns={
+                        "title": "Título",
+                        "price": "Precio",
+                        "discount": "Descuento",
+                        "store": "Tienda",
+                        "published_date": "Fecha de Publicación",
+                    },
+                    inplace=True,
                 )
-            
-            display_deals_df.rename(
-                columns={
-                    "title": "Título",
-                    "price": "Precio",
-                    "discount": "Descuento",
-                    "store": "Tienda",
-                    "published_date": "Fecha de Publicación",
-                },
-                inplace=True,
-            )
-            
-            st.markdown(
-                '<div class="deals-card">' + 
-                display_deals_df.to_html(escape=False, index=False) +
-                '</div>',
-                unsafe_allow_html=True,
-            )
-        st.markdown('</div>', unsafe_allow_html=True)
+                
+                st.markdown(
+                    display_deals_df.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.warning("No hay ofertas disponibles.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # Display bundles in responsive columns
-        st.markdown('<div class="deals-column">', unsafe_allow_html=True)
-        with st.container():
+        if "Paquetes de Juegos" in selected_tables:
+            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
+            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
             st.header("Paquetes de Juegos")
             if not bundles_df.empty:
                 filtered_bundles_df = bundles_df.copy()
@@ -629,18 +686,18 @@ with tab1:  # Juegos
                 )
                 
                 st.markdown(
-                    '<div class="deals-card">' + 
-                    display_bundles_df.to_html(escape=False, index=False) +
-                    '</div>',
+                    display_bundles_df.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
             else:
-                st.warning("No hay datos de paquetes disponibles.")
-        st.markdown('</div>', unsafe_allow_html=True)
+                st.warning("No hay paquetes disponibles.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # Display giveaways in responsive columns
-        st.markdown('<div class="deals-column">', unsafe_allow_html=True)
-        with st.container():
+        if "Juegos Gratuitos" in selected_tables:
+            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
+            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
             st.header("Juegos Gratuitos")
             if not giveaways_df.empty:
                 filtered_giveaways_df = giveaways_df.copy()
@@ -664,19 +721,20 @@ with tab1:  # Juegos
                 )
                 
                 st.markdown(
-                    '<div class="deals-card">' + 
-                    display_giveaways_df.to_html(escape=False, index=False) +
-                    '</div>',
+                    display_giveaways_df.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
             else:
-                st.warning("No hay datos de juegos gratuitos disponibles.")
-        st.markdown('</div>', unsafe_allow_html=True)
+                st.warning("No hay juegos gratuitos disponibles.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
 
 
 with tab2:
+    logger.info("Rendering News tab")
+    st.header("📰 Noticias Generative AI")
 
     @st.cache_data(ttl=3600)
     def get_news_data():
@@ -703,9 +761,6 @@ with tab2:
             )
 
         return futuretools_news_df, ycombinator_news_df, medium_news_df, bensbites_news_df
-
-    logger.info("Rendering News tab")
-    st.header("📰 Noticias Generative AI")
 
     # Add a button to call the script to scrape the data
     if st.button("(Re)cargar datos de noticias"):
@@ -737,77 +792,31 @@ with tab2:
         logger.warning("No news data available")
         st.warning("No hay datos de noticias disponibles.")
     else:
-        news_futuretools_col, news_ycombinator_col, news_medium_genai_col = st.columns([1, 1, 1])
-        
-        # Add responsive container CSS
-        st.markdown("""
-            <style>
-            .news-container {
-                display: flex;
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            @media (min-width: 768px) {
-                .news-container {
-                    flex-direction: row;
-                }
-                
-                .news-column {
-                    flex: 1;
-                    min-width: 0; /* Prevent flex items from overflowing */
-                }
-            }
-            
-            .news-card {
-                background-color: #2D2B55;
-                border-radius: 8px;
-                padding: 15px;
-                margin-bottom: 15px;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-                border-left: 3px solid #A37FFF;
-            }
-            
-            @media (max-width: 768px) {
-                .news-card {
-                    margin: 10px 0;
-                }
-            }
-            </style>
-        """, unsafe_allow_html=True)
-        
+        # Add news source selector
+        selected_sources = st.multiselect(
+            "Selecciona las fuentes de noticias",
+            ["FutureTools y Ben's Bites", "Hacker News", "Medium"],
+            default=["FutureTools y Ben's Bites", "Hacker News", "Medium"],
+            help="Elige qué fuentes de noticias quieres ver en el panel"
+        )
+
         st.markdown('<div class="news-container">', unsafe_allow_html=True)
         
         # FutureTools and Ben's Bites News
-        st.markdown('<div class="news-column">', unsafe_allow_html=True)
-        with news_futuretools_col:
+        if "FutureTools y Ben's Bites" in selected_sources:
+            st.markdown('<div class="news-column">', unsafe_allow_html=True)
+            st.markdown('<div class="news-card">', unsafe_allow_html=True)
             st.header("Noticias de FutureTools y Ben's Bites")
             if futuretools_news_df.empty and bensbites_news_df.empty:
                 st.warning("No hay noticias que coincidan con los filtros seleccionados.")
             else:
-                # Debug logging for data combination
-                logger.info("Combining FutureTools and Ben's Bites news")
-                logger.info(f"FutureTools columns: {futuretools_news_df.columns.tolist()}")
-                logger.info(f"Ben's Bites columns: {bensbites_news_df.columns.tolist()}")
-                
-                # Prepare display data for both sources
-                futuretools_display = futuretools_news_df[["title", "published_at", "source", "url"]].copy() if not futuretools_news_df.empty else pd.DataFrame(columns=["title", "published_at", "source", "url"])
-                bensbites_display = bensbites_news_df[["title", "published_at", "source", "url"]].copy() if not bensbites_news_df.empty else pd.DataFrame(columns=["title", "published_at", "source", "url"])
-                
                 # Combine FutureTools and Ben's Bites news
-                combined_news_df = pd.concat([futuretools_display, bensbites_display])
-                logger.info(f"Combined DataFrame shape: {combined_news_df.shape}")
-                
-                # Sort by published_at
+                combined_news_df = pd.concat([futuretools_news_df, bensbites_news_df])
                 combined_news_df = combined_news_df.sort_values("published_at", ascending=False)
                 
-                # Add clickable links using the URL column
                 combined_news_df["Ver Noticia"] = combined_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
-                
-                # Drop the URL column as it's no longer needed
                 combined_news_df = combined_news_df.drop(columns=["url"])
                 
-                # Rename columns to Spanish
                 combined_news_df.rename(
                     columns={
                         "title": "Título",
@@ -817,36 +826,24 @@ with tab2:
                     inplace=True,
                 )
                 
-                logger.info("Displaying combined news table")
-                # Show table
                 st.markdown(
                     combined_news_df.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Hacker News
-        st.markdown('<div class="news-column">', unsafe_allow_html=True)
-        with news_ycombinator_col:
+        if "Hacker News" in selected_sources:
+            st.markdown('<div class="news-column">', unsafe_allow_html=True)
+            st.markdown('<div class="news-card">', unsafe_allow_html=True)
             st.header("Noticias de Hacker News")
-            # Display results
             if ycombinator_news_df.empty:
-                logger.warning("No matches found")
-                st.warning(
-                    "No hay noticias que coincidan con los filtros seleccionados."
-                )
+                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
             else:
-                # Prepare display data
-                display_news_df = ycombinator_news_df[
-                    ["title", "published_at", "source"]
-                ].copy()
-
-                # Add clickable links
-                display_news_df["Ver Noticia"] = ycombinator_news_df["url"].apply(
-                    lambda x: make_clickable(x, "Leer más")
-                )
-
-                # Rename columns to Spanish
+                display_news_df = ycombinator_news_df[["title", "published_at", "source"]].copy()
+                display_news_df["Ver Noticia"] = ycombinator_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+                
                 display_news_df.rename(
                     columns={
                         "title": "Título",
@@ -855,36 +852,25 @@ with tab2:
                     },
                     inplace=True,
                 )
-
-                # Show table
+                
                 st.markdown(
                     display_news_df.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Medium News
-        st.markdown('<div class="news-column">', unsafe_allow_html=True)
-        with news_medium_genai_col:
-            # Display results
+        if "Medium" in selected_sources:
+            st.markdown('<div class="news-column">', unsafe_allow_html=True)
+            st.markdown('<div class="news-card">', unsafe_allow_html=True)
             st.header("Noticias de Medium sobre IA")
             if medium_news_df.empty:
-                logger.warning("No matches found")
-                st.warning(
-                    "No hay noticias que coincidan con los filtros seleccionados."
-                )
+                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
             else:
-                # Prepare display data
-                display_news_df = medium_news_df[
-                    ["title", "published_at", "source"]
-                ].copy()
-
-                # Add clickable links
-                display_news_df["Ver Noticia"] = medium_news_df["url"].apply(
-                    lambda x: make_clickable(x, "Leer más")
-                )
-
-                # Rename columns to Spanish
+                display_news_df = medium_news_df[["title", "published_at", "source"]].copy()
+                display_news_df["Ver Noticia"] = medium_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+                
                 display_news_df.rename(
                     columns={
                         "title": "Título",
@@ -893,13 +879,13 @@ with tab2:
                     },
                     inplace=True,
                 )
-
-                # Show table
+                
                 st.markdown(
                     display_news_df.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
 
