@@ -8,17 +8,56 @@ import plotly.express as px
 from urllib.parse import unquote
 import sys
 
+# Set page configuration - MUST BE THE FIRST STREAMLIT COMMAND
+st.set_page_config(
+    page_title="Watchtower: Monitor de Tendencias y Noticias",
+    page_icon="🗼",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 # Add the project root to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-
 from src.utils.logging import get_logger
-
-
-# Import centralized logging utility
 
 # Initialize logger for the Streamlit app
 logger = get_logger("GameDealsApp")
+
+# Function to determine number of columns based on screen width
+def get_responsive_cols():
+    # Get the current viewport width using JavaScript
+    viewport_width = st.session_state.get('viewport_width', 1200)  # Default to 1200px
+    
+    if viewport_width >= 1200:
+        return 6  # Large screens
+    elif viewport_width >= 992:
+        return 4  # Medium-large screens
+    elif viewport_width >= 768:
+        return 3  # Medium screens
+    elif viewport_width >= 576:
+        return 2  # Small screens
+    else:
+        return 1  # Extra small screens
+
+# Add JavaScript to get viewport width
+st.markdown("""
+    <script>
+        // Function to update viewport width
+        function updateViewportWidth() {
+            const width = window.innerWidth;
+            localStorage.setItem('viewportWidth', width);
+        }
+        
+        // Update on load and resize
+        window.addEventListener('load', updateViewportWidth);
+        window.addEventListener('resize', updateViewportWidth);
+    </script>
+""", unsafe_allow_html=True)
+
+# Get viewport width from localStorage
+if 'viewport_width' not in st.session_state:
+    st.session_state.viewport_width = 1200  # Default value
 
 # Define data paths
 GAMES_DATA_DIR = "../../../data/games"
@@ -44,16 +83,9 @@ BENSBITES_NEWS_FILE = os.path.join(BENSBITES_NEWS_DATA_DIR, "bensbites_news.json
 DEV_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "dev", "youtube_videos.json")
 PERSONAL_DEV_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "personal_development", "youtube_videos.json")
 ECONOMICS_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "economics", "youtube_videos.json")
+
 # Log application startup
 logger.info("Starting Watchtower Dashboard")
-
-# Set page configuration
-st.set_page_config(
-    page_title="Watchtower: Monitor de Tendencias y Noticias",
-    page_icon="🗼",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
 
 # Apply custom styling
 st.markdown("""
@@ -90,6 +122,7 @@ st.markdown("""
         background-color: #2D2B55;
         border-radius: 8px 8px 0 0;
         padding: 5px 5px 0 5px;
+        flex-wrap: wrap;
     }
     .stTabs [data-baseweb="tab"] {
         background-color: #2D2B55;
@@ -99,12 +132,85 @@ st.markdown("""
         font-family: 'Poppins', sans-serif !important;
         font-weight: 500;
         transition: all 0.3s ease;
+        white-space: nowrap;
+        min-width: auto;
     }
     .stTabs [aria-selected="true"] {
         background-color: #A37FFF !important;
         color: #1E1E2E !important;
         font-weight: 600;
         box-shadow: 0 4px 6px rgba(163, 127, 255, 0.2);
+    }
+    
+    /* Responsive tables */
+    .stDataFrame {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        background-color: #2D2B55 !important;
+        border-collapse: collapse;
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        font-family: 'Poppins', sans-serif !important;
+        min-width: 600px; /* Ensure minimum width for readability */
+    }
+    
+    /* Responsive cards */
+    .video-card {
+        background-color: #2D2B55;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: transform 0.2s;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Responsive grid container */
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        width: 100%;
+    }
+    
+    /* Media queries for responsive layout */
+    @media screen and (max-width: 768px) {
+        .stTabs [data-baseweb="tab"] {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        
+        table {
+            font-size: 0.9rem;
+        }
+        
+        th, td {
+            padding: 8px;
+        }
+        
+        .video-card {
+            padding: 10px;
+        }
+    }
+    
+    @media screen and (max-width: 480px) {
+        .stTabs [data-baseweb="tab"] {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+        }
+        
+        table {
+            font-size: 0.8rem;
+        }
+        
+        th, td {
+            padding: 6px;
+        }
     }
     
     /* Sidebar */
@@ -140,14 +246,6 @@ st.markdown("""
     }
     
     /* Table styling */
-    table {
-        background-color: #2D2B55 !important;
-        border-collapse: collapse;
-        width: 100%;
-        border-radius: 8px;
-        overflow: hidden;
-        font-family: 'Poppins', sans-serif !important;
-    }
     th {
         background-color: #3C3970 !important;
         color: #E2E8F0 !important;
@@ -230,6 +328,93 @@ st.markdown("""
         background-color: #2D2B55 !important;
         color: #A5FFAF !important;
         border-color: #A5FFAF !important;
+    }
+
+    /* Deals container */
+    .deals-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        width: 100%;
+        padding: 1rem;
+    }
+
+    @media (max-width: 1200px) {
+        .deals-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .deals-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .deals-column {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .deals-card {
+        background-color: #2D2B55;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        border-left: 3px solid #A37FFF;
+        height: 100%;
+        overflow-x: auto;
+    }
+
+    /* News container */
+    .news-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        width: 100%;
+        padding: 1rem;
+    }
+
+    @media (max-width: 1200px) {
+        .news-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .news-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .news-column {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .news-card {
+        background-color: #2D2B55;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        border-left: 3px solid #A37FFF;
+        height: 100%;
+        overflow-x: auto;
+    }
+
+    /* Table responsiveness */
+    .stDataFrame {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        width: 100%;
+        min-width: 100%;
+        margin-bottom: 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -417,182 +602,139 @@ with tab1:  # Juegos
     if deals_df.empty:
         logger.warning("No deals data available to display")
         st.warning("No hay datos de ofertas disponibles.")
-
     else:
         # Calculate summary statistics
         total_deals = len(deals_df)
         total_bundles = len(bundles_df)
         total_giveaways = len(giveaways_df)
 
-        # Display summary statistics
-        col1, col2, col3 = st.columns(3)
-        # Set column height to 400º
-        col2.markdown(
-            "<style>div.stDataFrame {height: 400px;}</style>", unsafe_allow_html=True
-        )
-        col3.markdown(
-            "<style>div.stDataFrame {height: 400px;}</style>", unsafe_allow_html=True
+        # Add table selector
+        selected_tables = st.multiselect(
+            "Selecciona las tablas a mostrar",
+            ["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
+            default=["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
+            help="Elige qué tablas quieres ver en el panel"
         )
 
-        with col1:
-            col1.markdown(
-                "<style>div.stDataFrame {height: 400px;}</style>",
-                unsafe_allow_html=True,
-            )
+        st.markdown('<div class="deals-container">', unsafe_allow_html=True)
 
-            # Apply filters
-            filtered_deals_df = deals_df.copy()
-
+        # Display deals in responsive columns
+        if "Ofertas de Juegos" in selected_tables:
+            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
+            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
             st.header("Ofertas de Juegos")
-
-            # Order by discount value
-            filtered_deals_df = filtered_deals_df.sort_values(
-                by="discount_value", ascending=False
-            )
-
-            # Prepare display dataframe
-            display_deals_df = filtered_deals_df[
-                ["title", "price", "discount", "store", "published_date"]
-            ].copy()
-
-            # Add clickable links
-            display_deals_df["Ver Oferta"] = filtered_deals_df["link"].apply(
-                lambda x: make_clickable(x, "Ver")
-            )
-
-            # Format price with currency symbol
-            if "price" in display_deals_df.columns:
-                display_deals_df["price"] = display_deals_df["price"].apply(
-                    lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
+            if not deals_df.empty:
+                filtered_deals_df = deals_df.copy()
+                filtered_deals_df = filtered_deals_df.sort_values(by="discount_value", ascending=False)
+                display_deals_df = filtered_deals_df[["title", "price", "discount", "store", "published_date"]].copy()
+                display_deals_df["Ver Oferta"] = filtered_deals_df["link"].apply(lambda x: make_clickable(x, "Ver"))
+                
+                if "price" in display_deals_df.columns:
+                    display_deals_df["price"] = display_deals_df["price"].apply(
+                        lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
+                    )
+                
+                display_deals_df.rename(
+                    columns={
+                        "title": "Título",
+                        "price": "Precio",
+                        "discount": "Descuento",
+                        "store": "Tienda",
+                        "published_date": "Fecha de Publicación",
+                    },
+                    inplace=True,
                 )
+                
+                st.markdown(
+                    display_deals_df.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.warning("No hay ofertas disponibles.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            # Change column names to spanish
-            display_deals_df.rename(
-                columns={
-                    "title": "Título",
-                    "price": "Precio",
-                    "discount": "Descuento",
-                    "store": "Tienda",
-                    "published_date": "Fecha de Publicación",
-                },
-                inplace=True,
-            )
-
-            # Display the dataframe with clickable links
-            st.markdown(
-                display_deals_df.to_html(escape=False, index=False),
-                unsafe_allow_html=True,
-            )
-
-        with col2:
-            logger.info("Rendering Bundles subtab")
+        # Display bundles in responsive columns
+        if "Paquetes de Juegos" in selected_tables:
+            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
+            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
             st.header("Paquetes de Juegos")
-
-            if bundles_df.empty:
-                logger.warning("No bundles data available to display")
-                st.warning("No hay datos de paquetes disponibles.")
-            else:
-                # Apply filters
+            if not bundles_df.empty:
                 filtered_bundles_df = bundles_df.copy()
-
-            # Order by published date
-            filtered_bundles_df = filtered_bundles_df.sort_values(
-                by="published_date", ascending=False
-            )
-
-            logger.info(
-                f"Bundles filtered: {len(filtered_bundles_df)} results after applying filters"
-            )
-
-            # Prepare display dataframe
-            if "game_count" in filtered_bundles_df.columns:
-                display_bundles_df = filtered_bundles_df[
-                    ["title", "price", "game_count", "published_date"]
-                ].copy()
-            else:
-                display_bundles_df = filtered_bundles_df[
-                    ["title", "price", "published_date"]
-                ].copy()
-
-            # Add clickable links
-            display_bundles_df["Ver Paquete"] = filtered_bundles_df["link"].apply(
-                lambda x: make_clickable(x, "Ver")
-            )
-
-            # Format price with currency symbol
-            if "price" in display_bundles_df.columns:
-                display_bundles_df["price"] = display_bundles_df["price"].apply(
-                    lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
-                )
-
-            # Change column names to spanish
-            display_bundles_df.rename(
-                columns={
-                    "title": "Título",
-                    "price": "Precio",
-                    "game_count": "Juegos en el Paquete",
-                    "published_date": "Fecha de Publicación",
-                },
-                inplace=True,
-            )
-
-            # Display the dataframe with clickable links
-            st.markdown(
-                display_bundles_df.to_html(escape=False, index=False),
-                unsafe_allow_html=True,
-            )
-
-        with col3:
-            logger.info("Rendering Giveaways subtab")
-            st.header("Juegos Gratuitos")
-
-            if giveaways_df.empty:
-                logger.warning("No giveaways data available to display")
-                st.warning("No hay datos de juegos gratuitos disponibles.")
-            else:
-                # Filter for active giveaways
-
-                filtered_giveaways_df = giveaways_df.copy()
-                # Fix the filtering for active giveaways
-
-                # Display data
-                if filtered_giveaways_df.empty:
-                    logger.warning("No giveaways data available")
-                    st.warning("No hay datos de juegos gratuitos disponibles.")
+                filtered_bundles_df = filtered_bundles_df.sort_values(by="published_date", ascending=False)
+                
+                if "game_count" in filtered_bundles_df.columns:
+                    display_bundles_df = filtered_bundles_df[["title", "price", "game_count", "published_date"]].copy()
                 else:
-                    # Prepare display dataframe
-                    if "expires_date" in filtered_giveaways_df.columns:
-                        display_giveaways_df = filtered_giveaways_df[
-                            ["title", "published_date", "expires_date"]
-                        ].copy()
-                    else:
-                        display_giveaways_df = filtered_giveaways_df[
-                            ["title", "published_date"]
-                        ].copy()
-
-                    # Add clickable links
-                    display_giveaways_df["Obtener Juego"] = filtered_giveaways_df[
-                        "link"
-                    ].apply(lambda x: make_clickable(x, "Reclamar"))
-
-                    # Change column names to spanish
-                    display_giveaways_df.rename(
-                        columns={
-                            "title": "Título",
-                            "published_date": "Fecha de Publicación",
-                            "expires_date": "Fecha de Expiración",
-                        },
-                        inplace=True,
+                    display_bundles_df = filtered_bundles_df[["title", "price", "published_date"]].copy()
+                
+                display_bundles_df["Ver Paquete"] = filtered_bundles_df["link"].apply(lambda x: make_clickable(x, "Ver"))
+                
+                if "price" in display_bundles_df.columns:
+                    display_bundles_df["price"] = display_bundles_df["price"].apply(
+                        lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
                     )
+                
+                display_bundles_df.rename(
+                    columns={
+                        "title": "Título",
+                        "price": "Precio",
+                        "game_count": "Juegos en el Paquete",
+                        "published_date": "Fecha de Publicación"
+                    },
+                    inplace=True,
+                )
+                
+                st.markdown(
+                    display_bundles_df.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.warning("No hay paquetes disponibles.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-                    # Display the dataframe with clickable links
-                    st.markdown(
-                        display_giveaways_df.to_html(escape=False, index=False),
-                        unsafe_allow_html=True,
-                    )
+        # Display giveaways in responsive columns
+        if "Juegos Gratuitos" in selected_tables:
+            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
+            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
+            st.header("Juegos Gratuitos")
+            if not giveaways_df.empty:
+                filtered_giveaways_df = giveaways_df.copy()
+                
+                if "expires_date" in filtered_giveaways_df.columns:
+                    display_giveaways_df = filtered_giveaways_df[["title", "published_date", "expires_date"]].copy()
+                else:
+                    display_giveaways_df = filtered_giveaways_df[["title", "published_date"]].copy()
+                
+                display_giveaways_df["Obtener Juego"] = filtered_giveaways_df["link"].apply(
+                    lambda x: make_clickable(x, "Reclamar")
+                )
+                
+                display_giveaways_df.rename(
+                    columns={
+                        "title": "Título",
+                        "published_date": "Fecha de Publicación",
+                        "expires_date": "Fecha de Expiración"
+                    },
+                    inplace=True,
+                )
+                
+                st.markdown(
+                    display_giveaways_df.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.warning("No hay juegos gratuitos disponibles.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 with tab2:
+    logger.info("Rendering News tab")
+    st.header("📰 Noticias Generative AI")
 
     @st.cache_data(ttl=3600)
     def get_news_data():
@@ -619,9 +761,6 @@ with tab2:
             )
 
         return futuretools_news_df, ycombinator_news_df, medium_news_df, bensbites_news_df
-
-    logger.info("Rendering News tab")
-    st.header("📰 Noticias Generative AI")
 
     # Add a button to call the script to scrape the data
     if st.button("(Re)cargar datos de noticias"):
@@ -653,37 +792,31 @@ with tab2:
         logger.warning("No news data available")
         st.warning("No hay datos de noticias disponibles.")
     else:
-        news_futuretools_col, news_ycombinator_col, news_medium_genai_col = st.columns(3)
-        with news_futuretools_col:
-            # Display results
+        # Add news source selector
+        selected_sources = st.multiselect(
+            "Selecciona las fuentes de noticias",
+            ["FutureTools y Ben's Bites", "Hacker News", "Medium"],
+            default=["FutureTools y Ben's Bites", "Hacker News", "Medium"],
+            help="Elige qué fuentes de noticias quieres ver en el panel"
+        )
+
+        st.markdown('<div class="news-container">', unsafe_allow_html=True)
+        
+        # FutureTools and Ben's Bites News
+        if "FutureTools y Ben's Bites" in selected_sources:
+            st.markdown('<div class="news-column">', unsafe_allow_html=True)
+            st.markdown('<div class="news-card">', unsafe_allow_html=True)
             st.header("Noticias de FutureTools y Ben's Bites")
             if futuretools_news_df.empty and bensbites_news_df.empty:
-                logger.warning("No matches found")
                 st.warning("No hay noticias que coincidan con los filtros seleccionados.")
             else:
-                # Debug logging for data combination
-                logger.info("Combining FutureTools and Ben's Bites news")
-                logger.info(f"FutureTools columns: {futuretools_news_df.columns.tolist()}")
-                logger.info(f"Ben's Bites columns: {bensbites_news_df.columns.tolist()}")
-                
-                # Prepare display data for both sources
-                futuretools_display = futuretools_news_df[["title", "published_at", "source", "url"]].copy() if not futuretools_news_df.empty else pd.DataFrame(columns=["title", "published_at", "source", "url"])
-                bensbites_display = bensbites_news_df[["title", "published_at", "source", "url"]].copy() if not bensbites_news_df.empty else pd.DataFrame(columns=["title", "published_at", "source", "url"])
-                
                 # Combine FutureTools and Ben's Bites news
-                combined_news_df = pd.concat([futuretools_display, bensbites_display])
-                logger.info(f"Combined DataFrame shape: {combined_news_df.shape}")
-                
-                # Sort by published_at
+                combined_news_df = pd.concat([futuretools_news_df, bensbites_news_df])
                 combined_news_df = combined_news_df.sort_values("published_at", ascending=False)
                 
-                # Add clickable links using the URL column
                 combined_news_df["Ver Noticia"] = combined_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
-                
-                # Drop the URL column as it's no longer needed
                 combined_news_df = combined_news_df.drop(columns=["url"])
                 
-                # Rename columns to Spanish
                 combined_news_df.rename(
                     columns={
                         "title": "Título",
@@ -693,33 +826,24 @@ with tab2:
                     inplace=True,
                 )
                 
-                logger.info("Displaying combined news table")
-                # Show table
                 st.markdown(
                     combined_news_df.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
-
-        with news_ycombinator_col:
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Hacker News
+        if "Hacker News" in selected_sources:
+            st.markdown('<div class="news-column">', unsafe_allow_html=True)
+            st.markdown('<div class="news-card">', unsafe_allow_html=True)
             st.header("Noticias de Hacker News")
-            # Display results
             if ycombinator_news_df.empty:
-                logger.warning("No matches found")
-                st.warning(
-                    "No hay noticias que coincidan con los filtros seleccionados."
-                )
+                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
             else:
-                # Prepare display data
-                display_news_df = ycombinator_news_df[
-                    ["title", "published_at", "source"]
-                ].copy()
-
-                # Add clickable links
-                display_news_df["Ver Noticia"] = ycombinator_news_df["url"].apply(
-                    lambda x: make_clickable(x, "Leer más")
-                )
-
-                # Rename columns to Spanish
+                display_news_df = ycombinator_news_df[["title", "published_at", "source"]].copy()
+                display_news_df["Ver Noticia"] = ycombinator_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+                
                 display_news_df.rename(
                     columns={
                         "title": "Título",
@@ -728,33 +852,25 @@ with tab2:
                     },
                     inplace=True,
                 )
-
-                # Show table
+                
                 st.markdown(
                     display_news_df.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
-
-        with news_medium_genai_col:
-            # Display results
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Medium News
+        if "Medium" in selected_sources:
+            st.markdown('<div class="news-column">', unsafe_allow_html=True)
+            st.markdown('<div class="news-card">', unsafe_allow_html=True)
             st.header("Noticias de Medium sobre IA")
             if medium_news_df.empty:
-                logger.warning("No matches found")
-                st.warning(
-                    "No hay noticias que coincidan con los filtros seleccionados."
-                )
+                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
             else:
-                # Prepare display data
-                display_news_df = medium_news_df[
-                    ["title", "published_at", "source"]
-                ].copy()
-
-                # Add clickable links
-                display_news_df["Ver Noticia"] = medium_news_df["url"].apply(
-                    lambda x: make_clickable(x, "Leer más")
-                )
-
-                # Rename columns to Spanish
+                display_news_df = medium_news_df[["title", "published_at", "source"]].copy()
+                display_news_df["Ver Noticia"] = medium_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+                
                 display_news_df.rename(
                     columns={
                         "title": "Título",
@@ -763,12 +879,15 @@ with tab2:
                     },
                     inplace=True,
                 )
-
-                # Show table
+                
                 st.markdown(
                     display_news_df.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 with tab3:
@@ -819,29 +938,18 @@ with tab3:
             logger.warning("No video matches found")
             st.warning("No hay videos que coincidan con los filtros seleccionados.")
         else:
-            # Display videos in a grid format
-            num_cols = 8  # Number of columns in the grid
-            rows = [
-                filtered_videos_df.iloc[i : i + num_cols]
-                for i in range(0, len(filtered_videos_df), num_cols)
-            ]
-
-            for row_data in rows:
+            # Display videos in a responsive grid format
+            num_cols = get_responsive_cols()
+            for i in range(0, len(filtered_videos_df), num_cols):
                 cols = st.columns(num_cols)
-
-                for i, (_, video) in enumerate(row_data.iterrows()):
-                    if i < len(cols):
-                        with cols[i]:
+                for j, (_, video) in enumerate(filtered_videos_df.iloc[i:i + num_cols].iterrows()):
+                    with cols[j % num_cols]:
+                        with st.container():
                             st.subheader(video["title"])
                             st.write(f"**Canal:** {video.get('channel', 'N/A')}")
-                            st.write(
-                                f"**Publicado:** {video.get('published_at', 'N/A')}"
-                            )
+                            st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
                             if "url" in video and pd.notna(video["url"]):
-                                st.markdown(
-                                    make_clickable(video["url"], "Ver en YouTube"),
-                                    unsafe_allow_html=True,
-                                )
+                                st.markdown(make_clickable(video["url"], "Ver en YouTube"), unsafe_allow_html=True)
                             st.markdown("---")
 
 with tab4:
@@ -892,29 +1000,18 @@ with tab4:
             logger.warning("No video matches found")
             st.warning("No hay videos que coincidan con los filtros seleccionados.")
         else:
-            # Display videos in a grid format
-            num_cols = 8  # Number of columns in the grid
-            rows = [
-                filtered_videos_df.iloc[i : i + num_cols]
-                for i in range(0, len(filtered_videos_df), num_cols)
-            ]
-
-            for row_data in rows:
+            # Display videos in a responsive grid format
+            num_cols = get_responsive_cols()
+            for i in range(0, len(filtered_videos_df), num_cols):
                 cols = st.columns(num_cols)
-
-                for i, (_, video) in enumerate(row_data.iterrows()):
-                    if i < len(cols):
-                        with cols[i]:
+                for j, (_, video) in enumerate(filtered_videos_df.iloc[i:i + num_cols].iterrows()):
+                    with cols[j % num_cols]:
+                        with st.container():
                             st.subheader(video["title"])
                             st.write(f"**Canal:** {video.get('channel', 'N/A')}")
-                            st.write(
-                                f"**Publicado:** {video.get('published_at', 'N/A')}"
-                            )
+                            st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
                             if "url" in video and pd.notna(video["url"]):
-                                st.markdown(
-                                    make_clickable(video["url"], "Ver en YouTube"),
-                                    unsafe_allow_html=True,
-                                )
+                                st.markdown(make_clickable(video["url"], "Ver en YouTube"), unsafe_allow_html=True)
                             st.markdown("---")
 
 with tab5:
@@ -965,29 +1062,18 @@ with tab5:
             logger.warning("No video matches found")
             st.warning("No hay videos que coincidan con los filtros seleccionados.")
         else:
-            # Display videos in a grid format
-            num_cols = 8  # Number of columns in the grid
-            rows = [
-                filtered_videos_df.iloc[i : i + num_cols]
-                for i in range(0, len(filtered_videos_df), num_cols)
-            ]
-
-            for row_data in rows:
+            # Display videos in a responsive grid format
+            num_cols = get_responsive_cols()
+            for i in range(0, len(filtered_videos_df), num_cols):
                 cols = st.columns(num_cols)
-
-                for i, (_, video) in enumerate(row_data.iterrows()):
-                    if i < len(cols):
-                        with cols[i]:
+                for j, (_, video) in enumerate(filtered_videos_df.iloc[i:i + num_cols].iterrows()):
+                    with cols[j % num_cols]:
+                        with st.container():
                             st.subheader(video["title"])
                             st.write(f"**Canal:** {video.get('channel', 'N/A')}")
-                            st.write(
-                                f"**Publicado:** {video.get('published_at', 'N/A')}"
-                            )
+                            st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
                             if "url" in video and pd.notna(video["url"]):
-                                st.markdown(
-                                    make_clickable(video["url"], "Ver en YouTube"),
-                                    unsafe_allow_html=True,
-                                )
+                                st.markdown(make_clickable(video["url"], "Ver en YouTube"), unsafe_allow_html=True)
                             st.markdown("---")
 
 with tab6:
