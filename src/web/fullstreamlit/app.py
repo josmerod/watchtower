@@ -169,9 +169,44 @@ st.markdown("""
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 15px;
-        transition: transform 0.2s;
+        transition: all 0.3s ease;
         width: 100%;
         box-sizing: border-box;
+        border-left: 3px solid #A37FFF;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        height: 100%;
+    }
+    
+    .video-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        border-left: 3px solid #B792FF;
+    }
+    
+    /* Video thumbnail container */
+    .stImage img {
+        width: 100%;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        transition: transform 0.3s ease;
+    }
+    
+    .stImage img:hover {
+        transform: scale(1.03);
+    }
+    
+    /* Video title styling */
+    .element-container .stMarkdown h3 {
+        margin-top: 0;
+        margin-bottom: 8px;
+        font-size: 1.1rem;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
     }
     
     /* Responsive grid container */
@@ -668,12 +703,19 @@ with tab1:
                     for j, (_, video) in enumerate(filtered_videos_df.iloc[i:i + num_cols].iterrows()):
                         with cols[j % num_cols]:
                             with st.container():
+                                st.markdown('<div class="video-card">', unsafe_allow_html=True)
+                                
+                                # Display thumbnail image if available
+                                if "thumbnail" in video and pd.notna(video["thumbnail"]):
+                                    st.image(video["thumbnail"], use_column_width=True)
+                                
                                 st.subheader(video["title"])
                                 st.write(f"**Canal:** {video.get('channel', 'N/A')}")
                                 st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
                                 if "url" in video and pd.notna(video["url"]):
                                     st.markdown(make_clickable(video["url"], "Ver en YouTube"), unsafe_allow_html=True)
-                                st.markdown("---")
+                                
+                                st.markdown('</div>', unsafe_allow_html=True)
 
 with tab2:
     logger.info("Rendering News tab")
