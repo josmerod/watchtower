@@ -780,7 +780,7 @@ with tab0:
             # Distribute shortcuts across the three columns
             for i, shortcut in enumerate(filtered_shortcuts):
                 with result_cols[i % 3]:
-                    st.markdown(f'''
+                    st.markdown(f"""
                     <a href="{shortcut['url']}" target="_blank" style="text-decoration: none;">
                         <div class="shortcut-item">
                             <div class="shortcut-icon">{shortcut['icon']}</div>
@@ -790,9 +790,8 @@ with tab0:
                             </div>
                         </div>
                     </a>
-                    ''', unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
     else:
-        
         # Create three fixed columns for categories
         col1, col2, col3 = st.columns(3)
         
@@ -907,7 +906,7 @@ with tab0:
                 
                 # Category selection
                 category_selection = st.selectbox(
-                    "Categoría", 
+                "Categoría",
                     all_categories,
                     index=all_categories.index("Personalizados") if "Personalizados" in all_categories else 0
                 )
@@ -916,7 +915,7 @@ with tab0:
                 new_category = None
                 if category_selection == "Nueva categoría...":
                     new_category = st.text_input("Nombre de nueva categoría", placeholder="Mi categoría")
-            
+        
             with col2:
                 custom_url = st.text_input("URL", placeholder="https://example.com")
                 custom_desc = st.text_input("Descripción (opcional)", placeholder="Breve descripción")
@@ -1144,21 +1143,129 @@ with tab1:
         with video_tabs[0]:
             st.header("Desarrollo")
             if not dev_videos_df.empty:
-                st.dataframe(dev_videos_df, use_container_width=True)
+                # Sort by published date
+                dev_videos_df = dev_videos_df.sort_values("published_date", ascending=False)
+                
+                # Get responsive columns based on screen width
+                num_cols = get_responsive_cols()
+                
+                # Display videos in a grid
+                for i in range(0, len(dev_videos_df), num_cols):
+                    cols = st.columns(num_cols)
+                    for j, (_, video) in enumerate(dev_videos_df.iloc[i:i + num_cols].iterrows()):
+                        with cols[j % num_cols]:
+                            with st.container():
+                                st.markdown('<div class="video-card">', unsafe_allow_html=True)
+                                
+                                # Video thumbnail with link
+                                if 'thumbnail' in video and pd.notna(video['thumbnail']):
+                                    st.markdown(
+                                        f'<a href="{video["url"]}" target="_blank"><img src="{video["thumbnail"]}" width="100%"></a>',
+                                        unsafe_allow_html=True
+                                    )
+                                
+                                # Video title with link
+                                st.markdown(
+                                    f'<h3><a href="{video["url"]}" target="_blank">{video["title"]}</a></h3>',
+                                    unsafe_allow_html=True
+                                )
+                                
+                                # Channel name
+                                if 'channel_name' in video and pd.notna(video['channel_name']):
+                                    st.markdown(f'**Canal:** {video["channel_name"]}', unsafe_allow_html=True)
+                                
+                                # Published date
+                                if 'published_date' in video and pd.notna(video['published_date']):
+                                    published_date = video['published_date'].strftime('%Y-%m-%d')
+                                    st.markdown(f'**Publicado:** {published_date}', unsafe_allow_html=True)
+                                
+                                st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.info("No hay videos de desarrollo disponibles.")
 
         with video_tabs[1]:
             st.header("Desarrollo Personal")
             if not personal_dev_videos_df.empty:
-                st.dataframe(personal_dev_videos_df, use_container_width=True)
+                # Sort by published date
+                personal_dev_videos_df = personal_dev_videos_df.sort_values("published_date", ascending=False)
+                
+                # Get responsive columns based on screen width
+                num_cols = get_responsive_cols()
+                
+                # Display videos in a grid
+                for i in range(0, len(personal_dev_videos_df), num_cols):
+                    cols = st.columns(num_cols)
+                    for j, (_, video) in enumerate(personal_dev_videos_df.iloc[i:i + num_cols].iterrows()):
+                        with cols[j % num_cols]:
+                            with st.container():
+                                st.markdown('<div class="video-card">', unsafe_allow_html=True)
+                                
+                                # Video thumbnail with link
+                                if 'thumbnail' in video and pd.notna(video['thumbnail']):
+                                    st.markdown(
+                                        f'<a href="{video["url"]}" target="_blank"><img src="{video["thumbnail"]}" width="100%"></a>',
+                                        unsafe_allow_html=True
+                                    )
+                                
+                                # Video title with link
+                                st.markdown(
+                                    f'<h3><a href="{video["url"]}" target="_blank">{video["title"]}</a></h3>',
+                                    unsafe_allow_html=True
+                                )
+                                
+                                # Channel name
+                                if 'channel_name' in video and pd.notna(video['channel_name']):
+                                    st.markdown(f'**Canal:** {video["channel_name"]}', unsafe_allow_html=True)
+                                
+                                # Published date
+                                if 'published_date' in video and pd.notna(video['published_date']):
+                                    published_date = video['published_date'].strftime('%Y-%m-%d')
+                                    st.markdown(f'**Publicado:** {published_date}', unsafe_allow_html=True)
+                                
+                                st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.info("No hay videos de desarrollo personal disponibles.")
 
         with video_tabs[2]:
             st.header("Economía")
             if not economics_videos_df.empty:
-                st.dataframe(economics_videos_df, use_container_width=True)
+                # Sort by published date
+                economics_videos_df = economics_videos_df.sort_values("published_date", ascending=False)
+                
+                # Get responsive columns based on screen width
+                num_cols = get_responsive_cols()
+                
+                # Display videos in a grid
+                for i in range(0, len(economics_videos_df), num_cols):
+                    cols = st.columns(num_cols)
+                    for j, (_, video) in enumerate(economics_videos_df.iloc[i:i + num_cols].iterrows()):
+                        with cols[j % num_cols]:
+                            with st.container():
+                                st.markdown('<div class="video-card">', unsafe_allow_html=True)
+                                
+                                # Video thumbnail with link
+                                if 'thumbnail' in video and pd.notna(video['thumbnail']):
+                                    st.markdown(
+                                        f'<a href="{video["url"]}" target="_blank"><img src="{video["thumbnail"]}" width="100%"></a>',
+                                        unsafe_allow_html=True
+                                    )
+                                
+                                # Video title with link
+                                st.markdown(
+                                    f'<h3><a href="{video["url"]}" target="_blank">{video["title"]}</a></h3>',
+                                    unsafe_allow_html=True
+                                )
+                                
+                                # Channel name
+                                if 'channel_name' in video and pd.notna(video['channel_name']):
+                                    st.markdown(f'**Canal:** {video["channel_name"]}', unsafe_allow_html=True)
+                                
+                                # Published date
+                                if 'published_date' in video and pd.notna(video['published_date']):
+                                    published_date = video['published_date'].strftime('%Y-%m-%d')
+                                    st.markdown(f'**Publicado:** {published_date}', unsafe_allow_html=True)
+                                
+                                st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.info("No hay videos de economía disponibles.")
 
@@ -1186,7 +1293,17 @@ with tab2:
                 # Combine FutureTools and Ben's Bites news
                 combined_news_df = pd.concat([futuretools_news_df, bensbites_news_df])
                 if not combined_news_df.empty:
-                    combined_news_df = combined_news_df.sort_values("published_date", ascending=False) # Use processed date
+                    # Ensure published_date column exists
+                    if "published_date" not in combined_news_df.columns:
+                        # Check if published_at exists and use it as a fallback
+                        if "published_at" in combined_news_df.columns:
+                            combined_news_df["published_date"] = pd.to_datetime(combined_news_df["published_at"], errors="coerce")
+                        else:
+                            # Create a default date column
+                            combined_news_df["published_date"] = pd.Timestamp("now")
+                    
+                    # Sort by published_date (now guaranteed to exist)
+                    combined_news_df = combined_news_df.sort_values("published_date", ascending=False)
                     
                     combined_news_df["Ver Noticia"] = combined_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
                     
@@ -1216,7 +1333,17 @@ with tab2:
             if ycombinator_news_df.empty:
                 st.warning("No hay noticias disponibles de Hacker News.")
             else:
-                display_news_df = ycombinator_news_df.sort_values("published_date", ascending=False) # Use processed date
+                # Ensure published_date column exists
+                if "published_date" not in ycombinator_news_df.columns:
+                    # Check if published_at exists and use it as a fallback
+                    if "published_at" in ycombinator_news_df.columns:
+                        ycombinator_news_df["published_date"] = pd.to_datetime(ycombinator_news_df["published_at"], errors="coerce")
+                    else:
+                        # Create a default date column
+                        ycombinator_news_df["published_date"] = pd.Timestamp("now")
+                
+                # Sort by published_date (now guaranteed to exist)
+                display_news_df = ycombinator_news_df.sort_values("published_date", ascending=False)
 
                 display_news_df["Ver Noticia"] = display_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
                 
@@ -1244,26 +1371,59 @@ with tab2:
             if medium_news_df.empty:
                 st.warning("No hay noticias disponibles de Medium sobre IA.")
             else:
-                # Medium data might not have 'published_date', adjust if needed based on actual data structure
-                if "published_at" in medium_news_df.columns: # Check if raw column exists
-                     medium_news_df = medium_news_df.sort_values("published_at", ascending=False) # Sort by raw if no processed date
-                
                 display_news_df = medium_news_df.copy() # Work with a copy
+                
+                # Ensure we have a consistent date column
+                if "published_date" not in display_news_df.columns:
+                    # Convert published_at to datetime if it exists
+                    if "published_at" in display_news_df.columns:
+                        display_news_df["published_date"] = pd.to_datetime(display_news_df["published_at"], errors="coerce")
+                        # Sort by converted date
+                        display_news_df = display_news_df.sort_values("published_date", ascending=False)
+                    else:
+                        # If no date column exists, don't sort
+                        pass
+                else:
+                    # Sort by existing published_date
+                    display_news_df = display_news_df.sort_values("published_date", ascending=False)
 
                 display_news_df["Ver Noticia"] = display_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
                 
-                # Use 'published_at' directly if 'published_date' is not created or different
-                display_news_df_final = display_news_df[["title", "published_at", "source", "Ver Noticia"]].copy()
-
-                display_news_df_final.rename(
-                    columns={
-                        "title": "Título",
-                        "published_at": "Fecha de Publicación", # Keep original column name if date processing wasn't done
-                        "source": "Fuente",
-                    },
-                    inplace=True,
-                )
+                # Determine which date column to display
+                date_col = "published_date" if "published_date" in display_news_df.columns else "published_at"
                 
+                if date_col in display_news_df.columns:
+                    # Format dates for display if they're datetime
+                    if pd.api.types.is_datetime64_any_dtype(display_news_df[date_col]):
+                        display_news_df["formatted_date"] = display_news_df[date_col].dt.strftime('%Y-%m-%d %H:%M')
+                        display_col = "formatted_date"
+                    else:
+                        display_col = date_col
+                    
+                    # Create final display dataframe
+                    display_news_df_final = display_news_df[["title", display_col, "source", "Ver Noticia"]].copy()
+
+                    display_news_df_final.rename(
+                        columns={
+                            "title": "Título",
+                            display_col: "Fecha de Publicación",
+                            "source": "Fuente",
+                        },
+                        inplace=True,
+                    )
+                else:
+                    # No date column available
+                    display_news_df_final = display_news_df[["title", "source", "Ver Noticia"]].copy()
+                    
+                    display_news_df_final.rename(
+                        columns={
+                            "title": "Título",
+                            "source": "Fuente",
+                        },
+                        inplace=True,
+                    )
+
+                # Display the final DataFrame as HTML
                 st.markdown(
                     display_news_df_final.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
@@ -1765,12 +1925,16 @@ with tab6:
     # Add section to scan YouTube directories
     st.subheader("Actualización de videos de YouTube")
     
+    # Get available YouTube categories
+    youtube_categories = [d for d in os.listdir(VIDEOS_DATA_DIR) 
+                        if os.path.isdir(os.path.join(VIDEOS_DATA_DIR, d))]
+    
+    # Option to update all channels
     if st.button("Actualizar todos los canales de YouTube"):
         try:
             st.info("Ejecutando actualización de videos...")
             # Get all category directories
-            categories = [d for d in os.listdir(VIDEOS_DATA_DIR) 
-                         if os.path.isdir(os.path.join(VIDEOS_DATA_DIR, d))]
+            categories = youtube_categories
             
             success_count = 0
             for category in categories:
@@ -1782,6 +1946,35 @@ with tab6:
                     st.warning(f"Error actualizando categoría {category}: {str(category_e)}")
             
             st.success(f"Actualizadas {success_count} de {len(categories)} categorías correctamente")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error al actualizar videos: {str(e)}")
+    
+    # Option to update specific channels
+    st.subheader("Actualizar categoría específica")
+    
+    # Select a category to update
+    selected_category = st.selectbox(
+        "Seleccionar categoría",
+        options=youtube_categories,
+        help="Selecciona una categoría de videos para actualizar"
+    )
+    
+    if st.button("Actualizar categoría seleccionada"):
+        try:
+            st.info(f"Actualizando videos de la categoría: {selected_category}")
+            script_path = f"../../../src/etl/youtube/youtube_get_videos.py"
+            result = subprocess.run(
+                ["python3", script_path, "--category", selected_category],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                st.success(f"Categoría {selected_category} actualizada correctamente")
+                st.text(result.stdout)
+            else:
+                st.error(f"Error al actualizar la categoría {selected_category}")
+                st.text(result.stderr)
             st.rerun()
         except Exception as e:
             st.error(f"Error al actualizar videos: {str(e)}")
