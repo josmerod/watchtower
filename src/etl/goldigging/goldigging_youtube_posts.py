@@ -187,6 +187,11 @@ def get_channel_videos_by_id(channel_handle: str, published_after: str = (dateti
                         "description": video_info.get('description', ''),
                         "views": video_info.get('view_count', 0),
                         "length": video_info.get('duration', 0),
+                        "thumbnail": video_info.get('thumbnail', 
+                                    # Try to get the highest quality thumbnail available
+                                    next((t['url'] for t in reversed(video_info.get('thumbnails', [])) 
+                                          if 'url' in t), 
+                                         '')),
                         "metadata": {
                             "api_source": "yt_dlp",
                             "processed_at": datetime.now().isoformat(),
