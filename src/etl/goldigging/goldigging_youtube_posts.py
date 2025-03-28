@@ -101,6 +101,24 @@ CHANNEL_TOPICS = {
             "SUCCESSCHASERS",
             "HowtoADHD"
         ]
+    },
+    "cooking": {
+        "description": "Cooking",
+        "channels": [
+            "FornerDeAlella",
+            "superpilopi",
+
+        ]
+    },
+
+    "food_reviews": {
+        "description": "Food Reviews",
+        "channels": [
+            "peldanyos",
+            "SezarBlue",
+            "esttikPlus",
+            
+        ]
     }
 }
 
