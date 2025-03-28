@@ -71,6 +71,8 @@ VIDEOS_DATA_DIR = "../../../data/youtube"
 
 WATCHERS_DATA_DIR = "../../../data/watchers"
 
+VALENCIA_EVENTS_DATA_DIR = "../../../data/valencia_events"
+
 DEALS_FILE = os.path.join(GAMES_DATA_DIR, "deals.json")
 BUNDLES_FILE = os.path.join(GAMES_DATA_DIR, "bundles.json")
 GIVEAWAYS_FILE = os.path.join(GAMES_DATA_DIR, "giveaways.json")
@@ -79,6 +81,8 @@ FUTURETOOLS_NEWS_FILE = os.path.join(FUTURETOOLS_NEWS_DATA_DIR, "futuretoolsnews
 YCOMBINATOR_NEWS_FILE = os.path.join(YCOMBINATOR_NEWS_DATA_DIR, "hackernews.json")
 MEDIUM_NEWS_FILE = os.path.join(MEDIUM_NEWS_DATA_DIR, "medium_genai.json")
 BENSBITES_NEWS_FILE = os.path.join(BENSBITES_NEWS_DATA_DIR, "bensbites_news.json")
+
+VALENCIA_EVENTS_FILE = os.path.join(VALENCIA_EVENTS_DATA_DIR, "valencia_events.json")
 
 DEV_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "dev", "youtube_videos.json")
 PERSONAL_DEV_VIDEOS_FILE = os.path.join(VIDEOS_DATA_DIR, "personal_development", "youtube_videos.json")
@@ -578,159 +582,98 @@ logger.info(
 )
 
 # Create tabs for different data views
-tab3, tab2, tab1, tab4, tab5, tab6 = st.tabs(["📺 Videos Programación e IA", "📰 Noticias", "🎮 Juegos", "📺 Videos Desarrollo personal", "📺 Videos Ecopolitica", "👁️ Watchers"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📺 Videos", "📰 Noticias", "🎮 Juegos", "👁️ Watchers", "🏙️ Eventos Valencia", "⚙️ Admin"])
 
-with tab1:  # Juegos
-    logger.info("Rendering Summary subtab")
-    st.header("Resumen de Ofertas")
+with tab1:
+    logger.info("Rendering Videos tab")
+    st.header("📺 Videos de Youtube")
 
-    # Add a button to call the script to scrape the data
-    if st.button("(Re)cargar datos de ofertas"):
-        logger.info("Cargando datos de ofertas...")
-        # Call the script to scrape the data and wait until it is finished
-        subprocess.run(["python3", "../../../src/etl/games/games_get_deals.py"])
-        # Wait until the script is finished
+    # Function to get all available video categories
+    @st.cache_data(ttl=3600)
+    def get_video_categories():
+        """Get all available video categories from the YouTube data directory"""
+        try:
+            categories = [d for d in os.listdir(VIDEOS_DATA_DIR) 
+                         if os.path.isdir(os.path.join(VIDEOS_DATA_DIR, d)) and 
+                         os.path.exists(os.path.join(VIDEOS_DATA_DIR, d, "youtube_videos.json"))]
+            return categories
+        except Exception as e:
+            logger.error(f"Error loading video categories: {str(e)}")
+            return []
 
-        logger.info("Data scraped successfully")
-        st.success("Data scraped successfully")
-        # Refresh the data
-        deals_df, bundles_df, giveaways_df = get_data()
-        logger.info("Data refreshed successfully")
-        # Refresh the page
-        st.rerun()
-
-    if deals_df.empty:
-        logger.warning("No deals data available to display")
-        st.warning("No hay datos de ofertas disponibles.")
+    # Get all available categories
+    video_categories = get_video_categories()
+    
+    if not video_categories:
+        st.warning("No se encontraron categorías de videos.")
     else:
-        # Calculate summary statistics
-        total_deals = len(deals_df)
-        total_bundles = len(bundles_df)
-        total_giveaways = len(giveaways_df)
-
-        # Add table selector
-        selected_tables = st.multiselect(
-            "Selecciona las tablas a mostrar",
-            ["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
-            default=["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
-            help="Elige qué tablas quieres ver en el panel"
+        # Format category names for display
+        display_categories = {cat: cat.replace('_', ' ').title() for cat in video_categories}
+        
+        # Category selector
+        selected_category = st.selectbox(
+            "Selecciona categoría de videos",
+            options=video_categories,
+            format_func=lambda x: display_categories[x]
         )
+        
+        # Load videos from selected category
+        video_file_path = os.path.join(VIDEOS_DATA_DIR, selected_category, "youtube_videos.json")
+        videos_df = get_videos_data(video_file_path)
+        
+        logger.info(f"Loaded {len(videos_df)} videos from category {selected_category}")
 
-        st.markdown('<div class="deals-container">', unsafe_allow_html=True)
+        if videos_df.empty:
+            logger.warning(f"No videos data available for category {selected_category}")
+            st.warning(f"No hay datos de videos disponibles para la categoría {display_categories[selected_category]}.")
+        else:
+            # Filters
+            search_term = st.text_input("🔍 Buscar en títulos de videos", "")
 
-        # Display deals in responsive columns
-        if "Ofertas de Juegos" in selected_tables:
-            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
-            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
-            st.header("Ofertas de Juegos")
-            if not deals_df.empty:
-                filtered_deals_df = deals_df.copy()
-                filtered_deals_df = filtered_deals_df.sort_values(by="discount_value", ascending=False)
-                display_deals_df = filtered_deals_df[["title", "price", "discount", "store", "published_date"]].copy()
-                display_deals_df["Ver Oferta"] = filtered_deals_df["link"].apply(lambda x: make_clickable(x, "Ver"))
-                
-                if "price" in display_deals_df.columns:
-                    display_deals_df["price"] = display_deals_df["price"].apply(
-                        lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
+            # Date range filter
+            date_range = st.date_input(
+                "Rango de fechas para videos",
+                [videos_df["published_date"].min(), videos_df["published_date"].max()],
+                min_value=videos_df["published_date"].min().date(),
+                max_value=videos_df["published_date"].max().date()
+            )
+
+            # Apply filters
+            filtered_videos_df = videos_df.copy()
+
+            if search_term:
+                filtered_videos_df = filtered_videos_df[
+                    filtered_videos_df["title"].str.contains(
+                        search_term, case=False, na=False
                     )
-                
-                display_deals_df.rename(
-                    columns={
-                        "title": "Título",
-                        "price": "Precio",
-                        "discount": "Descuento",
-                        "store": "Tienda",
-                        "published_date": "Fecha de Publicación",
-                    },
-                    inplace=True,
-                )
-                
-                st.markdown(
-                    display_deals_df.to_html(escape=False, index=False),
-                    unsafe_allow_html=True,
-                )
+                ]
+
+            if len(date_range) == 2:
+                filtered_videos_df = filtered_videos_df[
+                    (filtered_videos_df["published_date"].dt.date >= date_range[0])
+                    & (filtered_videos_df["published_date"].dt.date <= date_range[1])
+                ]
+
+            logger.info(f"Filtered to {len(filtered_videos_df)} video results")
+
+            # Display results
+            if filtered_videos_df.empty:
+                logger.warning("No video matches found")
+                st.warning("No hay videos que coincidan con los filtros seleccionados.")
             else:
-                st.warning("No hay ofertas disponibles.")
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # Display bundles in responsive columns
-        if "Paquetes de Juegos" in selected_tables:
-            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
-            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
-            st.header("Paquetes de Juegos")
-            if not bundles_df.empty:
-                filtered_bundles_df = bundles_df.copy()
-                filtered_bundles_df = filtered_bundles_df.sort_values(by="published_date", ascending=False)
-                
-                if "game_count" in filtered_bundles_df.columns:
-                    display_bundles_df = filtered_bundles_df[["title", "price", "game_count", "published_date"]].copy()
-                else:
-                    display_bundles_df = filtered_bundles_df[["title", "price", "published_date"]].copy()
-                
-                display_bundles_df["Ver Paquete"] = filtered_bundles_df["link"].apply(lambda x: make_clickable(x, "Ver"))
-                
-                if "price" in display_bundles_df.columns:
-                    display_bundles_df["price"] = display_bundles_df["price"].apply(
-                        lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
-                    )
-                
-                display_bundles_df.rename(
-                    columns={
-                        "title": "Título",
-                        "price": "Precio",
-                        "game_count": "Juegos en el Paquete",
-                        "published_date": "Fecha de Publicación"
-                    },
-                    inplace=True,
-                )
-                
-                st.markdown(
-                    display_bundles_df.to_html(escape=False, index=False),
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.warning("No hay paquetes disponibles.")
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # Display giveaways in responsive columns
-        if "Juegos Gratuitos" in selected_tables:
-            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
-            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
-            st.header("Juegos Gratuitos")
-            if not giveaways_df.empty:
-                filtered_giveaways_df = giveaways_df.copy()
-                
-                if "expires_date" in filtered_giveaways_df.columns:
-                    display_giveaways_df = filtered_giveaways_df[["title", "published_date", "expires_date"]].copy()
-                else:
-                    display_giveaways_df = filtered_giveaways_df[["title", "published_date"]].copy()
-                
-                display_giveaways_df["Obtener Juego"] = filtered_giveaways_df["link"].apply(
-                    lambda x: make_clickable(x, "Reclamar")
-                )
-                
-                display_giveaways_df.rename(
-                    columns={
-                        "title": "Título",
-                        "published_date": "Fecha de Publicación",
-                        "expires_date": "Fecha de Expiración"
-                    },
-                    inplace=True,
-                )
-                
-                st.markdown(
-                    display_giveaways_df.to_html(escape=False, index=False),
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.warning("No hay juegos gratuitos disponibles.")
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
+                # Display videos in a responsive grid format
+                num_cols = get_responsive_cols()
+                for i in range(0, len(filtered_videos_df), num_cols):
+                    cols = st.columns(num_cols)
+                    for j, (_, video) in enumerate(filtered_videos_df.iloc[i:i + num_cols].iterrows()):
+                        with cols[j % num_cols]:
+                            with st.container():
+                                st.subheader(video["title"])
+                                st.write(f"**Canal:** {video.get('channel', 'N/A')}")
+                                st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
+                                if "url" in video and pd.notna(video["url"]):
+                                    st.markdown(make_clickable(video["url"], "Ver en YouTube"), unsafe_allow_html=True)
+                                st.markdown("---")
 
 with tab2:
     logger.info("Rendering News tab")
@@ -891,192 +834,143 @@ with tab2:
 
 
 with tab3:
-    logger.info("Rendering Videos tab")
-    st.header("📺 Videos de Youtube sobre Desarrollo (informática)")
+    logger.info("Rendering Juegos tab")
+    st.header("🎮 Juegos")
 
-
-
-    videos_df = get_videos_data(DEV_VIDEOS_FILE)
-    logger.info(f"Loaded {len(videos_df)} videos")
-
-    if videos_df.empty:
-        logger.warning("No videos data available")
-        st.warning("No hay datos de videos disponibles.")
+    if deals_df.empty:
+        logger.warning("No deals data available to display")
+        st.warning("No hay datos de ofertas disponibles.")
     else:
-        # Filters
-        search_term = st.text_input("🔍 Buscar en títulos de videos", "")
+        # Calculate summary statistics
+        total_deals = len(deals_df)
+        total_bundles = len(bundles_df)
+        total_giveaways = len(giveaways_df)
 
-        # Date range filter
-        date_range = st.date_input(
-            "Rango de fechas para videos",
-            [videos_df["published_date"].min(), videos_df["published_date"].max()],
-            min_value=videos_df["published_date"].min().date(),
-            max_value=videos_df["published_date"].max().date(),
-            key="dev_videos_date_range"
+        # Add table selector
+        selected_tables = st.multiselect(
+            "Selecciona las tablas a mostrar",
+            ["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
+            default=["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
+            help="Elige qué tablas quieres ver en el panel"
         )
 
-        # Apply filters
-        filtered_videos_df = videos_df.copy()
+        st.markdown('<div class="deals-container">', unsafe_allow_html=True)
 
-        if search_term:
-            filtered_videos_df = filtered_videos_df[
-                filtered_videos_df["title"].str.contains(
-                    search_term, case=False, na=False
+        # Display deals in responsive columns
+        if "Ofertas de Juegos" in selected_tables:
+            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
+            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
+            st.header("Ofertas de Juegos")
+            if not deals_df.empty:
+                filtered_deals_df = deals_df.copy()
+                filtered_deals_df = filtered_deals_df.sort_values(by="discount_value", ascending=False)
+                display_deals_df = filtered_deals_df[["title", "price", "discount", "store", "published_date"]].copy()
+                display_deals_df["Ver Oferta"] = filtered_deals_df["link"].apply(lambda x: make_clickable(x, "Ver"))
+                
+                if "price" in display_deals_df.columns:
+                    display_deals_df["price"] = display_deals_df["price"].apply(
+                        lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
+                    )
+                
+                display_deals_df.rename(
+                    columns={
+                        "title": "Título",
+                        "price": "Precio",
+                        "discount": "Descuento",
+                        "store": "Tienda",
+                        "published_date": "Fecha de Publicación",
+                    },
+                    inplace=True,
                 )
-            ]
+                
+                st.markdown(
+                    display_deals_df.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.warning("No hay ofertas disponibles.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        if len(date_range) == 2:
-            filtered_videos_df = filtered_videos_df[
-                (filtered_videos_df["published_date"].dt.date >= date_range[0])
-                & (filtered_videos_df["published_date"].dt.date <= date_range[1])
-            ]
+        # Display bundles in responsive columns
+        if "Paquetes de Juegos" in selected_tables:
+            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
+            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
+            st.header("Paquetes de Juegos")
+            if not bundles_df.empty:
+                filtered_bundles_df = bundles_df.copy()
+                filtered_bundles_df = filtered_bundles_df.sort_values(by="published_date", ascending=False)
+                
+                if "game_count" in filtered_bundles_df.columns:
+                    display_bundles_df = filtered_bundles_df[["title", "price", "game_count", "published_date"]].copy()
+                else:
+                    display_bundles_df = filtered_bundles_df[["title", "price", "published_date"]].copy()
+                
+                display_bundles_df["Ver Paquete"] = filtered_bundles_df["link"].apply(lambda x: make_clickable(x, "Ver"))
+                
+                if "price" in display_bundles_df.columns:
+                    display_bundles_df["price"] = display_bundles_df["price"].apply(
+                        lambda x: f"€{x:.2f}" if pd.notna(x) else "N/A"
+                    )
+                
+                display_bundles_df.rename(
+                    columns={
+                        "title": "Título",
+                        "price": "Precio",
+                        "game_count": "Juegos en el Paquete",
+                        "published_date": "Fecha de Publicación"
+                    },
+                    inplace=True,
+                )
+                
+                st.markdown(
+                    display_bundles_df.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.warning("No hay paquetes disponibles.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        logger.info(f"Filtered to {len(filtered_videos_df)} video results")
+        # Display giveaways in responsive columns
+        if "Juegos Gratuitos" in selected_tables:
+            st.markdown('<div class="deals-column">', unsafe_allow_html=True)
+            st.markdown('<div class="deals-card">', unsafe_allow_html=True)
+            st.header("Juegos Gratuitos")
+            if not giveaways_df.empty:
+                filtered_giveaways_df = giveaways_df.copy()
+                
+                if "expires_date" in filtered_giveaways_df.columns:
+                    display_giveaways_df = filtered_giveaways_df[["title", "published_date", "expires_date"]].copy()
+                else:
+                    display_giveaways_df = filtered_giveaways_df[["title", "published_date"]].copy()
+                
+                display_giveaways_df["Obtener Juego"] = filtered_giveaways_df["link"].apply(
+                    lambda x: make_clickable(x, "Reclamar")
+                )
+                
+                display_giveaways_df.rename(
+                    columns={
+                        "title": "Título",
+                        "published_date": "Fecha de Publicación",
+                        "expires_date": "Fecha de Expiración"
+                    },
+                    inplace=True,
+                )
+                
+                st.markdown(
+                    display_giveaways_df.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.warning("No hay juegos gratuitos disponibles.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # Display results
-        if filtered_videos_df.empty:
-            logger.warning("No video matches found")
-            st.warning("No hay videos que coincidan con los filtros seleccionados.")
-        else:
-            # Display videos in a responsive grid format
-            num_cols = get_responsive_cols()
-            for i in range(0, len(filtered_videos_df), num_cols):
-                cols = st.columns(num_cols)
-                for j, (_, video) in enumerate(filtered_videos_df.iloc[i:i + num_cols].iterrows()):
-                    with cols[j % num_cols]:
-                        with st.container():
-                            st.subheader(video["title"])
-                            st.write(f"**Canal:** {video.get('channel', 'N/A')}")
-                            st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
-                            if "url" in video and pd.notna(video["url"]):
-                                st.markdown(make_clickable(video["url"], "Ver en YouTube"), unsafe_allow_html=True)
-                            st.markdown("---")
+        st.markdown('</div>', unsafe_allow_html=True)
+
 
 with tab4:
-    logger.info("Rendering Videos tab")
-    st.header("📺 Videos de Youtube sobre Desarrollo (personal)")
-
-
-
-    videos_df = get_videos_data(PERSONAL_DEV_VIDEOS_FILE)
-    logger.info(f"Loaded {len(videos_df)} videos")
-
-    if videos_df.empty:
-        logger.warning("No videos data available")
-        st.warning("No hay datos de videos disponibles.")
-    else:
-        # Filters
-        search_term_personal = st.text_input("🔍 Buscar en títulos de videos de desarrollo personal", "")
-
-        # Date range filter
-        date_range = st.date_input(
-            "Rango de fechas para videos",
-            [videos_df["published_date"].min(), videos_df["published_date"].max()],
-            min_value=videos_df["published_date"].min().date(),
-            max_value=videos_df["published_date"].max().date(),
-            key="date_input_personal_dev_videos"
-        )
-
-        # Apply filters
-        filtered_videos_df = videos_df.copy()
-
-        if search_term_personal:
-            filtered_videos_df = filtered_videos_df[
-                filtered_videos_df["title"].str.contains(
-                    search_term_personal, case=False, na=False
-                )
-            ]
-
-        if len(date_range) == 2:
-            filtered_videos_df = filtered_videos_df[
-                (filtered_videos_df["published_date"].dt.date >= date_range[0])
-                & (filtered_videos_df["published_date"].dt.date <= date_range[1])
-            ]
-
-        logger.info(f"Filtered to {len(filtered_videos_df)} video results")
-
-        # Display results
-        if filtered_videos_df.empty:
-            logger.warning("No video matches found")
-            st.warning("No hay videos que coincidan con los filtros seleccionados.")
-        else:
-            # Display videos in a responsive grid format
-            num_cols = get_responsive_cols()
-            for i in range(0, len(filtered_videos_df), num_cols):
-                cols = st.columns(num_cols)
-                for j, (_, video) in enumerate(filtered_videos_df.iloc[i:i + num_cols].iterrows()):
-                    with cols[j % num_cols]:
-                        with st.container():
-                            st.subheader(video["title"])
-                            st.write(f"**Canal:** {video.get('channel', 'N/A')}")
-                            st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
-                            if "url" in video and pd.notna(video["url"]):
-                                st.markdown(make_clickable(video["url"], "Ver en YouTube"), unsafe_allow_html=True)
-                            st.markdown("---")
-
-with tab5:
-    logger.info("Rendering Videos tab")
-    st.header("📺 Videos de Youtube sobre Economía y Política")
-
-
-
-    videos_df = get_videos_data(ECONOMICS_VIDEOS_FILE)
-    logger.info(f"Loaded {len(videos_df)} videos")
-
-    if videos_df.empty:
-        logger.warning("No videos data available")
-        st.warning("No hay datos de videos disponibles.")
-    else:
-        # Filters
-        search_term_economics = st.text_input("🔍 Buscar en títulos de videos de economía y política", "")
-
-        # Date range filter
-        date_range = st.date_input(
-            "Rango de fechas para videos",
-            [videos_df["published_date"].min(), videos_df["published_date"].max()],
-            min_value=videos_df["published_date"].min().date(),
-            max_value=videos_df["published_date"].max().date(),
-            key="date_input_economics_videos"
-        )
-
-        # Apply filters
-        filtered_videos_df = videos_df.copy()
-
-        if search_term_economics:
-            filtered_videos_df = filtered_videos_df[
-                filtered_videos_df["title"].str.contains(
-                    search_term_economics, case=False, na=False
-                )
-            ]
-
-        if len(date_range) == 2:
-            filtered_videos_df = filtered_videos_df[
-                (filtered_videos_df["published_date"].dt.date >= date_range[0])
-                & (filtered_videos_df["published_date"].dt.date <= date_range[1])
-            ]
-
-        logger.info(f"Filtered to {len(filtered_videos_df)} video results")
-
-        # Display results
-        if filtered_videos_df.empty:
-            logger.warning("No video matches found")
-            st.warning("No hay videos que coincidan con los filtros seleccionados.")
-        else:
-            # Display videos in a responsive grid format
-            num_cols = get_responsive_cols()
-            for i in range(0, len(filtered_videos_df), num_cols):
-                cols = st.columns(num_cols)
-                for j, (_, video) in enumerate(filtered_videos_df.iloc[i:i + num_cols].iterrows()):
-                    with cols[j % num_cols]:
-                        with st.container():
-                            st.subheader(video["title"])
-                            st.write(f"**Canal:** {video.get('channel', 'N/A')}")
-                            st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
-                            if "url" in video and pd.notna(video["url"]):
-                                st.markdown(make_clickable(video["url"], "Ver en YouTube"), unsafe_allow_html=True)
-                            st.markdown("---")
-
-with tab6:
     logger.info("Rendering Watchers tab")
     st.header("👁️ Monitores de Cambios (Watchers)")
     
@@ -1275,6 +1169,187 @@ with tab6:
                             } for e in events_data])
                             
                             st.dataframe(events_df, use_container_width=True)
+
+with tab5:
+    logger.info("Rendering Valencia Events tab")
+    st.header("🏙️ Eventos en Valencia")
+    
+    @st.cache_data(ttl=3600)
+    def get_valencia_events_data():
+        """Fetch and process Valencia events data"""
+        logger.info("Loading Valencia events data")
+        valencia_events_df = load_data(VALENCIA_EVENTS_FILE)
+        
+        if not valencia_events_df.empty:
+            # Convert dates if available
+            if "start_date" in valencia_events_df.columns:
+                valencia_events_df["start_date"] = pd.to_datetime(
+                    valencia_events_df["start_date"], format="%d/%m/%Y", errors="coerce"
+                )
+            if "end_date" in valencia_events_df.columns:
+                valencia_events_df["end_date"] = pd.to_datetime(
+                    valencia_events_df["end_date"], format="%d/%m/%Y", errors="coerce"
+                )
+                
+        return valencia_events_df
+    
+    # Load Valencia events data
+    valencia_events_df = get_valencia_events_data()
+    logger.info(f"Loaded {len(valencia_events_df)} Valencia events")
+    
+    if valencia_events_df.empty:
+        logger.warning("No Valencia events data available")
+        st.warning("No hay datos de eventos disponibles.")
+    else:
+        # Filters
+        search_term = st.text_input("🔍 Buscar en títulos de eventos", "")
+        
+        # Category filter if categories are available
+        categories = valencia_events_df["category"].dropna().unique().tolist()
+        if categories:
+            selected_categories = st.multiselect(
+                "Filtrar por categoría",
+                ["Todas"] + categories,
+                default=["Todas"]
+            )
+        
+        # Apply filters
+        filtered_events_df = valencia_events_df.copy()
+        
+        if search_term:
+            filtered_events_df = filtered_events_df[
+                filtered_events_df["title"].str.contains(
+                    search_term, case=False, na=False
+                )
+            ]
+        
+        if categories and selected_categories and "Todas" not in selected_categories:
+            filtered_events_df = filtered_events_df[
+                filtered_events_df["category"].isin(selected_categories)
+            ]
+        
+        logger.info(f"Filtered to {len(filtered_events_df)} Valencia events")
+        
+        # Display results
+        if filtered_events_df.empty:
+            logger.warning("No event matches found")
+            st.warning("No hay eventos que coincidan con los filtros seleccionados.")
+        else:
+            # Sort by start date if available
+            if "start_date" in filtered_events_df.columns:
+                filtered_events_df = filtered_events_df.sort_values(
+                    by="start_date", ascending=True, na_position="last"
+                )
+            
+            # Display events in a grid format similar to videos
+            num_cols = get_responsive_cols()
+            for i in range(0, len(filtered_events_df), num_cols):
+                cols = st.columns(num_cols)
+                for j, (_, event) in enumerate(filtered_events_df.iloc[i:i + num_cols].iterrows()):
+                    with cols[j % num_cols]:
+                        with st.container():
+                            st.markdown(f"<div class='card'>", unsafe_allow_html=True)
+                            st.subheader(event["title"])
+                            
+                            # Display dates if available
+                            if pd.notna(event.get("date_text")):
+                                st.write(f"**Fechas:** {event.get('date_text', 'No especificado')}")
+                            
+                            # Display category if available
+                            if pd.notna(event.get("category")) and event.get("category") != "":
+                                st.write(f"**Categoría:** {event.get('category', 'No especificado')}")
+                            
+                            # Display source
+                            st.write(f"**Fuente:** {event.get('source', 'No especificado')}")
+                            
+                            # Add link to event
+                            if "url" in event and pd.notna(event["url"]):
+                                st.markdown(make_clickable(event["url"], "Ver evento"), unsafe_allow_html=True)
+                            
+                            st.markdown("</div>", unsafe_allow_html=True)
+                            st.markdown("---")
+            
+            # Provide option to view as table
+            if st.checkbox("Ver como tabla"):
+                display_cols = ["title", "date_text", "category", "source"]
+                display_df = filtered_events_df[display_cols].copy()
+                
+                # Add URL column with clickable links
+                display_df["Ver evento"] = filtered_events_df["url"].apply(
+                    lambda x: make_clickable(x, "Ver")
+                )
+                
+                # Rename columns for display
+                display_df.rename(
+                    columns={
+                        "title": "Título",
+                        "date_text": "Fechas",
+                        "category": "Categoría",
+                        "source": "Fuente",
+                    },
+                    inplace=True,
+                )
+                
+                # Display as HTML table
+                st.markdown(
+                    display_df.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+
+with tab6:
+    logger.info("Rendering Admin tab")
+    st.header("⚙️ Admin Panel")
+    
+    st.markdown("""
+    <div class="card">
+        <h3>Panel de Administración</h3>
+        <p>Esta sección permite ejecutar tareas de administración del sistema.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("Ejecutar todos los scrapers"):
+        try:
+            st.info("Ejecutando scrapers...")
+            # Run all scrapers
+            scripts = [
+                "../../../src/etl/games/games_get_deals.py",
+                "../../../src/etl/news/news_get_futuretools.py",
+                "../../../src/etl/news/news_get_ycombinator.py",
+                "../../../src/etl/news/news_get_genai_medium.py",
+                "../../../src/etl/news/news_get_bensbites.py"
+            ]
+            
+            for script in scripts:
+                subprocess.run(["python3", script])
+                
+            st.success("Todos los scrapers ejecutados correctamente")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error al ejecutar los scrapers: {str(e)}")
+    
+    # Add section to scan YouTube directories
+    st.subheader("Actualización de videos de YouTube")
+    
+    if st.button("Actualizar todos los canales de YouTube"):
+        try:
+            st.info("Ejecutando actualización de videos...")
+            # Get all category directories
+            categories = [d for d in os.listdir(VIDEOS_DATA_DIR) 
+                         if os.path.isdir(os.path.join(VIDEOS_DATA_DIR, d))]
+            
+            success_count = 0
+            for category in categories:
+                try:
+                    script_path = f"../../../src/etl/youtube/youtube_get_videos.py"
+                    subprocess.run(["python3", script_path, "--category", category])
+                    success_count += 1
+                except Exception as category_e:
+                    st.warning(f"Error actualizando categoría {category}: {str(category_e)}")
+            
+            st.success(f"Actualizadas {success_count} de {len(categories)} categorías correctamente")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error al actualizar videos: {str(e)}")
 
 # Footer
 st.markdown(
