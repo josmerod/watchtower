@@ -172,7 +172,6 @@ st.markdown("""
         transition: all 0.3s ease;
         width: 100%;
         box-sizing: border-box;
-        border-left: 3px solid #A37FFF;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         height: 100%;
     }
@@ -180,7 +179,6 @@ st.markdown("""
     .video-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-        border-left: 3px solid #B792FF;
     }
     
     /* Video thumbnail container */
@@ -281,7 +279,6 @@ st.markdown("""
         border-radius: 8px;
         margin-bottom: 15px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        border-left: 3px solid #A37FFF;
     }
     
     /* Table styling */
@@ -378,21 +375,16 @@ st.markdown("""
         padding: 1rem;
     }
 
-    @media (max-width: 1200px) {
-        .deals-container {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media (max-width: 768px) {
-        .deals-container {
-            grid-template-columns: 1fr;
-        }
-    }
-
     .deals-column {
         min-width: 0;
         width: 100%;
+        background-color: #2D2B55;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        height: 100%;
+        overflow-x: auto;
     }
 
     .deals-card {
@@ -415,21 +407,16 @@ st.markdown("""
         padding: 1rem;
     }
 
-    @media (max-width: 1200px) {
-        .news-container {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media (max-width: 768px) {
-        .news-container {
-            grid-template-columns: 1fr;
-        }
-    }
-
     .news-column {
         min-width: 0;
         width: 100%;
+        background-color: #2D2B55;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        height: 100%;
+        overflow-x: auto;
     }
 
     .news-card {
@@ -645,16 +632,51 @@ with tab1:
         # Format category names for display
         display_categories = {cat: cat.replace('_', ' ').title() for cat in video_categories}
         
-        # Category selector
-        selected_category = st.selectbox(
-            "Selecciona categoría de videos",
-            options=video_categories,
-            format_func=lambda x: display_categories[x]
-        )
+        # --- Determine initial category and load data BEFORE creating widgets ---
+        # Use session state to keep track of category or default to first one
+        if 'selected_video_category' not in st.session_state:
+            st.session_state.selected_video_category = video_categories[0]
         
-        # Load videos from selected category
-        video_file_path = os.path.join(VIDEOS_DATA_DIR, selected_category, "youtube_videos.json")
-        videos_df = get_videos_data(video_file_path)
+        initial_category = st.session_state.selected_video_category
+        initial_video_file_path = os.path.join(VIDEOS_DATA_DIR, initial_category, "youtube_videos.json")
+        videos_df = get_videos_data(initial_video_file_path) # Load initial data
+        # ---
+
+        # --- Filters Row ---
+        col1, col2, col3 = st.columns([2, 3, 2]) # Adjust ratios as needed
+        
+        with col1:
+            # Category selector - update session state on change
+            selected_category = st.selectbox(
+                "Categoría",
+                options=video_categories,
+                index=video_categories.index(initial_category), # Set initial index
+                format_func=lambda x: display_categories[x],
+                label_visibility="collapsed", # Hide label if title is clear enough
+                key="selected_video_category" # Use key to link to session state
+            )
+        
+        with col2:
+            # Search input
+            search_term = st.text_input("🔍 Buscar en títulos", "", placeholder="Buscar videos...")
+
+        with col3:
+            # Date range filter
+            date_range = st.date_input(
+                "Rango de fechas",
+                value=[videos_df["published_date"].min().date(), videos_df["published_date"].max().date()] if not videos_df.empty else [],
+                min_value=videos_df["published_date"].min().date() if not videos_df.empty else None,
+                max_value=videos_df["published_date"].max().date() if not videos_df.empty else None,
+                # label_visibility="collapsed" # Hide label if title is clear enough
+            )
+        # --- End Filters Row ---
+
+        # --- Reload data ONLY if category changed ---
+        if selected_category != initial_category:
+            video_file_path = os.path.join(VIDEOS_DATA_DIR, selected_category, "youtube_videos.json")
+            videos_df = get_videos_data(video_file_path)
+            # The script will rerun, and this new videos_df will be used in the next run
+        # ---
         
         logger.info(f"Loaded {len(videos_df)} videos from category {selected_category}")
 
@@ -662,17 +684,6 @@ with tab1:
             logger.warning(f"No videos data available for category {selected_category}")
             st.warning(f"No hay datos de videos disponibles para la categoría {display_categories[selected_category]}.")
         else:
-            # Filters
-            search_term = st.text_input("🔍 Buscar en títulos de videos", "")
-
-            # Date range filter
-            date_range = st.date_input(
-                "Rango de fechas para videos",
-                [videos_df["published_date"].min(), videos_df["published_date"].max()],
-                min_value=videos_df["published_date"].min().date(),
-                max_value=videos_df["published_date"].max().date()
-            )
-
             # Apply filters
             filtered_videos_df = videos_df.copy()
 
@@ -683,11 +694,24 @@ with tab1:
                     )
                 ]
 
-            if len(date_range) == 2:
-                filtered_videos_df = filtered_videos_df[
-                    (filtered_videos_df["published_date"].dt.date >= date_range[0])
-                    & (filtered_videos_df["published_date"].dt.date <= date_range[1])
-                ]
+            if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+                start_date, end_date = date_range
+                if start_date and end_date: # Ensure neither date is None
+                     # Convert date objects to datetime objects for comparison
+                    start_datetime = datetime.combine(start_date, datetime.min.time())
+                    end_datetime = datetime.combine(end_date, datetime.max.time())
+                    
+                    # Ensure 'published_date' is timezone-naive or handle comparison appropriately
+                    if filtered_videos_df["published_date"].dt.tz:
+                         filtered_videos_df = filtered_videos_df[
+                            (filtered_videos_df["published_date"].dt.tz_localize(None) >= start_datetime)
+                            & (filtered_videos_df["published_date"].dt.tz_localize(None) <= end_datetime)
+                        ]
+                    else:
+                        filtered_videos_df = filtered_videos_df[
+                            (filtered_videos_df["published_date"] >= start_datetime)
+                            & (filtered_videos_df["published_date"] <= end_datetime)
+                        ]
 
             logger.info(f"Filtered to {len(filtered_videos_df)} video results")
 
@@ -777,103 +801,105 @@ with tab2:
         logger.warning("No news data available")
         st.warning("No hay datos de noticias disponibles.")
     else:
-        # Add news source selector
-        selected_sources = st.multiselect(
-            "Selecciona las fuentes de noticias",
-            ["FutureTools y Ben's Bites", "Hacker News", "Medium"],
-            default=["FutureTools y Ben's Bites", "Hacker News", "Medium"],
-            help="Elige qué fuentes de noticias quieres ver en el panel"
-        )
+        # Create subtabs for news sources
+        news_tab1, news_tab2, news_tab3 = st.tabs(["🚀 FutureTools & Ben's Bites", "📰 Hacker News", "Ⓜ️ Medium GenAI"])
 
-        st.markdown('<div class="news-container">', unsafe_allow_html=True)
-        
-        # FutureTools and Ben's Bites News
-        if "FutureTools y Ben's Bites" in selected_sources:
-            st.markdown('<div class="news-column">', unsafe_allow_html=True)
-            st.markdown('<div class="news-card">', unsafe_allow_html=True)
-            st.header("Noticias de FutureTools y Ben's Bites")
+        with news_tab1:
+            # st.header("Noticias de FutureTools y Ben's Bites")
             if futuretools_news_df.empty and bensbites_news_df.empty:
-                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
+                st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
             else:
                 # Combine FutureTools and Ben's Bites news
                 combined_news_df = pd.concat([futuretools_news_df, bensbites_news_df])
-                combined_news_df = combined_news_df.sort_values("published_at", ascending=False)
-                
-                combined_news_df["Ver Noticia"] = combined_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
-                combined_news_df = combined_news_df.drop(columns=["url"])
-                
-                combined_news_df.rename(
-                    columns={
-                        "title": "Título",
-                        "published_at": "Fecha de Publicación",
-                        "source": "Fuente",
-                    },
-                    inplace=True,
-                )
-                
-                st.markdown(
-                    combined_news_df.to_html(escape=False, index=False),
-                    unsafe_allow_html=True,
-                )
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Hacker News
-        if "Hacker News" in selected_sources:
-            st.markdown('<div class="news-column">', unsafe_allow_html=True)
-            st.markdown('<div class="news-card">', unsafe_allow_html=True)
-            st.header("Noticias de Hacker News")
-            if ycombinator_news_df.empty:
-                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
-            else:
-                display_news_df = ycombinator_news_df[["title", "published_at", "source"]].copy()
-                display_news_df["Ver Noticia"] = ycombinator_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
-                
-                display_news_df.rename(
-                    columns={
-                        "title": "Título",
-                        "published_at": "Fecha de Publicación",
-                        "source": "Fuente",
-                    },
-                    inplace=True,
-                )
-                
-                st.markdown(
-                    display_news_df.to_html(escape=False, index=False),
-                    unsafe_allow_html=True,
-                )
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Medium News
-        if "Medium" in selected_sources:
-            st.markdown('<div class="news-column">', unsafe_allow_html=True)
-            st.markdown('<div class="news-card">', unsafe_allow_html=True)
-            st.header("Noticias de Medium sobre IA")
-            if medium_news_df.empty:
-                st.warning("No hay noticias que coincidan con los filtros seleccionados.")
-            else:
-                display_news_df = medium_news_df[["title", "published_at", "source"]].copy()
-                display_news_df["Ver Noticia"] = medium_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
-                
-                display_news_df.rename(
-                    columns={
-                        "title": "Título",
-                        "published_at": "Fecha de Publicación",
-                        "source": "Fuente",
-                    },
-                    inplace=True,
-                )
-                
-                st.markdown(
-                    display_news_df.to_html(escape=False, index=False),
-                    unsafe_allow_html=True,
-                )
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+                if not combined_news_df.empty:
+                    combined_news_df = combined_news_df.sort_values("published_date", ascending=False) # Use processed date
+                    
+                    combined_news_df["Ver Noticia"] = combined_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+                    
+                    # Format date for display
+                    combined_news_df["published_display"] = combined_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
 
+                    display_combined_df = combined_news_df[["title", "published_display", "source", "Ver Noticia"]].copy()
+                    
+                    display_combined_df.rename(
+                        columns={
+                            "title": "Título",
+                            "published_display": "Fecha de Publicación",
+                            "source": "Fuente",
+                        },
+                        inplace=True,
+                    )
+                    
+                    st.markdown(
+                        display_combined_df.to_html(escape=False, index=False),
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
+
+        with news_tab2:
+            # st.header("Noticias de Hacker News")
+            if ycombinator_news_df.empty:
+                st.warning("No hay noticias disponibles de Hacker News.")
+            else:
+                display_news_df = ycombinator_news_df.sort_values("published_date", ascending=False) # Use processed date
+
+                display_news_df["Ver Noticia"] = display_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+                
+                # Format date for display
+                display_news_df["published_display"] = display_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
+
+                display_news_df_final = display_news_df[["title", "published_display", "source", "Ver Noticia"]].copy()
+                
+                display_news_df_final.rename(
+                    columns={
+                        "title": "Título",
+                        "published_display": "Fecha de Publicación",
+                        "source": "Fuente",
+                    },
+                    inplace=True,
+                )
+                
+                st.markdown(
+                    display_news_df_final.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+
+        with news_tab3:
+            # st.header("Noticias de Medium sobre IA")
+            if medium_news_df.empty:
+                st.warning("No hay noticias disponibles de Medium sobre IA.")
+            else:
+                # Medium data might not have 'published_date', adjust if needed based on actual data structure
+                if "published_at" in medium_news_df.columns: # Check if raw column exists
+                     medium_news_df = medium_news_df.sort_values("published_at", ascending=False) # Sort by raw if no processed date
+                
+                display_news_df = medium_news_df.copy() # Work with a copy
+
+                display_news_df["Ver Noticia"] = display_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+                
+                # Use 'published_at' directly if 'published_date' is not created or different
+                display_news_df_final = display_news_df[["title", "published_at", "source", "Ver Noticia"]].copy()
+
+                display_news_df_final.rename(
+                    columns={
+                        "title": "Título",
+                        "published_at": "Fecha de Publicación", # Keep original column name if date processing wasn't done
+                        "source": "Fuente",
+                    },
+                    inplace=True,
+                )
+                
+                st.markdown(
+                    display_news_df_final.to_html(escape=False, index=False),
+                    unsafe_allow_html=True,
+                )
+
+        # --- Removed the old multiselect and display logic ---
+        # selected_sources = st.multiselect(...)
+        # st.markdown('<div class="news-container">', unsafe_allow_html=True)
+        # ... (old display logic based on selected_sources) ...
+        # st.markdown('</div>', unsafe_allow_html=True)
 
 with tab3:
     logger.info("Rendering Juegos tab")
@@ -1309,7 +1335,6 @@ with tab5:
                                 st.markdown(make_clickable(event["url"], "Ver evento"), unsafe_allow_html=True)
                             
                             st.markdown("</div>", unsafe_allow_html=True)
-                            st.markdown("---")
             
             # Provide option to view as table
             if st.checkbox("Ver como tabla"):
