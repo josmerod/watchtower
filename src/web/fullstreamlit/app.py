@@ -24,6 +24,31 @@ from src.utils.logging import get_logger
 # Initialize logger for the Streamlit app
 logger = get_logger("GameDealsApp")
 
+# Define shortcuts data structure - customize categories and links here
+SHORTCUTS = {
+    "Development": [
+        {"name": "GitHub", "url": "https://github.com/", "icon": "🐙", "description": "Code hosting platform for version control and collaboration"},
+        {"name": "Stack Overflow", "url": "https://stackoverflow.com/", "icon": "📚", "description": "Community for developers to learn and share knowledge"},
+        {"name": "VS Code", "url": "https://vscode.dev/", "icon": "💻", "description": "Online code editor based on VS Code"}
+    ],
+    "AI Tools": [
+        {"name": "ChatGPT", "url": "https://chat.openai.com/", "icon": "🤖", "description": "AI assistant for natural language conversations"},
+        {"name": "Hugging Face", "url": "https://huggingface.co/", "icon": "🤗", "description": "AI model repository and community"},
+        {"name": "Cursor", "url": "https://cursor.sh/", "icon": "✨", "description": "AI-first code editor"},
+        {"name": "Midjourney", "url": "https://www.midjourney.com/", "icon": "🎨", "description": "AI image generation platform"}
+    ],
+    "Learning Resources": [
+        {"name": "Medium", "url": "https://medium.com/", "icon": "📝", "description": "Platform for reading and writing articles"},
+        {"name": "YouTube", "url": "https://www.youtube.com/", "icon": "📺", "description": "Video platform with vast educational content"},
+        {"name": "Coursera", "url": "https://www.coursera.org/", "icon": "🎓", "description": "Online courses from top universities"}
+    ],
+    "Productivity": [
+        {"name": "Notion", "url": "https://www.notion.so/", "icon": "📋", "description": "All-in-one workspace for notes and tasks"},
+        {"name": "Trello", "url": "https://trello.com/", "icon": "📊", "description": "Visual tool for managing projects and tasks"},
+        {"name": "Google Drive", "url": "https://drive.google.com/", "icon": "📁", "description": "Cloud storage and file sharing"}
+    ]
+}
+
 # Function to determine number of columns based on screen width
 def get_responsive_cols():
     # Get the current viewport width using JavaScript
@@ -72,6 +97,10 @@ VIDEOS_DATA_DIR = "../../../data/youtube"
 WATCHERS_DATA_DIR = "../../../data/watchers"
 
 VALENCIA_EVENTS_DATA_DIR = "../../../data/valencia_events"
+
+# New path for shortcuts data
+SHORTCUTS_DATA_DIR = "../../../data/shortcuts"
+CUSTOM_SHORTCUTS_FILE = os.path.join(SHORTCUTS_DATA_DIR, "custom_shortcuts.json")
 
 DEALS_FILE = os.path.join(GAMES_DATA_DIR, "deals.json")
 BUNDLES_FILE = os.path.join(GAMES_DATA_DIR, "bundles.json")
@@ -430,6 +459,66 @@ st.markdown("""
         overflow-x: auto;
     }
 
+    /* Shortcuts styling */
+    .shortcuts-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .shortcuts-category {
+        background-color: #2D2B55;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        border-top: 3px solid #A37FFF;
+        height: 100%;
+    }
+
+    .shortcut-item {
+        display: flex;
+        align-items: center;
+        background-color: #34325A;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .shortcut-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        background-color: #3C3970;
+    }
+
+    .shortcut-icon {
+        font-size: 24px;
+        margin-right: 15px;
+        min-width: 30px;
+        text-align: center;
+    }
+
+    .shortcut-content {
+        flex-grow: 1;
+    }
+
+    .shortcut-title {
+        font-weight: 600;
+        font-size: 16px;
+        margin-bottom: 5px;
+    }
+
+    .shortcut-description {
+        font-size: 13px;
+        color: #CCC6F2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
     /* Table responsiveness */
     .stDataFrame {
         width: 100%;
@@ -466,6 +555,40 @@ def load_data(file_path):
         logger.error(f"Error loading data from {file_path}: {str(e)}")
         st.error(f"Error al cargar datos desde {file_path}: {str(e)}")
         return pd.DataFrame()
+
+def load_custom_shortcuts():
+    """Load custom shortcuts from JSON file"""
+    try:
+        # Create directory if it doesn't exist
+        os.makedirs(SHORTCUTS_DATA_DIR, exist_ok=True)
+        
+        if os.path.exists(CUSTOM_SHORTCUTS_FILE):
+            logger.info(f"Loading custom shortcuts from {CUSTOM_SHORTCUTS_FILE}")
+            with open(CUSTOM_SHORTCUTS_FILE, "r", encoding="utf-8") as f:
+                shortcuts = json.load(f)
+            logger.info(f"Successfully loaded {len(shortcuts)} custom shortcuts")
+            return shortcuts
+        else:
+            logger.info(f"No custom shortcuts file found at {CUSTOM_SHORTCUTS_FILE}")
+            return []
+    except Exception as e:
+        logger.error(f"Error loading custom shortcuts: {str(e)}")
+        return []
+
+def save_custom_shortcuts(shortcuts):
+    """Save custom shortcuts to JSON file"""
+    try:
+        # Create directory if it doesn't exist
+        os.makedirs(SHORTCUTS_DATA_DIR, exist_ok=True)
+        
+        logger.info(f"Saving {len(shortcuts)} custom shortcuts to {CUSTOM_SHORTCUTS_FILE}")
+        with open(CUSTOM_SHORTCUTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(shortcuts, f, indent=4, ensure_ascii=False)
+        logger.info("Custom shortcuts saved successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Error saving custom shortcuts: {str(e)}")
+        return False
 
 # Load videos data
 @st.cache_data(ttl=3600)
@@ -604,208 +727,459 @@ logger.info(
 )
 
 # Create tabs for different data views
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📺 Videos", "📰 Noticias", "🎮 Juegos", "👁️ Watchers", "🏙️ Eventos Valencia", "⚙️ Admin"])
+tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🔖 Accesos Directos", "📺 Videos", "📰 Noticias", "🎮 Juegos", "👁️ Watchers", "🏙️ Eventos Valencia", "⚙️ Admin"])
+
+with tab0:
+    logger.info("Rendering Shortcuts tab")
+    st.header("🔖 Accesos Directos")
+    
+    st.markdown("""
+    <div class="card" style="background-color: #2D2B55; padding: 18px; border-radius: 8px; border-left: 5px solid #A37FFF; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);">
+        <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #E2E8F0;">
+            Enlaces rápidos a sitios web y herramientas útiles. Personaliza esta sección editando la variable <code>SHORTCUTS</code> 
+            en el código fuente o añade enlaces personalizados usando el panel inferior.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Initialize session state for custom shortcuts if not exists
+    if 'custom_shortcuts' not in st.session_state:
+        st.session_state.custom_shortcuts = load_custom_shortcuts()
+    
+    # Search bar for filtering shortcuts
+    search = st.text_input("🔍 Buscar acceso directo", placeholder="Buscar por nombre o descripción...")
+    
+    # Combine predefined and custom shortcuts for search
+    all_shortcuts = []
+    for category, shortcuts in SHORTCUTS.items():
+        for shortcut in shortcuts:
+            shortcut_with_category = shortcut.copy()
+            shortcut_with_category['category'] = category
+            all_shortcuts.append(shortcut_with_category)
+    
+    # Add custom shortcuts if any
+    for shortcut in st.session_state.custom_shortcuts:
+        shortcut_with_category = shortcut.copy()
+        shortcut_with_category['category'] = "Personalizados"
+        all_shortcuts.append(shortcut_with_category)
+    
+    # Filter shortcuts if search is not empty
+    if search:
+        filtered_shortcuts = [s for s in all_shortcuts if (
+            search.lower() in s['name'].lower() or 
+            search.lower() in s['description'].lower() or
+            search.lower() in s['category'].lower()
+        )]
+        
+        if not filtered_shortcuts:
+            st.warning(f"No se encontraron accesos directos que coincidan con '{search}'")
+        else:
+            # Create three columns for search results
+            result_cols = st.columns(3)
+            
+            # Distribute shortcuts across the three columns
+            for i, shortcut in enumerate(filtered_shortcuts):
+                with result_cols[i % 3]:
+                    st.markdown(f'''
+                    <a href="{shortcut['url']}" target="_blank" style="text-decoration: none;">
+                        <div class="shortcut-item">
+                            <div class="shortcut-icon">{shortcut['icon']}</div>
+                            <div class="shortcut-content">
+                                <div class="shortcut-title">{shortcut['name']} <span style="opacity: 0.6; font-size: 12px;">({shortcut['category']})</span></div>
+                                <div class="shortcut-description">{shortcut['description']}</div>
+                            </div>
+                        </div>
+                    </a>
+                    ''', unsafe_allow_html=True)
+    else:
+        
+        # Create three fixed columns for categories
+        col1, col2, col3 = st.columns(3)
+        
+        # Combine predefined and custom categories
+        all_categories = list(SHORTCUTS.keys())
+        
+        # Add custom categories that aren't in predefined ones
+        custom_categories = set()
+        for shortcut in st.session_state.custom_shortcuts:
+            category = shortcut.get("category", "Personalizados")
+            if category not in SHORTCUTS:
+                custom_categories.add(category)
+        
+        all_categories.extend(sorted(list(custom_categories)))
+        
+        # Calculate how to distribute categories across columns
+        categories_per_column = max(1, len(all_categories) // 3 + (1 if len(all_categories) % 3 > 0 else 0))
+        
+        # Distribute categories across columns
+        for i, category in enumerate(all_categories):
+            column = col1 if i % 3 == 0 else col2 if i % 3 == 1 else col3
+            with column:
+                st.markdown(f'<div class="shortcuts-category">', unsafe_allow_html=True)
+                st.markdown(f'<h3>{category}</h3>', unsafe_allow_html=True)
+                
+                # Display predefined shortcuts for this category
+                if category in SHORTCUTS:
+                    for shortcut in SHORTCUTS[category]:
+                        st.markdown(f'''
+                        <a href="{shortcut['url']}" target="_blank" style="text-decoration: none;">
+                            <div class="shortcut-item">
+                                <div class="shortcut-icon">{shortcut['icon']}</div>
+                                <div class="shortcut-content">
+                                    <div class="shortcut-title">{shortcut['name']}</div>
+                                    <div class="shortcut-description">{shortcut['description']}</div>
+                                </div>
+                            </div>
+                        </a>
+                        ''', unsafe_allow_html=True)
+                
+                # Display custom shortcuts for this category
+                custom_shortcuts_in_category = [s for s in st.session_state.custom_shortcuts 
+                                               if s.get("category", "Personalizados") == category]
+                
+                for i, shortcut in enumerate(custom_shortcuts_in_category):
+                    # For predefined categories, no delete button
+                    if category in SHORTCUTS:
+                        st.markdown(f'''
+                        <a href="{shortcut['url']}" target="_blank" style="text-decoration: none;">
+                            <div class="shortcut-item">
+                                <div class="shortcut-icon">{shortcut['icon']}</div>
+                                <div class="shortcut-content">
+                                    <div class="shortcut-title">{shortcut['name']}</div>
+                                    <div class="shortcut-description">{shortcut['description']}</div>
+                                </div>
+                            </div>
+                        </a>
+                        ''', unsafe_allow_html=True)
+                    else:
+                        # Custom category with delete button
+                        c1, c2 = st.columns([5, 1])
+                        with c1:
+                            st.markdown(f'''
+                            <a href="{shortcut['url']}" target="_blank" style="text-decoration: none;">
+                                <div class="shortcut-item">
+                                    <div class="shortcut-icon">{shortcut['icon']}</div>
+                                    <div class="shortcut-content">
+                                        <div class="shortcut-title">{shortcut['name']}</div>
+                                        <div class="shortcut-description">{shortcut['description']}</div>
+                                    </div>
+                                </div>
+                            </a>
+                            ''', unsafe_allow_html=True)
+                        with c2:
+                            # Find the index in the original list for deletion
+                            original_index = st.session_state.custom_shortcuts.index(shortcut)
+                            if st.button("❌", key=f"del_main_{category}_{original_index}", help="Eliminar este enlace"):
+                                st.session_state.custom_shortcuts.pop(original_index)
+                                # Save changes
+                                save_custom_shortcuts(st.session_state.custom_shortcuts)
+                                st.rerun()
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Tabs for managing shortcuts
+    manage_tab1, manage_tab2, manage_tab3, manage_tab4 = st.tabs(["Añadir enlace", "Organizar", "Exportar configuración", "Importar configuración"])
+    
+    with manage_tab1:
+        # Form for adding custom shortcuts
+        with st.form("add_custom_shortcut"):
+            st.subheader("Añadir enlace personalizado")
+            
+            # Get existing categories from predefined shortcuts
+            existing_categories = list(SHORTCUTS.keys()) + ["Personalizados", "Nueva categoría..."]
+            
+            # Get custom categories from custom shortcuts
+            custom_categories = set()
+            for shortcut in st.session_state.custom_shortcuts:
+                if "category" in shortcut and shortcut["category"]:
+                    custom_categories.add(shortcut["category"])
+            
+            # Combine all categories without duplicates
+            all_categories = sorted(list(set(existing_categories) | custom_categories))
+            if "Nueva categoría..." in all_categories:
+                all_categories.remove("Nueva categoría...")
+                all_categories.append("Nueva categoría...")
+            
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                custom_name = st.text_input("Nombre", placeholder="Nombre del enlace")
+                custom_icon = st.text_input("Icono (emoji)", placeholder="🔗", max_chars=2)
+                
+                # Category selection
+                category_selection = st.selectbox(
+                    "Categoría", 
+                    all_categories,
+                    index=all_categories.index("Personalizados") if "Personalizados" in all_categories else 0
+                )
+                
+                # Show input for new category if "Nueva categoría..." selected
+                new_category = None
+                if category_selection == "Nueva categoría...":
+                    new_category = st.text_input("Nombre de nueva categoría", placeholder="Mi categoría")
+            
+            with col2:
+                custom_url = st.text_input("URL", placeholder="https://example.com")
+                custom_desc = st.text_input("Descripción (opcional)", placeholder="Breve descripción")
+            
+            # Submit button
+            submitted = st.form_submit_button("Añadir enlace")
+            if submitted and custom_name and custom_url:
+                # Get the category
+                final_category = new_category if category_selection == "Nueva categoría..." and new_category else category_selection
+                
+                # If it's a new valid category, add it
+                if final_category != "Nueva categoría...":
+                    # Save to session state
+                    st.session_state.custom_shortcuts.append({
+                        "name": custom_name,
+                        "url": custom_url,
+                        "icon": custom_icon if custom_icon else "🔗",
+                        "description": custom_desc if custom_desc else "Enlace personalizado",
+                        "category": final_category
+                    })
+                    # Save changes to file
+                    save_custom_shortcuts(st.session_state.custom_shortcuts)
+                    st.success(f"Enlace '{custom_name}' añadido a la categoría '{final_category}'")
+                    st.rerun()
+                else:
+                    st.error("Por favor, ingresa un nombre válido para la nueva categoría")
+    
+    with manage_tab2:
+        st.subheader("Organizar accesos directos")
+        
+        if not st.session_state.custom_shortcuts:
+            st.info("No hay accesos directos personalizados para organizar.")
+        else:
+            # Group shortcuts by category
+            shortcuts_by_category = {}
+            
+            for i, shortcut in enumerate(st.session_state.custom_shortcuts):
+                category = shortcut.get("category", "Personalizados")
+                if category not in shortcuts_by_category:
+                    shortcuts_by_category[category] = []
+                
+                # Add index to shortcut for reference
+                shortcut_with_index = shortcut.copy()
+                shortcut_with_index["index"] = i
+                shortcuts_by_category[category].append(shortcut_with_index)
+            
+            # Get existing categories from predefined shortcuts for moving items
+            existing_categories = list(SHORTCUTS.keys()) + ["Personalizados"] + list(shortcuts_by_category.keys())
+            existing_categories = sorted(list(set(existing_categories)))
+            
+            # Display shortcuts by category with organization options
+            for category, shortcuts in shortcuts_by_category.items():
+                with st.expander(f"{category} ({len(shortcuts)} enlaces)", expanded=True):
+                    for shortcut in shortcuts:
+                        col1, col2, col3 = st.columns([4, 2, 1])
+                        
+                        with col1:
+                            st.markdown(f'''
+                            <div class="shortcut-item" style="margin-bottom: 5px;">
+                                <div class="shortcut-icon">{shortcut['icon']}</div>
+                                <div class="shortcut-content">
+                                    <div class="shortcut-title">{shortcut['name']}</div>
+                                </div>
+                            </div>
+                            ''', unsafe_allow_html=True)
+                        
+                        with col2:
+                            # Category movement dropdown
+                            move_to = st.selectbox(
+                                "Mover a",
+                                existing_categories,
+                                index=existing_categories.index(category),
+                                key=f"move_{shortcut['index']}"
+                            )
+                            
+                            if move_to != category:
+                                # Update category
+                                st.session_state.custom_shortcuts[shortcut['index']]["category"] = move_to
+                                # Save changes
+                                save_custom_shortcuts(st.session_state.custom_shortcuts)
+                                st.success(f"'{shortcut['name']}' movido a '{move_to}'")
+                                st.rerun()
+                        
+                        with col3:
+                            # Delete button
+                            if st.button("❌", key=f"del_org_{shortcut['index']}", help="Eliminar este enlace"):
+                                st.session_state.custom_shortcuts.pop(shortcut['index'])
+                                # Save changes
+                                save_custom_shortcuts(st.session_state.custom_shortcuts)
+                                st.success(f"Enlace '{shortcut['name']}' eliminado")
+                                st.rerun()
+            
+            # Button to remove empty categories
+            if st.button("Limpiar categorías vacías"):
+                # Get categories with shortcuts
+                used_categories = set()
+                for shortcut in st.session_state.custom_shortcuts:
+                    category = shortcut.get("category", "Personalizados")
+                    used_categories.add(category)
+                
+                # Remove unused categories
+                for shortcut in st.session_state.custom_shortcuts:
+                    category = shortcut.get("category")
+                    if category and category not in used_categories:
+                        shortcut.pop("category", None)
+                
+                # Save changes
+                save_custom_shortcuts(st.session_state.custom_shortcuts)
+                st.success("Categorías vacías eliminadas")
+                st.rerun()
+    
+    with manage_tab3:
+        st.subheader("Exportar configuración")
+        
+        export_tab1, export_tab2 = st.tabs(["Python", "JSON"])
+        
+        with export_tab1:
+            # Generate Python code snippet for current custom shortcuts
+            if st.session_state.custom_shortcuts:
+                code_snippet = "# Añade esto a la estructura SHORTCUTS en el archivo app.py\n"
+                code_snippet += "\"Personalizados\": [\n"
+                
+                for shortcut in st.session_state.custom_shortcuts:
+                    code_snippet += f"    {{\"name\": \"{shortcut['name']}\", \"url\": \"{shortcut['url']}\", \"icon\": \"{shortcut['icon']}\", \"description\": \"{shortcut['description']}\"}},\n"
+                
+                code_snippet += "]\n"
+                
+                st.code(code_snippet, language="python")
+                
+                st.download_button(
+                    label="Descargar como Python (.py)",
+                    data=code_snippet,
+                    file_name="custom_shortcuts.py",
+                    mime="text/plain",
+                )
+            else:
+                st.info("Añade algunos enlaces personalizados para generar código exportable")
+        
+        with export_tab2:
+            # Generate JSON for current custom shortcuts
+            if st.session_state.custom_shortcuts:
+                json_data = json.dumps(st.session_state.custom_shortcuts, indent=4, ensure_ascii=False)
+                st.code(json_data, language="json")
+                
+                st.download_button(
+                    label="Descargar como JSON",
+                    data=json_data,
+                    file_name="custom_shortcuts.json",
+                    mime="application/json",
+                )
+            else:
+                st.info("Añade algunos enlaces personalizados para generar JSON exportable")
+    
+    with manage_tab4:
+        st.subheader("Importar configuración")
+        
+        # Upload JSON file
+        uploaded_file = st.file_uploader("Subir archivo JSON de accesos directos", type=["json"])
+        
+        if uploaded_file is not None:
+            try:
+                # Read JSON from uploaded file
+                imported_shortcuts = json.load(uploaded_file)
+                
+                # Validate structure
+                valid_shortcuts = []
+                for item in imported_shortcuts:
+                    if isinstance(item, dict) and 'name' in item and 'url' in item:
+                        # Add missing fields if needed
+                        if 'icon' not in item:
+                            item['icon'] = '🔗'
+                        if 'description' not in item:
+                            item['description'] = 'Enlace importado'
+                        valid_shortcuts.append(item)
+                
+                # Preview imported shortcuts
+                st.write(f"Accesos directos encontrados: {len(valid_shortcuts)}")
+                
+                for shortcut in valid_shortcuts:
+                    st.markdown(f'''
+                    <div class="shortcut-item">
+                        <div class="shortcut-icon">{shortcut['icon']}</div>
+                        <div class="shortcut-content">
+                            <div class="shortcut-title">{shortcut['name']}</div>
+                            <div class="shortcut-description">{shortcut['description']}</div>
+                        </div>
+                    </div>
+                    ''', unsafe_allow_html=True)
+                
+                # Add options to replace or merge
+                option = st.radio(
+                    "¿Cómo quieres importar estos accesos directos?",
+                    ["Reemplazar todos los actuales", "Añadir a los actuales"]
+                )
+                
+                if st.button("Importar accesos directos"):
+                    if option == "Reemplazar todos los actuales":
+                        st.session_state.custom_shortcuts = valid_shortcuts
+                    else:  # Añadir a los actuales
+                        st.session_state.custom_shortcuts.extend(valid_shortcuts)
+                    
+                    # Save changes
+                    save_custom_shortcuts(st.session_state.custom_shortcuts)
+                    st.success(f"Se han importado {len(valid_shortcuts)} accesos directos")
+                    st.rerun()
+                
+            except Exception as e:
+                st.error(f"Error al importar accesos directos: {str(e)}")
 
 with tab1:
     logger.info("Rendering Videos tab")
-    st.header("📺 Videos de Youtube")
+    st.header("📺 Videos")
 
-    # Function to get all available video categories
-    @st.cache_data(ttl=3600)
-    def get_video_categories():
-        """Get all available video categories from the YouTube data directory"""
-        try:
-            categories = [d for d in os.listdir(VIDEOS_DATA_DIR) 
-                         if os.path.isdir(os.path.join(VIDEOS_DATA_DIR, d)) and 
-                         os.path.exists(os.path.join(VIDEOS_DATA_DIR, d, "youtube_videos.json"))]
-            return categories
-        except Exception as e:
-            logger.error(f"Error loading video categories: {str(e)}")
-            return []
+    # Load videos data
+    dev_videos_df = get_videos_data(DEV_VIDEOS_FILE)
+    personal_dev_videos_df = get_videos_data(PERSONAL_DEV_VIDEOS_FILE)
+    economics_videos_df = get_videos_data(ECONOMICS_VIDEOS_FILE)
 
-    # Get all available categories
-    video_categories = get_video_categories()
-    
-    if not video_categories:
-        st.warning("No se encontraron categorías de videos.")
+    if dev_videos_df.empty and personal_dev_videos_df.empty and economics_videos_df.empty:
+        st.warning("No hay videos disponibles para mostrar.")
     else:
-        # Format category names for display
-        display_categories = {cat: cat.replace('_', ' ').title() for cat in video_categories}
-        
-        # --- Determine initial category and load data BEFORE creating widgets ---
-        # Use session state to keep track of category or default to first one
-        if 'selected_video_category' not in st.session_state:
-            st.session_state.selected_video_category = video_categories[0]
-        
-        initial_category = st.session_state.selected_video_category
-        initial_video_file_path = os.path.join(VIDEOS_DATA_DIR, initial_category, "youtube_videos.json")
-        videos_df = get_videos_data(initial_video_file_path) # Load initial data
-        # ---
+        # Create tabs for different video categories
+        video_tabs = st.tabs(["Desarrollo", "Desarrollo Personal", "Economía"])
 
-        # --- Filters Row ---
-        col1, col2, col3 = st.columns([2, 3, 2]) # Adjust ratios as needed
-        
-        with col1:
-            # Category selector - update session state on change
-            selected_category = st.selectbox(
-                "Categoría",
-                options=video_categories,
-                index=video_categories.index(initial_category), # Set initial index
-                format_func=lambda x: display_categories[x],
-                label_visibility="collapsed", # Hide label if title is clear enough
-                key="selected_video_category" # Use key to link to session state
-            )
-        
-        with col2:
-            # Search input
-            search_term = st.text_input("🔍 Buscar en títulos", "", placeholder="Buscar videos...")
-
-        with col3:
-            # Date range filter
-            date_range = st.date_input(
-                "Rango de fechas",
-                value=[videos_df["published_date"].min().date(), videos_df["published_date"].max().date()] if not videos_df.empty else [],
-                min_value=videos_df["published_date"].min().date() if not videos_df.empty else None,
-                max_value=videos_df["published_date"].max().date() if not videos_df.empty else None,
-                # label_visibility="collapsed" # Hide label if title is clear enough
-            )
-        # --- End Filters Row ---
-
-        # --- Reload data ONLY if category changed ---
-        if selected_category != initial_category:
-            video_file_path = os.path.join(VIDEOS_DATA_DIR, selected_category, "youtube_videos.json")
-            videos_df = get_videos_data(video_file_path)
-            # The script will rerun, and this new videos_df will be used in the next run
-        # ---
-        
-        logger.info(f"Loaded {len(videos_df)} videos from category {selected_category}")
-
-        if videos_df.empty:
-            logger.warning(f"No videos data available for category {selected_category}")
-            st.warning(f"No hay datos de videos disponibles para la categoría {display_categories[selected_category]}.")
-        else:
-            # Apply filters
-            filtered_videos_df = videos_df.copy()
-
-            if search_term:
-                filtered_videos_df = filtered_videos_df[
-                    filtered_videos_df["title"].str.contains(
-                        search_term, case=False, na=False
-                    )
-                ]
-
-            if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
-                start_date, end_date = date_range
-                if start_date and end_date: # Ensure neither date is None
-                     # Convert date objects to datetime objects for comparison
-                    start_datetime = datetime.combine(start_date, datetime.min.time())
-                    end_datetime = datetime.combine(end_date, datetime.max.time())
-                    
-                    # Ensure 'published_date' is timezone-naive or handle comparison appropriately
-                    if filtered_videos_df["published_date"].dt.tz:
-                         filtered_videos_df = filtered_videos_df[
-                            (filtered_videos_df["published_date"].dt.tz_localize(None) >= start_datetime)
-                            & (filtered_videos_df["published_date"].dt.tz_localize(None) <= end_datetime)
-                        ]
-                    else:
-                        filtered_videos_df = filtered_videos_df[
-                            (filtered_videos_df["published_date"] >= start_datetime)
-                            & (filtered_videos_df["published_date"] <= end_datetime)
-                        ]
-
-            logger.info(f"Filtered to {len(filtered_videos_df)} video results")
-
-            # Display results
-            if filtered_videos_df.empty:
-                logger.warning("No video matches found")
-                st.warning("No hay videos que coincidan con los filtros seleccionados.")
+        with video_tabs[0]:
+            st.header("Desarrollo")
+            if not dev_videos_df.empty:
+                st.dataframe(dev_videos_df, use_container_width=True)
             else:
-                # Display videos in a responsive grid format
-                num_cols = get_responsive_cols()
-                for i in range(0, len(filtered_videos_df), num_cols):
-                    cols = st.columns(num_cols)
-                    for j, (_, video) in enumerate(filtered_videos_df.iloc[i:i + num_cols].iterrows()):
-                        with cols[j % num_cols]:
-                            with st.container():
-                                st.markdown('<div class="video-card">', unsafe_allow_html=True)
-                                
-                                # Display thumbnail image if available
-                                if "thumbnail" in video and pd.notna(video["thumbnail"]):
-                                    st.image(video["thumbnail"], use_column_width=True)
-                                
-                                st.subheader(video["title"])
-                                st.write(f"**Canal:** {video.get('channel', 'N/A')}")
-                                st.write(f"**Publicado:** {video.get('published_at', 'N/A')}")
-                                if "url" in video and pd.notna(video["url"]):
-                                    st.markdown(make_clickable(video["url"], "Ver en YouTube"), unsafe_allow_html=True)
-                                
-                                st.markdown('</div>', unsafe_allow_html=True)
+                st.info("No hay videos de desarrollo disponibles.")
+
+        with video_tabs[1]:
+            st.header("Desarrollo Personal")
+            if not personal_dev_videos_df.empty:
+                st.dataframe(personal_dev_videos_df, use_container_width=True)
+            else:
+                st.info("No hay videos de desarrollo personal disponibles.")
+
+        with video_tabs[2]:
+            st.header("Economía")
+            if not economics_videos_df.empty:
+                st.dataframe(economics_videos_df, use_container_width=True)
+            else:
+                st.info("No hay videos de economía disponibles.")
 
 with tab2:
-    logger.info("Rendering News tab")
-    st.header("📰 Noticias Generative AI")
-
-    @st.cache_data(ttl=3600)
-    def get_news_data():
-        """Fetch and process news data"""
-        logger.info("Loading news data")
-        futuretools_news_df = load_data(FUTURETOOLS_NEWS_FILE)
-        ycombinator_news_df = load_data(YCOMBINATOR_NEWS_FILE)
-        medium_news_df = load_data(MEDIUM_NEWS_FILE)
-        bensbites_news_df = load_data(BENSBITES_NEWS_FILE)
-
-        if not futuretools_news_df.empty:
-            futuretools_news_df["published_date"] = pd.to_datetime(
-                futuretools_news_df["published_at"]
-            )
-
-        if not ycombinator_news_df.empty:
-            ycombinator_news_df["published_date"] = pd.to_datetime(
-                ycombinator_news_df["published_at"]
-            )
-
-        if not bensbites_news_df.empty:
-            bensbites_news_df["published_date"] = pd.to_datetime(
-                bensbites_news_df["published_at"]
-            )
-
-        return futuretools_news_df, ycombinator_news_df, medium_news_df, bensbites_news_df
-
-    # Add a button to call the script to scrape the data
-    if st.button("(Re)cargar datos de noticias"):
-        logger.info("Cargando datos de noticias...")
-        # Call the script to scrape the data and wait until it is finished
-        subprocess.run(["python3", "../../../src/etl/news/news_get_futuretools.py"])
-        subprocess.run(["python3", "../../../src/etl/news/news_get_ycombinator.py"])
-        subprocess.run(["python3", "../../../src/etl/news/news_get_genai_medium.py"])
-        subprocess.run(["python3", "../../../src/etl/news/news_get_bensbites.py"])  # Add Ben's Bites refresh
-        # Wait until the script is finished
-        logger.info("Datos de noticias cargados correctamente")
-        st.success("Datos de noticias cargados correctamente")
-        # Refresh the data
-        futuretools_news_df, ycombinator_news_df, medium_news_df, bensbites_news_df = get_news_data()
-        logger.info("Datos de noticias actualizados correctamente")
-        # Refresh the page
-        st.rerun()
+    logger.info("Rendering Noticias tab")
+    st.header("📰 Noticias")
 
     # Load news data
-    futuretools_news_df, ycombinator_news_df, medium_news_df, bensbites_news_df = get_news_data()
+    futuretools_news_df = load_data(FUTURETOOLS_NEWS_FILE)
+    ycombinator_news_df = load_data(YCOMBINATOR_NEWS_FILE)
+    medium_news_df = load_data(MEDIUM_NEWS_FILE)
+    bensbites_news_df = load_data(BENSBITES_NEWS_FILE)
 
-    logger.info(f"Loaded {len(futuretools_news_df)} futuretools news articles")
-    logger.info(f"Loaded {len(ycombinator_news_df)} ycombinator news articles")
-    logger.info(f"Loaded {len(medium_news_df)} medium news articles")
-    logger.info(f"Loaded {len(bensbites_news_df)} bensbites news articles")
-
-    # Display news data
-    if futuretools_news_df.empty and ycombinator_news_df.empty and bensbites_news_df.empty:
-        logger.warning("No news data available")
-        st.warning("No hay datos de noticias disponibles.")
+    if futuretools_news_df.empty and bensbites_news_df.empty and medium_news_df.empty:
+        st.warning("No hay noticias disponibles para mostrar.")
     else:
-        # Create subtabs for news sources
-        news_tab1, news_tab2, news_tab3 = st.tabs(["🚀 FutureTools & Ben's Bites", "📰 Hacker News", "Ⓜ️ Medium GenAI"])
+        # Create tabs for different news sources
+        news_tabs = st.tabs(["FutureTools & Ben's Bites", "Hacker News", "Medium GenAI"])
 
-        with news_tab1:
-            # st.header("Noticias de FutureTools y Ben's Bites")
+        with news_tabs[0]:
+            st.header("FutureTools & Ben's Bites")
             if futuretools_news_df.empty and bensbites_news_df.empty:
                 st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
             else:
@@ -837,8 +1211,8 @@ with tab2:
                 else:
                     st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
 
-        with news_tab2:
-            # st.header("Noticias de Hacker News")
+        with news_tabs[1]:
+            st.header("Hacker News")
             if ycombinator_news_df.empty:
                 st.warning("No hay noticias disponibles de Hacker News.")
             else:
@@ -865,8 +1239,8 @@ with tab2:
                     unsafe_allow_html=True,
                 )
 
-        with news_tab3:
-            # st.header("Noticias de Medium sobre IA")
+        with news_tabs[2]:
+            st.header("Medium GenAI")
             if medium_news_df.empty:
                 st.warning("No hay noticias disponibles de Medium sobre IA.")
             else:
@@ -894,12 +1268,6 @@ with tab2:
                     display_news_df_final.to_html(escape=False, index=False),
                     unsafe_allow_html=True,
                 )
-
-        # --- Removed the old multiselect and display logic ---
-        # selected_sources = st.multiselect(...)
-        # st.markdown('<div class="news-container">', unsafe_allow_html=True)
-        # ... (old display logic based on selected_sources) ...
-        # st.markdown('</div>', unsafe_allow_html=True)
 
 with tab3:
     logger.info("Rendering Juegos tab")
