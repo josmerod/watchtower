@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 
 BASE_OUTPUT_DIR = "data/youtube"
 MAX_VIDEOS_PER_CHANNEL = 50
-DEFAULT_DAYS_LOOKBACK = 21 # 3 weekscd 
+DEFAULT_DAYS_LOOKBACK = 21  # 3 weekscd
 
 # Channel configurations by topic
 CHANNEL_TOPICS = {
@@ -47,16 +47,16 @@ CHANNEL_TOPICS = {
             "mreflow",
             "DaveShap",
             "Deeplearningai",
-            "Augmented_AI",            
+            "Augmented_AI",
             # Software Architecture/Design
             "CodeOpinion",
             "markrichards5014",
-            "CodingTech",            
+            "CodingTech",
             # Advanced Programming
             "EmilyBache-tech-coach",
             "CodeAesthetic",
-            "NoBoilerplate",  
-            "pragmaticengineer",          
+            "NoBoilerplate",
+            "pragmaticengineer",
             # Spanish Programming Content
             "mouredev",
             "FaztCode",
@@ -73,9 +73,8 @@ CHANNEL_TOPICS = {
             "TechLead",
             "techwithsoleyman",
             # Generative AI automation
-            "nateherk"
-            "leonardogrig"
-        ]
+            "nateherkleonardogrig",
+        ],
     },
     "economics": {
         "description": "Economics and Politics",
@@ -89,8 +88,8 @@ CHANNEL_TOPICS = {
             "PolyMatter",
             "slow_start",
             "companyman114",
-            "MagnatesMedia"
-        ]
+            "MagnatesMedia",
+        ],
     },
     "personal_development": {
         "description": "Personal Development",
@@ -100,39 +99,59 @@ CHANNEL_TOPICS = {
             "WiseSleep",
             "TED",
             "SUCCESSCHASERS",
-            "HowtoADHD"
-        ]
+            "HowtoADHD",
+        ],
     },
     "sleepcore": {
         "description": "Music for sleeping",
         "channels": [
             "smarterwhileyousleep",
             "heavenlyeyes",
-
-        ]
-    }
+        ],
+    },
+    "cooking": {
+        "description": "Cooking",
+        "channels": [
+            "FornerDeAlella",
+            "superpilopi",
+        ],
+    },
+    "food_reviews": {
+        "description": "Food Reviews",
+        "channels": [
+            "peldanyos",
+            "SezarBlue",
+            "esttikPlus",
+        ],
+    },
 }
 
-def get_channel_videos_by_id(channel_handle: str, published_after: str = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat()) -> List[Dict]:
+
+def get_channel_videos_by_id(
+    channel_handle: str,
+    published_after: str = (
+        datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)
+    ).isoformat(),
+) -> List[Dict]:
     """Fetch videos from a channel using yt-dlp."""
     try:
         ydl_opts = {
-            'extract_flat': True,  # Do not download videos
-            'quiet': True,
-            'no_warnings': True,
-            'ignoreerrors': True,
-            'playlist_items': f'1-{MAX_VIDEOS_PER_CHANNEL}'  # Limit number of videos to fetch
+            "extract_flat": True,  # Do not download videos
+            "quiet": True,
+            "no_warnings": True,
+            "ignoreerrors": True,
+            "playlist_items": f"1-{MAX_VIDEOS_PER_CHANNEL}",  # Limit number of videos to fetch
         }
-        
+
         videos = []
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             # Get channel URL - try both @ handle and direct channel URL formats
             channel_urls = [
                 f"https://www.youtube.com/@{channel_handle}/videos",
                 f"https://www.youtube.com/c/{channel_handle}/videos",
-                f"https://www.youtube.com/channel/{channel_handle}/videos"
+                f"https://www.youtube.com/channel/{channel_handle}/videos",
             ]
-            
+
             channel_info = None
             for url in channel_urls:
                 try:
@@ -141,43 +160,57 @@ def get_channel_videos_by_id(channel_handle: str, published_after: str = (dateti
                         break
                 except Exception:
                     continue
-            
+
             if not channel_info:
                 logger.error(f"No se pudo encontrar el canal: {channel_handle}")
                 return []
-            
+
             # Process videos
-            for entry in channel_info.get('entries', []):
+            for entry in channel_info.get("entries", []):
                 try:
                     if not entry:
                         continue
-                        
+
                     # Get detailed video information
                     video_info = ydl.extract_info(
-                        f"https://www.youtube.com/watch?v={entry['id']}", 
-                        download=False
+                        f"https://www.youtube.com/watch?v={entry['id']}", download=False
                     )
-                    
+
                     if not video_info:
                         continue
-                    
+
                     # Convert timestamp to ISO format
-                    published_at = datetime.fromtimestamp(
-                        video_info.get('timestamp', 0)
-                    ).isoformat() + "Z"
-                    
+                    published_at = (
+                        datetime.fromtimestamp(
+                            video_info.get("timestamp", 0)
+                        ).isoformat()
+                        + "Z"
+                    )
+
                     # Skip if video is older than published_after or newer than published_before
                     if published_at < published_after:
                         break
-                        
+
                     video_data = {
-                        "title": video_info.get('title', ''),
-                        "url": video_info.get('webpage_url', ''),
-                        "channel": video_info.get('channel', ''),
+                        "title": video_info.get("title", ""),
+                        "url": video_info.get("webpage_url", ""),
+                        "channel": video_info.get("channel", ""),
                         "published_at": published_at,
-                        "description": video_info.get('description', ''),
-                        "views": video_info.get('view_count', 0),
-                        "length": video_info.get('duration', 0),
+                        "description": video_info.get("description", ""),
+                        "views": video_info.get("view_count", 0),
+                        "length": video_info.get("duration", 0),
+                        "thumbnail": video_info.get(
+                            "thumbnail",
+                            # Try to get the highest quality thumbnail available
+                            next(
+                                (
+                                    t["url"]
+                                    for t in reversed(video_info.get("thumbnails", []))
+                                    if "url" in t
+                                ),
+                                "",
+                            ),
+                        ),
                         "metadata": {
                             "api_source": "yt_dlp",
                             "processed_at": datetime.now().isoformat(),
@@ -185,11 +218,13 @@ def get_channel_videos_by_id(channel_handle: str, published_after: str = (dateti
                     }
                     videos.append(video_data)
                     logger.debug(f"Video procesado: {video_data['title']}")
-                    
+
                 except Exception as e:
-                    logger.error(f"Error processing video {entry.get('id', 'unknown')}: {str(e)}")
+                    logger.error(
+                        f"Error processing video {entry.get('id', 'unknown')}: {str(e)}"
+                    )
                     continue
-                    
+
         return videos
 
     except Exception as e:
@@ -197,7 +232,9 @@ def get_channel_videos_by_id(channel_handle: str, published_after: str = (dateti
         return []
 
 
-def process_youtube_channels(channel_handles: List[str], published_after: str = None) -> List[Dict]:
+def process_youtube_channels(
+    channel_handles: List[str], published_after: str = None
+) -> List[Dict]:
     """Process multiple YouTube channels and combine their videos."""
     all_videos = []
 
@@ -219,37 +256,39 @@ def process_youtube_channels(channel_handles: List[str], published_after: str = 
 def process_topic(topic: str, channels: List[str], published_after: str = None):
     """Process a specific topic and save its results to separate files."""
     logger.info(f"Procesando tema: {topic}")
-    
+
     # Create topic-specific output directory
     project_root = get_project_root()
     output_dir = os.path.join(project_root, BASE_OUTPUT_DIR, topic)
     ensure_directories([os.path.join(BASE_OUTPUT_DIR, topic)])
-    
+
     # Process channels for this topic
     processed_videos = process_youtube_channels(channels, published_after)
-    
+
     if not processed_videos:
-        logger.warning(f"No se recuperaron videos para el tema {topic}, el proceso ETL no puede continuar")
+        logger.warning(
+            f"No se recuperaron videos para el tema {topic}, el proceso ETL no puede continuar"
+        )
         return
-    
+
     # Order by published_at descending (newest first)
     processed_videos = sorted(
         processed_videos, key=lambda x: x["published_at"], reverse=True
     )
-    
+
     # Save to JSON file
     json_file = os.path.join(output_dir, "youtube_videos.json")
     with open(json_file, "w") as f:
         json.dump(processed_videos, f, indent=2)
     logger.debug(f"Datos JSON guardados en {json_file}")
-    
+
     # Also save as CSV for easier viewing (drop description to avoid CSV formatting issues)
     csv_file = os.path.join(output_dir, "youtube_videos.csv")
     pd.DataFrame(processed_videos).drop(columns=["description"]).to_csv(
         csv_file, index=False
     )
     logger.debug(f"Datos CSV guardados en {csv_file}")
-    
+
     logger.info(
         f"Guardados {len(processed_videos)} videos del tema {topic} en {json_file} y {csv_file}"
     )
@@ -262,22 +301,20 @@ def main(topics: List[str] = None):
     try:
         # Ensure base output directory exists
         ensure_directories([BASE_OUTPUT_DIR])
-        
+
         # Define date range for videos
-        published_after = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat()
-        
+        published_after = (
+            datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)
+        ).isoformat()
+
         # If topics is None or empty, process all topics
         if not topics:
             topics = CHANNEL_TOPICS.keys()
-        
+
         # Process each specified topic
         for topic in topics:
             if topic in CHANNEL_TOPICS:
-                process_topic(
-                    topic, 
-                    CHANNEL_TOPICS[topic]["channels"],
-                    published_after
-                )
+                process_topic(topic, CHANNEL_TOPICS[topic]["channels"], published_after)
             else:
                 logger.warning(f"Tema no reconocido: {topic}")
 
@@ -287,12 +324,13 @@ def main(topics: List[str] = None):
 
 if __name__ == "__main__":
     logger.info("Script ETL de YouTube iniciado")
-    
+
     # Parse command line arguments for topics if provided
     import argparse
-    parser = argparse.ArgumentParser(description='Process YouTube channels by topic')
-    parser.add_argument('--topics', nargs='+', help='Topics to process (default: all)')
+
+    parser = argparse.ArgumentParser(description="Process YouTube channels by topic")
+    parser.add_argument("--topics", nargs="+", help="Topics to process (default: all)")
     args = parser.parse_args()
-    
+
     main(args.topics)
     logger.info("Script ETL de YouTube completado")
