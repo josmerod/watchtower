@@ -11,6 +11,7 @@ start /B python src/etl/news/news_get_futuretools.py
 start /B python src/etl/news/news_get_genai_medium.py
 start /B python src/etl/news/news_get_bensbites.py
 start /B python src/etl/news/news_get_planesvalencia.py
+start /B python src/etl/news/news_get_gooddevs.py
 start /B python src/etl/goldigging/goldigging_youtube_posts.py
 start /B python src/watchers/ms_skills_watcher.py --once
 

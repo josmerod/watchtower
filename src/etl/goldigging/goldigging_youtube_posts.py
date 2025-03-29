@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 
 BASE_OUTPUT_DIR = "data/youtube"
 MAX_VIDEOS_PER_CHANNEL = 50
-DEFAULT_DAYS_LOOKBACK = 21  # 3 weekscd
+DEFAULT_DAYS_LOOKBACK = 42  # 6 weeks
 
 # Channel configurations by topic
 CHANNEL_TOPICS = {
@@ -100,6 +100,7 @@ CHANNEL_TOPICS = {
             "TED",
             "SUCCESSCHASERS",
             "HowtoADHD",
+            "James_Lim",
         ],
     },
     "sleepcore": {
@@ -122,6 +123,15 @@ CHANNEL_TOPICS = {
             "peldanyos",
             "SezarBlue",
             "esttikPlus",
+        ],
+    },
+    "soundtowork": {
+        "description": "Sound to work",
+        "channels": [
+            "mugiwave",
+            "OriondeMirage",
+            "toiryusei",
+
         ],
     },
 }

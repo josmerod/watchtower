@@ -27,6 +27,7 @@ run_etl "src/etl/news/news_get_futuretools.py" && pids+=($!)
 run_etl "src/etl/news/news_get_genai_medium.py" && pids+=($!)
 run_etl "src/etl/news/news_get_bensbites.py" && pids+=($!)
 run_etl "src/etl/news/news_get_planesvalencia.py" && pids+=($!)
+run_etl "src/etl/news/news_get_gooddevs.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_youtube_posts.py" && pids+=($!)
 run_etl "src/watchers/ms_skills_watcher.py" && pids+=($!)
 
