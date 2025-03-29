@@ -55,7 +55,8 @@ CHANNEL_TOPICS = {
             # Advanced Programming
             "EmilyBache-tech-coach",
             "CodeAesthetic",
-            "NoBoilerplate",            
+            "NoBoilerplate",  
+            "pragmaticengineer",          
             # Spanish Programming Content
             "mouredev",
             "FaztCode",
@@ -100,6 +101,14 @@ CHANNEL_TOPICS = {
             "TED",
             "SUCCESSCHASERS",
             "HowtoADHD"
+        ]
+    },
+    "sleepcore": {
+        "description": "Music for sleeping",
+        "channels": [
+            "smarterwhileyousleep",
+            "heavenlyeyes",
+
         ]
     }
 }
