@@ -116,26 +116,29 @@ def render(logger=None):
                 cols = st.columns(num_cols)
                 for j, (_, event) in enumerate(filtered_events_df.iloc[i:i + num_cols].iterrows()):
                     with cols[j % num_cols]:
-                        with st.container():
-                            st.markdown(f"<div class='card'>", unsafe_allow_html=True)
-                            st.subheader(event["title"])
-                            
-                            # Display dates if available
-                            if pd.notna(event.get("date_text")):
-                                st.write(f"**Fechas:** {event.get('date_text', 'No especificado')}")
-                            
-                            # Display category if available
-                            if pd.notna(event.get("category")) and event.get("category") != "":
-                                st.write(f"**Categoría:** {event.get('category', 'No especificado')}")
-                            
-                            # Display source
-                            st.write(f"**Fuente:** {event.get('source', 'No especificado')}")
-                            
-                            # Add link to event
-                            if "url" in event and pd.notna(event["url"]):
-                                st.markdown(make_clickable(event["url"], "Ver evento"), unsafe_allow_html=True)
-                            
-                            st.markdown("</div>", unsafe_allow_html=True)
+                        # Build the entire card HTML string
+                        card_html = f"<div class='card'>"
+                        card_html += f"<h3>{event['title']}</h3>" # Use h3 for consistency
+                        
+                        # Display dates if available
+                        if pd.notna(event.get("date_text")):
+                            card_html += f"<p><strong>Fechas:</strong> {event.get('date_text', 'No especificado')}</p>"
+                        
+                        # Display category if available
+                        if pd.notna(event.get("category")) and event.get("category") != "":
+                            card_html += f"<p><strong>Categoría:</strong> {event.get('category', 'No especificado')}</p>"
+                        
+                        # Display source
+                        card_html += f"<p><strong>Fuente:</strong> {event.get('source', 'No especificado')}</p>"
+                        
+                        # Add link to event
+                        if "url" in event and pd.notna(event["url"]):
+                            card_html += make_clickable(event["url"], "Ver evento") # Already returns HTML
+                        
+                        card_html += "</div>"
+                        
+                        # Render the complete card
+                        st.markdown(card_html, unsafe_allow_html=True)
             
             # Provide option to view as table
             if st.checkbox("Ver como tabla"):

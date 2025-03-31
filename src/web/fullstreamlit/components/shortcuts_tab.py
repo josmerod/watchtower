@@ -10,6 +10,30 @@ import os
 # Define paths
 SHORTCUTS_DATA_DIR = "../../../data/shortcuts"
 CUSTOM_SHORTCUTS_FILE = os.path.join(SHORTCUTS_DATA_DIR, "custom_shortcuts.json")
+PREDEFINED_SHORTCUTS_FILE = os.path.join(SHORTCUTS_DATA_DIR, "predefined_shortcuts.json")
+
+def load_predefined_shortcuts(logger=None):
+    """Load predefined shortcuts from JSON file"""
+    try:
+        # Create directory if it doesn't exist
+        os.makedirs(SHORTCUTS_DATA_DIR, exist_ok=True)
+        
+        if os.path.exists(PREDEFINED_SHORTCUTS_FILE):
+            if logger:
+                logger.info(f"Loading predefined shortcuts from {PREDEFINED_SHORTCUTS_FILE}")
+            with open(PREDEFINED_SHORTCUTS_FILE, "r", encoding="utf-8") as f:
+                shortcuts = json.load(f)
+            if logger:
+                logger.info(f"Successfully loaded predefined shortcuts with {len(shortcuts)} categories")
+            return shortcuts
+        else:
+            if logger:
+                logger.error(f"Predefined shortcuts file not found at {PREDEFINED_SHORTCUTS_FILE}")
+            return {}
+    except Exception as e:
+        if logger:
+            logger.error(f"Error loading predefined shortcuts: {str(e)}")
+        return {}
 
 # Local versions of loader functions
 def load_custom_shortcuts(logger=None):
@@ -53,18 +77,20 @@ def save_custom_shortcuts(shortcuts, logger=None):
             logger.error(f"Error saving custom shortcuts: {str(e)}")
         return False
 
-def render(SHORTCUTS, logger=None):
+def render(logger=None):
     """Render the shortcuts tab"""
     st.header("🔖 Accesos Directos")
     
     st.markdown("""
     <div class="card" style="background-color: #2D2B55; padding: 18px; border-radius: 8px; border-left: 5px solid #A37FFF; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);">
         <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #E2E8F0;">
-            Enlaces rápidos a sitios web y herramientas útiles. Personaliza esta sección editando la variable <code>SHORTCUTS</code> 
-            en el código fuente o añade enlaces personalizados usando el panel inferior.
+            Enlaces rápidos a sitios web y herramientas útiles. Personaliza esta sección añadiendo enlaces personalizados usando el panel inferior.
         </p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Load predefined shortcuts
+    predefined_shortcuts = load_predefined_shortcuts(logger)
     
     # Ensure custom_shortcuts exists in session state
     if 'custom_shortcuts' not in st.session_state:
@@ -75,7 +101,7 @@ def render(SHORTCUTS, logger=None):
     
     # Combine predefined and custom shortcuts for search
     all_shortcuts = []
-    for category, shortcuts in SHORTCUTS.items():
+    for category, shortcuts in predefined_shortcuts.items():
         for shortcut in shortcuts:
             shortcut_with_category = shortcut.copy()
             shortcut_with_category['category'] = category
@@ -120,13 +146,13 @@ def render(SHORTCUTS, logger=None):
         col1, col2, col3 = st.columns(3)
         
         # Combine predefined and custom categories
-        all_categories = list(SHORTCUTS.keys())
+        all_categories = list(predefined_shortcuts.keys())
         
         # Add custom categories that aren't in predefined ones
         custom_categories = set()
         for shortcut in st.session_state.custom_shortcuts:
             category = shortcut.get("category", "Personalizados")
-            if category not in SHORTCUTS:
+            if category not in predefined_shortcuts:
                 custom_categories.add(category)
         
         all_categories.extend(sorted(list(custom_categories)))
@@ -142,8 +168,8 @@ def render(SHORTCUTS, logger=None):
                 st.markdown(f'<h3>{category}</h3>', unsafe_allow_html=True)
                 
                 # Display predefined shortcuts for this category
-                if category in SHORTCUTS:
-                    for shortcut in SHORTCUTS[category]:
+                if category in predefined_shortcuts:
+                    for shortcut in predefined_shortcuts[category]:
                         st.markdown(f'''
                         <a href="{shortcut['url']}" target="_blank" style="text-decoration: none;">
                             <div class="shortcut-item">
@@ -162,7 +188,7 @@ def render(SHORTCUTS, logger=None):
                 
                 for i, shortcut in enumerate(custom_shortcuts_in_category):
                     # For predefined categories, no delete button
-                    if category in SHORTCUTS:
+                    if category in predefined_shortcuts:
                         st.markdown(f'''
                         <a href="{shortcut['url']}" target="_blank" style="text-decoration: none;">
                             <div class="shortcut-item">
@@ -209,7 +235,7 @@ def render(SHORTCUTS, logger=None):
             st.subheader("Añadir enlace personalizado")
             
             # Get existing categories from predefined shortcuts
-            existing_categories = list(SHORTCUTS.keys()) + ["Personalizados", "Nueva categoría..."]
+            existing_categories = list(predefined_shortcuts.keys()) + ["Personalizados", "Nueva categoría..."]
             
             # Get custom categories from custom shortcuts
             custom_categories = set()
@@ -287,7 +313,7 @@ def render(SHORTCUTS, logger=None):
                 shortcuts_by_category[category].append(shortcut_with_index)
             
             # Get existing categories from predefined shortcuts for moving items
-            existing_categories = list(SHORTCUTS.keys()) + ["Personalizados"] + list(shortcuts_by_category.keys())
+            existing_categories = list(predefined_shortcuts.keys()) + ["Personalizados"] + list(shortcuts_by_category.keys())
             existing_categories = sorted(list(set(existing_categories)))
             
             # Display shortcuts by category with organization options
