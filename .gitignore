@@ -24,3 +24,4 @@ src/web/fullstreamlit/data/*
 src/utils/__pycache__/*
 src/utils/__pycache__/file_system.cpython-313.pyc
 src/utils/__pycache__/logging.cpython-313.pyc
+!data/shortcuts/predefined_shortcuts.json
