@@ -86,7 +86,6 @@ def get_main_style():
         width: 100%;
         box-sizing: border-box;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        height: 100%;
     }
     
     .video-card:hover {

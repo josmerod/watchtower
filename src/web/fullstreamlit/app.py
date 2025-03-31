@@ -132,31 +132,6 @@ def get_game_data(_logger=None):
         _logger.info("Data processing completed")
     return deals_df, bundles_df, giveaways_df
 
-# Define shortcuts data structure - this will be moved to a config file in a future update
-SHORTCUTS = {
-    "Development": [
-        {"name": "GitHub", "url": "https://github.com/", "icon": "🐙", "description": "Code hosting platform for version control and collaboration"},
-        {"name": "Stack Overflow", "url": "https://stackoverflow.com/", "icon": "📚", "description": "Community for developers to learn and share knowledge"},
-        {"name": "VS Code", "url": "https://vscode.dev/", "icon": "💻", "description": "Online code editor based on VS Code"}
-    ],
-    "AI Tools": [
-        {"name": "ChatGPT", "url": "https://chat.openai.com/", "icon": "🤖", "description": "AI assistant for natural language conversations"},
-        {"name": "Hugging Face", "url": "https://huggingface.co/", "icon": "🤗", "description": "AI model repository and community"},
-        {"name": "Cursor", "url": "https://cursor.sh/", "icon": "✨", "description": "AI-first code editor"},
-        {"name": "Midjourney", "url": "https://www.midjourney.com/", "icon": "🎨", "description": "AI image generation platform"}
-    ],
-    "Learning Resources": [
-        {"name": "Medium", "url": "https://medium.com/", "icon": "📝", "description": "Platform for reading and writing articles"},
-        {"name": "YouTube", "url": "https://www.youtube.com/", "icon": "📺", "description": "Video platform with vast educational content"},
-        {"name": "Coursera", "url": "https://www.coursera.org/", "icon": "🎓", "description": "Online courses from top universities"}
-    ],
-    "Productivity": [
-        {"name": "Notion", "url": "https://www.notion.so/", "icon": "📋", "description": "All-in-one workspace for notes and tasks"},
-        {"name": "Trello", "url": "https://trello.com/", "icon": "📊", "description": "Visual tool for managing projects and tasks"},
-        {"name": "Google Drive", "url": "https://drive.google.com/", "icon": "📁", "description": "Cloud storage and file sharing"}
-    ]
-}
-
 # Initialize logger for the Streamlit app
 logger = get_logger("GameDealsApp")
 
@@ -215,7 +190,7 @@ tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 # Render each tab
 with tab0:
     logger.info("Rendering Shortcuts tab")
-    shortcuts_tab.render(SHORTCUTS, logger)
+    shortcuts_tab.render(logger)
 
 with tab1:
     logger.info("Rendering Videos tab")

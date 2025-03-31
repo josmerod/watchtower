@@ -4,6 +4,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 from typing import Dict, List
+import concurrent.futures
 
 import yt_dlp
 import pandas as pd
@@ -24,7 +25,7 @@ DEFAULT_DAYS_LOOKBACK = 42  # 6 weeks
 
 # Channel configurations by topic
 CHANNEL_TOPICS = {
-    "dev": {
+    "aaa-dev": {
         "description": "Programming and Development",
         "channels": [
             # Popular Programming Tutorials
@@ -76,7 +77,7 @@ CHANNEL_TOPICS = {
             "nateherkleonardogrig",
         ],
     },
-    "economics": {
+    "aa-economics": {
         "description": "Economics and Politics",
         "channels": [
             # Spanish dissertions
@@ -91,7 +92,7 @@ CHANNEL_TOPICS = {
             "MagnatesMedia",
         ],
     },
-    "personal_development": {
+    "aa-personal_development": {
         "description": "Personal Development",
         "channels": [
             "hubermanlab",
@@ -103,21 +104,21 @@ CHANNEL_TOPICS = {
             "James_Lim",
         ],
     },
-    "sleepcore": {
+    "z-sleepcore": {
         "description": "Music for sleeping",
         "channels": [
             "smarterwhileyousleep",
             "heavenlyeyes",
         ],
     },
-    "cooking": {
+    "zz-cooking": {
         "description": "Cooking",
         "channels": [
             "FornerDeAlella",
             "superpilopi",
         ],
     },
-    "food_reviews": {
+    "zz-food_reviews": {
         "description": "Food Reviews",
         "channels": [
             "peldanyos",
@@ -125,7 +126,7 @@ CHANNEL_TOPICS = {
             "esttikPlus",
         ],
     },
-    "soundtowork": {
+    "z-soundtowork": {
         "description": "Sound to work",
         "channels": [
             "mugiwave",
@@ -245,21 +246,35 @@ def get_channel_videos_by_id(
 def process_youtube_channels(
     channel_handles: List[str], published_after: str = None
 ) -> List[Dict]:
-    """Process multiple YouTube channels and combine their videos."""
+    """Process multiple YouTube channels concurrently and combine their videos."""
     all_videos = []
+    # Determine a reasonable number of workers, e.g., based on CPU cores or a fixed number
+    # Let's start with a sensible default, adjust as needed based on performance
+    max_workers = min(10, os.cpu_count() + 4) # Example: Use up to 10 workers
 
-    for handle in channel_handles:
-        try:
-            logger.info(f"Procesando canal {handle}")
-            channel_videos = get_channel_videos_by_id(handle, published_after)
-            all_videos.extend(channel_videos)
-            logger.info(
-                f"Procesados con éxito {len(channel_videos)} videos de {handle}"
-            )
-        except Exception as e:
-            logger.error(f"Error al procesar el canal {handle}: {str(e)}")
-            continue
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Create a future for each channel processing task
+        future_to_channel = {
+            executor.submit(get_channel_videos_by_id, handle, published_after): handle
+            for handle in channel_handles
+        }
 
+        for future in concurrent.futures.as_completed(future_to_channel):
+            handle = future_to_channel[future]
+            try:
+                channel_videos = future.result()
+                if channel_videos:
+                    all_videos.extend(channel_videos)
+                    logger.info(
+                        f"Processed successfully {len(channel_videos)} videos from {handle}"
+                    )
+                else:
+                    logger.info(f"No new videos found for {handle}")
+            except Exception as e:
+                logger.error(f"Error processing channel {handle}: {str(e)}")
+                continue # Continue with other channels even if one fails
+
+    logger.info(f"Finished processing all channels. Total videos collected: {len(all_videos)}")
     return all_videos
 
 

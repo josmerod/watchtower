@@ -47,9 +47,9 @@ def render(deals_df, bundles_df, giveaways_df, logger=None):
 
 def display_deals(deals_df):
     """Display game deals"""
-    st.markdown('<div class="deals-column">', unsafe_allow_html=True)
-    st.markdown('<div class="deals-card">', unsafe_allow_html=True)
-    st.header("Ofertas de Juegos")
+    deals_html = '<div class="deals-column"><div class="deals-card">'
+    deals_html += '<h2>Ofertas de Juegos</h2>'
+
     if not deals_df.empty:
         filtered_deals_df = deals_df.copy()
         filtered_deals_df = filtered_deals_df.sort_values(by="discount_value", ascending=False)
@@ -72,21 +72,20 @@ def display_deals(deals_df):
             inplace=True,
         )
         
-        st.markdown(
-            display_deals_df.to_html(escape=False, index=False),
-            unsafe_allow_html=True,
-        )
+        deals_html += display_deals_df.to_html(escape=False, index=False)
+
     else:
-        st.warning("No hay ofertas disponibles.")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        deals_html += '<p>No hay ofertas disponibles.</p>'
+    
+    deals_html += '</div></div>'
+    st.markdown(deals_html, unsafe_allow_html=True)
 
 
 def display_bundles(bundles_df):
     """Display game bundles"""
-    st.markdown('<div class="deals-column">', unsafe_allow_html=True)
-    st.markdown('<div class="deals-card">', unsafe_allow_html=True)
-    st.header("Paquetes de Juegos")
+    bundles_html = '<div class="deals-column"><div class="deals-card">'
+    bundles_html += '<h2>Paquetes de Juegos</h2>'
+
     if not bundles_df.empty:
         filtered_bundles_df = bundles_df.copy()
         filtered_bundles_df = filtered_bundles_df.sort_values(by="published_date", ascending=False)
@@ -113,21 +112,20 @@ def display_bundles(bundles_df):
             inplace=True,
         )
         
-        st.markdown(
-            display_bundles_df.to_html(escape=False, index=False),
-            unsafe_allow_html=True,
-        )
+        bundles_html += display_bundles_df.to_html(escape=False, index=False)
+        
     else:
-        st.warning("No hay paquetes disponibles.")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        bundles_html += '<p>No hay paquetes disponibles.</p>'
+    
+    bundles_html += '</div></div>'
+    st.markdown(bundles_html, unsafe_allow_html=True)
 
 
 def display_giveaways(giveaways_df):
     """Display game giveaways"""
-    st.markdown('<div class="deals-column">', unsafe_allow_html=True)
-    st.markdown('<div class="deals-card">', unsafe_allow_html=True)
-    st.header("Juegos Gratuitos")
+    giveaways_html = '<div class="deals-column"><div class="deals-card">'
+    giveaways_html += '<h2>Juegos Gratuitos</h2>'
+
     if not giveaways_df.empty:
         filtered_giveaways_df = giveaways_df.copy()
         
@@ -149,11 +147,10 @@ def display_giveaways(giveaways_df):
             inplace=True,
         )
         
-        st.markdown(
-            display_giveaways_df.to_html(escape=False, index=False),
-            unsafe_allow_html=True,
-        )
+        giveaways_html += display_giveaways_df.to_html(escape=False, index=False)
+
     else:
-        st.warning("No hay juegos gratuitos disponibles.")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True) 
+        giveaways_html += '<p>No hay juegos gratuitos disponibles.</p>'
+    
+    giveaways_html += '</div></div>'
+    st.markdown(giveaways_html, unsafe_allow_html=True) 
