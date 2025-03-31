@@ -11,43 +11,50 @@ def render(deals_df, bundles_df, giveaways_df, logger=None):
     """Render the games tab"""
     st.header("🎮 Juegos")
 
-    if deals_df.empty:
-        logger.warning("No deals data available to display")
-        st.warning("No hay datos de ofertas disponibles.")
-    else:
-        # Calculate summary statistics
-        total_deals = len(deals_df)
-        total_bundles = len(bundles_df)
-        total_giveaways = len(giveaways_df)
+    # Check if all dataframes are empty
+    if deals_df.empty and bundles_df.empty and giveaways_df.empty:
+        if logger:
+            logger.warning("No game data available to display (deals, bundles, giveaways).")
+        st.warning("No hay datos de juegos disponibles para mostrar.")
+        return # Exit if no data
 
-        # Add table selector
-        selected_tables = st.multiselect(
-            "Selecciona las tablas a mostrar",
-            ["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
-            default=["Ofertas de Juegos", "Paquetes de Juegos", "Juegos Gratuitos"],
-            help="Elige qué tablas quieres ver en el panel"
-        )
+    # Create tabs for different game sections
+    tab_titles = []
+    if not giveaways_df.empty:
+        tab_titles.append("Juegos Gratuitos")
+    if not bundles_df.empty:
+        tab_titles.append("Paquetes de Juegos")
+    if not deals_df.empty:
+        tab_titles.append("Ofertas de Juegos")
 
-        st.markdown('<div class="deals-container">', unsafe_allow_html=True)
+    if not tab_titles: # Should not happen if the initial check passed, but good practice
+        st.warning("No hay datos de juegos válidos para mostrar en las pestañas.")
+        return
 
-        # Display deals in responsive columns
-        if "Ofertas de Juegos" in selected_tables:
-            display_deals(deals_df)
+    tabs = st.tabs(tab_titles)
+    tab_map = {title: tab for title, tab in zip(tab_titles, tabs)}
 
-        # Display bundles in responsive columns
-        if "Paquetes de Juegos" in selected_tables:
-            display_bundles(bundles_df)
-
-        # Display giveaways in responsive columns
-        if "Juegos Gratuitos" in selected_tables:
+    # Display content within each tab
+    if "Juegos Gratuitos" in tab_map:
+        with tab_map["Juegos Gratuitos"]:
             display_giveaways(giveaways_df)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+    if "Paquetes de Juegos" in tab_map:
+        with tab_map["Paquetes de Juegos"]:
+            display_bundles(bundles_df)
+
+    if "Ofertas de Juegos" in tab_map:
+        with tab_map["Ofertas de Juegos"]:
+            display_deals(deals_df)
+
+    # Removed the multiselect and the old sequential display logic.
+    # The container div is also removed as tabs handle the layout.
 
 
 def display_deals(deals_df):
     """Display game deals"""
-    deals_html = '<div class="deals-column"><div class="deals-card">'
+    # Keep the card styling, remove the outer column div
+    deals_html = '<div class="deals-card">'
     deals_html += '<h2>Ofertas de Juegos</h2>'
 
     if not deals_df.empty:
@@ -76,14 +83,16 @@ def display_deals(deals_df):
 
     else:
         deals_html += '<p>No hay ofertas disponibles.</p>'
-    
-    deals_html += '</div></div>'
+
+    # Close the card div
+    deals_html += '</div>'
     st.markdown(deals_html, unsafe_allow_html=True)
 
 
 def display_bundles(bundles_df):
     """Display game bundles"""
-    bundles_html = '<div class="deals-column"><div class="deals-card">'
+    # Keep the card styling, remove the outer column div
+    bundles_html = '<div class="deals-card">'
     bundles_html += '<h2>Paquetes de Juegos</h2>'
 
     if not bundles_df.empty:
@@ -116,14 +125,16 @@ def display_bundles(bundles_df):
         
     else:
         bundles_html += '<p>No hay paquetes disponibles.</p>'
-    
-    bundles_html += '</div></div>'
+
+    # Close the card div
+    bundles_html += '</div>'
     st.markdown(bundles_html, unsafe_allow_html=True)
 
 
 def display_giveaways(giveaways_df):
     """Display game giveaways"""
-    giveaways_html = '<div class="deals-column"><div class="deals-card">'
+    # Keep the card styling, remove the outer column div
+    giveaways_html = '<div class="deals-card">'
     giveaways_html += '<h2>Juegos Gratuitos</h2>'
 
     if not giveaways_df.empty:
@@ -151,6 +162,7 @@ def display_giveaways(giveaways_df):
 
     else:
         giveaways_html += '<p>No hay juegos gratuitos disponibles.</p>'
-    
-    giveaways_html += '</div></div>'
+
+    # Close the card div
+    giveaways_html += '</div>'
     st.markdown(giveaways_html, unsafe_allow_html=True) 
