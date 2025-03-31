@@ -14,11 +14,13 @@ FUTURETOOLS_NEWS_DATA_DIR = "../../../data/futuretools"
 YCOMBINATOR_NEWS_DATA_DIR = "../../../data/hackernews"
 MEDIUM_NEWS_DATA_DIR = "../../../data/medium_genai"
 BENSBITES_NEWS_DATA_DIR = "../../../data/bensbites"
+GOODDEVS_NEWS_DATA_DIR = "../../../data/gooddevs"
 
 FUTURETOOLS_NEWS_FILE = os.path.join(FUTURETOOLS_NEWS_DATA_DIR, "futuretoolsnews.json")
 YCOMBINATOR_NEWS_FILE = os.path.join(YCOMBINATOR_NEWS_DATA_DIR, "hackernews.json")
 MEDIUM_NEWS_FILE = os.path.join(MEDIUM_NEWS_DATA_DIR, "medium_genai.json")
 BENSBITES_NEWS_FILE = os.path.join(BENSBITES_NEWS_DATA_DIR, "bensbites_news.json")
+GOODDEVS_NEWS_FILE = os.path.join(GOODDEVS_NEWS_DATA_DIR, "gooddevs_latest.json")
 
 # Local version of load_data
 def load_data(file_path, _logger=None):
@@ -53,12 +55,13 @@ def render(logger=None):
     ycombinator_news_df = load_data(YCOMBINATOR_NEWS_FILE, _logger=logger)
     medium_news_df = load_data(MEDIUM_NEWS_FILE, _logger=logger)
     bensbites_news_df = load_data(BENSBITES_NEWS_FILE, _logger=logger)
+    gooddevs_df = load_data(GOODDEVS_NEWS_FILE, _logger=logger)
 
-    if futuretools_news_df.empty and bensbites_news_df.empty and medium_news_df.empty:
+    if futuretools_news_df.empty and bensbites_news_df.empty and medium_news_df.empty and gooddevs_df.empty:
         st.warning("No hay noticias disponibles para mostrar.")
     else:
         # Create tabs for different news sources
-        news_tabs = st.tabs(["FutureTools & Ben's Bites", "Hacker News", "Medium GenAI"])
+        news_tabs = st.tabs(["FutureTools & Ben's Bites", "Hacker News", "Medium GenAI", "Good Devs"])
 
         with news_tabs[0]:
             render_futuretools_bensbites(futuretools_news_df, bensbites_news_df)
@@ -68,6 +71,9 @@ def render(logger=None):
 
         with news_tabs[2]:
             render_medium(medium_news_df)
+
+        with news_tabs[3]:
+            render_gooddevs(gooddevs_df)
 
 
 def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
@@ -216,5 +222,63 @@ def render_medium(medium_news_df):
         # Display the final DataFrame as HTML
         st.markdown(
             display_news_df_final.to_html(escape=False, index=False),
+            unsafe_allow_html=True,
+        )
+
+
+# New function to render Good Devs blog posts
+def render_gooddevs(gooddevs_df):
+    """Render Good Devs blog posts"""
+    st.header("Good Devs")
+    if gooddevs_df.empty:
+        st.warning("No hay posts disponibles de Good Devs.")
+    else:
+        display_df = gooddevs_df.copy() # Work with a copy
+
+        # Ensure we have a consistent date column and sort
+        date_col_present = False
+        sort_col = None
+        if "published_date" in display_df.columns:
+            display_df["published_date"] = pd.to_datetime(display_df["published_date"], errors="coerce")
+            display_df.dropna(subset=["published_date"], inplace=True) # Remove rows where conversion failed
+            if not display_df.empty:
+                 display_df = display_df.sort_values("published_date", ascending=False)
+                 sort_col = "published_date"
+                 date_col_present = True
+        elif "published_at" in display_df.columns:
+            display_df["published_at"] = pd.to_datetime(display_df["published_at"], errors="coerce")
+            display_df.dropna(subset=["published_at"], inplace=True) # Remove rows where conversion failed
+            if not display_df.empty:
+                display_df = display_df.sort_values("published_at", ascending=False)
+                sort_col = "published_at"
+                date_col_present = True
+
+        display_df["Ver Post"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+
+        cols_to_display = ["title", "source", "Ver Post"]
+        rename_map = {
+            "title": "Título",
+            "source": "Fuente",
+            "Ver Post": "Ver Post"
+        }
+
+        # Add date column if available and formatted
+        if date_col_present and sort_col:
+             # Check if the sort column is actually datetime before formatting
+            if pd.api.types.is_datetime64_any_dtype(display_df[sort_col]):
+                display_df["formatted_date"] = display_df[sort_col].dt.strftime('%Y-%m-%d') # Format date only
+                cols_to_display.insert(1, "formatted_date") # Insert date after title
+                rename_map["formatted_date"] = "Fecha de Publicación"
+            else: # If it's not datetime after checks, treat as string
+                 cols_to_display.insert(1, sort_col)
+                 rename_map[sort_col] = "Fecha de Publicación"
+
+
+        display_final_df = display_df[cols_to_display].copy()
+        display_final_df.rename(columns=rename_map, inplace=True)
+
+        # Display the final DataFrame as HTML
+        st.markdown(
+            display_final_df.to_html(escape=False, index=False),
             unsafe_allow_html=True,
         ) 
