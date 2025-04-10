@@ -35,4 +35,4 @@ src/utils/__pycache__/logging.cpython-313.pyc
 **/ms-playwright/
 src/etl/goldigging/free_udemy_courses/duce-cli-settings.json
 src/etl/goldigging/free_udemy_courses/courses_to_enroll.json
-src/etl/goldigging/free_udemy_courses/Courses/2025-04-10--23-48.txt
+src/etl/goldigging/free_udemy_courses/Courses/*
