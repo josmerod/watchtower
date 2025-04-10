@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>FreePackages</title>
+  <style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+  <style type="text/css">
+
+
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+main,
+nav,
+section,
+summary {
+display: block;
+}
+
+audio,
+canvas,
+video {
+display: inline-block;
+}
+
+audio:not([controls]) {
+display: none;
+height: 0;
+}
+
+[hidden],
+template {
+display: none;
+}
+
+
+html {
+font-family: sans-serif; 
+-ms-text-size-adjust: 100%; 
+-webkit-text-size-adjust: 100%; 
+}
+
+body {
+margin: 0;
+}
+
+
+a {
+background: transparent;
+}
+
+a:focus {
+outline: thin dotted;
+}
+
+a:active,
+a:hover {
+outline: 0;
+}
+
+
+h1 {
+font-size: 2em;
+margin: 0.67em 0;
+}
+
+abbr[title] {
+border-bottom: 1px dotted;
+}
+
+b,
+strong {
+font-weight: bold;
+}
+
+dfn {
+font-style: italic;
+}
+
+hr {
+-moz-box-sizing: content-box;
+box-sizing: content-box;
+height: 0;
+}
+
+mark {
+background: #ff0;
+color: #000;
+}
+
+code,
+kbd,
+pre,
+samp {
+font-family: monospace, serif;
+font-size: 1em;
+}
+
+pre {
+white-space: pre-wrap;
+}
+
+q {
+quotes: "\201C" "\201D" "\2018" "\2019";
+}
+
+small {
+font-size: 80%;
+}
+
+sub,
+sup {
+font-size: 75%;
+line-height: 0;
+position: relative;
+vertical-align: baseline;
+}
+sup {
+top: -0.5em;
+}
+sub {
+bottom: -0.25em;
+}
+
+
+img {
+border: 0;
+}
+
+svg:not(:root) {
+overflow: hidden;
+}
+
+
+figure {
+margin: 0;
+}
+
+
+fieldset {
+border: 1px solid #c0c0c0;
+margin: 0 2px;
+padding: 0.35em 0.625em 0.75em;
+}
+
+legend {
+border: 0; 
+padding: 0; 
+}
+
+button,
+input,
+select,
+textarea {
+font-family: inherit; 
+font-size: 100%; 
+margin: 0; 
+}
+
+button,
+input {
+line-height: normal;
+}
+
+button,
+select {
+text-transform: none;
+}
+
+button,
+html input[type="button"], 
+input[type="reset"],
+input[type="submit"] {
+-webkit-appearance: button; 
+cursor: pointer; 
+}
+
+button[disabled],
+html input[disabled] {
+cursor: default;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+box-sizing: border-box; 
+padding: 0; 
+}
+
+input[type="search"] {
+-webkit-appearance: textfield; 
+-moz-box-sizing: content-box;
+-webkit-box-sizing: content-box; 
+box-sizing: content-box;
+}
+
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+-webkit-appearance: none;
+}
+
+button::-moz-focus-inner,
+input::-moz-focus-inner {
+border: 0;
+padding: 0;
+}
+
+textarea {
+overflow: auto; 
+vertical-align: top; 
+}
+
+
+table {
+border-collapse: collapse;
+border-spacing: 0;
+}
+.go-top {
+position: fixed;
+bottom: 2em;
+right: 2em;
+text-decoration: none;
+background-color: #E0E0E0;
+font-size: 12px;
+padding: 1em;
+display: inline;
+}
+
+html,body{ margin: auto;
+padding-right: 1em;
+padding-left: 1em;
+color:black;}*:not('#mkdbuttons'){margin:0;padding:0}body{font:13.34px helvetica,arial,freesans,clean,sans-serif;-webkit-font-smoothing:subpixel-antialiased;line-height:1.4;padding:3px;background:#fff;border-radius:3px;-moz-border-radius:3px;-webkit-border-radius:3px}p{margin:1em 0}a{color:#4183c4;text-decoration:none}body{background-color:#fff;padding:30px;margin:15px;font-size:14px;line-height:1.6}body>*:first-child{margin-top:0!important}body>*:last-child{margin-bottom:0!important}@media screen{body{box-shadow:0 0 0 1px #cacaca,0 0 0 4px #eee}}h1,h2,h3,h4,h5,h6{margin:20px 0 10px;padding:0;font-weight:bold;-webkit-font-smoothing:subpixel-antialiased;cursor:text}h1{font-size:28px;color:#000}h2{font-size:24px;border-bottom:1px solid #ccc;color:#000}h3{font-size:18px;color:#333}h4{font-size:16px;color:#333}h5{font-size:14px;color:#333}h6{color:#777;font-size:14px}p,blockquote,table,pre{margin:15px 0}ul{padding-left:30px}ol{padding-left:30px}ol li ul:first-of-type{margin-top:0}hr{background:transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAECAYAAACtBE5DAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OENDRjNBN0E2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OENDRjNBN0I2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo4Q0NGM0E3ODY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo4Q0NGM0E3OTY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PqqezsUAAAAfSURBVHjaYmRABcYwBiM2QSA4y4hNEKYDQxAEAAIMAHNGAzhkPOlYAAAAAElFTkSuQmCC) repeat-x 0 0;border:0 none;color:#ccc;height:4px;padding:0}body>h2:first-child{margin-top:0;padding-top:0}body>h1:first-child{margin-top:0;padding-top:0}body>h1:first-child+h2{margin-top:0;padding-top:0}body>h3:first-child,body>h4:first-child,body>h5:first-child,body>h6:first-child{margin-top:0;padding-top:0}a:first-child h1,a:first-child h2,a:first-child h3,a:first-child h4,a:first-child h5,a:first-child h6{margin-top:0;padding-top:0}h1+p,h2+p,h3+p,h4+p,h5+p,h6+p,ul li>:first-child,ol li>:first-child{margin-top:0}dl{padding:0}dl dt{font-size:14px;font-weight:bold;font-style:italic;padding:0;margin:15px 0 5px}dl dt:first-child{padding:0}dl dt>:first-child{margin-top:0}dl dt>:last-child{margin-bottom:0}dl dd{margin:0 0 15px;padding:0 15px}dl dd>:first-child{margin-top:0}dl dd>:last-child{margin-bottom:0}blockquote{border-left:4px solid #DDD;padding:0 15px;color:#777}blockquote>:first-child{margin-top:0}blockquote>:last-child{margin-bottom:0}table{border-collapse:collapse;border-spacing:0;font-size:100%;font:inherit}table th{font-weight:bold;border:1px solid #ccc;padding:6px 13px}table td{border:1px solid #ccc;padding:6px 13px}table tr{border-top:1px solid #ccc;background-color:#fff}table tr:nth-child(2n){background-color:#f8f8f8}img{max-width:100%}code,tt{margin:0 2px;padding:0 5px;white-space:nowrap;border:1px solid #eaeaea;background-color:#f8f8f8;border-radius:3px;font-family:Consolas,'Liberation Mono',Courier,monospace;font-size:12px;color:#333}pre>code{margin:0;padding:0;white-space:pre;border:0;background:transparent}.highlight pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px}pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px}pre code,pre tt{background-color:transparent;border:0}.poetry pre{font-family:Georgia,Garamond,serif!important;font-style:italic;font-size:110%!important;line-height:1.6em;display:block;margin-left:1em}.poetry pre code{font-family:Georgia,Garamond,serif!important;word-break:break-all;word-break:break-word;-webkit-hyphens:auto;-moz-hyphens:auto;hyphens:auto;white-space:pre-wrap}sup,sub,a.footnote{font-size:1.4ex;height:0;line-height:1;vertical-align:super;position:relative}sub{vertical-align:sub;top:-1px}@media print{body{background:#fff}img,pre,blockquote,table,figure{page-break-inside:avoid}body{background:#fff;border:0}code{background-color:#fff;color:#333!important;padding:0 .2em;border:1px solid #dedede}pre{background:#fff}pre code{background-color:white!important;overflow:visible}}@media screen{body.inverted{color:#eee!important;border-color:#555;box-shadow:none}.inverted body,.inverted hr .inverted p,.inverted td,.inverted li,.inverted h1,.inverted h2,.inverted h3,.inverted h4,.inverted h5,.inverted h6,.inverted th,.inverted .math,.inverted caption,.inverted dd,.inverted dt,.inverted blockquote{color:#eee!important;border-color:#555;box-shadow:none}.inverted td,.inverted th{background:#333}.inverted h2{border-color:#555}.inverted hr{border-color:#777;border-width:1px!important}::selection{background:rgba(157,193,200,0.5)}h1::selection{background-color:rgba(45,156,208,0.3)}h2::selection{background-color:rgba(90,182,224,0.3)}h3::selection,h4::selection,h5::selection,h6::selection,li::selection,ol::selection{background-color:rgba(133,201,232,0.3)}code::selection{background-color:rgba(0,0,0,0.7);color:#eee}code span::selection{background-color:rgba(0,0,0,0.7)!important;color:#eee!important}a::selection{background-color:rgba(255,230,102,0.2)}.inverted a::selection{background-color:rgba(255,230,102,0.6)}td::selection,th::selection,caption::selection{background-color:rgba(180,237,95,0.5)}.inverted{background:#0b2531;background:#252a2a}.inverted body{background:#252a2a}.inverted a{color:#acd1d5}}.highlight .c{color:#998;font-style:italic}.highlight .err{color:#a61717;background-color:#e3d2d2}.highlight .k,.highlight .o{font-weight:bold}.highlight .cm{color:#998;font-style:italic}.highlight .cp{color:#999;font-weight:bold}.highlight .c1{color:#998;font-style:italic}.highlight .cs{color:#999;font-weight:bold;font-style:italic}.highlight .gd{color:#000;background-color:#fdd}.highlight .gd .x{color:#000;background-color:#faa}.highlight .ge{font-style:italic}.highlight .gr{color:#a00}.highlight .gh{color:#999}.highlight .gi{color:#000;background-color:#dfd}.highlight .gi .x{color:#000;background-color:#afa}.highlight .go{color:#888}.highlight .gp{color:#555}.highlight .gs{font-weight:bold}.highlight .gu{color:#800080;font-weight:bold}.highlight .gt{color:#a00}.highlight .kc,.highlight .kd,.highlight .kn,.highlight .kp,.highlight .kr{font-weight:bold}.highlight .kt{color:#458;font-weight:bold}.highlight .m{color:#099}.highlight .s{color:#d14}.highlight .na{color:#008080}.highlight .nb{color:#0086b3}.highlight .nc{color:#458;font-weight:bold}.highlight .no{color:#008080}.highlight .ni{color:#800080}.highlight .ne,.highlight .nf{color:#900;font-weight:bold}.highlight .nn{color:#555}.highlight .nt{color:#000080}.highlight .nv{color:#008080}.highlight .ow{font-weight:bold}.highlight .w{color:#bbb}.highlight .mf,.highlight .mh,.highlight .mi,.highlight .mo{color:#099}.highlight .sb,.highlight .sc,.highlight .sd,.highlight .s2,.highlight .se,.highlight .sh,.highlight .si,.highlight .sx{color:#d14}.highlight .sr{color:#009926}.highlight .s1{color:#d14}.highlight .ss{color:#990073}.highlight .bp{color:#999}.highlight .vc,.highlight .vg,.highlight .vi{color:#008080}.highlight .il{color:#099}.highlight .gc{color:#999;background-color:#eaf2f5}.type-csharp .highlight .k,.type-csharp .highlight .kt{color:#00F}.type-csharp .highlight .nf{color:#000;font-weight:normal}.type-csharp .highlight .nc{color:#2b91af}.type-csharp .highlight .nn{color:#000}.type-csharp .highlight .s,.type-csharp .highlight .sc{color:#a31515}
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">FreePackages</h1>
+</header>
+<h1 id="free-packages-plugin-for-archisteamfarm">Free Packages Plugin for ArchiSteamFarm</h1>
+<p><a href="https://github.com/stars/Citrinate/lists/archisteamfarm-plugins"><img role="img" aria-label="Check out my other ArchiSteamFarm plugins" src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjc3IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkNoZWNrIG91dCBteSBvdGhlciBBcmNoaVN0ZWFtRmFybSBwbHVnaW5zIj48dGl0bGU+Q2hlY2sgb3V0IG15IG90aGVyIEFyY2hpU3RlYW1GYXJtIHBsdWdpbnM8L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjI3NyIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjAiIGhlaWdodD0iMjAiIGZpbGw9IiM1NTUiLz48cmVjdCB4PSIwIiB3aWR0aD0iMjc3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjMDA3ZWM2Ii8+PHJlY3Qgd2lkdGg9IjI3NyIgaGVpZ2h0PSIyMCIgZmlsbD0idXJsKCNzKSIvPjwvZz48ZyBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iVmVyZGFuYSxHZW5ldmEsRGVqYVZ1IFNhbnMsc2Fucy1zZXJpZiIgdGV4dC1yZW5kZXJpbmc9Imdlb21ldHJpY1ByZWNpc2lvbiIgZm9udC1zaXplPSIxMTAiPjxpbWFnZSB4PSI1IiB5PSIzIiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHhsaW5rOmhyZWY9ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5Qm1hV3hzUFNKM2FHbDBaWE50YjJ0bElpQnliMnhsUFNKcGJXY2lJSFpwWlhkQ2IzZzlJakFnTUNBeU5DQXlOQ0lnZUcxc2JuTTlJbWgwZEhBNkx5OTNkM2N1ZHpNdWIzSm5Mekl3TURBdmMzWm5JajQ4ZEdsMGJHVStSMmwwU0hWaVBDOTBhWFJzWlQ0OGNHRjBhQ0JrUFNKTk1USWdMakk1TjJNdE5pNDJNeUF3TFRFeUlEVXVNemN6TFRFeUlERXlJREFnTlM0ek1ETWdNeTQwTXpnZ09TNDRJRGd1TWpBMUlERXhMak00TlM0MkxqRXhNeTQ0TWkwdU1qVTRMamd5TFM0MU56Y2dNQzB1TWpnMUxTNHdNUzB4TGpBMExTNHdNVFV0TWk0d05DMHpMak16T0M0M01qUXROQzR3TkRJdE1TNDJNUzAwTGpBME1pMHhMall4UXpRdU5ESXlJREU0TGpBM0lETXVOak16SURFM0xqY2dNeTQyTXpNZ01UY3VOMk10TVM0d09EY3RMamMwTkM0d09EUXRMamN5T1M0d09EUXRMamN5T1NBeExqSXdOUzR3T0RRZ01TNDRNemdnTVM0eU16WWdNUzQ0TXpnZ01TNHlNellnTVM0d055QXhMamd6TlNBeUxqZ3dPU0F4TGpNd05TQXpMalE1TlM0NU9UZ3VNVEE0TFM0M056WXVOREUzTFRFdU16QTFMamMyTFRFdU5qQTFMVEl1TmpZMUxTNHpMVFV1TkRZMkxURXVNek15TFRVdU5EWTJMVFV1T1RNZ01DMHhMak14TGpRMk5TMHlMak00SURFdU1qTTFMVE11TWpJdExqRXpOUzB1TXpBekxTNDFOQzB4TGpVeU15NHhNRFV0TXk0eE56WWdNQ0F3SURFdU1EQTFMUzR6TWpJZ015NHpJREV1TWpNdU9UWXRMakkyTnlBeExqazRMUzR6T1RrZ015MHVOREExSURFdU1ESXVNREEySURJdU1EUXVNVE00SURNZ0xqUXdOU0F5TGpJNExURXVOVFV5SURNdU1qZzFMVEV1TWpNZ015NHlPRFV0TVM0eU15NDJORFVnTVM0Mk5UTXVNalFnTWk0NE56TXVNVElnTXk0eE56WXVOelkxTGpnMElERXVNak1nTVM0NU1TQXhMakl6SURNdU1qSWdNQ0EwTGpZeExUSXVPREExSURVdU5qSTFMVFV1TkRjMUlEVXVPVEl1TkRJdU16WXVPREVnTVM0d09UWXVPREVnTWk0eU1pQXdJREV1TmpBMkxTNHdNVFVnTWk0NE9UWXRMakF4TlNBekxqSTROaUF3SUM0ek1UVXVNakV1TmprdU9ESTFMalUzUXpJd0xqVTJOU0F5TWk0d09USWdNalFnTVRjdU5Ua3lJREkwSURFeUxqSTVOMk13TFRZdU5qSTNMVFV1TXpjekxURXlMVEV5TFRFeUlpOCtQQzl6ZG1jKyIvPjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSIxNDc1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSIyNDkwIj5DaGVjayBvdXQgbXkgb3RoZXIgQXJjaGlTdGVhbUZhcm0gcGx1Z2luczwvdGV4dD48dGV4dCB4PSIxNDc1IiB5PSIxNDAiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiBmaWxsPSIjZmZmIiB0ZXh0TGVuZ3RoPSIyNDkwIj5DaGVjayBvdXQgbXkgb3RoZXIgQXJjaGlTdGVhbUZhcm0gcGx1Z2luczwvdGV4dD48L2c+PC9zdmc+" alt="Check out my other ArchiSteamFarm plugins" /></a> <a href="https://github.com/Citrinate/FreePackages/tree/main/FreePackages/Localization"><img role="img" aria-label="Help with translations" src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTQ5IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkhlbHAgd2l0aCB0cmFuc2xhdGlvbnMiPjx0aXRsZT5IZWxwIHdpdGggdHJhbnNsYXRpb25zPC90aXRsZT48bGluZWFyR3JhZGllbnQgaWQ9InMiIHgyPSIwIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYmJiIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PC9saW5lYXJHcmFkaWVudD48Y2xpcFBhdGggaWQ9InIiPjxyZWN0IHdpZHRoPSIxNDkiIGhlaWdodD0iMjAiIHJ4PSIzIiBmaWxsPSIjZmZmIi8+PC9jbGlwUGF0aD48ZyBjbGlwLXBhdGg9InVybCgjcikiPjxyZWN0IHdpZHRoPSIwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iMCIgd2lkdGg9IjE0OSIgaGVpZ2h0PSIyMCIgZmlsbD0icHVycGxlIi8+PHJlY3Qgd2lkdGg9IjE0OSIgaGVpZ2h0PSIyMCIgZmlsbD0idXJsKCNzKSIvPjwvZz48ZyBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iVmVyZGFuYSxHZW5ldmEsRGVqYVZ1IFNhbnMsc2Fucy1zZXJpZiIgdGV4dC1yZW5kZXJpbmc9Imdlb21ldHJpY1ByZWNpc2lvbiIgZm9udC1zaXplPSIxMTAiPjxpbWFnZSB4PSI1IiB5PSIzIiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHhsaW5rOmhyZWY9ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5Qm1hV3hzUFNKM2FHbDBaWE50YjJ0bElpQnliMnhsUFNKcGJXY2lJSFpwWlhkQ2IzZzlJakFnTUNBeU5DQXlOQ0lnZUcxc2JuTTlJbWgwZEhBNkx5OTNkM2N1ZHpNdWIzSm5Mekl3TURBdmMzWm5JajQ4ZEdsMGJHVStRM0p2ZDJScGJqd3ZkR2wwYkdVK1BIQmhkR2dnWkQwaVRURTJMakV4T1NBeE55NDNPVE5oTWk0Mk1Ua2dNaTQyTVRrZ01DQXdJREV0TVM0Mk5qY3RMalUyTW1NdExqVTBOaTB1TkRNMkxURXVNREEwTFRFdU1Ea3RNUzR3TVRndE1TNDROVGd0TGpBd09DMHVNemc0TGpReE5DMHVNemc0TGpReE5DMHVNemc0YkRFdU1ERTRMUzR3TURoakxqTXpNaTR3TURndU5ETXVORGN1TkRRMUxqVTROaTR4TWpnZ01TNHdOQzQzTVRjZ01TNDBPVFVnTVM0eE5qZ2dNUzQzTURJdU1qY3pMakV5TXk0eU1EUXVOVEV6TFM0ek5qSXVOVEk0ZW0wdE5TNDJPVFV0TlM0eU9EZE1PQzQxSURFeUxqSTFNbU10TGpnMk55MHVNakUwTFM0NE5EUXRMams0TWkwdU9EQTNMVEV1TWpRM1lUVXVNVEU1SURVdU1URTVJREFnTUNBeElDNDRNVFF0TWk0eE1qVmpMalUwTlMwdU9EQTBJREV1TXpBekxURXVOVEE0SURJdU1qa3RNaTR3TnpNZ01TNDROVFl0TVM0d056UWdOQzQwTlMweExqWTNNeUEzTGpNeExURXVOamN6SURJdU1Ea2dNQ0EwTGpJMU5pNHlOeUEwTGpJNUxqSTNMakU1Tnk0d01qVXVNekk0TGpJeE15NHpNek11TkRNM1lTNHpOemN1TXpjM0lEQWdNQ0F4TFM0ek5UVXVNemt6YkMwdU9USXRMakF4WXkweUxqa3dNaUF3TFRRdU9UWTRMak01TkMwMkxqVXdOaUF4TGpJME9DMHhMalV5Tnk0NE16Y3RNaTQxTnlBeUxqRXhOeTB6TGpJNE55QTBMakF4TWkwdU1EYzJMakUyTXkwdU16TTFJREV1TVRJdE1TNHlOQ0F4TGpBeU1ucHRNaTQxTXpNZ055NDRNak5qTFRFdU5EUWdNQzB5TGpjNU55MHVOakl5TFRNdU9ESTFMVEV1TnpRMkxTNDROeTB1T1RZdE1TNHpPVGN0TVM0NU16RXRNUzQwT1RNdE15NHhOalF0TGpBMkxTNDRNVE11TXkweExqQTVOQzQzT0RndE1TNHdORFJzTVM0NU9EZ3VNakU0WXk0ME5TNHdPVEl1TnpVdU16UXVPREkxTGpnMU5DNHpPVGNnTWk0M016WWdNaTR4TWpJZ015NDRNVFFnTXk0eE5TQTBMakEwTmk0eE9DNHdOREl1TWpreUxqRTFOeTR5T0RNdU16WTFZUzQwTVRJdU5ERXlJREFnTUNBeExTNHpNakl1TXprNFl5MHVORFU0TGpBM05DMHVPVE0yTGpBM015MHhMak01TkM0d056TjZiUzAwTGpFd01TQXlMalF4T0dFeE5DNHlNVFlnTVRRdU1qRTJJREFnTUNBeExUSXVNekEzTFM0eU1UUmpMVEV1TWpBeUxTNHlNVFF0TWk0eU1EZ3RMalU0TWkwekxqQTNNaTB4TGpFelF6RXVOREVnTWpBdU1EazFMakUyTXlBeE55NDNPRFl1TURFMElERTFMakEwT0dNdExqQXpOeTB1TmpVdExqRXhMVEV1T0RrZ01TNDBNamN0TVM0M09UY3VOak00TGpBek15QXhMalkxTXk0ek5ETWdNaTR6TmpndU5UUTRMamc0Tnk0eU5EY2dNUzR6TVRRdU9UTXpJREV1TXpFMElERXVOakE0SURBZ015NDROVGdnTXk0ME9UUWdOaTQwTURnZ05TNHdNaUEyTGpRd09DNDJOVFFnTUNBdU5ERTBMamN3TVM0eE1qY3VOemM1TFM0MU1ESXVNVE0yTFRFdU1UVXVNVFV6TFRFdU5ERXpMakUxTTNwTk15NDFNalVnTVRFdU5ERTVZeTB1TmpBMUxTNHhNRGt0TVM0eE9UUXRMak0xT0MweExqYzJPQzB1TlVNdExqQXhPQ0F4TUM0ME56a3VNamcwSURndU5qZzRMalExSURndU1UazJZekV1TmpFM0xUUXVOelUzSURZdU56UTJMVFl1TXpVZ01UQXVPRGczTFRZdU56Y3pJRE11T0RrNExTNDBJRGN1T1RjNExTNHdPVElnTVRFdU56YzRMamsyTnk0ek1TNHdPRE1nTVM0eU5qa3VNekkzTGpjeE9DNDRPVEV0TGpNMUxqTTFPQzB4TGpjdExqQXhOaTB5TGpBM015MHVNRFF4TFRJdU1qTXRMakUyTnkwMExqUXpOQzB1TVRreUxUWXVOalUyTGpFMUxUSXVNelE1TGpNMU55MDBMamMyT0NBeExqQTVPUzAyTGpjeElESXVOalkxTFM0NU16Z3VOelU0TFRFdU56WWdNUzQzTWpNdE1pNHpNVE1nTWk0NE5qWXRMakUwTkM0ekxTNHlOVFl1TmkwdU16VTBMamt0TGpFeExqTXlOeTB1TkRjZ01TNDVNUzB5TGpJeE5TQXhMalo2YlRrdU9UUXVPVEUzWXk0ek16SXRNUzQwT0RnZ01TNDRNUzB6TGpnME9DQTJMak00TlMwekxqWTROaUF4TGpBMUxqQXpNeTQxTnk0M05Ea3VNRFV5TGpjek1TMHlMalU0TmkwdU1Ea3RNeTQ0TVRVZ01TNDFOemd0TkM0ME5UY2dNeTR5TnkwdU1qRTVMalUwTmkwdU5qZ3VOakkyTFRFdU1qY3hMalV6TFM0ME1UVXRMakEzTkMwdU9EWTJMUzR4TWpNdExqY3hMUzQ0TkRaYUlpOCtQQzl6ZG1jKyIvPjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI4MzUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjEyMTAiPkhlbHAgd2l0aCB0cmFuc2xhdGlvbnM8L3RleHQ+PHRleHQgeD0iODM1IiB5PSIxNDAiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiBmaWxsPSIjZmZmIiB0ZXh0TGVuZ3RoPSIxMjEwIj5IZWxwIHdpdGggdHJhbnNsYXRpb25zPC90ZXh0PjwvZz48L3N2Zz4=" alt="Help with translations" /></a> <img role="img" aria-label="GitHub all releases" src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTIzIiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkRvd25sb2FkczogOC44ayI+PHRpdGxlPkRvd25sb2FkczogOC44azwvdGl0bGU+PGxpbmVhckdyYWRpZW50IGlkPSJzIiB4Mj0iMCIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2JiYiIgc3RvcC1vcGFjaXR5PSIuMSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1vcGFjaXR5PSIuMSIvPjwvbGluZWFyR3JhZGllbnQ+PGNsaXBQYXRoIGlkPSJyIj48cmVjdCB3aWR0aD0iMTIzIiBoZWlnaHQ9IjIwIiByeD0iMyIgZmlsbD0iI2ZmZiIvPjwvY2xpcFBhdGg+PGcgY2xpcC1wYXRoPSJ1cmwoI3IpIj48cmVjdCB3aWR0aD0iODgiIGhlaWdodD0iMjAiIGZpbGw9IiM1NTUiLz48cmVjdCB4PSI4OCIgd2lkdGg9IjM1IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNGMxIi8+PHJlY3Qgd2lkdGg9IjEyMyIgaGVpZ2h0PSIyMCIgZmlsbD0idXJsKCNzKSIvPjwvZz48ZyBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iVmVyZGFuYSxHZW5ldmEsRGVqYVZ1IFNhbnMsc2Fucy1zZXJpZiIgdGV4dC1yZW5kZXJpbmc9Imdlb21ldHJpY1ByZWNpc2lvbiIgZm9udC1zaXplPSIxMTAiPjxpbWFnZSB4PSI1IiB5PSIzIiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHhsaW5rOmhyZWY9ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5Qm1hV3hzUFNKM2FHbDBaWE50YjJ0bElpQnliMnhsUFNKcGJXY2lJSFpwWlhkQ2IzZzlJakFnTUNBeU5DQXlOQ0lnZUcxc2JuTTlJbWgwZEhBNkx5OTNkM2N1ZHpNdWIzSm5Mekl3TURBdmMzWm5JajQ4ZEdsMGJHVStSMmwwU0hWaVBDOTBhWFJzWlQ0OGNHRjBhQ0JrUFNKTk1USWdMakk1TjJNdE5pNDJNeUF3TFRFeUlEVXVNemN6TFRFeUlERXlJREFnTlM0ek1ETWdNeTQwTXpnZ09TNDRJRGd1TWpBMUlERXhMak00TlM0MkxqRXhNeTQ0TWkwdU1qVTRMamd5TFM0MU56Y2dNQzB1TWpnMUxTNHdNUzB4TGpBMExTNHdNVFV0TWk0d05DMHpMak16T0M0M01qUXROQzR3TkRJdE1TNDJNUzAwTGpBME1pMHhMall4UXpRdU5ESXlJREU0TGpBM0lETXVOak16SURFM0xqY2dNeTQyTXpNZ01UY3VOMk10TVM0d09EY3RMamMwTkM0d09EUXRMamN5T1M0d09EUXRMamN5T1NBeExqSXdOUzR3T0RRZ01TNDRNemdnTVM0eU16WWdNUzQ0TXpnZ01TNHlNellnTVM0d055QXhMamd6TlNBeUxqZ3dPU0F4TGpNd05TQXpMalE1TlM0NU9UZ3VNVEE0TFM0M056WXVOREUzTFRFdU16QTFMamMyTFRFdU5qQTFMVEl1TmpZMUxTNHpMVFV1TkRZMkxURXVNek15TFRVdU5EWTJMVFV1T1RNZ01DMHhMak14TGpRMk5TMHlMak00SURFdU1qTTFMVE11TWpJdExqRXpOUzB1TXpBekxTNDFOQzB4TGpVeU15NHhNRFV0TXk0eE56WWdNQ0F3SURFdU1EQTFMUzR6TWpJZ015NHpJREV1TWpNdU9UWXRMakkyTnlBeExqazRMUzR6T1RrZ015MHVOREExSURFdU1ESXVNREEySURJdU1EUXVNVE00SURNZ0xqUXdOU0F5TGpJNExURXVOVFV5SURNdU1qZzFMVEV1TWpNZ015NHlPRFV0TVM0eU15NDJORFVnTVM0Mk5UTXVNalFnTWk0NE56TXVNVElnTXk0eE56WXVOelkxTGpnMElERXVNak1nTVM0NU1TQXhMakl6SURNdU1qSWdNQ0EwTGpZeExUSXVPREExSURVdU5qSTFMVFV1TkRjMUlEVXVPVEl1TkRJdU16WXVPREVnTVM0d09UWXVPREVnTWk0eU1pQXdJREV1TmpBMkxTNHdNVFVnTWk0NE9UWXRMakF4TlNBekxqSTROaUF3SUM0ek1UVXVNakV1TmprdU9ESTFMalUzUXpJd0xqVTJOU0F5TWk0d09USWdNalFnTVRjdU5Ua3lJREkwSURFeUxqSTVOMk13TFRZdU5qSTNMVFV1TXpjekxURXlMVEV5TFRFeUlpOCtQQzl6ZG1jKyIvPjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI1MzUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjYxMCI+RG93bmxvYWRzPC90ZXh0Pjx0ZXh0IHg9IjUzNSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iNjEwIj5Eb3dubG9hZHM8L3RleHQ+PHRleHQgYXJpYS1oaWRkZW49InRydWUiIHg9IjEwNDUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjI1MCI+OC44azwvdGV4dD48dGV4dCB4PSIxMDQ1IiB5PSIxNDAiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiBmaWxsPSIjZmZmIiB0ZXh0TGVuZ3RoPSIyNTAiPjguOGs8L3RleHQ+PC9nPjwvc3ZnPg==" alt="GitHub all releases" /></p>
+<h2 id="introduction">Introduction</h2>
+<p>This plugin finds free packages on Steam and adds them to your account.</p>
+<p>This plugin works by listening for <a href="https://steamdb.info/faq/#changenumber">changes</a> to Steam’s <a href="https://steamdb.info/faq/#pics">PICS</a>. The plugin can discover new packages as they’re released, but is limited due to PICS not showing all old changes. As a result, the plugin can only discover packages that have changed recently, usually in the last ~12 hours.</p>
+<h2 id="installation">Installation</h2>
+<ul>
+<li>Download the .zip file from the <a href="https://github.com/Citrinate/FreePackages/releases/latest">latest release</a></li>
+<li>Locate the <code>plugins</code> folder inside your ASF folder. Create a new folder here and unpack the downloaded .zip file to that folder.</li>
+<li>(Re)start ASF, you should get a message indicating that the plugin loaded successfully.</li>
+</ul>
+<blockquote>
+<p>[!NOTE] This plugin is only tested to work with ASF-generic. It may or may not work with other ASF variants, but feel free to report any issues you may encounter.</p>
+</blockquote>
+<h2 id="usage">Usage</h2>
+<h3 id="enabling-the-plugin">Enabling the plugin</h3>
+<p>You can enable the plugin per individual bot by adding <code>EnableFreePackages</code> to that bot’s config file:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;EnableFreePackages&quot;:</span> <span class="er">true,</span></span></code></pre></div>
+<hr />
+<h3 id="pausing-package-activations-while-playing-a-game">Pausing package activations while playing a game</h3>
+<p>Under certain conditions, activating a free package while playing a game on Steam can cause the game to temporarily freeze. You can prevent the plugin from activating packages while you’re in-game by adding <code>PauseFreePackagesWhilePlaying</code> to your individual bot’s config file. It’s recommended you use this for any account you play games on:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;PauseFreePackagesWhilePlaying&quot;:</span> <span class="er">true,</span></span></code></pre></div>
+<blockquote>
+<p>[!NOTE] This applies when your account is playing a game outside of ASF, and does not apply when ASF is idling a game. Your library being locked through Family Sharing will also prevent package activation. You likely don’t want to enable this if you run idle games 24/7, or your library is otherwise almost always in use, or you only run ASF rarely.</p>
+</blockquote>
+<hr />
+<h3 id="changing-the-package-limit">Changing the package limit</h3>
+<p>A maximum of 30 packages can be activated per 1.5 hours. By default, this plugin will use at most 25 of those activations and will resume where it left off if it’s ever interrupted. You can control this limit by adding <code>FreePackagesLimit</code> to your individual bot’s config files of <code>uint</code> type:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;FreePackagesLimit&quot;:</span> <span class="er">25,</span></span></code></pre></div>
+<blockquote>
+<p>[!NOTE] The default is intentionally made lower than the actual limit to allow for you the ability to manually redeem packages without having to fight with the plugin.</p>
+</blockquote>
+<hr />
+<h3 id="enabling-package-filters">Enabling package filters</h3>
+<p>By default, the plugin will attempt to activate all free non-demo and non-playtest packages. You can control what kinds of packages are activated by adding <code>FreePackagesFilters</code> to your individual bot’s config files with the following structure:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;FreePackagesFilters&quot;:</span> <span class="ot">[</span><span class="fu">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Types&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Tags&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Categories&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Languages&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Systems&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;MinReviewScore&quot;</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;MaxDaysOld&quot;</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;IgnoredContentDescriptors&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;IgnoredTypes&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Demo&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;IgnoredTags&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;IgnoredCategories&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;IgnoredAppIDs&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;RequireAllTags&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;RequireAllCategories&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;ImportStoreFilters&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;WishlistOnly&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;IgnoreFreeWeekends&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;NoCostOnly&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;PlaytestMode&quot;</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span><span class="ot">]</span><span class="er">,</span></span></code></pre></div>
+<p>All filter options are explained below:</p>
+<hr />
+<h4 id="types">Types</h4>
+<p><code>HashSet&lt;string&gt;</code> type with default value of <code>[]</code>. Packages must contain an app with one of the <code>TypeNames</code> specified here or they will not be added to your account. You can leave this empty to allow for all types. The available <code>TypeNames</code> for filtering are: <code>&quot;Game&quot;</code>, <code>&quot;Application&quot;</code>, <code>&quot;Tool&quot;</code>, <code>&quot;Demo&quot;</code>, <code>&quot;DLC&quot;</code>, <code>&quot;Music&quot;</code>, <code>&quot;Video&quot;</code></p>
+<hr />
+<h4 id="tags">Tags</h4>
+<p><code>HashSet&lt;uint&gt;</code> type with default value of <code>[]</code>. Packages must contain an app with at least one of these <code>TagIDs</code> or they will not be added to your account. You can leave this empty to allow for all tags. A list of tags can be found <a href="https://steamdb.info/tags/">here</a>. The <code>TagID</code> will be at the end of the URL. For example, the <code>TagID</code> for the <a href="https://steamdb.info/tag/492/">Indie</a> tag is 492.</p>
+<blockquote>
+<p>[!NOTE] The “Profile Features Limited” tag presented by SteamDB is not a real tag that Steam uses. This plugin does not detect whether or not an app has limited profile features.</p>
+</blockquote>
+<hr />
+<h4 id="categories">Categories</h4>
+<p><code>HashSet&lt;uint&gt;</code> type with default value of <code>[]</code>. Packages must contain an app with at least one of these <code>CategoryIDs</code> or they will not be added to your account. You can leave this empty to allow for all categories.</p>
+<details>
+<summary>
+List of Category IDs
+</summary>
+<table>
+<thead>
+<tr class="header">
+<th>Category ID</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Multi-player</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>Single-player</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>Mods (require HL2)</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>Mods (require HL1)</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>Valve Anti-Cheat enabled</td>
+</tr>
+<tr class="even">
+<td>9</td>
+<td>Co-op</td>
+</tr>
+<tr class="odd">
+<td>10</td>
+<td>Game demo</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td>HDR available</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td>Captions available</td>
+</tr>
+<tr class="even">
+<td>14</td>
+<td>Commentary available</td>
+</tr>
+<tr class="odd">
+<td>15</td>
+<td>Stats</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td>Includes Source SDK</td>
+</tr>
+<tr class="odd">
+<td>17</td>
+<td>Includes level editor</td>
+</tr>
+<tr class="even">
+<td>18</td>
+<td>Partial Controller Support</td>
+</tr>
+<tr class="odd">
+<td>19</td>
+<td>Mods</td>
+</tr>
+<tr class="even">
+<td>20</td>
+<td>MMO</td>
+</tr>
+<tr class="odd">
+<td>21</td>
+<td>Downloadable Content</td>
+</tr>
+<tr class="even">
+<td>22</td>
+<td>Steam Achievements</td>
+</tr>
+<tr class="odd">
+<td>23</td>
+<td>Steam Cloud</td>
+</tr>
+<tr class="even">
+<td>24</td>
+<td>Shared/Split Screen</td>
+</tr>
+<tr class="odd">
+<td>25</td>
+<td>Steam Leaderboards</td>
+</tr>
+<tr class="even">
+<td>27</td>
+<td>Cross-Platform Multiplayer</td>
+</tr>
+<tr class="odd">
+<td>28</td>
+<td>Full controller support</td>
+</tr>
+<tr class="even">
+<td>29</td>
+<td>Steam Trading Cards</td>
+</tr>
+<tr class="odd">
+<td>30</td>
+<td>Steam Workshop</td>
+</tr>
+<tr class="even">
+<td>32</td>
+<td>Steam Turn Notifications</td>
+</tr>
+<tr class="odd">
+<td>33</td>
+<td>Native Steam Controller</td>
+</tr>
+<tr class="even">
+<td>35</td>
+<td>In-App Purchases</td>
+</tr>
+<tr class="odd">
+<td>36</td>
+<td>Online PvP</td>
+</tr>
+<tr class="even">
+<td>37</td>
+<td>Shared/Split Screen PvP</td>
+</tr>
+<tr class="odd">
+<td>38</td>
+<td>Online Co-op</td>
+</tr>
+<tr class="even">
+<td>39</td>
+<td>Shared/Split Screen Co-op</td>
+</tr>
+<tr class="odd">
+<td>40</td>
+<td>SteamVR Collectibles</td>
+</tr>
+<tr class="even">
+<td>41</td>
+<td>Remote Play on Phone</td>
+</tr>
+<tr class="odd">
+<td>42</td>
+<td>Remote Play on Tablet</td>
+</tr>
+<tr class="even">
+<td>43</td>
+<td>Remote Play on TV</td>
+</tr>
+<tr class="odd">
+<td>44</td>
+<td>Remote Play Together</td>
+</tr>
+<tr class="even">
+<td>45</td>
+<td>Cloud Gaming</td>
+</tr>
+<tr class="odd">
+<td>46</td>
+<td>Cloud Gaming (NVIDIA)</td>
+</tr>
+<tr class="even">
+<td>47</td>
+<td>LAN PvP</td>
+</tr>
+<tr class="odd">
+<td>48</td>
+<td>LAN Co-op</td>
+</tr>
+<tr class="even">
+<td>49</td>
+<td>PvP</td>
+</tr>
+<tr class="odd">
+<td>50</td>
+<td>Additional High-Quality Audio</td>
+</tr>
+<tr class="even">
+<td>51</td>
+<td>Steam China Workshop</td>
+</tr>
+<tr class="odd">
+<td>52</td>
+<td>Tracked Controller Support</td>
+</tr>
+<tr class="even">
+<td>53</td>
+<td>VR Supported</td>
+</tr>
+<tr class="odd">
+<td>54</td>
+<td>VR Only</td>
+</tr>
+<tr class="even">
+<td>55</td>
+<td>PS4 Controller Support</td>
+</tr>
+<tr class="odd">
+<td>56</td>
+<td>PS4 Controller BT Support</td>
+</tr>
+<tr class="even">
+<td>57</td>
+<td>PS5 Controller BT Support</td>
+</tr>
+<tr class="odd">
+<td>58</td>
+<td>PS5 Controller BT Support</td>
+</tr>
+<tr class="even">
+<td>59</td>
+<td>Steam Input API Supported</td>
+</tr>
+<tr class="odd">
+<td>60</td>
+<td>Controller Preferred</td>
+</tr>
+</tbody>
+</table>
+</details>
+<hr />
+<h4 id="languages">Languages</h4>
+<p><code>HashSet&lt;string&gt;</code> type with default value of <code>[]</code>. Packages must contain an app with support for at least one of these <code>LanguageIDs</code> or they will not be added to your account. You can leave this empty to allow for all languages.</p>
+<details>
+<summary>
+List of Language IDs
+</summary>
+<table>
+<thead>
+<tr class="header">
+<th>Language ID</th>
+<th>Language</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>&quot;afrikaans&quot;</code></td>
+<td>Afrikaans</td>
+</tr>
+<tr class="even">
+<td><code>&quot;albanian&quot;</code></td>
+<td>Albanian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;amharic&quot;</code></td>
+<td>Amharic</td>
+</tr>
+<tr class="even">
+<td><code>&quot;arabic&quot;</code></td>
+<td>Arabic</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;armenian&quot;</code></td>
+<td>Armenian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;assamese&quot;</code></td>
+<td>Assamese</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;azerbaijani&quot;</code></td>
+<td>Azerbaijani</td>
+</tr>
+<tr class="even">
+<td><code>&quot;bangla&quot;</code></td>
+<td>Bangla</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;basque&quot;</code></td>
+<td>Basque</td>
+</tr>
+<tr class="even">
+<td><code>&quot;belarusian&quot;</code></td>
+<td>Belarusian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;bosnian&quot;</code></td>
+<td>Bosnian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;bulgarian&quot;</code></td>
+<td>Bulgarian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;catalan&quot;</code></td>
+<td>Catalan</td>
+</tr>
+<tr class="even">
+<td><code>&quot;cherokee&quot;</code></td>
+<td>Cherokee</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;croatian&quot;</code></td>
+<td>Croatian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;czech&quot;</code></td>
+<td>Czech</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;danish&quot;</code></td>
+<td>Danish</td>
+</tr>
+<tr class="even">
+<td><code>&quot;dari&quot;</code></td>
+<td>Dari</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;dutch&quot;</code></td>
+<td>Dutch</td>
+</tr>
+<tr class="even">
+<td><code>&quot;english&quot;</code></td>
+<td>English</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;estonian&quot;</code></td>
+<td>Estonian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;filipino&quot;</code></td>
+<td>Filipino</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;finnish&quot;</code></td>
+<td>Finnish</td>
+</tr>
+<tr class="even">
+<td><code>&quot;french&quot;</code></td>
+<td>French</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;galician&quot;</code></td>
+<td>Galician</td>
+</tr>
+<tr class="even">
+<td><code>&quot;georgian&quot;</code></td>
+<td>Georgian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;german&quot;</code></td>
+<td>German</td>
+</tr>
+<tr class="even">
+<td><code>&quot;greek&quot;</code></td>
+<td>Greek</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;gujarati&quot;</code></td>
+<td>Gujarati</td>
+</tr>
+<tr class="even">
+<td><code>&quot;hausa&quot;</code></td>
+<td>Hausa</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;hebrew&quot;</code></td>
+<td>Hebrew</td>
+</tr>
+<tr class="even">
+<td><code>&quot;hindi&quot;</code></td>
+<td>Hindi</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;hungarian&quot;</code></td>
+<td>Hungarian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;icelandic&quot;</code></td>
+<td>Icelandic</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;igbo&quot;</code></td>
+<td>Igbo</td>
+</tr>
+<tr class="even">
+<td><code>&quot;irish&quot;</code></td>
+<td>Irish</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;italian&quot;</code></td>
+<td>Italian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;japanese&quot;</code></td>
+<td>Japanese</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;kannada&quot;</code></td>
+<td>Kannada</td>
+</tr>
+<tr class="even">
+<td><code>&quot;kazakh&quot;</code></td>
+<td>Kazakh</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;khmer&quot;</code></td>
+<td>Khmer</td>
+</tr>
+<tr class="even">
+<td><code>&quot;kinyarwanda&quot;</code></td>
+<td>Kinyarwanda</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;konkani&quot;</code></td>
+<td>Konkani</td>
+</tr>
+<tr class="even">
+<td><code>&quot;koreana&quot;</code></td>
+<td>Korean</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;kyrgyz&quot;</code></td>
+<td>Kyrgyz</td>
+</tr>
+<tr class="even">
+<td><code>&quot;kiche&quot;</code></td>
+<td>K’iche’</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;latvian&quot;</code></td>
+<td>Latvian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;lithuanian&quot;</code></td>
+<td>Lithuanian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;luxembourgish&quot;</code></td>
+<td>Luxembourgish</td>
+</tr>
+<tr class="even">
+<td><code>&quot;macedonian&quot;</code></td>
+<td>Macedonian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;malay&quot;</code></td>
+<td>Malay</td>
+</tr>
+<tr class="even">
+<td><code>&quot;malayalam&quot;</code></td>
+<td>Malayalam</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;maltese&quot;</code></td>
+<td>Maltese</td>
+</tr>
+<tr class="even">
+<td><code>&quot;maori&quot;</code></td>
+<td>Maori</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;marathi&quot;</code></td>
+<td>Marathi</td>
+</tr>
+<tr class="even">
+<td><code>&quot;mongolian&quot;</code></td>
+<td>Mongolian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;nepali&quot;</code></td>
+<td>Nepali</td>
+</tr>
+<tr class="even">
+<td><code>&quot;norwegian&quot;</code></td>
+<td>Norwegian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;odia&quot;</code></td>
+<td>Odia</td>
+</tr>
+<tr class="even">
+<td><code>&quot;persian&quot;</code></td>
+<td>Persian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;polish&quot;</code></td>
+<td>Polish</td>
+</tr>
+<tr class="even">
+<td><code>&quot;portuguese&quot;</code></td>
+<td>Portuguese - Portugal</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;gurmukhi&quot;</code></td>
+<td>Punjabi (Gurmukhi)</td>
+</tr>
+<tr class="even">
+<td><code>&quot;shahmukhi&quot;</code></td>
+<td>Punjabi (Shahmukhi)</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;quechua&quot;</code></td>
+<td>Quechua</td>
+</tr>
+<tr class="even">
+<td><code>&quot;romanian&quot;</code></td>
+<td>Romanian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;russian&quot;</code></td>
+<td>Russian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;scots&quot;</code></td>
+<td>Scots</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;serbian&quot;</code></td>
+<td>Serbian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;schinese&quot;</code></td>
+<td>Simplified Chinese</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;sindhi&quot;</code></td>
+<td>Sindhi</td>
+</tr>
+<tr class="even">
+<td><code>&quot;sinhala&quot;</code></td>
+<td>Sinhala</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;slovak&quot;</code></td>
+<td>Slovak</td>
+</tr>
+<tr class="even">
+<td><code>&quot;slovenian&quot;</code></td>
+<td>Slovenian</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;sorani&quot;</code></td>
+<td>Sorani</td>
+</tr>
+<tr class="even">
+<td><code>&quot;sotho&quot;</code></td>
+<td>Sotho</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;latam&quot;</code></td>
+<td>Spanish - Latin America</td>
+</tr>
+<tr class="even">
+<td><code>&quot;spanish&quot;</code></td>
+<td>Spanish - Spain</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;swahili&quot;</code></td>
+<td>Swahili</td>
+</tr>
+<tr class="even">
+<td><code>&quot;swedish&quot;</code></td>
+<td>Swedish</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;tajik&quot;</code></td>
+<td>Tajik</td>
+</tr>
+<tr class="even">
+<td><code>&quot;tamil&quot;</code></td>
+<td>Tamil</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;tatar&quot;</code></td>
+<td>Tatar</td>
+</tr>
+<tr class="even">
+<td><code>&quot;telugu&quot;</code></td>
+<td>Telugu</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;thai&quot;</code></td>
+<td>Thai</td>
+</tr>
+<tr class="even">
+<td><code>&quot;tigrinya&quot;</code></td>
+<td>Tigrinya</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;tchinese&quot;</code></td>
+<td>Traditional Chinese</td>
+</tr>
+<tr class="even">
+<td><code>&quot;tswana&quot;</code></td>
+<td>Tswana</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;turkish&quot;</code></td>
+<td>Turkish</td>
+</tr>
+<tr class="even">
+<td><code>&quot;turkmen&quot;</code></td>
+<td>Turkmen</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;ukrainian&quot;</code></td>
+<td>Ukrainian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;urdu&quot;</code></td>
+<td>Urdu</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;uyghur&quot;</code></td>
+<td>Uyghur</td>
+</tr>
+<tr class="even">
+<td><code>&quot;uzbek&quot;</code></td>
+<td>Uzbek</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;valencian&quot;</code></td>
+<td>Valencian</td>
+</tr>
+<tr class="even">
+<td><code>&quot;vietnamese&quot;</code></td>
+<td>Vietnamese</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;welsh&quot;</code></td>
+<td>Welsh</td>
+</tr>
+<tr class="even">
+<td><code>&quot;wolof&quot;</code></td>
+<td>Wolof</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;xhosa&quot;</code></td>
+<td>Xhosa</td>
+</tr>
+<tr class="even">
+<td><code>&quot;yoruba&quot;</code></td>
+<td>Yoruba</td>
+</tr>
+<tr class="odd">
+<td><code>&quot;zulu&quot;</code></td>
+<td>Zulu</td>
+</tr>
+</tbody>
+</table>
+</details>
+<hr />
+<h4 id="systems">Systems</h4>
+<p><code>HashSet&lt;string&gt;</code> type with default value of <code>[]</code>. Packages must contain an app with support for one of the <code>SystemNames</code> specified here or they will not be added to your account. You can leave this empty to allow for all systems. The available <code>SystemNames</code> for filtering are: <code>&quot;Windows&quot;</code>, <code>&quot;MacOS&quot;</code>, <code>&quot;Linux&quot;</code>, <code>&quot;DeckVerified&quot;</code>, <code>&quot;DeckPlayable&quot;</code>, <code>&quot;DeckUnsupported&quot;</code>, <code>&quot;DeckUnknown&quot;</code></p>
+<hr />
+<h4 id="minreviewscore">MinReviewScore</h4>
+<p><code>uint</code> type with default value of <code>0</code>. Packages must contain an app with a <code>ReviewScore</code> greater than or equal to this or they will not be added to your account. You can leave this at <code>0</code> to allow for all values. A <code>ReviewScore</code> may range from 1 to 9 and is not the same as the percentage of positive reviews. Refer to the list below for more information. This filter is not applied to demos or playtests as they can’t normally be reviewed.</p>
+<details>
+<summary>
+List of Review Scores
+</summary>
+<table>
+<thead>
+<tr class="header">
+<th>Review Score</th>
+<th>Description</th>
+<th># of Reviews</th>
+<th>% of Positive Reviews</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Overwhelmingly Negative</td>
+<td>500+</td>
+<td>0%-19%</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>Very Negative</td>
+<td>50-499</td>
+<td>0%-19%</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>Negative</td>
+<td>1-49</td>
+<td>0%-19%</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>Mostly Negative</td>
+<td>-</td>
+<td>20%-39%</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>Mixed</td>
+<td>-</td>
+<td>40%-69%</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>Mostly Positive</td>
+<td>-</td>
+<td>70%-79%</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>Positive</td>
+<td>1-49</td>
+<td>80%-100%</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>Very Positive</td>
+<td>50-499</td>
+<td>80%-100%</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>Very Positive</td>
+<td>500+</td>
+<td>80%-94%</td>
+</tr>
+<tr class="even">
+<td>9</td>
+<td>Overwhelmingly Positive</td>
+<td>500+</td>
+<td>95%-100%</td>
+</tr>
+</tbody>
+</table>
+</details>
+<hr />
+<h4 id="maxdaysold">MaxDaysOld</h4>
+<p><code>uint</code> type with default value of <code>0</code>. Packages must contain an app which was released on Steam within the last <code>MaxDaysOld</code> days or they will not be added to your account. You can leave this at <code>0</code> to not filter by release date.</p>
+<hr />
+<h4 id="ignoredcontentdescriptors">IgnoredContentDescriptors</h4>
+<p><code>HashSet&lt;uint&gt;</code> type with default value of <code>[]</code>. Packages containing apps with any of the <code>ContentDescriptorIDs</code> specified here will not be added to your account. Detailed information about content descriptors can be found <a href="https://store.steampowered.com/account/preferences/">here</a> under “Mature Content Filtering”.</p>
+<details>
+<summary>
+List of Content Descriptor IDs
+</summary>
+<table>
+<thead>
+<tr class="header">
+<th>Descriptor ID</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Some Nudity or Sexual Content</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>Frequent Violence or Gore</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>Adult Only Sexual Content</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>Frequent Nudity or Sexual Content</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>General Mature Content</td>
+</tr>
+</tbody>
+</table>
+</details>
+<hr />
+<h4 id="ignoredtypes">IgnoredTypes</h4>
+<p><code>HashSet&lt;string&gt;</code> type with default value of <code>[&quot;Demo&quot;]</code>. Packages containing apps with any of the <code>TypeNames</code> specified here will not be added to your account. Refer to <a href="#types">Types</a> for more information about <code>TypeNames</code>.</p>
+<blockquote>
+<p>[!NOTE] Demos are filtered out by default. This is because Steam has at times removed all uninstalled demos from accounts. If you’d like the plugin to activate demos, you can do so by setting <code>IgnoredTypes</code> to <code>[]</code>, or some other value that doesn’t include <code>&quot;Demo&quot;</code>.</p>
+</blockquote>
+<hr />
+<h4 id="ignoredtags">IgnoredTags</h4>
+<p><code>HashSet&lt;uint&gt;</code> type with default value of <code>[]</code>. Packages containing apps with any of these <code>TagIDs</code> will not be added to your account. Refer to <a href="#tags">Tags</a> for more information about <code>TagIDs</code>.</p>
+<hr />
+<h4 id="ignoredcategories">IgnoredCategories</h4>
+<p><code>HashSet&lt;uint&gt;</code> type with default value of <code>[]</code>. Packages containing apps with any of these <code>CategoryIDs</code> will not be added to your account. Refer to <a href="#categories">Categories</a> for more information about <code>CategoryIDs</code>.</p>
+<hr />
+<h4 id="ignoredappids">IgnoredAppIDs</h4>
+<p><code>HashSet&lt;uint&gt;</code> type with default value of <code>[]</code>. Packages containing apps with any of these <code>AppIDs</code> will not be added to your account.</p>
+<hr />
+<h4 id="requirealltags">RequireAllTags</h4>
+<p><code>bool</code> type with default value of <code>false</code>. If set to <code>true</code>, packages must contain an app with <strong>all</strong> of the <code>TagIDs</code> specified in the <a href="#tags">Tags</a> filter or they will not be added to your account.</p>
+<hr />
+<h4 id="requireallcategories">RequireAllCategories</h4>
+<p><code>bool</code> type with default value of <code>false</code>. If set to <code>true</code>, packages must contain an app with <strong>all</strong> of the <code>CategoryIDs</code> specified in the <a href="#categories">Categories</a> filter or they will not be added to your account.</p>
+<hr />
+<h4 id="importstorefilters">ImportStoreFilters</h4>
+<p><code>bool</code> type with default value of <code>false</code>. If set to <code>true</code>, the filter will also use the ignored games, ignored tags, and ignored content descriptor settings you use on the Steam storefront.</p>
+<hr />
+<h4 id="wishlistonly">WishlistOnly</h4>
+<p><code>bool</code> type with default value of <code>false</code>. If set to <code>true</code>, packages must contain an app your account has wishlisted or followed on the Steam storefront or they will not be added to your account.</p>
+<hr />
+<h4 id="ignorefreeweekends">IgnoreFreeWeekends</h4>
+<p><code>bool</code> type with default value of <code>false</code>. Free weekend packages will be ignored if set to <code>true</code>.</p>
+<hr />
+<h4 id="nocostonly">NoCostOnly</h4>
+<p><code>bool</code> type with default value of <code>false</code>. If set to <code>true</code>, only “No Cost” packages will be added to your account. “No Cost” packages tend to be those which are free for only a limited time, and can also sometimes give a +1 to your owned games count.</p>
+<hr />
+<h4 id="playtestmode">PlaytestMode</h4>
+<p><code>uint</code> type with default value of <code>0</code>. Some or all playtests will be ignored based on the provided value.</p>
+<details>
+<summary>
+List of Playtest Modes
+</summary>
+<table>
+<thead>
+<tr class="header">
+<th>Playtest Modes</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>Ignore all playtests</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>Include only unlimited playtests</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>Include only limited playtests</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>Include all playtests</td>
+</tr>
+</tbody>
+</table>
+</details>
+<blockquote>
+<p>[!NOTE] Only one of your bots may use the <code>PlaytestMode</code> filter option. As some playtests have a limited number of slots, this is an artificial restriction I’ve put in place to limit how many slots a single person can occupy.</p>
+</blockquote>
+<blockquote>
+<p>[!NOTE] If you use <code>PauseFreePackagesWhilePlaying</code>, be aware that when it comes to limited playtests, the plugin cannot control when the playtest package is added to your account. When or if this happens is decided by the game’s developer, and so it’s possible that a package will be added to your account while you’re playing a game.</p>
+</blockquote>
+<hr />
+<h3 id="using-multiple-package-filters">Using multiple package filters</h3>
+<p>You can define as many filters as you’d like, and packages that pass any one of your filters will be added to your account. For example, with the three filters below we can allow for any of:</p>
+<ul>
+<li>Free games with Steam Trading Cards, but without nudity</li>
+<li>Free games or playtests which have English or French language support, and Puzzle or Programming tags</li>
+<li>Free DLC for games you own</li>
+</ul>
+<div class="sourceCode" id="cb5"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;FreePackagesFilters&quot;:</span> <span class="ot">[</span><span class="fu">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Types&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Game&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Categories&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">29</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;IgnoredContentDescriptors&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">3</span><span class="ot">,</span> <span class="dv">4</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span><span class="ot">,</span><span class="fu">{</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Types&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Game&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">1664</span><span class="ot">,</span> <span class="dv">5432</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Languages&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;english&quot;</span><span class="ot">,</span> <span class="st">&quot;french&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;PlaytestMode&quot;</span><span class="fu">:</span> <span class="dv">3</span><span class="fu">,</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span><span class="ot">,</span><span class="fu">{</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Types&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;DLC&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;IgnoredTypes&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Game&quot;</span><span class="ot">,</span> <span class="st">&quot;Application&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span><span class="ot">]</span><span class="er">,</span></span></code></pre></div>
+<hr />
+<h3 id="importing-packages">Importing packages</h3>
+<p>While the plugin can be used passively, you can also manually import free packages from <a href="https://steamdb.info/freepackages/">SteamDB</a> using <a href="https://github.com/Citrinate/FreePackages/tree/main/FreePackagesImporter">the importer userscript</a>, or through the commands and <a href="https://github.com/JustArchiNET/ArchiSteamFarm/wiki/IPC">IPC interface</a> endpoints below.</p>
+<h3 id="commands">Commands</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Command</th>
+<th>Access</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>freepackages</code></td>
+<td><code>FamilySharing</code></td>
+<td>Prints version of plugin.</td>
+</tr>
+<tr class="even">
+<td><code>queuestatus [Bots]</code></td>
+<td><code>Master</code></td>
+<td>Prints the status of the given bot’s packages queue</td>
+</tr>
+<tr class="odd">
+<td><code>queuelicense [Bots] &lt;Licenses&gt;</code></td>
+<td><code>Master</code></td>
+<td>Adds given <code>licenses</code>, explained <a href="https://github.com/JustArchiNET/ArchiSteamFarm/wiki/Commands#addlicense-licenses">here</a>, to the given bot’s packages queue. Playtests cannot be added to the package queue using this command</td>
+</tr>
+<tr class="even">
+<td><code>queuelicense^ [Bots] &lt;Licenses&gt;</code></td>
+<td><code>Master</code></td>
+<td>Adds given <code>licenses</code>, explained <a href="https://github.com/JustArchiNET/ArchiSteamFarm/wiki/Commands#addlicense-licenses">here</a>, to the given bot’s packages queue using that bot’s package filters</td>
+</tr>
+<tr class="odd">
+<td><code>clearfreepackagesqueue [Bots]</code></td>
+<td><code>Master</code></td>
+<td>Removes everything from the given bot’s packages queue</td>
+</tr>
+</tbody>
+</table>
+<h4 id="command-aliases">Command Aliases</h4>
+<table>
+<thead>
+<tr class="header">
+<th>Command</th>
+<th>Alias</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>queuestatus</code></td>
+<td><code>qstatus</code></td>
+</tr>
+<tr class="even">
+<td><code>queuestatus asf</code></td>
+<td><code>qsa</code></td>
+</tr>
+<tr class="odd">
+<td><code>queuelicense</code></td>
+<td><code>queuelicence</code>, <code>qlicense</code>, <code>qlicence</code></td>
+</tr>
+<tr class="even">
+<td><code>queuelicense^</code></td>
+<td><code>queuelicence^</code>, <code>qlicense^</code>, <code>qlicence^</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="ipc-interface">IPC Interface</h3>
+<table>
+<thead>
+<tr class="header">
+<th>API</th>
+<th>Method</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>/Api/FreePackages/{botNames}/GetChangesSince/{changeNumber}</code></td>
+<td><code>GET</code></td>
+<td></td>
+<td>Request changes for apps and packages since a given change number <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></td>
+</tr>
+<tr class="even">
+<td><code>/Api/FreePackages/{botName}/GetOwnedApps</code></td>
+<td><code>GET</code></td>
+<td><code>showNames</code></td>
+<td>Retrieves all apps owned by the given bot</td>
+</tr>
+<tr class="odd">
+<td><code>/Api/FreePackages/{botName}/GetOwnedPackages</code></td>
+<td><code>GET</code></td>
+<td></td>
+<td>Retrieves all packages owned by the given bot</td>
+</tr>
+<tr class="even">
+<td><code>/Api/FreePackages/{botNames}/GetProductInfo</code></td>
+<td><code>GET</code></td>
+<td><code>appIDs</code>, <code>packageIDs</code></td>
+<td>Request product information for a list of apps or packages <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></td>
+</tr>
+<tr class="odd">
+<td><code>/Api/FreePackages/{botNames}/QueueLicenses</code></td>
+<td><code>POST</code></td>
+<td><code>appIDs</code>, <code>packageIDs</code>, <code>useFilter</code></td>
+<td>Adds the given appIDs and packageIDs to the given bot’s package queue</td>
+</tr>
+<tr class="even">
+<td><code>/Api/FreePackages/{botName}/RequestFreeAppLicense</code></td>
+<td><code>GET</code></td>
+<td><code>appIDs</code></td>
+<td>Request a free license for given appIDs</td>
+</tr>
+<tr class="odd">
+<td><code>/Api/FreePackages/{botName}/RequestFreeSubLicense</code></td>
+<td><code>GET</code></td>
+<td><code>subID</code></td>
+<td>Request a free license for given subID</td>
+</tr>
+</tbody>
+</table>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Responses are not dependent on the account used to make these requests. You may provide multiple <code>botNames</code>, and the first available bot will be used to make the request.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Responses are not dependent on the account used to make these requests. You may provide multiple <code>botNames</code>, and the first available bot will be used to make the request.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>
