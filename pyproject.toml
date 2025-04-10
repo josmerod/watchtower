@@ -1,0 +1,18 @@
+[project]
+name = "watchtower" # Or a more specific name like "deeplearning-scraper"
+version = "0.1.0"
+description = "Scraper for DeepLearning.AI courses."
+authors = [
+    { name = "Your Name", email = "your@email.com" }, # Optional: Add your details
+]
+requires-python = ">=3.10" # Specify compatible Python versions
+dependencies = [
+    "playwright>=1.40", # Specify playwright as a dependency
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+# uv specific configurations can go here if needed in the future 

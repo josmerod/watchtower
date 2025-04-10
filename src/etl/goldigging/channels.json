@@ -1,0 +1,101 @@
+{
+  "aaa-dev": {
+    "description": "Programming and Development",
+    "channels": [
+      "Fireship",
+      "TechWithTim",
+      "TraversyMedia",
+      "CoreySchafer",
+      "freecodecamp",
+      "ArjanCodes",
+      "t3dotgg",
+      "ishaqhamin",
+      "james-willett",
+      "AICodeKing",
+      "Sentdex",
+      "TwoMinutePapers",
+      "YannicKilcher",
+      "CodeEmporium",
+      "mreflow",
+      "DaveShap",
+      "Deeplearningai",
+      "Augmented_AI",
+      "CodeOpinion",
+      "markrichards5014",
+      "CodingTech",
+      "EmilyBache-tech-coach",
+      "CodeAesthetic",
+      "NoBoilerplate",
+      "pragmaticengineer",
+      "mouredev",
+      "FaztCode",
+      "midudev",
+      "midulive",
+      "PeladoNerd",
+      "SeattleDataGuy",
+      "nataindata",
+      "DataWithBaraa",
+      "DecisionForest",
+      "ByteByteGo",
+      "TechLead",
+      "techwithsoleyman",
+      "nateherkleonardogrig"
+    ]
+  },
+  "aa-economics": {
+    "description": "Economics and Politics",
+    "channels": [
+      "jfcalero",
+      "jfcaleroMANUAL",
+      "VisualEconomik",
+      "VisualPolitik",
+      "PolyMatter",
+      "slow_start",
+      "companyman114",
+      "MagnatesMedia"
+    ]
+  },
+  "aa-personal_development": {
+    "description": "Personal Development",
+    "channels": [
+      "hubermanlab",
+      "Burnout.Recovery",
+      "WiseSleep",
+      "TED",
+      "SUCCESSCHASERS",
+      "HowtoADHD",
+      "James_Lim"
+    ]
+  },
+  "z-sleepcore": {
+    "description": "Music for sleeping",
+    "channels": [
+      "smarterwhileyousleep",
+      "heavenlyeyes",
+      "thehiddentreasury"
+    ]
+  },
+  "zz-cooking": {
+    "description": "Cooking",
+    "channels": [
+      "FornerDeAlella",
+      "superpilopi"
+    ]
+  },
+  "zz-food_reviews": {
+    "description": "Food Reviews",
+    "channels": [
+      "peldanyos",
+      "SezarBlue",
+      "esttikPlus"
+    ]
+  },
+  "z-soundtowork": {
+    "description": "Sound to work",
+    "channels": [
+      "mugiwave",
+      "OriondeMirage",
+      "toiryusei"
+    ]
+  }
+} 

@@ -10,7 +10,8 @@ import os
 # Define paths
 SHORTCUTS_DATA_DIR = "../../../data/shortcuts"
 CUSTOM_SHORTCUTS_FILE = os.path.join(SHORTCUTS_DATA_DIR, "custom_shortcuts.json")
-PREDEFINED_SHORTCUTS_FILE = os.path.join(SHORTCUTS_DATA_DIR, "predefined_shortcuts.json")
+#PREDEFINED_SHORTCUTS_FILE = os.path.join(SHORTCUTS_DATA_DIR, "predefined_shortcuts.json")
+PREDEFINED_SHORTCUTS_FILE = os.path.join(SHORTCUTS_DATA_DIR, "predefined_shortcuts.json.hugejoke")
 
 def load_predefined_shortcuts(logger=None):
     """Load predefined shortcuts from JSON file"""
