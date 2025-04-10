@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Any
 import concurrent.futures
 
 import yt_dlp
@@ -23,119 +23,18 @@ BASE_OUTPUT_DIR = "data/youtube"
 MAX_VIDEOS_PER_CHANNEL = 50
 DEFAULT_DAYS_LOOKBACK = 42  # 6 weeks
 
-# Channel configurations by topic
-CHANNEL_TOPICS = {
-    "aaa-dev": {
-        "description": "Programming and Development",
-        "channels": [
-            # Popular Programming Tutorials
-            "Fireship",
-            "TechWithTim",
-            "TraversyMedia",
-            "CoreySchafer",
-            "freecodecamp",
-            "ArjanCodes",
-            "t3dotgg",
-            "ishaqhamin",
-            "james-willett",
-            # AI/ML Focus
-            "AICodeKing",
-            "Sentdex",
-            "TwoMinutePapers",
-            "YannicKilcher",
-            "CodeEmporium",
-            # GenAI Focus
-            "mreflow",
-            "DaveShap",
-            "Deeplearningai",
-            "Augmented_AI",
-            # Software Architecture/Design
-            "CodeOpinion",
-            "markrichards5014",
-            "CodingTech",
-            # Advanced Programming
-            "EmilyBache-tech-coach",
-            "CodeAesthetic",
-            "NoBoilerplate",
-            "pragmaticengineer",
-            # Spanish Programming Content
-            "mouredev",
-            "FaztCode",
-            "midudev",
-            "midulive",
-            "PeladoNerd",
-            # Data Science / Data Engineering / Databricks
-            "SeattleDataGuy",
-            "nataindata",
-            "DataWithBaraa",
-            "DecisionForest",
-            # Cloud Architecture / Solution Architecture / Enterprise Architecture / DevOps
-            "ByteByteGo",
-            "TechLead",
-            "techwithsoleyman",
-            # Generative AI automation
-            "nateherkleonardogrig",
-        ],
-    },
-    "aa-economics": {
-        "description": "Economics and Politics",
-        "channels": [
-            # Spanish dissertions
-            "jfcalero",
-            "jfcaleroMANUAL",
-            "VisualEconomik",
-            "VisualPolitik",
-            # English economics, politics and enterprises
-            "PolyMatter",
-            "slow_start",
-            "companyman114",
-            "MagnatesMedia",
-        ],
-    },
-    "aa-personal_development": {
-        "description": "Personal Development",
-        "channels": [
-            "hubermanlab",
-            "Burnout.Recovery",
-            "WiseSleep",
-            "TED",
-            "SUCCESSCHASERS",
-            "HowtoADHD",
-            "James_Lim",
-        ],
-    },
-    "z-sleepcore": {
-        "description": "Music for sleeping",
-        "channels": [
-            "smarterwhileyousleep",
-            "heavenlyeyes",
-        ],
-    },
-    "zz-cooking": {
-        "description": "Cooking",
-        "channels": [
-            "FornerDeAlella",
-            "superpilopi",
-        ],
-    },
-    "zz-food_reviews": {
-        "description": "Food Reviews",
-        "channels": [
-            "peldanyos",
-            "SezarBlue",
-            "esttikPlus",
-        ],
-    },
-    "z-soundtowork": {
-        "description": "Sound to work",
-        "channels": [
-            "mugiwave",
-            "OriondeMirage",
-            "toiryusei",
+# Load channel topics from JSON file
+def load_channel_topics() -> Dict[str, Any]:
+    """Load the channel topics configuration from the JSON file."""
+    # Get the directory this file is in
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(current_dir, "channels.json")
+    
+    with open(json_path, 'r') as json_file:
+        return json.load(json_file)
 
-        ],
-    },
-}
+# Channel configurations by topic
+CHANNEL_TOPICS = load_channel_topics()
 
 
 def get_channel_videos_by_id(
