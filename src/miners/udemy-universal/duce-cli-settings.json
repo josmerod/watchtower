@@ -1,0 +1,66 @@
+{
+  "categories": {
+    "Business": true,
+    "Design": true,
+    "Development": true,
+    "Finance & Accounting": true,
+    "Health & Fitness": true,
+    "IT & Software": true,
+    "Lifestyle": true,
+    "Marketing": true,
+    "Music": true,
+    "Office Productivity": true,
+    "Personal Development": true,
+    "Photography & Video": true,
+    "Teaching & Academics": true
+  },
+  "languages": {
+    "Arabic": false,
+    "Chinese": false,
+    "Dutch": false,
+    "English": true,
+    "French": false,
+    "German": false,
+    "Hindi": false,
+    "Indonesian": false,
+    "Italian": true,
+    "Japanese": true,
+    "Korean": false,
+    "Nepali": false,
+    "Polish": false,
+    "Portuguese": true,
+    "Romanian": false,
+    "Russian": false,
+    "Spanish": true,
+    "Thai": false,
+    "Turkish": false,
+    "Urdu": false
+  },
+  "sites": {
+    "Real Discount": true,
+    "Discudemy": true,
+    "IDownloadCoupons": true,
+    "Tutorial Bar": true,
+    "E-next": true,
+    "Course Vania": true,
+    "Udemy Freebies": true,
+    "Course Joiner": true,
+    "Cursos Dev": true,
+    "Udemy Free Courses": true
+  },
+  "min_rating": 0.0,
+  "instructor_exclude": [
+    "instructor-1",
+    "instructor-2",
+    "more-bad-instructor"
+  ],
+  "title_exclude": [
+    "noT_cAse SenSItiVe"
+  ],
+  "email": "josemanuelmejiasrodriguez@gmail.com",
+  "password": "Josele1305!",
+  "save_txt": true,
+  "discounted_only": false,
+  "use_browser_cookies": false,
+  "course_update_threshold_months": 240
+}

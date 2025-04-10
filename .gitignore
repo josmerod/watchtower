@@ -36,3 +36,8 @@ src/utils/__pycache__/logging.cpython-313.pyc
 src/etl/goldigging/free_udemy_courses/duce-cli-settings.json
 src/etl/goldigging/free_udemy_courses/courses_to_enroll.json
 src/etl/goldigging/free_udemy_courses/Courses/*
+
+
+src/miners/asf-winonly/config/
+src/miners/asf-winonly/logs/
+
