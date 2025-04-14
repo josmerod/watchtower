@@ -1,195 +1,9 @@
 {
-    "IDownloadCoupons": [
-        [
-            "كورس التسويق الإلكتروني الوحيد الشامل الكامل .تحديثات( 2025)",
-            "https://www.udemy.com/course/transform-your-travel-writing-adventure-into-words-that-sell/?couponCode=_TUNDE_VICTOR"
-        ],
-        [
-            "Curso Básico de Canva 2025: Crea Diseños Gráficos Desde Cero",
-            "https://www.udemy.com/course/tibco-spotfire-development-beginners-to-advanced-course/?couponCode=TEACHERS_DAY_2024"
-        ],
-        [
-            "Curso de Zoom 2025, ¡Desde Cero Hasta Experto!",
-            "https://www.udemy.com/course/adobe-photoshop-selections-master-course/?couponCode=B63CD50ECF29751123DB"
-        ],
-        [
-            "Spring Boot Microservices Professional eCommerce Masterclass",
-            "https://www.udemy.com/course/dart-flutter-the-complete-flutter-development-course/?couponCode=40735CB4229329D1EFDB"
-        ],
-        [
-            "Curso de Canva 2025, ¡Desde Cero Hasta Experto!",
-            "https://www.udemy.com/course/python-django-the-complete-django-web-development-course/?couponCode=670F832B2E0E3383EBAB"
-        ],
-        [
-            "Spring Security 6 with ReactJS, OAuth2, JWT | Spring Boot",
-            "https://www.udemy.com/course/learn-java-fundamentals/?couponCode=COMIDOC"
-        ],
-        [
-            "Test driven development in Java with Mockito Framework",
-            "https://www.udemy.com/course/the-beginners-guide-to-bash-scripting-and-automation/?couponCode=APRILFREE"
-        ],
-        [
-            "Cómo Crear una Landing Page con Google Sites Desde Cero 2025",
-            "https://www.udemy.com/course/introduction-to-python-development/?couponCode=82BA2A6F2E67E616661C"
-        ],
-        [
-            "CC: Cybersecurity Practice Test- 2025",
-            "https://www.udemy.com/course/900-mongodb-interview-questions-practice-tests/?couponCode=31MARCH2024"
-        ],
-        [
-            "Build Your Career and Freedom as a Personal Trainer",
-            "https://www.udemy.com/course/build-a-chat-application-with-firebase-and-flutter/?couponCode=299D6F66A830CA94F2EA"
-        ],
-        [
-            "Python And Flask Framework Complete Course",
-            "https://www.udemy.com/course/tibco-spotfire-interview-technical-questions-answered-with-explanation/?couponCode=APRIL_2024"
-        ],
-        [
-            "Applied Azure Security",
-            "https://www.udemy.com/course/tibco-spotfire-interview-technical-questions-answered-with-explanation/?couponCode=APRIL_2024"
-        ],
-        [
-            "TensorFlow: Basic to Advanced Training",
-            "https://www.udemy.com/course/adobe-photoshop-selections-master-course/?couponCode=B63CD50ECF29751123DB"
-        ],
-        [
-            "600+ Microservices Interview Questions Practice Test",
-            "https://www.udemy.com/course/understand-logarithms-its-application-in-real-world/?couponCode=LOG-2024"
-        ],
-        [
-            "Introduction à la gestion comptable sur SAP S/4HANA Finance",
-            "https://www.udemy.com/course/user-experience-design-learn-ui-ux-app-design-with-figma/?couponCode=A30E8013A6A23903C9E0"
-        ],
-        [
-            "Certificado Profissional em Liderança e Gestão",
-            "https://www.udemy.com/course/python-django-the-complete-django-web-development-course/?couponCode=670F832B2E0E3383EBAB"
-        ],
-        [
-            "How to bring and practice forest bathing at home",
-            "https://www.udemy.com/course/ethically-hack-the-planet-part-4/?couponCode=APRILFREE"
-        ],
-        [
-            "NodeJS Masterclass (Express, MongoDB, OpenAI)",
-            "https://www.udemy.com/course/canva-magic-write-idea-to-text-to-ppt-in-minutes-using-ai/?couponCode=AUGUST_2024_2"
-        ],
-        [
-            "AI Prompt Engineering and Tools for Marketing Businesses",
-            "https://www.udemy.com/course/microsoft-powerbi-masterclass-latest-version/?couponCode=APRIL_2024"
-        ],
-        [
-            "Certificate of Leadership Excellence in Business Management",
-            "https://www.udemy.com/course/tibco-spotfire-development-beginners-to-advanced-course/?couponCode=TEACHERS_DAY_2024"
-        ],
-        [
-            "The Power of AI Avatars with HeyGen",
-            "https://www.udemy.com/course/flutter-20-firebase-build-a-chat-app-for-ios-android/?couponCode=00C87C5BA8801BF647B2"
-        ],
-        [
-            "WordPress no code Mastery Course With Advance SEO 2025",
-            "https://www.udemy.com/course/900-mongodb-interview-questions-practice-tests/?couponCode=31MARCH2024"
-        ],
-        [
-            "Maîtriser Elasticsearch : De l’Initiation à la Certification",
-            "https://www.udemy.com/course/learn-java-fundamentals/?couponCode=COMIDOC"
-        ],
-        [
-            "Flutter Masterclass – (Dart, Api & More)",
-            "https://www.udemy.com/course/web3-blockchain-project-product-manager-certification-course/?couponCode=APRIL_2024"
-        ],
-        [
-            "AWS Security Management & AWS Security Specialist Course",
-            "https://www.udemy.com/course/the-complete-python-django-rest-api-development-bootcamp/?couponCode=0E299D6979C7484636B2"
-        ],
-        [
-            "Maestría en JavaScript: Desde Principiante Hasta Experto",
-            "https://www.udemy.com/course/search-engine-optimization-seo-practice-tests-for-interviews/?couponCode=APRIL_2024"
-        ],
-        [
-            "انظمة السيطره",
-            "https://www.udemy.com/course/search-engine-optimization-seo-practice-tests-for-interviews/?couponCode=APRIL_2024"
-        ],
-        [
-            "The Complete Social Media Growth Mastery With AI 2025",
-            "https://www.udemy.com/course/object-oriented-programming-oop-practice-tests-basic-advanced/?couponCode=APRIL_2024"
-        ],
-        [
-            "Mastering LinkedIn Lead Generation & Social Selling",
-            "https://www.udemy.com/course/the-complete-python-django-rest-api-development-bootcamp/?couponCode=0E299D6979C7484636B2"
-        ],
-        [
-            "Craft Marketing Strategy in 5 Steps With Your AI-Copilot",
-            "https://www.udemy.com/course/introduction-to-python-development/?couponCode=82BA2A6F2E67E616661C"
-        ],
-        [
-            "ChatGPT, DeepSeek, Grok and 30+ More AI Marketing Assistants",
-            "https://www.udemy.com/course/introduction-to-python-development/?couponCode=82BA2A6F2E67E616661C"
-        ],
-        [
-            "Implement PCI-DSS 4.0 Step by Step With Templates",
-            "https://www.udemy.com/course/user-experience-design-learn-ui-ux-app-design-with-figma/?couponCode=A30E8013A6A23903C9E0"
-        ],
-        [
-            "Boost Your Productivity & Write Better Code with AI Tools",
-            "https://www.udemy.com/course/learn-java-fundamentals/?couponCode=COMIDOC"
-        ],
-        [
-            "Executive Certificate in Digital Transformation",
-            "https://www.udemy.com/course/ethically-hack-the-planet-part-4/?couponCode=APRILFREE"
-        ],
-        [
-            "JavaScript And PHP Programming Complete Course",
-            "https://www.udemy.com/course/microsoft-powerbi-masterclass-latest-version/?couponCode=APRIL_2024"
-        ],
-        [
-            "Implement ISO 20000-1:2018 Step By Step With Templates",
-            "https://www.udemy.com/course/understand-logarithms-its-application-in-real-world/?couponCode=LOG-2024"
-        ],
-        [
-            "Business & Science Method, Analysis & Research Methodologies",
-            "https://www.udemy.com/course/tibco-spotfire-interview-technical-questions-answered-with-explanation/?couponCode=APRIL_2024"
-        ],
-        [
-            "Professional Certificate of Secretary",
-            "https://www.udemy.com/course/build-a-chat-application-with-firebase-and-flutter/?couponCode=299D6F66A830CA94F2EA"
-        ],
-        [
-            "Unlocking Grok: AI for Business and Marketing",
-            "https://www.udemy.com/course/flutter-20-firebase-build-a-chat-app-for-ios-android/?couponCode=00C87C5BA8801BF647B2"
-        ],
-        [
-            "AI to Empower your Marketing Team",
-            "https://www.udemy.com/course/python-django-the-complete-django-web-development-course/?couponCode=670F832B2E0E3383EBAB"
-        ],
-        [
-            "Master Mobile Photography: Learn to Edit Photos with iPhone",
-            "https://www.udemy.com/course/text-to-image-ai-art-generators-masterclass/?couponCode=TEACHERS_DAY_2024"
-        ],
-        [
-            "CEO Playbook: Generative AI",
-            "https://www.udemy.com/course/the-beginners-guide-to-bash-scripting-and-automation/?couponCode=APRILFREE"
-        ],
-        [
-            "Social Media Marketing Strategy 2025: Launch Your SMM!",
-            "https://www.udemy.com/course/python-django-the-complete-django-web-development-course/?couponCode=670F832B2E0E3383EBAB"
-        ],
-        [
-            "Email Marketing. Increase Sales With Email Marketing!",
-            "https://www.udemy.com/course/microsoft-powerbi-masterclass-latest-version/?couponCode=APRIL_2024"
-        ],
-        [
-            "Google Ads 2025: How to Drive Sales With PPC!",
-            "https://www.udemy.com/course/ethically-hack-the-planet-part-4/?couponCode=APRILFREE"
-        ],
-        [
-            "Reputation Management: Take Control of Your Company’s Image",
-            "https://www.udemy.com/course/web3-blockchain-project-product-manager-certification-course/?couponCode=APRIL_2024"
-        ],
-        [
-            "Upgrade Your Social Media Presence with ChatGPT",
-            "https://www.udemy.com/course/adobe-photoshop-selections-master-course/?couponCode=B63CD50ECF29751123DB"
-        ]
-    ],
     "E-next": [
+        [
+            "Company Culture: Build a Tesla & Starbucks-Like Organization",
+            "https://www.udemy.com/course/build-winning-corporate-culture-drive-success-with-strategy/?couponCode=MIKE026348165"
+        ],
         [
             "Как запустить свой онлайн курс с нуля - инструкция эксперта",
             "https://www.udemy.com/course/how-to-create/?couponCode=MIKE637313701"
@@ -197,6 +11,14 @@
         [
             "COO: Domine a Excelência Operacional | 2025 [PT]",
             "https://www.udemy.com/course/essenciais-coo/?couponCode=MIKE640151901"
+        ],
+        [
+            "Talent Acquisition Director: Recruitment Management System",
+            "https://www.udemy.com/course/talent-acquisition-director/?couponCode=MIKE026409731"
+        ],
+        [
+            "Competency-Based Interview: Structured Behavioral Questions",
+            "https://www.udemy.com/course/competency-based-interviews/?couponCode=MIKE026409463"
         ],
         [
             "Employee Benefits & Perks: Designing Strategic Reward System",
@@ -207,8 +29,24 @@
             "https://www.udemy.com/course/ai-recruitment/?couponCode=MIKE643284701"
         ],
         [
+            "Employee Experience: HR Design Thinking & Talent Journey EX",
+            "https://www.udemy.com/course/employee-experience-mastery/?couponCode=MIKE644593101"
+        ],
+        [
             "HR Metrics, Analytics and KPI: Data-Driven Decision Making",
             "https://www.udemy.com/course/hr-metrics-new/?couponCode=MIKE646052901"
+        ],
+        [
+            "SHRM-SCP ⭑ SHRM Senior Certified Professional, 2025 exam",
+            "https://www.udemy.com/course/shrm-scp-senior-certified-professional-society/?couponCode=MIKE651832701"
+        ],
+        [
+            "Performance Management with Generative AI for HR & Managers",
+            "https://www.udemy.com/course/performance-management-with-generative-ai-for-hr-managers/?couponCode=MIKE02_26556911"
+        ],
+        [
+            "Business Process Management (BPM) – Design & Map Workflows",
+            "https://www.udemy.com/course/business-process-management-bpm-design-map-workflows/?couponCode=MIKE02_26558141"
         ],
         [
             "CCO: Chief Customer Officer: CX Journey, Success & Care 2025",
@@ -227,6 +65,10 @@
             "https://www.udemy.com/course/mastering-conflict-resolution/?couponCode=MIKE644187701"
         ],
         [
+            "HR Marketing Strategy for Employer Brand Management | 2025",
+            "https://www.udemy.com/course/hr-marketing-mastery-attract-talent-with-proven-strategies/?couponCode=MIKE634823301"
+        ],
+        [
             "SPHRi Senior Professional Human Resources International 2025",
             "https://www.udemy.com/course/sphri-certification-exam/?couponCode=MIKE649072501"
         ],
@@ -243,56 +85,12 @@
             "https://www.udemy.com/course/diversity-and-inclusion-training-build-equality-inclusion/?couponCode=MIKE652935901"
         ],
         [
-            "Performance Management with Generative AI for HR & Managers",
-            "https://www.udemy.com/course/performance-management-with-generative-ai-for-hr-managers/?couponCode=MIKE02_26556911"
-        ],
-        [
             "Build a Modern REST API with PHP 8, from Scratch!",
             "https://www.udemy.com/course/build-modern-php-api/?couponCode=38B806C68C2DA5400E3C"
         ],
         [
             "Efficacité et Concentration pour RÉSULTATS EXTRÊMES",
             "https://www.udemy.com/course/concentration-ultime/?couponCode=6DDDEA79A85E6B11C871"
-        ],
-        [
-            "IT Recruitment in Gaming: Wargaming, EA & Riot approach 2025",
-            "https://www.udemy.com/course/become-certified-game-dev-recruiter-and-start-earning/?couponCode=MIKE026346633"
-        ],
-        [
-            "Generalista de RH: Torne-se um Especialista Versátil [PT]",
-            "https://www.udemy.com/course/generalista-de-rh/?couponCode=MIKE026407699"
-        ],
-        [
-            "Employee Onboarding Mastery: 30-60-90 Day Success Plan",
-            "https://www.udemy.com/course/onboarding-new/?couponCode=MIKE026413811"
-        ],
-        [
-            "HR Marketing Strategy for Employer Brand Management | 2025",
-            "https://www.udemy.com/course/hr-marketing-mastery-attract-talent-with-proven-strategies/?couponCode=MIKE634823301"
-        ],
-        [
-            "Global Recruitment: International Hiring and Talent Sourcing",
-            "https://www.udemy.com/course/mastering-international-recruitment/?couponCode=MIKE647625501"
-        ],
-        [
-            "Google HR Strategies: Learn from the World’s #1 Company",
-            "https://www.udemy.com/course/work-rules-laszlo-bock-amazon-book/?couponCode=MIKE650001501"
-        ],
-        [
-            "Crisis-Proof HR: No-Budget Strategies for Human Resources",
-            "https://www.udemy.com/course/zero-hr-management/?couponCode=MIKE652159301"
-        ],
-        [
-            "Time Management Mastery: GTD, Time Boxing & Focus Hacks",
-            "https://www.udemy.com/course/time-management-with-gtd-time-boxing-for-productivity/?couponCode=MIKE653000301"
-        ],
-        [
-            "Career Coaching & Counseling: CV, Job Search, Growth",
-            "https://www.udemy.com/course/career-coaching-counseling-cv-job-search-growth/?couponCode=MIKE026546545"
-        ],
-        [
-            "Business Process Management (BPM) – Design & Map Workflows",
-            "https://www.udemy.com/course/business-process-management-bpm-design-map-workflows/?couponCode=MIKE02_26558141"
         ],
         [
             "Mastering PyTorch",
@@ -303,16 +101,24 @@
             "https://www.udemy.com/course/mastering-agentic-design-patterns/?couponCode=APR2025AA"
         ],
         [
-            "SHRM-CP ⭑ SHRM Certified Professional | 2025 | Exam",
-            "https://www.udemy.com/course/shrm-cp-exam/?couponCode=MIKE650739901"
+            "Generalista de RH: Torne-se um Especialista Versátil [PT]",
+            "https://www.udemy.com/course/generalista-de-rh/?couponCode=MIKE026407699"
+        ],
+        [
+            "Global Recruitment: International Hiring and Talent Sourcing",
+            "https://www.udemy.com/course/mastering-international-recruitment/?couponCode=MIKE647625501"
+        ],
+        [
+            "Google HR Strategies: Learn from the World’s #1 Company",
+            "https://www.udemy.com/course/work-rules-laszlo-bock-amazon-book/?couponCode=MIKE650001501"
         ],
         [
             "From Recipe to Chef: Become an LLM Engineer 100+ Projects",
             "https://www.udemy.com/course/llm-engineer/?couponCode=APR2025AA"
         ],
         [
-            "Executive Diploma in Human Resources Strategy",
-            "https://www.udemy.com/course/executive-diploma-in-human-resources-strategy/?couponCode=7EC00D5429DF4274C850"
+            "Career Coaching & Counseling: CV, Job Search, Growth",
+            "https://www.udemy.com/course/career-coaching-counseling-cv-job-search-growth/?couponCode=MIKE026546545"
         ],
         [
             "Research Methodologies in Strategy and Product Development",
@@ -327,10 +133,6 @@
             "https://www.udemy.com/course/strategic-partnerships-and-collaborations/?couponCode=STRATEGICPARTNER71"
         ],
         [
-            "CyberSecurity Bootcamp: The Ultimate Beginner's Course",
-            "https://www.udemy.com/course/personal-digital-security-everyone-must-have-cybersecurity/?couponCode=72669D5D045D7EFDE4CB"
-        ],
-        [
             "Complete Fundamental Analysis In Forex Trading Master Course",
             "https://www.udemy.com/course/complete-fundamental-analysis-master-course/?couponCode=E945C33E13C2BA47846D"
         ],
@@ -343,12 +145,20 @@
             "https://www.udemy.com/course/closing-the-distance-a-practical-guide-to-gap-analysis/?couponCode=C5589461DCB98B3F8D0D"
         ],
         [
+            "Executive Diploma in Human Resources Strategy",
+            "https://www.udemy.com/course/executive-diploma-in-human-resources-strategy/?couponCode=7EC00D5429DF4274C850"
+        ],
+        [
             "Professional Diploma in Digital Business Development",
             "https://www.udemy.com/course/professional-diploma-in-digital-business-development/?couponCode=0E3CAADDDFC24AF34DEC"
         ],
         [
             "Social Media Video Editing with Canva: From Beginner to Pro",
             "https://www.udemy.com/course/social-media-video-editing-with-canva-from-beginner-to-pro/?couponCode=78FBD26BB4EE3C16ACCD"
+        ],
+        [
+            "CyberSecurity Bootcamp: The Ultimate Beginner's Course",
+            "https://www.udemy.com/course/personal-digital-security-everyone-must-have-cybersecurity/?couponCode=72669D5D045D7EFDE4CB"
         ],
         [
             "Art Therapy through abstract painting fully accredited",
@@ -371,26 +181,6 @@
             "https://www.udemy.com/course/java-coding-interview-questions/"
         ],
         [
-            "Company Culture: Build a Tesla & Starbucks-Like Organization",
-            "https://www.udemy.com/course/build-winning-corporate-culture-drive-success-with-strategy/?couponCode=MIKE026348165"
-        ],
-        [
-            "Talent Acquisition Director: Recruitment Management System",
-            "https://www.udemy.com/course/talent-acquisition-director/?couponCode=MIKE026409731"
-        ],
-        [
-            "Competency-Based Interview: Structured Behavioral Questions",
-            "https://www.udemy.com/course/competency-based-interviews/?couponCode=MIKE026409463"
-        ],
-        [
-            "Employee Experience: HR Design Thinking & Talent Journey EX",
-            "https://www.udemy.com/course/employee-experience-mastery/?couponCode=MIKE644593101"
-        ],
-        [
-            "SHRM-SCP ⭑ SHRM Senior Certified Professional, 2025 exam",
-            "https://www.udemy.com/course/shrm-scp-senior-certified-professional-society/?couponCode=MIKE651832701"
-        ],
-        [
             "Job Profile: Role Description & Competencies Requirements",
             "https://www.udemy.com/course/master-job-profiles/?couponCode=MIKE026420079"
         ],
@@ -401,6 +191,10 @@
         [
             "Personality Types & Test: MBTI, PAEI, DISC, Big5, Hogan 2025",
             "https://www.udemy.com/course/personality-types-new/?couponCode=MIKE647184701"
+        ],
+        [
+            "Crisis-Proof HR: No-Budget Strategies for Human Resources",
+            "https://www.udemy.com/course/zero-hr-management/?couponCode=MIKE652159301"
         ],
         [
             "GPHR ⭑ The Global Professional in Human Resources HRCI 2025",
@@ -443,6 +237,10 @@
             "https://www.udemy.com/course/organizational-design-structure-matrix-functional-model/?couponCode=MIKE026531361"
         ],
         [
+            "SHRM-CP ⭑ SHRM Certified Professional | 2025 | Exam",
+            "https://www.udemy.com/course/shrm-cp-exam/?couponCode=MIKE650739901"
+        ],
+        [
             "Business Process Simplification & Workflow Optimization",
             "https://www.udemy.com/course/business-process-simplification-workflow-optimization/?couponCode=MIKE026553991"
         ],
@@ -467,6 +265,10 @@
             "https://www.udemy.com/course/recruitment-funnel/?couponCode=MIKE646491301"
         ],
         [
+            "IT Recruitment in Gaming: Wargaming, EA & Riot approach 2025",
+            "https://www.udemy.com/course/become-certified-game-dev-recruiter-and-start-earning/?couponCode=MIKE026346633"
+        ],
+        [
             "Job Evaluation & Grading: Build Fair Pay Salary Structures",
             "https://www.udemy.com/course/job-grading/?couponCode=MIKE645562101"
         ],
@@ -475,8 +277,16 @@
             "https://www.udemy.com/course/knowledge-management-new/?couponCode=MIKE647059101"
         ],
         [
+            "Employee Onboarding Mastery: 30-60-90 Day Success Plan",
+            "https://www.udemy.com/course/onboarding-new/?couponCode=MIKE026413811"
+        ],
+        [
             "Hybrid Work Environments: Manage Remote & Hybrid Teams",
             "https://www.udemy.com/course/hybrid-work-environments-manage-remote-hybrid-teams/?couponCode=MIKE654123101"
+        ],
+        [
+            "Time Management Mastery: GTD, Time Boxing & Focus Hacks",
+            "https://www.udemy.com/course/time-management-with-gtd-time-boxing-for-productivity/?couponCode=MIKE653000301"
         ],
         [
             "American English Vowels & Placement for All",
@@ -621,32 +431,6 @@
         [
             "Django Masterclass: Get Started With Django Web Development",
             "https://www.udemy.com/course/django-masterclass-get-started-with-django-web-development/?couponCode=6E0D169F2F72C2715695"
-        ]
-    ],
-    "Udemy Freebies": [
-        [
-            "American English Vowels & Placement for All",
-            "https://www.udemy.com/american-english-vowels-placement-for-all/?couponCode=REALDISAPR25A"
-        ],
-        [
-            "Natural Language Preprocessing Using spaCy",
-            "https://www.udemy.com/spacy-with-nlp/?couponCode=D6F76C0C4A78B73233C1"
-        ],
-        [
-            "Advanced Program in Business and Entrepreneurship",
-            "https://www.udemy.com/advanced-program-in-business-and-entrepreneurship/?couponCode=382A3CE9EA989E83BDD3"
-        ],
-        [
-            "Create Winning MT4/MT5 Forex Trading Robots without Coding",
-            "https://www.udemy.com/forextradingrobotcreationcourse/?couponCode=7CC32912C55081E89F3F"
-        ],
-        [
-            "Forex Trading Master Course - Zero to Hero",
-            "https://www.udemy.com/forex-trading-master-course-zero-to-hero/?couponCode=3E76D17A1052C58C4226"
-        ],
-        [
-            "Complete Fundamental Analysis In Forex Trading Master Course",
-            "https://www.udemy.com/complete-fundamental-analysis-master-course/?couponCode=E945C33E13C2BA47846D"
         ]
     ]
 }
