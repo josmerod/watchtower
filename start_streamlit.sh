@@ -11,4 +11,4 @@ if [ -d "venv" ]; then
 fi
 
 # Start Streamlit
-streamlit run app.py 
+python3 -m streamlit run app.py 
