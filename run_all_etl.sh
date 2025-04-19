@@ -30,6 +30,7 @@ run_etl "src/etl/news/news_get_planesvalencia.py" && pids+=($!)
 run_etl "src/etl/news/news_get_gooddevs.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_youtube_posts.py" && pids+=($!)
 run_etl "src/watchers/ms_skills_watcher.py" && pids+=($!)
+run_etl "src/etl/goldigging/goldigging_coursera_courses.py" && pids+=($!)
 
 echo "All ETL processes started in parallel"
 echo "Process PIDs: ${pids[*]}"

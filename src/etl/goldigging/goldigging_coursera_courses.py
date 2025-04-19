@@ -142,21 +142,7 @@ class CourseraScraper:
                                 f.write(content)
                             await page.screenshot(path=debug_screenshot)
                             logger.error(f"No courses found on page {page_num}, saved debug info")
-                            
-                            # Check for pagination
-                            next_button = soup.find("li", class_="pager-next")
-                            if not next_button:
-                                logger.info("No next page button found, stopping")
-                                break
-                            
-                            try:
-                                await page.click("li.pager-next a")
-                                await page.wait_for_timeout(3000)
-                                page_num += 1
-                                continue
-                            except Exception as e:
-                                logger.error(f"Error clicking next page: {e}")
-                                break
+                            break
                         
                         logger.info(f"Found {len(course_elements)} course elements on page {page_num}")
                         
@@ -165,21 +151,9 @@ class CourseraScraper:
                             course_data = self.extract_course_info(element, soup)
                             if course_data:
                                 all_courses.append(course_data)
-                        
-                        # Check for next page
-                        next_button = soup.find("li", class_="pager-next")
-                        if not next_button:
-                            logger.info("No next page button found, stopping")
-                            break
-                        
-                        try:
-                            await page.click("li.pager-next a")
-                            await page.wait_for_timeout(3000)
-                        except Exception as e:
-                            logger.error(f"Error clicking next page: {e}")
-                            break
-                        
+                        # URL-based pagination: increment page_num and fetch next page via URL
                         page_num += 1
+                        continue
                         
                     except Exception as e:
                         logger.error(f"Error processing page {page_num}: {e}")
@@ -424,7 +398,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Scrape Coursera courses from mooc-list.com")
-    parser.add_argument("--max-pages", type=int, help="Maximum number of pages to scrape")
+    parser.add_argument("--max-pages", type=int, help="Maximum number of pages to scrape", default=5)
     args = parser.parse_args()
     
     main(max_pages=args.max_pages)
