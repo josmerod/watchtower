@@ -20,7 +20,7 @@ A comprehensive monitoring and ETL framework for scraping and aggregating data f
     - [Web Dashboard](#web-dashboard)
   - [Project Structure](#project-structure)
   - [Dependencies](#dependencies)
-  - [Contribution](#contribution)
+  - [Contributing](#contributing)
   - [License](#license)
   - [Contact](#contact)
 
@@ -167,9 +167,44 @@ watchtower/
 
 For full list, see `requirements.txt` and `pyproject.toml`.
 
-## Contribution
+## Contributing
 
-Contributions are welcome! Please fork the repository and submit pull requests, following the existing style and lint rules.
+We welcome contributions of all kinds, whether it's reporting bugs, suggesting new features, improving documentation, or submitting code changes. To get started, please follow these guidelines:
+
+1. Fork the repository on GitHub and clone your fork:
+   ```bash
+   git clone https://github.com/yourusername/watchtower.git
+   cd watchtower
+   ```
+2. Create a feature branch for your changes:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. Make your changes. Ensure that you adhere to the project's code style and include type annotations and Google-style docstrings.
+4. Run Ruff to lint and format your code:
+   ```bash
+   ruff check . --fix
+   ```
+5. Add or update tests under the `tests/` directory, aiming for high coverage and covering edge cases.
+6. Commit your changes using clear, descriptive messages (e.g., following Conventional Commits).
+7. Push your branch to your fork:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+8. Open a pull request against the `main` branch of the upstream repository. Provide a summary of your changes and reference any related issues.
+
+### Issue Reporting
+
+- Use GitHub Issues to report bugs or request features.
+- Include steps to reproduce, expected vs. actual behavior, and any relevant logs or screenshots.
+
+### Pull Request Process
+
+- All pull requests will be reviewed; expect feedback or requested changes.
+- Ensure all CI checks pass before requests can be merged.
+- Please squash and rebase your commits into logical units for a clean history.
+
+Thank you for helping improve Watchtower!
 
 ## License
 
