@@ -17,7 +17,7 @@ sys.path.append(project_root)
 from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
-logger = logging.getLogger("coursera_scraper")
+logger = logging.getLogger("classcentral_scraper")
 logging.basicConfig(
     level=logging.INFO, 
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -30,13 +30,13 @@ MAX_PAGES_SUBSEQUENT_RUN = 10
 DEBUG_DIR = os.path.join(BASE_OUTPUT_DIR, "debug")
 
 class CourseraScraper:
-    """Scraper for retrieving Coursera courses from mooc-list.com.
-    
-    This class uses direct HTTP requests to retrieve courses from mooc-list.com
-    and save them in JSON and CSV formats for further analysis.
+    """Scraper for retrieving Coursera courses from Class Central.
+
+    This class uses Playwright to scrape the Coursera provider page on classcentral.com
+    and saves the course data in JSON and CSV formats for further analysis.
     """
     
-    BASE_URL = "https://www.mooc-list.com/initiative/coursera"
+    BASE_URL = "https://www.classcentral.com/provider/coursera"
     
     def __init__(self, max_pages: Optional[int] = None) -> None:
         """Initialize the CourseraScraper.
@@ -74,41 +74,46 @@ class CourseraScraper:
                 self.max_pages = MAX_PAGES_SUBSEQUENT_RUN
     
     async def scrape_courses(self) -> List[Dict[str, Any]]:
-        """Scrape courses from mooc-list.com.
-        
-        Returns:
-            List of dictionaries containing course information.
-        """
+        """Scrape courses from classcentral.com (Coursera provider)."""
         from playwright.async_api import async_playwright
         from bs4 import BeautifulSoup
-        
-        all_courses = []
-        page_num = 0
-        
+
+        all_courses: List[Dict[str, Any]] = []
+        page_num = 1
+
         try:
             async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
+                browser = await p.chromium.launch(
+                    headless=False,
+                    args=[
+                        '--disable-blink-features=AutomationControlled'
+                    ]
+                )
                 context = await browser.new_context(
                     viewport={'width': 1920, 'height': 1080},
                     user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
                 )
+                # Stealth: mask automation to bypass Cloudflare detection
+                await context.add_init_script(
+                    "() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }"
+                )
                 page = await context.new_page()
-                
+
                 # Visit the main site first to establish cookies
                 logger.info("Visiting main site to establish cookies")
-                await page.goto("https://www.mooc-list.com/", timeout=60000)
+                await page.goto("https://www.classcentral.com/", timeout=60000)
                 await page.wait_for_timeout(3000)
-                
-                while page_num < self.max_pages:
-                    url = f"{self.BASE_URL}?page={page_num}"
+
+                while page_num <= self.max_pages:
+                    url = f"{self.BASE_URL}?sort=created-up&page={page_num}"
                     logger.info(f"Fetching page {page_num}: {url}")
-                    
+
                     try:
                         await page.goto(url, timeout=60000)
-                        await page.wait_for_timeout(5000)  # Wait for page to load
-                    
+                        await page.wait_for_timeout(random.randint(5000, 8000))  # Wait with random delay to avoid detection
+
                         # Save debug info for the first page
-                        if page_num == 0:
+                        if page_num == 1:
                             debug_file = os.path.join(self.debug_dir, f"page_{page_num}.html")
                             debug_screenshot = os.path.join(self.debug_dir, f"page_{page_num}.png")
                             content = await page.content()
@@ -116,24 +121,29 @@ class CourseraScraper:
                                 f.write(content)
                             await page.screenshot(path=debug_screenshot)
                             logger.info(f"Saved debug info to {debug_file} and {debug_screenshot}")
-                        
-                        # Extract course elements
+
+                        # Extract page content, fallback to cloudscraper if Cloudflare challenge
                         content = await page.content()
+                        # Detect Cloudflare challenge page
+                        if "Just a moment" in content or "needs to review the security" in content:
+                            logger.warning(f"Cloudflare challenge detected on page {page_num}, falling back to cloudscraper")
+                            try:
+                                import cloudscraper
+                                scraper = cloudscraper.create_scraper()
+                                resp = scraper.get(url, headers={"User-Agent": context._options.get('user_agent', '')})  # reuse UA
+                                content = resp.text
+                            except ImportError:
+                                logger.error("cloudscraper not installed; install via 'pip install cloudscraper'")
+                        # Parse content
                         soup = BeautifulSoup(content, "html.parser")
-                        
-                        # First try to find course elements in the view
-                        course_elements = soup.find_all("div", class_="views-row")
-                        
+
+                        # Find all course listings - they're in a list structure
+                        course_elements = soup.find_all("li", class_="course-list-course")
+
                         if not course_elements:
-                            # Try alternative selectors
-                            course_elements = soup.find_all("div", class_="node-course")
-                        
-                        if not course_elements:
-                            # Try one more selector from the debug HTML
-                            container = soup.find("div", class_="view-content")
-                            if container:
-                                course_elements = container.find_all("div", recursive=False)
-                        
+                            # Try alternative selector
+                            course_elements = soup.select("div.catalog-grid__results li")
+
                         if not course_elements:
                             # Save debug info
                             debug_file = os.path.join(self.debug_dir, f"page_{page_num}_failed.html")
@@ -143,159 +153,99 @@ class CourseraScraper:
                             await page.screenshot(path=debug_screenshot)
                             logger.error(f"No courses found on page {page_num}, saved debug info")
                             break
-                        
+
                         logger.info(f"Found {len(course_elements)} course elements on page {page_num}")
-                        
+
                         # Process courses
-                        for element in course_elements:
-                            course_data = self.extract_course_info(element, soup)
+                        for course_element in course_elements:
+                            course_data = self.extract_course_info(course_element, soup)
                             if course_data:
                                 all_courses.append(course_data)
-                        # URL-based pagination: increment page_num and fetch next page via URL
+
                         page_num += 1
-                        continue
-                        
+
                     except Exception as e:
                         logger.error(f"Error processing page {page_num}: {e}")
                         break
-                
+
                 await browser.close()
-                
+
         except Exception as e:
             logger.error(f"Error in scrape_courses: {e}")
-            
+
         logger.info(f"Scraped {len(all_courses)} courses in total")
         return all_courses
     
     def extract_course_info(self, course_element, soup) -> Dict[str, Any]:
-        """Extract course information from a course element.
-        
-        Args:
-            course_element: BeautifulSoup element containing course information.
-            soup: The complete BeautifulSoup object for context
-            
-        Returns:
-            Dictionary with extracted course information.
-        """
-        course_data = {}
-        
+        """Extract course information from a ClassCentral course listing."""
+        import json
+        from datetime import datetime
+
+        course_data: Dict[str, Any] = {}
+
         try:
-            # Extract title and URL - try different selectors based on the HTML structure
-            title_element = course_element.find("h2", class_="views-field-title") or course_element.find("h2", class_="node-title")
-            
-            if title_element and title_element.a:
-                course_data["title"] = title_element.a.text.strip()
-                course_data["url"] = title_element.a.get("href", "")
-                if course_data["url"] and not course_data["url"].startswith("http"):
-                    course_data["url"] = f"https://www.mooc-list.com{course_data['url']}"
-            else:
-                # Try direct title div field
-                title_div = course_element.find("div", class_="views-field-title")
-                if title_div and title_div.a:
-                    course_data["title"] = title_div.a.text.strip()
-                    course_data["url"] = title_div.a.get("href", "")
-                    if course_data["url"] and not course_data["url"].startswith("http"):
-                        course_data["url"] = f"https://www.mooc-list.com{course_data['url']}"
-                        
-            if not course_data.get("title"):
-                return None
-            
-            # Helper function to extract field data
-            def extract_field(field_class: str, prefix: str = "") -> Optional[str]:
-                element = course_element.find("div", class_=field_class)
-                if element:
-                    text = element.get_text(strip=True)
-                    if prefix and text.startswith(prefix):
-                        return text[len(prefix):].strip()
-                    return text
-                return None
-            
-            # Helper function for views fields
-            def extract_views_field(field_class: str, prefix: str = "") -> Optional[str]:
-                element = course_element.find("div", class_=field_class)
-                if element:
-                    content = element.find("div", class_="field-content")
-                    if content:
-                        text = content.get_text(strip=True)
-                        if prefix and text.startswith(prefix):
-                            return text[len(prefix):].strip()
-                        return text
-                return None
-            
-            # Try to extract data from various field classes
-            # Initiative/Provider
-            provider = (
-                extract_field("field-name-field-initiative", "Initiative: ") or 
-                extract_views_field("views-field-field-initiative") or 
-                "Coursera"
-            )
-            course_data["provider"] = provider
-            
-            # University/Institution
-            institution = (
-                extract_field("field-name-field-university", "University/Institution: ") or
-                extract_views_field("views-field-field-university")
-            )
-            course_data["institution"] = institution
-            
-            # Subject
-            subject = (
-                extract_field("field-name-field-subject", "Subject: ") or
-                extract_views_field("views-field-field-subject")
-            )
-            course_data["subject"] = subject
-            
-            # Cost
-            cost = (
-                extract_field("field-name-field-fee", "Course Fee: ") or
-                extract_views_field("views-field-field-fee")
-            )
-            course_data["cost"] = cost if cost else "Free"
-            
-            # Language
-            language = (
-                extract_field("field-name-field-language", "Language: ") or
-                extract_views_field("views-field-field-language")
-            )
-            course_data["language"] = language
-            
-            # Duration
-            duration = (
-                extract_field("field-name-field-duration", "Duration: ") or
-                extract_views_field("views-field-field-duration")
-            )
-            course_data["duration"] = duration
-            
-            # Certificate information
-            certificate_text = (
-                extract_field("field-name-field-certificate") or
-                extract_views_field("views-field-field-certificate")
-            )
-            course_data["certificate_offered"] = "Yes" in certificate_text if certificate_text else False
-                
-            # Description
-            description_element = (
-                course_element.find("div", class_="field-name-body") or
-                course_element.find("div", class_="views-field-body")
-            )
-            if description_element:
-                course_data["description"] = description_element.get_text(strip=True)
-            
-            # Get the URL directly from the href if title exists
-            if "title" in course_data and not course_data.get("url"):
-                url_link = soup.find("a", text=course_data["title"])
-                if url_link:
-                    course_data["url"] = url_link.get("href", "")
-                    if course_data["url"] and not course_data["url"].startswith("http"):
-                        course_data["url"] = f"https://www.mooc-list.com{course_data['url']}"
-                
-            # Add metadata
+            # Extract course title and URL
+            course_name_element = course_element.find("h2", class_="text-1")
+            if course_name_element:
+                course_data["title"] = course_name_element.text.strip()
+                a_tag = course_name_element.find_parent("a")
+                if a_tag:
+                    relative_url = a_tag.get("href", "")
+                    course_data["url"] = f"https://www.classcentral.com{relative_url}"
+
+            # Extract institution
+            institution_element = course_element.find("a", href=lambda x: x and "/institution/" in x)
+            if institution_element:
+                course_data["institution"] = institution_element.text.strip()
+
+            # Extract description
+            desc_element = course_element.find("p", class_="text-2")
+            if desc_element:
+                course_data["description"] = desc_element.text.strip()
+
+            # Extract details
+            details_list = course_element.find("ul")
+            if details_list:
+                for item in details_list.find_all("li"):
+                    icon = item.find("i")
+                    if not icon:
+                        continue
+                    icon_class = icon.get("class", [])
+                    text_content = item.get_text(strip=True)
+
+                    if "icon-provider-charcoal" in icon_class:
+                        course_data["provider"] = "Coursera"
+                    elif "icon-clock-charcoal" in icon_class:
+                        course_data["duration"] = text_content
+                    elif "icon-calendar-charcoal" in icon_class:
+                        course_data["start_date"] = text_content
+                    elif "icon-tag-red" in icon_class or "icon-tag-charcoal" in icon_class:
+                        course_data["cost"] = text_content
+                        course_data["is_free"] = "Free" in text_content
+
+            # Extract rating
+            rating_element = course_element.find("span", class_="cmpt-rating-medium")
+            if rating_element:
+                filled_stars = rating_element.find_all("i", class_=lambda c: c and "icon-star-" in c and "empty" not in c)
+                course_data["rating"] = len(filled_stars)
+
+            # Extract subject and language from track props
+            track_props = course_element.find(attrs={"data-track-props": True})
+            if track_props:
+                try:
+                    props = json.loads(track_props["data-track-props"])
+                    course_data["subject"] = props.get("course_subject", "")
+                    course_data["language"] = props.get("course_language", "")
+                    course_data["certificate_offered"] = props.get("course_certificate", False)
+                except json.JSONDecodeError:
+                    pass
+
             course_data["scraped_at"] = datetime.now().isoformat()
-            
+
         except Exception as e:
             logger.error(f"Error extracting course info: {e}")
             return None
-            
+
         return course_data
         
     def save_courses(self, courses: List[Dict[str, Any]]) -> None:
@@ -397,9 +347,9 @@ if __name__ == "__main__":
     # Parse command line arguments
     import argparse
     
-    parser = argparse.ArgumentParser(description="Scrape Coursera courses from mooc-list.com")
+    parser = argparse.ArgumentParser(description="Scrape Coursera courses from classcentral.com provider page")
     parser.add_argument("--max-pages", type=int, help="Maximum number of pages to scrape", default=5)
     args = parser.parse_args()
     
     main(max_pages=args.max_pages)
-    logger.info("Script completed")
+    logger.info("ClassCentral Coursera scraper script completed")
