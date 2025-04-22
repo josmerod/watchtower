@@ -1,0 +1,129 @@
+"""ETL script to aggregate Udemy Universal course links from miner output files."""
+import os
+import sys
+import json
+import logging
+from datetime import datetime
+from typing import List, Dict, Any
+
+# Add project root to Python path
+global_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+sys.path.append(global_project_root)
+
+from src.utils.file_system import ensure_directories, get_project_root
+
+import pandas as pd
+
+# Set up logging
+logger = logging.getLogger("udemy_universal_etl")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
+# Constants
+BASE_OUTPUT_DIR = "data/udemy"
+SOURCE_RELATIVE_DIR = "src/miners/udemy-universal/Courses"
+
+class UdemyUniversalCoursesETL:
+    """ETL for extracting and aggregating Udemy Universal courses."""
+
+    def __init__(self) -> None:
+        """Initialize source and output directories and ensure output exists."""
+        project_root = get_project_root()
+        self.source_dir = os.path.join(project_root, SOURCE_RELATIVE_DIR)
+        self.output_dir = os.path.join(project_root, BASE_OUTPUT_DIR)
+        ensure_directories([BASE_OUTPUT_DIR])
+
+        self.courses_file = os.path.join(self.output_dir, "udemy_courses.json")
+        self.csv_file = os.path.join(self.output_dir, "udemy_courses.csv")
+
+    def extract_courses(self) -> List[Dict[str, Any]]:
+        """Extract courses from miner files sorted newest to oldest.
+
+        Returns:
+            List of course dictionaries with 'title', 'url', and 'scraped_at'.
+        """
+        courses: List[Dict[str, Any]] = []
+        try:
+            filenames = sorted(os.listdir(self.source_dir), reverse=True)
+        except FileNotFoundError:
+            logger.error(f"Source directory not found: {self.source_dir}")
+            return courses
+
+        for filename in filenames:
+            if not filename.lower().endswith(".txt"):
+                continue
+            filepath = os.path.join(self.source_dir, filename)
+            # Parse timestamp from filename
+            name_no_ext, _ = os.path.splitext(filename)
+            try:
+                dt = datetime.strptime(name_no_ext, "%Y-%m-%d--%H-%M")
+                scraped_at = dt.isoformat()
+            except ValueError:
+                scraped_at = datetime.now().isoformat()
+                logger.warning(f"Could not parse timestamp from filename: {filename}, using current time")
+
+            try:
+                with open(filepath, encoding="utf-8") as f:
+                    lines = f.readlines()
+            except Exception as e:
+                logger.error(f"Error reading file {filepath}: {e}")
+                continue
+
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    title, url = line.rsplit(" - ", 1)
+                except ValueError:
+                    logger.warning(f"Could not parse line in {filename}: {line}")
+                    continue
+
+                courses.append({
+                    "title": title.strip(),
+                    "url": url.strip(),
+                    "scraped_at": scraped_at
+                })
+
+        logger.info(f"Extracted {len(courses)} courses from {self.source_dir}")
+        return courses
+
+    def save_courses(self, courses: List[Dict[str, Any]]) -> None:
+        """Save extracted courses to JSON and CSV files.
+
+        Args:
+            courses: List of course dictionaries to save.
+        """
+        if not courses:
+            logger.warning("No courses to save for Udemy Universal")
+            return
+
+        # Save to JSON
+        try:
+            with open(self.courses_file, "w", encoding="utf-8") as f:
+                json.dump(courses, f, ensure_ascii=False, indent=2)
+            logger.info(f"Saved {len(courses)} courses to JSON: {self.courses_file}")
+        except Exception as e:
+            logger.error(f"Error saving JSON file {self.courses_file}: {e}")
+
+        # Save to CSV
+        try:
+            df = pd.DataFrame(courses)
+            df.to_csv(self.csv_file, index=False)
+            logger.info(f"Saved courses to CSV: {self.csv_file}")
+        except Exception as e:
+            logger.warning(f"Could not save courses to CSV: {e}")
+
+
+def main() -> None:
+    """Main entry point for Udemy Universal courses ETL."""
+    logger.info("Starting Udemy Universal courses ETL")
+    etl = UdemyUniversalCoursesETL()
+    courses = etl.extract_courses()
+    etl.save_courses(courses)
+    logger.info("Udemy Universal courses ETL completed")
+
+if __name__ == "__main__":
+    main()
