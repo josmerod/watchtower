@@ -28,46 +28,78 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
         if logger:
             logger.warning("No data from loader, trying direct load")
         
-        # Try multiple paths to find the file
+        # Search for Coursera JSON in multiple paths
         coursera_file = None
         paths_to_try = [
             "data/classcentral/coursera_courses.json",
             "../../../data/classcentral/coursera_courses.json",
             os.path.abspath("data/classcentral/coursera_courses.json"),
             "C:/Users/josem/watchtower/data/classcentral/coursera_courses.json",
-            # Additional paths with different working directory assumptions
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../data/classcentral/coursera_courses.json"),
             os.path.join(os.getcwd(), "data/classcentral/coursera_courses.json"),
             os.path.join(os.getcwd(), "../../../data/classcentral/coursera_courses.json")
         ]
-        
         if logger:
             logger.info(f"Current working directory: {os.getcwd()}")
-            
         for path in paths_to_try:
             if os.path.exists(path):
                 coursera_file = path
                 if logger:
-                    logger.info(f"Found coursera file at: {path}")
+                    logger.info(f"Found Coursera file at: {path}")
                 break
         
+        # Search for Udemy JSON in multiple paths
+        udemy_file = None
+        udemy_paths_to_try = [
+            "data/udemy/udemy_courses.json",
+            "../../../data/udemy/udemy_courses.json",
+            os.path.abspath("data/udemy/udemy_courses.json"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../data/udemy/udemy_courses.json"),
+            os.path.join(os.getcwd(), "data/udemy/udemy_courses.json"),
+            os.path.join(os.getcwd(), "../../../data/udemy/udemy_courses.json")
+        ]
+        if logger:
+            logger.info("Searching for Udemy JSON file")
+        for path in udemy_paths_to_try:
+            if os.path.exists(path):
+                udemy_file = path
+                if logger:
+                    logger.info(f"Found Udemy file at: {path}")
+                break
+        
+        # Load available course data from JSON files
+        loaded_data = {}
         if coursera_file:
             try:
                 with open(coursera_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                # Display successful load message directly to user
-                st.success(f"¡Cargados {len(data)} cursos de Coursera directamente del archivo!")
-                
-                courses_data = {"coursera": pd.DataFrame(data)}
+                    coursera_json = json.load(f)
+                st.success(f"¡Cargados {len(coursera_json)} cursos de Coursera directamente del archivo!")
+                loaded_data["coursera"] = pd.DataFrame(coursera_json)
             except Exception as e:
                 if logger:
-                    logger.error(f"Error loading coursera data directly: {str(e)}")
-                st.error(f"Error cargando datos: {str(e)}")
+                    logger.error(f"Error loading Coursera data directly: {str(e)}")
+                st.error(f"Error cargando datos de Coursera: {str(e)}")
         else:
             if logger:
                 logger.error("Could not find coursera_courses.json in any path")
             st.error("No se pudo encontrar el archivo de cursos de Coursera.")
+        
+        if udemy_file:
+            try:
+                with open(udemy_file, 'r', encoding='utf-8') as f:
+                    udemy_json = json.load(f)
+                st.success(f"¡Cargados {len(udemy_json)} cursos de Udemy directamente del archivo!")
+                loaded_data["udemy"] = pd.DataFrame(udemy_json)
+            except Exception as e:
+                if logger:
+                    logger.error(f"Error loading Udemy data directly: {str(e)}")
+                st.error(f"Error cargando datos de Udemy: {str(e)}")
+        else:
+            if logger:
+                logger.error("Could not find udemy_courses.json in any path")
+            st.info("No se pudo encontrar el archivo de cursos de Udemy.")
+        
+        courses_data = loaded_data
 
     # Check if all dataframes are empty after emergency loading
     all_empty = all(df.empty for df in courses_data.values())
@@ -96,6 +128,8 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
         with tab:
             if platform.lower() == "coursera":
                 display_coursera_courses(courses_data["coursera"])
+            elif platform.lower() == "udemy":
+                display_udemy_courses(courses_data["udemy"])
             # Add other platforms as they are added
             # elif platform.lower() == "edx":
             #     display_edx_courses(courses_data["edx"])
@@ -241,5 +275,40 @@ def display_coursera_courses(courses_df: pd.DataFrame):
         courses_html += '<p>No hay cursos de Coursera disponibles.</p>'
 
     # Close the card div
+    courses_html += '</div>'
+    st.markdown(courses_html, unsafe_allow_html=True)
+
+def display_udemy_courses(courses_df: pd.DataFrame):
+    """
+    Display Udemy courses
+    
+    Parameters
+    ----------
+    courses_df : pd.DataFrame
+        DataFrame containing Udemy courses data
+    """
+    # Card styling for Udemy courses
+    courses_html = '<div class="courses-card">'
+    courses_html += '<h2>Cursos de Udemy</h2>'
+
+    if not courses_df.empty:
+        filtered_df = courses_df.copy()
+        # Convert scraped_at to datetime for display
+        if "scraped_at" in filtered_df.columns:
+            filtered_df["scraped_at"] = pd.to_datetime(filtered_df["scraped_at"])
+            filtered_df["fecha_adición"] = filtered_df["scraped_at"].dt.strftime("%Y-%m-%d")
+        # Display number of courses
+        st.write(f"Mostrando {len(filtered_df)} cursos de Udemy")
+        # Select display columns
+        display_df = filtered_df[["title", "fecha_adición", "url"]].copy()
+        # Add clickable link
+        display_df["Ver Curso"] = display_df["url"].apply(lambda x: make_clickable(x, "Ver Detalles"))
+        # Rename columns
+        display_df.rename(columns={"title": "Título", "fecha_adición": "Añadido"}, inplace=True)
+        # Generate HTML table
+        courses_html += display_df.to_html(escape=False, index=False)
+    else:
+        courses_html += '<p>No hay cursos de Udemy disponibles.</p>'
+
     courses_html += '</div>'
     st.markdown(courses_html, unsafe_allow_html=True) 
