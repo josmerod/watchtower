@@ -8,9 +8,17 @@ import pandas as pd
 import os
 from datetime import datetime
 import glob
+import json
 
-# Define data paths locally
-VIDEOS_DATA_DIR = "../../../data/youtube"
+# Determine project root to build absolute paths
+COMPONENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(COMPONENT_DIR, "../../../../"))
+# Define data paths using project root
+VIDEOS_DATA_DIR = os.path.join(PROJECT_ROOT, "data", "youtube")
+# Define channels configuration path using project root
+CHANNELS_CONFIG_PATH = os.path.join(
+    PROJECT_ROOT, "src", "etl", "goldigging", "channels.json"
+)
 
 # Local version of get_responsive_cols
 def get_responsive_cols():
@@ -45,13 +53,14 @@ def load_data(file_path, logger=None):
             return df
         else:
             if logger:
-                logger.error(f"File not found: {file_path}")
-            st.error(f"Archivo no encontrado: {file_path}")
+                logger.warning(f"File not found (skipping): {file_path}")
+            # It's okay if the JSON file doesn't exist yet; return empty
             return pd.DataFrame()
     except Exception as e:
         if logger:
             logger.error(f"Error loading data from {file_path}: {str(e)}")
-        st.error(f"Error al cargar datos desde {file_path}: {str(e)}")
+        # Use warning to surface parsing/loading issues but continue
+        st.warning(f"Error al cargar datos desde {file_path}: {str(e)}")
         return pd.DataFrame()
 
 # Helper function to format category names
@@ -66,7 +75,7 @@ def discover_and_load_videos(base_dir, logger=None):
     videos_data = {}
     
     if not os.path.isdir(base_dir):
-        st.error(f"Directory not found: {base_dir}")
+        st.warning(f"Data directory no encontrado (skipping videos): {base_dir}")
         if logger:
             logger.error(f"Video data directory not found: {base_dir}")
         return categories, videos_data
@@ -86,9 +95,14 @@ def discover_and_load_videos(base_dir, logger=None):
             
             df = load_data(video_file, logger)
             if not df.empty:
+                # Normalize date and channel columns
                 df["published_date"] = pd.to_datetime(df["published_at"])
+                # Ensure channel_name exists for filtering
+                if "channel" in df.columns:
+                    df["channel_name"] = df["channel"]
+                # Handle thumbnail URL if provided
                 if "thumbnail_url" in df.columns:
-                     df["thumbnail"] = df["thumbnail_url"]
+                    df["thumbnail"] = df["thumbnail_url"]
                 videos_data[category_id] = df
             elif logger:
                 logger.warning(f"No data loaded or file not found for category '{category_id}' at {video_file}")
@@ -99,41 +113,97 @@ def discover_and_load_videos(base_dir, logger=None):
 
     return categories, videos_data
 
+# Load channels configuration from JSON
+def load_channels_config(file_path, logger=None):
+    """Load channels configuration from JSON file."""
+    try:
+        if os.path.exists(file_path):
+            if logger:
+                logger.info(f"Loading channels config from {file_path}")
+            with open(file_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            if logger:
+                logger.info(f"Successfully loaded channels config with {len(config)} categories")
+            return config
+        else:
+            if logger:
+                logger.error(f"Channels config file not found: {file_path}")
+            st.warning(f"Archivo de configuración de canales no encontrado: {file_path}")
+            return {}
+    except Exception as e:
+        if logger:
+            logger.error(f"Error loading channels config from {file_path}: {str(e)}")
+        st.warning(f"Error al cargar configuración de canales: {str(e)}")
+        return {}
+
 def render(logger=None):
-    """Render the videos tab"""
+    """Render the videos tab with category and optional channel filtering."""
     st.header("📺 Videos")
 
-    # Discover categories and load all video data
-    categories, all_videos_data = discover_and_load_videos(VIDEOS_DATA_DIR, logger)
+    # Attempt to load channels.json config
+    channels_config = load_channels_config(CHANNELS_CONFIG_PATH, logger)
+    # Discover available video directories and data
+    discovered_cats, all_videos_data = discover_and_load_videos(VIDEOS_DATA_DIR, logger)
 
-    if not all_videos_data:
-        st.warning("No hay videos disponibles para mostrar en ninguna categoría.")
+    # Determine categories: prefer config keys, else fallback to discovered directories
+    if channels_config:
+        # Use config for category list
+        category_map = {
+            cat_id: info.get("description") or format_category_name(cat_id)
+            for cat_id, info in channels_config.items()
+        }
+        use_config = True
     else:
-        # Create a mapping from display name back to category ID
-        display_name_to_id = {v: k for k, v in categories.items() if k in all_videos_data}
-        
-        if not display_name_to_id:
-             st.warning("No hay datos de video válidos para las categorías descubiertas.")
-             return # Exit if no valid data found
+        st.warning("No se pudo cargar configuración de canales; usando categorías descubiertas.")
+        category_map = discovered_cats
+        use_config = False
 
-        category_options = list(display_name_to_id.keys())
-        
-        # Category selector
-        selected_display_name = st.selectbox(
-            "Selecciona una categoría:",
-            options=category_options,
-            index=0 # Default to the first category
-        )
+    # Guard if no categories available
+    if not category_map:
+        st.warning("No hay categorías disponibles para mostrar.")
+        return
 
-        if selected_display_name:
-            selected_category_id = display_name_to_id[selected_display_name]
-            selected_videos_df = all_videos_data.get(selected_category_id)
+    # Build display-name to category-id mapping
+    display_to_id = {disp: cid for cid, disp in category_map.items()}
+    selected_disp = st.selectbox(
+        "Selecciona una categoría:",
+        options=list(display_to_id.keys())
+    )
+    selected_id = display_to_id[selected_disp]
 
-            if selected_videos_df is not None and not selected_videos_df.empty:
-                display_videos(selected_videos_df, selected_display_name)
-            else:
-                # This case should ideally not happen if display_name_to_id is built correctly
-                 st.info(f"No hay videos disponibles para la categoría '{selected_display_name}'.")
+    # Retrieve videos or default to empty
+    videos_df = all_videos_data.get(selected_id, pd.DataFrame())
+    if videos_df.empty:
+        st.warning("No se encontraron videos recientes para esta categoría.")
+
+    # If using config, show channel list and enable channel filter
+    if use_config:
+        channels_list = channels_config.get(selected_id, {}).get("channels", [])
+        if channels_list:
+            st.subheader("Canales de esta categoría")
+            cols = get_responsive_cols()
+            for i in range(0, len(channels_list), cols):
+                row = st.columns(cols)
+                for j, ch in enumerate(channels_list[i : i + cols]):
+                    url = (
+                        f"https://www.youtube.com/channel/{ch}"
+                        if ch.startswith("UC")
+                        else f"https://www.youtube.com/c/{ch}"
+                    )
+                    with row[j % cols]:
+                        st.markdown(f"[{ch}]({url})", unsafe_allow_html=True)
+
+            # Filter by channel
+            filter_opts = ["Todos los canales"] + channels_list
+            sel_ch = st.selectbox("Selecciona un canal:", options=filter_opts)
+            if sel_ch and sel_ch != "Todos los canales":
+                videos_df = videos_df[videos_df.get("channel_name") == sel_ch]
+
+    # Finally display videos or show info if none
+    if not videos_df.empty:
+        display_videos(videos_df, selected_disp)
+    else:
+        st.info(f"No hay videos disponibles para la categoría '{selected_disp}'.")
 
 def display_videos(videos_df, category_name):
     """Display videos for a specific category"""
