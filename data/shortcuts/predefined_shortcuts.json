@@ -1,0 +1,42 @@
+{
+  "Guías de estudio": [
+    {
+      "name": "Git",
+      "url": "https://git-scm.com/book/en/v2",
+      "icon": "📊",
+      "description": "Guía de Git hecha por la propia comunidad de Git"
+    },
+    {
+      "name": "Patrones de diseño",
+      "url": "https://martinfowler.com/eaaCatalog/",
+      "icon": "💡",
+      "description": "Guía de Patrones de diseño de Martin Fowler"
+    },
+    {
+      "name": "Arquitectura de aplicaciones open source",
+      "url": "https://aosabook.org/en/index.html",
+      "icon": "🏗️",
+      "description": "Arquitectura de aplicaciones open source"
+    }
+  ],
+  "Guías de programación (placeholder)": [
+    {
+      "name": "Curso de programación en Python",
+      "url": "https://www.youtube.com/watch?v=Z1Yd6uplHhM",
+      "icon": "🐍",
+      "description": "Curso de programación en Python"
+    },
+    {
+      "name": "Curso de programación en JavaScript",
+      "url": "https://www.youtube.com/watch?v=Z1Yd6uplHhM",
+      "icon": "🦊",
+      "description": "Curso de programación en JavaScript"
+    },
+    {
+      "name": "Curso de programación en C#",
+      "url": "https://www.youtube.com/watch?v=Z1Yd6uplHhM",
+      "icon": "💻",
+      "description": "Curso de programación en C#"
+    }
+  ]
+}
