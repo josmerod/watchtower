@@ -22,6 +22,15 @@ MEDIUM_NEWS_FILE = os.path.join(MEDIUM_NEWS_DATA_DIR, "medium_genai.json")
 BENSBITES_NEWS_FILE = os.path.join(BENSBITES_NEWS_DATA_DIR, "bensbites_news.json")
 GOODDEVS_NEWS_FILE = os.path.join(GOODDEVS_NEWS_DATA_DIR, "gooddevs_latest.json")
 
+# Meneame data paths
+MENEAME_DATA_DIR = "../../../data/meneame"
+MENEAME_GENERAL_FILE = os.path.join(MENEAME_DATA_DIR, "meneame_general_latest.json")
+MENEAME_TECNO_FILE = os.path.join(MENEAME_DATA_DIR, "meneame_tecnologia_latest.json")
+
+# Podcasts data paths
+PODCASTS_DATA_DIR = "../../../data/podcasts"
+PODCASTS_FILE = os.path.join(PODCASTS_DATA_DIR, "podcasts_latest.json")
+
 # Local version of load_data
 def load_data(file_path, _logger=None):
     """Load data from JSON file with error handling"""
@@ -56,12 +65,22 @@ def render(logger=None):
     medium_news_df = load_data(MEDIUM_NEWS_FILE, _logger=logger)
     bensbites_news_df = load_data(BENSBITES_NEWS_FILE, _logger=logger)
     gooddevs_df = load_data(GOODDEVS_NEWS_FILE, _logger=logger)
+    # Load Meneame data
+    meneame_general_df = load_data(MENEAME_GENERAL_FILE, _logger=logger)
+    meneame_tecnologia_df = load_data(MENEAME_TECNO_FILE, _logger=logger)
+    # Load Podcasts data
+    podcasts_df = load_data(PODCASTS_FILE, _logger=logger)
 
-    if futuretools_news_df.empty and bensbites_news_df.empty and medium_news_df.empty and gooddevs_df.empty:
+    # Check if any content is available
+    if (futuretools_news_df.empty and bensbites_news_df.empty and medium_news_df.empty and gooddevs_df.empty
+        and meneame_general_df.empty and meneame_tecnologia_df.empty and podcasts_df.empty):
         st.warning("No hay noticias disponibles para mostrar.")
     else:
-        # Create tabs for different news sources
-        news_tabs = st.tabs(["FutureTools & Ben's Bites", "Hacker News", "Medium GenAI", "Good Devs"])
+        # Create tabs for different news sources including Podcasts
+        news_tabs = st.tabs([
+            "FutureTools & Ben's Bites", "Hacker News", "Medium GenAI", "Good Devs",
+            "Meneame General", "Meneame Tecnología", "Podcasts"
+        ])
 
         with news_tabs[0]:
             render_futuretools_bensbites(futuretools_news_df, bensbites_news_df)
@@ -74,6 +93,15 @@ def render(logger=None):
 
         with news_tabs[3]:
             render_gooddevs(gooddevs_df)
+
+        with news_tabs[4]:
+            render_meneame_general(meneame_general_df)
+
+        with news_tabs[5]:
+            render_meneame_tecnologia(meneame_tecnologia_df)
+
+        with news_tabs[6]:
+            render_podcasts(podcasts_df)
 
 
 def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
@@ -280,5 +308,69 @@ def render_gooddevs(gooddevs_df):
         # Display the final DataFrame as HTML
         st.markdown(
             display_final_df.to_html(escape=False, index=False),
+            unsafe_allow_html=True,
+        )
+
+
+def render_meneame_general(df):
+    """Render Meneame General posts"""
+    st.header("Meneame General")
+    if df.empty:
+        st.warning("No hay posts disponibles de Meneame General.")
+    else:
+        display_df = df.copy()
+        display_df["published_date"] = pd.to_datetime(display_df["published_at"], errors="coerce")
+        display_df.dropna(subset=["published_date"], inplace=True)
+        display_df = display_df.sort_values("published_date", ascending=False)
+        display_df["Ver Noticia"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+        display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d')
+        display_df_final = display_df[["title", "formatted_date", "source", "Ver Noticia"]].copy()
+        display_df_final.rename(columns={"title": "Título", "formatted_date": "Fecha de Publicación", "source": "Fuente"}, inplace=True)
+        st.markdown(display_df_final.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+
+def render_meneame_tecnologia(df):
+    """Render Meneame Tecnología posts"""
+    st.header("Meneame Tecnología")
+    if df.empty:
+        st.warning("No hay posts disponibles de Meneame Tecnología.")
+    else:
+        display_df = df.copy()
+        display_df["published_date"] = pd.to_datetime(display_df["published_at"], errors="coerce")
+        display_df.dropna(subset=["published_date"], inplace=True)
+        display_df = display_df.sort_values("published_date", ascending=False)
+        display_df["Ver Noticia"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+        display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d')
+        display_df_final = display_df[["title", "formatted_date", "source", "Ver Noticia"]].copy()
+        display_df_final.rename(columns={"title": "Título", "formatted_date": "Fecha de Publicación", "source": "Fuente"}, inplace=True)
+        st.markdown(display_df_final.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+# New function to render Podcasts
+def render_podcasts(podcasts_df):
+    """Render Podcast Episodes"""
+    st.header("Podcasts")
+    if podcasts_df.empty:
+        st.warning("No hay episodios de podcast disponibles.")
+    else:
+        # Work on a copy to avoid side effects
+        df = podcasts_df.copy()
+        # Helper to safely format timestamps
+        def safe_format(ts):
+            try:
+                return pd.to_datetime(ts).strftime("%Y-%m-%d %H:%M")
+            except Exception:
+                return ""
+        # Apply formatting
+        df["Fecha de Publicación"] = df.get("published_at", pd.Series()).apply(safe_format)
+        # Sort by the formatted date; blanks will be last
+        df = df.sort_values("Fecha de Publicación", ascending=False)
+        # Build clickable links
+        df["Escuchar"] = df["url"].apply(lambda url: make_clickable(url, "Escuchar"))
+        # Select and rename columns
+        display_df = df[["title", "Fecha de Publicación", "source", "Escuchar"]].copy()
+        display_df.rename(columns={"title": "Título", "source": "Fuente"}, inplace=True)
+        # Render the DataFrame
+        st.markdown(
+            display_df.to_html(escape=False, index=False),
             unsafe_allow_html=True,
         ) 
