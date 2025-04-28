@@ -9,6 +9,7 @@ start /B python3 src/etl/games/games_get_deals.py
 start /B python3 src/etl/news/news_get_ycombinator.py
 start /B python3 src/etl/news/news_get_futuretools.py
 start /B python3 src/etl/news/news_get_genai_medium.py
+start /B python3 src/etl/news/news_get_kdnuggets.py
 start /B python3 src/etl/news/news_get_bensbites.py
 start /B python3 src/etl/news/news_get_planesvalencia.py
 start /B python3 src/etl/news/news_get_gooddevs.py
