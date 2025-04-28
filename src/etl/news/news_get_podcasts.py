@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Dict, List, Any
 
 import feedparser
+import requests
 
 # Add the project root to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
@@ -20,7 +21,20 @@ PODCAST_FEEDS: Dict[str, str] = {
     "Syntax": "https://feed.syntax.fm/",
     "SoftwareEngineeringDaily": "https://softwareengineeringdaily.com/feed/podcast/",
     "Changelog": "https://changelog.fm/rss",
-    "TalkPython": "https://talkpython.fm/subscribe/rss"
+    "TalkPython": "https://talkpython.fm/subscribe/rss",
+    "RealPython": "https://realpython.com/podcasts/rpp/feed",
+    "PythonBites": "https://pythonbytes.fm/subscribe/rss",
+    "AWSPodcast": "https://d3gih7jbfe3jlq.cloudfront.net/aws-podcast.rss",
+    "TheCloudPod": "https://feeds.castos.com/kqk1",
+    "TheLastWeekInAWS": "https://www.lastweekinaws.com/feed/",
+    "TheNewStack": "https://feeds.simplecast.com/IgzWks06?utm_source=the+new+stack&utm_medium=referral&utm_content=inline-mention&utm_campaign=tns+platform",
+    "ThePragmaticEngineer": "https://api.substack.com/feed/podcast/458709.rss",
+    "ThisWeekInAI": "https://feeds.megaphone.fm/MLN2155636147",
+    "PracticalAI": "https://feeds.transistor.fm/practical-ai-machine-learning-data-science-llm",
+    "MLOpsCommunity": "https://anchor.fm/s/174cb1b8/podcast/rss",
+    "IHaveADHD": "https://ihaveadhd.com/feed/",
+    "ADHDExperts": "http://feeds.libsyn.com/44408/rss",
+    "LexFridman": "https://lexfridman.com/feed/podcast/"
 }
 
 def get_podcast_episodes(
@@ -41,10 +55,22 @@ def get_podcast_episodes(
         logger.info(f"Processing podcast feed {source}: {rss_url}")
         for attempt in range(max_retries):
             try:
-                feed = feedparser.parse(rss_url)
+                # Fetch feed via requests with timeout to avoid hangs
+                response = requests.get(rss_url, timeout=10)
+                response.raise_for_status()
+                feed = feedparser.parse(response.content)
+                # Validate HTTP status if provided by feedparser
+                if hasattr(feed, 'status') and feed.status != 200:
+                    raise Exception(f"Failed to fetch feed, HTTP status {feed.status}")
                 if not feed.entries:
-                    logger.warning(f"No entries found in podcast feed {rss_url}")
-                    break
+                    logger.warning(f"No entries found in podcast feed {rss_url}, attempt {attempt+1}/{max_retries}")
+                    if attempt < max_retries - 1:
+                        logger.info(f"Retrying {rss_url} after {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        continue
+                    else:
+                        logger.error(f"Giving up on {rss_url} after {max_retries} attempts with no entries")
+                        break
                 for entry in feed.entries:
                     episode = {
                         "title": getattr(entry, "title", ""),

@@ -22,6 +22,10 @@ MEDIUM_NEWS_FILE = os.path.join(MEDIUM_NEWS_DATA_DIR, "medium_genai.json")
 BENSBITES_NEWS_FILE = os.path.join(BENSBITES_NEWS_DATA_DIR, "bensbites_news.json")
 GOODDEVS_NEWS_FILE = os.path.join(GOODDEVS_NEWS_DATA_DIR, "gooddevs_latest.json")
 
+# KDnuggets data paths
+KDNUGGETS_DATA_DIR = "../../../data/kdnuggets"
+KDNUGGETS_NEWS_FILE = os.path.join(KDNUGGETS_DATA_DIR, "kdnuggets.json")
+
 # Meneame data paths
 MENEAME_DATA_DIR = "../../../data/meneame"
 MENEAME_GENERAL_FILE = os.path.join(MENEAME_DATA_DIR, "meneame_general_latest.json")
@@ -63,6 +67,7 @@ def render(logger=None):
     futuretools_news_df = load_data(FUTURETOOLS_NEWS_FILE, _logger=logger)
     ycombinator_news_df = load_data(YCOMBINATOR_NEWS_FILE, _logger=logger)
     medium_news_df = load_data(MEDIUM_NEWS_FILE, _logger=logger)
+    kdnuggets_news_df = load_data(KDNUGGETS_NEWS_FILE, _logger=logger)
     bensbites_news_df = load_data(BENSBITES_NEWS_FILE, _logger=logger)
     gooddevs_df = load_data(GOODDEVS_NEWS_FILE, _logger=logger)
     # Load Meneame data
@@ -72,13 +77,13 @@ def render(logger=None):
     podcasts_df = load_data(PODCASTS_FILE, _logger=logger)
 
     # Check if any content is available
-    if (futuretools_news_df.empty and bensbites_news_df.empty and medium_news_df.empty and gooddevs_df.empty
+    if (futuretools_news_df.empty and bensbites_news_df.empty and medium_news_df.empty and kdnuggets_news_df.empty and gooddevs_df.empty
         and meneame_general_df.empty and meneame_tecnologia_df.empty and podcasts_df.empty):
         st.warning("No hay noticias disponibles para mostrar.")
     else:
         # Create tabs for different news sources including Podcasts
         news_tabs = st.tabs([
-            "FutureTools & Ben's Bites", "Hacker News", "Medium GenAI", "Good Devs",
+            "FutureTools & Ben's Bites", "Hacker News", "Medium GenAI", "KDnuggets", "Good Devs",
             "Meneame General", "Meneame Tecnología", "Podcasts"
         ])
 
@@ -92,15 +97,18 @@ def render(logger=None):
             render_medium(medium_news_df)
 
         with news_tabs[3]:
-            render_gooddevs(gooddevs_df)
+            render_kdnuggets(kdnuggets_news_df)
 
         with news_tabs[4]:
-            render_meneame_general(meneame_general_df)
+            render_gooddevs(gooddevs_df)
 
         with news_tabs[5]:
-            render_meneame_tecnologia(meneame_tecnologia_df)
+            render_meneame_general(meneame_general_df)
 
         with news_tabs[6]:
+            render_meneame_tecnologia(meneame_tecnologia_df)
+
+        with news_tabs[7]:
             render_podcasts(podcasts_df)
 
 
@@ -251,6 +259,48 @@ def render_medium(medium_news_df):
         st.markdown(
             display_news_df_final.to_html(escape=False, index=False),
             unsafe_allow_html=True,
+        )
+
+
+# New function to render KDnuggets
+def render_kdnuggets(kdnuggets_news_df):
+    """Render KDnuggets news"""
+    st.header("KDnuggets")
+    if kdnuggets_news_df.empty:
+        st.warning("No hay noticias disponibles de KDnuggets.")
+    else:
+        # Ensure published_date column exists
+        if "published_date" not in kdnuggets_news_df.columns:
+            if "published_at" in kdnuggets_news_df.columns:
+                kdnuggets_news_df["published_date"] = pd.to_datetime(
+                    kdnuggets_news_df["published_at"], errors="coerce"
+                )
+            else:
+                kdnuggets_news_df["published_date"] = pd.Timestamp("now")
+
+        # Sort by published_date
+        display_df = kdnuggets_news_df.sort_values("published_date", ascending=False)
+        # Add clickable link
+        display_df["Ver Noticia"] = display_df["url"].apply(
+            lambda x: make_clickable(x, "Leer más")
+        )
+        # Format date for display
+        display_df["published_display"] = display_df["published_date"].dt.strftime(
+            '%Y-%m-%d %H:%M'
+        )
+
+        final_df = display_df[["title", "published_display", "source", "Ver Noticia"]].copy()
+        final_df.rename(
+            columns={
+                "title": "Título",
+                "published_display": "Fecha de Publicación",
+                "source": "Fuente",
+            },
+            inplace=True,
+        )
+
+        st.markdown(
+            final_df.to_html(escape=False, index=False), unsafe_allow_html=True
         )
 
 
