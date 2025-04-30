@@ -62,6 +62,7 @@ def get_gooddevs_articles(
         "https://cdn.jwz.org/blog/feed/",
         "https://www.marginalia.nu/log/index.xml",
         "https://calnewport.com/feed",
+        "https://velvetshark.com/rss.xml",
         "https://tldr.tech/api/rss/tech"
     ]
     

@@ -1,11 +1,10 @@
 {
-  "aaa-dev": {
+  "aa-dev": {
     "description": "Programming and Development",
     "channels": [
       "Fireship",
       "TechWithTim",
       "TraversyMedia",
-      "CoreySchafer",
       "freecodecamp",
       "ArjanCodes",
       "t3dotgg",
@@ -39,7 +38,9 @@
       "ByteByteGo",
       "TechLead",
       "techwithsoleyman",
-      "nateherkleonardogrig"
+      "nateherkleonardogrig",
+      "s4vitar",
+      "DotCSV"
     ]
   },
   "aa-economics": {
@@ -52,7 +53,14 @@
       "PolyMatter",
       "slow_start",
       "companyman114",
-      "MagnatesMedia"
+      "MagnatesMedia",
+      "Rimembah",
+      "AdamSomething",
+      "Wendoverproductions",
+      "Computerphile",
+      "ItsComplicated",
+      "PolyMatter",
+      "ColdFusion"
     ]
   },
   "aa-personal_development": {
@@ -61,10 +69,12 @@
       "hubermanlab",
       "Burnout.Recovery",
       "WiseSleep",
-      "TED",
       "SUCCESSCHASERS",
       "HowtoADHD",
-      "James_Lim"
+      "James_Lim",
+      "Psicótico000",
+      "nobackupplan",
+      "ereselelegido-b3c"
     ]
   },
   "z-sleepcore": {
@@ -79,7 +89,11 @@
     "description": "Cooking",
     "channels": [
       "FornerDeAlella",
-      "superpilopi"
+      "superpilopi",
+      "diegodoal",
+      "epicurious",
+      "TheFoodLab",
+      "samthecookingguy"
     ]
   },
   "zz-food_reviews": {
@@ -87,7 +101,9 @@
     "channels": [
       "peldanyos",
       "SezarBlue",
-      "esttikPlus"
+      "esttikPlus",
+      "lacapitalcocina",
+      "DancingBacons"
     ]
   },
   "z-soundtowork": {
@@ -95,7 +111,107 @@
     "channels": [
       "mugiwave",
       "OriondeMirage",
-      "toiryusei"
+      "toiryusei",
+      "Ikarus636",
+      "LofiGirl",
+      "TheJapaneseTown-jt6fy",
+      "UCiC2wfbkgr8DU5uOQFz9OrQ",
+      "EYMmusic",
+      "boilerroom",
+      "hoer.berlin",
+      "stoorlab",
+      "radioradiofm",
+      "FutureIntel",
+      "ColinBenders",
+      "KioskRadio",
+      "TheLotRadio",
+      "KeepHush",
+      "detroitclassicgallery7108",
+      "CollectRadio"
+    ]
+  },
+  "zzz-alotof": {
+    "description": "TED",
+    "channels": [
+      "TED",
+      "TEDx Talks",
+      "TED-Ed"
+    ]
+  },
+  "zz-viajes": {
+    "description": "Viajes",
+    "channels": [
+      "luisitocomunica",
+      "Nekojitablog",
+      "Japatonic",
+      "HiClavero",
+      "peldanyos"
+    ]
+  },
+  "zz-anime": {
+    "description": "Anime",
+    "channels": [
+      "gigguk",
+      "GlassReflection"      
+    ]
+  },
+  "zz-memes": {
+    "description": "Memes",
+    "channels": [
+      "bigjpeldevorador",
+      "JesúsGMaestro",
+      "RIMBEL35",
+      "mundodesconocido",
+      "JollyWangcore",
+      "jollysbigolvideohole9402",
+      "DjRecuerdosYT",
+      "vinesauce",
+      "ElcanaldeKorah",
+      "OrdinarySausage",
+      "LaTierraesBlanda",
+      "RinConIllo222",
+      "SrTrilineo",
+      "BaityLive",
+      "markiplier",
+      "LifeofBoris",
+      "Joseju",
+      "DRAXMAX-u5s",
+      "nautrash",
+      "CreepsMcPasta",
+      "eas_YP",
+      "SrFractal",
+      "Valefisk",
+      "MejoresMomentosRangu",
+      "TocinoZ",
+      "IlloJuan_"
+
+    ]
+  },
+  "zz-curiosidades": {
+    "description": "Curiosidades",
+    "channels": [
+      "vinesauce",
+      "Yoshimitsu.Caleon",
+      "MattMcMuscles",
+      "LuLYeah",
+      "mexicanlopez",
+      "NightMind",
+      "LeyendasyVideojuegos",
+      "stressedskeleton6838",
+      "projared",
+      "JIMMYzonadepruebas",
+      "IbaiLlanos",
+      "rerez",
+      "lockpickinglawyer",
+      "TechnologyConnextras",
+      "TechnologyConnections",
+      "billiam"
+    ]
+  },
+  "zz-chill": {
+    "description": "Chill",
+    "channels": [
+      "bobross_thejoyofpainting"      
     ]
   }
 } 
