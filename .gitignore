@@ -3,9 +3,6 @@
 /data/*
 **/data/*
 
-# But don't ignore the predefined shortcuts file
-!/data/shortcuts/
-!/data/shortcuts/predefined_shortcuts.json
 
 **/__pycache__/*
 /.vscode
