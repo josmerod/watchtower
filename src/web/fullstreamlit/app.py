@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from src.utils.logging import get_logger
 from src.web.fullstreamlit.styles.main import get_main_style
 from src.web.fullstreamlit.utils.helpers import make_clickable, format_timestamp, clean_url, get_responsive_cols
+from src.web.fullstreamlit.utils.data_loader import load_courses_data
 
 # Import all components
 from src.web.fullstreamlit.components import (
@@ -22,6 +23,7 @@ from src.web.fullstreamlit.components import (
     videos_tab,
     news_tab,
     games_tab,
+    courses_tab,
     watchers_tab,
     events_tab,
     admin_tab
@@ -132,6 +134,29 @@ def get_game_data(_logger=None):
         _logger.info("Data processing completed")
     return deals_df, bundles_df, giveaways_df
 
+@st.cache_data(ttl=3600)
+def get_courses_data(_logger=None):
+    """Fetch and process courses data"""
+    if _logger:
+        _logger.info("Fetching and processing courses data")
+    
+    try:
+        # Load courses data from different platforms using the utility
+        courses_data = load_courses_data()
+        
+        if _logger:
+            platforms = ', '.join(courses_data.keys()) if courses_data else "none"
+            course_counts = {k: len(v) for k, v in courses_data.items()} if courses_data else {}
+            _logger.info(f"Loaded courses data from platforms: {platforms}")
+            _logger.info(f"Course counts by platform: {course_counts}")
+        
+        return courses_data
+    except Exception as e:
+        if _logger:
+            _logger.error(f"Error loading courses data: {str(e)}")
+        # Return empty dict if there's an error
+        return {}
+
 # Initialize logger for the Streamlit app
 logger = get_logger("GameDealsApp")
 
@@ -177,11 +202,12 @@ st.markdown(
 )
 
 # Create tabs for different data views
-tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab0, tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🔖 Accesos Directos", 
     "📺 Videos", 
     "📰 Noticias", 
-    "🎮 Juegos", 
+    "🎮 Juegos",
+    "🎓 Cursos",
     "👁️ Watchers", 
     "🏙️ Eventos Valencia", 
     "⚙️ Admin"
@@ -207,14 +233,20 @@ with tab3:
     games_tab.render(deals_df, bundles_df, giveaways_df, logger)
 
 with tab4:
+    logger.info("Rendering Cursos tab")
+    # Load courses data for this tab
+    courses_data = get_courses_data(_logger=logger)
+    courses_tab.render(courses_data, logger)
+
+with tab5:
     logger.info("Rendering Watchers tab")
     watchers_tab.render(logger)
 
-with tab5:
+with tab6:
     logger.info("Rendering Valencia Events tab")
     events_tab.render(logger)
 
-with tab6:
+with tab7:
     logger.info("Rendering Admin tab")
     admin_tab.render(logger)
 

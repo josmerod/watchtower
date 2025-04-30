@@ -1,350 +1,355 @@
-import asyncio
+import json
+import os
+import sys
+import time
+import random
+from datetime import datetime
+from typing import Dict, List, Optional, Any
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+import asyncio
 
-# Remove httpx, import playwright
-# import httpx 
-from playwright.async_api import async_playwright, Page, Browser, Playwright, Error as PlaywrightError
-import polars as pl
-from bs4 import BeautifulSoup, Tag # Keep BeautifulSoup for parsing flexibility
+# Add project root to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+sys.path.append(project_root)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Import utilities
+from src.utils.file_system import ensure_directories, get_project_root
+
+# Set up logging
+logger = logging.getLogger("classcentral_scraper")
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Constants
-BASE_URL = "https://www.coursera.org/courses?sortBy=NEW&page={page_num}"
-OUTPUT_DIR = Path("data/raw/coursera")
-OUTPUT_FILE = OUTPUT_DIR / "coursera_courses.parquet"
-MAX_PAGES_UPDATE = 5  # Number of pages to check during an update
-# REQUEST_TIMEOUT = 30  # Playwright uses different timeout mechanisms
-PAGE_LOAD_TIMEOUT = 60 * 1000 # Milliseconds for page load
-CONCURRENT_PAGES = 5 # Limit concurrent browser pages/tabs
+BASE_OUTPUT_DIR = "data/coursera"
+MAX_PAGES_FIRST_RUN = 150
+MAX_PAGES_SUBSEQUENT_RUN = 10
+DEBUG_DIR = os.path.join(BASE_OUTPUT_DIR, "debug")
 
+class CourseraScraper:
+    """Scraper for retrieving Coursera courses from Class Central.
 
-async def fetch_page(page: Page, page_num: int) -> Optional[str]:
+    This class uses Playwright to scrape the Coursera provider page on classcentral.com
+    and saves the course data in JSON and CSV formats for further analysis.
     """
-    Fetches the HTML content of a single Coursera search results page using Playwright.
+    
+    BASE_URL = "https://www.classcentral.com/provider/coursera"
+    
+    def __init__(self, max_pages: Optional[int] = None) -> None:
+        """Initialize the CourseraScraper.
+        
+        Args:
+            max_pages: Maximum number of pages to scrape. If None, determined automatically
+                       based on whether this is first run (150 pages) or subsequent run (10 pages).
+        """
+        # Ensure base output directory exists
+        project_root = get_project_root()
+        self.output_dir = os.path.join(project_root, BASE_OUTPUT_DIR)
+        ensure_directories([BASE_OUTPUT_DIR])
+        
+        # Ensure debug directory exists
+        self.debug_dir = os.path.join(self.output_dir, "debug")
+        os.makedirs(self.debug_dir, exist_ok=True)
 
-    Args:
-        page: A Playwright Page object.
-        page_num: The page number to fetch.
+        # Define output files
+        self.courses_file = os.path.join(self.output_dir, "coursera_courses.json")
+        self.last_run_file = os.path.join(self.output_dir, "last_run_info.json")
+        
+        # Configuration
+        self.max_pages = max_pages
+        
+        # Determine if this is first run
+        self.is_first_run = not os.path.exists(self.last_run_file)
+        
+        # Set max pages based on whether this is first run
+        if self.max_pages is None:
+            if self.is_first_run:
+                logger.info(f"First run detected, will scrape {MAX_PAGES_FIRST_RUN} pages")
+                self.max_pages = MAX_PAGES_FIRST_RUN
+            else:
+                logger.info(f"Not first run, using default of {MAX_PAGES_SUBSEQUENT_RUN} pages")
+                self.max_pages = MAX_PAGES_SUBSEQUENT_RUN
+    
+    async def scrape_courses(self) -> List[Dict[str, Any]]:
+        """Scrape courses from classcentral.com (Coursera provider)."""
+        from playwright.async_api import async_playwright
+        from bs4 import BeautifulSoup
 
-    Returns:
-        The HTML content as a string, or None if an error occurred.
-    """
-    url = BASE_URL.format(page_num=page_num)
-    try:
-        logger.info(f"Navigating to page {page_num}: {url}")
-        await page.goto(url, timeout=PAGE_LOAD_TIMEOUT, wait_until='domcontentloaded') 
-        # Optional: Wait for a specific selector that indicates courses are loaded
-        # await page.wait_for_selector('[data-e2e="search-result-card"]', timeout=30000) 
-        content = await page.content()
-        logger.info(f"Successfully fetched content for page {page_num}")
-        return content
-    except PlaywrightError as e:
-        logger.error(f"Playwright error fetching page {page_num} ({url}): {e}")
-    except Exception as e:
-        logger.error(f"An unexpected error occurred fetching page {page_num} ({url}): {e}")
-    return None
+        all_courses: List[Dict[str, Any]] = []
+        page_num = 1
 
-
-def parse_courses(html_content: str) -> List[Dict[str, Any]]:
-    """
-    Parses the HTML content of a search results page to extract course data.
-
-    Args:
-        html_content: The HTML content of the page.
-
-    Returns:
-        A list of dictionaries, where each dictionary represents a course.
-    """
-    courses_data = []
-    try:
-        soup = BeautifulSoup(html_content, 'html.parser')
-
-        # Find all course card containers. The exact selector might need adjustment.
-        # Common patterns involve list items (li) within an ordered/unordered list (ol/ul)
-        # Let's assume course cards are `li` elements with a specific data attribute or class.
-        # We might need to inspect the actual page source for robust selectors.
-        course_cards = soup.find_all('li', class_=lambda x: x and 'cds-9' in x) # Placeholder selector - likely needs refinement
-
-        if not course_cards:
-            # Fallback selector based on potential structure
-             course_cards = soup.select('[data-e2e="search-result-card"]') # Another guess
-
-        if not course_cards:
-             logger.warning("Could not find course card containers using known selectors.")
-             return []
-
-        logger.info(f"Found {len(course_cards)} potential course cards on the page.")
-
-        for card in course_cards:
-            course_info = {}
-            try:
-                # --- Extract Course URL and Title --- Usually within an <a> tag
-                title_element = card.find('h3') # Often course titles are in h3
-                link_element = card.find('a', href=True)
-                if link_element:
-                    course_info['url'] = f"https://www.coursera.org{link_element['href']}" if link_element['href'].startswith('/') else link_element['href']
-                    # Try getting title from link's content or a specific heading tag
-                    title_text = title_element.get_text(strip=True) if title_element else link_element.get_text(strip=True)
-                    course_info['title'] = title_text
-                else:
-                    # Skip card if no link/URL found
-                    logger.debug("Skipping card, no link element found.")
-                    continue
-
-                # --- Extract Educator --- Look for a specific element or class
-                # Often near the top, potentially a p or span with specific class
-                educator_element = card.find('span', class_=lambda x: x and ('partner-name' in x or 'cds-1' in x)) # Guessing class names
-                course_info['educator'] = educator_element.get_text(strip=True) if educator_element else None
-
-                # --- Extract Skills --- Look for text starting with "Skills you'll gain:"
-                skills_element = card.find(lambda tag: tag.name == 'p' and tag.find('strong') and "Skills you'll gain:" in tag.find('strong').get_text())
-                if not skills_element:
-                     # Fallback: find div/p containing the skills text based on structure
-                    skills_container = card.find('div', class_=lambda x: x and 'skills' in x.lower())
-                    if skills_container:
-                        skills_text_raw = skills_container.get_text(separator=' ', strip=True)
-                        if skills_text_raw.startswith("Skills you'll gain:"):
-                            skills_text = skills_text_raw.replace("Skills you'll gain:", "").strip()
-                            course_info['skills'] = [skill.strip() for skill in skills_text.split(',') if skill.strip()]
-                        else:
-                             course_info['skills'] = None
-                    else:
-                        course_info['skills'] = None
-                else:
-                    # Extract text after the strong tag
-                    skills_text = ' '.join(sibling.get_text(strip=True) for sibling in skills_element.find('strong').find_next_siblings())
-                    if not skills_text: # If skills are directly after strong tag text
-                        skills_text = skills_element.get_text(strip=True).replace("Skills you'll gain:", "").strip()
-
-                    course_info['skills'] = [skill.strip() for skill in skills_text.split(',') if skill.strip()]
-
-
-                # --- Extract Level, Type, Duration --- Often in a shared container
-                metadata_element = card.find('div', class_=lambda x: x and ('product-difficulty' in x or 'cds-117' in x )) # Guess
-                if metadata_element:
-                    metadata_text = metadata_element.get_text(separator='|', strip=True)
-                    parts = [part.strip() for part in metadata_text.split('|') if part.strip()]
-                    course_info['level'] = parts[0] if len(parts) > 0 else None
-                    course_info['type'] = parts[1] if len(parts) > 1 else None # e.g., Course, Specialization
-                    course_info['duration'] = parts[2] if len(parts) > 2 else None
-                else:
-                    # Fallback if specific class not found, look for pattern like "Level · Type · Duration"
-                    details_elements = card.find_all('span', limit=3) # Guessing structure
-                    details_text = ' · '.join(elem.get_text(strip=True) for elem in details_elements if elem.get_text(strip=True))
-                    parts = [part.strip() for part in details_text.split('·') if part.strip()]
-                    course_info['level'] = parts[0] if len(parts) > 0 else None
-                    course_info['type'] = parts[1] if len(parts) > 1 else None
-                    course_info['duration'] = parts[2] if len(parts) > 2 else None
-
-                # Add other fields if needed, e.g., rating, number of reviews
-
-                if course_info.get('title') and course_info.get('url'):
-                    courses_data.append(course_info)
-                else:
-                    logger.debug(f"Skipping card, missing title or URL. Card content: {card.prettify()[:200]}...")
-
-            except Exception as e:
-                logger.warning(f"Error parsing a course card: {e}. Card content: {card.prettify()[:200]}...")
-                continue # Skip this card on error
-
-    except Exception as e:
-        logger.error(f"Error parsing page content: {e}")
-
-    logger.info(f"Successfully parsed {len(courses_data)} courses from the page.")
-    return courses_data
-
-
-def get_total_pages(html_content: str) -> int:
-    """
-    Parses the HTML content to find the total number of pages.
-
-    Args:
-        html_content: The HTML content of the first page.
-
-    Returns:
-        The total number of pages, or 0 if not found.
-    """
-    try:
-        soup = BeautifulSoup(html_content, 'html.parser')
-        # Find pagination controls - selectors might need adjustment based on actual page structure
-        # Common patterns include nav elements or divs with 'pagination' in class/id
-        # Let's look for buttons with a 'data-page' attribute within a likely pagination container
-        pagination_container = soup.find('nav', attrs={'aria-label': lambda x: x and 'pagination' in x.lower()})
-        if not pagination_container:
-            # Fallback: search for divs that might contain pagination buttons
-            pagination_container = soup.find('div', class_=lambda x: x and 'pagination' in x.lower())
-
-        if pagination_container:
-            page_buttons = pagination_container.find_all('button', attrs={'data-page': True})
-            if page_buttons:
-                # Extract page numbers and find the maximum
-                page_numbers = [int(btn['data-page']) for btn in page_buttons if btn['data-page'].isdigit()]
-                if page_numbers:
-                    total_pages = max(page_numbers)
-                    logger.info(f"Determined total pages: {total_pages}")
-                    return total_pages
-
-        # If the above fails, maybe look for text like "... 84"
-        # This requires more specific selectors based on inspection
-        logger.warning("Could not find pagination controls or determine total pages from the standard selectors.")
-        return 0 # Indicate failure to find total pages
-
-    except Exception as e:
-        logger.error(f"Error parsing total pages: {e}")
-        return 0
-
-
-async def scrape_coursera(browser: Browser, num_pages_to_scrape: int) -> List[Dict[str, Any]]:
-    """
-    Scrapes course data from the specified number of Coursera pages concurrently using Playwright pages.
-
-    Args:
-        browser: A Playwright Browser instance.
-        num_pages_to_scrape: The number of pages to scrape.
-
-    Returns:
-        A list of dictionaries containing scraped course data.
-    """
-    all_courses_data = []
-    tasks = []
-    semaphore = asyncio.Semaphore(CONCURRENT_PAGES) # Limit concurrent pages
-
-    async def fetch_and_parse_page(page_num: int) -> List[Dict[str, Any]]:
-        async with semaphore:
-            page = None
-            context = None
-            try:
-                # Create a new context for isolation, helps with cookies/localStorage if needed
+        try:
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(
+                    headless=False,
+                    args=[
+                        '--disable-blink-features=AutomationControlled'
+                    ]
+                )
                 context = await browser.new_context(
-                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    viewport={'width': 1920, 'height': 1080},
+                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+                )
+                # Stealth: mask automation to bypass Cloudflare detection
+                await context.add_init_script(
+                    "() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }"
                 )
                 page = await context.new_page()
-                html_content = await fetch_page(page, page_num)
-                if html_content:
-                    parsed_data = parse_courses(html_content) # Still use BeautifulSoup parser
-                    return parsed_data
-                return []
-            except Exception as e:
-                 logger.error(f"Error in fetch_and_parse_page for page {page_num}: {e}")
-                 return [] # Return empty list on error
-            finally:
-                if page:
-                    await page.close()
-                if context:
-                    await context.close() # Close context to free up resources
 
-    logger.info(f"Starting scrape for {num_pages_to_scrape} pages using Playwright...")
-    # Create tasks for each page
-    scrape_tasks = [fetch_and_parse_page(page_num) for page_num in range(1, num_pages_to_scrape + 1)]
+                # Visit the main site first to establish cookies
+                logger.info("Visiting main site to establish cookies")
+                await page.goto("https://www.classcentral.com/", timeout=60000)
+                await page.wait_for_timeout(3000)
 
-    # Run tasks concurrently and gather results
-    results = await asyncio.gather(*scrape_tasks, return_exceptions=True)
+                while page_num <= self.max_pages:
+                    url = f"{self.BASE_URL}?sort=created-up&page={page_num}"
+                    logger.info(f"Fetching page {page_num}: {url}")
 
-    for i, result in enumerate(results):
-        page_num = i + 1
-        if isinstance(result, Exception):
-            logger.error(f"Task for page {page_num} failed with exception: {result}")
-        elif isinstance(result, list):
-            if result:
-                all_courses_data.extend(result)
-                logger.debug(f"Successfully processed page {page_num}, added {len(result)} courses.")
-            else:
-                # This could be due to parsing errors logged earlier or no courses found
-                logger.warning(f"No courses parsed or found for page {page_num}.")
-        else:
-             logger.error(f"Unexpected result type for page {page_num}: {type(result)}")
+                    try:
+                        await page.goto(url, timeout=60000)
+                        await page.wait_for_timeout(random.randint(5000, 8000))  # Wait with random delay to avoid detection
 
+                        # Save debug info for the first page
+                        if page_num == 1:
+                            debug_file = os.path.join(self.debug_dir, f"page_{page_num}.html")
+                            debug_screenshot = os.path.join(self.debug_dir, f"page_{page_num}.png")
+                            content = await page.content()
+                            with open(debug_file, "w", encoding="utf-8") as f:
+                                f.write(content)
+                            await page.screenshot(path=debug_screenshot)
+                            logger.info(f"Saved debug info to {debug_file} and {debug_screenshot}")
 
-    logger.info(f"Playwright scraping finished. Total courses collected: {len(all_courses_data)}")
-    return all_courses_data
+                        # Extract page content, fallback to cloudscraper if Cloudflare challenge
+                        content = await page.content()
+                        # Detect Cloudflare challenge page
+                        if "Just a moment" in content or "needs to review the security" in content:
+                            logger.warning(f"Cloudflare challenge detected on page {page_num}, falling back to cloudscraper")
+                            try:
+                                import cloudscraper
+                                scraper = cloudscraper.create_scraper()
+                                resp = scraper.get(url, headers={"User-Agent": context._options.get('user_agent', '')})  # reuse UA
+                                content = resp.text
+                            except ImportError:
+                                logger.error("cloudscraper not installed; install via 'pip install cloudscraper'")
+                        # Parse content
+                        soup = BeautifulSoup(content, "html.parser")
 
+                        # Find all course listings - they're in a list structure
+                        course_elements = soup.find_all("li", class_="course-list-course")
 
-def save_data(data: List[Dict[str, Any]], file_path: Path) -> None:
-    """
-    Saves the scraped course data to a Parquet file using Polars.
+                        if not course_elements:
+                            # Try alternative selector
+                            course_elements = soup.select("div.catalog-grid__results li")
 
-    Args:
-        data: A list of dictionaries containing course data.
-        file_path: The Path object representing the output file.
-    """
-    if not data:
-        logger.warning("No data to save.")
-        return
+                        if not course_elements:
+                            # Save debug info
+                            debug_file = os.path.join(self.debug_dir, f"page_{page_num}_failed.html")
+                            debug_screenshot = os.path.join(self.debug_dir, f"page_{page_num}_failed.png")
+                            with open(debug_file, "w", encoding="utf-8") as f:
+                                f.write(content)
+                            await page.screenshot(path=debug_screenshot)
+                            logger.error(f"No courses found on page {page_num}, saved debug info")
+                            break
 
-    try:
-        df = pl.DataFrame(data)
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        df.write_parquet(file_path)
-        logger.info(f"Successfully saved {len(df)} courses to {file_path}")
-    except Exception as e:
-        logger.error(f"Failed to save data to {file_path}: {e}")
+                        logger.info(f"Found {len(course_elements)} course elements on page {page_num}")
 
+                        # Process courses
+                        for course_element in course_elements:
+                            course_data = self.extract_course_info(course_element, soup)
+                            if course_data:
+                                all_courses.append(course_data)
 
-async def main() -> None:
-    """
-    Main function to orchestrate the Coursera course scraping process using Playwright.
-    Determines whether to perform a full scrape or an update based on file existence.
-    """
-    logger.info("Starting Coursera course scraping process with Playwright...")
-    output_file_exists = OUTPUT_FILE.exists()
-    num_pages_to_scrape = 0 # Default to 0, determine based on logic below
+                        page_num += 1
 
-    async with async_playwright() as p:
-        browser = None
-        try:
-            browser = await p.chromium.launch(headless=True) # Use headless mode
-            page = await browser.new_page() # Use one page for initial check
+                    except Exception as e:
+                        logger.error(f"Error processing page {page_num}: {e}")
+                        break
 
-            if not output_file_exists:
-                logger.info(f"Output file {OUTPUT_FILE} not found. Performing initial full scrape.")
-                first_page_html = await fetch_page(page, 1)
-                if first_page_html:
-                    total_pages = get_total_pages(first_page_html) # Use existing parser
-                    if total_pages > 0:
-                        num_pages_to_scrape = total_pages
-                        logger.info(f"Determined {total_pages} total pages for full scrape.")
-                    else:
-                        logger.warning("Could not determine total pages from first page. Falling back to update mode (first 5 pages).")
-                        num_pages_to_scrape = MAX_PAGES_UPDATE
-                else:
-                    logger.error("Failed to fetch the first page using Playwright. Aborting scrape.")
-                    return # Exit if first page fetch fails
-            else:
-                logger.info(f"Output file {OUTPUT_FILE} found. Scraping first {MAX_PAGES_UPDATE} pages for updates.")
-                num_pages_to_scrape = MAX_PAGES_UPDATE
-
-            await page.close() # Close the initial check page
-
-            if num_pages_to_scrape > 0:
-                logger.info(f"Proceeding to scrape {num_pages_to_scrape} pages.")
-                # Pass the browser instance to the main scraping function
-                scraped_data = await scrape_coursera(browser, num_pages_to_scrape)
-
-                if scraped_data:
-                    save_data(scraped_data, OUTPUT_FILE)
-                else:
-                    logger.warning("No data was scraped.")
-            else:
-                logger.warning("Number of pages to scrape is zero. No scraping will occur.")
-
-        except PlaywrightError as e:
-             logger.error(f"A Playwright error occurred during execution: {e}")
-        except Exception as e:
-            logger.error(f"An unexpected error occurred in main: {e}")
-        finally:
-            if browser:
                 await browser.close()
-            logger.info("Playwright browser closed.")
 
-    logger.info("Coursera scraping process finished.")
+        except Exception as e:
+            logger.error(f"Error in scrape_courses: {e}")
 
+        logger.info(f"Scraped {len(all_courses)} courses in total")
+        return all_courses
+    
+    def extract_course_info(self, course_element, soup) -> Dict[str, Any]:
+        """Extract course information from a ClassCentral course listing."""
+        import json
+        from datetime import datetime
+
+        course_data: Dict[str, Any] = {}
+
+        try:
+            # Extract course title and URL
+            course_name_element = course_element.find("h2", class_="text-1")
+            if course_name_element:
+                course_data["title"] = course_name_element.text.strip()
+                a_tag = course_name_element.find_parent("a")
+                if a_tag:
+                    relative_url = a_tag.get("href", "")
+                    course_data["url"] = f"https://www.classcentral.com{relative_url}"
+
+            # Extract institution
+            institution_element = course_element.find("a", href=lambda x: x and "/institution/" in x)
+            if institution_element:
+                course_data["institution"] = institution_element.text.strip()
+
+            # Extract description
+            desc_element = course_element.find("p", class_="text-2")
+            if desc_element:
+                course_data["description"] = desc_element.text.strip()
+
+            # Extract details
+            details_list = course_element.find("ul")
+            if details_list:
+                for item in details_list.find_all("li"):
+                    icon = item.find("i")
+                    if not icon:
+                        continue
+                    icon_class = icon.get("class", [])
+                    text_content = item.get_text(strip=True)
+
+                    if "icon-provider-charcoal" in icon_class:
+                        course_data["provider"] = "Coursera"
+                    elif "icon-clock-charcoal" in icon_class:
+                        course_data["duration"] = text_content
+                    elif "icon-calendar-charcoal" in icon_class:
+                        course_data["start_date"] = text_content
+                    elif "icon-tag-red" in icon_class or "icon-tag-charcoal" in icon_class:
+                        course_data["cost"] = text_content
+                        course_data["is_free"] = "Free" in text_content
+
+            # Extract rating
+            rating_element = course_element.find("span", class_="cmpt-rating-medium")
+            if rating_element:
+                filled_stars = rating_element.find_all("i", class_=lambda c: c and "icon-star-" in c and "empty" not in c)
+                course_data["rating"] = len(filled_stars)
+
+            # Extract subject and language from track props
+            track_props = course_element.find(attrs={"data-track-props": True})
+            if track_props:
+                try:
+                    props = json.loads(track_props["data-track-props"])
+                    course_data["subject"] = props.get("course_subject", "")
+                    course_data["language"] = props.get("course_language", "")
+                    course_data["certificate_offered"] = props.get("course_certificate", False)
+                except json.JSONDecodeError:
+                    pass
+
+            course_data["scraped_at"] = datetime.now().isoformat()
+
+        except Exception as e:
+            logger.error(f"Error extracting course info: {e}")
+            return None
+
+        return course_data
+        
+    def save_courses(self, courses: List[Dict[str, Any]]) -> None:
+        """Save scraped courses to JSON and CSV files.
+        
+        Args:
+            courses: List of course dictionaries to save.
+        """
+        if not courses:
+            logger.warning("No courses to save")
+            return
+            
+        try:
+            # Ensure we have at least some data before saving
+            if len(courses) < 3:
+                logger.warning(f"Found only {len(courses)} courses, which is suspiciously low. Check scraping.")
+
+            # If the file already exists, we don't delete it, we update the contents
+            if os.path.exists(self.courses_file):
+                with open(self.courses_file, "r", encoding="utf-8") as f:
+                    existing_courses = json.load(f)
+                    existing_courses.extend(courses)
+                    courses = existing_courses            
+            # Save courses as JSON
+            with open(self.courses_file, "w", encoding="utf-8") as f:
+                json.dump(courses, f, ensure_ascii=False, indent=2)
+            logger.info(f"Saved {len(courses)} courses to {self.courses_file}")
+                
+            # Update last run information
+            last_run_info = {
+                "timestamp": datetime.now().isoformat(),
+                "courses_count": len(courses)
+            }
+            
+            with open(self.last_run_file, "w", encoding="utf-8") as f:
+                json.dump(last_run_info, f, ensure_ascii=False, indent=2)
+            
+            # Save as CSV for easier viewing (similar to YouTube posts)
+            try:
+                import pandas as pd
+                csv_file = os.path.join(self.output_dir, "coursera_courses.csv")
+                # Convert to DataFrame
+                df = pd.DataFrame(courses)
+                # Drop description to avoid CSV formatting issues
+                if "description" in df.columns:
+                    df = df.drop(columns=["description"])
+                df.to_csv(csv_file, index=False)
+                logger.info(f"Also saved courses to CSV: {csv_file}")
+            except Exception as e:
+                logger.warning(f"Could not save courses to CSV: {e}")
+                
+        except Exception as e:
+            logger.error(f"Error saving courses: {e}")
+        
+    async def run(self) -> None:
+        """Run the scraper asynchronously."""
+        logger.info("Starting Coursera course scraper")
+        courses = await self.scrape_courses()
+        self.save_courses(courses)
+        logger.info("Coursera course scraping completed")
+
+async def main_async(max_pages: Optional[int] = None) -> None:
+    """Asynchronous main entry point for the script.
+    
+    Args:
+        max_pages: Optional override for the number of pages to scrape.
+    """
+    logger.info("Starting Coursera course scraping process")
+    
+    try:
+        scraper = CourseraScraper(max_pages=max_pages)
+        await scraper.run()
+        logger.info("Coursera course scraping completed successfully")
+    except Exception as e:
+        logger.error(f"Error during Coursera course scraping: {str(e)}", exc_info=True)
+
+def main(max_pages: Optional[int] = None) -> None:
+    """Synchronous main entry point for the script.
+    
+    This function sets up the event loop and runs the async main function.
+    
+    Args:
+        max_pages: Optional override for the number of pages to scrape.
+    """
+    try:
+        # On Windows, use the ProactorEventLoop policy
+        if sys.platform == 'win32':
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+            
+        asyncio.run(main_async(max_pages=max_pages))
+    except KeyboardInterrupt:
+        logger.info("Script interrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Unhandled exception: {e}", exc_info=True)
+        sys.exit(1)
 
 if __name__ == "__main__":
-    # Ensure browser binaries are installed: Run `playwright install` in your terminal
-    logger.info("Reminder: Ensure Playwright browsers are installed (`playwright install`).")
-    asyncio.run(main())
+    # Parse command line arguments
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Scrape Coursera courses from classcentral.com provider page")
+    parser.add_argument("--max-pages", type=int, help="Maximum number of pages to scrape", default=5)
+    args = parser.parse_args()
+    
+    main(max_pages=args.max_pages)
+    logger.info("ClassCentral Coursera scraper script completed")

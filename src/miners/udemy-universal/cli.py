@@ -36,7 +36,7 @@ def create_scraping_thread(site: str, scraper):
         t.start()
 
         # Wait for the scraper to initialize
-        timeout = 120  # Increased timeout to 120 seconds (from 60)
+        timeout = 180  # Increased timeout to 180 seconds (from 120) for initialization
         start_time = time.time()
         
         # Add a check interval to avoid busy waiting
@@ -88,9 +88,14 @@ def create_scraping_thread(site: str, scraper):
         if final_length > 0 and prev_progress < final_length: # Avoid update if length is 0 or -1
             progress_bar.update(final_length - prev_progress)
 
-        # Get actual number of courses scraped
-        courses_count = len(getattr(scraper, f"{code_name}_data", []))
-        thread_logger.info(f"Scraping completed for {site} with {courses_count} courses")
+        # Process potential partial results
+        courses = getattr(scraper, f"{code_name}_data", [])
+        # Even if we only got partial results, save them
+        if courses and len(courses) > 0:
+            thread_logger.info(f"Scraping completed for {site} with {len(courses)} courses")
+        else:
+            thread_logger.warning(f"No courses found for {site}")
+            
         progress_bar.close()
 
     except Exception as e:
@@ -146,9 +151,13 @@ def main_extract():
         time.sleep(1)
         logger.info("Extraction process finished.")
 
-        # Filter out sites with errors (where length is -1)
-        successful_data = {site: data for site, data in scraped_data.items() if getattr(scraper, f"{scraper_dict[site]}_length", 0) != -1}
-        failed_sites = [site for site, data in scraped_data.items() if getattr(scraper, f"{scraper_dict[site]}_length", 0) == -1]
+        # Accept sites with partial results (length > 0) instead of just filtering out failures
+        successful_data = {site: data for site, data in scraped_data.items() 
+                          if len(data) > 0 and getattr(scraper, f"{scraper_dict[site]}_length", 0) != -1}
+        
+        # Sites that failed completely (no courses extracted)
+        failed_sites = [site for site, data in scraped_data.items() 
+                       if len(data) == 0 or getattr(scraper, f"{scraper_dict[site]}_length", 0) == -1]
 
         if failed_sites:
             logger.error(f"Extraction failed for sites: {', '.join(failed_sites)}")
