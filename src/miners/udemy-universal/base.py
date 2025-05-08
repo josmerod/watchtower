@@ -10,6 +10,7 @@ import traceback
 from datetime import datetime, timezone
 from decimal import Decimal
 from urllib.parse import parse_qs, unquote, urlparse, urlsplit, urlunparse
+from typing import List, Dict, Optional, Any
 
 import cloudscraper
 import requests
@@ -2489,11 +2490,35 @@ class Udemy:
         if course["is_invalid"]:
             self.print(course["msg"], color="red")
             self.excluded_c += 1
+            return # Added return
         elif course["retry"]:
             self.print("Retrying...", color="red")
             time.sleep(1)
             self.handle_course_enrollment()
-        elif course["is_excluded"]:
+            return # Added return
+        
+        course_id = course["course_id"]
+        
+        # --- Fetch and Log Course Details --- 
+        try:
+            course_details = self.get_course_details(course_id)
+            if course_details and not course_details.get("error"):
+                self.logger.info(f"Details for course {course_id} ({course_details.get('title', 'N/A')})")
+                # Log some key details
+                self.logger.debug(f"  Rating: {course_details.get('rating')}, Students: {course_details.get('num_students')}, Lang: {course_details.get('language')}")
+                self.logger.debug(f"  Instructor(s): {', '.join([i.get('name', '') for i in course_details.get('instructors', [])])}")
+                self.logger.debug(f"  Last Updated: {course_details.get('last_update_date')}")
+            elif course_details and course_details.get("error"):
+                 self.logger.warning(f"Could not fetch full details for course {course_id}: {course_details.get('error')}")
+            else:
+                 self.logger.warning(f"Could not fetch any details for course {course_id}")
+        except Exception as detail_err:
+             self.logger.error(f"Error fetching details for course {course_id}: {detail_err}", exc_info=True)
+        # --- End Fetch and Log Course Details ---
+
+        if course["is_excluded"]:
+            # Exclude check was already done in get_course_id based on dma, 
+            # but we might want to re-evaluate based on fetched details here later.
             self.excluded_c += 1
         elif course["course_id"] in self.enrolled_courses:
             self.print(
@@ -2645,3 +2670,376 @@ class Udemy:
             self.print("Unknown Error: Report this to the developer", color="red")
             self.print(checkout_response, color="red")  # Add color parameter here
 
+    def get_course_details(self, course_id: str, max_retries: int = 3, base_delay: int = 2) -> Dict[str, Any]:
+        """
+        Fetches detailed information for a given Udemy course ID.
+
+        Tries to fetch data from the Udemy API first. If that fails or provides
+        incomplete data, it falls back to scraping the course landing page.
+        Includes retry logic for network requests.
+
+        Args:
+            course_id: The ID of the Udemy course.
+            max_retries: Maximum number of retries for network requests.
+            base_delay: Base delay in seconds for exponential backoff.
+
+        Returns:
+            A dictionary containing course details, or an error message if fetching fails.
+            Keys can include: 'title', 'headline', 'rating', 'num_students', 
+            'instructors', 'language', 'last_update_date', 'description', 
+            'curriculum_sections', 'url', 'error'.
+        """
+        details: Dict[str, Any] = {"course_id": course_id, "error": None}
+        api_url = f"https://{self.domain}/api-2.0/courses/{course_id}/?fields[course]=title,headline,rating,num_subscribers,visible_instructors,locale,last_update_date,description,curriculum_context,url,is_paid,price_detail,primary_category,primary_subcategory"
+
+        for attempt in range(max_retries):
+            try:
+                self.logger.debug(f"Attempt {attempt + 1} to fetch course details for {course_id} from API: {api_url}")
+                response = self.client.get(api_url, timeout=20) # Increased timeout
+                response.raise_for_status()
+                data = response.json()
+                
+                details["title"] = data.get("title")
+                details["headline"] = data.get("headline")
+                details["rating"] = data.get("rating")
+                details["num_students"] = data.get("num_subscribers")
+                details["url"] = f"https://{self.domain}{data.get('url')}" if data.get('url') else None
+                
+                instructors_data = data.get("visible_instructors", [])
+                details["instructors"] = [
+                    {
+                        "name": ins.get("display_name"),
+                        "title": ins.get("job_title"),
+                        "image": ins.get("image_100x100"),
+                        "url": f"https://{self.domain}{ins.get('url')}" if ins.get('url') else None,
+                    }
+                    for ins in instructors_data
+                ]
+                
+                locale_data = data.get("locale")
+                details["language"] = locale_data.get("simple_english_title") if locale_data else None
+                details["last_update_date"] = data.get("last_update_date") # Format: YYYY-MM-DD
+                
+                # Description might be HTML, keep as is for now
+                details["description"] = data.get("description") 
+                
+                # Curriculum (high-level sections and lecture counts)
+                curriculum = data.get("curriculum_context", {}).get("data", {})
+                sections = curriculum.get("sections", [])
+                details["curriculum_sections"] = []
+                for sec in sections:
+                    lectures = sec.get("items", [])
+                    details["curriculum_sections"].append({
+                        "title": sec.get("title"),
+                        "lecture_count": sec.get("lecture_count"),
+                        "content_length_text": sec.get("content_length_text"),
+                        "lectures": [{"title": lect.get("title"), "content_summary": lect.get("content_summary")} for lect in lectures if lect.get("_class") == "lecture"]
+                    })
+                
+                details["is_paid"] = data.get("is_paid", True)
+                price_detail = data.get("price_detail")
+                if price_detail:
+                    details["price"] = price_detail.get("amount")
+                    details["currency"] = price_detail.get("currency")
+
+                primary_category = data.get("primary_category")
+                if primary_category:
+                    details["primary_category"] = primary_category.get("title")
+                primary_subcategory = data.get("primary_subcategory")
+                if primary_subcategory:
+                    details["primary_subcategory"] = primary_subcategory.get("title")
+
+                self.logger.info(f"Successfully fetched details for course {course_id} via API.")
+                details["error"] = None # Clear error if successful
+                return details
+
+            except requests.exceptions.HTTPError as http_err:
+                self.logger.warning(f"API HTTP error for course {course_id} (attempt {attempt + 1}): {http_err}")
+                if http_err.response.status_code == 404:
+                    details["error"] = "Course not found via API (404)."
+                    # Don't retry on 404, but allow fallback to scrape
+                    break 
+                if http_err.response.status_code == 403:
+                    details["error"] = "Access forbidden to course API (403)."
+                     # Don't retry on 403, but allow fallback to scrape
+                    break
+                # For other HTTP errors, retry
+            except (requests.RequestException, json.JSONDecodeError) as e:
+                self.logger.warning(f"API request/JSON error for course {course_id} (attempt {attempt + 1}): {e}")
+            
+            if attempt < max_retries - 1:
+                time.sleep(base_delay * (2 ** attempt)) # Exponential backoff
+            else:
+                self.logger.error(f"API failed after {max_retries} attempts for course {course_id}.")
+                if not details["error"]: # Set a generic error if a specific one (like 404) wasn't set
+                    details["error"] = "Failed to fetch details from API after multiple retries."
+        
+        # Placeholder for scraping logic and final return
+        self.logger.info(f"API part finished for {course_id}, proceeding to potential scrape. Current error: {details.get('error')}")
+        return details # Temporary return, will be replaced
+
+        # Fallback to scraping if API failed or if crucial info is missing (e.g. description, curriculum)
+        # We can define "crucial info missing" more strictly if needed
+        should_scrape = bool(details["error"]) or not all(details.get(k) for k in ["title", "description"])
+
+        if should_scrape:
+            self.logger.info(f"Falling back to scraping for course {course_id}. Previous API error: {details.get('error', 'N/A')}")
+            # Construct a plausible course URL. The slug doesn't strictly matter for course ID based fetching.
+            scrape_url = f"https://{self.domain}/course/placeholder-slug/{course_id}/" 
+            
+            for attempt in range(max_retries):
+                try:
+                    self.logger.debug(f"Scrape attempt {attempt + 1} for course {course_id} from {scrape_url}")
+                    # Use the existing client which should handle cloudscraper session
+                    response = self.client.get(scrape_url, timeout=30) # Longer timeout for page load
+                    response.raise_for_status()
+                    soup = bs(response.content, "html5lib")
+
+                    # Extract data-module-args for structured data if available
+                    body_tag = soup.find("body")
+                    dma_str = body_tag.get("data-module-args") if body_tag else None
+                    
+                    if dma_str:
+                        try:
+                            dma = json.loads(dma_str)
+                            # Look in multiple places for course data within DMA
+                            course_data_options = [
+                                dma.get("course"),
+                                dma.get("serverSideProps", {}).get("course"),
+                                dma.get("componentProps", {}).get("course"), # Another common location
+                                dma.get("prerenderedData", {}).get("course") # Yet another location
+                            ]
+                            course_data = next((cd for cd in course_data_options if cd is not None), {})
+
+
+                            if not details.get("title") and course_data.get("title"):
+                                details["title"] = course_data["title"]
+                            if not details.get("headline") and course_data.get("headline"):
+                                details["headline"] = course_data["headline"]
+                            if not details.get("rating") and course_data.get("rating"):
+                                details["rating"] = course_data["rating"]
+                            
+                            num_students_options = [course_data.get("num_students"), course_data.get("num_subscribers")]
+                            current_num_students = next((ns for ns in num_students_options if ns is not None), None)
+                            if not details.get("num_students") and current_num_students is not None:
+                                details["num_students"] = current_num_students
+                            
+                            if not details.get("url"): 
+                                details["url"] = f"https://{self.domain}{course_data.get('url')}" if course_data.get('url') else scrape_url
+
+                            if not details.get("instructors"):
+                                instructors_dma_options = [
+                                    course_data.get("visible_instructors"),
+                                    course_data.get("instructors", {}).get("instructors_info")
+                                ]
+                                instructors_dma = next((ido for ido in instructors_dma_options if ido is not None), [])
+                                details["instructors"] = [
+                                    {
+                                        "name": ins.get("display_name"), 
+                                        "title": ins.get("job_title"),
+                                        "image": ins.get("image_100x100"),
+                                        "url": f"https://{self.domain}{ins.get('url')}" if ins.get('url') else f"https://{self.domain}{ins.get('absolute_url')}" if ins.get('absolute_url') else None,
+                                    } for ins in instructors_dma
+                                ]
+                            
+                            if not details.get("language") and course_data.get("locale", {}).get("simple_english_title"):
+                                details["language"] = course_data["locale"]["simple_english_title"]
+                            if not details.get("last_update_date") and course_data.get("last_update_date"):
+                                details["last_update_date"] = course_data["last_update_date"]
+                            
+                            description_options = [course_data.get("description"), course_data.get("details_html")]
+                            current_description = next((desc for desc in description_options if desc is not None), None)
+                            if not details.get("description") and current_description:
+                                details["description"] = current_description
+
+                            if not details.get("curriculum_sections"):
+                                curriculum_dma_options = [
+                                    course_data.get("curriculum_lectures"), # This might be flat list
+                                    course_data.get("curriculum_sections"), # This is usually structured
+                                    dma.get("curriculum_context", {}).get("data", {}).get("sections") # API-like path in DMA
+                                ]
+                                sections_dma_source = next((cdo for cdo in curriculum_dma_options if cdo is not None), [])
+                                
+                                temp_curriculum = []
+                                # Heuristic: if sections_dma_source looks like a list of lectures (flat), group them under a generic section
+                                if sections_dma_source and all("object_type" in item and item["object_type"] == "lecture" for item in sections_dma_source if isinstance(item, dict)):
+                                    temp_curriculum.append({
+                                        "title": "Course Content",
+                                        "lecture_count": len(sections_dma_source),
+                                        "content_length_text": course_data.get("content_info"), # Or some aggregate
+                                        "lectures": [{"title": lect.get("title"), "content_summary": lect.get("content_summary")} for lect in sections_dma_source]
+                                    })
+                                else: # Assume it's a list of sections
+                                    for sec_dma in sections_dma_source:
+                                        if not isinstance(sec_dma, dict): continue # Skip if not a dict
+                                        lectures_dma = sec_dma.get("items", []) 
+                                        temp_curriculum.append({
+                                            "title": sec_dma.get("title"),
+                                            "lecture_count": sec_dma.get("lecture_count"),
+                                            "content_length_text": sec_dma.get("content_length_text"),
+                                            "lectures": [{"title": lect.get("title"), "content_summary": lect.get("content_summary")} for lect in lectures_dma if isinstance(lect, dict) and (lect.get("object_type") == "lecture" or lect.get("_class") == "lecture")]
+                                        })
+                                if temp_curriculum:
+                                    details["curriculum_sections"] = temp_curriculum
+                            
+                            self.logger.info(f"Successfully extracted details for course {course_id} via DMA scrape.")
+                            details["error"] = None 
+                            return details
+                        except json.JSONDecodeError:
+                            self.logger.warning(f"Failed to parse data-module-args for course {course_id}.")
+                        except Exception as dma_exc:
+                            self.logger.warning(f"Error processing DMA for course {course_id}: {dma_exc}", exc_info=self.debug)
+
+                    # If DMA fails or is not present, try more direct scraping (less reliable)
+                    self.logger.info(f"DMA not available or failed for {course_id}. Attempting direct scrape selectors.")
+
+                    if not details.get("title"):
+                        title_tag = soup.select_one('h1[data-purpose="lead-title"], .clp-lead__title, .course-header__title h1')
+                        if title_tag: details["title"] = title_tag.get_text(strip=True)
+                    
+                    if not details.get("headline"):
+                        headline_tag = soup.select_one('div[data-purpose="lead-headline"], .clp-lead__headline')
+                        if headline_tag: details["headline"] = headline_tag.get_text(strip=True)
+
+                    if not details.get("rating"):
+                        rating_tag = soup.select_one('span[data-purpose="rating-number"], span.tooltip-container span.sr-only') 
+                        if rating_tag:
+                            rating_text = rating_tag.get_text(strip=True)
+                            match = re.search(r"([0-9\\\\.]+)", rating_text)
+                            if match: details["rating"] = float(match.group(1))
+                    
+                    if not details.get("num_students"):
+                        students_tag = soup.select_one('div[data-purpose="enrollment"], .course-header__details-text:-soup-contains("students"), .clp-lead__element-item:-soup-contains("students") span')
+                        if students_tag:
+                            students_text = students_tag.get_text(strip=True).replace(",", "")
+                            match = re.search(r"(\\\\d+)", students_text)
+                            if match: details["num_students"] = int(match.group(1))
+
+                    if not details.get("description"):
+                        desc_tag = soup.select_one('div[data-purpose="description"], div.ud-component--course-landing-page-udlite--description, .course-description')
+                        if desc_tag: details["description"] = str(desc_tag) 
+
+                    if not details.get("instructors"):
+                        instructor_elements = soup.select('div[data-purpose="instructor-name-top"] a, .instructor--instructor__title--32R_P a')
+                        temp_instructors = []
+                        for el in instructor_elements:
+                            name = el.get_text(strip=True)
+                            url_path = el.get("href")
+                            if name and url_path:
+                                temp_instructors.append({
+                                    "name": name, 
+                                    "url": f"https://{self.domain}{url_path}" if url_path.startswith("/") else url_path,
+                                    "title": None, "image": None 
+                                })
+                        if temp_instructors: details["instructors"] = temp_instructors
+                    
+                    if not details.get("last_update_date"):
+                        last_update_tag = soup.select_one('div[data-purpose="last-update-date"] span, .course-header__details-text:-soup-contains("Last updated")')
+                        if last_update_tag:
+                            date_text = last_update_tag.get_text(strip=True).replace("Last updated", "").strip()
+                            try:
+                                parsed_date = None
+                                if re.match(r"\\\\d{1,2}/\\\\d{4}", date_text): 
+                                    dt_obj = datetime.strptime(date_text, "%m/%Y")
+                                    parsed_date = dt_obj.strftime("%Y-%m-01") 
+                                elif re.match(r"[A-Za-z]+ \\\\d{4}", date_text): 
+                                    dt_obj = datetime.strptime(date_text, "%B %Y")
+                                    parsed_date = dt_obj.strftime("%Y-%m-01") 
+                                if parsed_date:
+                                    details["last_update_date"] = parsed_date
+                            except ValueError:
+                                self.logger.warning(f"Could not parse last update date string: {date_text} for course {course_id}")
+
+
+                    if not details.get("curriculum_sections"):
+                        curriculum_sections_scrape = []
+                        section_elements = soup.select('div[data-purpose^="course-curriculum-section-"], .curriculum--section--1J_z1')
+                        for sec_el in section_elements:
+                            title_el = sec_el.select_one('div[data-purpose="section-title"] span, .section--section-title--1v4gJ')
+                            meta_el = sec_el.select_one('div[data-purpose="section-meta"] span, .section--section-meta--2Q0N0 span')
+                            lectures_el = sec_el.select('div[data-purpose="lecture-title"], .lecture--lecture-title--3VZz-')
+                            
+                            lecture_count = len(lectures_el)
+                            content_length_text = None
+                            if meta_el: # Try to get lectures count and time from meta
+                                meta_text = meta_el.get_text(strip=True)
+                                count_match = re.search(r"(\d+)\s*lectures", meta_text, re.IGNORECASE)
+                                if count_match: lecture_count = int(count_match.group(1))
+                                time_match = re.search(r"([\d\w\s]+total length)", meta_text, re.IGNORECASE) # e.g. "12 lectures • 1h 30m total length"
+                                if time_match: content_length_text = time_match.group(1).replace(" total length","").strip()
+
+
+                            if title_el:
+                                curriculum_sections_scrape.append({
+                                    "title": title_el.get_text(strip=True),
+                                    "lecture_count": lecture_count,
+                                    "content_length_text": content_length_text, 
+                                    "lectures": [{"title": lec.get_text(strip=True), "content_summary": None} for lec in lectures_el]
+                                })
+                        if curriculum_sections_scrape:
+                            details["curriculum_sections"] = curriculum_sections_scrape
+                    
+                    self.logger.info(f"Successfully scraped details for course {course_id} from HTML.")
+                    details["error"] = None 
+                    return details
+
+                except requests.exceptions.HTTPError as http_err:
+                    self.logger.warning(f"Scrape HTTP error for course {course_id} (attempt {attempt + 1}): {http_err}")
+                    if http_err.response.status_code == 404:
+                        details["error"] = "Course landing page not found (404)."
+                        break 
+                    if http_err.response.status_code == 403: 
+                        details["error"] = "Access forbidden to course page (403)."
+                        break
+                except (requests.RequestException) as e:
+                    self.logger.warning(f"Scrape request error for course {course_id} (attempt {attempt + 1}): {e}")
+                except Exception as e_scrape: 
+                    self.logger.error(f"General error during scraping course {course_id} (attempt {attempt + 1}): {e_scrape}", exc_info=self.debug)
+
+                if attempt < max_retries - 1:
+                    time.sleep(base_delay * (2 ** attempt))
+                else:
+                    self.logger.error(f"Scraping failed after {max_retries} attempts for course {course_id}.")
+                    if not details["error"]: 
+                        details["error"] = "Failed to fetch details by scraping after multiple retries."
+        
+        # Final check and return
+        if not details.get("title") and not details.get("error"): 
+             details["error"] = "Failed to retrieve any course details despite attempts."
+        elif details.get("title") and details.get("error"): 
+            self.logger.warning(f"Returning partial details for {course_id} despite error: {details['error']}")
+            # Keep the error message to indicate partial data, but we have a title.
+        elif not details.get("title") and details.get("error"):
+            self.logger.error(f"Failed to get title for {course_id}. Error: {details['error']}")
+
+
+        return details
+
+    def is_course_excluded(self, dma):
+        instructors = [
+            i["absolute_url"].split("/")[-2]
+            for i in dma["serverSideProps"]["course"]["instructors"]["instructors_info"]
+            if i["absolute_url"]
+        ]
+        lang = dma["serverSideProps"]["course"]["localeSimpleEnglishTitle"]
+        cat = dma["serverSideProps"]["topicMenu"]["breadcrumbs"][0]["title"]
+        rating = dma["serverSideProps"]["course"]["rating"]
+        last_update = dma["serverSideProps"]["course"]["lastUpdateDate"]
+
+        if not self.is_course_updated(last_update):
+            self.print(
+                f"Course excluded: Last updated {last_update}", color="light blue"
+            )
+        elif self.is_instructor_excluded(instructors):
+            self.print(f"Instructor excluded: {instructors[0]}", color="light blue")
+        elif self.is_keyword_excluded(self.title):
+            self.print("Keyword Excluded", color="light blue")
+        elif cat not in self.categories:
+            self.print(f"Category excluded: {cat}", color="light blue")
+        elif lang not in self.languages:
+            self.print(f"Language excluded: {lang}", color="light blue")
+        elif rating < self.min_rating:
+            self.print(f"Low rating: {rating}", color="light blue")
+        else:
+            return False
+        return True

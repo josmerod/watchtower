@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import subprocess
-import schedule
 
 # Add the project root to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -67,29 +66,23 @@ def run_youtube_etl():
 
         return True
     except Exception as e:
-        logger.error(f"Unexpected error running YouTube ETL: {str(e)}")
+        logger.error(f"Unexpected error running YouTube ETL: {str(e)}", exc_info=True)
         return False
 
 
 def main():
-    """Main orchestrator function."""
-    logger.info("Starting Golddigging Orchestrator")
-
-    # Ensure required directories exist
+    """Main orchestrator function - Runs the ETL task once."""
+    logger.info("Starting Golddigging Orchestrator Task (single run)")
     ensure_golddigging_directories()
 
-    # Schedule the ETL job to run every 6 hours
-    schedule.every(6).hours.do(run_youtube_etl)
+    success = run_youtube_etl()
 
-    # Run immediately on startup
-    logger.info("Running initial ETL job...")
-    run_youtube_etl()
-
-    # Keep the script running and execute scheduled jobs
-    logger.info("Orchestrator running. Waiting for scheduled jobs...")
-    while True:
-        schedule.run_pending()
-        time.sleep(60)  # Check for pending jobs every minute
+    if success:
+        logger.info("Golddigging Orchestrator Task completed successfully.")
+        sys.exit(0)  # Exit with success code
+    else:
+        logger.error("Golddigging Orchestrator Task failed.")
+        sys.exit(1)  # Exit with error code
 
 
 if __name__ == "__main__":

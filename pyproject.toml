@@ -8,6 +8,8 @@ authors = [
 requires-python = ">=3.10" # Specify compatible Python versions
 dependencies = [
     "playwright>=1.40", # Specify playwright as a dependency
+    "requests>=2.27.1", # Added for GitHub API calls
+    "paperswithcode-client>=0.3.1", # Added for PapersWithCode integration
 ]
 
 [build-system]
