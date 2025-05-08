@@ -7,7 +7,10 @@ from src.web.fullstreamlit.components import (
     videos_tab,
     news_tab,
     games_tab,
+    courses_tab,
     watchers_tab,
     events_tab,
-    admin_tab
+    admin_tab,
+    arxiv_papers,
+    arxiv_search
 ) 

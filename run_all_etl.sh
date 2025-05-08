@@ -33,6 +33,9 @@ run_etl "src/etl/news/news_get_podcasts.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_youtube_posts.py" && pids+=($!)
 run_etl "src/watchers/ms_skills_watcher.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_coursera_courses.py" && pids+=($!)
+run_etl "src/etl/games/games_get_humblebundles.py" && pids+=($!)
+run_etl "src/etl/news/news_get_subreddits.py" && pids+=($!)
+run_etl "src/etl/news/news_get_media_rss.py" && pids+=($!)
 
 echo "All ETL processes started in parallel"
 echo "Process PIDs: ${pids[*]}"

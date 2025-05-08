@@ -26,7 +26,9 @@ from src.web.fullstreamlit.components import (
     courses_tab,
     watchers_tab,
     events_tab,
-    admin_tab
+    admin_tab,
+    arxiv_papers,
+    arxiv_search
 )
 
 # Define data paths
@@ -202,7 +204,7 @@ st.markdown(
 )
 
 # Create tabs for different data views
-tab0, tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab0, tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "🔖 Accesos Directos", 
     "📺 Videos", 
     "📰 Noticias", 
@@ -210,6 +212,8 @@ tab0, tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🎓 Cursos",
     "👁️ Watchers", 
     "🏙️ Eventos Valencia", 
+    "📚 ArXiv Papers",
+    "🔍 Búsqueda ArXiv",
     "⚙️ Admin"
 ])
 
@@ -247,6 +251,14 @@ with tab6:
     events_tab.render(logger)
 
 with tab7:
+    logger.info("Rendering ArXiv Papers tab")
+    arxiv_papers.display()
+
+with tab8:
+    logger.info("Rendering ArXiv Search tab")
+    arxiv_search.display()
+
+with tab9:
     logger.info("Rendering Admin tab")
     admin_tab.render(logger)
 
@@ -254,7 +266,7 @@ with tab7:
 st.markdown(
     """
 <div style="text-align: center; margin-top: 30px; padding: 20px; opacity: 0.9; background-color: #2D2B55; border-radius: 8px; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3); border-top: 3px solid #A37FFF;">
-    <p style="font-family: 'Poppins', sans-serif; color: #E2E8F0; font-size: 14px;">Datos obtenidos de <a href="https://isthereanydeal.com/" target="_blank">IsThereAnyDeal</a>, <a href="https://futuretools.io/news" target="_blank">FutureTools.io</a>, <a href="https://www.medium.com/" target="_blank">Medium</a> y <a href="https://www.youtube.com/" target="_blank">Youtube</a></p>
+    <p style="font-family: 'Poppins', sans-serif; color: #E2E8F0; font-size: 14px;">Datos obtenidos de <a href="https://isthereanydeal.com/" target="_blank">IsThereAnyDeal</a>, <a href="https://futuretools.io/news" target="_blank">FutureTools.io</a>, <a href="https://www.medium.com/" target="_blank">Medium</a>, <a href="https://arxiv.org/" target="_blank">ArXiv</a> y <a href="https://www.youtube.com/" target="_blank">Youtube</a></p>
 </div>
 """,
     unsafe_allow_html=True,
