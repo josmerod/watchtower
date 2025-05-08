@@ -19,7 +19,10 @@ start /B python3 src/etl/goldigging/goldigging_youtube_posts.py
 start /B python3 src/watchers/ms_skills_watcher.py --once
 start /B python3 src/etl/goldigging/goldigging_udemy_courses.py
 start /B python3 src/etl/goldigging/goldigging_coursera_courses.py
-
+REM Added new ETL scripts for Humble Bundle, Subreddits, and Media RSS
+start /B python3 src/etl/games/games_get_humblebundles.py
+start /B python3 src/etl/news/news_get_subreddits.py
+start /B python3 src/etl/news/news_get_media_rss.py
 
 echo All ETL processes started in parallel
 echo Check logs for individual process status 

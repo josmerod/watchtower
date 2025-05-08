@@ -21,3 +21,7 @@ schedule>=1.0.0
 # YouTube API utilities
 google-api-python-client>=2.0.0
 isodate>=0.6.0
+
+# NLP and ML components for content classification
+scikit-learn>=1.2.0
+nltk>=3.8.0
