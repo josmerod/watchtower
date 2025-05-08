@@ -25,3 +25,6 @@ isodate>=0.6.0
 # NLP and ML components for content classification
 scikit-learn>=1.2.0
 nltk>=3.8.0
+
+# PapersWithCode API Client
+paperswithcode-client>=0.3.1

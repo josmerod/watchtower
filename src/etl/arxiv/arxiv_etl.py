@@ -12,6 +12,9 @@ from src.watchers.arxiv_watcher import ArxivWatcher
 from src.utils.nlp_classifier import NLPContentClassifier
 from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
+from src.utils.pwc_utils import get_pwc_details_for_paper
+from paperswithcode import PapersWithCodeClient
 
 
 class ArxivETL:
@@ -67,6 +70,7 @@ class ArxivETL:
         
         self.classifier = NLPContentClassifier(name=f"{name}_classifier")
         self.n_clusters = n_clusters
+        self.pwc_client = PapersWithCodeClient()
         
         self.logger.info(f"ArxivETL initialized with {days_back} days back, {max_results} max results")
     
@@ -100,13 +104,13 @@ class ArxivETL:
     
     def transform(self, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Transform and enrich papers with NLP classification.
+        Transform and enrich papers with NLP classification, GitHub repository info, and PapersWithCode data.
         
         Args:
             papers (List[Dict[str, Any]]): Raw papers from extraction phase
             
         Returns:
-            List[Dict[str, Any]]: Transformed papers with classification
+            List[Dict[str, Any]]: Transformed papers with classification, GitHub, and PapersWithCode info
         """
         if not papers:
             self.logger.warning("No papers to transform")
@@ -115,8 +119,8 @@ class ArxivETL:
         self.logger.info(f"Starting transformation of {len(papers)} papers")
         
         # Extract text from papers for classification
-        texts = [
-            f"{paper['title']} {paper['summary']}"
+        texts_for_classification = [
+            f"{paper.get('title', '')} {paper.get('summary', '')}"
             for paper in papers
         ]
         
@@ -125,39 +129,103 @@ class ArxivETL:
         if not os.path.exists(model_path):
             # Train new classifier
             self.logger.info("Training new classifier")
-            self.classifier.train_classifier(texts, n_clusters=self.n_clusters)
-            
-            # Save the model
+            self.classifier.train_classifier(texts_for_classification, n_clusters=self.n_clusters)
             self.classifier.save_model()
         else:
             # Try to load existing model
             if not self.classifier.load_model():
                 # If loading fails, train a new one
                 self.logger.info("Training new classifier (failed to load existing)")
-                self.classifier.train_classifier(texts, n_clusters=self.n_clusters)
+                self.classifier.train_classifier(texts_for_classification, n_clusters=self.n_clusters)
                 self.classifier.save_model()
         
         # Classify all papers
-        classifications = self.classifier.batch_classify(texts)
+        classifications = self.classifier.batch_classify(texts_for_classification)
         
-        # Merge classifications with papers
+        # Merge classifications, GitHub info, and PapersWithCode info with papers
         transformed_papers = []
+        github_token = os.getenv("GITHUB_TOKEN") # For authenticated GitHub requests
+
         for i, paper in enumerate(papers):
             classification = classifications[i]
             
-            # Create transformed paper with classification data
+            # Initialize GitHub fields
+            github_info = {
+                "github_html_url": None,
+                "github_description": None,
+                "github_stars": None,
+                "github_forks": None,
+                "github_watchers": None,
+                "github_open_issues": None,
+                "github_last_updated": None,
+                "github_created_at": None,
+                "github_language": None,
+                "github_languages": None,
+                "github_topics": None,
+                "github_has_issues": None,
+                "github_has_projects": None,
+                "github_has_wiki": None,
+                "github_has_pages": None,
+                "github_default_branch": None,
+            }
+
+            # Find and process GitHub links
+            text_to_search_github = f"{paper.get('summary', '')} {paper.get('comment', '')}" 
+            github_urls = find_github_links_in_text(text_to_search_github)
+            
+            if github_urls:
+                self.logger.info(f"Found GitHub links for paper {paper.get('id', 'N/A')}: {github_urls}")
+                fetched_repo_info = get_github_repo_info(github_urls[0], github_token=github_token)
+                if fetched_repo_info:
+                    self.logger.info(f"Fetched GitHub info for {github_urls[0]}")
+                    github_info.update(fetched_repo_info)
+                else:
+                    self.logger.warning(f"Failed to fetch GitHub info for {github_urls[0]}")
+            
+            # Initialize PapersWithCode fields
+            pwc_data = {
+                "pwc_id": None,
+                "pwc_url": None,
+                "pwc_title": None,
+                "pwc_proceeding": None,
+                "pwc_repositories": [],
+                "pwc_datasets": [],
+                "pwc_tasks_and_metrics": [],
+                "pwc_methods": [],
+            }
+
+            # Fetch PapersWithCode data
+            arxiv_id_url = paper.get('id') # This is often the arxiv URL like http://arxiv.org/abs/xxxx.xxxx
+            paper_title = paper.get('title')
+            
+            if arxiv_id_url or paper_title:
+                self.logger.info(f"Fetching PwC data for paper ArXiv ID: {arxiv_id_url if arxiv_id_url else 'N/A'}, Title: {paper_title if paper_title else 'N/A'}")
+                fetched_pwc_info = get_pwc_details_for_paper(
+                    arxiv_id_url=arxiv_id_url, 
+                    title=paper_title, 
+                    pwc_client=self.pwc_client
+                )
+                if fetched_pwc_info:
+                    self.logger.info(f"Fetched PwC info for paper {arxiv_id_url if arxiv_id_url else paper_title}")
+                    pwc_data.update(fetched_pwc_info)
+                else:
+                    self.logger.warning(f"No PwC info found for paper {arxiv_id_url if arxiv_id_url else paper_title}")
+
+            # Create transformed paper with classification, GitHub, and PwC data
             transformed_paper = {
-                **paper,  # Include all original fields
+                **paper,
                 "cluster_id": classification["cluster_id"],
                 "cluster_label": classification["cluster_label"],
                 "cluster_keywords": classification["cluster_keywords"],
                 "extracted_keywords": classification["document_keywords"],
+                **github_info, 
+                **pwc_data, # Add PapersWithCode information
                 "processed_date": datetime.now().isoformat()
             }
             
             transformed_papers.append(transformed_paper)
         
-        self.logger.info(f"Transformed {len(transformed_papers)} papers into {len(set(c['cluster_id'] for c in classifications))} clusters")
+        self.logger.info(f"Transformed {len(transformed_papers)} papers into {len(set(c['cluster_id'] for c in classifications))} clusters, enriched with GitHub and PapersWithCode data.")
         return transformed_papers
     
     def load(self, transformed_papers: List[Dict[str, Any]]):
@@ -165,7 +233,7 @@ class ArxivETL:
         Load the transformed papers into various formats.
         
         Args:
-            transformed_papers (List[Dict[str, Any]]): Transformed papers with classification
+            transformed_papers (List[Dict[str, Any]]): Transformed papers with classification, GitHub, and PwC info
         """
         if not transformed_papers:
             self.logger.warning("No papers to load")
@@ -190,11 +258,32 @@ class ArxivETL:
             # Convert to DataFrame
             df = pd.DataFrame(transformed_papers)
             
-            # Handle nested fields (flatten lists to strings)
-            for col in ['authors', 'categories', 'cluster_keywords', 'extracted_keywords']:
-                if col in df.columns:
-                    df[col] = df[col].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
+            # Handle nested/complex fields for CSV (flatten lists/dicts to strings)
+            # Original fields: authors, categories, cluster_keywords, extracted_keywords
+            # GitHub fields: github_languages (dict), github_topics (list)
+            # PwC fields: pwc_repositories (list of dicts), pwc_datasets (list of dicts), 
+            #             pwc_tasks_and_metrics (list of dicts), pwc_methods (list of str)
             
+            cols_to_flatten_simple_list = ['authors', 'categories', 'cluster_keywords', 'extracted_keywords', 'github_topics', 'pwc_methods']
+            for col in cols_to_flatten_simple_list:
+                if col in df.columns:
+                    df[col] = df[col].apply(lambda x: ', '.join(map(str, x)) if isinstance(x, list) else x)
+
+            if 'github_languages' in df.columns:
+                df['github_languages'] = df['github_languages'].apply(
+                    lambda x: ', '.join([f"{k}:{v}" for k, v in x.items()]) if isinstance(x, dict) else x
+                )
+            
+            # Flatten lists of dictionaries for PwC fields
+            list_of_dicts_cols = ['pwc_repositories', 'pwc_datasets', 'pwc_tasks_and_metrics']
+            for col in list_of_dicts_cols:
+                if col in df.columns:
+                    # Convert list of dicts to a string representation of JSON or simplify
+                    # For CSV, a simple string representation of list of dicts might be too complex.
+                    # Let's try to make it a |-separated list of key aspects, e.g. name or id.
+                    # Or convert the whole list of dicts to a JSON string.
+                    df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, list) and x else (x if not isinstance(x, list) else None))
+
             # Save DataFrame
             csv_file = os.path.join(self.processed_dir, f"csv/papers_{timestamp}.csv")
             df.to_csv(csv_file, index=False, encoding='utf-8')

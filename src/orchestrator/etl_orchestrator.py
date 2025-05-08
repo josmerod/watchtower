@@ -2,7 +2,7 @@ import os
 import sys
 import time
 import subprocess
-import schedule
+# import schedule # Removed
 
 # Add the project root to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -67,29 +67,23 @@ def run_games_etl():
 
         return True
     except Exception as e:
-        logger.error(f"Unexpected error running games ETL: {str(e)}")
+        logger.error(f"Unexpected error running games ETL: {str(e)}", exc_info=True)
         return False
 
 
 def main():
-    """Main orchestrator function."""
-    logger.info("Starting ETL Orchestrator")
-
-    # Ensure required directories exist
+    """Main orchestrator function - Runs the ETL task once."""
+    logger.info("Starting ETL Orchestrator Task (single run)")
     ensure_etl_directories()
 
-    # Schedule the ETL job to run every 6 hours
-    schedule.every(6).hours.do(run_games_etl)
+    success = run_games_etl()
 
-    # Run immediately on startup
-    logger.info("Running initial ETL job...")
-    run_games_etl()
-
-    # Keep the script running and execute scheduled jobs
-    logger.info("Orchestrator running. Waiting for scheduled jobs...")
-    while True:
-        schedule.run_pending()
-        time.sleep(60)  # Check for pending jobs every minute
+    if success:
+        logger.info("ETL Orchestrator Task completed successfully.")
+        sys.exit(0)
+    else:
+        logger.error("ETL Orchestrator Task failed.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

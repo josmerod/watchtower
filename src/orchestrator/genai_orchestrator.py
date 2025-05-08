@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import subprocess
-import schedule
 
 # Add the project root to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -67,29 +66,23 @@ def run_futuretools_etl():
 
         return True
     except Exception as e:
-        logger.error(f"Unexpected error running futuretools ETL: {str(e)}")
+        logger.error(f"Unexpected error running futuretools ETL: {str(e)}", exc_info=True)
         return False
 
 
 def main():
-    """Main orchestrator function."""
-    logger.info("Starting GenAI Orchestrator")
-
-    # Ensure required directories exist
+    """Main orchestrator function - Runs the ETL task once."""
+    logger.info("Starting GenAI Orchestrator Task (single run)")
     ensure_genai_directories()
 
-    # Schedule the ETL job to run daily
-    schedule.every().day.at("03:00").do(run_futuretools_etl)
+    success = run_futuretools_etl()
 
-    # Run immediately on startup
-    logger.info("Running initial ETL job...")
-    run_futuretools_etl()
-
-    # Keep the script running and execute scheduled jobs
-    logger.info("Orchestrator running. Waiting for scheduled jobs...")
-    while True:
-        schedule.run_pending()
-        time.sleep(60)  # Check for pending jobs every minute
+    if success:
+        logger.info("GenAI Orchestrator Task completed successfully.")
+        sys.exit(0)
+    else:
+        logger.error("GenAI Orchestrator Task failed.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

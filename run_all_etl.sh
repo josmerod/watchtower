@@ -37,6 +37,7 @@ run_etl "src/etl/games/games_get_humblebundles.py" && pids+=($!)
 run_etl "src/etl/news/news_get_subreddits.py" && pids+=($!)
 run_etl "src/etl/news/news_get_media_rss.py" && pids+=($!)
 
+
 echo "All ETL processes started in parallel"
 echo "Process PIDs: ${pids[*]}"
 echo "Check logs directory for individual process logs"
