@@ -19,24 +19,44 @@
       "description": "Arquitectura de aplicaciones open source"
     }
   ],
-  "Guías de programación (placeholder)": [
+  "Formación": [
     {
-      "name": "Curso de programación en Python",
-      "url": "https://www.youtube.com/watch?v=Z1Yd6uplHhM",
-      "icon": "🐍",
-      "description": "Curso de programación en Python"
+      "name": "Uxcel",
+      "url": "https://uxcel.com/",
+      "icon": "👩‍💻",
+      "description": "Cursos de UX design"
     },
     {
-      "name": "Curso de programación en JavaScript",
-      "url": "https://www.youtube.com/watch?v=Z1Yd6uplHhM",
-      "icon": "🦊",
-      "description": "Curso de programación en JavaScript"
+      "name": "Udemy",
+      "url": "https://www.udemy.com/",
+      "icon": "🎓",
+      "description": "Cursos en general (lista de cursos en otra pestaña)"
     },
     {
-      "name": "Curso de programación en C#",
-      "url": "https://www.youtube.com/watch?v=Z1Yd6uplHhM",
+      "name": "Desata tu potencial",
+      "url": "https://fundacionobjetivofelicidad.org/campus/",
+      "icon": "🎓",
+      "description": "Curso de Desata tu potencial (curso socios)"
+    },
+    {
+      "name": "Coursera",
+      "url": "https://www.coursera.org/",
+      "icon": "🎓",
+      "description": "Cursos en general"
+    },
+    {
+      "name": "Boot dev",
+      "url": "https://boot.dev/",
       "icon": "💻",
       "description": "Curso de programación en C#"
+    }
+  ],
+  "Herramientas": [
+    {
+      "name": "Cursor",
+      "url": "https://www.cursor.com/",
+      "icon": "💻",
+      "description": "Editor de código"
     }
   ]
 }
