@@ -90,13 +90,14 @@ class ArxivPapersComponent:
         else:
             return f"{', '.join(authors[:max_authors])} et al."
     
-    def render_paper_card(self, paper: Dict[str, Any], user_id: Optional[str] = None):
+    def render_paper_card(self, paper: Dict[str, Any], user_id: Optional[str] = None, section: str = "default"):
         """
         Render a card for a single paper.
         
         Args:
             paper (Dict[str, Any]): Paper data
             user_id (Optional[str]): User ID for tracking views
+            section (str): Section identifier to create unique widget keys
         """
         paper_id = paper.get('id', '')
         
@@ -134,27 +135,27 @@ class ArxivPapersComponent:
             if user_id:
                 col1, col2, col3 = st.columns([1, 1, 3])
                 
-                # Mark as read button
+                # Mark as read button - use section in the key
                 with col1:
-                    if st.button(f"📖 Read", key=f"read_{paper_id}"):
+                    if st.button(f"📖 Read", key=f"{section}_read_{paper_id}"):
                         self.recommender.record_item_view(user_id, paper_id)
                         st.success("Marked as read!")
                 
-                # Rating
+                # Rating - use section in the key
                 with col2:
                     rating = st.select_slider(
                         "Rate",
                         options=[1, 2, 3, 4, 5],
                         value=3,
-                        key=f"rate_{paper_id}"
+                        key=f"{section}_rate_{paper_id}"
                     )
-                    if st.button("Submit", key=f"submit_{paper_id}"):
+                    if st.button("Submit", key=f"{section}_submit_{paper_id}"):
                         self.recommender.record_item_rating(user_id, paper_id, rating)
                         st.success("Rating submitted!")
                 
-                # Save keywords
+                # Save keywords - use section in the key
                 with col3:
-                    if st.button("➕ Add keywords to your interests", key=f"keywords_{paper_id}"):
+                    if st.button("➕ Add keywords to your interests", key=f"{section}_keywords_{paper_id}"):
                         keywords_list = paper.get('extracted_keywords', [])
                         if keywords_list:
                             self.recommender.update_user_interests(user_id, keywords_list)
@@ -173,6 +174,9 @@ class ArxivPapersComponent:
             cluster_id (Optional[int]): Cluster ID to filter by, or None for all papers
             user_id (Optional[str]): User ID for tracking views and interactions
         """
+        # Create a section identifier based on cluster_id
+        section = f"cluster_{cluster_id}" if cluster_id is not None else "all_papers"
+        
         if cluster_id is not None:
             filtered_papers = [p for p in papers if p.get('cluster_id') == cluster_id]
             if not filtered_papers:
@@ -194,7 +198,7 @@ class ArxivPapersComponent:
         
         # Render each paper
         for paper in sorted_papers:
-            self.render_paper_card(paper, user_id)
+            self.render_paper_card(paper, user_id, section=section)
     
     def render_cluster_visualization(self, cluster_stats: Dict[str, Any]):
         """
@@ -223,6 +227,35 @@ class ArxivPapersComponent:
         if not clusters_df.empty:
             st.dataframe(clusters_df[['label', 'paper_count', 'percentage']], hide_index=True)
     
+    def _safe_recommend_for_user(self, user_id: str, n_recommendations: int = 5, exclude_viewed: bool = True) -> List[Dict[str, Any]]:
+        """
+        Safely call the recommender's recommend_for_user method with error handling.
+        
+        Args:
+            user_id (str): User ID
+            n_recommendations (int): Number of recommendations to show
+            exclude_viewed (bool): Whether to exclude viewed items
+            
+        Returns:
+            List[Dict[str, Any]]: List of recommendations
+        """
+        try:
+            # Check if the recommender has items loaded
+            if (not hasattr(self.recommender, 'item_vectors') or 
+                self.recommender.item_vectors is None or 
+                not hasattr(self.recommender, 'item_ids') or 
+                len(self.recommender.item_ids) == 0):
+                return []
+            
+            return self.recommender.recommend_for_user(
+                user_id=user_id,
+                n_recommendations=n_recommendations,
+                exclude_viewed=exclude_viewed
+            )
+        except Exception as e:
+            st.error(f"Error generating recommendations: {str(e)}")
+            return []
+    
     def render_personalized_recommendations(self, papers: List[Dict[str, Any]], user_id: str, n_recommendations: int = 5):
         """
         Render personalized paper recommendations for the user.
@@ -234,8 +267,16 @@ class ArxivPapersComponent:
         """
         st.markdown("## 🔍 Personalized Recommendations")
         
-        # Get recommendations
-        recommendations = self.recommender.recommend_for_user(
+        # Check if the recommender has items loaded (directly check attributes instead of using has_items)
+        if (not hasattr(self.recommender, 'item_vectors') or 
+            self.recommender.item_vectors is None or 
+            not hasattr(self.recommender, 'item_ids') or 
+            len(self.recommender.item_ids) == 0):
+            st.warning("No papers loaded in the recommender system. Please check your data.")
+            return
+        
+        # Get recommendations using the safe method
+        recommendations = self._safe_recommend_for_user(
             user_id=user_id,
             n_recommendations=n_recommendations,
             exclude_viewed=True
@@ -276,7 +317,7 @@ class ArxivPapersComponent:
             return
             
         # Display recommendations with similarity scores
-        for rec in recommendations:
+        for i, rec in enumerate(recommendations):
             paper = rec["item"]
             similarity = rec["similarity"]
             
@@ -295,8 +336,9 @@ class ArxivPapersComponent:
                 # Add match quality badge
                 st.markdown(f"<span style='padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; background-color: var(--{match_color}-50); color: var(--{match_color}-700);'>{match_quality}</span>", unsafe_allow_html=True)
                 
-                # Render paper with user ID for interaction tracking
-                self.render_paper_card(paper, user_id)
+                # Render paper with user ID for interaction tracking 
+                # Use a recommendation-specific section with the recommendation index
+                self.render_paper_card(paper, user_id, section=f"rec_{i}")
     
     def render(self):
         """Render the ArXiv papers component."""

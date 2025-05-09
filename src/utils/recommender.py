@@ -251,40 +251,61 @@ class PersonalRecommender:
             return False
         
         try:
-            # Extract text features from items for content-based filtering
-            item_texts = []
-            item_ids = []
+            # Extract item IDs and content
+            self.item_ids = []
+            corpus = []
             
             for item in items:
-                item_id = item.get("id")
+                item_id = item.get("id") or item.get("_id") or item.get("item_id")
+                
+                if not item_id:
+                    continue
+                
+                # Create a text representation of the item for vectorization
                 title = item.get("title", "")
-                summary = item.get("summary", "")
+                abstract = item.get("abstract", "")
+                categories = item.get("categories", [])
                 
-                # Also include cluster keywords and categories if available
-                cluster_keywords = ", ".join(item.get("cluster_keywords", []))
-                categories = ", ".join(item.get("categories", []))
+                if isinstance(categories, list):
+                    categories = " ".join(categories)
                 
-                # Combine all text features
-                text = f"{title} {summary} {cluster_keywords} {categories}"
+                content = f"{title} {abstract} {categories}"
                 
-                item_texts.append(text)
-                item_ids.append(item_id)
-                
-                # Store the original item for later reference
+                # Store item data
+                self.item_ids.append(item_id)
                 self.item_features[item_id] = item
+                corpus.append(content)
             
-            # Fit vectorizer and transform texts to feature vectors
-            item_vectors = self.vectorizer.fit_transform(item_texts)
-            
-            self.item_vectors = item_vectors
-            self.item_ids = item_ids
-            
-            self.logger.info(f"Loaded {len(items)} items into recommender")
-            return True
-            
+            # Train vectorizer and create item vectors
+            if corpus:
+                self.vectorizer.fit(corpus)
+                item_vectors = self.vectorizer.transform(corpus)
+                
+                # Store item vectors
+                self.item_vectors = item_vectors
+                
+                self.logger.info(f"Loaded {len(self.item_ids)} items into recommender")
+                return True
+            else:
+                self.logger.error("No valid items in corpus")
+                return False
+                
         except Exception as e:
             self.logger.error(f"Error loading items: {str(e)}")
+            # Reset to a clean state
+            self.item_ids = []
+            self.item_features = {}
+            self.item_vectors = None
             return False
+    
+    def has_items(self) -> bool:
+        """
+        Check if the recommender has items loaded.
+        
+        Returns:
+            bool: True if items are loaded, False otherwise
+        """
+        return self.item_vectors is not None and len(self.item_ids) > 0
     
     def _calculate_user_vector(self, profile: Dict[str, Any]) -> Tuple[np.ndarray, float]:
         """
@@ -296,7 +317,7 @@ class PersonalRecommender:
         Returns:
             Tuple[np.ndarray, float]: User interest vector and confidence score
         """
-        if not self.item_vectors:
+        if self.item_vectors is None or len(self.item_ids) == 0:
             self.logger.error("No items loaded in recommender")
             return None, 0.0
         
@@ -401,7 +422,7 @@ class PersonalRecommender:
         Returns:
             List[Dict[str, Any]]: List of recommended items with similarity scores
         """
-        if not self.item_vectors:
+        if self.item_vectors is None or len(self.item_ids) == 0:
             self.logger.error("No items loaded in recommender")
             return []
         
