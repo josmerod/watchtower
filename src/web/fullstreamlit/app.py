@@ -7,6 +7,7 @@ import sys
 import os
 from datetime import datetime
 import json
+import numpy as np
 
 # Add the project root to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
@@ -36,6 +37,7 @@ GAMES_DATA_DIR = "../../../data/games"
 DEALS_FILE = os.path.join(GAMES_DATA_DIR, "deals.json")
 BUNDLES_FILE = os.path.join(GAMES_DATA_DIR, "bundles.json")
 GIVEAWAYS_FILE = os.path.join(GAMES_DATA_DIR, "giveaways.json")
+HUMBLE_BUNDLES_FILE = os.path.join(GAMES_DATA_DIR, "humblebundles.json")
 
 # Define local data loading functions
 def load_data(file_path, _logger=None):
@@ -64,76 +66,113 @@ def load_data(file_path, _logger=None):
 @st.cache_data(ttl=3600)
 def get_game_data(_logger=None):
     """Fetch and process game deals data"""
-    if _logger:
-        _logger.info("Fetching and processing game deals data")
-    
-    # Load data files
-    deals_df = load_data(DEALS_FILE, _logger)
-    bundles_df = load_data(BUNDLES_FILE, _logger)
-    giveaways_df = load_data(GIVEAWAYS_FILE, _logger)
 
-    # Process deals data
-    if not deals_df.empty:
-        if _logger:
-            _logger.info("Processing deals data")
-        # Convert timestamps to datetime
-        if "published" in deals_df.columns:
-            deals_df["published_date"] = deals_df["published"].apply(format_timestamp)
+    _logger.info("Fetching and processing game deals data")
 
-        # Extract discount percentage as numeric value
-        if "discount" in deals_df.columns:
-            deals_df["discount_value"] = (
-                deals_df["discount"]
-                .str.replace("-", "")
-                .str.replace("%", "")
-                .astype(float, errors="ignore")
-            )
+    deals_df = pd.DataFrame()
+    bundles_df = pd.DataFrame()
+    giveaways_df = pd.DataFrame()
 
-    # Process bundles data
-    if not bundles_df.empty:
-        if _logger:
-            _logger.info("Processing bundles data")
-        # Convert timestamps to datetime
-        if "published" in bundles_df.columns:
-            bundles_df["published_date"] = bundles_df["published"].apply(
-                format_timestamp
-            )
+    try:
+        # Load game deals if the file exists
+        if os.path.exists(DEALS_FILE):
+            with open(DEALS_FILE, "r", encoding="utf-8") as f:
+                deals = json.load(f)
+                if deals:
+                    deals_df = pd.DataFrame(deals)
+                    if "published_date" in deals_df.columns:
+                        deals_df["published_date"] = pd.to_datetime(deals_df["published_date"]).dt.date
+                    
+                    # Convert price to numeric if present
+                    if "price" in deals_df.columns:
+                        deals_df["price"] = pd.to_numeric(
+                            deals_df["price"].replace({None: np.nan, "": np.nan}), errors="coerce"
+                        )
+                    
+                    # Calculate discount percentage if not already present
+                    if "discount" not in deals_df.columns and "discount_value" in deals_df.columns:
+                        deals_df["discount"] = deals_df["discount_value"].map(lambda x: f"-{x}%" if pd.notna(x) else "")
+                    
+                    # Calculate discount value if not already present
+                    if "discount_value" not in deals_df.columns and "discount" in deals_df.columns:
+                        deals_df["discount_value"] = deals_df["discount"].str.replace("%", "").str.replace("-", "").replace({None: np.nan, "": np.nan}).astype(float)
+                    
+                    _logger.info(f"Loaded {len(deals_df)} game deals")
+                else:
+                    _logger.warning("No game deals found in the data file")
 
-        # Count games in each bundle
-        if "games" in bundles_df.columns:
-            bundles_df["game_count"] = bundles_df["games"].apply(
-                lambda x: len(x) if isinstance(x, list) else 0
-            )
+        # Load game bundles if the file exists
+        bundles_loaded = False
+        
+        # First try loading Humble Bundles
+        if os.path.exists(HUMBLE_BUNDLES_FILE):
+            try:
+                with open(HUMBLE_BUNDLES_FILE, "r", encoding="utf-8") as f:
+                    bundles = json.load(f)
+                    if bundles:
+                        # Filter to only include game bundles
+                        game_bundles = [b for b in bundles if b.get("type") == "games"]
+                        if game_bundles:
+                            humble_df = pd.DataFrame(game_bundles)
+                            
+                            # Rename end_date to published_date for compatibility
+                            if "end_date" in humble_df.columns:
+                                humble_df = humble_df.rename(columns={"end_date": "published_date"})
+                            
+                            if "published_date" in humble_df.columns:
+                                humble_df["published_date"] = pd.to_datetime(humble_df["published_date"]).dt.date
+                            
+                            # Add game_count based on games list
+                            if "games" in humble_df.columns:
+                                humble_df["game_count"] = humble_df["games"].apply(len)
+                            
+                            # Add store information
+                            humble_df["store"] = "Humble Bundle"
+                            
+                            bundles_df = humble_df
+                            bundles_loaded = True
+                            _logger.info(f"Loaded {len(humble_df)} Humble Bundle game bundles")
+            except Exception as e:
+                _logger.error(f"Error loading Humble Bundle data: {str(e)}")
+        
+        # Then try loading regular bundles if no Humble Bundles were found
+        if not bundles_loaded and os.path.exists(BUNDLES_FILE):
+            with open(BUNDLES_FILE, "r", encoding="utf-8") as f:
+                bundles = json.load(f)
+                if bundles:
+                    bundles_df = pd.DataFrame(bundles)
+                    if "published_date" in bundles_df.columns:
+                        bundles_df["published_date"] = pd.to_datetime(bundles_df["published_date"]).dt.date
+                    
+                    # Convert price to numeric if present
+                    if "price" in bundles_df.columns:
+                        bundles_df["price"] = pd.to_numeric(
+                            bundles_df["price"].replace({None: np.nan, "": np.nan}), errors="coerce"
+                        )
+                    
+                    _logger.info(f"Loaded {len(bundles_df)} game bundles from bundles.json")
+                else:
+                    _logger.warning("No game bundles found in the data file")
 
-    # Process giveaways data
-    if not giveaways_df.empty:
-        if _logger:
-            _logger.info("Processing giveaways data")
-        # Convert timestamps to datetime
-        if "published" in giveaways_df.columns:
-            giveaways_df["published_date"] = giveaways_df["published"].apply(
-                format_timestamp
-            )
+        # Load game giveaways if the file exists
+        if os.path.exists(GIVEAWAYS_FILE):
+            with open(GIVEAWAYS_FILE, "r", encoding="utf-8") as f:
+                giveaways = json.load(f)
+                if giveaways:
+                    giveaways_df = pd.DataFrame(giveaways)
+                    if "published_date" in giveaways_df.columns:
+                        giveaways_df["published_date"] = pd.to_datetime(giveaways_df["published_date"]).dt.date
+                    
+                    if "expires_date" in giveaways_df.columns:
+                        giveaways_df["expires_date"] = pd.to_datetime(giveaways_df["expires_date"]).dt.date
+                    
+                    _logger.info(f"Loaded {len(giveaways_df)} game giveaways")
+                else:
+                    _logger.warning("No game giveaways found in the data file")
 
-        if "expires" in giveaways_df.columns:
-            giveaways_df["expires_date"] = giveaways_df["expires"].apply(
-                format_timestamp
-            )
+    except Exception as e:
+        _logger.error(f"Error loading game data: {str(e)}", exc_info=True)
 
-            # Calculate if giveaway is still active
-            current_time = datetime.now().timestamp()
-            giveaways_df["is_active"] = giveaways_df["expires"].apply(
-                lambda x: x > current_time * 1000
-                if isinstance(x, (int, float)) and not pd.isna(x)
-                else False
-            )
-
-            active_count = giveaways_df["is_active"].sum()
-            if _logger:
-                _logger.info(f"Found {active_count} active giveaways")
-
-    if _logger:
-        _logger.info("Data processing completed")
     return deals_df, bundles_df, giveaways_df
 
 @st.cache_data(ttl=3600)
