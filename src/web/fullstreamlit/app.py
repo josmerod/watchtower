@@ -102,57 +102,67 @@ def get_game_data(_logger=None):
                     _logger.warning("No game deals found in the data file")
 
         # Load game bundles if the file exists
-        bundles_loaded = False
+        bundles_df = pd.DataFrame()  # Initialize empty DataFrame for all bundles
         
-        # First try loading Humble Bundles
+        # First load Humble Bundles
         if os.path.exists(HUMBLE_BUNDLES_FILE):
             try:
                 with open(HUMBLE_BUNDLES_FILE, "r", encoding="utf-8") as f:
                     bundles = json.load(f)
                     if bundles:
-                        # Filter to only include game bundles
-                        game_bundles = [b for b in bundles if b.get("type") == "games"]
-                        if game_bundles:
-                            humble_df = pd.DataFrame(game_bundles)
-                            
-                            # Rename end_date to published_date for compatibility
-                            if "end_date" in humble_df.columns:
-                                humble_df = humble_df.rename(columns={"end_date": "published_date"})
-                            
-                            if "published_date" in humble_df.columns:
-                                humble_df["published_date"] = pd.to_datetime(humble_df["published_date"]).dt.date
-                            
-                            # Add game_count based on games list
-                            if "games" in humble_df.columns:
-                                humble_df["game_count"] = humble_df["games"].apply(len)
-                            
-                            # Add store information
-                            humble_df["store"] = "Humble Bundle"
-                            
-                            bundles_df = humble_df
-                            bundles_loaded = True
-                            _logger.info(f"Loaded {len(humble_df)} Humble Bundle game bundles")
+                        # Load all bundles regardless of type
+                        humble_df = pd.DataFrame(bundles)
+                        
+                        # Rename end_date to published_date for compatibility
+                        if "end_date" in humble_df.columns:
+                            humble_df = humble_df.rename(columns={"end_date": "published_date"})
+                        
+                        if "published_date" in humble_df.columns:
+                            humble_df["published_date"] = pd.to_datetime(humble_df["published_date"]).dt.date
+                        
+                        # Add game_count based on games list
+                        if "games" in humble_df.columns:
+                            humble_df["game_count"] = humble_df["games"].apply(len)
+                        
+                        # Add store information
+                        humble_df["store"] = "Humble Bundle"
+                        
+                        bundles_df = humble_df.copy()  # Copy humble bundles to main DataFrame
+                        _logger.info(f"Loaded {len(humble_df)} Humble Bundle bundles (all types)")
             except Exception as e:
                 _logger.error(f"Error loading Humble Bundle data: {str(e)}")
         
-        # Then try loading regular bundles if no Humble Bundles were found
-        if not bundles_loaded and os.path.exists(BUNDLES_FILE):
-            with open(BUNDLES_FILE, "r", encoding="utf-8") as f:
-                bundles = json.load(f)
-                if bundles:
-                    bundles_df = pd.DataFrame(bundles)
-                    if "published_date" in bundles_df.columns:
-                        bundles_df["published_date"] = pd.to_datetime(bundles_df["published_date"]).dt.date
-                    
-                    # Convert price to numeric if present
-                    if "price" in bundles_df.columns:
-                        bundles_df["price"] = pd.to_numeric(
-                            bundles_df["price"].replace({None: np.nan, "": np.nan}), errors="coerce"
-                        )
-                    
-                    _logger.info(f"Loaded {len(bundles_df)} game bundles from bundles.json")
-                else:
-                    _logger.warning("No game bundles found in the data file")
+        # Then load regular bundles and append them to the bundles DataFrame
+        if os.path.exists(BUNDLES_FILE):
+            try:
+                with open(BUNDLES_FILE, "r", encoding="utf-8") as f:
+                    bundles = json.load(f)
+                    if bundles:
+                        regular_bundles_df = pd.DataFrame(bundles)
+                        if "published_date" in regular_bundles_df.columns:
+                            regular_bundles_df["published_date"] = pd.to_datetime(regular_bundles_df["published_date"]).dt.date
+                        
+                        # Convert price to numeric if present
+                        if "price" in regular_bundles_df.columns:
+                            regular_bundles_df["price"] = pd.to_numeric(
+                                regular_bundles_df["price"].replace({None: np.nan, "": np.nan}), errors="coerce"
+                            )
+                        
+                        # Add store information if not present
+                        if "store" not in regular_bundles_df.columns:
+                            regular_bundles_df["store"] = "Unknown"
+                        
+                        # Combine with existing bundles if we have any
+                        if not bundles_df.empty:
+                            bundles_df = pd.concat([bundles_df, regular_bundles_df], ignore_index=True)
+                        else:
+                            bundles_df = regular_bundles_df.copy()
+                        
+                        _logger.info(f"Loaded {len(regular_bundles_df)} game bundles from bundles.json")
+                    else:
+                        _logger.warning("No game bundles found in the data file")
+            except Exception as e:
+                _logger.error(f"Error loading regular bundles data: {str(e)}")
 
         # Load game giveaways if the file exists
         if os.path.exists(GIVEAWAYS_FILE):

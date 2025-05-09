@@ -143,6 +143,26 @@ def display_bundles(bundles_df):
             st.markdown(bundles_html, unsafe_allow_html=True)
             return
         
+        # Add a selector for bundle type if the type column exists
+        if "type" in available_columns or "store" in available_columns:
+            # Create a grouping column based on store or type
+            group_col = "store" if "store" in available_columns else "type"
+            unique_groups = filtered_bundles_df[group_col].unique().tolist()
+            
+            # Add "All" option at the beginning
+            all_option = "Todos"
+            options = [all_option] + unique_groups
+            
+            selected_group = st.selectbox(
+                "Filtrar por tipo de paquete/origen:",
+                options=options,
+                index=0
+            )
+            
+            # Filter by selected group if not "All"
+            if selected_group != all_option:
+                filtered_bundles_df = filtered_bundles_df[filtered_bundles_df[group_col] == selected_group]
+        
         # Handle date field compatibility for different bundle sources
         date_field = None
         for field in ["published_date", "end_date"]:
@@ -175,6 +195,10 @@ def display_bundles(bundles_df):
         if "price" in available_columns:
             display_columns.append("price")
         
+        # Add store if available
+        if "store" in available_columns:
+            display_columns.append("store")
+        
         # Add game count if available
         if "game_count" in available_columns:
             display_columns.append("game_count")
@@ -183,8 +207,8 @@ def display_bundles(bundles_df):
         if date_field:
             display_columns.append(date_field)
         
-        # Add bundle type if available
-        if "type" in available_columns:
+        # Add bundle type if available and not already filtering by it
+        if "type" in available_columns and ("store" not in available_columns or group_col != "type"):
             display_columns.append("type")
             
         display_bundles_df = filtered_bundles_df[display_columns].copy()
@@ -206,6 +230,7 @@ def display_bundles(bundles_df):
             "price": "Precio",
             "game_count": "Juegos en el Paquete",
             "type": "Tipo",
+            "store": "Fuente",
         }
         
         # Add date field to renaming if it exists
@@ -218,6 +243,9 @@ def display_bundles(bundles_df):
         rename_dict = {k: v for k, v in column_renames.items() if k in display_bundles_df.columns}
         if rename_dict:
             display_bundles_df.rename(columns=rename_dict, inplace=True)
+        
+        # Show the number of bundles being displayed
+        st.write(f"Mostrando {len(display_bundles_df)} paquetes de juegos")
         
         bundles_html += display_bundles_df.to_html(escape=False, index=False)
         
