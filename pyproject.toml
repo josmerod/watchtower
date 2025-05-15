@@ -1,15 +1,35 @@
 [project]
-name = "watchtower" # Or a more specific name like "deeplearning-scraper"
+name = "watchtower"
 version = "0.1.0"
-description = "Scraper for DeepLearning.AI courses."
+description = "A versatile data collection, processing, and application platform."
 authors = [
     { name = "Your Name", email = "your@email.com" }, # Optional: Add your details
 ]
 requires-python = ">=3.10" # Specify compatible Python versions
 dependencies = [
-    "playwright>=1.40", # Specify playwright as a dependency
-    "requests>=2.27.1", # Added for GitHub API calls
-    "paperswithcode-client>=0.3.1", # Added for PapersWithCode integration
+    "playwright>=1.51.0",       # Updated version
+    "requests>=2.32.3",         # Updated version
+    "paperswithcode-client>=0.3.1",
+    "beautifulsoup4>=4.13.3",
+    "feedparser>=6.0.11",
+    "nltk>=3.9.1",
+    "numpy>=2.2.5",
+    "pandas>=2.2.3",
+    "scikit-learn>=1.6.1",
+    "scipy>=1.15.2",
+    "joblib>=1.5.0",
+    "tqdm>=4.67.1",
+    "python-dateutil>=2.9.0.post0",
+    "pytz>=2025.2",
+    "streamlit", # For the Streamlit dashboards
+    # Add other core dependencies as your project evolves
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest>=7.0",
+    "pre-commit", # For running checks before commit
 ]
 
 [build-system]
@@ -17,4 +37,22 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]
-# uv specific configurations can go here if needed in the future 
+# uv specific configurations can go here if needed in the future
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "W", "I", "UP", "C4", "B", "A", "RUF"] # Select common rule sets
+ignore = ["E501"] # Allow longer lines if necessary, handled by formatter
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests", # Assuming you will have a 'tests' directory
+]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*" 
