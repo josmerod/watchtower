@@ -1,44 +1,46 @@
-# Ignore all data directories
+# Data directories
 /data
 /data/*
 **/data/*
 
-
+# Python cache
 **/__pycache__/*
+**/__pycache__/*.pyc
+
+# IDE and editor files
 /.vscode
-/logs
-/logs/*
-/node_modules
-/build
 /.VSCodeCounter
 /.VSCodeCounter/*
+**/.DS_Store
+
+# Build and dependencies
+/build
+/node_modules
 /venv
 /venv/*
-src/web/fullstreamlit/logs/*
-src/web/demo/games/logs/*
-src/web/demo/genai/logs/*
-src/web/demo/goldigging/logs/*
-src/web/demo/news/logs/*
-src/web/demo/videos/logs/*
-src/web/fullstreamlit/logs/*
-src/web/fullstreamlit/data/*
-**/.DS_Store
-**/logs/*
-src/utils/__pycache__/*
-src/utils/__pycache__/file_system.cpython-313.pyc
-src/utils/__pycache__/logging.cpython-313.pyc
 
-# Playwright browser cache
+# Logs
+/logs
+/logs/*
+**/logs/*
+
+# Web app specific
+src/web/*/logs/*
+src/web/*/data/*
+
+# Playwright
 **/ms-playwright/
+
+# Udemy related
 src/etl/goldigging/free_udemy_courses/duce-cli-settings.json
 src/etl/goldigging/free_udemy_courses/courses_to_enroll.json
 src/etl/goldigging/free_udemy_courses/Courses/*
+src/miners/udemy-universal/courses_to_enroll.json
+src/miners/udemy-universal/debug_rd_page.html
 
-
+# Miners
 src/miners/asf-winonly/config/
 src/miners/asf-winonly/logs/
 
-src/miners/udemy-universal/courses_to_enroll.json
+# Temporary files
 tmpxtrpjvj9.tmp-Frag1
-src/miners/udemy-universal/courses_to_enroll.json
-src/miners/udemy-universal/debug_rd_page.html

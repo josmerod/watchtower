@@ -11,6 +11,7 @@ global_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 sys.path.append(global_project_root)
 
 from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.course_deduplication import deduplicate_courses
 
 import pandas as pd
 
@@ -100,17 +101,33 @@ class UdemyUniversalCoursesETL:
             logger.warning("No courses to save for Udemy Universal")
             return
 
+        # Check if existing courses file exists and combine with new courses
+        all_courses = courses
+        if os.path.exists(self.courses_file):
+            try:
+                with open(self.courses_file, "r", encoding="utf-8") as f:
+                    existing_courses = json.load(f)
+                    all_courses = existing_courses + courses
+                    logger.info(f"Combined {len(courses)} new courses with {len(existing_courses)} existing courses")
+            except json.JSONDecodeError:
+                logger.warning(f"Error reading existing courses file. Starting fresh.")
+        
+        # Deduplicate courses before saving
+        deduplicated_courses, removed_count = deduplicate_courses(all_courses, key_field="url", prefer_newer=True)
+        if removed_count > 0:
+            logger.info(f"Removed {removed_count} duplicate courses")
+
         # Save to JSON
         try:
             with open(self.courses_file, "w", encoding="utf-8") as f:
-                json.dump(courses, f, ensure_ascii=False, indent=2)
-            logger.info(f"Saved {len(courses)} courses to JSON: {self.courses_file}")
+                json.dump(deduplicated_courses, f, ensure_ascii=False, indent=2)
+            logger.info(f"Saved {len(deduplicated_courses)} unique courses to JSON: {self.courses_file}")
         except Exception as e:
             logger.error(f"Error saving JSON file {self.courses_file}: {e}")
 
         # Save to CSV
         try:
-            df = pd.DataFrame(courses)
+            df = pd.DataFrame(deduplicated_courses)
             df.to_csv(self.csv_file, index=False)
             logger.info(f"Saved courses to CSV: {self.csv_file}")
         except Exception as e:

@@ -15,6 +15,7 @@ sys.path.append(project_root)
 
 # Import utilities
 from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.course_deduplication import deduplicate_courses
 
 # Set up logging
 logger = logging.getLogger("classcentral_scraper")
@@ -264,31 +265,43 @@ class CourseraScraper:
                 logger.warning(f"Found only {len(courses)} courses, which is suspiciously low. Check scraping.")
 
             # If the file already exists, we don't delete it, we update the contents
+            all_courses = courses
             if os.path.exists(self.courses_file):
-                with open(self.courses_file, "r", encoding="utf-8") as f:
-                    existing_courses = json.load(f)
-                    existing_courses.extend(courses)
-                    courses = existing_courses            
+                try:
+                    with open(self.courses_file, "r", encoding="utf-8") as f:
+                        existing_courses = json.load(f)
+                        all_courses = existing_courses + courses
+                        logger.info(f"Combined {len(courses)} new courses with {len(existing_courses)} existing courses")
+                except json.JSONDecodeError:
+                    logger.warning(f"Error reading existing courses file. Starting fresh.")
+            
+            # Deduplicate courses before saving
+            deduplicated_courses, removed_count = deduplicate_courses(all_courses, key_field="url", prefer_newer=True)
+            if removed_count > 0:
+                logger.info(f"Removed {removed_count} duplicate courses")
+            
             # Save courses as JSON
             with open(self.courses_file, "w", encoding="utf-8") as f:
-                json.dump(courses, f, ensure_ascii=False, indent=2)
-            logger.info(f"Saved {len(courses)} courses to {self.courses_file}")
+                json.dump(deduplicated_courses, f, ensure_ascii=False, indent=2)
+            logger.info(f"Saved {len(deduplicated_courses)} unique courses to {self.courses_file}")
                 
             # Update last run information
             last_run_info = {
                 "timestamp": datetime.now().isoformat(),
-                "courses_count": len(courses)
+                "courses_count": len(deduplicated_courses),
+                "new_courses_added": len(courses),
+                "duplicates_removed": removed_count
             }
             
             with open(self.last_run_file, "w", encoding="utf-8") as f:
                 json.dump(last_run_info, f, ensure_ascii=False, indent=2)
             
-            # Save as CSV for easier viewing (similar to YouTube posts)
+            # Save as CSV for easier viewing
             try:
                 import pandas as pd
                 csv_file = os.path.join(self.output_dir, "coursera_courses.csv")
                 # Convert to DataFrame
-                df = pd.DataFrame(courses)
+                df = pd.DataFrame(deduplicated_courses)
                 # Drop description to avoid CSV formatting issues
                 if "description" in df.columns:
                     df = df.drop(columns=["description"])
@@ -348,7 +361,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Scrape Coursera courses from classcentral.com provider page")
-    parser.add_argument("--max-pages", type=int, help="Maximum number of pages to scrape", default=5)
+    parser.add_argument("--max-pages", type=int, help="Maximum number of pages to scrape", default=10)
     args = parser.parse_args()
     
     main(max_pages=args.max_pages)

@@ -1,0 +1,6 @@
+# Machine Learning tools and libraries
+langgraph>=0.0.20
+faiss-cpu>=1.7.4
+chromadb>=0.4.22
+
+# Install these with: pip install -r requirements-ml.txt 
