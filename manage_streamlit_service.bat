@@ -5,101 +5,91 @@ echo Watchtower Streamlit Service Manager
 echo ==================================
 echo.
 
-REM Check if running as administrator
->nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+REM Check admin privileges
+net session >nul 2>&1
 if %errorlevel% NEQ 0 (
-    echo WARNING: You are NOT running as Administrator.
-    echo Service management operations require administrator privileges.
+    echo WARNING: Administrator privileges required for service operations
     echo.
 )
 
 :menu
 echo Choose an option:
-echo 1) Start Streamlit service (requires admin)
-echo 2) Stop Streamlit service (requires admin)
-echo 3) Restart Streamlit service (requires admin)
-echo 4) Check service status
-echo 5) Reinstall service (requires admin)
-echo 6) Run Streamlit directly (without service)
-echo 7) Test service batch file
-echo 8) Check service logs
+echo 1) Start service (admin)
+echo 2) Stop service (admin)
+echo 3) Restart service (admin)
+echo 4) Check status
+echo 5) Reinstall service (admin)
+echo 6) Run directly
+echo 7) Test runner
+echo 8) View logs
 echo 9) Exit
 echo.
 
-set /p choice=Enter your choice (1-9): 
+set /p choice=Enter choice (1-9): 
 
 if "%choice%"=="1" (
-    echo Starting Streamlit service...
+    echo Starting service...
     powershell -Command "Start-Process cmd -ArgumentList '/c sc start WatchtowerStreamlit' -Verb RunAs"
-    timeout /t 2 /nobreak >nul
+    timeout /t 2 >nul
     goto :status
 )
 if "%choice%"=="2" (
-    echo Stopping Streamlit service...
+    echo Stopping service...
     powershell -Command "Start-Process cmd -ArgumentList '/c sc stop WatchtowerStreamlit' -Verb RunAs"
-    timeout /t 2 /nobreak >nul
+    timeout /t 2 >nul
     goto :status
 )
 if "%choice%"=="3" (
-    echo Restarting Streamlit service...
-    powershell -Command "Start-Process cmd -ArgumentList '/c sc stop WatchtowerStreamlit' -Verb RunAs"
-    timeout /t 3 /nobreak >nul
-    powershell -Command "Start-Process cmd -ArgumentList '/c sc start WatchtowerStreamlit' -Verb RunAs"
-    timeout /t 2 /nobreak >nul
+    echo Restarting service...
+    powershell -Command "Start-Process cmd -ArgumentList '/c sc stop WatchtowerStreamlit && timeout /t 2 && sc start WatchtowerStreamlit' -Verb RunAs"
+    timeout /t 3 >nul
     goto :status
 )
-if "%choice%"=="4" (
-    goto :status
-)
+if "%choice%"=="4" goto :status
 if "%choice%"=="5" (
-    echo Reinstalling service with proper configuration...
-    echo This requires administrator privileges.
+    echo Reinstalling service...
     powershell -Command "Start-Process cmd -ArgumentList '/c cd /d %~dp0 && PowerShell -ExecutionPolicy Bypass -File setup_streamlit_service.ps1' -Verb RunAs"
-    echo Service reinstallation initiated. Please wait...
-    timeout /t 5 /nobreak >nul
+    timeout /t 5 >nul
     goto :status
 )
 if "%choice%"=="6" (
-    echo Running Streamlit directly (not as service)...
+    echo Running Streamlit directly...
     start cmd /k "%~dp0streamlit_service_runner.bat"
-    echo Streamlit is starting in a new window.
-    echo The app will be accessible at: http://localhost:8501
+    echo App will be available at: http://localhost:8501
     echo.
     goto :menu
 )
 if "%choice%"=="7" (
-    echo Testing service batch file...
+    echo Testing runner...
     call "%~dp0streamlit_service_runner.bat"
     goto :menu
 )
 if "%choice%"=="8" (
-    echo Checking service logs...
+    echo Checking logs...
     echo.
-    echo === Last 10 lines of service log ===
-    powershell -Command "if (Test-Path '%~dp0streamlit_service.log') { Get-Content '%~dp0streamlit_service.log' -Tail 10 } else { Write-Host 'Log file not found.' }"
+    echo === Service Log ===
+    powershell -Command "if (Test-Path '%~dp0streamlit_service.log') { Get-Content '%~dp0streamlit_service.log' -Tail 10 } else { Write-Host 'Log not found' }"
     echo.
-    echo === Last 10 lines of error log ===
-    powershell -Command "if (Test-Path '%~dp0streamlit_service_error.log') { Get-Content '%~dp0streamlit_service_error.log' -Tail 10 } else { Write-Host 'Error log file not found.' }"
+    echo === Error Log ===
+    powershell -Command "if (Test-Path '%~dp0streamlit_service_error.log') { Get-Content '%~dp0streamlit_service_error.log' -Tail 10 } else { Write-Host 'Error log not found' }"
     echo.
     pause
     goto :menu
 )
-if "%choice%"=="9" (
-    exit /b 0
-)
+if "%choice%"=="9" exit /b 0
 
-echo Invalid choice. Please try again.
+echo Invalid choice
 echo.
 goto :menu
 
 :status
 echo.
-echo Current service status:
+echo Service status:
 sc query WatchtowerStreamlit
 echo.
-echo Service logs can be found at: %~dp0streamlit_service.log
-echo Error logs can be found at: %~dp0streamlit_service_error.log
+echo Logs: %~dp0streamlit_service.log
+echo Errors: %~dp0streamlit_service_error.log
 echo.
-echo The Streamlit app is accessible at: http://localhost:8501
+echo App: http://localhost:8501
 echo.
-goto :menu 
+goto :menu

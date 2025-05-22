@@ -1,18 +1,17 @@
 #!/bin/bash
 
-# Change to the project root directory
-cd "$(dirname "$0")"
+# Ensure script runs from project root
+cd "$(dirname "$0")" || exit 1
 
-# Make all shell scripts executable
+# Set up permissions and directories
 chmod +x *.sh
-
-# Create LaunchAgents directory if it doesn't exist
 mkdir -p ~/Library/LaunchAgents
 
-# Load the services
-launchctl load ~/Library/LaunchAgents/com.watchtower.streamlit.plist
-launchctl load ~/Library/LaunchAgents/com.watchtower.etl.plist
+# Load Watchtower services
+for service in com.watchtower.{streamlit,etl}.plist; do
+    launchctl load ~/Library/LaunchAgents/"$service" 2>/dev/null || echo "Failed to load $service"
+done
 
-echo "Services have been added to startup"
-echo "You can check their status using:"
-echo "  launchctl list | grep watchtower" 
+# Provide status feedback
+echo "✅ Watchtower services added to startup"
+echo "📊 Check status: launchctl list | grep watchtower"

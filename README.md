@@ -15,7 +15,9 @@ Watchtower is designed to automate the collection of information from news sites
   - [Installation](#installation)
     - [Prerequisites](#prerequisites)
     - [Clone the Repository](#clone-the-repository)
-    - [Set up Virtual Environment](#set-up-virtual-environment)
+    - [Set up Development Environment](#set-up-development-environment)
+      - [Using Poetry (Recommended)](#using-poetry-recommended)
+      - [Using venv (Alternative)](#using-venv-alternative)
     - [Install Dependencies](#install-dependencies)
     - [Install Playwright Browsers](#install-playwright-browsers)
   - [Configuration](#configuration)
@@ -26,7 +28,11 @@ Watchtower is designed to automate the collection of information from news sites
     - [Launching the Web Dashboard](#launching-the-web-dashboard)
   - [Docker](#docker)
   - [Scheduling and Automation](#scheduling-and-automation)
+  - [Development Standards](#development-standards)
   - [Contributing](#contributing)
+    - [Adherence to Development Standards](#adherence-to-development-standards)
+    - [Code Style](#code-style)
+    - [Testing](#testing)
     - [Issue Reporting](#issue-reporting)
     - [Pull Request Process](#pull-request-process)
   - [Troubleshooting](#troubleshooting)
@@ -35,47 +41,51 @@ Watchtower is designed to automate the collection of information from news sites
 
 ## Overview
 
-Watchtower is an all-in-one solution for data acquisition and monitoring. Its key capabilities include:
+Watchtower is an integrated solution for automated data acquisition, processing, and monitoring. Its core capabilities include:
 
 -   **Automated Data Collection**: Regularly scrapes data from various websites, including news portals, e-learning platforms, and gaming sites.
 -   **Change Detection**: Monitors specified web pages for any changes in content, providing alerts or updates.
--   **Process Management**: Orchestrates multiple data collection and monitoring tasks, ensuring they run reliably and efficiently.
--   **Data Visualization**: Presents the aggregated data through an interactive web interface, allowing for easy exploration and analysis.
+-   **Process Management**: Orchestrates multiple data collection and monitoring tasks, ensuring they run reliably and efficiently with fault tolerance.
+-   **Data Visualization**: Presents aggregated data through an interactive web interface built with Streamlit, allowing for easy exploration and analysis.
 
-This project is ideal for users who need to stay updated on specific topics, track changes on websites, or aggregate data for analysis and reporting.
+This project is ideal for users who need to stay updated on specific topics, track website changes, or aggregate data for analysis, reporting, and decision-making.
 
 ## Features
 
 -   **ETL Pipelines**:
-    -   News Scraping: Hacker News, Future Tools, Bensbites, GoodDevs, Valencia Events, Medium GenAI, arXiv papers, etc.
-    -   Game Deals: Aggregates deals, bundles, and giveaways.
-    -   Online Courses: Tracks courses from platforms like Coursera and posts from DeepLearning.AI.
+    -   Comprehensive news scraping: Hacker News, Future Tools, Bensbites, GoodDevs, Valencia Events, Medium GenAI, arXiv papers, and more.
+    -   Game Deals: Aggregates deals, bundles, and free game offerings.
+    -   Online Courses: Tracks courses from platforms like Coursera and content from sources like DeepLearning.AI.
 -   **Watchers**:
-    -   Monitors web pages for content changes (e.g., Microsoft Applied Skills credentials, arXiv new submissions).
-    -   Pluggable `BaseWatcher` class for creating custom watchers easily.
+    -   Monitors web pages for content changes (e.g., Microsoft Applied Skills credentials, new arXiv submissions).
+    -   Extensible `BaseWatcher` class for straightforward creation of custom watchers.
 -   **Orchestrator**:
-    -   `MetaOrchestrator` to run and oversee multiple specific orchestrators (e.g., ETL, GenAI, Golddigging) concurrently.
-    -   Designed for fault tolerance with auto-restart capabilities for managed scripts.
+    -   Robust `MetaOrchestrator` to manage and monitor multiple specific orchestrators (e.g., ETL, GenAI, Golddigging tasks) concurrently.
+    -   Designed for high availability with auto-restart capabilities for managed scripts.
 -   **Web Dashboard**:
-    -   Streamlit-based application providing a comprehensive view of collected data.
-    -   Tabs for various categories: Shortcuts, Videos, News, Games, Courses, Watchers, and Admin functionalities.
-    -   Interactive data tables, search, and filtering capabilities.
+    -   Interactive Streamlit application providing a holistic view of collected data.
+    -   Categorized data presentation: Shortcuts, Videos, News, Games, Courses, Watchers, and Administrative functionalities.
+    -   Features include interactive data tables, search, filtering, and potentially data export.
 -   **Scheduling & Automation**:
-    -   Shell (`.sh`) and batch (`.bat`) scripts for automating the execution of ETL tasks, watchers, and the dashboard.
-    -   Support for setting up tasks as background processes or services.
-    -   Centralized logging for all components, typically within the `logs/` directory.
+    -   Cross-platform shell (`.sh`) and batch (`.bat`) scripts for automating the execution of ETL tasks, watchers, and the dashboard.
+    -   Support for setting up tasks as background processes or services (e.g., using systemd on Linux or Task Scheduler on Windows).
+    -   Centralized logging for all components, typically aggregated within the `logs/` directory.
+-   **Data Management**:
+    -   Utilizes Polars for high-performance data manipulation and analysis, with Pandas as a secondary option.
+    -   Flexible data storage solutions, adaptable for various data types and sizes.
 
 ## Technologies Used
 
 -   **Programming Language**: Python 3.10+
 -   **Web Scraping**: Playwright, Beautiful Soup, Feedparser
--   **Data Processing**: Pandas, NumPy
+-   **Data Processing**: Polars (primary), Pandas (secondary), NumPy
 -   **Web Dashboard**: Streamlit
--   **Dependency Management**: pip with `requirements.txt`, `pyproject.toml` (compatible with Poetry/Rye)
+-   **Dependency Management**: Poetry (preferred, using `pyproject.toml`), pip with `requirements.txt` (for compatibility)
 -   **Code Formatting & Linting**: Ruff
+-   **Testing**: pytest
 -   **Version Control**: Git
 -   **Containerization**: Docker (see `Dockerfile`)
--   **Scheduling**: System-specific tools (e.g., cron, Task Scheduler via provided scripts)
+-   **Scheduling**: System-specific tools (e.g., cron, systemd on Linux; Task Scheduler on Windows via provided scripts)
 
 ## Project Structure
 
@@ -93,42 +103,43 @@ watchtower/
 │   └── use-cases/
 ├── logs/                  # Centralized directory for log files from various components
 ├── src/                   # Source code
-│   ├── data/              # Data handling utilities, potentially specific to data modules
+│   ├── data/              # Data handling utilities, data models, and connectors
 │   │   └── youtube/
-│   ├── etl/               # ETL (Extract, Transform, Load) pipelines
+│   ├── etl/               # ETL (Extract, Transform, Load) pipelines for various sources
 │   │   ├── arxiv/
 │   │   ├── games/
 │   │   ├── goldigging/
 │   │   └── news/
-│   ├── miners/            # Specialized data extraction tools (e.g., for Steam)
+│   ├── miners/            # Specialized or intensive data extraction tools (e.g., for Steam, Udemy)
 │   │   ├── asf-winonly/
 │   │   └── udemy-universal/
-│   ├── orchestrator/      # Scripts for managing and orchestrating processes
-│   │   └── logs/
-│   ├── utils/             # Common utility functions and modules
-│   ├── watchers/          # Modules for monitoring web content changes
+│   ├── orchestrator/      # Scripts for managing, scheduling, and orchestrating processes
+│   │   └── logs/          # Logs specific to the orchestrator
+│   ├── utils/             # Common utility functions, classes, and modules shared across the project
+│   ├── watchers/          # Modules for monitoring web content changes and triggering alerts/actions
 │   └── web/               # Web application components
-│       └── fullstreamlit/ # Streamlit dashboard application
+│       └── fullstreamlit/ # Streamlit dashboard application source code
 │           ├── components/  # Reusable UI components for the Streamlit app
-│           ├── data/        # Data specifically for the Streamlit app (e.g., cached)
+│           ├── data/        # Data specifically cached or used by the Streamlit app
 │           ├── logs/        # Logs specific to the Streamlit app
-│           ├── pages/       # (If using multi-page Streamlit app structure)
-│           ├── styles/      # CSS styles for the Streamlit app
-│           ├── utils/       # Utility functions for the Streamlit app
-│           └── app.py       # Main Streamlit application script
-├── tests/                 # Unit and integration tests (pytest recommended)
+│           ├── pages/       # Individual page modules for multi-page Streamlit apps (if used)
+│           ├── styles/      # CSS and styling files for the Streamlit app
+│           ├── utils/       # Utility functions specific to the Streamlit app
+│           └── app.py       # Main Streamlit application entry point script
+├── tests/                 # Unit, integration, and end-to-end tests (using pytest)
 ├── .dockerignore          # Specifies files to ignore when building Docker images
 ├── .gitignore             # Specifies intentionally untracked files that Git should ignore
-├── Dockerfile             # Defines the Docker image for the application
-├── README.md              # This file: project overview and documentation
-├── requirements.txt       # Lists Python dependencies for pip
-├── pyproject.toml         # Project metadata and build system configuration (e.g., for Poetry, Ruff)
-├── run_all_etl.bat / .sh  # Scripts to run all ETL pipelines
-├── run_watcher.bat / .sh  # Scripts to execute watchers
-├── run_streamlit.bat / .sh # Scripts to launch the Streamlit dashboard
-├── setup_etl_scheduler.ps1 / .sh       # Scripts for setting up ETL scheduling
-└── setup_streamlit_service.ps1 / .sh   # Scripts for setting up Streamlit as a service
-└── ... (other configuration and utility scripts)
+├── Dockerfile             # Defines the Docker image for building and running the application
+├── LICENSE                # Project's software license (e.g., MIT License)
+├── README.md              # This file: project overview, setup, and usage documentation
+├── requirements.txt       # Lists Python dependencies for pip (often generated from pyproject.toml)
+├── pyproject.toml         # Project metadata, dependencies (for Poetry), and tool configurations (e.g., Ruff, pytest)
+├── run_all_etl.bat / .sh  # Convenience scripts to run all defined ETL pipelines
+├── run_watcher.bat / .sh  # Convenience scripts to execute registered watchers
+├── run_streamlit.bat / .sh # Convenience scripts to launch the Streamlit dashboard
+├── setup_etl_scheduler.ps1 / .sh       # Scripts for assisting with ETL task scheduling
+└── setup_streamlit_service.ps1 / .sh   # Scripts for assisting with setting up Streamlit as a service
+└── ... (other configuration files, utility scripts, and documentation)
 ```
 
 ## Installation
@@ -137,6 +148,7 @@ watchtower/
 
 -   Python 3.10 or higher
 -   Git
+-   [Poetry](https://python-poetry.org/docs/#installation) (Recommended for dependency management)
 -   [Playwright](https://playwright.dev/python/) browser binaries
 
 ### Clone the Repository
@@ -146,14 +158,35 @@ git clone https://github.com/yourusername/watchtower.git  # Replace with your ac
 cd watchtower
 ```
 
-### Set up Virtual Environment
+### Set up Development Environment
 
-It's highly recommended to use a virtual environment:
+Choose one of the following methods to set up your environment:
 
+#### Using Poetry (Recommended)
+
+Poetry simplifies dependency management and packaging.
+
+1.  **Install Poetry** if you haven't already (see [Poetry installation guide](https://python-poetry.org/docs/#installation)).
+2.  **Configure Poetry to create virtual environments in the project's directory (optional but recommended):**
+    ```bash
+    poetry config virtualenvs.in-project true
+    ```
+3.  **Install dependencies and create the virtual environment:**
+    ```bash
+    poetry install
+    ```
+4.  **Activate the virtual environment:**
+    ```bash
+    poetry shell
+    ```
+    Alternatively, run commands prefixed with `poetry run` (e.g., `poetry run python src/script.py`).
+
+#### Using venv (Alternative)
+
+If you prefer to use `venv` directly:
 ```bash
 python -m venv .venv
 ```
-
 Activate the environment:
 -   On Windows:
     ```powershell
@@ -170,81 +203,87 @@ Activate the environment:
 
 ### Install Dependencies
 
-Ensure `pip` is up to date, then install the required packages:
-
-```bash
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-Alternatively, if using Poetry:
-```bash
-poetry install
-```
+-   **If using Poetry**, dependencies are installed with `poetry install` (see above).
+-   **If using `venv`**:
+    Ensure `pip` is up to date, then install the required packages from `requirements.txt`.
+    Note: `requirements.txt` is ideally generated from `pyproject.toml` using Poetry (`poetry export -f requirements.txt --output requirements.txt --without-hashes`).
+    ```bash
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+    ```
 
 ### Install Playwright Browsers
 
-The application uses Playwright for browser automation. Install the necessary browser binaries:
-
--   Windows: Run `install_playwright.bat`
--   macOS/Linux: Run `bash install_playwright.sh`
-
-This typically executes `playwright install`.
+Ensure your virtual environment (Poetry shell or activated venv) is active. Then, install the necessary Playwright browser binaries:
+```bash
+playwright install
+```
+Convenience scripts might also be available:
+-   Windows: Run `install_playwright.bat` (ensure it runs `playwright install` internally)
+-   macOS/Linux: Run `bash install_playwright.sh` (ensure it runs `playwright install` internally)
 
 ## Configuration
 
-The application may require configuration for various services, API keys, or behaviors. Common places to look for configuration options include:
+Application configuration is crucial for tailoring Watchtower to your needs and providing necessary credentials.
 
--   **Environment Variables**: Check if any scripts or modules expect environment variables to be set (e.g., `API_KEY_SERVICE_X`, `DATABASE_URL`). This is a common practice for sensitive data.
--   **Configuration Files**: Look for `.env` files, JSON, YAML, or Python configuration files (e.g., `config.py`) within specific modules or a central `config/` directory.
--   **Script Arguments**: Some scripts might accept configuration parameters via command-line arguments. Check their respective `--help` messages.
+-   **Environment Variables (`.env` files)**:
+    -   The primary method for providing sensitive information (API keys, database URLs, etc.) and environment-specific settings.
+    -   Create a `.env` file in the project root, based on `.env.example` if provided.
+    -   Variables in `.env` are typically loaded automatically by Python libraries like `python-dotenv` or handled by application entry points.
+-   **Configuration Files (`config.py`, YAML, JSON)**:
+    -   For less sensitive, more structural configuration (e.g., lists of URLs to scrape, default parameters), look for Python-based config files (e.g., `src/config.py`) or structured files (YAML, JSON) within module directories or a central `config/` directory.
+-   **Script Arguments**:
+    -   Many scripts accept command-line arguments for runtime adjustments. Use the `--help` flag for specific scripts to see available options (e.g., `python src/watchers/run_watcher.py --help`).
 
-*Note: Specific configuration details should be documented per component or within a dedicated configuration guide if the project complexity warrants it.*
+*Consult component-specific documentation or code for detailed configuration options.*
 
 ## Usage
 
-Ensure your virtual environment is activated before running any scripts.
+Ensure your virtual environment is activated (e.g., `poetry shell` or `source .venv/bin/activate`) and you are in the project root directory before running any scripts.
 
 ### Running ETL Pipelines
 
-To run an individual ETL script (example):
+Individual ETL scripts are typically located in `src/etl/`.
+
+To run an individual ETL script (example for Hacker News):
 ```bash
 python src/etl/news/news_get_ycombinator.py
 ```
 
-To run all ETL pipelines (often in parallel, depending on the script's implementation):
+To run all major ETL pipelines (behavior depends on the script's implementation - sequential or parallel):
 -   Windows: `.\run_all_etl.bat`
 -   macOS/Linux: `bash run_all_etl.sh`
 
 ### Running Watchers
 
-To run all watchers:
+The main script for managing watchers is `src/watchers/run_watcher.py`.
+
+To run all registered watchers continuously:
 ```bash
 python src/watchers/run_watcher.py
 ```
 
-To run a specific watcher (e.g., `ms_applied_skills`):
+To run a specific watcher once (e.g., `ms_applied_skills`):
 ```bash
 python src/watchers/run_watcher.py ms_applied_skills --once
 ```
-The `--once` flag typically means it runs one time and exits, otherwise it might run in a loop.
 
 To list available watchers:
 ```bash
 python src/watchers/run_watcher.py --list
 ```
 
-Convenience scripts are also provided:
--   Windows: `.\run_watcher.bat [watcher_name]`
--   macOS/Linux: `bash run_watcher.sh [watcher_name]`
+Convenience scripts are also provided for running all watchers (typically in continuous mode):
+-   Windows: `.\run_watcher.bat [optional_watcher_name]`
+-   macOS/Linux: `bash run_watcher.sh [optional_watcher_name]`
 
 ### Running the Orchestrator
 
-The `meta_orchestrator.py` script is the main entry point for managing multiple processes:
+The `meta_orchestrator.py` in `src/orchestrator/` is the primary entry point for starting and managing multiple processes or sub-orchestrators.
 ```bash
 python src/orchestrator/meta_orchestrator.py
 ```
-This will typically start and monitor other orchestrator scripts or defined tasks.
+This script will monitor and manage defined tasks, often including ETL jobs and watchers, providing fault tolerance. Check its configuration for details on managed processes.
 
 ### Launching the Web Dashboard
 
@@ -252,119 +291,155 @@ To start the Streamlit web dashboard:
 -   Windows: `.\run_streamlit.bat` (or `.\start_streamlit.bat`)
 -   macOS/Linux: `bash run_streamlit.sh` (or `bash start_streamlit.sh`)
 
-This will usually run a command similar to `streamlit run src/web/fullstreamlit/app.py`.
-Open your browser and navigate to `http://localhost:8501` (or the port indicated in the console).
+This will usually execute a command like `streamlit run src/web/fullstreamlit/app.py`.
+Open your web browser and navigate to `http://localhost:8501` (or the port indicated in the console output).
 
 ## Docker
 
-This project includes a `Dockerfile` to build a container image for the application. This can simplify deployment and ensure a consistent runtime environment.
+This project includes a `Dockerfile` for building a container image, simplifying deployment and ensuring a consistent runtime environment.
 
 **Build the Docker Image:**
 ```bash
 docker build -t watchtower-app .
 ```
+*Ensure your `.dockerignore` file is comprehensive to optimize build times and image size.*
 
 **Run the Docker Container:**
 ```bash
-docker run -p 8501:8501 watchtower-app
+docker run -p 8501:8501 --env-file .env watchtower-app
 ```
-*(Adjust port mapping and other Docker run options as needed, e.g., for volume mounts to persist data).*
-
-Refer to the `Dockerfile` for details on the image setup. You might need to pass environment variables or mount configuration files into the container.
+-   Adjust port mapping (`-p HOST_PORT:CONTAINER_PORT`) as needed.
+-   Use `--env-file .env` to pass environment variables from a local `.env` file. Alternatively, pass variables individually with `-e VAR_NAME=value`.
+-   For persistent data, mount volumes: `-v /path/on/host:/app/data` (adjust paths accordingly).
+-   Refer to the `Dockerfile` for build stages, exposed ports, and entry points.
 
 ## Scheduling and Automation
 
-The project provides scripts to help automate tasks:
+The project includes scripts to assist in setting up automated execution of its components. For robust production deployments, consider using system-level process managers.
 
--   **ETL Scheduler**:
-    -   Unix: `bash setup_etl_scheduler.sh`
-    -   Windows: `powershell -ExecutionPolicy Bypass -File setup_etl_scheduler.ps1`
-    These scripts likely assist in setting up cron jobs (Unix) or Task Scheduler tasks (Windows) to run ETL pipelines regularly.
-
+-   **ETL Scheduler & Watchers**:
+    -   **Linux**: Use `cron` or `systemd` timers. The `setup_etl_scheduler.sh` might provide a basic cron setup. For more advanced control, create custom `systemd` service and timer units.
+    -   **Windows**: Use Task Scheduler. The `setup_etl_scheduler.ps1` script likely assists in creating scheduled tasks.
 -   **Streamlit Service**:
-    -   Unix: `bash setup_streamlit_service.sh`
-    -   Windows: `powershell -ExecutionPolicy Bypass -File setup_streamlit_service.ps1`
-    These scripts help in setting up the Streamlit dashboard to run as a background service.
+    -   **Linux**: Use `systemd` to run Streamlit as a background service. The `setup_streamlit_service.sh` might help generate a basic service file.
+    -   **Windows**: The `setup_streamlit_service.ps1` script can help set up the Streamlit dashboard to run as a service or a background task. Tools like `NSSM (Non-Sucking Service Manager)` can also be used for more robust service creation.
 
-Consult the content of these scripts for their specific actions and any prerequisites.
+Consult the contents of these scripts for their specific actions. Always review and adapt them to your system's configuration and security policies.
+
+## Development Standards
+
+This project adheres to a set of development standards to ensure code quality, maintainability, and scalability. Key principles include:
+
+-   **Pythonic Practices**: PEP 8 (enforced by Ruff), readable code, Zen of Python.
+-   **Architecture**: Single responsibility, composition over inheritance, logical structure.
+-   **Quality Assurance**: Comprehensive type hints, Google-style docstrings, 90%+ test coverage (pytest), robust error handling, strategic logging.
+-   **Performance**: Async/await for I/O, caching, resource monitoring, optimized data structures (Polars).
+-   **API Development (if applicable)**: Pydantic, dependency injection, RESTful design, OpenAPI.
+
+Contributors are expected to familiarize themselves with and follow these standards. (Refer to `CONTRIBUTING.md` or internal documentation for full details if available).
 
 ## Contributing
 
-We welcome contributions of all kinds, whether it's reporting bugs, suggesting new features, improving documentation, or submitting code changes. Please adhere to the following guidelines:
+We welcome contributions! Please follow these guidelines to ensure a smooth process.
 
-1.  **Fork the Repository**: Create your own fork of the project on GitHub.
+1.  **Fork the Repository**: Create your fork on GitHub.
 2.  **Clone Your Fork**:
     ```bash
-    git clone https://github.com/yourusername/watchtower.git # Use your fork's URL
+    git clone https://github.com/YOUR_USERNAME/watchtower.git # Use your fork's URL
     cd watchtower
     ```
-3.  **Create a Feature Branch**:
+3.  **Set up Environment**: Follow the [Installation](#installation) section, preferably using Poetry.
+4.  **Create a Feature Branch**:
     ```bash
-    git checkout -b feature/your-awesome-feature
+    git checkout -b feature/your-exciting-feature # or fix/issue-number
     ```
-4.  **Make Changes**:
-    -   Ensure your code adheres to the project's style (PEP 8, Ruff for formatting).
-    -   Include comprehensive type annotations for all functions, methods, and class members.
-    -   Write detailed Google-style docstrings.
-5.  **Lint and Format**:
-    Run Ruff to check and format your code:
+5.  **Make Changes**:
+    -   Implement your feature or bug fix.
+    -   Write clean, well-documented code.
+
+### Adherence to Development Standards
+-   Ensure your code aligns with the project's [Development Standards](#development-standards).
+-   Pay close attention to type hinting, docstrings, and overall code structure.
+
+### Code Style
+-   **Lint and Format**: Run Ruff to check and automatically format your code before committing.
     ```bash
-    ruff check . --fix
     ruff format .
+    ruff check . --fix
     ```
-6.  **Test Your Changes**:
-    -   Add new tests for your features or bug fixes under a `tests/` directory.
-    -   Aim for high test coverage, including common cases and edge cases. (pytest is the recommended framework).
-    -   Ensure all tests pass.
-7.  **Commit Your Changes**:
-    Use clear, descriptive commit messages. Consider following the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+-   Follow Google-style docstrings for all public modules, classes, functions, and methods.
+-   Use comprehensive type annotations.
+
+### Testing
+-   Write new tests for your features or bug fixes in the `tests/` directory using `pytest`.
+-   Aim for high test coverage (ideally 90%+) for new code, covering common cases and edge cases.
+-   Ensure all tests pass locally before pushing:
     ```bash
-    git commit -m "feat: Add new feature for X"
+    pytest
+    ```
+7.  **Commit Your Changes**:
+    Use clear, descriptive commit messages, preferably following the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+    ```bash
+    git add .
+    git commit -m "feat: Add new analytics module for user engagement"
+    # Example: git commit -m "fix: Correct data parsing error in arXiv ETL"
     ```
 8.  **Push to Your Fork**:
     ```bash
-    git push origin feature/your-awesome-feature
+    git push origin feature/your-exciting-feature
     ```
 9.  **Open a Pull Request (PR)**:
-    Submit a PR from your feature branch to the `main` branch of the upstream (original) repository.
+    -   Submit a PR from your feature branch to the `main` (or `develop`) branch of the upstream repository.
     -   Provide a concise title and a detailed description of your changes.
-    -   Reference any related GitHub issues (e.g., "Closes #123").
+    -   Reference any related GitHub issues (e.g., "Closes #123", "Fixes #456").
+    -   Ensure all automated CI checks (linting, tests, etc.) pass on your PR.
 
 ### Issue Reporting
 
 -   Use GitHub Issues to report bugs or suggest features.
--   Provide detailed information: steps to reproduce, expected behavior, actual behavior, Python version, OS, and relevant logs or screenshots.
+-   Provide detailed information: steps to reproduce, expected behavior, actual behavior, Python version, OS, Poetry/pip version, and relevant logs or screenshots.
 
 ### Pull Request Process
 
--   PRs will be reviewed by maintainers. Expect feedback and potential requests for changes.
--   Ensure all automated checks (CI/CD, linting, tests) pass.
--   Maintainers may squash or rebase commits for a cleaner merge history.
+-   PRs will be reviewed by maintainers. Be prepared for feedback and requests for changes.
+-   Maintain communication and address review comments promptly.
+-   Once approved and all checks pass, your PR will be merged. Maintainers may squash or rebase commits.
 
 Thank you for contributing to Watchtower!
 
 ## Troubleshooting
 
 -   **Playwright Issues**:
-    -   Ensure browsers are installed: `playwright install`.
-    -   If running headlessly in Docker or a CI environment, ensure all system dependencies for browsers are met.
--   **Dependency Conflicts**:
+    -   Ensure browsers are installed *within your active virtual environment*: `playwright install`.
+    -   If running headlessly (e.g., in Docker, CI), ensure all system dependencies for browsers are met (e.g., `ldd $(which playwright)` can help identify missing libraries for the browser executables).
+-   **Dependency Conflicts (Poetry)**:
+    -   Try `poetry lock --no-update` to resolve without updating dependencies.
+    -   If necessary, `poetry update` to update specific packages or all.
+    -   Check `pyproject.toml` for version constraints.
+    -   Ensure you are using a compatible Python version as defined in `pyproject.toml`.
+-   **Dependency Conflicts (`pip`/`venv`)**:
     -   Ensure your virtual environment is clean and activated.
     -   Try recreating the virtual environment and reinstalling dependencies.
 -   **Streamlit App Not Loading**:
-    -   Check the console output for errors when running `streamlit run ...`.
-    -   Ensure the correct port (usually 8501) is not blocked by a firewall.
+    -   Check the console output for errors when running `streamlit run ...` or `poetry run streamlit run ...`.
+    -   Ensure the correct port (usually 8501) is not blocked by a firewall or used by another application.
 -   **Script Execution Failures**:
-    -   Verify paths and permissions for files and directories the script might be accessing.
-    -   Check script logs in the `logs/` directory for detailed error messages.
+    -   Verify paths: Ensure scripts are run from the project root or that paths within scripts are correctly relative or absolute.
+    -   Permissions: Check file and directory permissions, especially for `data/` and `logs/`.
+    -   Check script-specific logs in the `logs/` directory (e.g., `logs/etl_arxiv.log`, `src/orchestrator/logs/`, `src/web/fullstreamlit/logs/`) for detailed error messages.
+-   **Configuration Errors**:
+    -   Ensure `.env` file is present in the root and correctly formatted if used.
+    -   Verify API keys and other credentials are correct and have the necessary permissions.
 
 *Add more common issues and solutions as they are identified.*
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details (if one exists, otherwise state "MIT License").
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+(If a `LICENSE` file is not present, please add one, typically containing the standard MIT License text.)
 
 ## Contact
 
-Project Maintainer <your.email@example.com>
-*(Update with actual contact information or GitHub profile link)*
+For questions, issues, or collaboration, please refer to:
+-   **GitHub Issues**: [Project's GitHub Issues Page](https://github.com/yourusername/watchtower/issues) (Replace with actual link)
+-   **Project Maintainer**: `<your.email@example.com>` or [GitHub Profile](https://github.com/yourusername) (Update with actual contact information)
