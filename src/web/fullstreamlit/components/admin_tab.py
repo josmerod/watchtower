@@ -1,6 +1,6 @@
 """
 Admin tab component for the Watchtower Streamlit application.
-Provides administrative functionality for the application.
+Provides administrative functions and system monitoring.
 """
 
 import streamlit as st
@@ -13,6 +13,7 @@ import glob
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
+from pathlib import Path
 
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
@@ -20,8 +21,19 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from src.utils.file_system import get_project_root
 
 
-# Define videos data directory
-VIDEOS_DATA_DIR = "../../../data/youtube"
+# Get the project root directory
+def get_project_root():
+    """Get the project root directory"""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Go up from src/web/fullstreamlit/components to project root
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+    return project_root
+
+# Define admin data paths using absolute paths
+PROJECT_ROOT = get_project_root()
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+
+VIDEOS_DATA_DIR = os.path.join(DATA_DIR, "youtube")
 
 # Define available themes
 THEMES: Dict[str, Dict[str, str]] = {

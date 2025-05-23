@@ -12,5 +12,8 @@ from src.web.fullstreamlit.components import (
     events_tab,
     admin_tab,
     arxiv_papers,
-    arxiv_search
+    arxiv_search,
+    dev_communities_tab,
+    innovation_tab,
+    crypto_tab
 ) 

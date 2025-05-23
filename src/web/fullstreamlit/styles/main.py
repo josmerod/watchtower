@@ -184,6 +184,70 @@ def get_main_style():
         transform: translateY(-2px);
     }
     
+    /* Quick action buttons styling */
+    .quick-action-button {
+        background: linear-gradient(135deg, #A37FFF 0%, #B792FF 100%) !important;
+        color: #1E1E2E !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 600 !important;
+        padding: 12px 16px !important;
+        font-size: 0.95rem !important;
+        transition: all 0.2s ease !important;
+        position: relative !important;
+        overflow: hidden !important;
+        cursor: pointer !important;
+    }
+    
+    .quick-action-button:hover {
+        background: linear-gradient(135deg, #B792FF 0%, #C9A6FF 100%) !important;
+        box-shadow: 0 6px 12px rgba(163, 127, 255, 0.4) !important;
+        transform: translateY(-3px) !important;
+    }
+    
+    .quick-action-button:active {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 3px 6px rgba(163, 127, 255, 0.3) !important;
+    }
+    
+    .quick-action-button:disabled {
+        background: #4A4A6A !important;
+        color: #8B8B8B !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Quick links styling */
+    .quick-link-button {
+        background: linear-gradient(135deg, #2D2B55 0%, #3C3970 100%) !important;
+        color: #E2E8F0 !important;
+        border: 2px solid #A37FFF !important;
+        border-radius: 8px !important;
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 500 !important;
+        padding: 10px 16px !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .quick-link-button:hover {
+        background: linear-gradient(135deg, #A37FFF 0%, #B792FF 100%) !important;
+        color: #1E1E2E !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(163, 127, 255, 0.3) !important;
+    }
+    
+    /* System status styling */
+    .system-status {
+        animation: pulse 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes pulse {
+        from { opacity: 0.8; }
+        to { opacity: 1; }
+    }
+    
     /* Cards and tables */
     .card, div.stDataFrame {
         background-color: #2D2B55 !important;

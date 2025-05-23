@@ -10,8 +10,18 @@ import subprocess
 import json
 from datetime import datetime
 
-# Define watcher data path
-WATCHERS_DATA_DIR = "../../../data/watchers"
+# Get the project root directory
+def get_project_root():
+    """Get the project root directory"""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Go up from src/web/fullstreamlit/components to project root
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+    return project_root
+
+# Define watchers data path using absolute path
+PROJECT_ROOT = get_project_root()
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+WATCHERS_DATA_DIR = os.path.join(DATA_DIR, "watchers")
 
 # Local implementation of load_watcher_states
 @st.cache_data(ttl=300)  # Cache for 5 minutes
