@@ -7,32 +7,38 @@ import streamlit as st
 import pandas as pd
 import os
 import json
+import sys
 from src.web.fullstreamlit.utils.helpers import make_clickable
 
-# Define news data paths locally
-FUTURETOOLS_NEWS_DATA_DIR = "../../../data/futuretools"
-YCOMBINATOR_NEWS_DATA_DIR = "../../../data/hackernews"
-MEDIUM_NEWS_DATA_DIR = "../../../data/medium_genai"
-BENSBITES_NEWS_DATA_DIR = "../../../data/bensbites"
-GOODDEVS_NEWS_DATA_DIR = "../../../data/gooddevs"
+# Get the project root directory
+def get_project_root():
+    """Get the project root directory"""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Go up from src/web/fullstreamlit/components to project root
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+    return project_root
+
+# Define news data paths using absolute paths
+PROJECT_ROOT = get_project_root()
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+
+FUTURETOOLS_NEWS_DATA_DIR = os.path.join(DATA_DIR, "futuretools")
+YCOMBINATOR_NEWS_DATA_DIR = os.path.join(DATA_DIR, "hackernews")
+MEDIUM_NEWS_DATA_DIR = os.path.join(DATA_DIR, "medium_genai")
+BENSBITES_NEWS_DATA_DIR = os.path.join(DATA_DIR, "bensbites")
+GOODDEVS_NEWS_DATA_DIR = os.path.join(DATA_DIR, "gooddevs")
+KDNUGGETS_DATA_DIR = os.path.join(DATA_DIR, "kdnuggets")
+MENEAME_DATA_DIR = os.path.join(DATA_DIR, "meneame")
+PODCASTS_DATA_DIR = os.path.join(DATA_DIR, "podcasts")
 
 FUTURETOOLS_NEWS_FILE = os.path.join(FUTURETOOLS_NEWS_DATA_DIR, "futuretoolsnews.json")
 YCOMBINATOR_NEWS_FILE = os.path.join(YCOMBINATOR_NEWS_DATA_DIR, "hackernews.json")
 MEDIUM_NEWS_FILE = os.path.join(MEDIUM_NEWS_DATA_DIR, "medium_genai.json")
 BENSBITES_NEWS_FILE = os.path.join(BENSBITES_NEWS_DATA_DIR, "bensbites_news.json")
 GOODDEVS_NEWS_FILE = os.path.join(GOODDEVS_NEWS_DATA_DIR, "gooddevs_latest.json")
-
-# KDnuggets data paths
-KDNUGGETS_DATA_DIR = "../../../data/kdnuggets"
 KDNUGGETS_NEWS_FILE = os.path.join(KDNUGGETS_DATA_DIR, "kdnuggets.json")
-
-# Meneame data paths
-MENEAME_DATA_DIR = "../../../data/meneame"
 MENEAME_GENERAL_FILE = os.path.join(MENEAME_DATA_DIR, "meneame_general_latest.json")
 MENEAME_TECNO_FILE = os.path.join(MENEAME_DATA_DIR, "meneame_tecnologia_latest.json")
-
-# Podcasts data paths
-PODCASTS_DATA_DIR = "../../../data/podcasts"
 PODCASTS_FILE = os.path.join(PODCASTS_DATA_DIR, "podcasts_latest.json")
 
 # Local version of load_data
@@ -50,18 +56,53 @@ def load_data(file_path, _logger=None):
             return df
         else:
             if _logger:
-                _logger.error(f"File not found: {file_path}")
-            st.error(f"Archivo no encontrado: {file_path}")
+                _logger.warning(f"File not found: {file_path}")
+            st.warning(f"📁 Archivo no encontrado: {os.path.basename(file_path)}")
             return pd.DataFrame()
     except Exception as e:
         if _logger:
             _logger.error(f"Error loading data from {file_path}: {str(e)}")
-        st.error(f"Error al cargar datos desde {file_path}: {str(e)}")
+        st.error(f"❌ Error al cargar datos desde {os.path.basename(file_path)}: {str(e)}")
         return pd.DataFrame()
 
 def render(logger=None):
     """Render the news tab"""
     st.header("📰 Noticias")
+
+    # Show data loading status
+    with st.expander("📊 Estado de Fuentes de Datos", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Fuentes Principales:**")
+            sources_status = {
+                "FutureTools": os.path.exists(FUTURETOOLS_NEWS_FILE),
+                "Hacker News": os.path.exists(YCOMBINATOR_NEWS_FILE),
+                "Medium GenAI": os.path.exists(MEDIUM_NEWS_FILE),
+                "Ben's Bites": os.path.exists(BENSBITES_NEWS_FILE)
+            }
+            
+            for source, exists in sources_status.items():
+                if exists:
+                    st.success(f"✅ {source}")
+                else:
+                    st.error(f"❌ {source}")
+        
+        with col2:
+            st.markdown("**Fuentes Adicionales:**")
+            additional_sources = {
+                "KDnuggets": os.path.exists(KDNUGGETS_NEWS_FILE),
+                "Good Devs": os.path.exists(GOODDEVS_NEWS_FILE),
+                "Meneame General": os.path.exists(MENEAME_GENERAL_FILE),
+                "Meneame Tech": os.path.exists(MENEAME_TECNO_FILE),
+                "Podcasts": os.path.exists(PODCASTS_FILE)
+            }
+            
+            for source, exists in additional_sources.items():
+                if exists:
+                    st.success(f"✅ {source}")
+                else:
+                    st.error(f"❌ {source}")
 
     # Load news data
     futuretools_news_df = load_data(FUTURETOOLS_NEWS_FILE, _logger=logger)
@@ -76,15 +117,67 @@ def render(logger=None):
     # Load Podcasts data
     podcasts_df = load_data(PODCASTS_FILE, _logger=logger)
 
+    # Count available data
+    available_sources = 0
+    total_articles = 0
+    
+    data_counts = {}
+    for name, df in [
+        ("FutureTools", futuretools_news_df),
+        ("Ben's Bites", bensbites_news_df),
+        ("Medium GenAI", medium_news_df),
+        ("KDnuggets", kdnuggets_news_df),
+        ("Good Devs", gooddevs_df),
+        ("Hacker News", ycombinator_news_df),
+        ("Meneame General", meneame_general_df),
+        ("Meneame Tech", meneame_tecnologia_df),
+        ("Podcasts", podcasts_df)
+    ]:
+        if not df.empty:
+            available_sources += 1
+            total_articles += len(df)
+            data_counts[name] = len(df)
+
+    # Display summary metrics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("📊 Fuentes Activas", f"{available_sources}/9")
+    with col2:
+        st.metric("📰 Total Artículos", f"{total_articles:,}")
+    with col3:
+        if data_counts:
+            most_active = max(data_counts, key=data_counts.get)
+            st.metric("🔥 Fuente Más Activa", f"{most_active}")
+
     # Check if any content is available
     if (futuretools_news_df.empty and bensbites_news_df.empty and medium_news_df.empty and kdnuggets_news_df.empty and gooddevs_df.empty
-        and meneame_general_df.empty and meneame_tecnologia_df.empty and podcasts_df.empty):
-        st.warning("No hay noticias disponibles para mostrar.")
+        and meneame_general_df.empty and meneame_tecnologia_df.empty and podcasts_df.empty and ycombinator_news_df.empty):
+        st.warning("📭 No hay noticias disponibles para mostrar.")
+        st.info("💡 **Sugerencia:** Ejecuta los procesos ETL para recopilar noticias actualizadas.")
+        
+        # Show ETL run buttons
+        st.markdown("### 🔄 Ejecutar ETL de Noticias")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🚀 Ejecutar ETL Principal", help="Ejecuta FutureTools, HackerNews, Medium"):
+                st.info("Ejecutando ETL principal... esto puede tomar unos minutos.")
+        
+        with col2:
+            if st.button("📡 Ejecutar ETL Completo", help="Ejecuta todos los ETL de noticias"):
+                st.info("Ejecutando ETL completo... esto puede tomar varios minutos.")
+        
     else:
         # Create tabs for different news sources including Podcasts
         news_tabs = st.tabs([
-            "FutureTools & Ben's Bites", "Hacker News", "Medium GenAI", "KDnuggets", "Good Devs",
-            "Meneame General", "Meneame Tecnología", "Podcasts"
+            "🚀 FutureTools & Ben's Bites", 
+            "🗞️ Hacker News", 
+            "🤖 Medium GenAI", 
+            "📊 KDnuggets", 
+            "👨‍💻 Good Devs",
+            "🇪🇸 Meneame General", 
+            "🔧 Meneame Tech", 
+            "🎧 Podcasts"
         ])
 
         with news_tabs[0]:

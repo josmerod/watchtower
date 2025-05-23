@@ -8,11 +8,7 @@ joblib>=1.5.0
 python-dateutil>=2.9.0.post0
 pytz>=2025.2
 
-# Web scraping and API interaction
-esrequests>=2.32.3
-beautifulsoup4>=4.13.3
-playwright>=1.51.0
-feedparser>=6.0.11
+# Data validation and configurationpydantic>=2.11.5pydantic-settings>=2.9.1# Web scraping and API interactionrequests>=2.32.3beautifulsoup4>=4.13.3playwright>=1.51.0feedparser>=6.0.11aiohttp>=3.11.18
 yt-dlp>=2024.3.10
 cloudscraper>=1.2.60
 

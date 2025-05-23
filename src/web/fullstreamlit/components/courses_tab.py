@@ -1,14 +1,62 @@
 """
 Courses tab component for the Watchtower Streamlit application.
-Displays courses from different platforms like Coursera, edX, etc.
+Displays online course data from various platforms like Coursera and Udemy.
 """
 
 import streamlit as st
 import pandas as pd
 import json
 import os
-from src.web.fullstreamlit.utils.helpers import make_clickable
+from src.web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols
 from typing import Dict, List, Optional, Any, Union
+
+# Get the project root directory
+def get_project_root():
+    """Get the project root directory"""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Go up from src/web/fullstreamlit/components to project root
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+    return project_root
+
+# Define course data paths using absolute paths
+PROJECT_ROOT = get_project_root()
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+
+COURSERA_DATA_DIR = os.path.join(DATA_DIR, "classcentral")
+UDEMY_DATA_DIR = os.path.join(DATA_DIR, "udemy")
+
+COURSERA_FILE = os.path.join(COURSERA_DATA_DIR, "coursera_courses.json")
+UDEMY_FILE = os.path.join(UDEMY_DATA_DIR, "udemy_courses.json")
+
+def load_coursera_courses_from_multiple_paths():
+    """Try loading Coursera courses from multiple potential paths"""
+    
+    # Try the main path first
+    if os.path.exists(COURSERA_FILE):
+        try:
+            with open(COURSERA_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            st.warning(f"Error reading Coursera data from main path: {str(e)}")
+    
+    # If main path fails, return empty data
+    st.warning("No se encontraron cursos de Coursera en las rutas esperadas")
+    return []
+
+def load_udemy_courses_from_multiple_paths():
+    """Try loading Udemy courses from multiple potential paths"""
+    
+    # Try the main path first
+    if os.path.exists(UDEMY_FILE):
+        try:
+            with open(UDEMY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            st.warning(f"Error reading Udemy data from main path: {str(e)}")
+    
+    # If main path fails, return empty data
+    st.warning("No se encontraron cursos de Udemy en las rutas esperadas")
+    return []
 
 def render(courses_data: Dict[str, pd.DataFrame], logger=None):
     """
@@ -28,51 +76,11 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
         if logger:
             logger.warning("No data from loader, trying direct load")
         
-        # Search for Coursera JSON in multiple paths
-        coursera_file = None
-        paths_to_try = [
-            "data/classcentral/coursera_courses.json",
-            "../../../data/classcentral/coursera_courses.json",
-            os.path.abspath("data/classcentral/coursera_courses.json"),
-            "C:/Users/josem/watchtower/data/classcentral/coursera_courses.json",
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../data/classcentral/coursera_courses.json"),
-            os.path.join(os.getcwd(), "data/classcentral/coursera_courses.json"),
-            os.path.join(os.getcwd(), "../../../data/classcentral/coursera_courses.json")
-        ]
-        if logger:
-            logger.info(f"Current working directory: {os.getcwd()}")
-        for path in paths_to_try:
-            if os.path.exists(path):
-                coursera_file = path
-                if logger:
-                    logger.info(f"Found Coursera file at: {path}")
-                break
-        
-        # Search for Udemy JSON in multiple paths
-        udemy_file = None
-        udemy_paths_to_try = [
-            "data/udemy/udemy_courses.json",
-            "../../../data/udemy/udemy_courses.json",
-            os.path.abspath("data/udemy/udemy_courses.json"),
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../data/udemy/udemy_courses.json"),
-            os.path.join(os.getcwd(), "data/udemy/udemy_courses.json"),
-            os.path.join(os.getcwd(), "../../../data/udemy/udemy_courses.json")
-        ]
-        if logger:
-            logger.info("Searching for Udemy JSON file")
-        for path in udemy_paths_to_try:
-            if os.path.exists(path):
-                udemy_file = path
-                if logger:
-                    logger.info(f"Found Udemy file at: {path}")
-                break
-        
         # Load available course data from JSON files
         loaded_data = {}
-        if coursera_file:
+        coursera_json = load_coursera_courses_from_multiple_paths()
+        if coursera_json:
             try:
-                with open(coursera_file, 'r', encoding='utf-8') as f:
-                    coursera_json = json.load(f)
                 st.success(f"¡Cargados {len(coursera_json)} cursos de Coursera directamente del archivo!")
                 loaded_data["coursera"] = pd.DataFrame(coursera_json)
             except Exception as e:
@@ -84,10 +92,9 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
                 logger.error("Could not find coursera_courses.json in any path")
             st.error("No se pudo encontrar el archivo de cursos de Coursera.")
         
-        if udemy_file:
+        udemy_json = load_udemy_courses_from_multiple_paths()
+        if udemy_json:
             try:
-                with open(udemy_file, 'r', encoding='utf-8') as f:
-                    udemy_json = json.load(f)
                 st.success(f"¡Cargados {len(udemy_json)} cursos de Udemy directamente del archivo!")
                 loaded_data["udemy"] = pd.DataFrame(udemy_json)
             except Exception as e:
@@ -150,16 +157,23 @@ def display_coursera_courses(courses_df: pd.DataFrame):
     courses_html += '<h2>Cursos de Coursera</h2>'
 
     if not courses_df.empty:
-        # Use the original DataFrame to preserve JSON order
+        # Use the original DataFrame to preserve JSON order - create a copy first
         filtered_courses_df = courses_df.copy()
+        
+        # Store original index to maintain order
+        filtered_courses_df = filtered_courses_df.reset_index(drop=True)
+        original_order = filtered_courses_df.index.copy()
         
         # Convert scraped_at to datetime if it exists (for display only, not sorting)
         if "scraped_at" in filtered_courses_df.columns:
-            # Convert to datetime but don't sort
-            filtered_courses_df["scraped_at"] = pd.to_datetime(filtered_courses_df["scraped_at"])
+            # Convert to datetime but preserve original order
+            filtered_courses_df["scraped_at"] = pd.to_datetime(filtered_courses_df["scraped_at"], errors='coerce')
             
             # Format scraped_at for display
             filtered_courses_df["fecha_adición"] = filtered_courses_df["scraped_at"].dt.strftime("%Y-%m-%d")
+            
+            # Ensure we maintain the original order
+            filtered_courses_df = filtered_courses_df.reindex(original_order)
         
         # Add text search for title and description
         search_term = st.text_input("Buscar cursos:", placeholder="Ingrese palabras clave...")
@@ -293,12 +307,22 @@ def display_udemy_courses(courses_df: pd.DataFrame):
 
     if not courses_df.empty:
         filtered_df = courses_df.copy()
+        
+        # Store original index to maintain order
+        filtered_df = filtered_df.reset_index(drop=True)
+        original_order = filtered_df.index.copy()
+        
         # Convert scraped_at to datetime for display
         if "scraped_at" in filtered_df.columns:
-            filtered_df["scraped_at"] = pd.to_datetime(filtered_df["scraped_at"])
+            filtered_df["scraped_at"] = pd.to_datetime(filtered_df["scraped_at"], errors='coerce')
             filtered_df["fecha_adición"] = filtered_df["scraped_at"].dt.strftime("%Y-%m-%d")
+            
+            # Maintain original order
+            filtered_df = filtered_df.reindex(original_order)
+            
         # Display number of courses
         st.write(f"Mostrando {len(filtered_df)} cursos de Udemy")
+        
         # Select display columns
         display_df = filtered_df[["title", "fecha_adición", "url"]].copy()
         # Add clickable link

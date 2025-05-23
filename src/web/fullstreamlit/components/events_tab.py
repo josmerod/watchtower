@@ -9,8 +9,20 @@ import os
 import json
 from src.web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols
 
+# Get the project root directory
+def get_project_root():
+    """Get the project root directory"""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Go up from src/web/fullstreamlit/components to project root
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+    return project_root
+
+# Define events data path using absolute path
+PROJECT_ROOT = get_project_root()
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+VALENCIA_EVENTS_DATA_DIR = os.path.join(DATA_DIR, "valencia_events")
+
 # Define event data path
-VALENCIA_EVENTS_DATA_DIR = "../../../data/valencia_events"
 VALENCIA_EVENTS_FILE = os.path.join(VALENCIA_EVENTS_DATA_DIR, "valencia_events.json")
 
 # Local implementation of load_data
