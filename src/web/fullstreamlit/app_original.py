@@ -24,15 +24,19 @@ from src.web.fullstreamlit.components import (
     news_tab,
     games_tab,
     courses_tab,
-    watchers_tab,
     events_tab,
     admin_tab,
     arxiv_papers,
     arxiv_search,
     dev_communities_tab,
     innovation_tab,
-    crypto_tab
+    crypto_tab,
+    security_tab,
+    enhanced_arxiv_papers
 )
+
+# Import enhanced components
+from src.web.fullstreamlit.components import enhanced_innovation_tab
 
 # Initialize logger and data service
 logger = get_logger("WatchtowerApp")
@@ -285,6 +289,7 @@ main_tabs = st.tabs([
     "🎮 Gaming",
     "🎓 Educación",
     "👨‍💻 Dev Hub",
+    "🛡️ Security",
     "🚀 Innovation",
     "₿ Crypto",
     "📚 ArXiv Research", 
@@ -343,30 +348,37 @@ with main_tabs[4]:  # Educación
 with main_tabs[5]:  # Dev Hub
     render_tab_safely("Dev Communities", dev_communities_tab.render, logger)
 
-with main_tabs[6]:  # Innovation
-    render_tab_safely("Innovation & Tech", innovation_tab.render, logger)
+with main_tabs[6]:  # Security
+    render_tab_safely("Security Intelligence", security_tab.render, logger, data_service)
 
-with main_tabs[7]:  # Crypto
+with main_tabs[7]:  # Innovation
+    render_tab_safely("Innovation & Tech", enhanced_innovation_tab.render, logger, data_service)
+
+with main_tabs[8]:  # Crypto
     render_tab_safely("Crypto Sentiment", crypto_tab.render, logger)
 
-with main_tabs[8]:  # ArXiv Research (combined tab)
+with main_tabs[9]:  # ArXiv Research (combined tab)
     
     # Sub-tabs for ArXiv functionality
-    arxiv_subtabs = st.tabs(["📄 Papers Recientes", "🔍 Búsqueda Avanzada"])
+    arxiv_subtabs = st.tabs(["🚀 Enhanced Intelligence", "📄 Papers Recientes", "🔍 Búsqueda Avanzada"])
     
     with arxiv_subtabs[0]:
-        render_tab_safely("ArXiv Papers", arxiv_papers.display)
+        render_tab_safely("Enhanced ArXiv Intelligence", enhanced_arxiv_papers.display_enhanced_papers)
     
     with arxiv_subtabs[1]:
+        render_tab_safely("ArXiv Papers", arxiv_papers.display)
+    
+    with arxiv_subtabs[2]:
         render_tab_safely("ArXiv Search", arxiv_search.display)
 
-with main_tabs[9]:  # Monitoring
-    render_tab_safely("Watchers", watchers_tab.render, logger)
+with main_tabs[10]:  # Monitoring
+    st.header("👁️ Monitoring")
+    st.info("🚧 Monitoring tab is under development. Check back soon!")
 
-with main_tabs[10]:  # Valencia
+with main_tabs[11]:  # Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[11]:  # Admin
+with main_tabs[12]:  # Admin
     render_tab_safely("Admin", admin_tab.render, logger)
 
 # Enhanced footer with better information and styling

@@ -18,6 +18,17 @@ import gc
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
 
+# Import technology intelligence components
+try:
+    from src.analytics.technology_adoption import TechnologyAdoptionAnalyzer
+    from src.models.technology import FrameworkBattleModel, TechnologyCategory, TechnologyPredictionModel
+except ImportError:
+    # Fallback if modules not available
+    TechnologyAdoptionAnalyzer = None
+    FrameworkBattleModel = None
+    TechnologyCategory = None
+    TechnologyPredictionModel = None
+
 class UltraOptimizedDataService:
     """Ultra-optimized data service with advanced caching and memory management"""
     
@@ -26,6 +37,13 @@ class UltraOptimizedDataService:
         self._setup_paths()
         self._init_memory_cache()
         self._preload_file_metadata()
+        
+        # Initialize technology adoption analyzer
+        self.tech_analyzer: Optional[TechnologyAdoptionAnalyzer] = None
+        self._tech_intelligence_cache: Dict[str, Any] = {}
+        self._cache_expiry: Optional[datetime] = None
+        self._cache_duration_minutes = 30  # Cache for 30 minutes
+        self._initialize_tech_analyzer()
         
     def _setup_paths(self):
         """Setup and cache all file paths to avoid repeated path operations"""
@@ -48,7 +66,8 @@ class UltraOptimizedDataService:
             'tech_jobs_dir': self.data_dir / "tech_jobs",
             'dev_community_dir': self.data_dir / "dev_community",
             'product_hunt_dir': self.data_dir / "product_hunt",
-            'github_trends_dir': self.data_dir / "github_trends"
+            'github_trends_dir': self.data_dir / "github_trends",
+            'security_vulnerabilities_dir': self.data_dir / "security_vulnerabilities"
         }
         
     def _init_memory_cache(self):
@@ -478,6 +497,32 @@ class UltraOptimizedDataService:
         
         return pd.DataFrame()
     
+    def get_enhanced_arxiv_data(self) -> Dict[str, Any]:
+        """Get enhanced ArXiv papers data with intelligence features"""
+        try:
+            # Try different possible locations for enhanced papers
+            possible_paths = [
+                self.data_dir / "streamlit_enhanced_arxiv" / "output" / "latest_enhanced_papers.json",
+                self.data_dir / "enhanced_arxiv" / "output" / "latest_enhanced_papers.json",
+                self.data_dir / "arxiv" / "output" / "latest_enhanced_papers.json"
+            ]
+            
+            for path in possible_paths:
+                if path.exists():
+                    cache_key = self._get_cache_key(str(path), "enhanced_arxiv")
+                    data = self._ultra_fast_json_load(path, cache_key)
+                    
+                    if isinstance(data, dict):
+                        return data
+                    elif isinstance(data, list):
+                        return {"papers": data, "metadata": {}}
+            
+            return {"papers": [], "metadata": {}}
+            
+        except Exception as e:
+            self._log(f"Error loading enhanced ArXiv data: {str(e)}", "error")
+            return {"papers": [], "metadata": {}, "error": str(e)}
+    
     def get_events_data(self) -> pd.DataFrame:
         """Get events data"""
         events_dir = self.cached_paths.get('events_dir')
@@ -575,6 +620,501 @@ class UltraOptimizedDataService:
             return pd.DataFrame(data) if data else pd.DataFrame()
         
         return pd.DataFrame()
+    
+    def get_security_vulnerabilities_data(self) -> pd.DataFrame:
+        """Get security vulnerabilities data"""
+        security_dir = self.cached_paths.get('security_vulnerabilities_dir', 
+                                           self.data_dir / "security_vulnerabilities")
+        if not security_dir or not security_dir.exists():
+            return pd.DataFrame()
+        
+        security_file = security_dir / "security_vulnerabilities_latest.json"
+        if security_file.exists():
+            cache_key = self._get_cache_key(str(security_file), "security_vulnerabilities")
+            data = self._ultra_fast_json_load(security_file, cache_key)
+            return pd.DataFrame(data) if data else pd.DataFrame()
+        
+        return pd.DataFrame()
+    
+    def get_security_intelligence(self) -> Dict[str, Any]:
+        """Get security intelligence summary and analysis"""
+        try:
+            vulnerabilities_df = self.get_security_vulnerabilities_data()
+            
+            if vulnerabilities_df.empty:
+                return {
+                    'error': 'No security vulnerability data available',
+                    'vulnerabilities': [],
+                    'critical_count': 0,
+                    'average_severity': 0.0,
+                    'patch_availability': 0,
+                    'affected_technologies': []
+                }
+            
+            # Convert to list of dictionaries for processing
+            vulnerabilities = vulnerabilities_df.to_dict('records')
+            
+            # Calculate metrics
+            critical_count = sum(1 for v in vulnerabilities 
+                               if v.get('risk_level') == 'critical' or v.get('severity_score', 0) >= 9.0)
+            
+            severity_scores = [v.get('severity_score', 0) for v in vulnerabilities]
+            avg_severity = sum(severity_scores) / len(severity_scores) if severity_scores else 0.0
+            
+            with_patches = sum(1 for v in vulnerabilities if v.get('patch_available', False))
+            patch_availability = (with_patches / len(vulnerabilities) * 100) if vulnerabilities else 0
+            
+            # Get affected technologies
+            affected_technologies = set()
+            for v in vulnerabilities:
+                tech_stack = v.get('technology_stack', [])
+                if isinstance(tech_stack, list):
+                    affected_technologies.update(tech_stack)
+                elif isinstance(tech_stack, str):
+                    try:
+                        import json
+                        parsed_tech = json.loads(tech_stack)
+                        if isinstance(parsed_tech, list):
+                            affected_technologies.update(parsed_tech)
+                    except:
+                        affected_technologies.add(tech_stack)
+            
+            return {
+                'vulnerabilities': vulnerabilities,
+                'critical_count': critical_count,
+                'average_severity': round(avg_severity, 1),
+                'patch_availability': round(patch_availability, 1),
+                'affected_technologies': list(affected_technologies),
+                'total_count': len(vulnerabilities),
+                'high_count': sum(1 for v in vulnerabilities if v.get('risk_level') == 'high'),
+                'medium_count': sum(1 for v in vulnerabilities if v.get('risk_level') == 'medium'),
+                'low_count': sum(1 for v in vulnerabilities if v.get('risk_level') == 'low'),
+                'with_exploits': sum(1 for v in vulnerabilities if v.get('exploit_available', False)),
+                'needs_urgent_attention': sum(1 for v in vulnerabilities if v.get('needs_urgent_attention', False)),
+                'recent_vulnerabilities': sum(1 for v in vulnerabilities if v.get('is_recent', False))
+            }
+            
+        except Exception as e:
+            self._log(f"Error generating security intelligence: {str(e)}", "error")
+            return {
+                'error': f'Error processing security data: {str(e)}',
+                'vulnerabilities': [],
+                'critical_count': 0,
+                'average_severity': 0.0,
+                'patch_availability': 0,
+                'affected_technologies': []
+            }
+
+    def _initialize_tech_analyzer(self) -> None:
+        """Initialize the technology adoption analyzer."""
+        try:
+            if TechnologyAdoptionAnalyzer:
+                self.tech_analyzer = TechnologyAdoptionAnalyzer(self)
+                self._log("Technology adoption analyzer initialized successfully")
+            else:
+                self._log("Technology analyzer components not available", "warning")
+                self.tech_analyzer = None
+        except Exception as e:
+            self._log(f"Failed to initialize technology analyzer: {e}", "error")
+            self.tech_analyzer = None
+    
+    def get_github_trends(self) -> List[Dict[str, Any]]:
+        """Get GitHub trends data as list of dictionaries."""
+        try:
+            df = self.get_github_trends_data()
+            if not df.empty:
+                return df.to_dict('records')
+            
+            # Fallback: try different file name
+            gh_dir = self.cached_paths.get('github_trends_dir')
+            if gh_dir:
+                for filename in ["github_trends_latest.json", "github_trending_latest.json"]:
+                    gh_file = gh_dir / filename
+                    if gh_file.exists():
+                        cache_key = self._get_cache_key(str(gh_file), "github_trends")
+                        data = self._ultra_fast_json_load(gh_file, cache_key)
+                        self._log(f"Loaded {len(data)} GitHub repositories from {filename}")
+                        return data
+            
+            self._log("GitHub trends file not found", "warning")
+            return []
+                
+        except Exception as e:
+            self._log(f"Failed to get GitHub trends: {e}", "error")
+            return []
+    
+    def get_dev_community(self) -> List[Dict[str, Any]]:
+        """Get DEV community data as list of dictionaries."""
+        try:
+            df = self.get_dev_community_data()
+            if not df.empty:
+                return df.to_dict('records')
+            
+            self._log("DEV community data not available", "warning")
+            return []
+                
+        except Exception as e:
+            self._log(f"Failed to get DEV community data: {e}", "error")
+            return []
+    
+    def _is_cache_valid(self) -> bool:
+        """Check if the technology intelligence cache is still valid."""
+        if not self._cache_expiry:
+            return False
+        return datetime.utcnow() < self._cache_expiry
+    
+    def _update_cache_expiry(self) -> None:
+        """Update the cache expiry timestamp."""
+        self._cache_expiry = datetime.utcnow() + timedelta(minutes=self._cache_duration_minutes)
+    
+    async def get_technology_radar(self) -> Dict[str, Any]:
+        """Get comprehensive technology adoption intelligence."""
+        self._log("Generating technology radar intelligence")
+        
+        try:
+            # Check cache first
+            if self._is_cache_valid() and 'technology_radar' in self._tech_intelligence_cache:
+                self._log("Returning cached technology radar data", "debug")
+                return self._tech_intelligence_cache['technology_radar']
+            
+            if not self.tech_analyzer:
+                self._log("Technology analyzer not available", "warning")
+                return {'error': 'Technology analyzer not initialized'}
+            
+            # Generate framework battles
+            framework_battles = await self.tech_analyzer.analyze_framework_battles()
+            
+            # Generate adoption predictions
+            adoption_predictions = await self.tech_analyzer.predict_adoption_trends()
+            
+            # Generate technology recommendations
+            recommendations = self._generate_technology_recommendations(
+                framework_battles, adoption_predictions
+            )
+            
+            # Analyze market intelligence
+            market_intelligence = self._analyze_market_trends(
+                framework_battles, adoption_predictions
+            )
+            
+            # Compile results
+            radar_data = {
+                'framework_battles': self._serialize_framework_battles(framework_battles),
+                'adoption_predictions': self._serialize_predictions(adoption_predictions),
+                'recommendation_engine': recommendations,
+                'market_intelligence': market_intelligence,
+                'last_updated': datetime.utcnow().isoformat(),
+                'data_sources': ['github_trends', 'dev_community', 'analytics_engine'],
+                'confidence_score': self._calculate_overall_confidence(
+                    framework_battles, adoption_predictions
+                )
+            }
+            
+            # Cache the results
+            self._tech_intelligence_cache['technology_radar'] = radar_data
+            self._update_cache_expiry()
+            
+            self._log(f"Technology radar generated with {len(framework_battles)} battles and {len(adoption_predictions)} predictions")
+            return radar_data
+            
+        except Exception as e:
+            self._log(f"Technology radar generation failed: {e}", "error")
+            return {
+                'error': str(e),
+                'message': 'Failed to generate technology radar intelligence',
+                'timestamp': datetime.utcnow().isoformat()
+            }
+    
+    def _serialize_framework_battles(self, battles) -> Dict[str, Any]:
+        """Serialize framework battles for JSON response."""
+        if not battles or not FrameworkBattleModel:
+            return {}
+        
+        serialized = {}
+        
+        for category, battle in battles.items():
+            try:
+                battle_data = {
+                    'category': category.value if hasattr(category, 'value') else str(category),
+                    'winner': battle.winner,
+                    'runner_up': battle.runner_up,
+                    'rising_star': battle.rising_star,
+                    'market_share_leader': battle.market_share_leader,
+                    'developer_preference': battle.developer_preference,
+                    'enterprise_adoption': battle.enterprise_adoption,
+                    'predicted_winner_6m': battle.predicted_winner_6m,
+                    'predicted_winner_12m': battle.predicted_winner_12m,
+                    'confidence_score': battle.confidence_score,
+                    'data_quality_score': battle.data_quality_score,
+                    'total_frameworks': battle.total_frameworks,
+                    'battle_summary': battle.battle_summary,
+                    'frameworks': []
+                }
+                
+                # Serialize framework details
+                for framework in battle.frameworks:
+                    framework_data = {
+                        'name': framework.technology_name,
+                        'category': framework.category.value if hasattr(framework.category, 'value') else str(framework.category),
+                        'popularity_score': framework.popularity_score,
+                        'growth_rate': framework.growth_rate,
+                        'community_health': framework.community_health,
+                        'job_market_demand': framework.job_market_demand,
+                        'learning_curve': framework.learning_curve,
+                        'maturity_level': framework.maturity_level.value if hasattr(framework.maturity_level, 'value') else str(framework.maturity_level),
+                        'ecosystem_size': framework.ecosystem_size,
+                        'performance_score': framework.performance_score,
+                        'overall_rank': framework.overall_rank,
+                        'strengths': framework.strengths,
+                        'weaknesses': framework.weaknesses,
+                        'recommendation_score': framework.recommendation_score,
+                        'use_cases': framework.use_cases
+                    }
+                    battle_data['frameworks'].append(framework_data)
+                
+                category_key = category.value if hasattr(category, 'value') else str(category)
+                serialized[category_key] = battle_data
+                
+            except Exception as e:
+                self._log(f"Failed to serialize battle for {category}: {e}", "warning")
+                continue
+        
+        return serialized
+    
+    def _serialize_predictions(self, predictions) -> Dict[str, Any]:
+        """Serialize technology predictions for JSON response."""
+        if not predictions or not TechnologyPredictionModel:
+            return {}
+        
+        serialized = {}
+        
+        for tech_name, prediction in predictions.items():
+            try:
+                prediction_data = {
+                    'technology_name': prediction.technology_name,
+                    'current_score': prediction.current_score,
+                    'current_adoption_level': prediction.current_adoption_level.value if hasattr(prediction.current_adoption_level, 'value') else str(prediction.current_adoption_level),
+                    'predicted_score': prediction.predicted_score,
+                    'predicted_adoption_level': prediction.predicted_adoption_level.value if hasattr(prediction.predicted_adoption_level, 'value') else str(prediction.predicted_adoption_level),
+                    'growth_rate': prediction.growth_rate,
+                    'trend_direction': prediction.trend_direction.value if hasattr(prediction.trend_direction, 'value') else str(prediction.trend_direction),
+                    'prediction_timeframe_months': prediction.prediction_timeframe_months,
+                    'confidence': prediction.confidence,
+                    'expected_growth_percentage': prediction.expected_growth_percentage,
+                    'investment_recommendation': prediction.investment_recommendation,
+                    'key_drivers': prediction.key_drivers,
+                    'risk_factors': prediction.risk_factors,
+                    'recommendation': prediction.recommendation,
+                    'early_adoption_indicators': prediction.early_adoption_indicators,
+                    'competitive_threats': prediction.competitive_threats
+                }
+                
+                serialized[tech_name] = prediction_data
+                
+            except Exception as e:
+                self._log(f"Failed to serialize prediction for {tech_name}: {e}", "warning")
+                continue
+        
+        return serialized
+    
+    def _generate_technology_recommendations(self, battles, predictions) -> Dict[str, Any]:
+        """Generate technology recommendations based on battles and predictions."""
+        try:
+            recommendations = {
+                'top_recommendations': [],
+                'category_winners': {},
+                'rising_technologies': [],
+                'avoid_technologies': [],
+                'investment_grades': {
+                    'strong_buy': [],
+                    'buy': [],
+                    'hold': [],
+                    'avoid': []
+                }
+            }
+            
+            # Extract category winners
+            for category, battle in battles.items():
+                category_key = category.value if hasattr(category, 'value') else str(category)
+                recommendations['category_winners'][category_key] = {
+                    'winner': battle.winner,
+                    'recommendation_reason': f"Leading {category_key} framework with highest overall score"
+                }
+            
+            # Analyze predictions for investment recommendations
+            for tech_name, prediction in predictions.items():
+                investment_rec = prediction.investment_recommendation.lower()
+                
+                if 'strong buy' in investment_rec:
+                    recommendations['investment_grades']['strong_buy'].append({
+                        'technology': tech_name,
+                        'reason': prediction.recommendation,
+                        'growth_potential': f"{prediction.expected_growth_percentage}%"
+                    })
+                elif 'buy' in investment_rec:
+                    recommendations['investment_grades']['buy'].append({
+                        'technology': tech_name,
+                        'reason': prediction.recommendation,
+                        'growth_potential': f"{prediction.expected_growth_percentage}%"
+                    })
+                elif 'hold' in investment_rec:
+                    recommendations['investment_grades']['hold'].append({
+                        'technology': tech_name,
+                        'reason': prediction.recommendation
+                    })
+                elif 'avoid' in investment_rec or 'sell' in investment_rec:
+                    recommendations['investment_grades']['avoid'].append({
+                        'technology': tech_name,
+                        'reason': prediction.recommendation
+                    })
+                
+                # Identify rising technologies
+                trend_direction = prediction.trend_direction.value if hasattr(prediction.trend_direction, 'value') else str(prediction.trend_direction)
+                if trend_direction in ['rising', 'explosive'] and prediction.confidence > 0.7:
+                    recommendations['rising_technologies'].append({
+                        'technology': tech_name,
+                        'trend': trend_direction,
+                        'confidence': prediction.confidence,
+                        'key_drivers': prediction.key_drivers
+                    })
+                
+                # Identify technologies to avoid
+                if trend_direction == 'declining' and prediction.confidence > 0.6:
+                    recommendations['avoid_technologies'].append({
+                        'technology': tech_name,
+                        'reason': 'Declining adoption trend predicted',
+                        'risk_factors': prediction.risk_factors
+                    })
+            
+            # Generate top recommendations
+            all_strong_buys = recommendations['investment_grades']['strong_buy']
+            all_buys = recommendations['investment_grades']['buy']
+            
+            top_recommendations = (all_strong_buys + all_buys)[:5]  # Top 5
+            recommendations['top_recommendations'] = top_recommendations
+            
+            return recommendations
+            
+        except Exception as e:
+            self._log(f"Failed to generate recommendations: {e}", "error")
+            return {'error': 'Failed to generate recommendations'}
+    
+    def _analyze_market_trends(self, battles, predictions) -> Dict[str, Any]:
+        """Analyze market trends from battle and prediction data."""
+        try:
+            market_analysis = {
+                'overall_trends': [],
+                'category_insights': {},
+                'adoption_lifecycle': {
+                    'emerging': [],
+                    'growing': [],
+                    'mainstream': [],
+                    'mature': []
+                },
+                'market_shifts': [],
+                'competitive_landscape': {}
+            }
+            
+            # Analyze overall market trends
+            growth_technologies = []
+            for name, pred in predictions.items():
+                if pred.growth_rate > 0.2:
+                    growth_technologies.append(name)
+            
+            if len(growth_technologies) > len(predictions) * 0.6:
+                market_analysis['overall_trends'].append(
+                    "Market shows strong innovation and growth across multiple technologies"
+                )
+            
+            declining_count = 0
+            for name, pred in predictions.items():
+                trend_direction = pred.trend_direction.value if hasattr(pred.trend_direction, 'value') else str(pred.trend_direction)
+                if trend_direction == 'declining':
+                    declining_count += 1
+            
+            if declining_count > 0:
+                market_analysis['overall_trends'].append(
+                    f"{declining_count} technologies showing declining trends - market consolidation occurring"
+                )
+            
+            # Category insights
+            for category, battle in battles.items():
+                category_key = category.value if hasattr(category, 'value') else str(category)
+                rising_star = battle.rising_star
+                winner = battle.winner
+                
+                insight = f"In {category_key}: {winner} dominates"
+                if rising_star and rising_star != winner:
+                    insight += f", but {rising_star} is the rising challenger"
+                
+                market_analysis['category_insights'][category_key] = {
+                    'insight': insight,
+                    'market_leader': winner,
+                    'challenger': rising_star,
+                    'confidence': battle.confidence_score
+                }
+            
+            # Adoption lifecycle analysis
+            for tech_name, prediction in predictions.items():
+                lifecycle_stage = prediction.current_adoption_level.value if hasattr(prediction.current_adoption_level, 'value') else str(prediction.current_adoption_level)
+                trend_direction = prediction.trend_direction.value if hasattr(prediction.trend_direction, 'value') else str(prediction.trend_direction)
+                
+                if lifecycle_stage in market_analysis['adoption_lifecycle']:
+                    market_analysis['adoption_lifecycle'][lifecycle_stage].append({
+                        'technology': tech_name,
+                        'score': prediction.current_score,
+                        'trend': trend_direction
+                    })
+            
+            # Identify market shifts
+            explosive_growth = []
+            for name, pred in predictions.items():
+                trend_direction = pred.trend_direction.value if hasattr(pred.trend_direction, 'value') else str(pred.trend_direction)
+                if trend_direction == 'explosive':
+                    explosive_growth.append(name)
+            
+            if explosive_growth:
+                market_analysis['market_shifts'].append({
+                    'type': 'explosive_growth',
+                    'technologies': explosive_growth,
+                    'description': 'Technologies experiencing explosive growth and rapid adoption'
+                })
+            
+            return market_analysis
+            
+        except Exception as e:
+            self._log(f"Failed to analyze market trends: {e}", "error")
+            return {'error': 'Failed to analyze market trends'}
+    
+    def _calculate_overall_confidence(self, battles, predictions) -> float:
+        """Calculate overall confidence score for the technology intelligence."""
+        try:
+            confidence_scores = []
+            
+            # Add battle confidence scores
+            for battle in battles.values():
+                confidence_scores.append(battle.confidence_score)
+            
+            # Add prediction confidence scores
+            for prediction in predictions.values():
+                confidence_scores.append(prediction.confidence)
+            
+            if not confidence_scores:
+                return 0.0
+            
+            # Calculate weighted average
+            average_confidence = sum(confidence_scores) / len(confidence_scores)
+            
+            # Bonus for having more data points
+            data_bonus = min(len(confidence_scores) / 20, 0.1)  # Up to 10% bonus
+            
+            final_confidence = min(average_confidence + data_bonus, 1.0)
+            return round(final_confidence, 3)
+            
+        except Exception as e:
+            self._log(f"Failed to calculate overall confidence: {e}", "warning")
+            return 0.5  # Default moderate confidence
+
 
 # Factory function for easy instantiation
 def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:

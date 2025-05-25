@@ -8,12 +8,12 @@ from src.web.fullstreamlit.components import (
     news_tab,
     games_tab,
     courses_tab,
-    watchers_tab,
     events_tab,
     admin_tab,
     arxiv_papers,
     arxiv_search,
     dev_communities_tab,
     innovation_tab,
-    crypto_tab
+    crypto_tab,
+    security_tab
 ) 

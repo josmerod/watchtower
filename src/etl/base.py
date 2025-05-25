@@ -8,7 +8,27 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Unionfrom pydantic import BaseModel, ValidationError as PydanticValidationErrorfrom src.config.settings import get_settingsfrom src.exceptions.base import handle_exceptionfrom src.exceptions.etl import (    ETLError,    ExtractionError,    LoadError,    TransformationError,)from src.models.base import TimestampedModelfrom src.utils.logging import get_logger, get_performance_loggerclass ETLMetrics(BaseModel):
+from typing import Any, Dict, List, Optional, Union, TypeVar
+
+from pydantic import BaseModel, ValidationError as PydanticValidationError
+
+from src.config.settings import get_settings
+from src.exceptions.base import handle_exception
+from src.exceptions.etl import (
+    ETLError,
+    ExtractionError,
+    LoadError,
+    TransformationError,
+)
+from src.models.base import TimestampedModel
+from src.utils.logging import get_logger, get_performance_logger
+
+# Type variables for generic ETL
+InputType = TypeVar('InputType')
+OutputType = TypeVar('OutputType')
+
+
+class ETLMetrics(BaseModel):
     """Model for ETL execution metrics."""
     
     start_time: datetime
@@ -387,7 +407,7 @@ class BaseETL(ABC):
         return self.metrics
 
 
-class SimpleETL(BaseETL[Dict[str, Any], Dict[str, Any]]):
+class SimpleETL(BaseETL):
     """Simple ETL class for basic dictionary-based transformations."""
     
     def __init__(self, name: str, **kwargs):
@@ -417,7 +437,7 @@ class SimpleETL(BaseETL[Dict[str, Any], Dict[str, Any]]):
         self.logger.info(f"Data saved to {output_file}")
 
 
-class DataFrameETL(BaseETL[Dict[str, Any], Dict[str, Any]]):
+class DataFrameETL(BaseETL):
     """ETL class with Pandas DataFrame support."""
     
     def __init__(self, name: str, **kwargs):

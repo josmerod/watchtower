@@ -8,11 +8,15 @@ from typing import Any, Optional, Dict, List
 from bs4 import BeautifulSoup
 import requests
 from playwright.async_api import async_playwright, Page, Browser, TimeoutError as PlaywrightTimeoutError
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
 
 # Add the project root to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from src.watchers.base_watcher import BaseWatcher
+from src.utils.logging import get_logger
 
 
 class MSAppliedSkillsWatcher(BaseWatcher):
@@ -238,6 +242,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
     async def _fetch_and_extract_all_skill_data(self) -> Dict[str, Any]:
         """
         Orchestrates fetching the list of skills and then their individual details.
+        Updated to handle dynamic content loading with better waiting strategies.
         """
         async with async_playwright() as p:
             self.logger.info("Launching browser for MS Skills Watcher")
@@ -245,58 +250,82 @@ class MSAppliedSkillsWatcher(BaseWatcher):
             page = await browser.new_page()
             await page.set_viewport_size({"width": 1920, "height": 1080})
             await page.set_extra_http_headers({
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-                "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9"
             })
 
             all_detailed_skills = []
             try:
                 self.logger.info(f"Navigating to MS Skills browse page: {self.url}")
                 await page.goto(self.url, wait_until="networkidle", timeout=90000)
+                
+                # Wait for the dynamic content to load
+                self.logger.info("Waiting for dynamic content to load...")
+                
+                # Wait for the content browser container to be present
+                await page.wait_for_selector('#content-browser-container', timeout=30000)
+                self.logger.info("Content browser container found")
+                
+                # Wait additional time for JavaScript to render the content
+                await page.wait_for_timeout(10000)  # 10 seconds for content to load
+                
+                # Try to wait for actual credential cards to appear
+                card_selectors = [
+                    'div[data-bi-name="card"]',
+                    '.card',
+                    'article',
+                    'div[class*="credential"]'
+                ]
+                
+                cards_loaded = False
+                for selector in card_selectors:
+                    try:
+                        await page.wait_for_selector(selector, timeout=15000)
+                        card_count = await page.evaluate(f'document.querySelectorAll("{selector}").length')
+                        if card_count > 0:
+                            self.logger.info(f"Found {card_count} cards with selector '{selector}'")
+                            cards_loaded = True
+                            break
+                    except Exception as e:
+                        self.logger.debug(f"Selector '{selector}' not found: {e}")
+                        continue
+                
+                if not cards_loaded:
+                    self.logger.warning("No credential cards found with standard selectors, proceeding with available content")
+                
+                # Additional wait to ensure all content is fully rendered
                 await page.wait_for_timeout(5000)
                 
-                # --- Pagination logic (adapted from original _fetch_with_playwright) --- 
-                list_page_html_accumulator = ""
-                page_num = 1
-                max_pages_to_scrape = 5 # Safety limit
-
-                while page_num <= max_pages_to_scrape:
-                    self.logger.info(f"Processing MS Skills list page {page_num}")
-                    await page.wait_for_load_state("domcontentloaded", timeout=30000)
-                    await page.wait_for_timeout(2000) # ensure scripts run
-                    list_page_html_accumulator += await page.content()
-
-                    # Try to find and click the next page button
-                    next_button_selectors = [
-                        'a[aria-label="Next page"], a[aria-label="Página siguiente"]', 
-                        'button[aria-label="Next page"], button[aria-label="Página siguiente"]',
-                        '.pagination .next a', '.pager .next a' 
-                    ]
-                    next_button_found_and_clicked = False
-                    for selector in next_button_selectors:
-                        next_button = await page.query_selector(selector)
-                        if next_button and await next_button.is_visible() and await next_button.is_enabled():
-                            try:
-                                self.logger.info(f"Found next page button with selector: {selector}. Clicking...")
-                                await next_button.click()
-                                await page.wait_for_load_state("networkidle", timeout=60000)
-                                await page.wait_for_timeout(3000) # Wait for new content
-                                next_button_found_and_clicked = True
-                                page_num += 1
-                                break # Found and clicked
-                            except Exception as click_err:
-                                self.logger.warning(f"Error clicking next button ({selector}): {click_err}")
-                        # else: self.logger.debug(f"Selector '{selector}' not found or not clickable.")
-                    
-                    if not next_button_found_and_clicked:
-                        self.logger.info("No more next page buttons found or clickable, or max pages reached.")
-                        break
-                # --- End Pagination logic --- 
-
-                soup = BeautifulSoup(list_page_html_accumulator, 'html.parser')
+                # Get the final HTML content
+                html_content = await page.content()
+                self.logger.info(f"Retrieved HTML content ({len(html_content)} characters)")
+                
+                # Save HTML for debugging if needed
+                self._save_html_content(html_content)
+                
+                # Parse with BeautifulSoup
+                soup = BeautifulSoup(html_content, 'html.parser')
                 initial_skills_with_urls = self._extract_skills_with_urls_from_html(soup)
-                self.logger.info(f"Found {len(initial_skills_with_urls)} skills on the list page(s) after pagination attempt.")
+                
+                if not initial_skills_with_urls:
+                    self.logger.warning("No Applied Skills found on the page. This might indicate:")
+                    self.logger.warning("1. Content is still loading dynamically")
+                    self.logger.warning("2. Page structure has changed significantly") 
+                    self.logger.warning("3. Applied Skills are not currently available")
+                    
+                    # Try alternative approach: look for any credential links
+                    all_credential_links = soup.select('a[href*="/credentials/"]')
+                    self.logger.info(f"Found {len(all_credential_links)} total credential links")
+                    
+                    if all_credential_links:
+                        for i, link in enumerate(all_credential_links[:5]):  # Show first 5
+                            href = link.get('href', '')
+                            text = link.get_text(strip=True)[:100]
+                            self.logger.info(f"Sample credential link {i+1}: {href} - '{text}'")
+                
+                self.logger.info(f"Found {len(initial_skills_with_urls)} Applied Skills on the list page")
 
+                # Process each skill to get detailed information
                 for skill_info in initial_skills_with_urls:
                     skill_name = skill_info.get("name")
                     skill_detail_url = skill_info.get("url")
@@ -304,17 +333,26 @@ class MSAppliedSkillsWatcher(BaseWatcher):
 
                     if not skill_detail_url:
                         self.logger.warning(f"Skipping skill '{skill_name}' due to missing detail URL.")
-                        all_detailed_skills.append({"name": skill_name, "url": None, "details_error": "Missing detail URL", **self._get_empty_skill_details_dict()})
+                        all_detailed_skills.append({
+                            "name": skill_name, 
+                            "url": None, 
+                            "details_error": "Missing detail URL", 
+                            **self._get_empty_skill_details_dict()
+                        })
                         continue
                     
-                    # Ensure full URL (already handled in _extract_skills_with_urls_from_html, but good for safety)
+                    # Ensure full URL
                     if not skill_detail_url.startswith("http"):
                         base_url = "https://learn.microsoft.com"
-                        skill_detail_url = f"{base_url}{skill_detail_url.lstrip('/')}"
+                        skill_detail_url = f"{base_url}/{skill_detail_url.lstrip('/')}"
 
-                    skill_details_data = await self._fetch_skill_details(skill_detail_url, page)
-                    
-                    await asyncio.sleep(1) # Polite delay
+                    # Get detailed information for this skill
+                    try:
+                        skill_details_data = await self._fetch_skill_details(skill_detail_url, page)
+                        await asyncio.sleep(2)  # Polite delay between requests
+                    except Exception as e:
+                        self.logger.error(f"Error fetching details for {skill_name}: {e}")
+                        skill_details_data = {"error": str(e), **self._get_empty_skill_details_dict()}
 
                     all_detailed_skills.append({
                         "name": skill_name,
@@ -322,24 +360,62 @@ class MSAppliedSkillsWatcher(BaseWatcher):
                         **skill_details_data
                     })
                 
-                return {"skills_count": len(all_detailed_skills), "skills": all_detailed_skills}
+                return {
+                    "skills_count": len(all_detailed_skills), 
+                    "skills": all_detailed_skills,
+                    "extraction_method": "playwright_dynamic",
+                    "page_url": self.url
+                }
 
             except Exception as e:
                 self.logger.error(f"General error in _fetch_and_extract_all_skill_data: {e}", exc_info=True)
-                return {"skills_count": 0, "skills": [], "error": str(e)}
+                return {
+                    "skills_count": 0, 
+                    "skills": [], 
+                    "error": str(e),
+                    "extraction_method": "failed",
+                    "page_url": self.url
+                }
             finally:
                 self.logger.info("Closing browser for MS Skills Watcher")
                 await browser.close()
     
+    def _save_html_content(self, html_content: str) -> None:
+        """Save HTML content to file for debugging purposes."""
+        try:
+            debug_dir = self.events_dir / "debug"
+            debug_dir.mkdir(exist_ok=True)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            debug_file = debug_dir / f"ms_skills_page_{timestamp}.html"
+            
+            with open(debug_file, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
+            self.logger.info(f"Saved HTML content to {debug_file} for debugging")
+            
+            # Keep only the last 5 debug files
+            debug_files = sorted(debug_dir.glob("ms_skills_page_*.html"))
+            if len(debug_files) > 5:
+                for old_file in debug_files[:-5]:
+                    old_file.unlink()
+                    self.logger.debug(f"Removed old debug file: {old_file}")
+                    
+        except Exception as e:
+            self.logger.warning(f"Could not save HTML content for debugging: {e}")
+
     def _get_empty_skill_details_dict(self) -> Dict[str, Any]:
-        """Returns a dictionary with None values for all skill detail fields."""
+        """Return empty skill details dictionary with default values."""
         return {
             "description": None,
-            "evaluated_tasks": [],
-            "learning_modules_recommended": [],
+            "skills_learned": [],
+            "prerequisites": [],
+            "level": None,
+            "products": [],
             "roles": [],
-            "last_updated": None,
-            "error": None # Can be used if fetching this specific skill failed
+            "duration": None,
+            "type": "Applied Skills",
+            "last_updated": None
         }
 
     def extract_value(self, html_content: Optional[str] = None) -> Dict[str, Any]:
@@ -367,94 +443,194 @@ class MSAppliedSkillsWatcher(BaseWatcher):
     def _extract_skills_with_urls_from_html(self, soup: BeautifulSoup) -> List[Dict[str, str]]:
         """
         Extracts skill names and their detail page URLs from the browse page HTML.
+        Updated for dynamic content loading (JavaScript-rendered page).
         """
         skills_with_urls: List[Dict[str, str]] = []
-        # Primary selector based on typical structure of MS Learn credential browse pages
-        # These cards usually contain an <a> tag with data-bi-cn (unique name) and the href. 
-        # The text/title is often within this <a> or a child h3/div.
-        skill_link_elements = soup.select('a[data-bi-cn^="applied-skill."][href*="/credentials/applied-skills/"]')
-
-        if not skill_link_elements:
-            # Fallback to more generic card selectors if the specific one fails
-            self.logger.info("Primary selector for skill links failed. Trying generic card selectors...")
-            # These selectors target a broader card element, then we find the link and title inside.
-            generic_card_item_selectors = [
-                "div.card.credential-card", # Common card structure
-                "li[role='listitem'] article", # List item structure
-                "div[class*='credential-card']", # Class name containing 'credential-card'
-                "div[class*='card'][class*='credential']" # Contains both 'card' and 'credential'
-            ]
-            container_elements = []
-            for selector in generic_card_item_selectors:
-                container_elements = soup.select(selector)
-                if container_elements:
-                    self.logger.info(f"Found {len(container_elements)} skill containers using fallback selector: '{selector}'")
+        
+        # The page loads content dynamically, so we need to search for the actual rendered content
+        # Based on the structure seen in the browser, certificates appear as individual cards
+        
+        # Updated selectors for the actual rendered content structure
+        skill_card_selectors = [
+            # Generic card selectors that should catch the rendered content
+            'div[data-bi-name="card"]',  # Main card container
+            '.card',  # Generic card class
+            'article',  # Article elements that might contain the cards
+            '[role="article"]',  # ARIA role for articles
+            'div[class*="card"]',  # Any div with card in the class name
+            'div[data-testid*="card"]',  # Test ID patterns
+            'div[class*="credential"]',  # Credential-specific containers
+            'li[data-bi-name*="card"]',  # List items that might be cards
+            'div[data-bi-name*="credential"]'  # BI name patterns
+        ]
+        
+        found_cards = []
+        
+        # First, try to find the container and any cards within it
+        content_container = soup.select_one('#content-browser-container, [data-bi-name="content-browser"]')
+        if content_container:
+            self.logger.info("Found content browser container")
+            
+            # Look for cards within the container
+            for selector in skill_card_selectors:
+                cards = content_container.select(selector)
+                if cards:
+                    self.logger.info(f"Found {len(cards)} cards using selector: '{selector}' within container")
+                    found_cards.extend(cards)
                     break
-            
-            if not container_elements:
-                self.logger.warning("Could not find skill containers/links on the browse page using any known selectors.")
-                return []
-
-            # Process containers found by fallback selectors
-            for container in container_elements:
-                link_element = container.select_one('a[href*="/credentials/applied-skills/"]')
-                if not link_element:
-                    link_element = container.select_one('a[href*="/credentials/"]') # Broader link if specific AS not found
-                
-                if link_element and link_element.get('href'):
-                    skill_url = link_element['href']
-                    skill_name = None
-                    # Try to find name from h3, then specific title divs, then link's text or aria-label
-                    name_el = container.select_one('h3, h2, div[class*="card-title" i], div[class*="title" i]')
-                    if name_el:
-                        skill_name = name_el.get_text(strip=True)
-                    if not skill_name:
-                         skill_name = link_element.get_text(strip=True)
-                    if not skill_name:
-                        skill_name = link_element.get('aria-label', "Unnamed Skill")
-                    
-                    if not skill_url.startswith("http"):
-                        skill_url = "https://learn.microsoft.com" + skill_url.lstrip('/')
-                    skills_with_urls.append({"name": skill_name.strip(), "url": skill_url.strip()})
-                    self.logger.debug(f"Extracted (fallback container): Name='{skill_name.strip()}', URL='{skill_url.strip()}'")
-                else:
-                    self.logger.debug(f"No usable link found in fallback container: {container.select_one('h3,h2').get_text(strip=True) if container.select_one('h3,h2') else 'Unknown container'}")
-
-        else: # Process links found by primary selector
-            self.logger.info(f"Found {len(skill_link_elements)} skill links using primary selector.")
-            for link_element in skill_link_elements:
-                skill_url = link_element['href']
-                skill_name = None
-                # Try to find name from a nested h3 or title-like div first
-                name_el = link_element.select_one('h3, div[class*="card-title" i], div[class*="title" i]')
-                if name_el:
-                    skill_name = name_el.get_text(strip=True)
-                if not skill_name:
-                    skill_name = link_element.get_text(strip=True) # Text of the link itself
-                if not skill_name:
-                    skill_name = link_element.get('data-bi-cn').replace("applied-skill.", "").replace("-", " ").title() # From data-bi-cn
-                if not skill_name:
-                    skill_name = "Unnamed Skill (from URL)"
-
-                if not skill_url.startswith("http"):
-                     skill_url = "https://learn.microsoft.com" + skill_url.lstrip('/')
-                skills_with_urls.append({"name": skill_name.strip(), "url": skill_url.strip()})
-                self.logger.debug(f"Extracted (primary link): Name='{skill_name.strip()}', URL='{skill_url.strip()}'")
-
-        if not skills_with_urls:
-            self.logger.warning("No skills with URLs were extracted from the HTML content after all attempts.")
         else:
-             # Deduplicate based on URL, prefering entries with more complete names if collision
-            seen_urls = {}
-            deduplicated_skills = []
-            for skill in skills_with_urls:
-                if skill["url"] not in seen_urls or len(skill["name"]) > len(seen_urls[skill["url"]]["name"]):
-                    seen_urls[skill["url"]] = skill
-            deduplicated_skills = list(seen_urls.values())
-            if len(deduplicated_skills) < len(skills_with_urls):
-                self.logger.info(f"Deduplicated skills list from {len(skills_with_urls)} to {len(deduplicated_skills)} based on URL.")
-            skills_with_urls = deduplicated_skills
+            self.logger.warning("Content browser container not found, searching entire page")
             
+            # Fallback: search entire page
+            for selector in skill_card_selectors:
+                cards = soup.select(selector)
+                if cards:
+                    self.logger.info(f"Found {len(cards)} cards using selector: '{selector}' on entire page")
+                    found_cards.extend(cards)
+                    break
+        
+        if not found_cards:
+            self.logger.warning("No cards found with any selector. Content might not be loaded yet.")
+            return []
+        
+        # Remove duplicates while preserving order
+        seen_cards = set()
+        unique_cards = []
+        for card in found_cards:
+            card_html = str(card)
+            if card_html not in seen_cards:
+                seen_cards.add(card_html)
+                unique_cards.append(card)
+        
+        found_cards = unique_cards
+        self.logger.info(f"Processing {len(found_cards)} unique cards")
+        
+        # Process each card to extract skill information
+        for card in found_cards:
+            try:
+                skill_url = None
+                skill_name = None
+                
+                # Look for links within the card that point to applied skills
+                link_selectors = [
+                    'a[href*="/credentials/applied-skills/"]',  # Direct applied skills links
+                    'a[href*="applied-skills"]',  # Any applied skills links
+                    'a[href*="/credentials/"]',  # General credentials links
+                    'a[data-bi-name*="title"]',  # Title links with BI names
+                    'a[role="button"]',  # Links styled as buttons
+                    'h3 a, h2 a, h4 a',  # Heading links
+                    'a'  # Any link as last resort
+                ]
+                
+                link_element = None
+                for link_selector in link_selectors:
+                    link_element = card.select_one(link_selector)
+                    if link_element and link_element.get('href'):
+                        href = link_element.get('href', '')
+                        # Prefer applied-skills links
+                        if 'applied-skills' in href.lower():
+                            skill_url = href
+                            break
+                        elif '/credentials/' in href and not skill_url:
+                            skill_url = href
+                
+                if not skill_url and link_element:
+                    skill_url = link_element.get('href', '')
+                
+                # Look for skill name in various elements
+                name_selectors = [
+                    'h1, h2, h3, h4, h5, h6',  # Any heading
+                    '[data-bi-name*="title"]',  # BI name title elements
+                    '.title, .card-title',  # Title classes
+                    'a[href*="applied-skills"]',  # Link text for applied skills
+                    '[role="heading"]',  # ARIA heading role
+                    'strong',  # Strong emphasis
+                    'b'  # Bold text
+                ]
+                
+                for name_selector in name_selectors:
+                    title_element = card.select_one(name_selector)
+                    if title_element:
+                        candidate_name = title_element.get_text(strip=True)
+                        # Look for actual skill names (longer than just "Applied Skills")
+                        if candidate_name and len(candidate_name) > 15 and 'applied skills' in candidate_name.lower():
+                            skill_name = candidate_name
+                            break
+                        elif candidate_name and len(candidate_name) > 10 and not skill_name:
+                            skill_name = candidate_name
+                
+                # If no good name found, try getting it from the link
+                if not skill_name and link_element:
+                    skill_name = link_element.get_text(strip=True)
+                
+                # Clean up the skill name
+                if skill_name:
+                    # Remove common prefixes/suffixes
+                    prefixes_to_remove = [
+                        'Microsoft Applied Skills: ',
+                        'Applied Skills: ',
+                        'Microsoft: ',
+                        'APPLIED SKILLS'
+                    ]
+                    
+                    for prefix in prefixes_to_remove:
+                        if skill_name.startswith(prefix):
+                            skill_name = skill_name[len(prefix):].strip()
+                    
+                    # Remove trailing text that's not part of the title
+                    skill_name = skill_name.split('\n')[0].strip()  # Take first line only
+                
+                # Validate we found both name and URL
+                if not skill_name or not skill_url:
+                    self.logger.debug(f"Skipping card - Name: '{skill_name}', URL: '{skill_url}'")
+                    continue
+                
+                # Ensure full URL
+                if skill_url.startswith('/'):
+                    skill_url = "https://learn.microsoft.com" + skill_url
+                elif not skill_url.startswith('http'):
+                    skill_url = "https://learn.microsoft.com/" + skill_url.lstrip('/')
+                
+                # Only include Applied Skills (filter out other credentials)
+                if 'applied-skills' not in skill_url.lower():
+                    self.logger.debug(f"Skipping non-Applied Skills credential: {skill_name}")
+                    continue
+                
+                skills_with_urls.append({
+                    "name": skill_name.strip(),
+                    "url": skill_url.strip()
+                })
+                
+                self.logger.debug(f"Extracted Applied Skill: '{skill_name}' -> {skill_url}")
+                
+            except Exception as e:
+                self.logger.warning(f"Error processing card: {e}")
+                continue
+        
+        # Deduplicate based on URL
+        if skills_with_urls:
+            seen_urls = {}
+            for skill in skills_with_urls:
+                url = skill["url"]
+                if url not in seen_urls or len(skill["name"]) > len(seen_urls[url]["name"]):
+                    seen_urls[url] = skill
+            
+            skills_with_urls = list(seen_urls.values())
+        
+        self.logger.info(f"Successfully extracted {len(skills_with_urls)} unique Applied Skills")
+        
+        # If we didn't find any Applied Skills, log some debug info
+        if not skills_with_urls:
+            self.logger.warning("No Applied Skills found. Debug info:")
+            all_links = soup.select('a[href]')
+            applied_skills_links = [link for link in all_links if 'applied-skills' in link.get('href', '').lower()]
+            self.logger.warning(f"Total links found: {len(all_links)}")
+            self.logger.warning(f"Applied Skills links found: {len(applied_skills_links)}")
+            
+            if applied_skills_links:
+                for i, link in enumerate(applied_skills_links[:3]):  # Show first 3
+                    self.logger.warning(f"Sample Applied Skills link {i+1}: {link.get('href')} - Text: '{link.get_text(strip=True)[:50]}'")
+        
         return skills_with_urls
 
     def _extract_skills_from_html(self, soup: BeautifulSoup) -> list:
@@ -495,10 +671,26 @@ class MSAppliedSkillsWatcher(BaseWatcher):
             self.logger.info(f"Number of skills changed: {len(old_skills_list)} -> {len(new_skills_list)}")
             return True
 
-        # Create sets of (name, url) tuples for comparison, and then compare details if name/url match
-        # This is a simplified comparison. For deep comparison, one might hash content of details.
-        old_skill_ids = {(s.get("name"), s.get("url")) for s in old_skills_list}
-        new_skill_ids = {(s.get("name"), s.get("url")) for s in new_skills_list}
+        # Create sets of (name, url) tuples for comparison, handling both old and new formats
+        old_skill_ids = set()
+        for skill in old_skills_list:
+            if isinstance(skill, dict):
+                # Handle both new format (name) and old format (title)
+                name = skill.get("name", skill.get("title", ""))
+                url = skill.get("url", "")
+                old_skill_ids.add((name, url))
+            elif isinstance(skill, str):
+                old_skill_ids.add((skill, ""))
+        
+        new_skill_ids = set()
+        for skill in new_skills_list:
+            if isinstance(skill, dict):
+                # Handle both new format (name) and old format (title)
+                name = skill.get("name", skill.get("title", ""))
+                url = skill.get("url", "")
+                new_skill_ids.add((name, url))
+            elif isinstance(skill, str):
+                new_skill_ids.add((skill, ""))
 
         if old_skill_ids != new_skill_ids:
             self.logger.info("Set of skill names/URLs changed.")
@@ -522,21 +714,28 @@ class MSAppliedSkillsWatcher(BaseWatcher):
             old_value (dict): Previous count and skills
             new_value (dict): Current count and skills
         """
-        old_count = old_value.get("count", 0)
-        new_count = new_value.get("count", 0)
+        # Handle both old format (count) and new format (skills_count)
+        old_count = old_value.get("skills_count", old_value.get("count", 0))
+        new_count = new_value.get("skills_count", new_value.get("count", 0))
         
-        # Extract skill titles, handling both new format (dict with title) and old format (strings)
+        # Extract skill titles, handling both new format (dict with name) and old format (strings or title)
         old_skill_titles = set()
         for skill in old_value.get("skills", []):
-            if isinstance(skill, dict) and "title" in skill:
-                old_skill_titles.add(skill["title"])
+            if isinstance(skill, dict):
+                # Handle both new format (name) and old format (title)
+                skill_name = skill.get("name", skill.get("title", ""))
+                if skill_name:
+                    old_skill_titles.add(skill_name)
             elif isinstance(skill, str):
                 old_skill_titles.add(skill)
         
         new_skill_titles = set()
         for skill in new_value.get("skills", []):
-            if isinstance(skill, dict) and "title" in skill:
-                new_skill_titles.add(skill["title"])
+            if isinstance(skill, dict):
+                # Handle both new format (name) and old format (title)
+                skill_name = skill.get("name", skill.get("title", ""))
+                if skill_name:
+                    new_skill_titles.add(skill_name)
             elif isinstance(skill, str):
                 new_skill_titles.add(skill)
         
@@ -579,19 +778,172 @@ class MSAppliedSkillsWatcher(BaseWatcher):
         self.logger.warning(message)
         
         # TODO: Implement notification mechanisms here
-        # For now, just log the event 
+        # For now, just log the event
     
-    def _save_html_content(self, html_content: str):
+    def _get_browse_page_html(self, browse_url: str) -> Optional[str]:
         """
-        Save the HTML content to a file for debugging purposes.
+        Fetch the HTML content of the browse page with improved error handling and modern headers.
+        """
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0'
+        }
         
-        Args:
-            html_content (str): HTML content to save
-        """
         try:
-            debug_html_path = os.path.join(self.data_dir, "last_page.html")
-            with open(debug_html_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            self.logger.debug(f"Saved HTML content to {debug_html_path}")
+            self.logger.info(f"Fetching browse page: {browse_url}")
+            
+            # Add session for better connection handling
+            session = requests.Session()
+            session.headers.update(headers)
+            
+            # Try the request with timeout and retries
+            for attempt in range(3):
+                try:
+                    response = session.get(browse_url, timeout=30, allow_redirects=True)
+                    
+                    if response.status_code == 200:
+                        self.logger.info(f"Successfully fetched browse page (attempt {attempt + 1})")
+                        content = response.text
+                        
+                        # Basic validation of content
+                        if 'microsoft.com' in content or 'Applied Skills' in content or 'credentials' in content:
+                            self.logger.debug(f"Page content looks valid (length: {len(content)} chars)")
+                            return content
+                        else:
+                            self.logger.warning(f"Page content doesn't look like Microsoft Learn page (attempt {attempt + 1})")
+                            if attempt == 2:  # Last attempt
+                                self.logger.debug(f"Content preview: {content[:500]}...")
+                            continue
+                    
+                    elif response.status_code == 429:
+                        self.logger.warning(f"Rate limited (429) - waiting before retry (attempt {attempt + 1})")
+                        time.sleep(5 * (attempt + 1))  # Exponential backoff
+                        continue
+                    
+                    elif response.status_code in [503, 502, 504]:
+                        self.logger.warning(f"Server error {response.status_code} - retrying (attempt {attempt + 1})")
+                        time.sleep(2 * (attempt + 1))
+                        continue
+                    
+                    else:
+                        self.logger.error(f"HTTP {response.status_code} error fetching browse page (attempt {attempt + 1})")
+                        if attempt == 2:  # Last attempt
+                            self.logger.error(f"Response content preview: {response.text[:500]}...")
+                        continue
+                
+                except requests.exceptions.Timeout:
+                    self.logger.warning(f"Timeout fetching browse page (attempt {attempt + 1})")
+                    if attempt < 2:
+                        time.sleep(5)
+                        continue
+                
+                except requests.exceptions.ConnectionError:
+                    self.logger.warning(f"Connection error fetching browse page (attempt {attempt + 1})")
+                    if attempt < 2:
+                        time.sleep(10)
+                        continue
+                
+                except Exception as e:
+                    self.logger.error(f"Unexpected error fetching browse page (attempt {attempt + 1}): {e}")
+                    if attempt < 2:
+                        time.sleep(5)
+                        continue
+            
+            self.logger.error("Failed to fetch browse page after all attempts")
+            return None
+            
         except Exception as e:
-            self.logger.error(f"Error saving HTML content: {str(e)}") 
+            self.logger.error(f"Critical error in _get_browse_page_html: {e}")
+            return None
+        finally:
+            try:
+                session.close()
+            except:
+                pass 
+
+
+if __name__ == "__main__":
+    import argparse
+    import asyncio
+    import sys
+    import os
+    from pathlib import Path
+    
+    # Add the project root to the path to ensure imports work correctly
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+    
+    parser = argparse.ArgumentParser(description="MS Skills Watcher")
+    parser.add_argument("--once", action="store_true", help="Run once and exit")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    
+    args = parser.parse_args()
+    
+    # Set up logging level
+    import logging
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    elif args.verbose:
+        logging.basicConfig(level=logging.INFO)
+    else:
+        logging.basicConfig(level=logging.WARNING)
+    
+    # Create and run the watcher
+    watcher = MSAppliedSkillsWatcher()
+    
+    if args.once:
+        print("🔍 Running MS Skills Watcher once...")
+        try:
+            # Run the extraction once
+            result = watcher.extract_value()
+            
+            print(f"\n✅ Extraction completed!")
+            print(f"📊 Found {result.get('skills_count', 0)} Applied Skills")
+            
+            if result.get('skills'):
+                print(f"\n📝 Sample skills found:")
+                for i, skill in enumerate(result['skills'][:5]):  # Show first 5
+                    name = skill.get('name', 'Unknown')
+                    url = skill.get('url', 'No URL')
+                    print(f"  {i+1}. {name}")
+                    print(f"     URL: {url}")
+                
+                if len(result['skills']) > 5:
+                    print(f"     ... and {len(result['skills']) - 5} more skills")
+            
+            if result.get('error'):
+                print(f"⚠️  Error occurred: {result['error']}")
+            
+            # Check if debug files were created
+            debug_dir = Path("data/watchers/ms_applied_skills/events/debug")
+            if debug_dir.exists():
+                debug_files = list(debug_dir.glob("*.html"))
+                if debug_files:
+                    latest_debug = max(debug_files, key=lambda p: p.stat().st_mtime)
+                    print(f"🔧 Debug HTML saved to: {latest_debug}")
+            
+        except Exception as e:
+            print(f"❌ Error running watcher: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print("🔄 Running MS Skills Watcher in continuous mode...")
+        print("Press Ctrl+C to stop")
+        try:
+            asyncio.run(watcher.run())
+        except KeyboardInterrupt:
+            print("\n⏹️  Watcher stopped by user")
+        except Exception as e:
+            print(f"❌ Error in continuous mode: {e}")
+            import traceback
+            traceback.print_exc() 
