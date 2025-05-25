@@ -474,4 +474,65 @@ class EnhancedArxivWatcher(BaseWatcher):
         for paper in papers:
             for area in paper.get("research_areas", []):
                 distribution[area] = distribution.get(area, 0) + 1
-        return distribution 
+        return distribution
+    
+    def has_changed(self, old_papers: List[Dict[str, Any]], new_papers: List[Dict[str, Any]]) -> bool:
+        """
+        Determine if the ArXiv papers have changed significantly enough to trigger an alarm.
+        
+        Args:
+            old_papers: Previously fetched papers (can be None for first run)
+            new_papers: Currently fetched papers
+            
+        Returns:
+            bool: True if changes are significant enough to trigger an alarm
+        """
+        # If this is the first run (no old papers), only trigger if we have new papers
+        if old_papers is None or len(old_papers) == 0:
+            return len(new_papers) > 0
+        
+        # If new papers list is empty but old papers existed, that's a change
+        if len(new_papers) == 0:
+            return True
+        
+        # Create sets of paper IDs for comparison
+        old_ids = {paper["id"] for paper in old_papers}
+        new_ids = {paper["id"] for paper in new_papers}
+        
+        # Check for new papers (papers in new_papers but not in old_papers)
+        new_paper_ids = new_ids - old_ids
+        
+        # Trigger alarm if:
+        # 1. There are new papers
+        # 2. There are high-relevance new papers (score >= 4.0)
+        # 3. The total number of papers has changed significantly (more than 10% change)
+        
+        has_new_papers = len(new_paper_ids) > 0
+        
+        if has_new_papers:
+            # Check if any new papers have high relevance scores
+            high_relevance_new_papers = [
+                paper for paper in new_papers 
+                if paper["id"] in new_paper_ids and paper.get("relevance_score", 0) >= 4.0
+            ]
+            
+            # Log information about changes
+            self.logger.info(f"Paper comparison: {len(old_papers)} old vs {len(new_papers)} new papers")
+            self.logger.info(f"New papers detected: {len(new_paper_ids)}")
+            if high_relevance_new_papers:
+                self.logger.info(f"High-relevance new papers: {len(high_relevance_new_papers)}")
+            
+            # Trigger alarm if there are new papers (any new papers are interesting for ArXiv monitoring)
+            return True
+        
+        # Check for significant changes in paper count (might indicate API issues or major events)
+        old_count = len(old_papers)
+        new_count = len(new_papers)
+        count_change_percentage = abs(new_count - old_count) / old_count if old_count > 0 else 0
+        
+        if count_change_percentage > 0.5:  # More than 50% change in paper count
+            self.logger.info(f"Significant change in paper count: {old_count} -> {new_count} ({count_change_percentage:.1%})")
+            return True
+        
+        # No significant changes detected
+        return False 

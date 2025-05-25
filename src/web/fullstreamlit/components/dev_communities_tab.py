@@ -47,15 +47,23 @@ def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
     
-    # Convert any dictionary or list columns to strings
-    for col in df.columns:
-        if df[col].dtype == 'object':
-            # Check if column contains dictionaries or lists
-            sample_value = df[col].dropna().iloc[0] if not df[col].dropna().empty else None
-            if isinstance(sample_value, (dict, list)):
-                df[col] = df[col].astype(str)
+    # Create a copy to avoid modifying the original
+    df_clean = df.copy()
     
-    return df
+    # Convert any dictionary or list columns to strings
+    for col in df_clean.columns:
+        if df_clean[col].dtype == 'object':
+            # Check if column contains dictionaries or lists
+            try:
+                # Convert all values that are dict or list to JSON strings
+                df_clean[col] = df_clean[col].apply(
+                    lambda x: json.dumps(x, default=str) if isinstance(x, (dict, list)) else x
+                )
+            except (TypeError, ValueError):
+                # If there's any issue, convert the entire column to string
+                df_clean[col] = df_clean[col].astype(str)
+    
+    return df_clean
 
 def load_community_data() -> Dict[str, pd.DataFrame]:
     """Load all developer community data sources."""
