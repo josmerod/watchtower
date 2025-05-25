@@ -17,6 +17,8 @@ import pickle
 import gc
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+import time
+import threading
 
 # Import technology intelligence components
 try:
@@ -28,6 +30,8 @@ except ImportError:
     FrameworkBattleModel = None
     TechnologyCategory = None
     TechnologyPredictionModel = None
+
+from src.utils.logging import get_logger
 
 class UltraOptimizedDataService:
     """Ultra-optimized data service with advanced caching and memory management"""
@@ -148,7 +152,7 @@ class UltraOptimizedDataService:
             self._log(f"Error loading {file_path}: {str(e)}", "error")
             return []
     
-    @st.cache_data(ttl=3600, max_entries=10, show_spinner=False)
+    @st.cache_data(ttl=3600, max_entries=10, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
     def get_games_data_ultra(_self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Ultra-optimized games data loading with parallel processing"""
         _self._log("Loading games data (ultra-optimized)")
@@ -179,6 +183,7 @@ class UltraOptimizedDataService:
                     'published_date': 'datetime',
                     'price': 'float'
                 })
+                deals_df = clean_dataframe_for_caching(deals_df)
         
         # Process bundles (combine regular and humble)
         bundles_data = []
@@ -203,6 +208,7 @@ class UltraOptimizedDataService:
                 bundles_df = _self._optimize_dataframe_dtypes(bundles_df, {
                     'published_date': 'datetime'
                 })
+                bundles_df = clean_dataframe_for_caching(bundles_df)
         
         # Process giveaways
         giveaways_df = pd.DataFrame()
@@ -213,11 +219,12 @@ class UltraOptimizedDataService:
                     'published_date': 'datetime',
                     'expires_date': 'datetime'
                 })
+                giveaways_df = clean_dataframe_for_caching(giveaways_df)
         
         _self._log(f"Ultra-loaded: {len(deals_df)} deals, {len(bundles_df)} bundles, {len(giveaways_df)} giveaways")
         return deals_df, bundles_df, giveaways_df
     
-    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False)
+    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
     def get_videos_data_ultra(_self) -> Dict[str, pd.DataFrame]:
         """Ultra-optimized video data loading with memory efficiency"""
         _self._log("Loading videos data (ultra-optimized)")
@@ -249,6 +256,7 @@ class UltraOptimizedDataService:
                             if not df.empty:
                                 # Optimize in one pass
                                 df = _self._optimize_video_dataframe(df)
+                                df = clean_dataframe_for_caching(df)
                                 videos_data[channel_dir.name] = df
                                 _self._log(f"Ultra-loaded {len(df)} videos from {channel_dir.name}")
                         break
@@ -258,7 +266,7 @@ class UltraOptimizedDataService:
         
         return videos_data
     
-    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False) 
+    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())}) 
     def get_news_data_ultra(_self) -> Dict[str, pd.DataFrame]:
         """Ultra-optimized news data loading"""
         _self._log("Loading news data (ultra-optimized)")
@@ -288,13 +296,14 @@ class UltraOptimizedDataService:
                             df = _self._optimize_dataframe_dtypes(df, {
                                 'published_date': 'datetime'
                             })
+                            df = clean_dataframe_for_caching(df)
                             news_data[source_name] = df
                             _self._log(f"Ultra-loaded {len(df)} {source_name} articles")
                     break
         
         return news_data
     
-    @st.cache_data(ttl=3600, max_entries=5, show_spinner=False)
+    @st.cache_data(ttl=3600, max_entries=5, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
     def get_courses_data_ultra(_self) -> Dict[str, pd.DataFrame]:
         """Ultra-optimized courses data loading"""
         _self._log("Loading courses data (ultra-optimized)")
@@ -315,6 +324,7 @@ class UltraOptimizedDataService:
                 if data:
                     df = pd.DataFrame(data)
                     if not df.empty:
+                        df = clean_dataframe_for_caching(df)
                         courses_data[source_name] = df
                         _self._log(f"Ultra-loaded {len(df)} {source_name} courses")
         
@@ -375,7 +385,7 @@ class UltraOptimizedDataService:
         
         return df
     
-    @st.cache_data(ttl=600, show_spinner=False)  # 10 minute cache for summary
+    @st.cache_data(ttl=600, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})  # 10 minute cache for summary
     def get_data_summary_ultra(_self) -> Dict[str, Dict]:
         """Ultra-fast data summary generation using cached data"""
         _self._log("Generating ultra-fast data summary")
@@ -1120,3 +1130,32 @@ class UltraOptimizedDataService:
 def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:
     """Create an ultra-optimized data service instance"""
     return UltraOptimizedDataService(logger) 
+
+def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean DataFrame to avoid unhashable type errors during Streamlit caching."""
+    if df.empty:
+        return df
+    
+    # Create a copy to avoid modifying the original
+    df_clean = df.copy()
+    
+    # Convert any dictionary or list columns to strings
+    for col in df_clean.columns:
+        if df_clean[col].dtype == 'object':
+            # Check if column contains dictionaries or lists
+            try:
+                # Sample a few non-null values to check type
+                sample_values = df_clean[col].dropna().head(3)
+                if not sample_values.empty:
+                    for val in sample_values:
+                        if isinstance(val, (dict, list)):
+                            # Convert all values that are dict or list to JSON strings
+                            df_clean[col] = df_clean[col].apply(
+                                lambda x: json.dumps(x, default=str) if isinstance(x, (dict, list)) else x
+                            )
+                            break
+            except (TypeError, ValueError):
+                # If there's any issue, convert the entire column to string
+                df_clean[col] = df_clean[col].astype(str)
+    
+    return df_clean 
