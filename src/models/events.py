@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field, HttpUrl, field_validator, computed_field
 
@@ -166,7 +166,7 @@ class TechEventModel(TimestampedModel):
     # Additional metadata
     tags: List[str] = Field(default=[], description="Event tags")
     categories: List[str] = Field(default=[], description="Event categories")
-    metadata: Optional[Dict[str, any]] = Field(default=None, description="Additional metadata")
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata")
     
     @field_validator("name")
     @classmethod

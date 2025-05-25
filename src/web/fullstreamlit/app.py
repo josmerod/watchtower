@@ -32,7 +32,9 @@ from src.web.fullstreamlit.components import (
     innovation_tab,
     crypto_tab,
     security_tab,
-    enhanced_arxiv_papers
+    enhanced_arxiv_papers,
+    monitoring_tab,
+    tech_events_tab
 )
 
 # Import enhanced components
@@ -288,6 +290,7 @@ main_tabs = st.tabs([
     "📰 Tech News", 
     "🎮 Gaming",
     "🎓 Educación",
+    "📅 Tech Events",
     "👨‍💻 Dev Hub",
     "🛡️ Security",
     "🚀 Innovation",
@@ -304,17 +307,7 @@ def render_tab_safely(tab_name, render_func, *args, **kwargs):
     try:
         logger.info(f"Rendering {tab_name} tab")
         
-        # Show tab header with status
-        st.markdown(f"""
-        <div class="tab-header">
-            <h3 style="margin: 0; color: #A37FFF;">{tab_name}</h3>
-            <span class="status-indicator status-online">
-                ✅ Activo
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Render the actual content
+        # Render the actual content without the problematic header
         render_func(*args, **kwargs)
         
     except Exception as e:
@@ -345,19 +338,22 @@ with main_tabs[4]:  # Educación
     courses_data = cached_data.get('courses', {})
     render_tab_safely("Educación", courses_tab.render, courses_data, logger)
 
-with main_tabs[5]:  # Dev Hub
+with main_tabs[5]:  # Tech Events
+    render_tab_safely("Tech Events & Conference Intelligence", tech_events_tab.render, logger, data_service)
+
+with main_tabs[6]:  # Dev Hub
     render_tab_safely("Dev Communities", dev_communities_tab.render, logger)
 
-with main_tabs[6]:  # Security
+with main_tabs[7]:  # Security
     render_tab_safely("Security Intelligence", security_tab.render, logger, data_service)
 
-with main_tabs[7]:  # Innovation
+with main_tabs[8]:  # Innovation
     render_tab_safely("Innovation & Tech", enhanced_innovation_tab.render, logger, data_service)
 
-with main_tabs[8]:  # Crypto
+with main_tabs[9]:  # Crypto
     render_tab_safely("Crypto Sentiment", crypto_tab.render, logger)
 
-with main_tabs[9]:  # ArXiv Research (combined tab)
+with main_tabs[10]:  # ArXiv Research (combined tab)
     
     # Sub-tabs for ArXiv functionality
     arxiv_subtabs = st.tabs(["🚀 Enhanced Intelligence", "📄 Papers Recientes", "🔍 Búsqueda Avanzada"])
@@ -371,14 +367,13 @@ with main_tabs[9]:  # ArXiv Research (combined tab)
     with arxiv_subtabs[2]:
         render_tab_safely("ArXiv Search", arxiv_search.display)
 
-with main_tabs[10]:  # Monitoring
-    st.header("👁️ Monitoring")
-    st.info("🚧 Monitoring tab is under development. Check back soon!")
+with main_tabs[11]:  # Monitoring
+    render_tab_safely("Monitoring", monitoring_tab.render, logger)
 
-with main_tabs[11]:  # Valencia
+with main_tabs[12]:  # Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[12]:  # Admin
+with main_tabs[13]:  # Admin
     render_tab_safely("Admin", admin_tab.render, logger)
 
 # Enhanced footer with better information and styling

@@ -15,5 +15,6 @@ from src.web.fullstreamlit.components import (
     dev_communities_tab,
     innovation_tab,
     crypto_tab,
-    security_tab
+    security_tab,
+    monitoring_tab
 ) 
