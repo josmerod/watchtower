@@ -476,17 +476,21 @@ class EnhancedArxivWatcher(BaseWatcher):
                 distribution[area] = distribution.get(area, 0) + 1
         return distribution
     
-    def has_changed(self, old_papers: List[Dict[str, Any]], new_papers: List[Dict[str, Any]]) -> bool:
+    def has_changed(self, old_value: Any, new_value: Any) -> bool:
         """
         Determine if the ArXiv papers have changed significantly enough to trigger an alarm.
         
         Args:
-            old_papers: Previously fetched papers (can be None for first run)
-            new_papers: Currently fetched papers
+            old_value: Previously extracted papers (can be None for first run)
+            new_value: Currently extracted papers
             
         Returns:
             bool: True if changes are significant enough to trigger an alarm
         """
+        # Convert to lists if needed
+        old_papers = old_value if isinstance(old_value, list) else []
+        new_papers = new_value if isinstance(new_value, list) else []
+        
         # If this is the first run (no old papers), only trigger if we have new papers
         if old_papers is None or len(old_papers) == 0:
             return len(new_papers) > 0
@@ -496,8 +500,8 @@ class EnhancedArxivWatcher(BaseWatcher):
             return True
         
         # Create sets of paper IDs for comparison
-        old_ids = {paper["id"] for paper in old_papers}
-        new_ids = {paper["id"] for paper in new_papers}
+        old_ids = {paper["id"] for paper in old_papers if isinstance(paper, dict) and "id" in paper}
+        new_ids = {paper["id"] for paper in new_papers if isinstance(paper, dict) and "id" in paper}
         
         # Check for new papers (papers in new_papers but not in old_papers)
         new_paper_ids = new_ids - old_ids
@@ -513,7 +517,7 @@ class EnhancedArxivWatcher(BaseWatcher):
             # Check if any new papers have high relevance scores
             high_relevance_new_papers = [
                 paper for paper in new_papers 
-                if paper["id"] in new_paper_ids and paper.get("relevance_score", 0) >= 4.0
+                if isinstance(paper, dict) and paper.get("id") in new_paper_ids and paper.get("relevance_score", 0) >= 4.0
             ]
             
             # Log information about changes
