@@ -40,7 +40,10 @@
       "techwithsoleyman",
       "nateherkleonardogrig",
       "s4vitar",
-      "DotCSV"
+      "DotCSV",
+      "CodelyTV",
+      "SebastianLague",
+      "TechWorldwithNana"
     ]
   },
   "aa-economics": {
@@ -59,8 +62,15 @@
       "Wendoverproductions",
       "Computerphile",
       "ItsComplicated",
-      "PolyMatter",
-      "ColdFusion"
+      "ColdFusion",
+      "EconomicsExplained",
+      "NewEconomicThinking",
+      "MoneyMacroLofi",
+      "unlearningeconomics9021",
+      "SecondThought",
+      "democracyatwrk",
+      "EpicEconomics",
+      "MoneyMacro"
     ]
   },
   "aa-personal_development": {
@@ -74,7 +84,17 @@
       "James_Lim",
       "Psicótico000",
       "nobackupplan",
-      "ereselelegido-b3c"
+      "ereselelegido-b3c",
+      "RobinSharma",
+      "JimRohnChannel",
+      "EscapingOrdinary",
+      "BrendonBurchard",
+      "TonyRobbins",
+      "Hamza",
+      "KaylnNicholson",
+      "MuchelleBMiller",
+      "katie-callaway",
+      "rachelleea"
     ]
   },
   "z-sleepcore": {
@@ -82,7 +102,10 @@
     "channels": [
       "smarterwhileyousleep",
       "heavenlyeyes",
-      "thehiddentreasury"
+      "thehiddentreasury",
+      "thehonestguys",
+      "YellowBrickCinema",
+      "PowerfulMeditation"
     ]
   },
   "zz-cooking": {
@@ -94,7 +117,18 @@
       "epicurious",
       "TheFoodLab",
       "samthecookingguy",
-      "justonecookbook"
+      "EthanChlebowski",
+      "justonecookbook",
+      "JoshuaWeissman",
+      "BabishCulinaryUniverse",
+      "FoodWishes",
+      "AdamRagusea",
+      "LifebyMikeG",
+      
+      "NotAnotherCookingShow",
+      "internetshaquille",
+      "YouSuckAtCooking",
+      "GugaFoods"
     ]
   },
   "zz-food_reviews": {
@@ -104,7 +138,10 @@
       "SezarBlue",
       "esttikPlus",
       "lacapitalcocina",
-      "DancingBacons"
+      "DancingBacons",
+      "TheReportOfTheWeek",
+      "FoodReviewUK",
+      "besteverreviewshow"
     ]
   },
   "z-soundtowork": {
@@ -129,7 +166,12 @@
       "KeepHush",
       "detroitclassicgallery7108",
       "CollectRadio",
-      "UCmlC4U-_00j40kDagJZwwXQ"
+      "UCmlC4U-_00j40kDagJZwwXQ",
+      "ChillhopMusic",
+      "themuunlofi",
+      "EternalDepth",
+      "StudyMD",
+      "MusicLabChill"
     ]
   },
   "zzz-alotof": {
@@ -137,7 +179,12 @@
     "channels": [
       "TED",
       "TEDx Talks",
-      "TED-Ed"
+      "TED-Ed",
+      "BigThink",
+      "AsapSCIENCE",
+      "CrashCourse",
+      "Kurzgesagt",
+      "Veritasium"
     ]
   },
   "zz-viajes": {
@@ -147,14 +194,27 @@
       "Nekojitablog",
       "Japatonic",
       "HiClavero",
-      "peldanyos"
+      "peldanyos",
+      "KinoYves",
+      "DarwenTV",
+      "TheTimTracker",
+      "YesTheory",
+      "FunForLouis"
     ]
   },
   "zz-anime": {
     "description": "Anime",
     "channels": [
       "gigguk",
-      "GlassReflection"      
+      "GlassReflection",
+      "TheAnimeMan",
+      "CDawgVA",
+      "AnimeAmerica",
+      "AnimeBallsDeep",
+      "AnimeUproar",
+      "Mother'sBasement",
+      "PodcastNow",
+      "AnimeZone"
     ]
   },
   "zz-memes": {
@@ -171,6 +231,7 @@
       "ElcanaldeKorah",
       "OrdinarySausage",
       "LaTierraesBlanda",
+      "Exponiendolaverdad",
       "RinConIllo222",
       "SrTrilineo",
       "BaityLive",
@@ -186,8 +247,12 @@
       "MejoresMomentosRangu",
       "TocinoZ",
       "IlloJuan_",
-      "SMAE_Podcast"
-
+      "SMAE_Podcast",
+      "PewDiePie",
+      "FilthyFrank",
+      "JontronShow",
+      "CallMeCarson",
+      "FunnyOrDie"
     ]
   },
   "zz-curiosidades": {
@@ -209,13 +274,24 @@
       "TechnologyConnextras",
       "TechnologyConnections",
       "billiam",
-      "AtomicSchrimp"
+      "AtomicSchrimp",
+      "Vsauce",
+      "ElectronicGreyGoo",
+      "SciShow",
+      "TheSlowMoGuys",
+      "DidYouKnowGaming"
     ]
   },
   "zz-chill": {
     "description": "Chill",
     "channels": [
-      "bobross_thejoyofpainting"      
+      "bobross_thejoyofpainting",
+      "ASMRMagic",
+      "GentleWhispering",
+      "ASMRTheChew",
+      "AsmrMaria",
+      "Peaceful Cuisine",
+      "CalmChannelASMR"
     ]
   }
 } 

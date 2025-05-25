@@ -2,8 +2,14 @@ from typing import Optional, Dict, Any, List
 import time
 import asyncio # Added for sleep
 
-from paperswithcode import PapersWithCodeClient
-from paperswithcode.models import Paper, Repository, Dataset, Task # Import specific models for type hinting
+try:
+    from paperswithcode import PapersWithCodeClient
+    from paperswithcode.models import Paper
+    HAS_PWC = True
+except ImportError:
+    HAS_PWC = False
+    PapersWithCodeClient = None
+    Paper = None
 # Import exceptions if the client library defines specific ones for retries
 # from paperswithcode.exceptions import RateLimitError, ServerError # Example
 
@@ -39,7 +45,7 @@ def _extract_arxiv_id_from_url(arxiv_url: str) -> Optional[str]:
         logger.warning(f"Could not parse ArXiv ID from URL: {arxiv_url}")
         return None
 
-def get_pwc_details_for_paper(
+async def get_pwc_details_for_paper(
     arxiv_id_url: Optional[str] = None, 
     title: Optional[str] = None,
     pwc_client: Optional[PapersWithCodeClient] = None
@@ -56,6 +62,10 @@ def get_pwc_details_for_paper(
     Returns:
         Optional[Dict[str, Any]]: A dictionary with PapersWithCode details or None if not found or error.
     """
+    if not HAS_PWC:
+        logger.warning("PapersWithCode client not available. Install with: pip install paperswithcode-client")
+        return None
+        
     client = pwc_client if pwc_client else PapersWithCodeClient()
     
     pwc_paper_obj: Optional[Paper] = None

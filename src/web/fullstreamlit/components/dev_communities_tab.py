@@ -185,7 +185,7 @@ def display_dev_community_data(df: pd.DataFrame):
                 st.metric("Engagement", f"{engagement_score:.1f}")
                 
                 content_type = article.get('content_type', 'article')
-                st.badge(content_type.title())
+                st.markdown(f'<span style="background-color: #E8F5E8; color: #2E7D32; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">{content_type.title()}</span>', unsafe_allow_html=True)
         
         st.divider()
 
