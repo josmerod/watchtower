@@ -321,51 +321,115 @@ class TechConferenceETL(BaseETL):
             List of extracted events.
         """
         events = []
+        successful_feeds = 0
         
         for feed_url in feeds:
             try:
                 self.logger.info(f"Parsing {source_type} feed: {feed_url}")
                 
-                # Parse RSS/Atom feed
-                feed = parse_feed(feed_url)
+                # Add timeout and user agent to avoid blocking
+                import requests
                 
-                if not feed.entries:
+                try:
+                    # Try to fetch the feed with a timeout and proper headers
+                    headers = {
+                        'User-Agent': 'Watchtower-ETL/1.0 (Tech Event Aggregator)',
+                        'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml'
+                    }
+                    
+                    response = requests.get(feed_url, headers=headers, timeout=10)
+                    response.raise_for_status()
+                    
+                    # Parse the content
+                    feed = parse_feed(response.content)
+                    
+                except requests.exceptions.RequestException as e:
+                    self.logger.warning(f"Failed to fetch feed {feed_url}: {e}")
+                    # Try with feedparser directly as fallback
+                    try:
+                        feed = parse_feed(feed_url)
+                    except Exception as fallback_e:
+                        self.logger.warning(f"Fallback also failed for {feed_url}: {fallback_e}")
+                        continue
+                
+                # Check if feed parsing was successful
+                if hasattr(feed, 'status') and feed.status >= 400:
+                    self.logger.warning(f"Feed returned error status {feed.status}: {feed_url}")
+                    continue
+                
+                if not hasattr(feed, 'entries') or not feed.entries:
                     self.logger.warning(f"No entries found in feed: {feed_url}")
                     continue
                 
+                successful_feeds += 1
+                self.logger.info(f"Successfully parsed {len(feed.entries)} entries from {feed_url}")
+                
                 for entry in feed.entries[:self.max_events_per_source]:
-                    # Extract event information from feed entry
-                    event_data = {
-                        "name": entry.get("title", "").strip(),
-                        "description": entry.get("summary", "").strip(),
-                        "url": entry.get("link", ""),
-                        "published_date": entry.get("published", ""),
-                        "topics": self._extract_topics_from_text(
+                    try:
+                        # Extract event information from feed entry
+                        event_data = {
+                            "name": self._clean_text(entry.get("title", "")).strip(),
+                            "description": self._clean_text(entry.get("summary", "") or entry.get("description", "")).strip(),
+                            "url": entry.get("link", ""),
+                            "published_date": entry.get("published", ""),
+                            "topics": self._extract_topics_from_text(
+                                entry.get("title", "") + " " + entry.get("summary", "")
+                            ),
+                            "event_type": self._infer_event_type_from_text(entry.get("title", "")),
+                            "is_virtual": self._detect_virtual_event(entry),
+                            "source_type": source_type,
+                            "source_url": feed_url
+                        }
+                        
+                        # Try to extract date information
+                        if hasattr(entry, "published_parsed") and entry.published_parsed:
+                            try:
+                                event_data["start_date"] = datetime(*entry.published_parsed[:6]).isoformat()
+                            except (TypeError, ValueError) as e:
+                                self.logger.debug(f"Failed to parse date from entry: {e}")
+                        
+                        # Try to extract location from content
+                        location_info = self._extract_location_from_text(
                             entry.get("title", "") + " " + entry.get("summary", "")
-                        ),
-                        "event_type": self._infer_event_type_from_text(entry.get("title", "")),
-                        "is_virtual": self._detect_virtual_event(entry),
-                        "source_type": source_type
-                    }
-                    
-                    # Try to extract date information
-                    if hasattr(entry, "published_parsed") and entry.published_parsed:
-                        event_data["start_date"] = datetime(*entry.published_parsed[:6]).isoformat()
-                    
-                    # Try to extract location from content
-                    location_info = self._extract_location_from_text(
-                        entry.get("title", "") + " " + entry.get("summary", "")
-                    )
-                    if location_info:
-                        event_data["venue"] = location_info
-                    
-                    events.append(event_data)
+                        )
+                        if location_info:
+                            event_data["venue"] = location_info
+                        
+                        # Only add if we have basic required fields
+                        if event_data["name"] and len(event_data["name"]) > 3:
+                            events.append(event_data)
+                        
+                    except Exception as e:
+                        self.logger.debug(f"Failed to process entry from {feed_url}: {e}")
+                        continue
                 
             except Exception as e:
                 self.logger.warning(f"Failed to parse {source_type} feed {feed_url}: {e}")
                 continue
         
+        self.logger.info(f"Successfully parsed {successful_feeds}/{len(feeds)} feeds for {source_type}, extracted {len(events)} events")
         return events
+    
+    def _clean_text(self, text: str) -> str:
+        """Clean text content by removing HTML tags and extra whitespace.
+        
+        Args:
+            text: Raw text content.
+            
+        Returns:
+            Cleaned text.
+        """
+        if not text:
+            return ""
+        
+        # Remove HTML tags if present
+        import re
+        text = re.sub(r'<[^>]+>', '', text)
+        
+        # Remove extra whitespace
+        text = ' '.join(text.split())
+        
+        return text
     
     def _detect_virtual_event(self, entry) -> bool:
         """Detect if an event is virtual from feed entry."""
@@ -706,7 +770,6 @@ class TechConferenceETL(BaseETL):
         
         # Extract from universities
         universities = config.get("university_feeds", [])
-        universities = config.get("universities", [])
         events.extend(self._extract_feed_events(universities, "university_events"))
         
         # Mock academic events
@@ -750,107 +813,108 @@ class TechConferenceETL(BaseETL):
         events.extend(mock_events)
         return events
     
-    def _extract_community_events(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Extract events from tech community platforms.
+    def _extract_tech_news_events(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract tech news events from various sources.
         
         Args:
-            config: Community platforms configuration.
+            config: Tech news events configuration.
             
         Returns:
-            List of raw event data from community platforms.
+            List of raw event data from tech news sources.
         """
         events = []
         
-        # Extract from community sources
-        sources = config.get("sources", [])
-        events.extend(self._extract_feed_events(sources, "tech_community"))
+        # Extract from tech news sources
+        sources = config.get("news_sources", [])
+        events.extend(self._extract_feed_events(sources, "tech_news"))
         
-        # Mock community events
+        # Mock tech news events
         mock_events = [
             {
-                "name": "DEV Community Virtual Meetup - Open Source Contributions",
-                "description": "Virtual meetup about contributing to open source projects.",
-                "start_date": (datetime.utcnow() + timedelta(days=18)).isoformat(),
+                "name": "TechCrunch Daily",
+                "description": "Daily tech news roundup from TechCrunch.",
+                "start_date": (datetime.utcnow() + timedelta(days=1)).isoformat(),
                 "venue": {
-                    "name": "DEV Community Platform",
+                    "name": "TechCrunch",
                     "city": "Online",
                     "country": "Global"
                 },
-                "organizer": "DEV Community",
-                "url": "https://dev.to/events/",
+                "organizer": "TechCrunch",
+                "url": "https://techcrunch.com/feed/",
                 "cost": 0.0,
                 "is_virtual": True,
-                "topics": ["open source", "community", "programming"],
-                "event_type": "meetup"
-            }
-        ]
-        
-        events.extend(mock_events)
-        return events
-    
-    def _extract_startup_events(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Extract events from startup and innovation sources.
-        
-        Args:
-            config: Startup events configuration.
-            
-        Returns:
-            List of raw event data from startup sources.
-        """
-        events = []
-        
-        # Extract from startup feeds
-        feeds = config.get("feeds", [])
-        events.extend(self._extract_feed_events(feeds, "startup_events"))
-        
-        # Extract from innovation hubs
-        innovation_hubs = config.get("innovation_hubs", [])
-        events.extend(self._extract_feed_events(innovation_hubs, "innovation_hubs"))
-        
-        # Mock startup events
-        mock_events = [
+                "topics": ["tech news", "startup", "innovation"],
+                "event_type": "news"
+            },
             {
-                "name": "Lanzadera Demo Day",
-                "description": "Presentación de las startups de la última promoción de Lanzadera.",
-                "start_date": (datetime.utcnow() + timedelta(days=91)).isoformat(),
+                "name": "The Verge Tech News",
+                "description": "Daily tech news from The Verge.",
+                "start_date": (datetime.utcnow() + timedelta(days=1)).isoformat(),
                 "venue": {
-                    "name": "Lanzadera",
-                    "address": "Marina de Empresas, Valencia",
-                    "city": "Valencia",
-                    "country": "Spain"
+                    "name": "The Verge",
+                    "city": "Online",
+                    "country": "Global"
                 },
-                "organizer": "Lanzadera",
-                "url": "https://lanzadera.es/",
+                "organizer": "The Verge",
+                "url": "https://www.theverge.com/rss/index.xml",
                 "cost": 0.0,
-                "is_virtual": False,
-                "topics": ["startup", "demo day", "investment", "entrepreneurship"],
-                "event_type": "demo_day"
+                "is_virtual": True,
+                "topics": ["tech news", "gadgets", "software"],
+                "event_type": "news"
+            },
+            {
+                "name": "Ars Technica Tech News",
+                "description": "Daily tech news from Ars Technica.",
+                "start_date": (datetime.utcnow() + timedelta(days=1)).isoformat(),
+                "venue": {
+                    "name": "Ars Technica",
+                    "city": "Online",
+                    "country": "Global"
+                },
+                "organizer": "Ars Technica",
+                "url": "https://arstechnica.com/rss.xml",
+                "cost": 0.0,
+                "is_virtual": True,
+                "topics": ["tech news", "hardware", "software"],
+                "event_type": "news"
+            },
+            {
+                "name": "Wired Tech News",
+                "description": "Daily tech news from Wired.",
+                "start_date": (datetime.utcnow() + timedelta(days=1)).isoformat(),
+                "venue": {
+                    "name": "Wired",
+                    "city": "Online",
+                    "country": "Global"
+                },
+                "organizer": "Wired",
+                "url": "https://www.wired.com/feed/",
+                "cost": 0.0,
+                "is_virtual": True,
+                "topics": ["tech news", "gadgets", "software"],
+                "event_type": "news"
             }
         ]
         
         events.extend(mock_events)
         return events
     
-    def _extract_developer_conferences(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Extract events from major developer conferences.
+    def _extract_open_source_events(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract open source events from various sources.
         
         Args:
-            config: Developer conferences configuration.
+            config: Open source events configuration.
             
         Returns:
-            List of raw event data from developer conferences.
+            List of raw event data from open source communities.
         """
         events = []
         
-        # Extract from major conferences
-        major_conferences = config.get("major_conferences", [])
-        events.extend(self._extract_feed_events(major_conferences, "major_dev_conferences"))
+        # Extract from open source feeds
+        feeds = config.get("oss_feeds", [])
+        events.extend(self._extract_feed_events(feeds, "open_source"))
         
-        # Extract from regional conferences
-        regional_conferences = config.get("regional_conferences", [])
-        events.extend(self._extract_feed_events(regional_conferences, "regional_dev_conferences"))
-        
-        # Mock developer conferences
+        # Mock open source events
         mock_events = [
             {
                 "name": "GitHub Universe 2024 - Virtual Attendance",
@@ -908,233 +972,117 @@ class TechConferenceETL(BaseETL):
         events.extend(mock_events)
         return events
     
-    def _extract_ai_ml_events(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Extract events from AI/ML conferences.
+    def _extract_developer_platforms(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract developer platforms from various sources.
         
         Args:
-            config: AI/ML conferences configuration.
+            config: Developer platforms configuration.
             
         Returns:
-            List of raw event data from AI/ML conferences.
+            List of raw event data from developer platforms.
         """
         events = []
         
-        # Extract from AI/ML sources
-        sources = config.get("sources", [])
-        events.extend(self._extract_feed_events(sources, "ai_ml_conferences"))
+        # Extract from platform feeds
+        feeds = config.get("platform_feeds", [])
+        events.extend(self._extract_feed_events(feeds, "developer_platforms"))
         
-        # Extract from research conferences
-        research_conferences = config.get("research_conferences", [])
-        events.extend(self._extract_feed_events(research_conferences, "ai_research_conferences"))
-        
-        # Mock AI/ML events
+        # Mock developer platforms
         mock_events = [
             {
-                "name": "Global AI Summit 2024 - Virtual",
-                "description": "Leading AI conference with speakers from OpenAI, Anthropic, and Google. Sessions on LLMs, computer vision, and AI ethics.",
-                "start_date": (datetime.utcnow() + timedelta(days=45)).isoformat(),
-                "end_date": (datetime.utcnow() + timedelta(days=47)).isoformat(),
+                "name": "Stack Overflow Developer Survey",
+                "description": "Annual survey of developer opinions and trends.",
+                "start_date": (datetime.utcnow() + timedelta(days=1)).isoformat(),
                 "venue": {
-                    "name": "Virtual Event Platform",
+                    "name": "Stack Overflow",
                     "city": "Online",
                     "country": "Global"
                 },
-                "organizer": "AI Global Events",
-                "url": "https://globalaisummit.com/",
-                "cost": 199.0,
+                "organizer": "Stack Overflow",
+                "url": "https://stackoverflow.blog/feed/",
+                "cost": 0.0,
                 "is_virtual": True,
-                "virtual_platform": "Zoom + Custom Platform",
-                "topics": ["artificial intelligence", "machine learning", "LLM", "GPT", "computer vision"],
-                "event_type": "conference",
-                "attendee_count": 2500
+                "topics": ["developer opinions", "trends", "survey"],
+                "event_type": "survey"
             },
             {
-                "name": "MLConf Virtual - Machine Learning in Production",
-                "description": "Virtual conference focused on deploying ML models in production environments.",
-                "start_date": (datetime.utcnow() + timedelta(days=75)).isoformat(),
+                "name": "GitHub Engineering Blog",
+                "description": "Insights and news from GitHub's engineering team.",
+                "start_date": (datetime.utcnow() + timedelta(days=1)).isoformat(),
                 "venue": {
-                    "name": "MLConf Virtual Platform",
+                    "name": "GitHub",
                     "city": "Online",
                     "country": "Global"
                 },
-                "organizer": "MLConf",
-                "url": "https://mlconf.com/",
-                "cost": 99.0,
+                "organizer": "GitHub",
+                "url": "https://github.blog/engineering/feed/",
+                "cost": 0.0,
                 "is_virtual": True,
-                "topics": ["machine learning", "MLOps", "production", "deployment"],
-                "event_type": "conference"
+                "topics": ["github", "git", "open source", "development", "AI coding"],
+                "event_type": "blog"
+            },
+            {
+                "name": "GitLab Developer Survey",
+                "description": "Annual survey of developer opinions and trends from GitLab.",
+                "start_date": (datetime.utcnow() + timedelta(days=1)).isoformat(),
+                "venue": {
+                    "name": "GitLab",
+                    "city": "Online",
+                    "country": "Global"
+                },
+                "organizer": "GitLab",
+                "url": "https://about.gitlab.com/atom.xml",
+                "cost": 0.0,
+                "is_virtual": True,
+                "topics": ["gitlab", "git", "open source", "development", "AI coding"],
+                "event_type": "survey"
             }
         ]
         
         events.extend(mock_events)
         return events
     
-    def _extract_virtual_events(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Extract virtual events from global sources.
+    def _extract_valencia_local_sources(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract Valencia-specific events from local sources.
         
         Args:
-            config: Virtual events configuration.
+            config: Valencia local sources configuration.
             
         Returns:
-            List of raw virtual event data.
+            List of raw event data from Valencia local sources.
         """
         events = []
         
-        # Extract from virtual event feeds
-        feeds = config.get("feeds", [])
-        events.extend(self._extract_feed_events(feeds, "virtual_events"))
+        # Extract from local feeds
+        feeds = config.get("local_feeds", [])
+        events.extend(self._extract_feed_events(feeds, "valencia_local"))
         
-        # Extract from virtual platforms
-        platforms = config.get("platforms", [])
-        events.extend(self._extract_feed_events(platforms, "virtual_platforms"))
+        # Extract from innovation hubs
+        innovation_hubs = config.get("innovation_hubs", [])
+        events.extend(self._extract_feed_events(innovation_hubs, "innovation_hubs"))
         
-        # Mock global virtual events relevant to project scope
-        self.logger.info("Generating virtual tech events")
-        
-        mock_virtual_events = [
+        # Mock Valencia local events
+        mock_events = [
             {
-                "name": "PyData Global - Data Science Virtual Conference",
-                "description": "Virtual conference for data science practitioners. Focus on pandas, scikit-learn, and real-world applications.",
-                "start_date": (datetime.utcnow() + timedelta(days=60)).isoformat(),
-                "end_date": (datetime.utcnow() + timedelta(days=62)).isoformat(),
+                "name": "Lanzadera Demo Day",
+                "description": "Presentación de las startups de la última promoción de Lanzadera.",
+                "start_date": (datetime.utcnow() + timedelta(days=91)).isoformat(),
                 "venue": {
-                    "name": "Virtual Conference Center",
-                    "city": "Online",
-                    "country": "Global"
+                    "name": "Lanzadera",
+                    "address": "Marina de Empresas, Valencia",
+                    "city": "Valencia",
+                    "country": "Spain"
                 },
-                "organizer": "PyData Community",
-                "url": "https://pydata.org/global/",
+                "organizer": "Lanzadera",
+                "url": "https://lanzadera.es/",
                 "cost": 0.0,
-                "is_virtual": True,
-                "virtual_platform": "YouTube Live + Discord",
-                "topics": ["python", "data science", "pandas", "machine learning", "analytics"],
-                "event_type": "conference",
-                "attendee_count": 5000
-            },
-            {
-                "name": "DevOps World Virtual",
-                "description": "Virtual DevOps conference covering CI/CD, cloud infrastructure, and automation best practices.",
-                "start_date": (datetime.utcnow() + timedelta(days=30)).isoformat(),
-                "venue": {
-                    "name": "DevOps Virtual Venue",
-                    "city": "Online",
-                    "country": "Global"
-                },
-                "organizer": "DevOps Institute",
-                "url": "https://devopsworld.com/virtual/",
-                "cost": 149.0,
-                "is_virtual": True,
-                "virtual_platform": "Custom Platform",
-                "topics": ["devops", "ci/cd", "kubernetes", "cloud", "automation"],
-                "event_type": "conference"
-            },
-            {
-                "name": "React Global Summit - Online",
-                "description": "Virtual React conference with workshops and talks from core team members.",
-                "start_date": (datetime.utcnow() + timedelta(days=25)).isoformat(),
-                "venue": {
-                    "name": "React Virtual Summit",
-                    "city": "Online", 
-                    "country": "Global"
-                },
-                "organizer": "React Community",
-                "url": "https://reactsummit.com/virtual/",
-                "cost": 99.0,
-                "is_virtual": True,
-                "virtual_platform": "Custom React Platform",
-                "topics": ["react", "javascript", "frontend", "web development"],
-                "event_type": "summit"
-            },
-            {
-                "name": "FreeCodeCamp Virtual Bootcamp - Full Stack Development",
-                "description": "Free virtual bootcamp covering full stack web development with modern technologies.",
-                "start_date": (datetime.utcnow() + timedelta(days=40)).isoformat(),
-                "end_date": (datetime.utcnow() + timedelta(days=47)).isoformat(),
-                "venue": {
-                    "name": "FreeCodeCamp Platform",
-                    "city": "Online",
-                    "country": "Global"
-                },
-                "organizer": "FreeCodeCamp",
-                "url": "https://www.freecodecamp.org/bootcamp/",
-                "cost": 0.0,
-                "is_virtual": True,
-                "virtual_platform": "Custom Learning Platform",
-                "topics": ["web development", "javascript", "react", "node.js", "full stack"],
-                "event_type": "bootcamp"
-            },
-            {
-                "name": "Mozilla Developer Roadshow - Virtual Edition",
-                "description": "Virtual developer roadshow covering web standards, privacy, and open web technologies.",
-                "start_date": (datetime.utcnow() + timedelta(days=55)).isoformat(),
-                "venue": {
-                    "name": "Mozilla Virtual Platform",
-                    "city": "Online",
-                    "country": "Global"
-                },
-                "organizer": "Mozilla",
-                "url": "https://developer.mozilla.org/events/",
-                "cost": 0.0,
-                "is_virtual": True,
-                "virtual_platform": "Mozilla Hubs",
-                "topics": ["web standards", "privacy", "firefox", "web development"],
-                "event_type": "roadshow"
-            },
-            {
-                "name": "Kaggle Learn Virtual Workshop - Machine Learning",
-                "description": "Interactive virtual workshop on machine learning fundamentals using Kaggle datasets.",
-                "start_date": (datetime.utcnow() + timedelta(days=33)).isoformat(),
-                "venue": {
-                    "name": "Kaggle Platform",
-                    "city": "Online",
-                    "country": "Global"
-                },
-                "organizer": "Kaggle",
-                "url": "https://www.kaggle.com/learn/",
-                "cost": 0.0,
-                "is_virtual": True,
-                "virtual_platform": "Kaggle Learn",
-                "topics": ["machine learning", "data science", "kaggle", "competitions"],
-                "event_type": "workshop"
-            },
-            {
-                "name": "Streamlit Community Meetup - Building Data Apps",
-                "description": "Virtual meetup focused on building interactive data applications with Streamlit.",
-                "start_date": (datetime.utcnow() + timedelta(days=26)).isoformat(),
-                "venue": {
-                    "name": "Streamlit Community",
-                    "city": "Online",
-                    "country": "Global"
-                },
-                "organizer": "Streamlit",
-                "url": "https://streamlit.io/community/",
-                "cost": 0.0,
-                "is_virtual": True,
-                "virtual_platform": "Zoom",
-                "topics": ["streamlit", "data apps", "python", "data visualization"],
-                "event_type": "meetup"
-            },
-            {
-                "name": "Open Source Summit Virtual - Europe",
-                "description": "Virtual open source summit covering the latest in open source technologies and communities.",
-                "start_date": (datetime.utcnow() + timedelta(days=95)).isoformat(),
-                "end_date": (datetime.utcnow() + timedelta(days=97)).isoformat(),
-                "venue": {
-                    "name": "Linux Foundation Virtual",
-                    "city": "Online",
-                    "country": "Europe"
-                },
-                "organizer": "Linux Foundation",
-                "url": "https://events.linuxfoundation.org/",
-                "cost": 199.0,
-                "is_virtual": True,
-                "virtual_platform": "Linux Foundation Platform",
-                "topics": ["open source", "linux", "cloud native", "kubernetes"],
-                "event_type": "summit"
+                "is_virtual": False,
+                "topics": ["startup", "demo day", "investment", "entrepreneurship"],
+                "event_type": "demo_day"
             }
         ]
         
-        events.extend(mock_virtual_events)
+        events.extend(mock_events)
         return events
     
     def _filter_events_by_location(self, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -2020,4 +1968,172 @@ class TechConferenceETL(BaseETL):
         if not reasons:
             reasons.append("is a relevant technology event")
         
-        return f"This event {', '.join(reasons[:3])}.{' Plus, it has a high overall quality score.' if event.quality_score > 75 else ''}" 
+        return f"This event {', '.join(reasons[:3])}.{' Plus, it has a high overall quality score.' if event.quality_score > 75 else ''}"
+    
+    def _extract_virtual_events(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract virtual events from global sources.
+        
+        Args:
+            config: Virtual events configuration.
+            
+        Returns:
+            List of raw virtual event data.
+        """
+        events = []
+        
+        # Extract from platform feeds
+        platform_feeds = config.get("platform_feeds", [])
+        events.extend(self._extract_feed_events(platform_feeds, "virtual_platforms"))
+        
+        # Extract from tech community feeds
+        tech_feeds = config.get("tech_community_feeds", [])
+        events.extend(self._extract_feed_events(tech_feeds, "tech_community"))
+        
+        # Mock global virtual events relevant to project scope
+        self.logger.info("Generating virtual tech events")
+        
+        mock_virtual_events = [
+            {
+                "name": "PyData Global - Data Science Virtual Conference",
+                "description": "Virtual conference for data science practitioners. Focus on pandas, scikit-learn, and real-world applications.",
+                "start_date": (datetime.utcnow() + timedelta(days=60)).isoformat(),
+                "end_date": (datetime.utcnow() + timedelta(days=62)).isoformat(),
+                "venue": {
+                    "name": "Virtual Conference Center",
+                    "city": "Online",
+                    "country": "Global"
+                },
+                "organizer": "PyData Community",
+                "url": "https://pydata.org/global/",
+                "cost": 0.0,
+                "is_virtual": True,
+                "virtual_platform": "YouTube Live + Discord",
+                "topics": ["python", "data science", "pandas", "machine learning", "analytics"],
+                "event_type": "conference",
+                "attendee_count": 5000
+            },
+            {
+                "name": "DevOps World Virtual",
+                "description": "Virtual DevOps conference covering CI/CD, cloud infrastructure, and automation best practices.",
+                "start_date": (datetime.utcnow() + timedelta(days=30)).isoformat(),
+                "venue": {
+                    "name": "DevOps Virtual Venue",
+                    "city": "Online",
+                    "country": "Global"
+                },
+                "organizer": "DevOps Institute",
+                "url": "https://devopsworld.com/virtual/",
+                "cost": 149.0,
+                "is_virtual": True,
+                "virtual_platform": "Custom Platform",
+                "topics": ["devops", "ci/cd", "kubernetes", "cloud", "automation"],
+                "event_type": "conference"
+            },
+            {
+                "name": "React Global Summit - Online",
+                "description": "Virtual React conference with workshops and talks from core team members.",
+                "start_date": (datetime.utcnow() + timedelta(days=25)).isoformat(),
+                "venue": {
+                    "name": "React Virtual Summit",
+                    "city": "Online", 
+                    "country": "Global"
+                },
+                "organizer": "React Community",
+                "url": "https://reactsummit.com/virtual/",
+                "cost": 99.0,
+                "is_virtual": True,
+                "virtual_platform": "Custom React Platform",
+                "topics": ["react", "javascript", "frontend", "web development"],
+                "event_type": "summit"
+            },
+            {
+                "name": "FreeCodeCamp Virtual Bootcamp - Full Stack Development",
+                "description": "Free virtual bootcamp covering full stack web development with modern technologies.",
+                "start_date": (datetime.utcnow() + timedelta(days=40)).isoformat(),
+                "end_date": (datetime.utcnow() + timedelta(days=47)).isoformat(),
+                "venue": {
+                    "name": "FreeCodeCamp Platform",
+                    "city": "Online",
+                    "country": "Global"
+                },
+                "organizer": "FreeCodeCamp",
+                "url": "https://www.freecodecamp.org/bootcamp/",
+                "cost": 0.0,
+                "is_virtual": True,
+                "virtual_platform": "Custom Learning Platform",
+                "topics": ["web development", "javascript", "react", "node.js", "full stack"],
+                "event_type": "bootcamp"
+            },
+            {
+                "name": "Mozilla Developer Roadshow - Virtual Edition",
+                "description": "Virtual developer roadshow covering web standards, privacy, and open web technologies.",
+                "start_date": (datetime.utcnow() + timedelta(days=55)).isoformat(),
+                "venue": {
+                    "name": "Mozilla Virtual Platform",
+                    "city": "Online",
+                    "country": "Global"
+                },
+                "organizer": "Mozilla",
+                "url": "https://developer.mozilla.org/events/",
+                "cost": 0.0,
+                "is_virtual": True,
+                "virtual_platform": "Mozilla Hubs",
+                "topics": ["web standards", "privacy", "firefox", "web development"],
+                "event_type": "roadshow"
+            },
+            {
+                "name": "Kaggle Learn Virtual Workshop - Machine Learning",
+                "description": "Interactive virtual workshop on machine learning fundamentals using Kaggle datasets.",
+                "start_date": (datetime.utcnow() + timedelta(days=33)).isoformat(),
+                "venue": {
+                    "name": "Kaggle Platform",
+                    "city": "Online",
+                    "country": "Global"
+                },
+                "organizer": "Kaggle",
+                "url": "https://www.kaggle.com/learn/",
+                "cost": 0.0,
+                "is_virtual": True,
+                "virtual_platform": "Kaggle Learn",
+                "topics": ["machine learning", "data science", "kaggle", "competitions"],
+                "event_type": "workshop"
+            },
+            {
+                "name": "Streamlit Community Meetup - Building Data Apps",
+                "description": "Virtual meetup focused on building interactive data applications with Streamlit.",
+                "start_date": (datetime.utcnow() + timedelta(days=26)).isoformat(),
+                "venue": {
+                    "name": "Streamlit Community",
+                    "city": "Online",
+                    "country": "Global"
+                },
+                "organizer": "Streamlit",
+                "url": "https://streamlit.io/community/",
+                "cost": 0.0,
+                "is_virtual": True,
+                "virtual_platform": "Zoom",
+                "topics": ["streamlit", "data apps", "python", "data visualization"],
+                "event_type": "meetup"
+            },
+            {
+                "name": "Open Source Summit Virtual - Europe",
+                "description": "Virtual open source summit covering the latest in open source technologies and communities.",
+                "start_date": (datetime.utcnow() + timedelta(days=95)).isoformat(),
+                "end_date": (datetime.utcnow() + timedelta(days=97)).isoformat(),
+                "venue": {
+                    "name": "Linux Foundation Virtual",
+                    "city": "Online",
+                    "country": "Europe"
+                },
+                "organizer": "Linux Foundation",
+                "url": "https://events.linuxfoundation.org/",
+                "cost": 199.0,
+                "is_virtual": True,
+                "virtual_platform": "Linux Foundation Platform",
+                "topics": ["open source", "linux", "cloud native", "kubernetes"],
+                "event_type": "summit"
+            }
+        ]
+        
+        events.extend(mock_virtual_events)
+        return events 
