@@ -633,19 +633,263 @@ class UltraOptimizedDataService:
     
     def get_security_vulnerabilities_data(self) -> pd.DataFrame:
         """Get security vulnerabilities data"""
-        security_dir = self.cached_paths.get('security_vulnerabilities_dir', 
-                                           self.data_dir / "security_vulnerabilities")
-        if not security_dir or not security_dir.exists():
+        vulnerabilities_dir = self.cached_paths.get('security_vulnerabilities_dir')
+        if not vulnerabilities_dir or not vulnerabilities_dir.exists():
             return pd.DataFrame()
         
-        security_file = security_dir / "security_vulnerabilities_latest.json"
-        if security_file.exists():
-            cache_key = self._get_cache_key(str(security_file), "security_vulnerabilities")
-            data = self._ultra_fast_json_load(security_file, cache_key)
+        vulnerabilities_file = vulnerabilities_dir / "vulnerabilities_latest.json"
+        if vulnerabilities_file.exists():
+            cache_key = self._get_cache_key(str(vulnerabilities_file), "security")
+            data = self._ultra_fast_json_load(vulnerabilities_file, cache_key)
             return pd.DataFrame(data) if data else pd.DataFrame()
         
         return pd.DataFrame()
     
+    def get_tech_events_intelligence(self) -> Dict[str, Any]:
+        """Get technology events and conference intelligence.
+        
+        Returns:
+            Technology events intelligence data.
+        """
+        try:
+            # Load events from the ETL output
+            events_file = self.data_dir / "tech_conference" / "output" / "tech_events_latest.json"
+            
+            if not events_file.exists():
+                self._log("Tech events file not found, generating demo data", "warning")
+                return self._generate_demo_events_data()
+            
+            with open(events_file, "r", encoding="utf-8") as f:
+                events_data = json.load(f)
+            
+            # Process events data
+            processed_events = []
+            upcoming_events = []
+            high_quality_events = []
+            free_events = []
+            
+            for event in events_data:
+                processed_event = {
+                    'name': event.get('name'),
+                    'description': event.get('description', '')[:200] + '...' if len(event.get('description', '')) > 200 else event.get('description', ''),
+                    'start_date': event.get('start_date'),
+                    'event_type': event.get('event_type'),
+                    'format': event.get('format'),
+                    'is_virtual': event.get('is_virtual', False),
+                    'location': event.get('location') or (event.get('venue', {}).get('city') if event.get('venue') else 'TBD'),
+                    'organizer': event.get('organizer'),
+                    'estimated_cost': event.get('estimated_cost', 0),
+                    'is_free': event.get('is_free', False),
+                    'topics': event.get('topics', []),
+                    'categories': event.get('categories', []),
+                    'quality_score': event.get('quality_score', 0),
+                    'relevance_score': event.get('relevance_score', 0),
+                    'networking_score': event.get('networking_score', 0),
+                    'roi_score': event.get('roi_score', 0),
+                    'registration_url': event.get('registration_url'),
+                    'website_url': event.get('website_url'),
+                    'tags': event.get('tags', []),
+                    'source_name': event.get('source_name')
+                }
+                
+                processed_events.append(processed_event)
+                
+                # Categorize events
+                try:
+                    event_date = datetime.fromisoformat(event.get('start_date', '').replace('Z', '+00:00'))
+                    if event_date > datetime.utcnow():
+                        upcoming_events.append(processed_event)
+                except:
+                    pass
+                
+                if event.get('quality_score', 0) >= 75:
+                    high_quality_events.append(processed_event)
+                
+                if event.get('is_free', False):
+                    free_events.append(processed_event)
+            
+            # Calculate statistics
+            total_events = len(processed_events)
+            upcoming_count = len(upcoming_events)
+            high_quality_count = len(high_quality_events)
+            free_events_count = len(free_events)
+            
+            # Calculate average scores
+            avg_quality = sum(e.get('quality_score', 0) for e in processed_events) / max(total_events, 1)
+            avg_relevance = sum(e.get('relevance_score', 0) for e in processed_events) / max(total_events, 1)
+            avg_networking = sum(e.get('networking_score', 0) for e in processed_events) / max(total_events, 1)
+            avg_roi = sum(e.get('roi_score', 0) for e in processed_events) / max(total_events, 1)
+            
+            # Event type distribution
+            event_types = {}
+            for event in processed_events:
+                event_type = event.get('event_type', 'unknown')
+                event_types[event_type] = event_types.get(event_type, 0) + 1
+            
+            # Topic distribution
+            all_topics = []
+            for event in processed_events:
+                all_topics.extend(event.get('topics', []))
+            
+            topic_counts = {}
+            for topic in all_topics:
+                topic_counts[topic] = topic_counts.get(topic, 0) + 1
+            
+            top_topics = sorted(topic_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+            
+            # Format categories
+            format_distribution = {}
+            for event in processed_events:
+                format_type = event.get('format', 'unknown')
+                format_distribution[format_type] = format_distribution.get(format_type, 0) + 1
+            
+            return {
+                'events': processed_events,
+                'upcoming_events': upcoming_events[:20],  # Top 20 upcoming
+                'high_quality_events': high_quality_events[:10],  # Top 10 high quality
+                'free_events': free_events[:15],  # Top 15 free events
+                'statistics': {
+                    'total_events': total_events,
+                    'upcoming_count': upcoming_count,
+                    'high_quality_count': high_quality_count,
+                    'free_events_count': free_events_count,
+                    'avg_quality_score': round(avg_quality, 1),
+                    'avg_relevance_score': round(avg_relevance, 1),
+                    'avg_networking_score': round(avg_networking, 1),
+                    'avg_roi_score': round(avg_roi, 1)
+                },
+                'distributions': {
+                    'event_types': event_types,
+                    'formats': format_distribution,
+                    'top_topics': top_topics
+                },
+                'last_updated': datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            self._log(f"Tech events intelligence error: {e}", "error")
+            return {'error': str(e)}
+    
+    def _generate_demo_events_data(self) -> Dict[str, Any]:
+        """Generate demo events data for when ETL hasn't run yet.
+        
+        Returns:
+            Demo events intelligence data.
+        """
+        demo_events = [
+            {
+                'name': 'AI & Machine Learning Conference 2024',
+                'description': 'Join industry leaders for the latest in AI and ML innovations, featuring keynotes, workshops, and networking opportunities.',
+                'start_date': (datetime.utcnow() + timedelta(days=30)).isoformat(),
+                'event_type': 'conference',
+                'format': 'in_person',
+                'is_virtual': False,
+                'location': 'San Francisco, CA',
+                'organizer': 'AI Society',
+                'estimated_cost': 299.0,
+                'is_free': False,
+                'topics': ['artificial intelligence', 'machine learning', 'deep learning'],
+                'categories': ['AI/ML'],
+                'quality_score': 85.0,
+                'relevance_score': 90.0,
+                'networking_score': 80.0,
+                'roi_score': 75.0,
+                'registration_url': 'https://example.com/ai-conference-2024',
+                'website_url': 'https://example.com/ai-conference-2024',
+                'tags': ['conference', 'ai', 'premium'],
+                'source_name': 'eventbrite'
+            },
+            {
+                'name': 'Python Data Science Workshop',
+                'description': 'Hands-on workshop for data science with Python, covering pandas, scikit-learn, and machine learning fundamentals.',
+                'start_date': (datetime.utcnow() + timedelta(days=21)).isoformat(),
+                'event_type': 'workshop',
+                'format': 'in_person',
+                'is_virtual': False,
+                'location': 'Austin, TX',
+                'organizer': 'Austin Python Meetup',
+                'estimated_cost': 50.0,
+                'is_free': False,
+                'topics': ['python', 'data science', 'workshop'],
+                'categories': ['Data Science'],
+                'quality_score': 70.0,
+                'relevance_score': 85.0,
+                'networking_score': 65.0,
+                'roi_score': 85.0,
+                'registration_url': 'https://example.com/python-workshop',
+                'website_url': 'https://example.com/python-workshop',
+                'tags': ['workshop', 'python', 'affordable'],
+                'source_name': 'meetup'
+            },
+            {
+                'name': 'React Developer Meetup',
+                'description': 'Monthly meetup for React developers to share knowledge, network, and learn about the latest React ecosystem updates.',
+                'start_date': (datetime.utcnow() + timedelta(days=14)).isoformat(),
+                'event_type': 'meetup',
+                'format': 'in_person',
+                'is_virtual': False,
+                'location': 'New York, NY',
+                'organizer': 'React NYC',
+                'estimated_cost': 0.0,
+                'is_free': True,
+                'topics': ['react', 'javascript', 'frontend'],
+                'categories': ['Web Development'],
+                'quality_score': 65.0,
+                'relevance_score': 80.0,
+                'networking_score': 75.0,
+                'roi_score': 90.0,
+                'registration_url': 'https://example.com/react-meetup',
+                'website_url': 'https://example.com/react-meetup',
+                'tags': ['meetup', 'react', 'free'],
+                'source_name': 'meetup'
+            },
+            {
+                'name': 'Blockchain & Web3 Summit',
+                'description': 'Explore the future of decentralized web, featuring talks on DeFi, NFTs, and blockchain technology.',
+                'start_date': (datetime.utcnow() + timedelta(days=60)).isoformat(),
+                'event_type': 'summit',
+                'format': 'virtual',
+                'is_virtual': True,
+                'location': 'Online',
+                'organizer': 'Web3 Community',
+                'estimated_cost': 150.0,
+                'is_free': False,
+                'topics': ['blockchain', 'web3', 'cryptocurrency', 'DeFi'],
+                'categories': ['Blockchain/Web3'],
+                'quality_score': 78.0,
+                'relevance_score': 75.0,
+                'networking_score': 60.0,
+                'roi_score': 70.0,
+                'registration_url': 'https://example.com/web3-summit',
+                'website_url': 'https://example.com/web3-summit',
+                'tags': ['summit', 'blockchain', 'virtual'],
+                'source_name': 'dev_events'
+            }
+        ]
+        
+        return {
+            'events': demo_events,
+            'upcoming_events': demo_events,
+            'high_quality_events': [e for e in demo_events if e['quality_score'] >= 75],
+            'free_events': [e for e in demo_events if e['is_free']],
+            'statistics': {
+                'total_events': len(demo_events),
+                'upcoming_count': len(demo_events),
+                'high_quality_count': len([e for e in demo_events if e['quality_score'] >= 75]),
+                'free_events_count': len([e for e in demo_events if e['is_free']]),
+                'avg_quality_score': 74.5,
+                'avg_relevance_score': 82.5,
+                'avg_networking_score': 70.0,
+                'avg_roi_score': 80.0
+            },
+            'distributions': {
+                'event_types': {'conference': 1, 'workshop': 1, 'meetup': 1, 'summit': 1},
+                'formats': {'in_person': 3, 'virtual': 1},
+                'top_topics': [('python', 1), ('react', 1), ('blockchain', 1), ('machine learning', 1)]
+            },
+            'last_updated': datetime.utcnow().isoformat()
+        }
+
     def get_security_intelligence(self) -> Dict[str, Any]:
         """Get security intelligence summary and analysis"""
         try:

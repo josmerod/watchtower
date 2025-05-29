@@ -1,59 +1,126 @@
-# Development Standards
+# Watchtower Platform Development Standards
 
 ## Core Principles
 - Expert Python development with focus on ML, data science, and system architecture
+- Real-time data intelligence and monitoring capabilities
 - Emphasis on code quality, maintainability, and scalability
-- Clear communication and documentation
+- Clear communication and comprehensive documentation
+- Security-first approach for data handling and API access
 
 ## Tech Stack
-- Python 3.10+
-- Development: Poetry/Rye, Ruff, pytest, venv
-- Web: FastAPI, Streamlit
-- Data: polars (primary), pandas (secondary)
-- ML: langgraph (optional)
-- Storage: faiss/chroma (optional)
-- Process: systemd/supervisor
+- **Core**: Python 3.10+
+- **Development**: Poetry/Rye, Ruff, pytest, venv
+- **Web**: FastAPI (APIs), Streamlit (dashboards)
+- **Data Processing**: polars (primary), pandas (secondary)
+- **ML/AI**: langgraph (optional), transformers, scikit-learn
+- **Storage**: faiss/chroma (vector), SQLite/PostgreSQL (relational)
+- **Process Management**: systemd/supervisor
+- **Monitoring**: logging, metrics collection
+- **Deployment**: Docker, GitHub Actions
+
+## Platform Architecture
+1. **ETL Pipeline Design**
+   - Modular data extractors for different sources
+   - Standardized data transformation patterns
+   - Robust error handling and retry mechanisms
+   - Parallel processing for performance
+   - Data validation and quality checks
+
+2. **Data Intelligence Layer**
+   - Real-time sentiment analysis
+   - Trend detection algorithms
+   - Anomaly detection systems
+   - Predictive analytics capabilities
+   - Cross-source data correlation
+
+3. **API & Web Services**
+   - RESTful API design with FastAPI
+   - Real-time data streaming endpoints
+   - Interactive Streamlit dashboards
+   - WebSocket support for live updates
+   - Rate limiting and authentication
 
 ## Code Standards
 1. **Pythonic Practices**
    - PEP 8 compliance via Ruff
-   - Explicit, readable code
-   - Follow Zen of Python
+   - Explicit, readable code following Zen of Python
+   - Type hints for all functions and classes
+   - Descriptive variable and function names
+   - Consistent code formatting
 
-2. **Architecture**
-   - Single responsibility modules
+2. **Architecture Patterns**
+   - Single responsibility principle
    - Composition over inheritance
-   - Logical package structure
+   - Dependency injection for testability
+   - Factory patterns for data source creation
+   - Observer patterns for real-time updates
+   - Logical package structure with clear boundaries
 
 3. **Quality Assurance**
-   - Comprehensive type hints
-   - Google-style docstrings
-   - 90%+ test coverage
-   - Robust error handling
-   - Strategic logging
+   - Comprehensive type hints (mypy compliance)
+   - Google-style docstrings with examples
+   - 90%+ test coverage with pytest
+   - Integration tests for ETL pipelines
+   - Robust error handling with custom exceptions
+   - Strategic logging with structured formats
+   - Code reviews and automated quality checks
 
-4. **Performance**
-   - Async/await for I/O
-   - Strategic caching
-   - Resource monitoring
-   - Memory management
-   - Concurrent processing
-   - Optimized database design
+4. **Performance Optimization**
+   - Async/await for I/O operations
+   - Strategic caching with TTL policies
+   - Resource monitoring and alerting
+   - Memory-efficient data processing
+   - Concurrent processing for ETL jobs
+   - Database query optimization
+   - Connection pooling for external APIs
 
-5. **API Development**
-   - Pydantic validation
-   - Dependency injection
-   - RESTful routing
-   - Background processing
-   - Security (OAuth/JWT)
-   - OpenAPI docs
-   - API versioning
-   - CORS configuration
+5. **Data Management**
+   - Standardized data schemas with Pydantic
+   - Data versioning and lineage tracking
+   - Incremental data loading strategies
+   - Data retention and archival policies
+   - Privacy-compliant data handling
+   - Backup and recovery procedures
+
+6. **Security & Compliance**
+   - API authentication (OAuth/JWT)
+   - Input validation and sanitization
+   - Secure credential management
+   - Rate limiting and DDoS protection
+   - Data encryption at rest and in transit
+   - Audit logging for sensitive operations
+   - GDPR compliance for user data
+
+7. **Monitoring & Observability**
+   - Application performance monitoring
+   - ETL pipeline health checks
+   - Data quality metrics
+   - Error tracking and alerting
+   - Resource utilization monitoring
+   - Business metrics dashboards
+
+## Platform-Specific Best Practices
+- **ETL Development**: Idempotent operations, graceful degradation, source-specific error handling
+- **Data Processing**: Batch and streaming patterns, data validation pipelines, schema evolution
+- **Web Development**: Responsive design, real-time updates, user experience optimization
+- **API Design**: Versioning strategy, documentation, backward compatibility
+- **Deployment**: Blue-green deployments, rollback strategies, environment parity
+- **Documentation**: Architecture decisions, API documentation, operational runbooks
+
+## Development Workflow
+- Feature branch development with pull requests
+- Automated testing and quality gates
+- Code review requirements
+- Continuous integration/deployment
+- Environment-specific configurations
+- Regular dependency updates and security patches
 
 ## Best Practices
-- Prioritize Python 3.10+ features
-- Clear code documentation
-- Justified technology choices
-- Security-first approach
-- Task-specific best practices
+- Prioritize Python 3.10+ features (pattern matching, improved type hints)
+- Clear code documentation with practical examples
+- Justified technology choices with trade-off analysis
+- Security-first approach in all development decisions
+- Task-specific best practices for different platform components
 - Balance between modularity and simplicity
+- Regular refactoring and technical debt management
+- Performance benchmarking and optimization

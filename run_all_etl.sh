@@ -57,44 +57,26 @@ echo "All ETL processes started in parallel"
 echo "Process PIDs: ${pids[*]}"
 echo "Check logs directory for individual process logs"
 echo "To monitor processes: ps -p ${pids[*]}"
-echo ""
-echo "New modules added:"
-echo "- DEV Community: Developer articles and discussions"
-echo "- Product Hunt: Product launches and innovations"
-echo "- Indie Hackers: Entrepreneur discussions and revenue insights"
-echo "- Lobsters: High-quality tech discussions"
-echo "- GitHub Trends: Trending repositories and open-source projects"
-echo "- Tech Jobs: Job market trends and salary analysis"
-echo "- HackerNews Ask: Community Q&A and discussions"
-echo "- Discord Trending: Developer community insights"
-echo "- Stack Overflow Trends: Developer questions and pain points"
-echo "- Crypto Sentiment: Multi-platform cryptocurrency sentiment analysis"
-echo ""
 
 # Wait for all ETL processes to complete
-echo "⏳ Waiting for all ETL processes to complete before applying performance optimizations..."
+echo "Waiting for all ETL processes to complete..."
 for pid in "${pids[@]}"; do
     wait $pid
     if [ $? -eq 0 ]; then
-        echo "✅ Process $pid completed successfully"
+        echo "Process $pid completed successfully"
     else
-        echo "⚠️  Process $pid completed with errors (check logs)"
+        echo "Process $pid completed with errors (check logs)"
     fi
 done
 
-echo ""
-echo "🎯 All ETL processes completed at $(date)"
-echo ""
-echo "⚡ Auto-applying Ultra Performance Optimizations..."
-echo "🚀 This will make your Watchtower app 90-98% faster!"
-echo ""
-
-# Auto-apply ultra optimizations with option 1 (maximum performance)
-echo "1" | python apply_ultra_optimizations.py
-
-echo ""
-echo "✅ ETL and Performance Optimization Complete!"
-echo "🚀 Your Watchtower app is now ultra-fast and ready to use!"
-echo "📊 Run: streamlit run src/web/fullstreamlit/app.py"
-echo "🎉 Expected improvements: 90-98% faster, 80% memory reduction"
-echo "" 
+echo "All ETL processes completed at $(date)"
+echo "Data has been saved to respective directories:"
+echo "- data/dev_community/"
+echo "- data/product_hunt/"
+echo "- data/indie_hackers/"
+echo "- data/lobsters/"
+echo "- data/crypto_sentiment/"
+echo "- data/games/"
+echo "- data/news/"
+echo "- data/goldigging/"
+echo "- data/watchers/"

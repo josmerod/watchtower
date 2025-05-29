@@ -1,73 +1,81 @@
 # Watchtower Architecture Overview
 
-This document provides a comprehensive overview of Watchtower's system architecture, design patterns, and component interactions.
+This document provides a comprehensive overview of Watchtower's **actual implementation**, design patterns, and component interactions based on the current codebase.
 
 ## 📋 Table of Contents
 
 1. [System Overview](#system-overview)
-2. [Core Architecture](#core-architecture)
-3. [Component Design](#component-design)
+2. [Real Architecture](#real-architecture)
+3. [Actual Component Design](#actual-component-design)
 4. [Data Flow Patterns](#data-flow-patterns)
 5. [Technology Stack](#technology-stack)
-6. [Design Patterns](#design-patterns)
-7. [Scalability & Performance](#scalability--performance)
+6. [Implementation Patterns](#implementation-patterns)
+7. [File Organization](#file-organization)
 
 ---
 
 ## System Overview
 
-Watchtower is a **professional-grade data monitoring and processing framework** built with modern Python practices and enterprise-ready patterns.
+Watchtower is a **practical data monitoring and ETL framework** built around **specific use cases** including ArXiv paper monitoring, course aggregation, news tracking, and technology trend analysis.
 
-### Key Architectural Principles
+### Key Implementation Characteristics
 
-- **🏗️ Modular Design**: Clear separation of concerns with pluggable components
-- **⚡ Async-First**: Modern async/await patterns for scalable I/O operations
-- **📊 Type Safety**: Comprehensive type hints with Pydantic validation
-- **🛡️ Error Resilience**: Robust exception handling with context preservation
-- **📈 Observability**: Built-in logging, metrics, and performance monitoring
-- **⚙️ Configuration-Driven**: Environment-based settings with validation
+- **🎯 Domain-Specific**: Built for specific data sources (ArXiv, courses, news, etc.)
+- **📊 Streamlit-Centered**: Web interface built with Streamlit for dashboard visualization
+- **🔄 ETL-Focused**: Heavy emphasis on Extract-Transform-Load pipelines
+- **📁 File-Based Storage**: Primarily JSON and CSV file storage with some database integration
+- **🕸️ Web Scraping**: Extensive use of web scraping and API integration
+- **⚡ Performance-Optimized**: Caching and optimization for Streamlit performance
 
-### High-Level System Architecture
+### Actual System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Watchtower System                        │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    │
-│  │ Data Sources│    │  Watchers   │    │   ETL Jobs  │    │
-│  │             │    │             │    │             │    │
-│  │ • RSS Feeds │    │ • Web Pages │    │ • Extract   │    │
-│  │ • APIs      │    │ • Content   │    │ • Transform │    │
-│  │ • Web Pages │    │ • Changes   │    │ • Load      │    │
-│  └─────────────┘    └─────────────┘    └─────────────┘    │
-│         │                   │                   │          │
-│         └───────────────────┼───────────────────┘          │
-│                             │                              │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │              Core Framework                         │   │
+│  │              Streamlit Frontend                     │   │
 │  │                                                     │   │
 │  │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │   │
-│  │ │Config Mgmt  │ │ Exception   │ │  Logging    │   │   │
-│  │ │& Validation │ │ Handling    │ │& Metrics    │   │   │
+│  │ │ Dashboard   │ │  Tab System │ │ Data Views  │   │   │
+│  │ │ Components  │ │ Navigation  │ │ & Metrics   │   │   │
 │  │ └─────────────┘ └─────────────┘ └─────────────┘   │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                             │                              │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │                Data Layer                           │   │
+│  │                ETL Pipelines                        │   │
 │  │                                                     │   │
 │  │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │   │
-│  │ │   Files     │ │  Database   │ │    Cache    │   │   │
-│  │ │ JSON/CSV    │ │  (SQLite)   │ │   Memory    │   │   │
+│  │ │ ArXiv ETL   │ │ Course ETL  │ │  News ETL   │   │   │
+│  │ │             │ │             │ │             │   │   │
+│  │ │• Papers     │ │• Udemy      │ │• HackerNews │   │   │
+│  │ │• Classification│• Coursera   │ │• DevCommunity│   │   │
+│  │ │• GitHub Links│ │• Skills     │ │• Security   │   │   │
 │  │ └─────────────┘ └─────────────┘ └─────────────┘   │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                             │                              │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │              Presentation Layer                     │   │
+│  │               Watcher System                        │   │
 │  │                                                     │   │
 │  │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │   │
-│  │ │ Streamlit   │ │    API      │ │   Reports   │   │   │
-│  │ │ Dashboard   │ │  Endpoints  │ │    & Logs   │   │   │
+│  │ │ ArXiv       │ │ MS Skills   │ │ Enhanced    │   │   │
+│  │ │ Watcher     │ │ Watcher     │ │ Watchers    │   │   │
+│  │ │             │ │             │ │             │   │   │
+│  │ │• RSS Feeds  │ │• Web Scraping│ │• Advanced   │   │   │
+│  │ │• XML Parsing│ │• Change Det. │ │• Multi-src  │   │   │
+│  │ └─────────────┘ └─────────────┘ └─────────────┘   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                             │                              │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                Data Storage                         │   │
+│  │                                                     │   │
+│  │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │   │
+│  │ │    JSON     │ │    CSV      │ │   Events    │   │   │
+│  │ │   Files     │ │  Exports    │ │    Files    │   │   │
+│  │ │             │ │             │ │             │   │   │
+│  │ │• Raw Data   │ │• Processed  │ │• Changes    │   │   │
+│  │ │• Metadata   │ │• Analytics  │ │• Alerts     │   │   │
 │  │ └─────────────┘ └─────────────┘ └─────────────┘   │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
@@ -76,218 +84,202 @@ Watchtower is a **professional-grade data monitoring and processing framework** 
 
 ---
 
-## Core Architecture
+## Real Architecture
 
-### 1. Layered Architecture
+### 1. Actual Layered Structure
 
-Watchtower follows a **layered architecture** pattern with clear separation of concerns:
+Based on the codebase analysis, Watchtower follows this **actual architecture**:
 
-#### **Presentation Layer**
-- **Streamlit Dashboard**: Interactive web interface for data visualization
-- **API Layer**: RESTful endpoints for programmatic access (future)
-- **CLI Tools**: Command-line interfaces for operations
+#### **Frontend Layer (`src/web/fullstreamlit/`)**
+- **Streamlit Application**: Main dashboard interface (`app.py`)
+- **Component System**: Modular tab-based components for different data types
+- **Performance Optimization**: Ultra-optimized data services and caching
+- **Responsive Design**: Mobile-friendly UI with custom CSS
 
-#### **Business Logic Layer**
-- **ETL Framework**: Extract, Transform, Load operations
-- **Watcher System**: Content monitoring and change detection
-- **Orchestrator**: Process management and scheduling
+#### **ETL Layer (`src/etl/`)**
+- **BaseETL Framework**: Abstract base class with metrics, checkpointing, and error handling
+- **Domain-Specific ETLs**: ArXiv, Course, News, Security, Games pipelines
+- **Data Processing**: Transformation, enrichment, and classification
+- **File-Based Output**: JSON and CSV exports with structured storage
 
-#### **Infrastructure Layer**
-- **Configuration Management**: Settings and environment handling
-- **Exception Framework**: Error handling and recovery
-- **Logging & Metrics**: Observability and monitoring
-- **Utilities**: Common functionality and helpers
+#### **Watcher Layer (`src/watchers/`)**
+- **BaseWatcher**: Abstract monitoring framework with state persistence
+- **Specialized Watchers**: ArXiv, Microsoft Skills, Enhanced content monitoring
+- **Change Detection**: Value comparison and event recording
+- **Event System**: JSON-based event logging and state management
 
-#### **Data Layer**
-- **File System**: JSON, CSV, and other file formats
-- **Database**: SQLite (default), PostgreSQL (production)
-- **Cache**: In-memory caching for performance
+#### **Infrastructure Layer (`src/utils/`, `src/config/`, `src/exceptions/`)**
+- **Configuration Management**: Pydantic-based settings with environment support
+- **Exception Handling**: Structured error handling with context preservation
+- **Logging System**: Structured logging with performance monitoring
+- **Utilities**: File system, NLP classification, GitHub integration, course deduplication
 
-### 2. Component Interaction Model
+### 2. Real Component Interactions
 
 ```
 ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│   Client    │      │ Application │      │   Storage   │
+│  Streamlit  │      │   ETL       │      │   Storage   │
+│  Dashboard  │      │ Pipelines   │      │   System    │
 │             │      │             │      │             │
-│ • Dashboard │◄────►│ • ETL       │◄────►│ • Files     │
-│ • CLI       │      │ • Watchers  │      │ • Database  │
-│ • Scripts   │      │ • API       │      │ • Cache     │
+│ • Tab Views │◄────►│ • Data Proc │◄────►│ • JSON      │
+│ • Metrics   │      │ • Transform │      │ • CSV       │
+│ • Filters   │      │ • Enrich    │      │ • Events    │
+│ • Analytics │      │ • Classify  │      │ • State     │
 └─────────────┘      └─────────────┘      └─────────────┘
+                             ▲
                              │
-                             ▼
                      ┌─────────────┐
-                     │    Core     │
+                     │  Watchers   │
                      │             │
-                     │ • Config    │
-                     │ • Logging   │
-                     │ • Exceptions│
-                     │ • Utils     │
+                     │ • Monitor   │
+                     │ • Detect    │
+                     │ • Alert     │
+                     │ • Event Log │
                      └─────────────┘
 ```
 
 ---
 
-## Component Design
+## Actual Component Design
 
 ### 1. Configuration System (`src/config/`)
 
-**Purpose**: Centralized configuration management with validation
+**Real Implementation**:
+- `Settings`: Main Pydantic settings class with environment detection
+- `ConfigModels`: Specialized models for Database, Logging, Scraping, ETL, etc.
+- **Environment Variables**: Nested delimiter support (`DATABASE__URL`)
+- **Auto-Discovery**: Project root detection and path resolution
 
-**Key Components**:
-- `Settings`: Main configuration class with environment detection
-- `*Config`: Specialized configuration models for each component
-- Environment variable support with nested configurations
-
-**Design Patterns**:
-- **Singleton Pattern**: Cached settings instance
-- **Factory Pattern**: Configuration model creation
-- **Strategy Pattern**: Environment-specific configurations
-
+**Actual Patterns**:
 ```python
-# Configuration hierarchy
-Settings
-├── DatabaseConfig      # Database connections
-├── LoggingConfig      # Logging configuration  
-├── ScrapingConfig     # Web scraping settings
-├── ETLConfig         # ETL pipeline settings
-├── WatcherConfig     # Monitoring configuration
-└── StreamlitConfig   # Dashboard settings
+class Settings(BaseSettings):
+    # Component configurations
+    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
+    logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    scraping: ScrapingConfig = Field(default_factory=ScrapingConfig)
+    etl: ETLConfig = Field(default_factory=ETLConfig)
+    watchers: WatcherConfig = Field(default_factory=WatcherConfig)
+    streamlit: StreamlitConfig = Field(default_factory=StreamlitConfig)
 ```
 
 ### 2. ETL Framework (`src/etl/`)
 
-**Purpose**: Robust data extraction, transformation, and loading
+**Real Implementation**:
+- `BaseETL`: Abstract class with metrics, checkpointing, batch processing
+- `ArxivETL`: Complete ArXiv paper processing with NLP classification
+- `SimpleETL` & `DataFrameETL`: Lightweight ETL variants
+- **File-Based Processing**: JSON/CSV input and output
 
-**Key Components**:
-- `BaseETL`: Abstract base class with error handling and metrics
-- `SimpleETL`: Dictionary-based ETL for basic use cases
-- `DataFrameETL`: DataFrame-based ETL with export capabilities
-
-**Design Patterns**:
-- **Template Method Pattern**: ETL workflow structure
-- **Strategy Pattern**: Different ETL implementations
-- **Observer Pattern**: Metrics and monitoring
-- **Command Pattern**: ETL operations as commands
-
+**Actual Processing Pipeline**:
 ```python
-# ETL inheritance hierarchy
-BaseETL[InputType, OutputType]
-├── SimpleETL[Dict, Dict]
-├── DataFrameETL[Dict, Dict]
-└── Custom ETL implementations
-```
-
-**Processing Pipeline**:
-```
-Extract → Validate → Transform → Batch → Load → Metrics
-    ↓         ↓          ↓        ↓       ↓        ↓
- Source → Pydantic → Business → Chunks → Store → Report
-         Models     Logic              
+class ArxivETL:
+    def extract(self) -> List[Dict[str, Any]]:
+        # Extract from ArXiv via watcher
+        
+    def transform(self, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        # NLP classification, GitHub enrichment, PapersWithCode integration
+        
+    def load(self, transformed_papers: List[Dict[str, Any]]):
+        # Save to JSON/CSV with statistics
 ```
 
 ### 3. Watcher System (`src/watchers/`)
 
-**Purpose**: Continuous monitoring of web content changes
+**Real Implementation**:
+- `BaseWatcher`: State persistence, event recording, change detection
+- `ArxivWatcher`: RSS feed monitoring with XML parsing
+- `MSSkillsWatcher`: Complex web scraping with dynamic content
+- `EnhancedWatcher`: Advanced multi-source monitoring
 
-**Key Components**:
-- `BaseWatcher`: Abstract base class for content monitoring
-- State persistence and event recording
-- Configurable check intervals and change detection
-
-**Design Patterns**:
-- **Observer Pattern**: Change detection and notifications
-- **State Pattern**: Watcher state management
-- **Command Pattern**: Check operations
-- **Strategy Pattern**: Different change detection algorithms
-
+**Actual Workflow**:
 ```python
-# Watcher workflow
-fetch_page() → extract_value() → has_changed() → trigger_alarm()
-     ↓              ↓              ↓              ↓
-  HTTP Get → Content Parse → Compare State → Record Event
+class BaseWatcher:
+    def check(self):
+        html_content = self.fetch_page()
+        current_value = self.extract_value(html_content)
+        if self.has_changed(self.previous_state["last_value"], current_value):
+            self.trigger_alarm(old_value, current_value)
+            self._record_event("change_detected", old_value, current_value)
 ```
 
-### 4. Exception Framework (`src/exceptions/`)
+### 4. Streamlit Frontend (`src/web/fullstreamlit/`)
 
-**Purpose**: Comprehensive error handling with context preservation
+**Real Implementation**:
+- **Tab-Based Architecture**: Modular components for different data types
+- **Performance Optimization**: Ultra-optimized data service with caching
+- **Component System**: Separate modules for videos, courses, news, papers, etc.
+- **Custom Styling**: CSS-based theming with responsive design
 
-**Key Components**:
-- `WatchtowerError`: Base exception with error codes
-- Specialized exceptions for each component
-- Context preservation and error recovery
+**Actual Tab Components**:
+- `arxiv_papers.py`: ArXiv paper visualization
+- `courses_tab.py`: Course aggregation and filtering
+- `news_tab.py`: News feed compilation
+- `monitoring_tab.py`: System health and metrics
+- `innovation_tab.py`: Technology trend analysis
 
-**Design Patterns**:
-- **Chain of Responsibility**: Exception handling chain
-- **Decorator Pattern**: Error handling decorators
-- **Factory Pattern**: Exception creation with context
+### 5. Exception System (`src/exceptions/`)
+
+**Real Implementation**:
+- `WatchtowerError`: Base exception with error codes and context
+- **Domain-Specific Exceptions**: ETLError, WatcherError, ValidationError
+- **Context Preservation**: Rich error information with timestamps
+- **Structured Logging**: Integration with logging system
 
 ```python
-# Exception hierarchy
-WatchtowerError
-├── ETLError
-│   ├── ExtractionError
-│   ├── TransformationError
-│   └── LoadError
-├── WatcherError
-├── ConfigurationError
-└── ValidationError
+class WatchtowerError(Exception):
+    def __init__(self, message: str, error_code: Optional[str] = None, 
+                 context: Optional[Dict[str, Any]] = None):
+        self.message = message
+        self.error_code = error_code or self._generate_error_code()
+        self.context = context or {}
+        self.timestamp = datetime.utcnow()
 ```
-
-### 5. Logging System (`src/utils/logging.py`)
-
-**Purpose**: Structured logging with performance monitoring
-
-**Key Features**:
-- **Structured JSON Logging**: Machine-readable log format
-- **Performance Monitoring**: Automatic timing and metrics
-- **Contextual Information**: Rich debugging context
-- **Multiple Outputs**: File and console logging
-
-**Design Patterns**:
-- **Decorator Pattern**: Automatic instrumentation
-- **Factory Pattern**: Logger creation
-- **Strategy Pattern**: Different log formatters
 
 ---
 
 ## Data Flow Patterns
 
-### 1. ETL Data Flow
+### 1. ETL Data Flow (Actual)
 
 ```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   External  │    │     ETL     │    │   Storage   │
-│   Sources   │    │   Process   │    │             │
-│             │    │             │    │             │
-│ • RSS Feeds │───►│ Extract     │───►│ • JSON      │
-│ • APIs      │    │ Transform   │    │ • CSV       │
-│ • Web Pages │    │ Load        │    │ • Database  │
-└─────────────┘    └─────────────┘    └─────────────┘
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  External   │    │   Watcher   │    │     ETL     │    │   Storage   │
+│  Sources    │    │             │    │   Process   │    │             │
+│             │    │             │    │             │    │             │
+│ • ArXiv RSS │───►│ • Monitor   │───►│ • Extract   │───►│ • JSON      │
+│ • Course    │    │ • Parse     │    │ • Transform │    │ • CSV       │
+│   APIs      │    │ • Store     │    │ • Classify  │    │ • Events    │
+│ • News      │    │ • Event     │    │ • Enrich    │    │ • Reports   │
+│   Feeds     │    │             │    │ • Load      │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+                                              │
+                                              ▼
+                                   ┌─────────────┐
+                                   │  Streamlit  │
+                                   │  Dashboard  │
+                                   │             │
+                                   │ • Visualize │
+                                   │ • Filter    │
+                                   │ • Analyze   │
+                                   │ • Export    │
+                                   └─────────────┘
+```
+
+### 2. Watcher Data Flow (Actual)
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ Target Site │    │   Watcher   │    │   State     │    │   Events    │
+│             │    │             │    │ Management  │    │             │
+│ • ArXiv     │───►│ • Fetch     │───►│ • Compare   │───►│ • Change    │
+│ • MS Skills │    │ • Parse     │    │ • Update    │    │   Events    │
+│ • Course    │    │ • Extract   │    │ • Persist   │    │ • Alerts    │
+│   Sites     │    │   Value     │    │             │    │ • Logs      │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
                           │
                           ▼
                    ┌─────────────┐
-                   │   Metrics   │
-                   │             │
-                   │ • Records   │
-                   │ • Timing    │
-                   │ • Errors    │
-                   └─────────────┘
-```
-
-### 2. Watcher Data Flow
-
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│ Target Page │    │   Watcher   │    │    Events   │
-│             │    │             │    │             │
-│ • HTML      │───►│ Monitor     │───►│ • Changes   │
-│ • Content   │    │ Compare     │    │ • Alerts    │
-│ • Structure │    │ Detect      │    │ • History   │
-└─────────────┘    └─────────────┘    └─────────────┘
-                          │
-                          ▼
-                   ┌─────────────┐
-                   │    State    │
+                   │  JSON State │
                    │             │
                    │ • Last Val  │
                    │ • Timestamp │
@@ -295,230 +287,146 @@ WatchtowerError
                    └─────────────┘
 ```
 
-### 3. Configuration Data Flow
+### 3. Streamlit Data Flow (Actual)
 
 ```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│Environment  │    │Configuration│    │ Components  │
-│Variables    │    │ System      │    │             │
-│             │───►│             │───►│ • ETL       │
-│ • Env Vars  │    │ • Validation│    │ • Watchers  │
-│ • .env File │    │ • Defaults  │    │ • Logging   │
-│ • CLI Args  │    │ • Override  │    │ • Database  │
-└─────────────┘    └─────────────┘    └─────────────┘
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   JSON/CSV  │    │    Data     │    │  Component  │    │    User     │
+│   Files     │    │   Service   │    │   System    │    │ Interface   │
+│             │    │             │    │             │    │             │
+│ • Papers    │───►│ • Cache     │───►│ • Tabs      │───►│ • Dashboard │
+│ • Courses   │    │ • Filter    │    │ • Metrics   │    │ • Filters   │
+│ • News      │    │ • Aggregate │    │ • Charts    │    │ • Analytics │
+│ • Events    │    │ • Optimize  │    │ • Tables    │    │ • Export    │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
 ---
 
 ## Technology Stack
 
-### Core Technologies
+### Actually Used Technologies
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Language** | Python 3.10+ | Modern Python features and performance |
-| **Async** | asyncio, aiohttp | Scalable I/O operations |
-| **Validation** | Pydantic v2 | Type-safe data models |
-| **Web Scraping** | Playwright, BeautifulSoup | Robust content extraction |
-| **Data Processing** | Polars (primary), Pandas | High-performance data manipulation |
-| **Web Interface** | Streamlit | Interactive dashboard |
-| **Configuration** | Pydantic Settings | Environment-based configuration |
-| **Testing** | pytest | Comprehensive testing framework |
+| Component | Technology | Actual Usage |
+|-----------|------------|--------------|
+| **Language** | Python 3.10+ | Core implementation language |
+| **Web Framework** | Streamlit | Main dashboard interface |
+| **Data Processing** | pandas, JSON | Primary data manipulation |
+| **Web Scraping** | requests, BeautifulSoup | Content extraction |
+| **Configuration** | Pydantic Settings | Settings management |
+| **File Storage** | JSON, CSV | Primary data persistence |
+| **Classification** | scikit-learn | NLP content classification |
+| **External APIs** | ArXiv API, GitHub API | Data source integration |
+| **Logging** | Python logging | System monitoring |
 
-### Supporting Technologies
+### Supporting Libraries
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Logging** | structlog | Structured logging |
-| **Database** | SQLite/PostgreSQL | Data persistence |
-| **Packaging** | Poetry/pip | Dependency management |
-| **Code Quality** | Ruff | Linting and formatting |
-| **Documentation** | Markdown | Documentation system |
+| Purpose | Library | Usage |
+|---------|---------|-------|
+| **RSS Parsing** | feedparser | ArXiv RSS feeds |
+| **HTTP Requests** | requests | Web scraping |
+| **Data Science** | pandas, numpy | Data processing |
+| **Machine Learning** | scikit-learn | Classification |
+| **Date/Time** | datetime | Timestamps |
+| **File Operations** | pathlib, os | File management |
+| **Performance** | @st.cache_data | Streamlit caching |
 
 ---
 
-## Design Patterns
+## Implementation Patterns
 
-### 1. Creational Patterns
+### 1. Factory Pattern (Configuration)
 
-**Factory Pattern**: Configuration and component creation
-```python
-def create_etl(etl_type: str, **kwargs) -> BaseETL:
-    if etl_type == "simple":
-        return SimpleETL(**kwargs)
-    elif etl_type == "dataframe":
-        return DataFrameETL(**kwargs)
-```
-
-**Singleton Pattern**: Configuration management
 ```python
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()
 ```
 
-### 2. Structural Patterns
+### 2. Template Method (ETL)
 
-**Adapter Pattern**: Different data source adapters
-```python
-class RSSAdapter(DataSourceAdapter):
-    def fetch_data(self) -> List[Dict]:
-        # RSS-specific implementation
-        pass
-```
-
-**Facade Pattern**: Simplified API interfaces
-```python
-class WatchtowerFacade:
-    def run_etl(self, name: str):
-        # Simplified interface for complex operations
-        pass
-```
-
-### 3. Behavioral Patterns
-
-**Template Method Pattern**: ETL workflow
 ```python
 class BaseETL(ABC):
     def run(self) -> ETLMetrics:
-        data = self.extract()      # Abstract
-        transformed = self.transform(data)  # Abstract
-        self.load(transformed)     # Abstract
+        data = self.extract()           # Implemented by subclass
+        transformed = self.transform(data)  # Implemented by subclass  
+        self.load(transformed)          # Implemented by subclass
         return self.metrics
 ```
 
-**Observer Pattern**: Event handling
+### 3. State Pattern (Watchers)
+
 ```python
-class EventEmitter:
+class BaseWatcher:
     def __init__(self):
-        self._observers = []
+        self.previous_state = self._load_state()
     
-    def notify(self, event):
-        for observer in self._observers:
-            observer.handle_event(event)
+    def check(self):
+        if self.has_changed(old_state, new_state):
+            self._save_state(new_state)
+            self._record_event("change_detected")
 ```
 
-**Strategy Pattern**: Different algorithms
+### 4. Component Pattern (Streamlit)
+
 ```python
-class ChangeDetectionStrategy(ABC):
-    @abstractmethod
-    def has_changed(self, old_value, new_value) -> bool:
-        pass
+# Tab-based modular architecture
+tabs = st.tabs(["ArXiv", "Courses", "News", "Monitoring"])
+with tabs[0]:
+    arxiv_papers.render()
+with tabs[1]:
+    courses_tab.render()
 ```
 
 ---
 
-## Scalability & Performance
+## File Organization
 
-### 1. Concurrency Model
-
-**Async I/O**: Non-blocking operations for network requests
-```python
-async def fetch_multiple_sources():
-    async with aiohttp.ClientSession() as session:
-        tasks = [fetch_source(session, url) for url in urls]
-        return await asyncio.gather(*tasks)
-```
-
-**Thread Pool**: CPU-intensive operations
-```python
-with ThreadPoolExecutor(max_workers=settings.etl.max_workers) as executor:
-    futures = [executor.submit(process_chunk, chunk) for chunk in chunks]
-    results = [future.result() for future in futures]
-```
-
-### 2. Memory Management
-
-**Batch Processing**: Controlled memory usage
-```python
-def process_in_batches(data: List[Any], batch_size: int):
-    for i in range(0, len(data), batch_size):
-        yield data[i:i + batch_size]
-```
-
-**Streaming**: Large dataset handling
-```python
-def process_large_file(filepath: Path):
-    with open(filepath) as f:
-        for line in f:  # Process line by line
-            yield process_line(line)
-```
-
-### 3. Caching Strategy
-
-**Function-Level Caching**: Expensive operations
-```python
-@lru_cache(maxsize=1000)
-def expensive_computation(input_data: str) -> str:
-    # Cached computation
-    return result
-```
-
-**Data Caching**: Frequently accessed data
-```python
-class DataCache:
-    def __init__(self, ttl: int = 3600):
-        self._cache = {}
-        self._timestamps = {}
-        self._ttl = ttl
-```
-
-### 4. Database Optimization
-
-**Connection Pooling**: Efficient database access
-```python
-DATABASE__POOL_SIZE=20
-DATABASE__MAX_OVERFLOW=30
-```
-
-**Indexed Queries**: Fast data retrieval
-```sql
-CREATE INDEX idx_timestamp ON events(timestamp);
-CREATE INDEX idx_watcher_name ON events(watcher_name);
-```
-
----
-
-## Future Architecture Considerations
-
-### 1. Microservices Evolution
-
-Current monolithic structure can evolve into microservices:
+### Actual Directory Structure
 
 ```
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│ ETL Service │  │Watcher Svc  │  │ API Gateway │
-└─────────────┘  └─────────────┘  └─────────────┘
-       │                 │                 │
-       └─────────────────┼─────────────────┘
-                         │
-                 ┌─────────────┐
-                 │Config Svc   │
-                 └─────────────┘
+src/
+├── config/              # Pydantic settings management
+│   ├── settings.py      # Main settings class
+│   └── models.py        # Configuration models
+├── etl/                 # ETL pipelines
+│   ├── base.py          # BaseETL framework
+│   ├── arxiv/           # ArXiv processing
+│   ├── news/            # News processing  
+│   ├── games/           # Games processing
+│   └── security/        # Security processing
+├── watchers/            # Monitoring system
+│   ├── base_watcher.py  # BaseWatcher framework
+│   ├── arxiv_watcher.py # ArXiv monitoring
+│   └── ms_skills_watcher.py # MS Skills monitoring
+├── web/fullstreamlit/   # Streamlit frontend
+│   ├── app.py           # Main application
+│   ├── components/      # Tab components
+│   └── utils/           # Data services
+├── utils/               # Shared utilities
+│   ├── logging.py       # Logging system
+│   ├── file_system.py   # File operations
+│   └── nlp_classifier.py # Classification
+└── exceptions/          # Error handling
+    ├── base.py          # Base exceptions
+    └── etl.py           # ETL exceptions
 ```
 
-### 2. Event-Driven Architecture
-
-Implement event sourcing for better scalability:
+### Data Organization
 
 ```
-Events → Event Store → Event Handlers → Projections
+data/
+├── arxiv/               # ArXiv papers
+│   ├── processed/       # ETL outputs
+│   └── events/          # Watcher events
+├── courses/             # Course data
+├── news/                # News articles
+├── watchers/            # Watcher states
+│   └── {watcher_name}/
+│       ├── state.json   # Current state
+│       └── events/      # Change events
+└── models/              # ML models
+    └── nlp/             # Classification models
 ```
 
-### 3. Container Orchestration
-
-Docker and Kubernetes deployment:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: watchtower
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: watchtower
-```
-
-This architecture provides a solid foundation for current needs while enabling future evolution and scaling requirements. 
+This architecture represents the **actual working system** as implemented, focusing on practical data processing, monitoring, and visualization rather than theoretical enterprise patterns. The system is designed for specific use cases and optimized for the Streamlit dashboard experience. 

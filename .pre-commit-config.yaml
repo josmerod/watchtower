@@ -6,30 +6,119 @@ repos:
     -   id: end-of-file-fixer
     -   id: check-yaml
     -   id: check-added-large-files
+        args: ['--maxkb=1000']
     -   id: check-toml
     -   id: check-merge-conflict
+    -   id: check-json
+    -   id: check-xml
+    -   id: check-case-conflict
+    -   id: check-docstring-first
+    -   id: check-executables-have-shebangs
+    -   id: check-shebang-scripts-are-executable
+    -   id: debug-statements
+    -   id: name-tests-test
+        args: ['--pytest-test-first']
+    -   id: requirements-txt-fixer
 
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.5 # Make sure this is the latest version of ruff
+    rev: v0.5.5
     hooks:
     -   id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi, jupyter]
     -   id: ruff-format
+        types_or: [python, pyi, jupyter]
 
 -   repo: https://github.com/psf/black
-    rev: 24.8.0 # Make sure this is the latest version of black
+    rev: 24.8.0
     hooks:
     -   id: black
+        language_version: python3.10
+        types_or: [python, pyi]
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.0 # Make sure this is the latest version of mypy
+    rev: v1.11.0
     hooks:
     -   id: mypy
-        args: [--strict]
+        args: [--strict, --ignore-missing-imports, --show-error-codes]
         additional_dependencies:
           - types-requests
           - types-python-dateutil
           - types-pytz
           - types-tqdm
           - types-beautifulsoup4
-          # Add other types-* packages as needed for your dependencies 
+          - types-pyyaml
+          - types-setuptools
+          - types-toml
+          - pydantic
+          - fastapi
+          - streamlit
+          - polars
+          - pandas-stubs
+
+-   repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+    -   id: isort
+        args: ["--profile", "black", "--filter-files"]
+
+-   repo: https://github.com/pycqa/bandit
+    rev: 1.7.5
+    hooks:
+    -   id: bandit
+        args: ["-r", "-x", "tests/"]
+        exclude: ^tests/
+
+-   repo: https://github.com/PyCQA/docformatter
+    rev: v1.7.5
+    hooks:
+    -   id: docformatter
+        args: [--in-place, --wrap-summaries=88, --wrap-descriptions=88]
+
+-   repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+    -   id: interrogate
+        args: [--quiet, --fail-under=80, --ignore-init-method, --ignore-module]
+        exclude: ^(docs/|tests/)
+
+-   repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+    -   id: python-check-blanket-noqa
+    -   id: python-check-blanket-type-ignore
+    -   id: python-no-log-warn
+    -   id: python-use-type-annotations
+    -   id: rst-backticks
+    -   id: rst-directive-colons
+    -   id: rst-inline-touching-normal
+
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+    -   id: pyupgrade
+        args: [--py310-plus]
+
+-   repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.2
+    hooks:
+    -   id: python-safety-dependencies-check
+        files: requirements.*\.txt$
+
+-   repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+    -   id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package.lock.json
+
+-   repo: local
+    hooks:
+    -   id: pytest-check
+        name: pytest-check
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true
+        args: [--tb=short, -q]
+        stages: [push]

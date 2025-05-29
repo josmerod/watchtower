@@ -12,23 +12,48 @@ from src.watchers.base_watcher import BaseWatcher
 
 class ArxivWatcher(BaseWatcher):
     """
-    Watcher for ArXiv papers related to AI/ML.
+    Watcher for ArXiv papers related to AI/ML, Programming, Cloud Architecture, and Enterprise Architecture.
     
-    This watcher monitors ArXiv for new papers in AI/ML categories and 
-    tracks changes in the latest publications.
+    This watcher monitors ArXiv for new papers in AI/ML categories and related computer science 
+    domains including programming languages, software engineering, distributed computing, 
+    networking, and systems architecture.
     """
     
     # ArXiv API URL with AI/ML categories
     ARXIV_API_BASE = "http://export.arxiv.org/api/query"
     
-    # AI and ML related categories
+    # AI, ML, Programming, Cloud Architecture, and Enterprise Architecture related categories
     AI_ML_CATEGORIES = [
+        # Core AI/ML Categories
         "cs.AI",    # Artificial Intelligence
         "cs.LG",    # Machine Learning
         "cs.CL",    # Computation and Language (NLP)
         "cs.CV",    # Computer Vision
         "cs.NE",    # Neural and Evolutionary Computing
         "stat.ML",  # Statistics - Machine Learning
+        
+        # Programming and Software Engineering
+        "cs.PL",    # Programming Languages
+        "cs.SE",    # Software Engineering
+        "cs.LO",    # Logic in Computer Science
+        "cs.FL",    # Formal Languages and Automata Theory
+        "cs.DS",    # Data Structures and Algorithms
+        
+        # Cloud Architecture and Distributed Systems
+        "cs.DC",    # Distributed, Parallel, and Cluster Computing
+        "cs.NI",    # Networking and Internet Architecture
+        "cs.OS",    # Operating Systems
+        "cs.AR",    # Hardware Architecture
+        "cs.SY",    # Systems and Control
+        "cs.PF",    # Performance
+        
+        # Enterprise Architecture and Related Systems
+        "cs.DB",    # Databases
+        "cs.CY",    # Computers and Society
+        "cs.ET",    # Emerging Technologies
+        "cs.CR",    # Cryptography and Security
+        "cs.SI",    # Social and Information Networks
+        "cs.CE",    # Computational Engineering, Finance, and Science
     ]
     
     def __init__(

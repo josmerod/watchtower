@@ -16,5 +16,9 @@ from src.web.fullstreamlit.components import (
     innovation_tab,
     crypto_tab,
     security_tab,
-    monitoring_tab
+    monitoring_tab,
+    enhanced_arxiv_papers,
+    enhanced_innovation_tab,
+    tech_events_tab,
+    ai_platforms_tab
 ) 
