@@ -1,32 +1,21 @@
 # Data directories
-/data
-/data/*
-**/data/*
+**/data/
 
 # Python cache
-**/__pycache__/*
-**/__pycache__/*.pyc
+**/__pycache__/
 
 # IDE and editor files
-/.vscode
-/.VSCodeCounter
-/.VSCodeCounter/*
+.vscode/
+.VSCodeCounter/
 **/.DS_Store
 
 # Build and dependencies
-/build
-/node_modules
-/venv
-/venv/*
+build/
+node_modules/
+.venv/
 
 # Logs
-/logs
-/logs/*
-**/logs/*
-
-# Web app specific
-src/web/*/logs/*
-src/web/*/data/*
+**/logs/
 
 # Playwright
 **/ms-playwright/
@@ -34,7 +23,7 @@ src/web/*/data/*
 # Udemy related
 src/etl/goldigging/free_udemy_courses/duce-cli-settings.json
 src/etl/goldigging/free_udemy_courses/courses_to_enroll.json
-src/etl/goldigging/free_udemy_courses/Courses/*
+src/etl/goldigging/free_udemy_courses/Courses/
 src/miners/udemy-universal/courses_to_enroll.json
 src/miners/udemy-universal/debug_rd_page.html
 
@@ -43,4 +32,4 @@ src/miners/asf-winonly/config/
 src/miners/asf-winonly/logs/
 
 # Temporary files
-tmpxtrpjvj9.tmp-Frag1
+*.tmp*

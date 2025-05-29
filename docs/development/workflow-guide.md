@@ -6,11 +6,13 @@ A comprehensive guide for contributing to the Watchtower project, covering devel
 
 1. [Getting Started](#getting-started)
 2. [Development Environment](#development-environment)
-3. [Coding Standards](#coding-standards)
-4. [Testing Workflow](#testing-workflow)
-5. [Git Workflow](#git-workflow)
-6. [Code Review Process](#code-review-process)
-7. [Release Process](#release-process)
+3. [Current Architecture](#current-architecture)
+4. [Coding Standards](#coding-standards)
+5. [Testing Workflow](#testing-workflow)
+6. [Git Workflow](#git-workflow)
+7. [Code Review Process](#code-review-process)
+8. [Release Process](#release-process)
+9. [Deployment and Automation](#deployment-and-automation)
 
 ---
 
@@ -30,6 +32,7 @@ ms-python.python
 ms-python.ruff
 ms-python.pylint
 ms-toolsai.jupyter
+ms-python.mypy-type-checker
 ```
 
 ### Initial Setup
@@ -39,17 +42,24 @@ ms-toolsai.jupyter
 git clone https://github.com/your-username/watchtower.git
 cd watchtower
 
-# Setup development environment
+# Setup development environment (Poetry recommended)
+poetry install
+poetry shell
+
+# OR using venv
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 .venv\Scripts\activate.bat  # Windows
 
-# Install development dependencies
+# Install dependencies
+pip install -e .
 pip install -r requirements-dev.txt
-pip install -r requirements.txt
 
 # Install pre-commit hooks
 pre-commit install
+
+# Install Playwright browsers
+playwright install
 
 # Run initial tests to verify setup
 python -m pytest Tests/unit/ -v
@@ -59,66 +69,182 @@ python -m pytest Tests/unit/ -v
 
 ## Development Environment
 
-### Recommended IDE Configuration
+### Current Project Structure
 
-**VS Code Settings (`.vscode/settings.json`)**:
-```json
-{
-    "python.defaultInterpreterPath": "./.venv/bin/python",
-    "python.linting.enabled": true,
-    "python.linting.ruffEnabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.formatting.provider": "black",
-    "python.testing.pytestEnabled": true,
-    "python.testing.pytestArgs": ["Tests/"],
-    "files.exclude": {
-        "**/__pycache__": true,
-        "**/*.pyc": true
-    }
-}
+```
+watchtower/
+├── src/                           # Source code
+│   ├── analytics/                 # Data analytics components
+│   │   ├── __init__.py
+│   │   ├── models.py              # Configuration models
+│   │   └── settings.py            # Main settings with environment support
+│   ├── data/                      # Data handling and connectors
+│   ├── etl/                       # ETL pipelines
+│   │   ├── arxiv/                 # arXiv paper extraction
+│   │   ├── events/                # Event processing
+│   │   ├── games/                 # Game deals and data
+│   │   ├── goldigging/            # Investment/opportunity tracking
+│   │   ├── news/                  # News aggregation
+│   │   └── security/              # Security vulnerability tracking
+│   ├── exceptions/                # Custom exception classes
+│   ├── miners/                    # Specialized extraction tools
+│   │   ├── asf-winonly/           # Steam Achievement Farm (Windows)
+│   │   └── udemy-universal/       # Udemy course mining
+│   ├── models/                    # Data models and schemas
+│   ├── orchestrator/              # Task orchestration and scheduling
+│   ├── utils/                     # Shared utilities
+│   │   ├── file_system.py         # File system operations
+│   │   ├── logging.py             # Centralized logging
+│   │   ├── nlp_classifier.py      # NLP and ML utilities
+│   │   └── recommender.py         # Recommendation engine
+│   ├── watchers/                  # Content change monitoring
+│   └── web/                       # Web applications
+│       └── fullstreamlit/         # Main Streamlit dashboard
+│           ├── components/        # Reusable UI components
+│           ├── styles/            # CSS and styling
+│           ├── utils/             # App-specific utilities
+│           └── app.py             # Main application entry
+├── data/                          # Data storage (git-ignored)
+├── logs/                          # Application logs
+├── Tests/                         # Test suite
+│   ├── unit/                      # Unit tests
+│   ├── integration/               # Integration tests
+│   ├── etl/                       # ETL-specific tests
+│   └── data/                      # Test data
+├── docs/                          # Documentation
+├── config/                        # Configuration files
+├── .streamlit/                    # Streamlit configuration
+└── automation scripts            # Various .bat/.sh/.ps1 files
+```
+
+### Configuration Management
+
+Watchtower uses **Pydantic Settings** for robust configuration management:
+
+```python
+# Example: Using the configuration system
+from src.config.settings import get_settings
+
+def setup_component():
+    settings = get_settings()
+    
+    # Access nested configurations
+    db_url = settings.database.url
+    log_level = settings.logging.level
+    api_timeout = settings.api.timeout
+    
+    # Environment-specific settings
+    if settings.is_development():
+        # Development-specific logic
+        pass
 ```
 
 ### Environment Variables
 
-Create a `.env.dev` file for development:
+Create environment-specific `.env` files:
 
 ```bash
-# Development environment
+# .env (development)
 ENVIRONMENT=development
 DEBUG=true
-
-# Logging configuration
-LOGGING__LEVEL=DEBUG
-LOGGING__FILE_ENABLED=true
 
 # Database configuration
 DATABASE__URL=sqlite:///watchtower_dev.db
 DATABASE__ECHO=true
 
+# Logging configuration
+LOGGING__LEVEL=DEBUG
+LOGGING__FILE_ENABLED=true
+LOGGING__FILE_PATH=logs/watchtower.log
+
 # ETL configuration
-ETL__BATCH_SIZE=100  # Smaller batches for testing
+ETL__BATCH_SIZE=100
 ETL__MAX_WORKERS=2
+ETL__TIMEOUT=30
 
 # Scraping configuration
 SCRAPING__TIMEOUT=10
-SCRAPING__MAX_RETRIES=2
+SCRAPING__MAX_RETRIES=3
 SCRAPING__CONCURRENT_LIMIT=5
+SCRAPING__USER_AGENT="Watchtower/0.1.0"
+
+# Streamlit configuration
+STREAMLIT__HOST=localhost
+STREAMLIT__PORT=8501
+STREAMLIT__DEBUG=true
+
+# API configuration
+API__HOST=0.0.0.0
+API__PORT=8000
+API__RELOAD=true
 ```
 
 ### Development Scripts
 
+The project includes numerous automation scripts:
+
 ```bash
-# Run development server
-./start_dev_server.sh
+# Start Streamlit dashboard
+./start_streamlit.sh         # Linux/Mac
+./start_streamlit.bat        # Windows
 
-# Run all tests
-./run_tests.sh
+# Run ETL pipelines
+./run_all_etl.sh            # All ETL pipelines
+./run_enhanced_arxiv_etl.py # Specific ETL
 
-# Format code
-./format_code.sh
+# Run watchers
+./run_watcher.bat           # Start watchers
 
-# Type checking
-./check_types.sh
+# Development utilities
+./deduplicate_courses.sh    # Clean duplicate data
+./manage_streamlit_service.sh # Service management
+```
+
+---
+
+## Current Architecture
+
+### Key Components
+
+#### 1. Configuration System (`src/config/`)
+- **Pydantic Settings**: Type-safe configuration with environment variable support
+- **Nested Configuration**: Organized by component (database, logging, api, etc.)
+- **Environment Detection**: Automatic development/production/testing modes
+
+#### 2. ETL Framework (`src/etl/`)
+- **Modular Pipelines**: Each source has its own ETL module
+- **Base Classes**: Standardized extraction, transformation, and loading
+- **Error Handling**: Comprehensive error handling with custom exceptions
+
+#### 3. Watcher System (`src/watchers/`)
+- **BaseWatcher**: Extensible base class for content monitoring
+- **Event-Driven**: Change detection with notification support
+- **Configurable**: Flexible monitoring intervals and criteria
+
+#### 4. Web Dashboard (`src/web/fullstreamlit/`)
+- **Multi-Component UI**: Modular Streamlit components
+- **Real-time Data**: Live data visualization and interaction
+- **Performance Optimized**: Caching and efficient data loading
+
+#### 5. Orchestration (`src/orchestrator/`)
+- **MetaOrchestrator**: Manages multiple task orchestrators
+- **Fault Tolerance**: Auto-restart and error recovery
+- **Scheduling**: Flexible task scheduling and execution
+
+### Data Flow
+
+```mermaid
+graph TD
+    A[Data Sources] --> B[ETL Pipelines]
+    B --> C[Data Storage]
+    C --> D[Streamlit Dashboard]
+    E[Watchers] --> F[Change Detection]
+    F --> G[Notifications]
+    H[Orchestrator] --> B
+    H --> E
+    I[Configuration] --> B
+    I --> E
+    I --> D
 ```
 
 ---
@@ -127,165 +253,218 @@ SCRAPING__CONCURRENT_LIMIT=5
 
 ### Python Style Guide
 
-We follow **PEP 8** with the following specific guidelines:
+We follow **PEP 8** with **Ruff** for linting and **Black** for formatting:
 
-#### 1. Imports
+#### 1. Tool Configuration
+
+**pyproject.toml - Ruff Configuration**:
+```toml
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings 
+    "I",   # isort
+    "UP",  # pyupgrade
+    "C4",  # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "A",   # flake8-builtins
+    "RUF", # Ruff-specific rules
+    "N",   # pep8-naming
+    "D",   # pydocstyle
+    "PT",  # pytest style
+    "SIM", # simplify
+]
+
+[tool.ruff.pydocstyle]
+convention = "google"  # Google-style docstrings
+
+[tool.mypy]
+python_version = "3.10"
+disallow_untyped_defs = true
+check_untyped_defs = true
+strict_optional = true
+```
+
+#### 2. Import Organization
 ```python
-# Standard library imports first
+"""Module docstring explaining purpose."""
+
+from __future__ import annotations
+
+# Standard library imports
 import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 # Third-party imports
 import pandas as pd
+import polars as pl
 from pydantic import BaseModel
 
 # Local imports
 from src.config.settings import get_settings
 from src.utils.logging import get_logger
+from src.watchers.base_watcher import BaseWatcher
 ```
 
-#### 2. Type Hints
+#### 3. Type Hints and Documentation
 ```python
-# Always include type hints for function parameters and returns
+from typing import Any, Dict, List, Optional, Union
+
+# Type aliases for complex types
+DataDict = Dict[str, Union[str, int, float, bool]]
+ProcessedData = List[DataDict]
+
 def process_data(
     input_data: List[Dict[str, Any]], 
-    batch_size: int = 1000
-) -> List[Dict[str, Any]]:
-    """Process data in batches.
+    batch_size: int = 1000,
+    timeout: Optional[int] = None
+) -> ProcessedData:
+    """Process data in configurable batches.
     
     Args:
         input_data: Raw data to process
         batch_size: Number of items per batch
+        timeout: Processing timeout in seconds
         
     Returns:
-        Processed data list
-    """
-    # Implementation
-    pass
-
-# Use type aliases for complex types
-DataDict = Dict[str, Union[str, int, float, bool]]
-ProcessedData = List[DataDict]
-```
-
-#### 3. Docstrings
-Use **Google-style docstrings**:
-
-```python
-def extract_content(url: str, timeout: int = 30) -> str:
-    """Extract content from a web page.
-    
-    Args:
-        url: The URL to fetch content from
-        timeout: Request timeout in seconds
-        
-    Returns:
-        The extracted HTML content
+        List of processed data dictionaries
         
     Raises:
-        ExtractionError: If the content cannot be extracted
-        TimeoutError: If the request times out
+        ProcessingError: If data processing fails
+        TimeoutError: If processing exceeds timeout
         
     Example:
-        >>> content = extract_content("https://example.com")
-        >>> len(content) > 0
+        >>> data = [{"id": 1, "value": "test"}]
+        >>> result = process_data(data, batch_size=10)
+        >>> len(result) == 1
         True
     """
-    # Implementation
-    pass
-```
-
-#### 4. Error Handling
-```python
-# Use specific exceptions with context
-from src.exceptions.etl import ExtractionError
-
-def risky_operation(data: Any) -> Any:
+    settings = get_settings()
+    logger = get_logger(__name__)
+    
     try:
-        result = process_data(data)
-        return result
-    except ValueError as e:
-        raise ExtractionError(
-            message=f"Failed to process data: {e}",
-            error_code="DATA_PROCESSING_FAILED",
-            context={"input_type": type(data).__name__}
-        ) from e
+        # Implementation with proper error handling
+        pass
+    except Exception as e:
+        logger.error(f"Processing failed: {e}", exc_info=True)
+        raise ProcessingError(f"Failed to process data: {e}") from e
 ```
 
-#### 5. Configuration Usage
+#### 4. Configuration Usage Pattern
 ```python
-# Always use configuration system
 from src.config.settings import get_settings
 
-def setup_component():
-    settings = get_settings()
-    batch_size = settings.etl.batch_size
-    max_workers = settings.etl.max_workers
-    # Use settings throughout the function
-```
-
-### Code Organization
-
-#### 1. File Structure
-```python
-# Standard file structure
-"""Module docstring explaining purpose."""
-
-# Imports section
-import ...
-
-# Constants (if any)
-DEFAULT_TIMEOUT = 30
-MAX_RETRIES = 3
-
-# Type aliases (if any)
-DataType = Dict[str, Any]
-
-# Classes
-class ComponentName:
-    """Class docstring."""
-    pass
-
-# Functions
-def utility_function():
-    """Function docstring."""
-    pass
-
-# Main execution (if applicable)
-if __name__ == "__main__":
-    main()
-```
-
-#### 2. Class Design
-```python
 class DataProcessor:
-    """Processes data with configurable options.
+    """Processes data with configurable options."""
     
-    Attributes:
-        batch_size: Number of items to process per batch
-        logger: Logger instance for this processor
-    """
-    
-    def __init__(self, batch_size: int = 1000):
-        """Initialize the processor.
-        
-        Args:
-            batch_size: Items per batch
-        """
-        self.batch_size = batch_size
+    def __init__(self):
+        """Initialize processor with current settings."""
+        self.settings = get_settings()
         self.logger = get_logger(self.__class__.__name__)
-        self._setup()
-    
-    def _setup(self) -> None:
-        """Private setup method."""
-        # Internal setup logic
-        pass
+        
+        # Use configuration values
+        self.batch_size = self.settings.etl.batch_size
+        self.timeout = self.settings.etl.timeout
+        self.max_workers = self.settings.etl.max_workers
     
     def process(self, data: List[Any]) -> List[Any]:
-        """Public interface method."""
+        """Process data using configured parameters."""
+        self.logger.info(f"Processing {len(data)} items with batch size {self.batch_size}")
+        # Implementation
+```
+
+#### 5. Error Handling Pattern
+```python
+from src.exceptions.etl import ExtractionError, ProcessingError
+
+def extract_content(url: str) -> str:
+    """Extract content with comprehensive error handling."""
+    settings = get_settings()
+    logger = get_logger(__name__)
+    
+    try:
+        # Extraction logic
+        return content
+    except requests.RequestException as e:
+        raise ExtractionError(
+            message=f"Failed to fetch URL {url}",
+            error_code="NETWORK_ERROR",
+            context={"url": url, "timeout": settings.scraping.timeout}
+        ) from e
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}", exc_info=True)
+        raise ProcessingError(f"Unexpected extraction error: {e}") from e
+```
+
+### Code Organization Patterns
+
+#### 1. ETL Module Structure
+```python
+# src/etl/example/example_etl.py
+"""Example ETL pipeline implementation."""
+
+from typing import Any, Dict, List
+
+from src.config.settings import get_settings
+from src.etl.base import BaseETL
+from src.utils.logging import get_logger
+
+class ExampleETL(BaseETL):
+    """ETL pipeline for Example data source."""
+    
+    def __init__(self, name: str = "example"):
+        """Initialize ETL with configuration."""
+        super().__init__(name)
+        self.settings = get_settings()
+        self.logger = get_logger(self.__class__.__name__)
+    
+    def extract(self) -> List[Dict[str, Any]]:
+        """Extract data from source."""
+        # Implementation
+        pass
+    
+    def transform(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Transform extracted data."""
+        # Implementation
+        pass
+    
+    def load(self, data: List[Dict[str, Any]]) -> bool:
+        """Load transformed data."""
+        # Implementation
+        pass
+```
+
+#### 2. Watcher Implementation
+```python
+# src/watchers/example_watcher.py
+"""Example content watcher implementation."""
+
+from typing import Any, Dict, Optional
+
+from src.config.settings import get_settings
+from src.watchers.base_watcher import BaseWatcher
+
+class ExampleWatcher(BaseWatcher):
+    """Monitors Example website for content changes."""
+    
+    def __init__(self, name: str = "example_watcher"):
+        """Initialize watcher with configuration."""
+        super().__init__(name)
+        self.settings = get_settings()
+    
+    def check_for_changes(self) -> Optional[Dict[str, Any]]:
+        """Check for content changes."""
+        # Implementation
+        pass
+    
+    def get_current_content(self) -> str:
+        """Get current content for comparison."""
         # Implementation
         pass
 ```
@@ -294,178 +473,122 @@ class DataProcessor:
 
 ## Testing Workflow
 
-### Test Organization
+### Test Organization (Current Structure)
 
 ```
 Tests/
 ├── unit/           # Unit tests for individual components
 ├── integration/    # Integration tests
 ├── etl/           # ETL-specific tests
-├── data/          # Test data files
-└── fixtures/      # Pytest fixtures
+└── data/          # Test data files
 ```
 
 ### Writing Tests
 
-#### 1. Unit Tests
+#### 1. Unit Test Example
 ```python
-# test_data_processor.py
+# Tests/unit/test_config.py
+"""Tests for configuration management."""
+
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-from src.components.data_processor import DataProcessor
-from src.exceptions.etl import ProcessingError
+from src.config.settings import Settings, get_settings
 
-class TestDataProcessor:
-    """Test suite for DataProcessor."""
+class TestSettings:
+    """Test suite for Settings configuration."""
     
-    def setup_method(self):
-        """Setup for each test method."""
-        self.processor = DataProcessor(batch_size=10)
-    
-    def test_process_valid_data(self):
-        """Test processing with valid data."""
-        # Arrange
-        input_data = [{"id": i, "value": f"item_{i}"} for i in range(5)]
+    def test_default_settings(self):
+        """Test default configuration values."""
+        settings = Settings()
         
-        # Act
-        result = self.processor.process(input_data)
+        assert settings.app_name == "Watchtower"
+        assert settings.app_version == "0.1.0"
+        assert settings.environment.value == "development"
+    
+    def test_environment_variable_override(self):
+        """Test environment variable configuration override."""
+        with patch.dict('os.environ', {'DATABASE__URL': 'postgresql://test'}):
+            settings = Settings()
+            assert settings.database.url == 'postgresql://test'
+    
+    def test_settings_caching(self):
+        """Test that get_settings returns cached instance."""
+        settings1 = get_settings()
+        settings2 = get_settings()
         
-        # Assert
-        assert len(result) == 5
-        assert all("processed" in item for item in result)
-    
-    @pytest.mark.parametrize("invalid_data", [
-        None,
-        [],
-        [{"missing_id": "value"}]
-    ])
-    def test_process_invalid_data(self, invalid_data):
-        """Test processing with invalid data."""
-        with pytest.raises(ProcessingError):
-            self.processor.process(invalid_data)
-    
-    def test_process_with_mocked_dependency(self):
-        """Test with mocked external dependency."""
-        with patch('src.components.data_processor.external_api') as mock_api:
-            mock_api.return_value = {"status": "success"}
-            
-            result = self.processor.process([{"id": 1}])
-            
-            assert result is not None
-            mock_api.assert_called_once()
+        assert settings1 is settings2
 ```
 
-#### 2. Integration Tests
+#### 2. ETL Integration Test
 ```python
-# test_etl_integration.py
+# Tests/integration/test_arxiv_etl.py
+"""Integration tests for arXiv ETL pipeline."""
+
 import pytest
 import tempfile
 from pathlib import Path
 
-from src.etl.news.hackernews_etl import HackerNewsETL
+from src.etl.arxiv.enhanced_arxiv_etl import EnhancedArxivETL
 
-class TestHackerNewsETLIntegration:
-    """Integration tests for HackerNews ETL."""
+class TestArxivETLIntegration:
+    """Integration tests for arXiv ETL."""
     
-    def test_full_etl_pipeline(self):
-        """Test complete ETL pipeline."""
+    @pytest.mark.integration
+    def test_full_arxiv_pipeline(self):
+        """Test complete arXiv ETL pipeline."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            # Setup
-            etl = HackerNewsETL(
-                name="test_hackernews",
+            etl = EnhancedArxivETL(
+                name="test_arxiv",
                 output_dir=Path(temp_dir)
             )
             
-            # Execute
+            # Execute pipeline
             metrics = etl.run()
             
-            # Verify
+            # Verify results
             assert metrics.is_successful
             assert metrics.records_extracted > 0
-            assert metrics.records_loaded > 0
-            assert (Path(temp_dir) / "hackernews.json").exists()
-```
-
-#### 3. Test Fixtures
-```python
-# conftest.py
-import pytest
-import tempfile
-from pathlib import Path
-
-from src.config.settings import Settings
-
-@pytest.fixture
-def temp_directory():
-    """Provide a temporary directory for tests."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        yield Path(temp_dir)
-
-@pytest.fixture
-def test_settings():
-    """Provide test configuration."""
-    return Settings(
-        environment="testing",
-        debug=True,
-        database__url="sqlite:///:memory:",
-        logging__level="DEBUG"
-    )
-
-@pytest.fixture
-def sample_data():
-    """Provide sample data for tests."""
-    return [
-        {"id": 1, "title": "Test Article 1", "score": 100},
-        {"id": 2, "title": "Test Article 2", "score": 200},
-    ]
+            assert (Path(temp_dir) / "arxiv_papers.json").exists()
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-pytest
-
-# Run specific test categories
-pytest Tests/unit/
-pytest Tests/integration/
-pytest Tests/etl/
+poetry run pytest
+# OR
+python -m pytest
 
 # Run with coverage
-pytest --cov=src --cov-report=html
+pytest --cov=src --cov-report=html --cov-report=term-missing
 
-# Run specific test file
-pytest Tests/unit/test_data_processor.py -v
+# Run specific test categories
+pytest Tests/unit/ -v
+pytest Tests/integration/ -v -m integration
+pytest Tests/etl/ -v
 
-# Run tests matching pattern
-pytest -k "test_process" -v
-
-# Run tests with markers
-pytest -m "slow" -v
-pytest -m "not slow" -v
+# Run tests with specific markers
+pytest -m "not slow" -v      # Skip slow tests
+pytest -m "integration" -v   # Only integration tests
 ```
 
-### Test Markers
+### Test Configuration
 
-```python
-# Mark slow tests
-@pytest.mark.slow
-def test_large_dataset_processing():
-    """Test that takes significant time."""
-    pass
-
-# Mark integration tests
-@pytest.mark.integration
-def test_database_integration():
-    """Test requiring database."""
-    pass
-
-# Mark tests requiring network
-@pytest.mark.network
-def test_external_api():
-    """Test requiring internet connection."""
-    pass
+**pyproject.toml**:
+```toml
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=src --cov-report=term-missing"
+testpaths = ["Tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "network: marks tests requiring network access",
+]
 ```
 
 ---
@@ -476,7 +599,7 @@ def test_external_api():
 
 ```
 main                 # Production-ready code
-├── develop          # Integration branch
+├── develop          # Integration branch  
 ├── feature/xxx      # Feature development
 ├── bugfix/xxx       # Bug fixes
 ├── hotfix/xxx       # Critical production fixes
@@ -493,162 +616,113 @@ main                 # Production-ready code
 <footer>
 ```
 
-**Types**:
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks
-
 **Examples**:
 ```bash
-feat(etl): add HackerNews RSS parsing
+feat(etl): add enhanced arXiv paper classification
 
-- Implement RSS feed parsing for HackerNews
-- Add data validation with Pydantic models
-- Include comprehensive error handling
+- Implement ML-based paper categorization
+- Add confidence scoring for classifications
+- Include bias detection and mitigation
+- Add comprehensive logging and metrics
 
 Closes #123
 
 fix(watcher): handle connection timeouts gracefully
 
-- Add retry logic for network failures
+- Add exponential backoff retry logic
 - Increase default timeout to 30 seconds
-- Log connection errors with context
+- Improve error logging with context
+- Add connection health monitoring
 
 Fixes #456
 
-docs(api): update ETL framework documentation
+perf(streamlit): optimize dashboard data loading
 
-- Add comprehensive API reference
-- Include usage examples
-- Update architecture diagrams
-```
+- Implement smart caching for large datasets
+- Add pagination for better performance
+- Reduce initial load time by 60%
+- Add loading progress indicators
 
-### Development Workflow
-
-#### 1. Feature Development
-```bash
-# Start from develop branch
-git checkout develop
-git pull origin develop
-
-# Create feature branch
-git checkout -b feature/new-etl-source
-
-# Make changes
-# ... development work ...
-
-# Commit changes
-git add .
-git commit -m "feat(etl): add new ETL source support"
-
-# Push to remote
-git push origin feature/new-etl-source
-
-# Create pull request
-# ... via GitHub/GitLab interface ...
-```
-
-#### 2. Bug Fixes
-```bash
-# Create bugfix branch from develop
-git checkout develop
-git checkout -b bugfix/fix-watcher-timeout
-
-# Fix the issue
-# ... fix implementation ...
-
-# Test the fix
-pytest Tests/ -v
-
-# Commit and push
-git commit -m "fix(watcher): handle connection timeouts"
-git push origin bugfix/fix-watcher-timeout
-```
-
-#### 3. Hotfixes
-```bash
-# Create hotfix from main
-git checkout main
-git checkout -b hotfix/critical-security-fix
-
-# Apply critical fix
-# ... fix implementation ...
-
-# Test thoroughly
-pytest Tests/ -v
-
-# Commit and push
-git commit -m "fix(security): patch critical vulnerability"
-git push origin hotfix/critical-security-fix
-
-# Merge to both main and develop
+Improves #789
 ```
 
 ---
 
 ## Code Review Process
 
+### Pre-commit Hooks
+
+The project uses comprehensive pre-commit hooks:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-toml
+    -   id: check-merge-conflict
+
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.5
+    hooks:
+    -   id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+    -   id: ruff-format
+
+-   repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+    -   id: black
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.0
+    hooks:
+    -   id: mypy
+        args: [--strict]
+```
+
 ### Pull Request Guidelines
 
 #### 1. PR Description Template
 ```markdown
 ## Description
-Brief description of changes
+Brief description of changes and motivation
 
 ## Type of Change
-- [ ] Bug fix
-- [ ] New feature
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
 - [ ] Performance improvement
-- [ ] Refactoring
+- [ ] Code refactoring
 
 ## Testing
-- [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
+- [ ] Unit tests added/updated and passing
+- [ ] Integration tests added/updated and passing
 - [ ] Manual testing completed
+- [ ] All existing tests pass
+
+## Configuration
+- [ ] New configuration options documented
+- [ ] Environment variables updated in .env.example
+- [ ] Settings validation added
 
 ## Checklist
-- [ ] Code follows style guidelines
-- [ ] Self-review completed
-- [ ] Comments added for complex logic
-- [ ] Documentation updated
-- [ ] No breaking changes (or documented)
+- [ ] Code follows the style guidelines (Ruff + Black)
+- [ ] Self-review of code completed
+- [ ] Code is commented, particularly in hard-to-understand areas
+- [ ] Corresponding changes to documentation made
+- [ ] No new warnings generated
+- [ ] Pre-commit hooks pass
 
 ## Related Issues
 Closes #123
+Relates to #456
 ```
-
-#### 2. Review Checklist
-
-**Code Quality**:
-- [ ] Follows coding standards
-- [ ] Proper error handling
-- [ ] Appropriate logging
-- [ ] Type hints included
-- [ ] Docstrings present
-
-**Testing**:
-- [ ] Adequate test coverage
-- [ ] Tests are meaningful
-- [ ] Edge cases covered
-- [ ] Performance considerations
-
-**Documentation**:
-- [ ] API documentation updated
-- [ ] README changes if needed
-- [ ] Changelog updated
-
-### Review Process
-
-1. **Self-Review**: Author reviews their own code first
-2. **Automated Checks**: CI/CD pipeline runs tests and linting
-3. **Peer Review**: At least one team member reviews
-4. **Approval**: Required approvals before merge
-5. **Merge**: Squash and merge to develop branch
 
 ---
 
@@ -657,83 +731,144 @@ Closes #123
 ### Version Management
 
 We use **Semantic Versioning** (SemVer):
+- Current version: `0.1.0` (in pyproject.toml and src/__init__.py)
 - `MAJOR.MINOR.PATCH`
-- `MAJOR`: Breaking changes
-- `MINOR`: New features (backward compatible)
-- `PATCH`: Bug fixes (backward compatible)
+- Pre-release: `0.1.0-alpha.1`, `0.1.0-beta.1`, `0.1.0-rc.1`
 
 ### Release Steps
 
 #### 1. Prepare Release
 ```bash
-# Create release branch
-git checkout develop
-git checkout -b release/1.2.0
-
-# Update version numbers
-# - pyproject.toml
-# - src/__init__.py
-# - docs/
+# Update version in multiple files
+# - pyproject.toml: version = "0.2.0"
+# - src/__init__.py: __version__ = "0.2.0"
 
 # Update CHANGELOG.md
 # Run full test suite
-pytest Tests/ -v --cov=src
+poetry run pytest Tests/ -v --cov=src
 
-# Commit version updates
-git commit -m "chore(release): bump version to 1.2.0"
+# Test installation
+poetry build
+poetry install
+
+# Test Streamlit app
+poetry run streamlit run src/web/fullstreamlit/app.py
 ```
 
-#### 2. Create Release
+#### 2. Version Update Script
+```python
+# scripts/update_version.py
+"""Script to update version across all files."""
+
+import re
+from pathlib import Path
+
+def update_version(new_version: str):
+    """Update version in all relevant files."""
+    files_to_update = [
+        ("pyproject.toml", r'version = ".*"', f'version = "{new_version}"'),
+        ("src/__init__.py", r'__version__ = ".*"', f'__version__ = "{new_version}"'),
+    ]
+    
+    for file_path, pattern, replacement in files_to_update:
+        path = Path(file_path)
+        content = path.read_text()
+        updated = re.sub(pattern, replacement, content)
+        path.write_text(updated)
+        print(f"Updated {file_path}")
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) != 2:
+        print("Usage: python scripts/update_version.py 0.2.0")
+        sys.exit(1)
+    
+    update_version(sys.argv[1])
+```
+
+---
+
+## Deployment and Automation
+
+### Current Automation Scripts
+
+The project includes comprehensive automation:
+
+#### 1. Streamlit Service Management
 ```bash
-# Merge to main
-git checkout main
-git merge release/1.2.0
+# Linux/Mac
+./manage_streamlit_service.sh start    # Start service
+./manage_streamlit_service.sh stop     # Stop service  
+./manage_streamlit_service.sh restart  # Restart service
 
-# Tag release
-git tag -a v1.2.0 -m "Release version 1.2.0"
-
-# Push to remote
-git push origin main
-git push origin v1.2.0
-
-# Merge back to develop
-git checkout develop
-git merge main
+# Windows
+./manage_streamlit_service.bat start
+./manage_streamlit_service.bat stop
 ```
 
-#### 3. Post-Release
+#### 2. ETL Pipeline Execution
 ```bash
-# Create GitHub release
-# Upload distribution packages
-# Update documentation site
-# Announce release
+# Run all ETL pipelines
+./run_all_etl.sh           # Linux/Mac
+./run_all_etl.bat          # Windows
+./run_all_etl_powershell.ps1  # PowerShell
+
+# Run specific ETL
+python run_enhanced_arxiv_etl.py
+python run_arxiv_etl.py
 ```
 
-### Changelog Format
+#### 3. Service Setup
+```bash
+# Setup Streamlit as a system service
+./setup_streamlit_service.sh     # Linux (systemd)
+./setup_streamlit_service.ps1    # Windows (Task Scheduler)
 
-```markdown
-# Changelog
+# Setup ETL scheduling
+./setup_etl_scheduler.sh         # Linux (cron)
+./setup_etl_scheduler.ps1        # Windows (Task Scheduler)
+```
 
-## [1.2.0] - 2025-01-23
+### Environment-Specific Configurations
 
-### Added
-- New ETL source for Reddit data
-- Performance monitoring dashboard
-- Configuration validation
+#### Development
+```bash
+# .env.development
+ENVIRONMENT=development
+DEBUG=true
+LOGGING__LEVEL=DEBUG
+STREAMLIT__DEBUG=true
+ETL__BATCH_SIZE=100
+```
 
-### Changed
-- Improved error handling in watchers
-- Updated dependencies
+#### Production
+```bash
+# .env.production  
+ENVIRONMENT=production
+DEBUG=false
+LOGGING__LEVEL=INFO
+STREAMLIT__HOST=0.0.0.0
+STREAMLIT__PORT=8501
+ETL__BATCH_SIZE=1000
+DATABASE__URL=postgresql://prod_server/watchtower
+```
 
-### Fixed
-- Memory leak in batch processing
-- Timezone handling in timestamps
+### Docker Support
 
-### Deprecated
-- Old configuration format (will be removed in 2.0.0)
+```dockerfile
+# Dockerfile (current structure)
+FROM python:3.11-slim
 
-### Security
-- Updated dependencies with security patches
+WORKDIR /app
+COPY pyproject.toml requirements*.txt ./
+RUN pip install -r requirements.txt
+
+COPY src/ ./src/
+COPY data/ ./data/
+COPY config/ ./config/
+
+EXPOSE 8501
+CMD ["streamlit", "run", "src/web/fullstreamlit/app.py", "--server.address", "0.0.0.0"]
 ```
 
 ---
@@ -741,21 +876,27 @@ git merge main
 ## Best Practices Summary
 
 ### Development
-- **Start Small**: Implement features incrementally
-- **Test Early**: Write tests alongside code
-- **Document Everything**: Code, APIs, and decisions
-- **Review Thoroughly**: Use peer reviews effectively
+- **Configuration-Driven**: Use the Pydantic settings system consistently
+- **Type Safety**: Comprehensive type hints with mypy validation
+- **Error Handling**: Custom exceptions with context and logging
+- **Performance**: Polars for data processing, smart caching in Streamlit
 
 ### Code Quality
-- **Type Safety**: Use type hints consistently
-- **Error Handling**: Handle errors gracefully with context
-- **Logging**: Add appropriate logging for debugging
-- **Performance**: Consider performance implications
+- **Automated Formatting**: Ruff + Black for consistent style
+- **Pre-commit Hooks**: Catch issues before commit
+- **Comprehensive Testing**: Unit, integration, and ETL-specific tests
+- **Documentation**: Google-style docstrings and up-to-date README
 
-### Collaboration
-- **Clear Communication**: Use descriptive commit messages and PR descriptions
-- **Incremental Changes**: Keep PRs focused and reviewable
-- **Documentation**: Keep documentation updated with changes
-- **Testing**: Ensure adequate test coverage
+### Architecture
+- **Modular Design**: Clear separation of ETL, watchers, web, and utilities
+- **Extensible Framework**: BaseWatcher and BaseETL for new implementations
+- **Centralized Logging**: Consistent logging across all components
+- **Service-Oriented**: Support for running as system services
 
-This workflow guide ensures consistent, high-quality contributions to the Watchtower project while maintaining code quality and team collaboration. 
+### Automation
+- **Cross-Platform Scripts**: Support for Windows (.bat), Linux/Mac (.sh), and PowerShell (.ps1)
+- **Service Management**: Built-in service setup and management scripts
+- **ETL Orchestration**: Automated pipeline execution and scheduling
+- **Performance Monitoring**: Built-in benchmarking and optimization
+
+This updated workflow guide reflects the current state of the Watchtower project, including its modern Python development practices, comprehensive configuration management, and robust automation infrastructure. 

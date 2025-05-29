@@ -52,6 +52,17 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Utility function to safely get/set session state
+def safe_get_session_state(key: str, default_value=None):
+    """Safely get a session state value with a default"""
+    if key not in st.session_state:
+        st.session_state[key] = default_value
+    return st.session_state[key]
+
+def safe_set_session_state(key: str, value):
+    """Safely set a session state value"""
+    st.session_state[key] = value
+
 # Apply CSS styles with improvements
 st.markdown(get_main_style(), unsafe_allow_html=True)
 
@@ -132,13 +143,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state
-if 'viewport_width' not in st.session_state:
-    st.session_state.viewport_width = 1200
-if 'last_refresh' not in st.session_state:
-    st.session_state.last_refresh = datetime.now()
-if 'data_status' not in st.session_state:
-    st.session_state.data_status = {}
+# Initialize session state with error handling
+safe_get_session_state('viewport_width', 1200)
+safe_get_session_state('last_refresh', datetime.now())
+safe_get_session_state('data_status', {})
 
 # Enhanced header with real-time status
 col1, col2, col3 = st.columns([3, 1, 1])
@@ -149,7 +157,8 @@ with col1:
 with col2:
     if st.button("🔄 Actualizar Datos", help="Recargar todos los datos"):
         st.cache_data.clear()
-        st.session_state.last_refresh = datetime.now()
+        # Update last refresh timestamp
+        safe_set_session_state('last_refresh', datetime.now())
         st.rerun()
 
 with col3:
@@ -184,8 +193,9 @@ with st.sidebar:
     with st.spinner("Cargando estadísticas..."):
         try:
             # Quick data overview without full loading
+            last_refresh = safe_get_session_state('last_refresh', datetime.now())
             st.metric("Última Actualización", 
-                     st.session_state.last_refresh.strftime("%H:%M"))
+                     last_refresh.strftime("%H:%M"))
         except Exception as e:
             st.error("Error cargando estadísticas")
     
@@ -274,9 +284,10 @@ with data_placeholder.container():
 data_placeholder.empty()
 
 # Display data status indicators
-if st.session_state.get('data_status'):
-    status_cols = st.columns(len(st.session_state.data_status))
-    for idx, (source, status) in enumerate(st.session_state.data_status.items()):
+data_status = safe_get_session_state('data_status', {})
+if data_status:
+    status_cols = st.columns(len(data_status))
+    for idx, (source, status) in enumerate(data_status.items()):
         with status_cols[idx]:
             if status == 'success':
                 st.success(f"✅ {source.title()}")
@@ -382,12 +393,15 @@ st.markdown("---")
 # Performance metrics
 perf_cols = st.columns(4)
 with perf_cols[0]:
+    # Safely get last refresh time
+    last_refresh = safe_get_session_state('last_refresh', datetime.now())
     st.metric("🔄 Última Actualización", 
-             st.session_state.last_refresh.strftime("%H:%M:%S"))
+             last_refresh.strftime("%H:%M:%S"))
 
 with perf_cols[1]:
-    data_sources_count = len([k for k, v in st.session_state.get('data_status', {}).items() if v == 'success'])
-    total_sources = len(st.session_state.get('data_status', {}))
+    data_status = safe_get_session_state('data_status', {})
+    data_sources_count = len([k for k, v in data_status.items() if v == 'success'])
+    total_sources = len(data_status)
     st.metric("📊 Fuentes Activas", f"{data_sources_count}/{total_sources}")
 
 with perf_cols[2]:
@@ -396,6 +410,7 @@ with perf_cols[2]:
 with perf_cols[3]:
     if st.button("🔄 Actualizar Todo", key="footer_refresh"):
         st.cache_data.clear()
+        safe_set_session_state('last_refresh', datetime.now())
         st.rerun()
 
 # Enhanced footer with data sources

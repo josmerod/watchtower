@@ -28,34 +28,6 @@ class MSAppliedSkillsWatcher(BaseWatcher):
     to detail pages for each skill.
     """
     
-    # Known skills as of implementation - used as fallback when scraping fails
-    KNOWN_SKILLS = [
-        "Microsoft 365 Copilot",
-        "Azure Virtual Desktop",
-        "Windows Server Hybrid Administrator",
-        "Azure Support Engineer for Connectivity Specialty",
-        "Implementing and Managing Microsoft 365 Security Solutions",
-        "Microsoft Security Operations Analyst",
-        "Manage Microsoft 365 Apps in Enterprise Deployments",
-        "Microsoft 365 Messaging Administrator",
-        "Azure AI Engineer",
-        "Azure Data Scientist",
-        "Azure Data Engineer",
-        "Azure Database Administrator",
-        "Azure Developer",
-        "Azure Administrator",
-        "Microsoft 365 Developer",
-        "Microsoft 365 Teams Administrator",
-        "Microsoft 365 Modern Desktop Administrator",
-        "Microsoft 365 Enterprise Administrator",
-        "Microsoft 365 Security Administrator",
-        "Windows Server Administrator",
-        "Windows Client Administrator",
-        "Microsoft Identity and Access Administrator",
-        "Microsoft Information Protection Administrator",
-        "Microsoft Azure IoT Developer",
-    ]
-    
     def __init__(self, name: str = "ms_applied_skills", check_interval: int = 3600):
         """
         Initialize the Microsoft Applied Skills watcher.
@@ -242,7 +214,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
     async def _fetch_and_extract_all_skill_data(self) -> Dict[str, Any]:
         """
         Orchestrates fetching the list of skills and then their individual details.
-        Updated to handle dynamic content loading with better waiting strategies.
+        Updated to handle dynamic content loading with better waiting strategies and pagination.
         """
         async with async_playwright() as p:
             self.logger.info("Launching browser for MS Skills Watcher")
@@ -296,37 +268,127 @@ class MSAppliedSkillsWatcher(BaseWatcher):
                 # Additional wait to ensure all content is fully rendered
                 await page.wait_for_timeout(5000)
                 
-                # Get the final HTML content
-                html_content = await page.content()
-                self.logger.info(f"Retrieved HTML content ({len(html_content)} characters)")
+                # Collect skills from all pages
+                page_number = 1
+                all_skills_with_urls = []
                 
-                # Save HTML for debugging if needed
-                self._save_html_content(html_content)
-                
-                # Parse with BeautifulSoup
-                soup = BeautifulSoup(html_content, 'html.parser')
-                initial_skills_with_urls = self._extract_skills_with_urls_from_html(soup)
-                
-                if not initial_skills_with_urls:
-                    self.logger.warning("No Applied Skills found on the page. This might indicate:")
-                    self.logger.warning("1. Content is still loading dynamically")
-                    self.logger.warning("2. Page structure has changed significantly") 
-                    self.logger.warning("3. Applied Skills are not currently available")
+                while True:
+                    self.logger.info(f"Processing page {page_number}")
                     
-                    # Try alternative approach: look for any credential links
-                    all_credential_links = soup.select('a[href*="/credentials/"]')
-                    self.logger.info(f"Found {len(all_credential_links)} total credential links")
+                    # Get the HTML content for current page
+                    html_content = await page.content()
+                    self.logger.info(f"Retrieved HTML content for page {page_number} ({len(html_content)} characters)")
                     
-                    if all_credential_links:
-                        for i, link in enumerate(all_credential_links[:5]):  # Show first 5
-                            href = link.get('href', '')
-                            text = link.get_text(strip=True)[:100]
-                            self.logger.info(f"Sample credential link {i+1}: {href} - '{text}'")
+                    # Save HTML for debugging if needed (only first page to avoid clutter)
+                    if page_number == 1:
+                        self._save_html_content(html_content)
+                    
+                    # Parse with BeautifulSoup
+                    soup = BeautifulSoup(html_content, 'html.parser')
+                    page_skills = self._extract_skills_with_urls_from_html(soup)
+                    
+                    if not page_skills:
+                        self.logger.warning(f"No Applied Skills found on page {page_number}")
+                        break
+                    
+                    all_skills_with_urls.extend(page_skills)
+                    self.logger.info(f"Found {len(page_skills)} Applied Skills on page {page_number}")
+                    
+                    # Check if there's a next page
+                    try:
+                        # Look for pagination next button
+                        next_button_selectors = [
+                            'button.pagination-next:not([hidden]):not([disabled])',
+                            '.pagination-next:not([hidden]):not([disabled])',
+                            'button[aria-label*="Siguientes"]:not([hidden]):not([disabled])',
+                            'button[aria-label*="Next"]:not([hidden]):not([disabled])',
+                            'a[aria-label*="Siguientes"]:not([hidden]):not([disabled])',
+                            'a[aria-label*="Next"]:not([hidden]):not([disabled])'
+                        ]
+                        
+                        next_button = None
+                        for selector in next_button_selectors:
+                            try:
+                                next_button = await page.query_selector(selector)
+                                if next_button:
+                                    # Check if button is actually visible and clickable
+                                    is_visible = await next_button.is_visible()
+                                    is_enabled = await next_button.is_enabled()
+                                    if is_visible and is_enabled:
+                                        self.logger.info(f"Found next button with selector: {selector}")
+                                        break
+                                    else:
+                                        next_button = None
+                            except Exception as e:
+                                self.logger.debug(f"Next button selector '{selector}' failed: {e}")
+                                continue
+                        
+                        if not next_button:
+                            # Alternative: look for page 2, 3, etc. buttons
+                            page_button_selector = f'button[data-page="{page_number + 1}"]:not([hidden]):not([disabled])'
+                            next_button = await page.query_selector(page_button_selector)
+                            if next_button:
+                                is_visible = await next_button.is_visible()
+                                is_enabled = await next_button.is_enabled()
+                                if is_visible and is_enabled:
+                                    self.logger.info(f"Found page {page_number + 1} button")
+                                else:
+                                    next_button = None
+                        
+                        if next_button:
+                            self.logger.info(f"Navigating to page {page_number + 1}")
+                            await next_button.click()
+                            
+                            # Wait for the page to load
+                            await page.wait_for_timeout(5000)
+                            
+                            # Wait for content to be updated
+                            try:
+                                await page.wait_for_function(
+                                    f"document.querySelector('.pagination-link.is-current')?.getAttribute('data-page') === '{page_number + 1}' || document.querySelector('.pagination-link.is-current')?.textContent === '{page_number + 1}'",
+                                    timeout=10000
+                                )
+                            except Exception as e:
+                                self.logger.warning(f"Could not confirm page navigation: {e}")
+                                # Continue anyway as the click might have worked
+                            
+                            await page.wait_for_timeout(3000)  # Additional wait for content to load
+                            page_number += 1
+                        else:
+                            self.logger.info(f"No more pages found after page {page_number}")
+                            break
+                            
+                    except Exception as e:
+                        self.logger.warning(f"Error checking for next page: {e}")
+                        break
                 
-                self.logger.info(f"Found {len(initial_skills_with_urls)} Applied Skills on the list page")
+                # Remove duplicates based on URL (in case of overlap between pages)
+                if all_skills_with_urls:
+                    seen_urls = {}
+                    for skill in all_skills_with_urls:
+                        url = skill["url"]
+                        if url not in seen_urls or len(skill["name"]) > len(seen_urls[url]["name"]):
+                            seen_urls[url] = skill
+                    all_skills_with_urls = list(seen_urls.values())
+                
+                self.logger.info(f"Total unique Applied Skills found across all pages: {len(all_skills_with_urls)}")
+                
+                if not all_skills_with_urls:
+                    self.logger.error("No Applied Skills found on any page. This indicates:")
+                    self.logger.error("1. Content is still loading dynamically")
+                    self.logger.error("2. Page structure has changed significantly") 
+                    self.logger.error("3. Applied Skills are not currently available")
+                    
+                    return {
+                        "skills_count": 0, 
+                        "skills": [], 
+                        "error": "No Applied Skills found on any page",
+                        "extraction_method": "failed",
+                        "page_url": self.url
+                    }
 
                 # Process each skill to get detailed information
-                for skill_info in initial_skills_with_urls:
+                for skill_info in all_skills_with_urls:
                     skill_name = skill_info.get("name")
                     skill_detail_url = skill_info.get("url")
                     self.logger.info(f"Processing skill: {skill_name} - URL: {skill_detail_url}")
@@ -363,8 +425,9 @@ class MSAppliedSkillsWatcher(BaseWatcher):
                 return {
                     "skills_count": len(all_detailed_skills), 
                     "skills": all_detailed_skills,
-                    "extraction_method": "playwright_dynamic",
-                    "page_url": self.url
+                    "extraction_method": "playwright_dynamic_paginated",
+                    "page_url": self.url,
+                    "pages_processed": page_number
                 }
 
             except Exception as e:
@@ -383,7 +446,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
     def _save_html_content(self, html_content: str) -> None:
         """Save HTML content to file for debugging purposes."""
         try:
-            debug_dir = self.events_dir / "debug"
+            debug_dir = Path(self.events_dir) / "debug"
             debug_dir.mkdir(exist_ok=True)
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -429,8 +492,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
             extracted_data = asyncio.run(self._fetch_and_extract_all_skill_data())
             
             if not extracted_data or "skills" not in extracted_data or extracted_data.get("skills_count", 0) == 0:
-                self.logger.warning("No skills data extracted or skills list is empty. Considering fallback.")
-                # return self._fallback_extraction() # Ensure fallback is compatible or updated
+                self.logger.error("No skills data extracted or skills list is empty.")
                 return {"skills_count": 0, "skills": [], "error": extracted_data.get("error", "No data extracted")}
             
             self.logger.info(f"Successfully extracted {extracted_data.get('skills_count')} skills with details.")
@@ -481,7 +543,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
         else:
             self.logger.warning("Content browser container not found, searching entire page")
             
-            # Fallback: search entire page
+            # Search entire page
             for selector in skill_card_selectors:
                 cards = soup.select(selector)
                 if cards:
@@ -632,27 +694,6 @@ class MSAppliedSkillsWatcher(BaseWatcher):
                     self.logger.warning(f"Sample Applied Skills link {i+1}: {link.get('href')} - Text: '{link.get_text(strip=True)[:50]}'")
         
         return skills_with_urls
-
-    def _extract_skills_from_html(self, soup: BeautifulSoup) -> list:
-        """
-        DEPRECATED / TO BE REMOVED or REPURPOSED.
-        Original method to extract only skill names. 
-        New logic uses _extract_skills_with_urls_from_html.
-        """
-        self.logger.warning("_extract_skills_from_html is deprecated and should be removed.")
-        return [] # No longer used for primary extraction
-    
-    def _fallback_extraction(self) -> Dict[str, Any]:
-        """Fallback method when extraction fails, using known skills list."""
-        self.logger.warning("Using fallback extraction with known skills list")
-        # Convert the KNOWN_SKILLS list to the new format
-        skills_with_urls = [{"title": skill, "url": None} for skill in self.KNOWN_SKILLS]
-        return {
-            "count": len(skills_with_urls),
-            "skills": skills_with_urls,
-            "extraction_method": "fallback",
-            "url": self.url  # Include the URL in the state
-        }
     
     def has_changed(self, old_value: Dict[str, Any], new_value: Dict[str, Any]) -> bool:
         """
