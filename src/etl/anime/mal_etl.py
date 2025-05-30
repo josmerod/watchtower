@@ -8,9 +8,13 @@ from typing import Dict, List, Optional, Any, Tuple
 
 import requests
 from pydantic.json import pydantic_encoder
+from dotenv import load_dotenv
 
 from src.etl.base import BaseETL, ETLError
 from src.models.anime import AnimeItem
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
