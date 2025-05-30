@@ -226,28 +226,38 @@ def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
             # Sort by published_date (now guaranteed to exist)
             combined_news_df = combined_news_df.sort_values("published_date", ascending=False)
             
-            combined_news_df["Ver Noticia"] = combined_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
-            
             # Format date for display
             combined_news_df["published_display"] = combined_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
 
-            # Standardize columns
-            final_df = combined_news_df[["title", "source", "published_display", "Ver Noticia"]].copy()
-            final_df.rename(
-                columns={
-                    "title": "Título",
-                    "source": "Fuente",
-                    "published_display": "Fecha de Publicación",
-                    "Ver Noticia": "Link",
-                },
-                inplace=True,
-            )
-            # Reorder columns
-            final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
+            # Prepare DataFrame for st.data_editor
+            df_for_editor = combined_news_df.rename(columns={
+                "title": "Título",
+                "source": "Fuente",
+                "published_display": "Fecha de Publicación",
+                "url": "URL_Enlace"
+            })
             
-            st.markdown(
-                final_df.to_html(escape=False, index=False),
-                unsafe_allow_html=True,
+            # Ensure required columns exist and select them in order
+            required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
+            cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
+            df_for_editor = df_for_editor[cols_to_display]
+
+            st.data_editor(
+                df_for_editor,
+                column_config={
+                    "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
+                    "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
+                    "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
+                    "URL_Enlace": st.column_config.LinkColumn(
+                        label="Enlace",
+                        display_text="Leer Artículo",
+                        width="small",
+                        help="Enlace directo al artículo"
+                    )
+                },
+                hide_index=True,
+                use_container_width=True,
+                disabled=True
             )
         else:
             st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
@@ -270,29 +280,39 @@ def render_hackernews(ycombinator_news_df):
         
         # Sort by published_date (now guaranteed to exist)
         display_news_df = ycombinator_news_df.sort_values("published_date", ascending=False)
-
-        display_news_df["Ver Noticia"] = display_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
         
         # Format date for display
         display_news_df["published_display"] = display_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
 
-        # Standardize columns
-        final_df = display_news_df[["title", "source", "published_display", "Ver Noticia"]].copy()
-        final_df.rename(
-            columns={
-                "title": "Título",
-                "source": "Fuente",
-                "published_display": "Fecha de Publicación",
-                "Ver Noticia": "Link",
-            },
-            inplace=True,
-        )
-        # Reorder columns
-        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
+        # Prepare DataFrame for st.data_editor
+        df_for_editor = display_news_df.rename(columns={
+            "title": "Título",
+            "source": "Fuente",
+            "published_display": "Fecha de Publicación",
+            "url": "URL_Enlace"
+        })
+
+        # Ensure required columns exist and select them in order
+        required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
+        cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[cols_to_display]
         
-        st.markdown(
-            final_df.to_html(escape=False, index=False),
-            unsafe_allow_html=True,
+        st.data_editor(
+            df_for_editor,
+            column_config={
+                "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
+                "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
+                "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
+                "URL_Enlace": st.column_config.LinkColumn(
+                    label="Enlace",
+                    display_text="Leer Artículo",
+                    width="small",
+                    help="Enlace directo al artículo"
+                )
+            },
+            hide_index=True,
+            use_container_width=True,
+            disabled=True
         )
 
 
@@ -317,59 +337,60 @@ def render_medium(medium_news_df):
         else:
             # Sort by existing published_date
             display_news_df = display_news_df.sort_values("published_date", ascending=False)
-
-        display_news_df["Ver Noticia"] = display_news_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
         
-        # Determine which date column to display
-        date_col = "published_date" if "published_date" in display_news_df.columns else "published_at"
+        # Determine which date column to use for display and prepare it
+        # This part replaces the old 'display_col' logic to ensure a consistent 'formatted_date' column name
+        date_column_to_format = None
+        if "published_date" in display_news_df.columns and pd.api.types.is_datetime64_any_dtype(display_news_df["published_date"]):
+            date_column_to_format = "published_date"
+        elif "published_at" in display_news_df.columns and pd.api.types.is_datetime64_any_dtype(display_news_df["published_at"]):
+            date_column_to_format = "published_at"
         
-        if date_col in display_news_df.columns:
-            # Format dates for display if they're datetime
-            if pd.api.types.is_datetime64_any_dtype(display_news_df[date_col]):
-                display_news_df["formatted_date"] = display_news_df[date_col].dt.strftime('%Y-%m-%d %H:%M')
-                display_col = "formatted_date"
-            else:
-                display_col = date_col
-            
-            # Standardize columns
-            cols_to_select = ["title", "source", "Ver Noticia"]
-            rename_map = {
-                "title": "Título",
-                "source": "Fuente",
-                "Ver Noticia": "Link",
-            }
-            if display_col: # If date column exists
-                cols_to_select.insert(2, display_col) # Insert before "Ver Noticia"
-                rename_map[display_col] = "Fecha de Publicación"
-            
-            final_df = display_news_df[cols_to_select].copy()
-            final_df.rename(columns=rename_map, inplace=True)
-            
-            # Reorder columns
-            final_cols_order = ["Título", "Fuente"]
-            if "Fecha de Publicación" in final_df.columns:
-                final_cols_order.append("Fecha de Publicación")
-            final_cols_order.append("Link")
-            final_df = final_df[final_cols_order]
-
+        if date_column_to_format:
+            display_news_df["formatted_date"] = display_news_df[date_column_to_format].dt.strftime('%Y-%m-%d %H:%M')
+            date_col_for_editor = "formatted_date"
+        elif "published_at" in display_news_df.columns: # Fallback if not datetime but exists
+            date_col_for_editor = "published_at"
         else:
-            # No date column available
-            final_df = display_news_df[["title", "source", "Ver Noticia"]].copy()
-            final_df.rename(
-                columns={
-                    "title": "Título",
-                    "source": "Fuente",
-                    "Ver Noticia": "Link",
-                },
-                inplace=True,
-            )
-            # Reorder columns
-            final_df = final_df[["Título", "Fuente", "Link"]]
+            date_col_for_editor = None
 
-        # Display the final DataFrame as HTML
-        st.markdown(
-            final_df.to_html(escape=False, index=False),
-            unsafe_allow_html=True,
+        # Prepare DataFrame for st.data_editor
+        df_for_editor = display_news_df.rename(columns={
+            "title": "Título",
+            "source": "Fuente",
+            date_col_for_editor if date_col_for_editor else "non_existent_date_col": "Fecha de Publicación", # Handle missing date
+            "url": "URL_Enlace"
+        })
+
+        # Define base required columns and add date if available
+        required_cols = ["Título", "Fuente"]
+        column_config = {
+            "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
+            "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
+            "URL_Enlace": st.column_config.LinkColumn(
+                label="Enlace",
+                display_text="Leer Artículo",
+                width="small",
+                help="Enlace directo al artículo"
+            )
+        }
+
+        if date_col_for_editor and "Fecha de Publicación" in df_for_editor.columns:
+            required_cols.append("Fecha de Publicación")
+            column_config["Fecha de Publicación"] = st.column_config.TextColumn(width="small", help="Fecha de publicación original")
+
+        required_cols.append("URL_Enlace")
+
+        # Ensure required columns exist and select them in order
+        cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[cols_to_display]
+
+        st.data_editor(
+            df_for_editor,
+            column_config=column_config,
+            hide_index=True,
+            use_container_width=True,
+            disabled=True
         )
 
 
@@ -391,31 +412,41 @@ def render_kdnuggets(kdnuggets_news_df):
 
         # Sort by published_date
         display_df = kdnuggets_news_df.sort_values("published_date", ascending=False)
-        # Add clickable link
-        display_df["Ver Noticia"] = display_df["url"].apply(
-            lambda x: make_clickable(x, "Leer más")
-        )
+
         # Format date for display
         display_df["published_display"] = display_df["published_date"].dt.strftime(
             '%Y-%m-%d %H:%M'
         )
 
-        # Standardize columns
-        final_df = display_df[["title", "source", "published_display", "Ver Noticia"]].copy()
-        final_df.rename(
-            columns={
-                "title": "Título",
-                "source": "Fuente",
-                "published_display": "Fecha de Publicación",
-                "Ver Noticia": "Link",
-            },
-            inplace=True,
-        )
-        # Reorder columns
-        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
+        # Prepare DataFrame for st.data_editor
+        df_for_editor = display_df.rename(columns={
+            "title": "Título",
+            "source": "Fuente",
+            "published_display": "Fecha de Publicación",
+            "url": "URL_Enlace"
+        })
 
-        st.markdown(
-            final_df.to_html(escape=False, index=False), unsafe_allow_html=True
+        # Ensure required columns exist and select them in order
+        required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
+        cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[cols_to_display]
+
+        st.data_editor(
+            df_for_editor,
+            column_config={
+                "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
+                "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
+                "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
+                "URL_Enlace": st.column_config.LinkColumn(
+                    label="Enlace",
+                    display_text="Leer Artículo",
+                    width="small",
+                    help="Enlace directo al artículo"
+                )
+            },
+            hide_index=True,
+            use_container_width=True,
+            disabled=True
         )
 
 
@@ -443,45 +474,56 @@ def render_gooddevs(gooddevs_df):
             display_df.dropna(subset=["published_at"], inplace=True) # Remove rows where conversion failed
             if not display_df.empty:
                 display_df = display_df.sort_values("published_at", ascending=False)
-                sort_col = "published_at"
+                 sort_col = "published_at" # This is the original column name for date data
                 date_col_present = True
 
-        display_df["Ver Post"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
-
-        display_df["Ver Post"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
-
-        # Standardize columns
-        cols_to_select = ["title", "source", "Ver Post"]
-        rename_map = {
-            "title": "Título",
-            "source": "Fuente",
-            "Ver Post": "Link", # Renamed from "Ver Post"
-        }
-
-        # Add date column if available and formatted
+        # Prepare date column for display
         if date_col_present and sort_col:
             if pd.api.types.is_datetime64_any_dtype(display_df[sort_col]):
-                display_df["formatted_date"] = display_df[sort_col].dt.strftime('%Y-%m-%d') # Format date only
-                cols_to_select.insert(1, "formatted_date") # Insert before "source"
-                rename_map["formatted_date"] = "Fecha de Publicación"
-            else: 
-                cols_to_select.insert(1, sort_col) 
-                rename_map[sort_col] = "Fecha de Publicación"
-        
-        final_df = display_df[cols_to_select].copy()
-        final_df.rename(columns=rename_map, inplace=True)
-        
-        # Reorder columns
-        final_cols_order = ["Título", "Fuente"]
-        if "Fecha de Publicación" in final_df.columns:
-            final_cols_order.append("Fecha de Publicación")
-        final_cols_order.append("Link")
-        final_df = final_df[final_cols_order]
+                display_df["formatted_date"] = display_df[sort_col].dt.strftime('%Y-%m-%d')
+                date_col_for_editor = "formatted_date"
+            else: # If it's not datetime after checks, treat as string
+                date_col_for_editor = sort_col # Use original non-datetime date column
+        else:
+            date_col_for_editor = None
 
-        # Display the final DataFrame as HTML
-        st.markdown(
-            final_df.to_html(escape=False, index=False),
-            unsafe_allow_html=True,
+        # Prepare DataFrame for st.data_editor
+        df_for_editor = display_df.rename(columns={
+            "title": "Título",
+            "source": "Fuente",
+            date_col_for_editor if date_col_for_editor else "non_existent_date_col": "Fecha de Publicación",
+            "url": "URL_Enlace"
+        })
+
+        # Define base required columns and add date if available
+        required_cols = ["Título", "Fuente"]
+        column_config = {
+            "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
+            "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
+            "URL_Enlace": st.column_config.LinkColumn(
+                label="Enlace",
+                display_text="Leer Post", # Specific for Good Devs
+                width="small",
+                help="Enlace directo al post"
+            )
+        }
+
+        if date_col_for_editor and "Fecha de Publicación" in df_for_editor.columns:
+            required_cols.append("Fecha de Publicación")
+            column_config["Fecha de Publicación"] = st.column_config.TextColumn(width="small", help="Fecha de publicación original")
+
+        required_cols.append("URL_Enlace")
+
+        # Ensure required columns exist and select them in order
+        cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[cols_to_display]
+
+        st.data_editor(
+            df_for_editor,
+            column_config=column_config,
+            hide_index=True,
+            use_container_width=True,
+            disabled=True
         )
 
 
@@ -495,24 +537,38 @@ def render_meneame_general(df):
         display_df["published_date"] = pd.to_datetime(display_df["published_at"], errors="coerce")
         display_df.dropna(subset=["published_date"], inplace=True)
         display_df = display_df.sort_values("published_date", ascending=False)
-        display_df["Ver Noticia"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
         display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d')
-        
-        # Standardize columns
-        final_df = display_df[["title", "source", "formatted_date", "Ver Noticia"]].copy()
-        final_df.rename(
-            columns={
-                "title": "Título",
-                "source": "Fuente",
-                "formatted_date": "Fecha de Publicación",
-                "Ver Noticia": "Link",
+
+        # Prepare DataFrame for st.data_editor
+        df_for_editor = display_df.rename(columns={
+            "title": "Título",
+            "source": "Fuente",
+            "formatted_date": "Fecha de Publicación",
+            "url": "URL_Enlace"
+        })
+
+        # Ensure required columns exist and select them in order
+        required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
+        cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[cols_to_display]
+
+        st.data_editor(
+            df_for_editor,
+            column_config={
+                "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
+                "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
+                "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
+                "URL_Enlace": st.column_config.LinkColumn(
+                    label="Enlace",
+                    display_text="Leer Artículo",
+                    width="small",
+                    help="Enlace directo al artículo"
+                )
             },
-            inplace=True,
+            hide_index=True,
+            use_container_width=True,
+            disabled=True
         )
-        # Reorder columns
-        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
-        
-        st.markdown(final_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 
 def render_meneame_tecnologia(df):
@@ -525,24 +581,38 @@ def render_meneame_tecnologia(df):
         display_df["published_date"] = pd.to_datetime(display_df["published_at"], errors="coerce")
         display_df.dropna(subset=["published_date"], inplace=True)
         display_df = display_df.sort_values("published_date", ascending=False)
-        display_df["Ver Noticia"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
         display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d')
 
-        # Standardize columns
-        final_df = display_df[["title", "source", "formatted_date", "Ver Noticia"]].copy()
-        final_df.rename(
-            columns={
-                "title": "Título",
-                "source": "Fuente",
-                "formatted_date": "Fecha de Publicación",
-                "Ver Noticia": "Link",
-            },
-            inplace=True,
-        )
-        # Reorder columns
-        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
+        # Prepare DataFrame for st.data_editor
+        df_for_editor = display_df.rename(columns={
+            "title": "Título",
+            "source": "Fuente",
+            "formatted_date": "Fecha de Publicación",
+            "url": "URL_Enlace"
+        })
 
-        st.markdown(final_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+        # Ensure required columns exist and select them in order
+        required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
+        cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[cols_to_display]
+
+        st.data_editor(
+            df_for_editor,
+            column_config={
+                "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
+                "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
+                "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
+                "URL_Enlace": st.column_config.LinkColumn(
+                    label="Enlace",
+                    display_text="Leer Artículo",
+                    width="small",
+                    help="Enlace directo al artículo"
+                )
+            },
+            hide_index=True,
+            use_container_width=True,
+            disabled=True
+        )
 
 # New function to render Podcasts
 def render_podcasts(podcasts_df):
@@ -562,26 +632,36 @@ def render_podcasts(podcasts_df):
         # Apply formatting
         df["Fecha de Publicación"] = df.get("published_at", pd.Series()).apply(safe_format)
         # Sort by the formatted date; blanks will be last
-        df = df.sort_values("Fecha de Publicación", ascending=False)
-        # Build clickable links
-        df["Escuchar"] = df["url"].apply(lambda url: make_clickable(url, "Escuchar"))
-        
-        # Standardize columns
-        # Note: "Fecha de Publicación" is already created correctly
-        final_df = df[["title", "source", "Fecha de Publicación", "Escuchar"]].copy()
-        final_df.rename(
-            columns={
-                "title": "Título",
-                "source": "Fuente",
-                "Escuchar": "Link", # Renamed from "Escuchar"
+        df = df.sort_values("Fecha de Publicación", ascending=False) # This column is already named "Fecha de Publicación"
+
+        # Prepare DataFrame for st.data_editor
+        df_for_editor = df.rename(columns={
+            "title": "Título",
+            "source": "Fuente",
+            # "Fecha de Publicación" is already correctly named
+            "url": "URL_Enlace"
+        })
+
+        # Ensure required columns exist and select them in order
+        # "Fecha de Publicación" is kept as is.
+        required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
+        cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[cols_to_display]
+
+        st.data_editor(
+            df_for_editor,
+            column_config={
+                "Título": st.column_config.TextColumn(width="medium", help="Título del episodio"),
+                "Fuente": st.column_config.TextColumn(width="small", help="Fuente del podcast"),
+                "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
+                "URL_Enlace": st.column_config.LinkColumn(
+                    label="Enlace",
+                    display_text="Escuchar Episodio", # Specific for Podcasts
+                    width="small",
+                    help="Enlace directo al episodio"
+                )
             },
-            inplace=True,
-        )
-        # Reorder columns
-        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
-        
-        # Render the DataFrame
-        st.markdown(
-            final_df.to_html(escape=False, index=False),
-            unsafe_allow_html=True,
+            hide_index=True,
+            use_container_width=True,
+            disabled=True
         )
