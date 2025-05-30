@@ -154,27 +154,67 @@ def render(logger=None):
             
             # Provide option to view as table
             if st.checkbox("Ver como tabla"):
-                display_cols = ["title", "date_text", "category", "source"]
-                display_df = filtered_events_df[display_cols].copy()
+                # Ensure 'url' is included for the LinkColumn
+                display_cols_source = ["title", "date_text", "category", "source", "url"]
+                # Select only columns that actually exist in filtered_events_df
+                actual_cols_to_select = [col for col in display_cols_source if col in filtered_events_df.columns]
                 
-                # Add URL column with clickable links
-                display_df["Ver evento"] = filtered_events_df["url"].apply(
-                    lambda x: make_clickable(x, "Ver")
-                )
+                df_for_editor = filtered_events_df[actual_cols_to_select].copy()
+
+                # Rename columns for st.data_editor
+                rename_map = {
+                    "title": "Título",
+                    "date_text": "Fechas",
+                    "category": "Categoría",
+                    "source": "Fuente",
+                    "url": "URL_Enlace" # New name for the raw URL column
+                }
+                # Apply renaming only for columns that exist in df_for_editor
+                active_rename_map = {k: v for k, v in rename_map.items() if k in df_for_editor.columns}
+                df_for_editor.rename(columns=active_rename_map, inplace=True)
+
+                # Ensure final column order for st.data_editor
+                final_ordered_columns = ["Título", "Fechas", "Categoría", "Fuente", "URL_Enlace"]
                 
-                # Rename columns for display
-                display_df.rename(
-                    columns={
-                        "title": "Título",
-                        "date_text": "Fechas",
-                        "category": "Categoría",
-                        "source": "Fuente",
+                # Filter this list to include only columns that actually exist in df_for_editor
+                columns_for_editor_display = [col for col in final_ordered_columns if col in df_for_editor.columns]
+                df_for_editor = df_for_editor[columns_for_editor_display]
+
+                st.data_editor(
+                    df_for_editor,
+                    column_config={
+                        "Título": st.column_config.TextColumn(width="medium", help="Nombre del evento"),
+                        "Fechas": st.column_config.TextColumn(width="medium", help="Fechas del evento"),
+                        "Categoría": st.column_config.TextColumn(width="small", help="Categoría del evento"),
+                        "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la información"),
+                        "URL_Enlace": st.column_config.LinkColumn(
+                            label="Enlace",
+                            display_text="Ver Evento",
+                            width="medium",
+                            help="Enlace a la página del evento"
+                        )
                     },
-                    inplace=True,
+                    disabled=True,
+                    hide_index=True,
+                    use_container_width=True
                 )
-                
-                # Display as HTML table
-                st.markdown(
-                    display_df.to_html(escape=False, index=False),
-                    unsafe_allow_html=True,
-                ) 
+
+                if not df_for_editor.empty:
+                    st.markdown("---")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.download_button(
+                            label="📥 Descargar CSV (Eventos Valencia)",
+                            data=df_for_editor.to_csv(index=False).encode('utf-8'),
+                            file_name="valencia_events_data.csv",
+                            mime='text/csv',
+                            key="csv_download_valencia_events"
+                        )
+                    with col2:
+                        st.download_button(
+                            label="📥 Descargar JSON (Eventos Valencia)",
+                            data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
+                            file_name="valencia_events_data.json",
+                            mime='application/json',
+                            key="json_download_valencia_events"
+                        )

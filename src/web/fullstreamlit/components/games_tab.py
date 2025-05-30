@@ -134,6 +134,25 @@ def display_deals(deals_df):
         use_container_width=True
     )
 
+    if not df_for_editor.empty:
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                label="📥 Descargar CSV (Ofertas)",
+                data=df_for_editor.to_csv(index=False).encode('utf-8'),
+                file_name="game_deals_data.csv",
+                mime='text/csv',
+                key="csv_download_deals"
+            )
+        with col2:
+            st.download_button(
+                label="📥 Descargar JSON (Ofertas)",
+                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="game_deals_data.json",
+                mime='application/json',
+                key="json_download_deals"
+            )
 
 def display_bundles(bundles_df):
     """Display game bundles"""
@@ -269,6 +288,25 @@ def display_bundles(bundles_df):
         use_container_width=True
     )
 
+    if not df_for_editor.empty:
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                label="📥 Descargar CSV (Paquetes)",
+                data=df_for_editor.to_csv(index=False).encode('utf-8'),
+                file_name="game_bundles_data.csv",
+                mime='text/csv',
+                key="csv_download_bundles"
+            )
+        with col2:
+            st.download_button(
+                label="📥 Descargar JSON (Paquetes)",
+                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="game_bundles_data.json",
+                mime='application/json',
+                key="json_download_bundles"
+            )
 
 def display_giveaways(giveaways_df):
     """Display game giveaways"""
@@ -351,3 +389,23 @@ def display_giveaways(giveaways_df):
         hide_index=True,
         use_container_width=True
     )
+
+        if not df_for_editor.empty:
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.download_button(
+                    label="📥 Descargar CSV (Gratuitos)",
+                    data=df_for_editor.to_csv(index=False).encode('utf-8'),
+                    file_name="game_giveaways_data.csv",
+                    mime='text/csv',
+                    key="csv_download_giveaways"
+                )
+            with col2:
+                st.download_button(
+                    label="📥 Descargar JSON (Gratuitos)",
+                    data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
+                    file_name="game_giveaways_data.json",
+                    mime='application/json',
+                    key="json_download_giveaways"
+                )
