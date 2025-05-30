@@ -201,10 +201,10 @@ class BaseWatcher(ABC):
                     "first_seen": self.previous_state["first_seen"]
                 }
                 self._save_state(new_state)
-                return
+                # return # MODIFIED FOR TESTING: Allow flow through to has_changed
             
             # Check if value has changed
-            old_value = self.previous_state["last_value"]
+            old_value = self.previous_state["last_value"] # This will be None if it was the first check and we didn't return
             if self.has_changed(old_value, current_value):
                 self.trigger_alarm(old_value, current_value)
             
