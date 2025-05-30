@@ -1,37 +1,66 @@
 """Data models for Watchtower."""
 
-from src.models.base import BaseModel, TimestampedModel, StatusModel, ErrorModel, PaginationModel
-from src.models.security import (
-    VulnerabilityModel, VulnerabilitySourceModel, ThreatIntelligenceModel,
-    RiskLevel, VulnerabilityStatus, AttackVector, AttackComplexity, 
-    PrivilegesRequired, UserInteraction
-)
-from src.models.technology import (
-    TechnologyModel, TechnologyComparisonModel, TechnologyPredictionModel,
-    FrameworkBattleModel, TechnologyMetrics, TechnologyCategory,
-    TrendDirection, MaturityLevel, AdoptionLevel
-)
 from src.models.arxiv import (
-    ArxivPaperModel, EnhancedArxivPaperModel, GitHubRepositoryModel, PapersWithCodeModel,
-    TechnologyReadinessLevel, ResearchCategory, CommercialPotential
+    ArxivPaperModel,
+    CommercialPotential,
+    EnhancedArxivPaperModel,
+    GitHubRepositoryModel,
+    PapersWithCodeModel,
+    ResearchCategory,
+    TechnologyReadinessLevel,
+)
+from src.models.base import (
+    BaseModel,
+    ErrorModel,
+    PaginationModel,
+    StatusModel,
+    TimestampedModel,
 )
 from src.models.events import (
-    TechEventModel, SpeakerModel, VenueModel, EventRecommendationModel, 
-    UserEventPreferencesModel, EventType, EventFormat, EventStatus
+    EventFormat,
+    EventRecommendationModel,
+    EventStatus,
+    EventType,
+    SpeakerModel,
+    TechEventModel,
+    UserEventPreferencesModel,
+    VenueModel,
 )
+from src.models.security import (
+    AttackComplexity,
+    AttackVector,
+    PrivilegesRequired,
+    RiskLevel,
+    ThreatIntelligenceModel,
+    UserInteraction,
+    VulnerabilityModel,
+    VulnerabilitySourceModel,
+    VulnerabilityStatus,
+)
+from src.models.technology import (
+    AdoptionLevel,
+    FrameworkBattleModel,
+    MaturityLevel,
+    TechnologyCategory,
+    TechnologyComparisonModel,
+    TechnologyMetrics,
+    TechnologyModel,
+    TechnologyPredictionModel,
+    TrendDirection,
+)
+
 # from src.models.news import NewsArticleModel, FeedSourceModel  # Temporarily disabled
 
 __all__ = [
     # Base models
     "BaseModel",
-    "TimestampedModel", 
+    "TimestampedModel",
     "StatusModel",
     "ErrorModel",
     "PaginationModel",
-    
     # Security models
     "VulnerabilityModel",
-    "VulnerabilitySourceModel", 
+    "VulnerabilitySourceModel",
     "ThreatIntelligenceModel",
     "RiskLevel",
     "VulnerabilityStatus",
@@ -39,7 +68,6 @@ __all__ = [
     "AttackComplexity",
     "PrivilegesRequired",
     "UserInteraction",
-    
     # Technology models
     "TechnologyModel",
     "TechnologyComparisonModel",
@@ -50,7 +78,6 @@ __all__ = [
     "TrendDirection",
     "MaturityLevel",
     "AdoptionLevel",
-    
     # ArXiv models
     "ArxivPaperModel",
     "EnhancedArxivPaperModel",
@@ -59,18 +86,16 @@ __all__ = [
     "TechnologyReadinessLevel",
     "ResearchCategory",
     "CommercialPotential",
-    
     # Events models
     "TechEventModel",
-    "SpeakerModel", 
+    "SpeakerModel",
     "VenueModel",
     "EventRecommendationModel",
     "UserEventPreferencesModel",
     "EventType",
     "EventFormat",
     "EventStatus",
-    
     # News models (temporarily disabled)
     # "NewsArticleModel",
     # "FeedSourceModel",
-] 
+]

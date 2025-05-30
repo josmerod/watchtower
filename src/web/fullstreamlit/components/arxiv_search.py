@@ -1,3 +1,9 @@
+"""Streamlit component for advanced ArXiv paper search.
+
+This module provides the `ArxivSearchComponent` class, which allows users
+to search through a collection of ArXiv papers using text queries,
+category filters, and date range filters. It uses TF-IDF for relevance ranking.
+"""
 import os
 import sys
 import json

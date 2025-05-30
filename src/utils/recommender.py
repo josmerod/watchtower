@@ -1,3 +1,9 @@
+"""Personalized recommendation system for Watchtower.
+
+This module provides the `PersonalRecommender` class, which uses
+content-based filtering techniques to generate personalized recommendations
+for users based on their interests, viewed items, and ratings.
+"""
 import os
 import json
 import numpy as np

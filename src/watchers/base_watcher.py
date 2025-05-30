@@ -1,3 +1,9 @@
+"""Base class and core logic for web content watchers.
+
+This module provides the `BaseWatcher` abstract base class, which defines
+the common interface and core functionality for all watcher implementations.
+Watchers periodically check web pages for changes in specific values or content.
+"""
 import os
 import json
 import time

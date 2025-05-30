@@ -1,3 +1,9 @@
+"""Utilities for interacting with GitHub repositories.
+
+This module provides functions to extract information from GitHub URLs,
+fetch repository details via the GitHub API, and find GitHub repository
+links within text content.
+"""
 import re
 import requests
 from typing import Optional, Dict, Any, Tuple

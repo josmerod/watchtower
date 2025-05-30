@@ -1,3 +1,9 @@
+"""ArXiv Watcher for monitoring new research papers.
+
+This module provides the `ArxivWatcher` class, which periodically checks
+ArXiv for new papers in specified AI/ML and computer science categories.
+It extracts paper metadata and saves information about new or updated papers.
+"""
 import os
 import feedparser
 import json

@@ -1,3 +1,9 @@
+"""Command-line interface for running web content watchers.
+
+This script allows users to list available watchers, run specific watchers,
+or run all available watchers. Watchers can be run once or continuously
+at specified intervals.
+"""
 import os
 import sys
 import argparse

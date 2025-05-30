@@ -1,3 +1,9 @@
+"""NLP Content Classifier for text analysis and clustering.
+
+This module provides the `NLPContentClassifier` class, which uses
+TF-IDF vectorization, dimensionality reduction (LSA), and K-Means clustering
+to classify text documents, extract keywords, and identify topics.
+"""
 import os
 import json
 import nltk

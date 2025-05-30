@@ -1,3 +1,9 @@
+"""Microsoft Applied Skills Watcher.
+
+This module provides the `MSAppliedSkillsWatcher` class, which monitors the
+Microsoft Learn website for new or updated "Applied Skills" credentials.
+It uses Playwright for dynamic content rendering and detailed information extraction.
+"""
 import re
 import time
 import logging

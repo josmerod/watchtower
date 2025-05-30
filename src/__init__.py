@@ -1,5 +1,5 @@
 """Watchtower: A comprehensive data collection and monitoring platform.
-
+"""Main package for the Watchtower application."""
 A versatile framework for automated data collection, processing, and monitoring
 from diverse online sources.
 """
