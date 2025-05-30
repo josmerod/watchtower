@@ -15,7 +15,7 @@ from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
 from src.utils.pwc_utils import get_pwc_details_for_paper
-from paperswithcode import PapersWithCodeClient
+# from paperswithcode import PapersWithCodeClient # Commented out for testing
 
 
 class ArxivETL:
@@ -73,10 +73,10 @@ class ArxivETL:
 
         self.classifier = NLPContentClassifier(name=f"{name}_classifier")
         self.n_clusters = n_clusters
-        self.pwc_client = PapersWithCodeClient()
+        # self.pwc_client = PapersWithCodeClient() # Commented out for testing
 
         self.logger.info(
-            f"ArxivETL initialized with {days_back} days back, {max_results} max results"
+            f"ArxivETL initialized with {days_back} days back, {max_results} max results (PwC integration temporarily disabled for testing)"
         )
 
     def extract(self) -> List[Dict[str, Any]]:
@@ -93,9 +93,16 @@ class ArxivETL:
 
         # Load papers from watcher output
         papers_file = os.path.join(self.watcher.data_dir, "latest_papers.json")
+        self.logger.info(f"Attempting to load papers from: {papers_file}") # Detailed log
 
         if not os.path.exists(papers_file):
-            self.logger.warning("No papers found from watcher")
+            self.logger.warning(f"File not found: {papers_file}. No papers found from watcher.") # Detailed log
+            # Listing directory contents for debugging
+            try:
+                dir_contents = os.listdir(self.watcher.data_dir)
+                self.logger.info(f"Contents of {self.watcher.data_dir}: {dir_contents}")
+            except Exception as e_ls:
+                self.logger.error(f"Could not list directory {self.watcher.data_dir}: {e_ls}")
             return []
 
         try:
@@ -198,42 +205,42 @@ class ArxivETL:
                         f"Failed to fetch GitHub info for {github_urls[0]}"
                     )
 
-            # Initialize PapersWithCode fields
-            pwc_data = {
-                "pwc_id": None,
-                "pwc_url": None,
-                "pwc_title": None,
-                "pwc_proceeding": None,
-                "pwc_repositories": [],
-                "pwc_datasets": [],
-                "pwc_tasks_and_metrics": [],
-                "pwc_methods": [],
-            }
+            # Initialize PapersWithCode fields (Commented out for testing)
+            # pwc_data = {
+            #     "pwc_id": None,
+            #     "pwc_url": None,
+            #     "pwc_title": None,
+            #     "pwc_proceeding": None,
+            #     "pwc_repositories": [],
+            #     "pwc_datasets": [],
+            #     "pwc_tasks_and_metrics": [],
+            #     "pwc_methods": [],
+            # }
 
-            # Fetch PapersWithCode data
-            arxiv_id_url = paper.get(
-                "id"
-            )  # This is often the arxiv URL like http://arxiv.org/abs/xxxx.xxxx
-            paper_title = paper.get("title")
+            # Fetch PapersWithCode data (Commented out for testing)
+            # arxiv_id_url = paper.get(
+            #     "id"
+            # )  # This is often the arxiv URL like http://arxiv.org/abs/xxxx.xxxx
+            # paper_title = paper.get("title")
 
-            if arxiv_id_url or paper_title:
-                self.logger.info(
-                    f"Fetching PwC data for paper ArXiv ID: {arxiv_id_url if arxiv_id_url else 'N/A'}, Title: {paper_title if paper_title else 'N/A'}"
-                )
-                fetched_pwc_info = get_pwc_details_for_paper(
-                    arxiv_id_url=arxiv_id_url,
-                    title=paper_title,
-                    pwc_client=self.pwc_client,
-                )
-                if fetched_pwc_info:
-                    self.logger.info(
-                        f"Fetched PwC info for paper {arxiv_id_url if arxiv_id_url else paper_title}"
-                    )
-                    pwc_data.update(fetched_pwc_info)
-                else:
-                    self.logger.warning(
-                        f"No PwC info found for paper {arxiv_id_url if arxiv_id_url else paper_title}"
-                    )
+            # if arxiv_id_url or paper_title:
+            #     self.logger.info(
+            #         f"Fetching PwC data for paper ArXiv ID: {arxiv_id_url if arxiv_id_url else 'N/A'}, Title: {paper_title if paper_title else 'N/A'} (PwC integration temporarily disabled)"
+            #     )
+                # fetched_pwc_info = get_pwc_details_for_paper(
+                #     arxiv_id_url=arxiv_id_url,
+                #     title=paper_title,
+                #     pwc_client=self.pwc_client, # This would error as self.pwc_client is commented out
+                # )
+                # if fetched_pwc_info:
+                #     self.logger.info(
+                #         f"Fetched PwC info for paper {arxiv_id_url if arxiv_id_url else paper_title}"
+                #     )
+                #     pwc_data.update(fetched_pwc_info)
+                # else:
+                #     self.logger.warning(
+                #         f"No PwC info found for paper {arxiv_id_url if arxiv_id_url else paper_title}"
+                #     )
 
             # Create transformed paper with classification, GitHub, and PwC data
             transformed_paper = {
@@ -243,7 +250,7 @@ class ArxivETL:
                 "cluster_keywords": classification["cluster_keywords"],
                 "extracted_keywords": classification["document_keywords"],
                 **github_info,
-                **pwc_data,  # Add PapersWithCode information
+                # **pwc_data,  # Add PapersWithCode information (Commented out for testing)
                 "processed_date": datetime.now().isoformat(),
             }
 
@@ -429,6 +436,7 @@ class ArxivETL:
 
         except Exception as e:
             self.logger.error(f"Error in ETL pipeline: {str(e)}")
+            raise # Re-raise the exception
 
 
 if __name__ == "__main__":

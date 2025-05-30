@@ -55,18 +55,21 @@ class NLPContentClassifier:
     def _download_nltk_resources(self):
         """Download necessary NLTK resources."""
         resources = [
-            'punkt',           # For tokenization
-            'stopwords',       # Common words to filter out
-            'wordnet',         # For lemmatization
-            'averaged_perceptron_tagger' # For POS tagging
+            ('punkt', 'tokenizers/punkt'),
+            ('stopwords', 'corpora/stopwords'),
+            ('wordnet', 'corpora/wordnet'),
+            ('averaged_perceptron_tagger', 'taggers/averaged_perceptron_tagger'),
+            ('averaged_perceptron_tagger_eng', 'taggers/averaged_perceptron_tagger_eng'), # Added specifically
+            ('punkt_tab', 'tokenizers/punkt_tab')
         ]
         
-        for resource in resources:
+        for resource_name, resource_path in resources:
             try:
-                nltk.data.find(f'tokenizers/{resource}')
+                # nltk.data.find checks various paths for the resource
+                nltk.data.find(resource_path)
             except LookupError:
-                self.logger.info(f"Downloading NLTK resource: {resource}")
-                nltk.download(resource, quiet=True)
+                self.logger.info(f"Downloading NLTK resource: {resource_name}")
+                nltk.download(resource_name, quiet=True)
         
     def extract_keywords(self, text: str, top_n: int = 10) -> List[str]:
         """
