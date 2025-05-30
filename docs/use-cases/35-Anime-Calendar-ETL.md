@@ -31,19 +31,20 @@ The ETL script processes the fetched data and saves it into the following JSON f
 
 ## 6. Configuration
 
-### API Access
+To use this ETL, you need a MyAnimeList API Client ID.
 
-This ETL requires access to the MyAnimeList API, which necessitates a Client ID.
+1.  **Obtain a Client ID:** Register an API client application on MyAnimeList at [https://myanimelist.net/apiconfig](https://myanimelist.net/apiconfig) to get your Client ID.
+2.  **Set up `.env` file:**
+    *   In the root directory of this project, you'll find a file named `.env.example`.
+    *   Create a copy of this file and name it `.env`.
+    *   Open the `.env` file and replace `"YOUR_MAL_CLIENT_ID_HERE"` with your actual MyAnimeList Client ID:
+        ```
+        MAL_CLIENT_ID="your_actual_client_id_value"
+        ```
+    *   The `.env` file is included in `.gitignore`, so your API key will not be committed to the repository.
+3.  The script uses the `python-dotenv` library to load this `MAL_CLIENT_ID` from your `.env` file. If the `.env` file is not present, or the variable is not found there, it will fall back to checking system environment variables.
 
-*   **Environment Variable:** `MAL_CLIENT_ID`
-*   **Obtaining a Client ID:**
-    1.  Log in to your MyAnimeList account.
-    2.  Navigate to the API configuration page: [https://myanimelist.net/apiconfig](https://myanimelist.net/apiconfig).
-    3.  Create a new API client. You'll need to provide details like the application name and purpose.
-    4.  Once created, your Client ID will be provided.
-    5.  Set this Client ID as the value for the `MAL_CLIENT_ID` environment variable in your Watchtower execution environment.
-
-If the `MAL_CLIENT_ID` is not set, the ETL script will log an error and fail to run.
+If the `MAL_CLIENT_ID` cannot be resolved either from `.env` or system environment variables, the ETL script will log an error and fail to run.
 
 ## 7. Pydantic Model
 
@@ -61,7 +62,7 @@ To run this ETL script individually:
 python src/etl/anime/mal_etl.py
 ```
 
-Ensure the `MAL_CLIENT_ID` environment variable is set before execution.
+Ensure the `MAL_CLIENT_ID` is configured via `.env` file or as a system environment variable before execution.
 
 ### Integrated Execution
 
