@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
-
 from src.exceptions.base import WatchtowerError
 
 
 class ScrapingError(WatchtowerError):
     """Base exception for scraping-related errors."""
-    
+
     def __init__(
         self,
         message: str,
-        url: Optional[str] = None,
+        url: str | None = None,
         **kwargs,
     ):
         """Initialize scraping error.
-        
+
         Args:
             message: Error message.
             url: URL being scraped when error occurred.
@@ -26,25 +24,25 @@ class ScrapingError(WatchtowerError):
         context = kwargs.get("context", {})
         if url:
             context["url"] = url
-            
+
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_SCRAPING_ERROR")
-        
+
         super().__init__(message, **kwargs)
 
 
 class RequestError(ScrapingError):
     """Exception raised for HTTP request errors."""
-    
+
     def __init__(
         self,
         message: str,
-        status_code: Optional[int] = None,
-        response_text: Optional[str] = None,
+        status_code: int | None = None,
+        response_text: str | None = None,
         **kwargs,
     ):
         """Initialize request error.
-        
+
         Args:
             message: Error message.
             status_code: HTTP status code.
@@ -56,25 +54,25 @@ class RequestError(ScrapingError):
             context["status_code"] = status_code
         if response_text:
             context["response_text"] = response_text[:500]  # Limit size
-            
+
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_REQUEST_ERROR")
-        
+
         super().__init__(message, **kwargs)
 
 
 class ParsingError(ScrapingError):
     """Exception raised for content parsing errors."""
-    
+
     def __init__(
         self,
         message: str,
-        parser_type: Optional[str] = None,
-        content_sample: Optional[str] = None,
+        parser_type: str | None = None,
+        content_sample: str | None = None,
         **kwargs,
     ):
         """Initialize parsing error.
-        
+
         Args:
             message: Error message.
             parser_type: Type of parser used (html, xml, json, etc.).
@@ -86,24 +84,24 @@ class ParsingError(ScrapingError):
             context["parser_type"] = parser_type
         if content_sample:
             context["content_sample"] = content_sample[:300]  # Limit size
-            
+
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_PARSING_ERROR")
-        
+
         super().__init__(message, **kwargs)
 
 
 class RateLimitError(ScrapingError):
     """Exception raised when rate limits are exceeded."""
-    
+
     def __init__(
         self,
         message: str,
-        retry_after: Optional[int] = None,
+        retry_after: int | None = None,
         **kwargs,
     ):
         """Initialize rate limit error.
-        
+
         Args:
             message: Error message.
             retry_after: Seconds to wait before retrying.
@@ -112,25 +110,27 @@ class RateLimitError(ScrapingError):
         context = kwargs.get("context", {})
         if retry_after:
             context["retry_after"] = retry_after
-            
+
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_RATE_LIMIT_ERROR")
-        kwargs["user_message"] = f"Rate limit exceeded. Please try again in {retry_after or 'a few'} seconds."
-        
+        kwargs["user_message"] = (
+            f"Rate limit exceeded. Please try again in {retry_after or 'a few'} seconds."
+        )
+
         super().__init__(message, **kwargs)
 
 
 class TimeoutError(ScrapingError):
     """Exception raised for request timeouts."""
-    
+
     def __init__(
         self,
         message: str,
-        timeout_seconds: Optional[int] = None,
+        timeout_seconds: int | None = None,
         **kwargs,
     ):
         """Initialize timeout error.
-        
+
         Args:
             message: Error message.
             timeout_seconds: Timeout value in seconds.
@@ -139,9 +139,11 @@ class TimeoutError(ScrapingError):
         context = kwargs.get("context", {})
         if timeout_seconds:
             context["timeout_seconds"] = timeout_seconds
-            
+
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_TIMEOUT_ERROR")
-        kwargs["user_message"] = "Request timed out. Please check your connection and try again."
-        
+        kwargs["user_message"] = (
+            "Request timed out. Please check your connection and try again."
+        )
+
         super().__init__(message, **kwargs)

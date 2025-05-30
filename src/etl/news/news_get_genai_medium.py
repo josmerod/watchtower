@@ -1,17 +1,24 @@
-import os
+"""ETL module for fetching Generative AI articles from Medium.
+
+This module retrieves articles related to Generative AI, LLMs, and related
+topics from various Medium RSS feeds. The fetched data is then
+processed and saved into JSON and CSV files.
+"""
 import json
+import os
+import re
 import sys
 import time
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any
+
 import feedparser
-import re
 
 # Add the project root to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("MediumGenAIETL")
@@ -19,9 +26,8 @@ logger = get_logger("MediumGenAIETL")
 
 def get_medium_genai_data(
     max_retries: int = 3, retry_delay: int = 5
-) -> List[Dict[str, Any]]:
-    """
-    Fetches generative AI articles from Medium by parsing multiple RSS feeds.
+) -> list[dict[str, Any]]:
+    """Fetches generative AI articles from Medium by parsing multiple RSS feeds.
 
     Args:
         max_retries: Maximum number of retry attempts on connection failure
@@ -42,91 +48,99 @@ def get_medium_genai_data(
         "https://medium.com/feed/tag/deep-learning",
         "https://medium.com/feed/tag/natural-language-processing",
         "https://medium.com/feed/tag/computer-vision",
-        "https://medium.com/feed/tag/nlp"
-
+        "https://medium.com/feed/tag/nlp",
     ]
     articles = []
-    
+
     for rss_url in rss_urls:
         logger.info(f"Processing RSS feed: {rss_url}")
-        
+
         for attempt in range(max_retries):
             try:
                 logger.info(f"Fetching RSS feed from {rss_url}")
                 feed = feedparser.parse(rss_url)
-                
+
                 if not feed.entries:
                     logger.warning(f"No entries found in RSS feed from {rss_url}")
                     break
-                
-                logger.debug(f"Found {len(feed.entries)} entries in RSS feed from {rss_url}")
-                
+
+                logger.debug(
+                    f"Found {len(feed.entries)} entries in RSS feed from {rss_url}"
+                )
+
                 for entry in feed.entries:
                     try:
                         # Extract article data from the entry
                         article = {
-                            "title": entry.title if hasattr(entry, 'title') else "",
-                            "url": entry.link if hasattr(entry, 'link') else "",
-                            "published_at": entry.published if hasattr(entry, 'published') else "",
+                            "title": entry.title if hasattr(entry, "title") else "",
+                            "url": entry.link if hasattr(entry, "link") else "",
+                            "published_at": entry.published
+                            if hasattr(entry, "published")
+                            else "",
                             "source": "medium.com",
-                            "author": entry.author if hasattr(entry, 'author') else "",
-                            "summary": entry.summary if hasattr(entry, 'summary') else "",
-                            "medium_id": entry.id if hasattr(entry, 'id') else "",
-                            "feed_source": rss_url
+                            "author": entry.author if hasattr(entry, "author") else "",
+                            "summary": entry.summary
+                            if hasattr(entry, "summary")
+                            else "",
+                            "medium_id": entry.id if hasattr(entry, "id") else "",
+                            "feed_source": rss_url,
                         }
-                        
+
                         # Extract tags/categories if available
-                        if hasattr(entry, 'tags'):
-                            article["tags"] = [tag.term for tag in entry.tags if hasattr(tag, 'term')]
-                        
+                        if hasattr(entry, "tags"):
+                            article["tags"] = [
+                                tag.term for tag in entry.tags if hasattr(tag, "term")
+                            ]
+
                         # Extract source domain from entry
-                        if hasattr(entry, 'link'):
-                            source_match = re.search(r'https?://([^/]+)', entry.link)
+                        if hasattr(entry, "link"):
+                            source_match = re.search(r"https?://([^/]+)", entry.link)
                             if source_match:
                                 article["source"] = source_match.group(1)
-                        
+
                         articles.append(article)
                         logger.debug(f"Extracted article: {article['title']}")
                     except Exception as e:
-                        logger.error(f"Error parsing RSS entry: {str(e)}")
+                        logger.error(f"Error parsing RSS entry: {e!s}")
                         continue
-                
+
                 # Break out of retry loop if successful
                 break
-                
+
             except Exception as e:
-                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {str(e)}")
+                logger.warning(
+                    f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e!s}"
+                )
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                 else:
                     logger.error(
-                        f"Error fetching data from RSS feed {rss_url} after {max_retries} attempts: {str(e)}"
+                        f"Error fetching data from RSS feed {rss_url} after {max_retries} attempts: {e!s}"
                     )
-    
+
     # Remove duplicates based on medium_id and title
     unique_articles = {}
     unique_titles = set()
-    
+
     for article in articles:
         # First check if we've seen this title before
         title = article.get("title", "").strip()
         medium_id = article.get("medium_id", "")
-        
+
         if title and title not in unique_titles and medium_id not in unique_articles:
             unique_titles.add(title)
             unique_articles[medium_id] = article
-    
+
     articles = list(unique_articles.values())
     logger.info(f"Retrieved {len(articles)} unique articles from Medium RSS feeds")
     return articles
 
 
 def process_medium_articles(
-    articles: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    """
-    Process and transform Medium articles into a standardized format.
+    articles: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Process and transform Medium articles into a standardized format.
 
     Args:
         articles: List of raw article dictionaries from Medium
@@ -151,13 +165,13 @@ def process_medium_articles(
                     "author": article.get("author", ""),
                     "tags": article.get("tags", []),
                     "summary": article.get("summary", ""),
-                    "feed_source": article.get("feed_source", "")
+                    "feed_source": article.get("feed_source", ""),
                 },
             }
             processed_articles.append(processed_article)
             logger.debug(f"Processed article: {processed_article['title']}")
         except Exception as e:
-            logger.error(f"Error processing article: {str(e)}")
+            logger.error(f"Error processing article: {e!s}")
             continue
 
     logger.info(f"Successfully processed {len(processed_articles)} articles")
@@ -201,7 +215,9 @@ def main():
         )
 
     except Exception as e:
-        logger.error(f"Error in Medium Generative AI ETL process: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error in Medium Generative AI ETL process: {e!s}", exc_info=True
+        )
 
 
 if __name__ == "__main__":

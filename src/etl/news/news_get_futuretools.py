@@ -1,17 +1,24 @@
-import os
+"""ETL module for scraping news articles from FutureTools.io.
+
+This module fetches news articles related to AI tools and technologies
+by scraping the FutureTools.io news page. The scraped data is then
+processed and saved into JSON and CSV files.
+"""
 import json
-import requests
+import os
 import sys
 import time
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any
+
+import requests
 from bs4 import BeautifulSoup
 
 # Add the project root to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("FuturetoolsETL")
@@ -19,9 +26,8 @@ logger = get_logger("FuturetoolsETL")
 
 def get_futuretools_data(
     max_retries: int = 3, retry_delay: int = 5
-) -> List[Dict[str, Any]]:
-    """
-    Fetches news articles from the futuretools web by scraping the HTML page.
+) -> list[dict[str, Any]]:
+    """Fetches news articles from the futuretools web by scraping the HTML page.
 
     Args:
         max_retries: Maximum number of retry attempts on connection failure
@@ -76,29 +82,28 @@ def get_futuretools_data(
                         articles.append(article)
                         logger.debug(f"Extracted article: {title}")
                 except Exception as e:
-                    logger.error(f"Error parsing news item: {str(e)}")
+                    logger.error(f"Error parsing news item: {e!s}")
                     continue
 
             logger.info(f"Retrieved {len(articles)} articles from futuretools website")
             return articles
 
         except requests.exceptions.RequestException as e:
-            logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {str(e)}")
+            logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {e!s}")
             if attempt < max_retries - 1:
                 logger.info(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
             else:
                 logger.error(
-                    f"Error fetching data from futuretools website after {max_retries} attempts: {str(e)}"
+                    f"Error fetching data from futuretools website after {max_retries} attempts: {e!s}"
                 )
                 return []
 
 
 def process_futuretools_articles(
-    articles: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    """
-    Process and transform futuretools articles into a standardized format.
+    articles: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Process and transform futuretools articles into a standardized format.
 
     Args:
         articles: List of raw article dictionaries from the futuretools website
@@ -124,7 +129,7 @@ def process_futuretools_articles(
             processed_articles.append(processed_article)
             logger.debug(f"Processed article: {processed_article['title']}")
         except Exception as e:
-            logger.error(f"Error processing article: {str(e)}")
+            logger.error(f"Error processing article: {e!s}")
             continue
 
     logger.info(f"Successfully processed {len(processed_articles)} articles")
@@ -168,11 +173,11 @@ def main():
         )
 
     except Exception as e:
-        logger.error(f"Error in futuretools ETL process: {str(e)}", exc_info=True)
+        logger.error(f"Error in futuretools ETL process: {e!s}", exc_info=True)
 
 
 if __name__ == "__main__":
     logger.info("futuretools ETL script started")
     # Run the main function
     main()
-    logger.info("futuretools ETL script completed") 
+    logger.info("futuretools ETL script completed")

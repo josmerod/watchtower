@@ -19,43 +19,58 @@ classifiers = [
 dependencies = [
     "playwright>=1.51.0",
     "requests>=2.32.3",
-    "paperswithcode-client>=0.3.1",
+    "paperswithcode-client>=0.3.1", # Known Pydantic v1 conflict; kept for now.
     "beautifulsoup4>=4.13.3",
     "feedparser>=6.0.11",
     "nltk>=3.9.1",
     "numpy>=2.2.5",
     "pandas>=2.2.3",
     "scikit-learn>=1.6.1",
-    "scipy>=1.15.2",
-    "joblib>=1.5.0",
+    "scipy>=1.15.2", # Potentially transitive, review if truly unused by core logic.
+    "joblib>=1.5.0", # Potentially transitive, review if truly unused by core logic.
     "tqdm>=4.67.1",
     "python-dateutil>=2.9.0.post0",
-    "pytz>=2025.2",
-    "streamlit>=1.29.0",
-    "polars>=0.20.0",  # Primary data processing library per standards
+    "pytz>=2025.2", # Potentially transitive, review if truly unused by core logic.
+    "streamlit>=1.45.0", # Updated version
+    "polars>=0.20.0",
+    "pydantic>=2.11.5", # Moved from web optional, version updated
+    "pydantic-settings>=2.9.1",
+    "typing-extensions>=4.13.2", # Often a Pydantic peer dependency
+    "aiohttp>=3.11.18",
+    "yt-dlp>=2024.3.10",
+    "cloudscraper>=1.2.60",
+    "plotly>=5.0.0",
+    "toml>=0.10.2",
+    "google-api-python-client>=2.0.0",
+    "isodate>=0.6.0",
+    "psutil>=6.0.0",
+    "tenacity>=9.1.2",
+    "blinker>=1.9.0",
+    "cachetools>=5.5.2",
+    "GitPython>=3.1.44",
 ]
 
 [project.optional-dependencies]
 dev = [
     "ruff>=0.2.0",
     "pytest>=7.0",
-    "pytest-cov>=4.1.0",  # For test coverage reporting
+    "pytest-cov>=4.1.0",
     "pre-commit>=3.5.0",
-    "mypy>=1.7.0",        # For static type checking
-    "black>=24.1.0",      # For code formatting
+    "mypy>=1.7.0",
+    "black>=24.1.0",
 ]
 
 ml = [
-    "langgraph>=0.0.20",  # Optional for ML workflows
-    "faiss-cpu>=1.7.4",   # Vector storage
-    "chromadb>=0.4.22",   # Document store
+    "langgraph>=0.0.20",
+    "faiss-cpu>=1.7.4",
+    "chromadb>=0.4.22",
 ]
 
 web = [
-    "fastapi>=0.110.0",   # For API development
-    "uvicorn>=0.27.0",    # ASGI server
-    "pydantic>=2.6.0",    # Data validation
-    "httpx>=0.27.0",      # HTTP client
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    # pydantic was moved to core dependencies
+    "httpx>=0.27.0",
 ]
 
 [project.urls]

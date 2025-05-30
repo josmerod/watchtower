@@ -12,6 +12,11 @@ class PerformanceTracker:
     """Track performance metrics for the application"""
     
     def __init__(self):
+        """Initialize the PerformanceTracker.
+
+        Ensures that a 'performance_metrics' dictionary exists in
+        Streamlit's session state to store metrics.
+        """
         if 'performance_metrics' not in st.session_state:
             st.session_state.performance_metrics = {}
     

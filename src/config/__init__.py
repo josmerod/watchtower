@@ -1,18 +1,18 @@
 """Configuration management for Watchtower."""
 
-from src.config.settings import Settings, get_settings
 from src.config.models import (
+    APIConfig,
     DatabaseConfig,
     LoggingConfig,
     ScrapingConfig,
-    APIConfig,
 )
+from src.config.settings import Settings, get_settings
 
 __all__ = [
-    "Settings",
-    "get_settings",
-    "DatabaseConfig", 
+    "APIConfig",
+    "DatabaseConfig",
     "LoggingConfig",
     "ScrapingConfig",
-    "APIConfig",
-] 
+    "Settings",
+    "get_settings",
+]

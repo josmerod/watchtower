@@ -1,3 +1,10 @@
+"""Utilities for interacting with the PapersWithCode API.
+
+This module provides functions to fetch paper details, including associated
+repositories, datasets, tasks, and methods, from PapersWithCode (PwC)
+using either an ArXiv ID or paper title. It handles API request retries
+and polite request delays.
+"""
 from typing import Optional, Dict, Any, List
 import time
 import asyncio # Added for sleep

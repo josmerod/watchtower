@@ -1,26 +1,27 @@
-import os
-import json
-import time
-from datetime import datetime
-from typing import List, Dict, Any, Optional
-import pandas as pd
+"""ETL module for fetching, processing, and classifying research papers from ArXiv."""
 
+import json
+import os
 import sys
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from src.watchers.arxiv_watcher import ArxivWatcher
-from src.utils.nlp_classifier import NLPContentClassifier
-from src.utils.logging import get_logger
+from paperswithcode import PapersWithCodeClient
+
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
+from src.utils.logging import get_logger
+from src.utils.nlp_classifier import NLPContentClassifier
 from src.utils.pwc_utils import get_pwc_details_for_paper
-from paperswithcode import PapersWithCodeClient
+from src.watchers.arxiv_watcher import ArxivWatcher
 
 
 class ArxivETL:
-    """
-    ETL process for ArXiv papers.
+    """ETL process for ArXiv papers.
 
     This ETL:
     1. Collects papers from ArXiv using the ArxivWatcher
@@ -36,8 +37,7 @@ class ArxivETL:
         max_results: int = 100,
         n_clusters: int = 10,
     ):
-        """
-        Initialize the ArXiv ETL.
+        """Initialize the ArXiv ETL.
 
         Args:
             name (str): Name for this ETL process
@@ -79,9 +79,8 @@ class ArxivETL:
             f"ArxivETL initialized with {days_back} days back, {max_results} max results"
         )
 
-    def extract(self) -> List[Dict[str, Any]]:
-        """
-        Extract papers from ArXiv.
+    def extract(self) -> list[dict[str, Any]]:
+        """Extract papers from ArXiv.
 
         Returns:
             List[Dict[str, Any]]: List of papers with metadata
@@ -99,17 +98,16 @@ class ArxivETL:
             return []
 
         try:
-            with open(papers_file, "r", encoding="utf-8") as f:
+            with open(papers_file, encoding="utf-8") as f:
                 papers = json.load(f)
             self.logger.info(f"Loaded {len(papers)} papers from watcher")
             return papers
         except Exception as e:
-            self.logger.error(f"Error loading papers: {str(e)}")
+            self.logger.error(f"Error loading papers: {e!s}")
             return []
 
-    def transform(self, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Transform and enrich papers with NLP classification, GitHub repository info, and PapersWithCode data.
+    def transform(self, papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Transform and enrich papers with NLP classification, GitHub repository info, and PapersWithCode data.
 
         Args:
             papers (List[Dict[str, Any]]): Raw papers from extraction phase
@@ -254,9 +252,8 @@ class ArxivETL:
         )
         return transformed_papers
 
-    def load(self, transformed_papers: List[Dict[str, Any]]):
-        """
-        Load the transformed papers into various formats.
+    def load(self, transformed_papers: list[dict[str, Any]]):
+        """Load the transformed papers into various formats.
 
         Args:
             transformed_papers (List[Dict[str, Any]]): Transformed papers with classification, GitHub, and PwC info
@@ -277,7 +274,7 @@ class ArxivETL:
                 json.dump(transformed_papers, f, ensure_ascii=False, indent=2)
             self.logger.info(f"Saved JSON to {json_file}")
         except Exception as e:
-            self.logger.error(f"Error saving JSON: {str(e)}")
+            self.logger.error(f"Error saving JSON: {e!s}")
 
         # Save as CSV
         try:
@@ -334,7 +331,7 @@ class ArxivETL:
             df.to_csv(csv_file, index=False, encoding="utf-8")
             self.logger.info(f"Saved CSV to {csv_file}")
         except Exception as e:
-            self.logger.error(f"Error saving CSV: {str(e)}")
+            self.logger.error(f"Error saving CSV: {e!s}")
 
         # Save latest version for easy access
         try:
@@ -347,14 +344,13 @@ class ArxivETL:
 
             self.logger.info("Updated latest paper files")
         except Exception as e:
-            self.logger.error(f"Error updating latest files: {str(e)}")
+            self.logger.error(f"Error updating latest files: {e!s}")
 
         # Generate cluster statistics
         self._generate_cluster_statistics(transformed_papers)
 
-    def _generate_cluster_statistics(self, papers: List[Dict[str, Any]]):
-        """
-        Generate statistics about the paper clusters.
+    def _generate_cluster_statistics(self, papers: list[dict[str, Any]]):
+        """Generate statistics about the paper clusters.
 
         Args:
             papers (List[Dict[str, Any]]): Transformed papers with cluster information
@@ -403,11 +399,11 @@ class ArxivETL:
                 json.dump(statistics, f, ensure_ascii=False, indent=2)
             self.logger.info(f"Saved cluster statistics to {stats_file}")
         except Exception as e:
-            self.logger.error(f"Error saving cluster statistics: {str(e)}")
+            self.logger.error(f"Error saving cluster statistics: {e!s}")
 
     def run(self):
         """Run the complete ETL pipeline."""
-        self.logger.info(f"Starting ArXiv ETL pipeline")
+        self.logger.info("Starting ArXiv ETL pipeline")
 
         try:
             # Extract
@@ -425,10 +421,10 @@ class ArxivETL:
             # Load
             self.load(transformed_papers)
 
-            self.logger.info(f"ArXiv ETL pipeline completed successfully")
+            self.logger.info("ArXiv ETL pipeline completed successfully")
 
         except Exception as e:
-            self.logger.error(f"Error in ETL pipeline: {str(e)}")
+            self.logger.error(f"Error in ETL pipeline: {e!s}")
 
 
 if __name__ == "__main__":

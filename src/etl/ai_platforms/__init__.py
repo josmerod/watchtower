@@ -13,15 +13,15 @@ Based on Watchtower Platform Expansion Proposals: AI & ML Platform Monitoring.
 """
 
 from .ai_monitoring_etl import AIMonitoringETL
-from .openai_platform_etl import OpenAIPlatformETL
 from .anthropic_etl import AnthropicETL
-from .huggingface_etl import HuggingFaceETL
 from .github_copilot_etl import GitHubCopilotETL
+from .huggingface_etl import HuggingFaceETL
+from .openai_platform_etl import OpenAIPlatformETL
 
 __all__ = [
-    'AIMonitoringETL',
-    'OpenAIPlatformETL', 
-    'AnthropicETL',
-    'HuggingFaceETL',
-    'GitHubCopilotETL'
-] 
+    "AIMonitoringETL",
+    "AnthropicETL",
+    "GitHubCopilotETL",
+    "HuggingFaceETL",
+    "OpenAIPlatformETL",
+]
