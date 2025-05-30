@@ -35,6 +35,13 @@ from src.web.fullstreamlit.components import (
     tech_events_tab,
     ai_platforms_tab
 )
+# Import for Anime Tab
+from src.web.fullstreamlit.components.anime_display import display_anime_section
+from src.models.anime import AnimeItem
+import json
+from pathlib import Path
+from typing import List, Dict, Optional # Already imported but good for clarity
+
 
 # Import enhanced components
 from src.web.fullstreamlit.components import enhanced_innovation_tab
@@ -93,11 +100,73 @@ main_tabs = st.tabs([
     "Innovación",
     "Plataformas IA",
     "Crypto",
-    "ArXiv", 
+    "ArXiv",
+    "⛩️ Anime", # New Tab
     "Monitoreo", 
     "Eventos Valencia", 
     "Admin"
 ])
+
+# --- Anime Tab Specific Functions ---
+@st.cache_data(ttl=3600) # Cache for 1 hour
+def load_anime_data(json_path: Path) -> List[AnimeItem]:
+    """Loads anime data from a JSON file and converts to AnimeItem models."""
+    if not json_path.exists():
+        logger.error(f"Anime data file not found: {json_path}")
+        return []
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        # Assuming the JSON is a list of dicts, each convertible to AnimeItem
+        return [AnimeItem(**item) for item in data]
+    except json.JSONDecodeError:
+        logger.error(f"Error decoding JSON from {json_path}")
+        return []
+    except Exception as e: # Catch Pydantic validation errors or others
+        logger.error(f"Error parsing anime data from {json_path}: {e}")
+        return []
+
+def display_anime_calendar_tab():
+    """Displays the Anime Calendar tab with sections for seasonal, popular, and rated anime."""
+    st.title("⛩️ Anime Calendar & Guide")
+
+    DATA_PATH = Path("data/anime")
+    current_season_file = DATA_PATH / "current_season_anime.json"
+    top_popular_file = DATA_PATH / "top_popular_anime.json"
+    top_rated_file = DATA_PATH / "top_rated_anime.json"
+
+    seasonal_anime = load_anime_data(current_season_file)
+    popular_anime = load_anime_data(top_popular_file)
+    rated_anime = load_anime_data(top_rated_file)
+
+    season_tab, popular_tab, rated_tab = st.tabs([
+        f"🌸 Current Season ({len(seasonal_anime)})" if seasonal_anime else "🌸 Current Season",
+        f"🔥 Top Popular ({len(popular_anime)})" if popular_anime else "🔥 Top Popular",
+        f"⭐ Top Rated ({len(rated_anime)})" if rated_anime else "⭐ Top Rated"
+    ])
+
+    with season_tab:
+        display_anime_section(
+            "🌸 Current Season Anime",
+            seasonal_anime,
+            num_columns=3
+        )
+
+    with popular_tab:
+        display_anime_section(
+            "🔥 Top Popular Anime",
+            popular_anime,
+            num_columns=3
+        )
+
+    with rated_tab:
+        display_anime_section(
+            "⭐ Top Rated Anime",
+            rated_anime,
+            num_columns=3
+        )
+
+# --- End Anime Tab Specific Functions ---
 
 def render_tab_safely(tab_name, render_func, *args, **kwargs):
     """Safely render a tab with error handling"""
@@ -160,11 +229,14 @@ with main_tabs[11]:
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 
-with main_tabs[12]:
+with main_tabs[12]: # Index for Anime Tab
+    render_tab_safely("Anime Calendar", display_anime_calendar_tab)
+
+with main_tabs[13]: # Index for Monitoreo
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[13]:
+with main_tabs[14]: # Index for Eventos Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[14]:
+with main_tabs[15]: # Index for Admin
     render_tab_safely("Admin", admin_tab.render, logger)

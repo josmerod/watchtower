@@ -36,6 +36,7 @@ The Watchtower platform is a sophisticated technology intelligence system that a
 11. **[Product Hunt ETL](11-Product-Hunt-ETL.md)** - Innovation tracking with launch success prediction and trend analysis
 12. **[Indie Hackers ETL](15-Indie-Hackers-ETL.md)** - Startup discussion analysis with founder insights and market intelligence
 29. **[Y Combinator HackerNews ETL](29-Y-Combinator-HackerNews-ETL.md)** - Startup community analytics and innovation signal detection
+35. **[Anime Calendar & Guide ETL](35-Anime-Calendar-ETL.md)** - MyAnimeList anime data for seasonal, popular, and top-rated shows
 
 ### Developer Communities
 
