@@ -5,7 +5,7 @@ Displays game deals, bundles, and giveaways.
 
 import streamlit as st
 import pandas as pd
-from src.web.fullstreamlit.utils.helpers import make_clickable
+# from src.web.fullstreamlit.utils.helpers import make_clickable # Removed
 
 def render(deals_df, bundles_df, giveaways_df, logger=None):
     """Render the games tab"""
@@ -66,7 +66,7 @@ def display_deals(deals_df):
         title_col_actual = "title"
     elif "name" in available_columns:
         title_col_actual = "name"
-    
+
     if not title_col_actual:
         st.error("Los datos de ofertas no tienen una columna de título ('title' or 'name').")
         return
@@ -87,15 +87,8 @@ def display_deals(deals_df):
     # Sort by discount value if available (assuming 'discount_value' is numeric for sorting)
     if "discount_value" in available_columns:
         filtered_deals_df = filtered_deals_df.sort_values(by="discount_value", ascending=False)
-    
+
     display_deals_df = filtered_deals_df[source_columns_to_select].copy()
-
-    # Create clickable link
-    if "link" in display_deals_df.columns:
-        display_deals_df["Ver Oferta"] = display_deals_df["link"].apply(lambda x: make_clickable(x, "Ver"))
-    else:
-        display_deals_df["Ver Oferta"] = "N/A"
-
 
     # Format price
     if "price" in display_deals_df.columns:
@@ -108,24 +101,38 @@ def display_deals(deals_df):
         title_col_actual: "Título",
         "store": "Tienda",
         "price": "Precio",
-        "discount": "Descuento", # Already formatted string
+        "discount": "Descuento",
         "published_date": "Fecha de Publicación",
-        "Ver Oferta": "Link"
+        "link": "URL_Enlace"  # Raw URL column
     }
-    
-    # Filter rename_map to only include columns present in display_deals_df
-    active_rename_map = {k: v for k, v in rename_map.items() if k in display_deals_df.columns}
-    display_deals_df.rename(columns=active_rename_map, inplace=True)
 
-    # Final column order
-    final_columns_order = ["Título", "Tienda", "Precio", "Descuento", "Fecha de Publicación", "Link"]
-    
-    # Filter final_columns_order to only include columns that actually exist in display_deals_df
-    ordered_columns_present = [col for col in final_columns_order if col in display_deals_df.columns]
-    display_deals_df = display_deals_df[ordered_columns_present]
-    
-    st.write(f"Mostrando {len(display_deals_df)} ofertas")
-    st.markdown(display_deals_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+    # Select only the source columns that exist and are needed, then rename
+    actual_source_columns_for_rename = [col for col in rename_map.keys() if col in display_deals_df.columns]
+    df_for_editor = display_deals_df[actual_source_columns_for_rename].copy()
+    df_for_editor.rename(columns=rename_map, inplace=True)
+
+    # Final column order for data_editor
+    final_columns_ordered = ["Título", "Tienda", "Precio", "Descuento", "Fecha de Publicación", "URL_Enlace"]
+
+    # Filter to include only columns present in df_for_editor
+    columns_for_editor_display = [col for col in final_columns_ordered if col in df_for_editor.columns]
+    df_for_editor = df_for_editor[columns_for_editor_display]
+
+    st.write(f"Mostrando {len(df_for_editor)} ofertas")
+    st.data_editor(
+        df_for_editor,
+        column_config={
+            "Título": st.column_config.TextColumn(width="medium", help="Título del juego"),
+            "Tienda": st.column_config.TextColumn(width="small", help="Tienda de la oferta"),
+            "Precio": st.column_config.TextColumn(width="small", help="Precio actual"),
+            "Descuento": st.column_config.TextColumn(width="small", help="Porcentaje de descuento"),
+            "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación de la oferta"),
+            "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Oferta", width="small", help="Enlace directo a la oferta")
+        },
+        disabled=True,
+        hide_index=True,
+        use_container_width=True
+    )
 
 
 def display_bundles(bundles_df):
@@ -160,7 +167,7 @@ def display_bundles(bundles_df):
             )
             if selected_group != "Todos":
                 filtered_bundles_df = filtered_bundles_df[filtered_bundles_df[group_col_actual] == selected_group]
-    
+
     # Determine date column and its display name
     date_col_actual = None
     date_col_display_name = None
@@ -190,52 +197,77 @@ def display_bundles(bundles_df):
     if "type" in available_columns: source_columns_to_select.append("type") # This is bundle category like "Humble Choice"
     if date_col_actual: source_columns_to_select.append(date_col_actual)
     if "link" in available_columns: source_columns_to_select.append("link")
-    
+
     # Ensure no duplicates if title_col_actual or date_col_actual is already in the list by name
     source_columns_to_select = sorted(list(set(source_columns_to_select)), key=source_columns_to_select.index)
 
 
-    display_bundles_df = filtered_bundles_df[source_columns_to_select].copy()
+    display_bundles_df_intermediate = filtered_bundles_df[source_columns_to_select].copy()
 
-    if "link" in display_bundles_df.columns:
-        display_bundles_df["Ver Paquete"] = display_bundles_df["link"].apply(lambda x: make_clickable(x, "Ver"))
-    else:
-        display_bundles_df["Ver Paquete"] = "N/A"
-
-    if "price" in display_bundles_df.columns:
-        display_bundles_df["price"] = display_bundles_df["price"].apply(
+    # Price formatting (moved before rename)
+    if "price" in display_bundles_df_intermediate.columns:
+        display_bundles_df_intermediate["price"] = display_bundles_df_intermediate["price"].apply(
             lambda x: f"€{x:.2f}" if pd.notna(x) and isinstance(x, (int, float)) else x
         )
-    
-    if date_col_actual and date_col_actual in display_bundles_df.columns:
-         if pd.api.types.is_datetime64_any_dtype(display_bundles_df[date_col_actual]):
-            display_bundles_df[date_col_actual] = display_bundles_df[date_col_actual].dt.strftime('%Y-%m-%d')
 
+    if date_col_actual and date_col_actual in display_bundles_df_intermediate.columns:
+         if pd.api.types.is_datetime64_any_dtype(display_bundles_df_intermediate[date_col_actual]):
+            display_bundles_df_intermediate[date_col_actual] = display_bundles_df_intermediate[date_col_actual].dt.strftime('%Y-%m-%d')
 
-    rename_map = {
+    # Prepare df_for_editor
+    df_for_editor_rename_map = {
         title_col_actual: "Título",
         "store": "Fuente",
-        "game_count": "Juegos en el Paquete",
+        "game_count": "Juegos", # Renamed as per instruction
         "price": "Precio",
-        "type": "Tipo", # Bundle category
-        "Ver Paquete": "Link"
+        "type": "Tipo",
+        "link": "URL_Enlace"
     }
+    # Add the actual date column to the rename map, using its display name as the target
+    # This ensures the column in df_for_editor has the name like "Fecha de Publicación"
     if date_col_actual and date_col_display_name:
-        rename_map[date_col_actual] = date_col_display_name
-        
-    active_rename_map = {k: v for k, v in rename_map.items() if k in display_bundles_df.columns}
-    display_bundles_df.rename(columns=active_rename_map, inplace=True)
+        df_for_editor_rename_map[date_col_actual] = date_col_display_name
 
-    final_columns_order = ["Título", "Fuente", "Juegos en el Paquete", "Precio", "Tipo"]
-    if date_col_display_name and date_col_display_name in display_bundles_df.columns: # Add if it was successfully renamed
-        final_columns_order.append(date_col_display_name)
-    final_columns_order.append("Link")
-    
-    ordered_columns_present = [col for col in final_columns_order if col in display_bundles_df.columns]
-    display_bundles_df = display_bundles_df[ordered_columns_present]
-    
-    st.write(f"Mostrando {len(display_bundles_df)} paquetes de juegos")
-    st.markdown(display_bundles_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+    actual_source_columns_for_rename = [col for col in df_for_editor_rename_map.keys() if col in display_bundles_df_intermediate.columns]
+    df_for_editor = display_bundles_df_intermediate[actual_source_columns_for_rename].copy()
+    df_for_editor.rename(columns=df_for_editor_rename_map, inplace=True)
+
+    # Define final column order for data_editor
+    # The date column now has its display name (e.g., "Fecha de Publicación") in df_for_editor
+    final_columns_ordered = ["Título", "Fuente", "Juegos", "Precio", "Tipo"]
+    if date_col_display_name and date_col_display_name in df_for_editor.columns:
+        final_columns_ordered.append(date_col_display_name)
+    final_columns_ordered.append("URL_Enlace")
+
+    columns_for_editor_display = [col for col in final_columns_ordered if col in df_for_editor.columns]
+    df_for_editor = df_for_editor[columns_for_editor_display]
+
+    # Determine column config for 'Juegos' based on data type
+    juegos_column_config = None
+    if "Juegos" in df_for_editor.columns and pd.api.types.is_numeric_dtype(df_for_editor["Juegos"]):
+        juegos_column_config = st.column_config.NumberColumn(width="small", help="Número de juegos en el paquete", format="%d")
+    else:
+        juegos_column_config = st.column_config.TextColumn(width="small", help="Número de juegos en el paquete")
+
+    column_config_data_editor = {
+        "Título": st.column_config.TextColumn(width="medium", help="Título del paquete"),
+        "Fuente": st.column_config.TextColumn(width="small", help="Fuente/Origen del paquete"),
+        "Juegos": juegos_column_config,
+        "Precio": st.column_config.TextColumn(width="small", help="Precio del paquete"),
+        "Tipo": st.column_config.TextColumn(width="small", help="Categoría del paquete"),
+        "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Paquete", width="small", help="Enlace directo al paquete")
+    }
+    if date_col_display_name and date_col_display_name in df_for_editor.columns: # Add date to column_config if it exists
+        column_config_data_editor[date_col_display_name] = st.column_config.TextColumn(label="Fecha", width="small", help="Fecha de publicación o expiración")
+
+    st.write(f"Mostrando {len(df_for_editor)} paquetes de juegos")
+    st.data_editor(
+        df_for_editor,
+        column_config=column_config_data_editor,
+        disabled=True,
+        hide_index=True,
+        use_container_width=True
+    )
 
 
 def display_giveaways(giveaways_df):
@@ -264,46 +296,58 @@ def display_giveaways(giveaways_df):
     if published_date_col_actual: source_columns_to_select.append(published_date_col_actual)
     if "expires_date" in available_columns: source_columns_to_select.append("expires_date")
     if "link" in available_columns: source_columns_to_select.append("link")
-    
+
     # Ensure no duplicates
     source_columns_to_select = sorted(list(set(source_columns_to_select)), key=source_columns_to_select.index)
-    
+
     display_giveaways_df = filtered_giveaways_df[source_columns_to_select].copy()
 
     # Format dates if they exist and are datetime objects
     if published_date_col_actual and published_date_col_actual in display_giveaways_df.columns and \
        pd.api.types.is_datetime64_any_dtype(display_giveaways_df[published_date_col_actual]):
         display_giveaways_df[published_date_col_actual] = display_giveaways_df[published_date_col_actual].dt.strftime('%Y-%m-%d')
-    
+
+    if "expires_date" in display_giveaways_df.columns and \
+       pd.api.types.is_datetime64_any_dtype(display_giveaways_df[published_date_col_actual]):
+        display_giveaways_df[published_date_col_actual] = display_giveaways_df[published_date_col_actual].dt.strftime('%Y-%m-%d')
+
     if "expires_date" in display_giveaways_df.columns and \
        pd.api.types.is_datetime64_any_dtype(display_giveaways_df["expires_date"]):
         display_giveaways_df["expires_date"] = display_giveaways_df["expires_date"].dt.strftime('%Y-%m-%d')
 
-
-    if "link" in display_giveaways_df.columns:
-        display_giveaways_df["Obtener Juego"] = display_giveaways_df["link"].apply(lambda x: make_clickable(x, "Reclamar"))
-    else:
-        display_giveaways_df["Obtener Juego"] = "N/A"
-        
-    rename_map = {
+    # Prepare df_for_editor
+    df_for_editor_rename_map = {
         title_col_actual: "Título",
-        "Obtener Juego": "Link"
+        "link": "URL_Enlace"
     }
-    if published_date_col_actual:
-        rename_map[published_date_col_actual] = "Fecha de Publicación"
-    if "expires_date" in available_columns: # Check original name
-        rename_map["expires_date"] = "Fecha de Expiración"
-        
-    active_rename_map = {k:v for k,v in rename_map.items() if k in display_giveaways_df.columns}
-    display_giveaways_df.rename(columns=active_rename_map, inplace=True)
+    if published_date_col_actual: # This is the original name of the column with published date
+        df_for_editor_rename_map[published_date_col_actual] = "Publicado"
+    if "expires_date" in display_giveaways_df.columns: # Check if original column exists before adding to map
+        df_for_editor_rename_map["expires_date"] = "Expira"
 
-    final_columns_order = ["Título"]
-    if "Fecha de Publicación" in display_giveaways_df.columns: final_columns_order.append("Fecha de Publicación")
-    if "Fecha de Expiración" in display_giveaways_df.columns: final_columns_order.append("Fecha de Expiración")
-    final_columns_order.append("Link")
-    
-    ordered_columns_present = [col for col in final_columns_order if col in display_giveaways_df.columns]
-    display_giveaways_df = display_giveaways_df[ordered_columns_present]
+    actual_source_columns_for_rename = [col for col in df_for_editor_rename_map.keys() if col in display_giveaways_df.columns]
+    df_for_editor = display_giveaways_df[actual_source_columns_for_rename].copy()
+    df_for_editor.rename(columns=df_for_editor_rename_map, inplace=True)
 
-    st.write(f"Mostrando {len(display_giveaways_df)} juegos gratuitos")
-    st.markdown(display_giveaways_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+    # Define final column order for data_editor
+    final_columns_ordered = ["Título"]
+    if "Publicado" in df_for_editor.columns: final_columns_ordered.append("Publicado")
+    if "Expira" in df_for_editor.columns: final_columns_ordered.append("Expira")
+    final_columns_ordered.append("URL_Enlace")
+
+    columns_for_editor_display = [col for col in final_columns_ordered if col in df_for_editor.columns]
+    df_for_editor = df_for_editor[columns_for_editor_display]
+
+    st.write(f"Mostrando {len(df_for_editor)} juegos gratuitos")
+    st.data_editor(
+        df_for_editor,
+        column_config={
+            "Título": st.column_config.TextColumn(width="medium", help="Título del juego gratuito"),
+            "Publicado": st.column_config.TextColumn(width="small", help="Fecha de publicación del juego gratuito"),
+            "Expira": st.column_config.TextColumn(width="small", help="Fecha de expiración de la oferta"),
+            "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Reclamar", width="small", help="Enlace para obtener el juego")
+        },
+        disabled=True,
+        hide_index=True,
+        use_container_width=True
+    )

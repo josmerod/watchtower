@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
-from src.web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols
+# from src.web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols # Removed as unused
 from typing import Dict, List, Optional, Any, Union
 
 # Get the project root directory
@@ -158,11 +158,11 @@ def display_coursera_courses(courses_df: pd.DataFrame):
 
     # Use the original DataFrame to preserve JSON order - create a copy first
     filtered_courses_df = courses_df.copy()
-    
+
     # Store original index to maintain order
     filtered_courses_df = filtered_courses_df.reset_index(drop=True)
     original_order = filtered_courses_df.index.copy()
-    
+
     # Convert scraped_at to datetime if it exists (for display only, not sorting)
     if "scraped_at" in filtered_courses_df.columns:
         filtered_courses_df["scraped_at"] = pd.to_datetime(filtered_courses_df["scraped_at"], errors='coerce')
@@ -170,7 +170,7 @@ def display_coursera_courses(courses_df: pd.DataFrame):
         filtered_courses_df = filtered_courses_df.reindex(original_order) # Ensure original order
     else:
         # Ensure fecha_adición column exists even if scraped_at is missing, for schema consistency
-        filtered_courses_df["fecha_adición"] = None 
+        filtered_courses_df["fecha_adición"] = None
 
     with st.expander("Filtros y Opciones para Coursera", expanded=True):
         search_term = st.text_input("Buscar cursos:", placeholder="Ingrese palabras clave...", key="coursera_search")
@@ -209,52 +209,62 @@ def display_coursera_courses(courses_df: pd.DataFrame):
     st.write(f"Mostrando {len(filtered_courses_df)} cursos")
 
     if not filtered_courses_df.empty:
-        # Define all potential columns that could be displayed
-        potential_display_cols = ["title", "institution", "subject", "language", "duration", "start_date", "fecha_adición"]
-        
-        # Select only existing columns from the filtered DataFrame
-        display_columns = [col for col in potential_display_cols if col in filtered_courses_df.columns]
-        display_courses_df = filtered_courses_df[display_columns].copy()
+        # Prepare DataFrame for st.data_editor
+        # Ensure 'url' is present for the link column
+        if 'url' not in filtered_courses_df.columns:
+            st.error("La columna 'url' es necesaria y no está presente en los datos de Coursera.")
+            return
 
-        # Add special columns
-        display_courses_df["Ver Curso"] = filtered_courses_df["url"].apply(lambda x: make_clickable(x, "Ver Detalles"))
-        
-        if "is_free" in filtered_courses_df.columns:
-            display_courses_df["Gratis"] = filtered_courses_df["is_free"].apply(lambda x: "✅" if x else "❌")
-        else:
-            display_courses_df["Gratis"] = "N/A" # Or "❌" or "" depending on desired display for missing data
+        df_for_editor = filtered_courses_df.copy()
 
-        if "certificate_offered" in filtered_courses_df.columns:
-            display_courses_df["Certificado"] = filtered_courses_df["certificate_offered"].apply(lambda x: "✅" if x else "❌")
-        else:
-            display_courses_df["Certificado"] = "N/A" # Or "❌" or ""
-
-        # Rename columns for final display
-        rename_map = {
+        # Rename source columns to target names for st.data_editor
+        # and ensure boolean columns are suitable for CheckboxColumn
+        rename_map_editor = {
             "title": "Título",
             "institution": "Institución",
             "subject": "Tema",
             "language": "Idioma",
             "duration": "Duración",
-            "start_date": "Fecha de Inicio",
-            "fecha_adición": "Añadido",
-            "Ver Curso": "Link"
-            # Gratis and Certificado are already named correctly
+            "start_date": "Fecha de Inicio", # Keep as is, TextColumn will handle string/None
+            "fecha_adición": "Añadido",   # Keep as is, TextColumn will handle string/None
+            "is_free": "Gratis",             # Will be boolean
+            "certificate_offered": "Certificado", # Will be boolean
+            "url": "URL_Enlace"
         }
-        display_courses_df.rename(columns=rename_map, inplace=True)
 
-        # Ensure final column order, including only those present in display_courses_df
-        final_column_order = [
-            "Título", "Institución", "Tema", "Idioma", 
-            "Duración", "Fecha de Inicio", "Añadido", 
-            "Gratis", "Certificado", "Link"
+        # Select only columns that exist in filtered_courses_df and apply renaming
+        cols_to_rename = {k: v for k, v in rename_map_editor.items() if k in df_for_editor.columns}
+        df_for_editor.rename(columns=cols_to_rename, inplace=True)
+
+        # Define the final column order for st.data_editor
+        final_ordered_columns = [
+            "Título", "Institución", "Tema", "Idioma",
+            "Duración", "Fecha de Inicio", "Añadido",
+            "Gratis", "Certificado", "URL_Enlace"
         ]
         
-        # Filter final_column_order to only include columns that actually exist in display_courses_df
-        ordered_columns_present = [col for col in final_column_order if col in display_courses_df.columns]
-        display_courses_df = display_courses_df[ordered_columns_present]
-        
-        st.markdown(display_courses_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+        # Filter this list to include only columns that actually exist in df_for_editor
+        columns_for_editor_display = [col for col in final_ordered_columns if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[columns_for_editor_display]
+
+        st.data_editor(
+            df_for_editor,
+            column_config={
+                "Título": st.column_config.TextColumn(width="medium", help="Título del curso"),
+                "Institución": st.column_config.TextColumn(width="medium", help="Institución que ofrece el curso"),
+                "Tema": st.column_config.TextColumn(width="small", help="Tema principal del curso"),
+                "Idioma": st.column_config.TextColumn(width="small", help="Idioma del curso"),
+                "Duración": st.column_config.TextColumn(width="small", help="Duración estimada del curso"),
+                "Fecha de Inicio": st.column_config.TextColumn(width="small", help="Fecha de inicio del curso"),
+                "Añadido": st.column_config.TextColumn(width="small", help="Fecha en que se añadió a la lista"),
+                "Gratis": st.column_config.CheckboxColumn(width="small", help="¿Es el curso gratuito?"),
+                "Certificado": st.column_config.CheckboxColumn(width="small", help="¿Ofrece certificado?"),
+                "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Detalles", width="medium", help="Enlace directo al curso")
+            },
+            disabled=True,
+            hide_index=True,
+            use_container_width=True
+        )
     else:
         st.info("No hay cursos que coincidan con los filtros seleccionados.")
 
@@ -272,9 +282,9 @@ def display_udemy_courses(courses_df: pd.DataFrame):
         return
 
     filtered_df = courses_df.copy()
-    
+
     # Store original index to maintain order if needed, though less critical here without complex filtering
-    # filtered_df = filtered_df.reset_index(drop=True) 
+    # filtered_df = filtered_df.reset_index(drop=True)
     # original_order = filtered_df.index.copy()
         
     if "scraped_at" in filtered_df.columns:
@@ -283,7 +293,7 @@ def display_udemy_courses(courses_df: pd.DataFrame):
         # filtered_df = filtered_df.reindex(original_order) # if maintaining original order strictly
     else:
         # Ensure fecha_adición column exists for schema consistency
-        filtered_df["fecha_adición"] = None 
+        filtered_df["fecha_adición"] = None
             
     st.write(f"Mostrando {len(filtered_df)} cursos de Udemy")
         
@@ -292,35 +302,41 @@ def display_udemy_courses(courses_df: pd.DataFrame):
         cols_to_select = ["title"]
         if "fecha_adición" in filtered_df.columns:
              cols_to_select.append("fecha_adición")
-        
+
         # Ensure 'url' is present for the link, even if not directly in cols_to_select yet
         if 'url' not in filtered_df.columns:
             st.error("La columna 'url' es necesaria y no está presente en los datos de Udemy.")
-            return # Cannot create links
+            return
 
-        display_df = filtered_df[cols_to_select + ['url']].copy() # Include URL for link creation
+        df_for_editor = filtered_df.copy()
 
-        display_df["Ver Curso"] = display_df["url"].apply(lambda x: make_clickable(x, "Ver Detalles"))
-        
-        # Rename columns for final display
-        rename_map = {
+        # Rename source columns for st.data_editor
+        rename_map_editor = {
             "title": "Título",
-            "fecha_adición": "Añadido",
-            "Ver Curso": "Link"
+            "fecha_adición": "Añadido", # Already a string or None
+            "url": "URL_Enlace"
         }
-        display_df.rename(columns=rename_map, inplace=True)
-        
-        # Final column order
-        final_columns_ordered = ["Título"]
-        if "Añadido" in display_df.columns:
-            final_columns_ordered.append("Añadido")
-        final_columns_ordered.append("Link")
-        
-        # Filter final_columns_ordered to only include columns that actually exist in display_df
-        ordered_columns_present = [col for col in final_columns_ordered if col in display_df.columns]
-        display_df = display_df[ordered_columns_present]
 
-        st.markdown(display_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+        cols_to_rename = {k: v for k, v in rename_map_editor.items() if k in df_for_editor.columns}
+        df_for_editor.rename(columns=cols_to_rename, inplace=True)
+
+        # Define final column order for st.data_editor
+        final_ordered_columns = ["Título", "Añadido", "URL_Enlace"]
+
+        # Filter to include only existing columns in df_for_editor
+        columns_for_editor_display = [col for col in final_ordered_columns if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[columns_for_editor_display]
+
+        st.data_editor(
+            df_for_editor,
+            column_config={
+                "Título": st.column_config.TextColumn(width="large", help="Título del curso Udemy"),
+                "Añadido": st.column_config.TextColumn(width="medium", help="Fecha en que se añadió"),
+                "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Detalles", width="medium", help="Enlace directo al curso Udemy")
+            },
+            disabled=True,
+            hide_index=True,
+            use_container_width=True
+        )
     else:
-        # This case might not be reached if the initial empty check for courses_df is effective
         st.info("No hay cursos de Udemy para mostrar (después de procesar).")

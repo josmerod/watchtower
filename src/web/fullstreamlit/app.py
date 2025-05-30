@@ -82,9 +82,9 @@ cached_data = get_cached_data()
 
 # Tabs
 main_tabs = st.tabs([
-    "📊 Dashboard", 
-    "📺 Videos", 
-    "📰 Noticias", 
+    "📊 Dashboard",
+    "📺 Videos",
+    "📰 Noticias",
     "🎮 Juegos",
     "🎓 Cursos",
     "🗓️ Eventos Tech", # Changed from 📅 for variety from tech_events_tab.py header
@@ -93,9 +93,9 @@ main_tabs = st.tabs([
     "💡 Innovación",
     "🤖 Plataformas IA",
     "🪙 Crypto",
-    "🔬 ArXiv", 
-    "📈 Monitoreo", 
-    "📍 Eventos Valencia", 
+    "🔬 ArXiv",
+    "📈 Monitoreo",
+    "📍 Eventos Valencia",
     "⚙️ Admin"
 ])
 
