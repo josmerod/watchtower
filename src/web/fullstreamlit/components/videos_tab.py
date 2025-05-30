@@ -96,8 +96,8 @@ def precompute_html_batch(video_records: List[Dict], batch_id: str) -> List[str]
                 <img src="{thumbnail}" loading="lazy" style="width:100%; border-radius: 6px; margin-bottom: 10px; aspect-ratio: 16/9; object-fit: cover;">
             </a>
             <h3><a href="{url}" target="_blank">{title}</a></h3>
-            <p style="margin-bottom: 5px;"><strong>Canal:</strong> {channel_name}</p>
-            <p style="font-size: 0.9em; color: #CCC6F2;"><strong>Publicado:</strong> {published_date}</p>
+            <p style="margin-bottom: 5px;"><span class="text-muted">Canal:</span> <strong>{channel_name}</strong></p>
+            <p style="margin-bottom: 5px;"><span class="text-muted">Publicado:</span> <strong>{published_date}</strong></p>
         </div>'''
         
         html_cards.append(html)
@@ -217,32 +217,27 @@ def render_ultra_optimized(logger=None, videos_data: Optional[Dict[str, pd.DataF
         st.info(f"ℹ️ No hay videos disponibles para '{selected_display}'.")
         return
     
-    # Ultra-fast filters with single row layout
-    col1, col2, col3 = st.columns([3, 2, 1])
-    
-    with col1:
+    with st.expander("Filtros y Opciones de Visualización", expanded=True):
         search_term = st.text_input(
             "🔍 Buscar videos:",
             value=st.session_state.videos_search,
             placeholder="Buscar por título o canal...",
-            key="video_search_ultra"
+            key="video_search_ultra"  # Existing key preserved
         )
     
-    with col2:
         date_filter = st.selectbox(
             "📅 Filtrar por fecha:",
             options=["Todos", "Última semana", "Último mes", "Últimos 3 meses"],
-            key="video_date_filter_ultra"
+            key="video_date_filter_ultra"  # Existing key preserved
         )
     
-    with col3:
         page_size = st.selectbox(
             "📄 Por página:",
             options=[12, 24, 36, 48],
-            index=1,
-            key="video_page_size_ultra"
+            index=1,  # Default to 24 videos per page
+            key="video_page_size_ultra"  # Existing key preserved
         )
-    
+
     # Apply ultra-fast filtering
     df_shape = (len(records), len(records[0]) if records else 0)
     

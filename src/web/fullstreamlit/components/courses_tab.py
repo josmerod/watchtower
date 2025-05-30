@@ -152,145 +152,111 @@ def display_coursera_courses(courses_df: pd.DataFrame):
     courses_df : pd.DataFrame
         DataFrame containing Coursera courses data
     """
-    # Card styling for courses
-    courses_html = '<div class="courses-card">'
-    courses_html += '<h2>Cursos de Coursera</h2>'
+    if courses_df.empty:
+        st.warning("No hay cursos de Coursera disponibles.")
+        return
 
-    if not courses_df.empty:
-        # Use the original DataFrame to preserve JSON order - create a copy first
-        filtered_courses_df = courses_df.copy()
-        
-        # Store original index to maintain order
-        filtered_courses_df = filtered_courses_df.reset_index(drop=True)
-        original_order = filtered_courses_df.index.copy()
-        
-        # Convert scraped_at to datetime if it exists (for display only, not sorting)
-        if "scraped_at" in filtered_courses_df.columns:
-            # Convert to datetime but preserve original order
-            filtered_courses_df["scraped_at"] = pd.to_datetime(filtered_courses_df["scraped_at"], errors='coerce')
-            
-            # Format scraped_at for display
-            filtered_courses_df["fecha_adición"] = filtered_courses_df["scraped_at"].dt.strftime("%Y-%m-%d")
-            
-            # Ensure we maintain the original order
-            filtered_courses_df = filtered_courses_df.reindex(original_order)
-        
-        # Add text search for title and description
-        search_term = st.text_input("Buscar cursos:", placeholder="Ingrese palabras clave...")
+    # Use the original DataFrame to preserve JSON order - create a copy first
+    filtered_courses_df = courses_df.copy()
+    
+    # Store original index to maintain order
+    filtered_courses_df = filtered_courses_df.reset_index(drop=True)
+    original_order = filtered_courses_df.index.copy()
+    
+    # Convert scraped_at to datetime if it exists (for display only, not sorting)
+    if "scraped_at" in filtered_courses_df.columns:
+        filtered_courses_df["scraped_at"] = pd.to_datetime(filtered_courses_df["scraped_at"], errors='coerce')
+        filtered_courses_df["fecha_adición"] = filtered_courses_df["scraped_at"].dt.strftime("%Y-%m-%d")
+        filtered_courses_df = filtered_courses_df.reindex(original_order) # Ensure original order
+    else:
+        # Ensure fecha_adición column exists even if scraped_at is missing, for schema consistency
+        filtered_courses_df["fecha_adición"] = None 
+
+    with st.expander("Filtros y Opciones para Coursera", expanded=True):
+        search_term = st.text_input("Buscar cursos:", placeholder="Ingrese palabras clave...", key="coursera_search")
         if search_term:
-            # Convert search term to lowercase for case-insensitive search
-            search_term = search_term.lower()
-            
-            # Search in title
-            title_mask = filtered_courses_df["title"].str.lower().str.contains(search_term, na=False)
-            
-            # Search in description if it exists
+            search_term_lower = search_term.lower()
+            title_mask = filtered_courses_df["title"].str.lower().str.contains(search_term_lower, na=False)
+            desc_mask = pd.Series([False] * len(filtered_courses_df)) # Default if no description
             if "description" in filtered_courses_df.columns:
-                desc_mask = filtered_courses_df["description"].str.lower().str.contains(search_term, na=False)
-                # Combine masks (title OR description)
-                search_mask = title_mask | desc_mask
-            else:
-                search_mask = title_mask
-            
-            # Apply search filter
+                desc_mask = filtered_courses_df["description"].str.lower().str.contains(search_term_lower, na=False)
+            search_mask = title_mask | desc_mask
             filtered_courses_df = filtered_courses_df[search_mask]
-            
-            # Show how many results were found
-            st.write(f"Se encontraron {len(filtered_courses_df)} cursos con '{search_term}'")
-        
-        # Create a row with two columns for filters
+            # Note: No st.write for search results here, count will be shown later
+
         col1, col2 = st.columns(2)
-        
-        # Add filters for subject and language
         with col1:
             if "subject" in filtered_courses_df.columns:
-                # Get unique subjects, sorted alphabetically
                 subjects = sorted(filtered_courses_df["subject"].dropna().unique().tolist())
-                
-                # Add an "All Subjects" option at the beginning
                 subjects = ["Todos los temas"] + subjects
-                
-                selected_subject = st.selectbox("Filtrar por tema:", subjects)
-                
-                # Apply the filter if a specific subject is selected
+                selected_subject = st.selectbox("Filtrar por tema:", subjects, key="coursera_subject")
                 if selected_subject != "Todos los temas":
                     filtered_courses_df = filtered_courses_df[filtered_courses_df["subject"] == selected_subject]
         
-        # Filter by language
         with col2:
             if "language" in filtered_courses_df.columns:
-                # Get unique languages, sorted alphabetically
                 languages = sorted(filtered_courses_df["language"].dropna().unique().tolist())
-                
-                # Add an "All Languages" option
                 languages = ["Todos los idiomas"] + languages
-                
-                selected_language = st.selectbox("Filtrar por idioma:", languages)
-                
-                # Apply the filter if a specific language is selected
+                selected_language = st.selectbox("Filtrar por idioma:", languages, key="coursera_language")
                 if selected_language != "Todos los idiomas":
                     filtered_courses_df = filtered_courses_df[filtered_courses_df["language"] == selected_language]
-        
-        # Add option to show only free courses if that column exists
+
         if "is_free" in filtered_courses_df.columns:
-            show_only_free = st.checkbox("Mostrar solo cursos gratuitos")
+            show_only_free = st.checkbox("Mostrar solo cursos gratuitos", key="coursera_free_checkbox")
             if show_only_free:
                 filtered_courses_df = filtered_courses_df[filtered_courses_df["is_free"] == True]
+
+    st.write(f"Mostrando {len(filtered_courses_df)} cursos")
+
+    if not filtered_courses_df.empty:
+        # Define all potential columns that could be displayed
+        potential_display_cols = ["title", "institution", "subject", "language", "duration", "start_date", "fecha_adición"]
         
-        # Display the number of courses after filtering
-        st.write(f"Mostrando {len(filtered_courses_df)} cursos")
-        
-        # Select columns to display
-        columns_to_display = ["title", "institution", "subject", "language", "duration", "start_date"]
-        
-        # Add scraped_at date to display columns if it exists
-        if "fecha_adición" in filtered_courses_df.columns:
-            columns_to_display.append("fecha_adición")
-        
-        # Make sure all required columns exist
-        display_columns = [col for col in columns_to_display if col in filtered_courses_df.columns]
+        # Select only existing columns from the filtered DataFrame
+        display_columns = [col for col in potential_display_cols if col in filtered_courses_df.columns]
         display_courses_df = filtered_courses_df[display_columns].copy()
+
+        # Add special columns
+        display_courses_df["Ver Curso"] = filtered_courses_df["url"].apply(lambda x: make_clickable(x, "Ver Detalles"))
         
-        # Add clickable link to course
-        display_courses_df["Ver Curso"] = filtered_courses_df["url"].apply(
-            lambda x: make_clickable(x, "Ver Detalles")
-        )
-        
-        # Check for certificate information
-        if "certificate_offered" in filtered_courses_df.columns:
-            display_courses_df["Certificado"] = filtered_courses_df["certificate_offered"].apply(
-                lambda x: "✅" if x else "❌"
-            )
-            
-        # Check for free course information
         if "is_free" in filtered_courses_df.columns:
-            display_courses_df["Gratis"] = filtered_courses_df["is_free"].apply(
-                lambda x: "✅" if x else "❌"
-            )
-        
-        # Rename columns for display
-        column_mapping = {
+            display_courses_df["Gratis"] = filtered_courses_df["is_free"].apply(lambda x: "✅" if x else "❌")
+        else:
+            display_courses_df["Gratis"] = "N/A" # Or "❌" or "" depending on desired display for missing data
+
+        if "certificate_offered" in filtered_courses_df.columns:
+            display_courses_df["Certificado"] = filtered_courses_df["certificate_offered"].apply(lambda x: "✅" if x else "❌")
+        else:
+            display_courses_df["Certificado"] = "N/A" # Or "❌" or ""
+
+        # Rename columns for final display
+        rename_map = {
             "title": "Título",
             "institution": "Institución",
             "subject": "Tema",
             "language": "Idioma",
             "duration": "Duración",
             "start_date": "Fecha de Inicio",
-            "fecha_adición": "Añadido"
+            "fecha_adición": "Añadido",
+            "Ver Curso": "Link"
+            # Gratis and Certificado are already named correctly
         }
-        
-        # Only rename columns that exist
-        rename_cols = {k: v for k, v in column_mapping.items() if k in display_courses_df.columns}
-        display_courses_df.rename(columns=rename_cols, inplace=True)
-        
-        # Generate HTML table
-        courses_html += display_courses_df.to_html(escape=False, index=False)
-    else:
-        courses_html += '<p>No hay cursos de Coursera disponibles.</p>'
+        display_courses_df.rename(columns=rename_map, inplace=True)
 
-    # Close the card div
-    courses_html += '</div>'
-    st.markdown(courses_html, unsafe_allow_html=True)
+        # Ensure final column order, including only those present in display_courses_df
+        final_column_order = [
+            "Título", "Institución", "Tema", "Idioma", 
+            "Duración", "Fecha de Inicio", "Añadido", 
+            "Gratis", "Certificado", "Link"
+        ]
+        
+        # Filter final_column_order to only include columns that actually exist in display_courses_df
+        ordered_columns_present = [col for col in final_column_order if col in display_courses_df.columns]
+        display_courses_df = display_courses_df[ordered_columns_present]
+        
+        st.markdown(display_courses_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+    else:
+        st.info("No hay cursos que coincidan con los filtros seleccionados.")
 
 def display_udemy_courses(courses_df: pd.DataFrame):
     """
@@ -301,38 +267,60 @@ def display_udemy_courses(courses_df: pd.DataFrame):
     courses_df : pd.DataFrame
         DataFrame containing Udemy courses data
     """
-    # Card styling for Udemy courses
-    courses_html = '<div class="courses-card">'
-    courses_html += '<h2>Cursos de Udemy</h2>'
+    if courses_df.empty:
+        st.warning("No hay cursos de Udemy disponibles.")
+        return
 
-    if not courses_df.empty:
-        filtered_df = courses_df.copy()
+    filtered_df = courses_df.copy()
+    
+    # Store original index to maintain order if needed, though less critical here without complex filtering
+    # filtered_df = filtered_df.reset_index(drop=True) 
+    # original_order = filtered_df.index.copy()
         
-        # Store original index to maintain order
-        filtered_df = filtered_df.reset_index(drop=True)
-        original_order = filtered_df.index.copy()
-        
-        # Convert scraped_at to datetime for display
-        if "scraped_at" in filtered_df.columns:
-            filtered_df["scraped_at"] = pd.to_datetime(filtered_df["scraped_at"], errors='coerce')
-            filtered_df["fecha_adición"] = filtered_df["scraped_at"].dt.strftime("%Y-%m-%d")
-            
-            # Maintain original order
-            filtered_df = filtered_df.reindex(original_order)
-            
-        # Display number of courses
-        st.write(f"Mostrando {len(filtered_df)} cursos de Udemy")
-        
-        # Select display columns
-        display_df = filtered_df[["title", "fecha_adición", "url"]].copy()
-        # Add clickable link
-        display_df["Ver Curso"] = display_df["url"].apply(lambda x: make_clickable(x, "Ver Detalles"))
-        # Rename columns
-        display_df.rename(columns={"title": "Título", "fecha_adición": "Añadido"}, inplace=True)
-        # Generate HTML table
-        courses_html += display_df.to_html(escape=False, index=False)
+    if "scraped_at" in filtered_df.columns:
+        filtered_df["scraped_at"] = pd.to_datetime(filtered_df["scraped_at"], errors='coerce')
+        filtered_df["fecha_adición"] = filtered_df["scraped_at"].dt.strftime("%Y-%m-%d")
+        # filtered_df = filtered_df.reindex(original_order) # if maintaining original order strictly
     else:
-        courses_html += '<p>No hay cursos de Udemy disponibles.</p>'
+        # Ensure fecha_adición column exists for schema consistency
+        filtered_df["fecha_adición"] = None 
+            
+    st.write(f"Mostrando {len(filtered_df)} cursos de Udemy")
+        
+    if not filtered_df.empty:
+        # Select and prepare display columns
+        cols_to_select = ["title"]
+        if "fecha_adición" in filtered_df.columns:
+             cols_to_select.append("fecha_adición")
+        
+        # Ensure 'url' is present for the link, even if not directly in cols_to_select yet
+        if 'url' not in filtered_df.columns:
+            st.error("La columna 'url' es necesaria y no está presente en los datos de Udemy.")
+            return # Cannot create links
 
-    courses_html += '</div>'
-    st.markdown(courses_html, unsafe_allow_html=True) 
+        display_df = filtered_df[cols_to_select + ['url']].copy() # Include URL for link creation
+
+        display_df["Ver Curso"] = display_df["url"].apply(lambda x: make_clickable(x, "Ver Detalles"))
+        
+        # Rename columns for final display
+        rename_map = {
+            "title": "Título",
+            "fecha_adición": "Añadido",
+            "Ver Curso": "Link"
+        }
+        display_df.rename(columns=rename_map, inplace=True)
+        
+        # Final column order
+        final_columns_ordered = ["Título"]
+        if "Añadido" in display_df.columns:
+            final_columns_ordered.append("Añadido")
+        final_columns_ordered.append("Link")
+        
+        # Filter final_columns_ordered to only include columns that actually exist in display_df
+        ordered_columns_present = [col for col in final_columns_ordered if col in display_df.columns]
+        display_df = display_df[ordered_columns_present]
+
+        st.markdown(display_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+    else:
+        # This case might not be reached if the initial empty check for courses_df is effective
+        st.info("No hay cursos de Udemy para mostrar (después de procesar).")

@@ -82,21 +82,21 @@ cached_data = get_cached_data()
 
 # Tabs
 main_tabs = st.tabs([
-    "Dashboard", 
-    "Videos", 
-    "Noticias", 
-    "Juegos",
-    "Cursos",
-    "Eventos Tech",
-    "Comunidades Dev",
-    "Seguridad",
-    "Innovación",
-    "Plataformas IA",
-    "Crypto",
-    "ArXiv", 
-    "Monitoreo", 
-    "Eventos Valencia", 
-    "Admin"
+    "📊 Dashboard", 
+    "📺 Videos", 
+    "📰 Noticias", 
+    "🎮 Juegos",
+    "🎓 Cursos",
+    "🗓️ Eventos Tech", # Changed from 📅 for variety from tech_events_tab.py header
+    "🧑‍💻 Comunidades Dev",
+    "🛡️ Seguridad",
+    "💡 Innovación",
+    "🤖 Plataformas IA",
+    "🪙 Crypto",
+    "🔬 ArXiv", 
+    "📈 Monitoreo", 
+    "📍 Eventos Valencia", 
+    "⚙️ Admin"
 ])
 
 def render_tab_safely(tab_name, render_func, *args, **kwargs):
