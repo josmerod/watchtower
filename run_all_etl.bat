@@ -23,6 +23,7 @@ start /B python3 src/etl/goldigging/goldigging_coursera_courses.py
 start /B python3 src/etl/games/games_get_humblebundles.py
 start /B python3 src/etl/news/news_get_subreddits.py
 start /B python3 src/etl/news/news_get_media_rss.py
+start /B python3 src\etl\anime\mal_etl.py
 
 REM NEW MODULES - Developer Communities & Innovation Tracking
 start /B python3 src/etl/news/news_get_devto.py
@@ -53,4 +54,5 @@ echo - data/games/
 echo - data/news/
 echo - data/goldigging/
 echo - data/watchers/
+echo - data/anime/
 echo.
