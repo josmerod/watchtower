@@ -265,6 +265,25 @@ def display_coursera_courses(courses_df: pd.DataFrame):
             hide_index=True,
             use_container_width=True
         )
+
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                label="📥 Descargar CSV (Coursera)",
+                data=df_for_editor.to_csv(index=False).encode('utf-8'),
+                file_name="coursera_courses_data.csv",
+                mime='text/csv',
+                key="csv_download_coursera"
+            )
+        with col2:
+            st.download_button(
+                label="📥 Descargar JSON (Coursera)",
+                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="coursera_courses_data.json",
+                mime='application/json',
+                key="json_download_coursera"
+            )
     else:
         st.info("No hay cursos que coincidan con los filtros seleccionados.")
 
@@ -338,5 +357,24 @@ def display_udemy_courses(courses_df: pd.DataFrame):
             hide_index=True,
             use_container_width=True
         )
+
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                label="📥 Descargar CSV (Udemy)",
+                data=df_for_editor.to_csv(index=False).encode('utf-8'),
+                file_name="udemy_courses_data.csv",
+                mime='text/csv',
+                key="csv_download_udemy"
+            )
+        with col2:
+            st.download_button(
+                label="📥 Descargar JSON (Udemy)",
+                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="udemy_courses_data.json",
+                mime='application/json',
+                key="json_download_udemy"
+            )
     else:
         st.info("No hay cursos de Udemy para mostrar (después de procesar).")
