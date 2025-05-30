@@ -207,7 +207,7 @@ def render(logger=None):
 
 def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
     """Render FutureTools and Ben's Bites news"""
-    st.header("FutureTools & Ben's Bites")
+    st.subheader("FutureTools & Ben's Bites")
     if futuretools_news_df.empty and bensbites_news_df.empty:
         st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
     else:
@@ -231,19 +231,22 @@ def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
             # Format date for display
             combined_news_df["published_display"] = combined_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
 
-            display_combined_df = combined_news_df[["title", "published_display", "source", "Ver Noticia"]].copy()
-            
-            display_combined_df.rename(
+            # Standardize columns
+            final_df = combined_news_df[["title", "source", "published_display", "Ver Noticia"]].copy()
+            final_df.rename(
                 columns={
                     "title": "Título",
-                    "published_display": "Fecha de Publicación",
                     "source": "Fuente",
+                    "published_display": "Fecha de Publicación",
+                    "Ver Noticia": "Link",
                 },
                 inplace=True,
             )
+            # Reorder columns
+            final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
             
             st.markdown(
-                display_combined_df.to_html(escape=False, index=False),
+                final_df.to_html(escape=False, index=False),
                 unsafe_allow_html=True,
             )
         else:
@@ -252,7 +255,7 @@ def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
 
 def render_hackernews(ycombinator_news_df):
     """Render Hacker News"""
-    st.header("Hacker News")
+    st.subheader("Hacker News")
     if ycombinator_news_df.empty:
         st.warning("No hay noticias disponibles de Hacker News.")
     else:
@@ -273,26 +276,29 @@ def render_hackernews(ycombinator_news_df):
         # Format date for display
         display_news_df["published_display"] = display_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
 
-        display_news_df_final = display_news_df[["title", "published_display", "source", "Ver Noticia"]].copy()
-        
-        display_news_df_final.rename(
+        # Standardize columns
+        final_df = display_news_df[["title", "source", "published_display", "Ver Noticia"]].copy()
+        final_df.rename(
             columns={
                 "title": "Título",
-                "published_display": "Fecha de Publicación",
                 "source": "Fuente",
+                "published_display": "Fecha de Publicación",
+                "Ver Noticia": "Link",
             },
             inplace=True,
         )
+        # Reorder columns
+        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
         
         st.markdown(
-            display_news_df_final.to_html(escape=False, index=False),
+            final_df.to_html(escape=False, index=False),
             unsafe_allow_html=True,
         )
 
 
 def render_medium(medium_news_df):
     """Render Medium GenAI news"""
-    st.header("Medium GenAI")
+    st.subheader("Medium GenAI")
     if medium_news_df.empty:
         st.warning("No hay noticias disponibles de Medium sobre IA.")
     else:
@@ -325,32 +331,44 @@ def render_medium(medium_news_df):
             else:
                 display_col = date_col
             
-            # Create final display dataframe
-            display_news_df_final = display_news_df[["title", display_col, "source", "Ver Noticia"]].copy()
+            # Standardize columns
+            cols_to_select = ["title", "source", "Ver Noticia"]
+            rename_map = {
+                "title": "Título",
+                "source": "Fuente",
+                "Ver Noticia": "Link",
+            }
+            if display_col: # If date column exists
+                cols_to_select.insert(2, display_col) # Insert before "Ver Noticia"
+                rename_map[display_col] = "Fecha de Publicación"
+            
+            final_df = display_news_df[cols_to_select].copy()
+            final_df.rename(columns=rename_map, inplace=True)
+            
+            # Reorder columns
+            final_cols_order = ["Título", "Fuente"]
+            if "Fecha de Publicación" in final_df.columns:
+                final_cols_order.append("Fecha de Publicación")
+            final_cols_order.append("Link")
+            final_df = final_df[final_cols_order]
 
-            display_news_df_final.rename(
-                columns={
-                    "title": "Título",
-                    display_col: "Fecha de Publicación",
-                    "source": "Fuente",
-                },
-                inplace=True,
-            )
         else:
             # No date column available
-            display_news_df_final = display_news_df[["title", "source", "Ver Noticia"]].copy()
-            
-            display_news_df_final.rename(
+            final_df = display_news_df[["title", "source", "Ver Noticia"]].copy()
+            final_df.rename(
                 columns={
                     "title": "Título",
                     "source": "Fuente",
+                    "Ver Noticia": "Link",
                 },
                 inplace=True,
             )
+            # Reorder columns
+            final_df = final_df[["Título", "Fuente", "Link"]]
 
         # Display the final DataFrame as HTML
         st.markdown(
-            display_news_df_final.to_html(escape=False, index=False),
+            final_df.to_html(escape=False, index=False),
             unsafe_allow_html=True,
         )
 
@@ -358,7 +376,7 @@ def render_medium(medium_news_df):
 # New function to render KDnuggets
 def render_kdnuggets(kdnuggets_news_df):
     """Render KDnuggets news"""
-    st.header("KDnuggets")
+    st.subheader("KDnuggets")
     if kdnuggets_news_df.empty:
         st.warning("No hay noticias disponibles de KDnuggets.")
     else:
@@ -382,15 +400,19 @@ def render_kdnuggets(kdnuggets_news_df):
             '%Y-%m-%d %H:%M'
         )
 
-        final_df = display_df[["title", "published_display", "source", "Ver Noticia"]].copy()
+        # Standardize columns
+        final_df = display_df[["title", "source", "published_display", "Ver Noticia"]].copy()
         final_df.rename(
             columns={
                 "title": "Título",
-                "published_display": "Fecha de Publicación",
                 "source": "Fuente",
+                "published_display": "Fecha de Publicación",
+                "Ver Noticia": "Link",
             },
             inplace=True,
         )
+        # Reorder columns
+        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
 
         st.markdown(
             final_df.to_html(escape=False, index=False), unsafe_allow_html=True
@@ -400,7 +422,7 @@ def render_kdnuggets(kdnuggets_news_df):
 # New function to render Good Devs blog posts
 def render_gooddevs(gooddevs_df):
     """Render Good Devs blog posts"""
-    st.header("Good Devs")
+    st.subheader("Good Devs")
     if gooddevs_df.empty:
         st.warning("No hay posts disponibles de Good Devs.")
     else:
@@ -426,38 +448,46 @@ def render_gooddevs(gooddevs_df):
 
         display_df["Ver Post"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
 
-        cols_to_display = ["title", "source", "Ver Post"]
+        display_df["Ver Post"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
+
+        # Standardize columns
+        cols_to_select = ["title", "source", "Ver Post"]
         rename_map = {
             "title": "Título",
             "source": "Fuente",
-            "Ver Post": "Ver Post"
+            "Ver Post": "Link", # Renamed from "Ver Post"
         }
 
         # Add date column if available and formatted
         if date_col_present and sort_col:
-             # Check if the sort column is actually datetime before formatting
             if pd.api.types.is_datetime64_any_dtype(display_df[sort_col]):
                 display_df["formatted_date"] = display_df[sort_col].dt.strftime('%Y-%m-%d') # Format date only
-                cols_to_display.insert(1, "formatted_date") # Insert date after title
+                cols_to_select.insert(1, "formatted_date") # Insert before "source"
                 rename_map["formatted_date"] = "Fecha de Publicación"
-            else: # If it's not datetime after checks, treat as string
-                 cols_to_display.insert(1, sort_col)
-                 rename_map[sort_col] = "Fecha de Publicación"
-
-
-        display_final_df = display_df[cols_to_display].copy()
-        display_final_df.rename(columns=rename_map, inplace=True)
+            else: 
+                cols_to_select.insert(1, sort_col) 
+                rename_map[sort_col] = "Fecha de Publicación"
+        
+        final_df = display_df[cols_to_select].copy()
+        final_df.rename(columns=rename_map, inplace=True)
+        
+        # Reorder columns
+        final_cols_order = ["Título", "Fuente"]
+        if "Fecha de Publicación" in final_df.columns:
+            final_cols_order.append("Fecha de Publicación")
+        final_cols_order.append("Link")
+        final_df = final_df[final_cols_order]
 
         # Display the final DataFrame as HTML
         st.markdown(
-            display_final_df.to_html(escape=False, index=False),
+            final_df.to_html(escape=False, index=False),
             unsafe_allow_html=True,
         )
 
 
 def render_meneame_general(df):
     """Render Meneame General posts"""
-    st.header("Meneame General")
+    st.subheader("Meneame General")
     if df.empty:
         st.warning("No hay posts disponibles de Meneame General.")
     else:
@@ -467,14 +497,27 @@ def render_meneame_general(df):
         display_df = display_df.sort_values("published_date", ascending=False)
         display_df["Ver Noticia"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
         display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d')
-        display_df_final = display_df[["title", "formatted_date", "source", "Ver Noticia"]].copy()
-        display_df_final.rename(columns={"title": "Título", "formatted_date": "Fecha de Publicación", "source": "Fuente"}, inplace=True)
-        st.markdown(display_df_final.to_html(escape=False, index=False), unsafe_allow_html=True)
+        
+        # Standardize columns
+        final_df = display_df[["title", "source", "formatted_date", "Ver Noticia"]].copy()
+        final_df.rename(
+            columns={
+                "title": "Título",
+                "source": "Fuente",
+                "formatted_date": "Fecha de Publicación",
+                "Ver Noticia": "Link",
+            },
+            inplace=True,
+        )
+        # Reorder columns
+        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
+        
+        st.markdown(final_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 
 def render_meneame_tecnologia(df):
     """Render Meneame Tecnología posts"""
-    st.header("Meneame Tecnología")
+    st.subheader("Meneame Tecnología")
     if df.empty:
         st.warning("No hay posts disponibles de Meneame Tecnología.")
     else:
@@ -484,14 +527,27 @@ def render_meneame_tecnologia(df):
         display_df = display_df.sort_values("published_date", ascending=False)
         display_df["Ver Noticia"] = display_df["url"].apply(lambda x: make_clickable(x, "Leer más"))
         display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d')
-        display_df_final = display_df[["title", "formatted_date", "source", "Ver Noticia"]].copy()
-        display_df_final.rename(columns={"title": "Título", "formatted_date": "Fecha de Publicación", "source": "Fuente"}, inplace=True)
-        st.markdown(display_df_final.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+        # Standardize columns
+        final_df = display_df[["title", "source", "formatted_date", "Ver Noticia"]].copy()
+        final_df.rename(
+            columns={
+                "title": "Título",
+                "source": "Fuente",
+                "formatted_date": "Fecha de Publicación",
+                "Ver Noticia": "Link",
+            },
+            inplace=True,
+        )
+        # Reorder columns
+        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
+
+        st.markdown(final_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 # New function to render Podcasts
 def render_podcasts(podcasts_df):
     """Render Podcast Episodes"""
-    st.header("Podcasts")
+    st.subheader("Podcasts")
     if podcasts_df.empty:
         st.warning("No hay episodios de podcast disponibles.")
     else:
@@ -509,11 +565,23 @@ def render_podcasts(podcasts_df):
         df = df.sort_values("Fecha de Publicación", ascending=False)
         # Build clickable links
         df["Escuchar"] = df["url"].apply(lambda url: make_clickable(url, "Escuchar"))
-        # Select and rename columns
-        display_df = df[["title", "Fecha de Publicación", "source", "Escuchar"]].copy()
-        display_df.rename(columns={"title": "Título", "source": "Fuente"}, inplace=True)
+        
+        # Standardize columns
+        # Note: "Fecha de Publicación" is already created correctly
+        final_df = df[["title", "source", "Fecha de Publicación", "Escuchar"]].copy()
+        final_df.rename(
+            columns={
+                "title": "Título",
+                "source": "Fuente",
+                "Escuchar": "Link", # Renamed from "Escuchar"
+            },
+            inplace=True,
+        )
+        # Reorder columns
+        final_df = final_df[["Título", "Fuente", "Fecha de Publicación", "Link"]]
+        
         # Render the DataFrame
         st.markdown(
-            display_df.to_html(escape=False, index=False),
+            final_df.to_html(escape=False, index=False),
             unsafe_allow_html=True,
-        ) 
+        )
