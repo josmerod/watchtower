@@ -31,7 +31,8 @@ $etl_scripts = @(
     "src/etl/goldigging/goldigging_coursera_courses.py",
     "src/etl/games/games_get_humblebundles.py",
     "src/etl/news/news_get_subreddits.py",
-    "src/etl/news/news_get_media_rss.py"
+    "src/etl/news/news_get_media_rss.py",
+    "src/etl/news/news_get_newsapi.py"
 )
 
 # New community & developer intelligence scripts

@@ -119,6 +119,7 @@ class APIConfig(BaseModel):
         default=["GET", "POST", "PUT", "DELETE"],
         description="CORS allowed methods"
     )
+    news_api_key: Optional[str] = Field(default=None, description="API key for NewsAPI")
 
 
 class StreamlitConfig(BaseModel):
