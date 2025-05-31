@@ -34,7 +34,9 @@ from src.web.fullstreamlit.components import (
     monitoring_tab,
     tech_events_tab,
     ai_platforms_tab,
-    google_cloud_blog_tab
+    google_cloud_blog_tab,
+    aws_training_tab,
+    azure_training_tab
 )
 
 # Import enhanced components
@@ -75,6 +77,8 @@ def get_cached_data():
         data['arxiv'] = data_service.get_arxiv_data()
         data['events'] = data_service.get_events_data()
         data['google_cloud_blog'] = data_service.get_google_cloud_blog_data()
+        data['aws_training'] = data_service.get_aws_training_data()
+        data['azure_training'] = data_service.get_azure_training_data()
         return data
     except Exception as e:
         logger.error(f"Error loading data: {str(e)}")
@@ -82,17 +86,19 @@ def get_cached_data():
 
 cached_data = get_cached_data()
 
-cached_data = get_cached_data()
-
-# Retrieve the new data slice
+# Retrieve the new data slices
 google_cloud_blog_data = cached_data.get('google_cloud_blog', [])
+aws_training_data = cached_data.get('aws_training', [])
+azure_training_data = cached_data.get('azure_training', [])
 
 # Tabs
 main_tabs = st.tabs([
     "Dashboard",
     "Videos",
     "Noticias",
-    "Google Cloud Blog", # New tab added here
+    "Google Cloud Blog",
+    "AWS Training",      # New tab
+    "Azure Training",    # New tab
     "Juegos",
     "Cursos",
     "Eventos Tech",
@@ -129,7 +135,13 @@ with main_tabs[2]:
 with main_tabs[3]: # Google Cloud Blog
     render_tab_safely("Google Cloud Blog", google_cloud_blog_tab.render, logger, google_cloud_blog_data)
 
-with main_tabs[4]: # Juegos
+with main_tabs[4]: # AWS Training
+    render_tab_safely("AWS Training", aws_training_tab.render, logger, aws_training_data)
+
+with main_tabs[5]: # Azure Training
+    render_tab_safely("Azure Training", azure_training_tab.render, logger, azure_training_data)
+
+with main_tabs[6]: # Juegos
     games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
     if isinstance(games_data, tuple) and len(games_data) == 3:
         deals_df, bundles_df, giveaways_df = games_data
@@ -137,29 +149,29 @@ with main_tabs[4]: # Juegos
         deals_df = bundles_df = giveaways_df = pd.DataFrame()
     render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, logger)
 
-with main_tabs[5]: # Cursos
+with main_tabs[7]: # Cursos
     courses_data = cached_data.get('courses', {})
     render_tab_safely("Cursos", courses_tab.render, courses_data, logger)
 
-with main_tabs[6]: # Eventos Tech
+with main_tabs[8]: # Eventos Tech
     render_tab_safely("Eventos Tech", tech_events_tab.render, logger, data_service)
 
-with main_tabs[7]: # Comunidades Dev
+with main_tabs[9]: # Comunidades Dev
     render_tab_safely("Comunidades Dev", dev_communities_tab.render, logger)
 
-with main_tabs[8]: # Seguridad
+with main_tabs[10]: # Seguridad
     render_tab_safely("Seguridad", security_tab.render, logger, data_service)
 
-with main_tabs[9]: # Innovación
+with main_tabs[11]: # Innovación
     render_tab_safely("Innovación", enhanced_innovation_tab.render, logger, data_service)
 
-with main_tabs[10]: # Plataformas IA
+with main_tabs[12]: # Plataformas IA
     render_tab_safely("Plataformas IA", ai_platforms_tab.render, logger)
 
-with main_tabs[11]: # Crypto
+with main_tabs[13]: # Crypto
     render_tab_safely("Crypto", crypto_tab.render, logger)
 
-with main_tabs[12]: # ArXiv
+with main_tabs[14]: # ArXiv
     arxiv_subtabs = st.tabs(["Mejorado", "Papers", "Búsqueda"])
     
     with arxiv_subtabs[0]:
@@ -171,11 +183,11 @@ with main_tabs[12]: # ArXiv
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 
-with main_tabs[13]: # Monitoreo
+with main_tabs[15]: # Monitoreo
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[14]: # Eventos Valencia
+with main_tabs[16]: # Eventos Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[15]: # Admin
+with main_tabs[17]: # Admin
     render_tab_safely("Admin", admin_tab.render, logger)
