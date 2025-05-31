@@ -67,6 +67,9 @@ The Watchtower platform is a sophisticated technology intelligence system that a
 
 27. **[Tech Jobs ETL](27-Tech-Jobs-ETL.md)** - Job market intelligence, salary analytics, and career development insights
 
+### Specialized Research & Health
+35. **[ADHD Research Papers and Resources ETL](35-ADHD-Research-ETL.md)** - Extraction and visualization of ADHD research papers from PubMed
+
 ## Platform Architecture
 
 ### Technology Stack

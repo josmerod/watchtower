@@ -33,7 +33,8 @@ from src.web.fullstreamlit.components import (
     enhanced_arxiv_papers,
     monitoring_tab,
     tech_events_tab,
-    ai_platforms_tab
+    ai_platforms_tab,
+    adhd_tab # Added ADHD tab
 )
 
 # Import enhanced components
@@ -93,7 +94,8 @@ main_tabs = st.tabs([
     "Innovación",
     "Plataformas IA",
     "Crypto",
-    "ArXiv", 
+    "ArXiv",
+    "ADHD Research", # Added ADHD tab
     "Monitoreo", 
     "Eventos Valencia", 
     "Admin"
@@ -160,11 +162,14 @@ with main_tabs[11]:
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 
-with main_tabs[12]:
+with main_tabs[12]: # ADHD Research - NEW TAB
+    render_tab_safely("ADHD Research", adhd_tab.display)
+
+with main_tabs[13]: # Monitoreo - Index Shifted
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[13]:
+with main_tabs[14]: # Eventos Valencia - Index Shifted
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[14]:
+with main_tabs[15]: # Admin - Index Shifted
     render_tab_safely("Admin", admin_tab.render, logger)

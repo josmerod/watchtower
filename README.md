@@ -56,6 +56,7 @@ This project is ideal for users who need to stay updated on specific topics, tra
     -   Comprehensive news scraping: Hacker News, Future Tools, Bensbites, GoodDevs, Valencia Events, Medium GenAI, arXiv papers, and more.
     -   Game Deals: Aggregates deals, bundles, and free game offerings.
     -   Online Courses: Tracks courses from platforms like Coursera and content from sources like DeepLearning.AI.
+    -   **ADHD Research**: Collects and processes research papers related to ADHD from PubMed.
 -   **Watchers**:
     -   Monitors web pages for content changes (e.g., Microsoft Applied Skills credentials, new arXiv submissions).
     -   Extensible `BaseWatcher` class for straightforward creation of custom watchers.
