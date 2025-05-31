@@ -71,7 +71,8 @@ class UltraOptimizedDataService:
             'dev_community_dir': self.data_dir / "dev_community",
             'product_hunt_dir': self.data_dir / "product_hunt",
             'github_trends_dir': self.data_dir / "github_trends",
-            'security_vulnerabilities_dir': self.data_dir / "security_vulnerabilities"
+            'security_vulnerabilities_dir': self.data_dir / "security_vulnerabilities",
+            'museums_output_dir': self.data_dir / "virtual_museums_etl" / "output"
         }
         
     def _init_memory_cache(self):
@@ -1374,6 +1375,76 @@ class UltraOptimizedDataService:
 def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:
     """Create an ultra-optimized data service instance"""
     return UltraOptimizedDataService(logger) 
+
+    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
+    def get_museum_data(_self) -> pd.DataFrame:
+        """Load and process virtual museum data."""
+        _self._log("Loading virtual museum data...")
+
+        museums_output_dir = _self.cached_paths.get('museums_output_dir')
+
+        if not museums_output_dir:
+            _self._log("Museums output directory not configured.", "warning")
+            return pd.DataFrame()
+
+        if not museums_output_dir.exists():
+            _self._log(f"Museums output directory not found: {museums_output_dir}", "warning")
+            return pd.DataFrame()
+
+        try:
+            json_files = list(museums_output_dir.glob("virtual_museums_etl_*.json"))
+            if not json_files:
+                _self._log(f"No museum JSON files found in {museums_output_dir}", "warning")
+                return pd.DataFrame()
+
+            # Select the most recent file based on modification time
+            latest_file_path = max(json_files, key=lambda p: p.stat().st_mtime)
+            _self._log(f"Latest museum data file: {latest_file_path}")
+
+        except Exception as e:
+            _self._log(f"Error finding latest museum file in {museums_output_dir}: {e}", "error")
+            return pd.DataFrame()
+
+        cache_key = _self._get_cache_key(str(latest_file_path), "museums_data")
+        data = _self._ultra_fast_json_load(latest_file_path, cache_key)
+
+        if not data:
+            _self._log(f"No data loaded from {latest_file_path} or file is empty.", "warning")
+            return pd.DataFrame()
+
+        try:
+            df = pd.DataFrame(data)
+            if df.empty:
+                _self._log("Museum data converted to DataFrame is empty.", "info")
+                return pd.DataFrame()
+
+            # Define type mappings based on VirtualMuseumModel
+            # id (uuid.UUID) becomes string, name (str), description (Optional[str])
+            # website_url (Optional[HttpUrl]) becomes string, virtual_tour_url (Optional[HttpUrl]) becomes string
+            # country_label (Optional[str]), city_label (Optional[str]), main_subject_label (Optional[str])
+            # image_url (Optional[HttpUrl]) becomes string, wikidata_url (Optional[HttpUrl]) becomes string
+            # latitude (Optional[float]), longitude (Optional[float])
+            # data_source (str) = "Wikidata"
+            # retrieved_at (datetime), created_at (datetime), updated_at (datetime)
+            type_mapping = {
+                'retrieved_at': 'datetime',
+                'created_at': 'datetime',
+                'updated_at': 'datetime',
+                'latitude': 'float',
+                'longitude': 'float'
+                # Other fields are likely strings or will be handled correctly by default.
+                # Pydantic HttpUrl fields become strings in JSON.
+            }
+
+            df = _self._optimize_dataframe_dtypes(df, type_mapping)
+            df = clean_dataframe_for_caching(df) # Apply cleaning for cache compatibility
+
+            _self._log(f"Successfully loaded and processed {len(df)} museum entries from {latest_file_path}.")
+            return df
+
+        except Exception as e:
+            _self._log(f"Error processing museum data from {latest_file_path} into DataFrame: {e}", "error")
+            return pd.DataFrame()
 
 def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
     """Clean DataFrame to avoid unhashable type errors during Streamlit caching."""
