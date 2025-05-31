@@ -683,6 +683,94 @@ class UltraOptimizedDataService:
             self._log(f"An unexpected error occurred while reading {gcb_file_path}: {e}", "error")
             return []
 
+    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False)
+    def get_aws_training_data(self) -> List[Dict[str, Any]]:
+        """
+        Reads AWS Training data from data/courses/aws_training_updates.json.
+        Handles FileNotFoundError and json.JSONDecodeError.
+        Returns a list of AWS training post dictionaries.
+        """
+        self._log("Loading AWS Training data")
+        file_path = self.data_dir / "courses" / "aws_training_updates.json"
+        cache_key_op_name = "aws_training_data"
+
+        if not file_path.exists():
+            self._log(f"AWS Training data file not found: {file_path}", "error")
+            return []
+
+        cache_key = self._get_cache_key(str(file_path), cache_key_op_name)
+        if cache_key in self.memory_cache:
+            self._log(f"Returning cached AWS Training data for key: {cache_key}", "debug")
+            return self.memory_cache[cache_key]
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            if not isinstance(data, list):
+                self._log(f"AWS Training data is not a list: {type(data)}", "warning")
+                if isinstance(data, dict): # Wrap if single dict
+                    data = [data]
+                else:
+                    return [] # Invalid format
+
+            if len(self.memory_cache) < 50: # Adhere to L1 cache size
+                self.memory_cache[cache_key] = data
+
+            self._log(f"Successfully loaded {len(data)} entries from {file_path}")
+            return data
+
+        except json.JSONDecodeError as e:
+            self._log(f"Error decoding JSON from {file_path}: {e}", "error")
+            return []
+        except Exception as e: # Catch any other reading errors
+            self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
+            return []
+
+    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False)
+    def get_azure_training_data(self) -> List[Dict[str, Any]]:
+        """
+        Reads Azure Training data from data/courses/azure_training_updates.json.
+        Handles FileNotFoundError and json.JSONDecodeError.
+        Returns a list of Azure training post dictionaries.
+        """
+        self._log("Loading Azure Training data")
+        file_path = self.data_dir / "courses" / "azure_training_updates.json"
+        cache_key_op_name = "azure_training_data"
+
+        if not file_path.exists():
+            self._log(f"Azure Training data file not found: {file_path}", "error")
+            return []
+
+        cache_key = self._get_cache_key(str(file_path), cache_key_op_name)
+        if cache_key in self.memory_cache:
+            self._log(f"Returning cached Azure Training data for key: {cache_key}", "debug")
+            return self.memory_cache[cache_key]
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            if not isinstance(data, list):
+                self._log(f"Azure Training data is not a list: {type(data)}", "warning")
+                if isinstance(data, dict): # Wrap if single dict
+                    data = [data]
+                else:
+                    return [] # Invalid format
+
+            if len(self.memory_cache) < 50: # Adhere to L1 cache size
+                self.memory_cache[cache_key] = data
+
+            self._log(f"Successfully loaded {len(data)} entries from {file_path}")
+            return data
+
+        except json.JSONDecodeError as e:
+            self._log(f"Error decoding JSON from {file_path}: {e}", "error")
+            return []
+        except Exception as e: # Catch any other reading errors
+            self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
+            return []
+
     def get_security_vulnerabilities_data(self) -> pd.DataFrame:
         """Get security vulnerabilities data"""
         vulnerabilities_dir = self.cached_paths.get('security_vulnerabilities_dir')
