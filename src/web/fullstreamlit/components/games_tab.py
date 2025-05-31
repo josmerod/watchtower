@@ -6,49 +6,45 @@ Displays game deals, bundles, and giveaways.
 import streamlit as st
 import pandas as pd
 from src.web.fullstreamlit.utils.helpers import make_clickable
+from . import new_releases_tab # Added import
 
-def render(deals_df, bundles_df, giveaways_df, logger=None):
+def render(deals_df, bundles_df, giveaways_df, new_releases_df, logger=None): # Added new_releases_df
     """Render the games tab"""
     st.header("🎮 Juegos")
 
     # Check if all dataframes are empty
-    if deals_df.empty and bundles_df.empty and giveaways_df.empty:
+    if deals_df.empty and bundles_df.empty and giveaways_df.empty and (new_releases_df is None or new_releases_df.empty):
         if logger:
-            logger.warning("No game data available to display (deals, bundles, giveaways).")
+            logger.warning("No game data available to display (deals, bundles, giveaways, new releases).")
         st.warning("No hay datos de juegos disponibles para mostrar.")
         return # Exit if no data
 
     # Create tabs for different game sections
-    tab_titles = []
-    if not giveaways_df.empty:
-        tab_titles.append("Juegos Gratuitos")
-    if not bundles_df.empty:
-        tab_titles.append("Paquetes de Juegos")
-    if not deals_df.empty:
-        tab_titles.append("Ofertas de Juegos")
+    tab_titles = ["Ofertas", "Paquetes", "Gratuitos", "Nuevos Lanzamientos"]
 
-    if not tab_titles: # Should not happen if the initial check passed, but good practice
-        st.warning("No hay datos de juegos válidos para mostrar en las pestañas.")
-        return
+    ofertas_tab, paquetes_tab, gratuitos_tab, nuevos_lanzamientos_tab = st.tabs(tab_titles)
 
-    tabs = st.tabs(tab_titles)
-    tab_map = {title: tab for title, tab in zip(tab_titles, tabs)}
-
-    # Display content within each tab
-    if "Juegos Gratuitos" in tab_map:
-        with tab_map["Juegos Gratuitos"]:
-            display_giveaways(giveaways_df)
-
-    if "Paquetes de Juegos" in tab_map:
-        with tab_map["Paquetes de Juegos"]:
-            display_bundles(bundles_df)
-
-    if "Ofertas de Juegos" in tab_map:
-        with tab_map["Ofertas de Juegos"]:
+    with ofertas_tab:
+        if not deals_df.empty:
             display_deals(deals_df)
+        else:
+            st.info("No hay ofertas de juegos disponibles en este momento.")
 
-    # Removed the multiselect and the old sequential display logic.
-    # The container div is also removed as tabs handle the layout.
+    with paquetes_tab:
+        if not bundles_df.empty:
+            display_bundles(bundles_df)
+        else:
+            st.info("No hay paquetes de juegos disponibles en este momento.")
+
+    with gratuitos_tab:
+        if not giveaways_df.empty:
+            display_giveaways(giveaways_df)
+        else:
+            st.info("No hay juegos gratuitos disponibles en este momento.")
+
+    with nuevos_lanzamientos_tab:
+        # Assuming new_releases_tab.render handles empty df and logger correctly
+        new_releases_tab.render(new_releases_df, logger)
 
 
 def display_deals(deals_df):

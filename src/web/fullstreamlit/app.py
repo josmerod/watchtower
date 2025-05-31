@@ -73,6 +73,7 @@ def get_cached_data():
         data['videos'] = data_service.get_videos_data()
         data['arxiv'] = data_service.get_arxiv_data()
         data['events'] = data_service.get_events_data()
+        data['new_game_releases'] = data_service.get_new_game_releases_data() # Added
         return data
     except Exception as e:
         logger.error(f"Error loading data: {str(e)}")
@@ -119,12 +120,15 @@ with main_tabs[2]:
     render_tab_safely("Noticias", news_tab.render, logger)
 
 with main_tabs[3]:
-    games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
-    if isinstance(games_data, tuple) and len(games_data) == 3:
-        deals_df, bundles_df, giveaways_df = games_data
+    games_data_tuple = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
+    new_releases_df = cached_data.get('new_game_releases', pd.DataFrame())
+
+    if isinstance(games_data_tuple, tuple) and len(games_data_tuple) == 3:
+        deals_df, bundles_df, giveaways_df = games_data_tuple
     else:
         deals_df = bundles_df = giveaways_df = pd.DataFrame()
-    render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, logger)
+
+    render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, new_releases_df, logger)
 
 with main_tabs[4]:
     courses_data = cached_data.get('courses', {})
