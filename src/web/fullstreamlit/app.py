@@ -33,7 +33,8 @@ from src.web.fullstreamlit.components import (
     enhanced_arxiv_papers,
     monitoring_tab,
     tech_events_tab,
-    ai_platforms_tab
+    ai_platforms_tab,
+    google_cloud_blog_tab
 )
 
 # Import enhanced components
@@ -73,6 +74,7 @@ def get_cached_data():
         data['videos'] = data_service.get_videos_data()
         data['arxiv'] = data_service.get_arxiv_data()
         data['events'] = data_service.get_events_data()
+        data['google_cloud_blog'] = data_service.get_google_cloud_blog_data()
         return data
     except Exception as e:
         logger.error(f"Error loading data: {str(e)}")
@@ -80,11 +82,17 @@ def get_cached_data():
 
 cached_data = get_cached_data()
 
+cached_data = get_cached_data()
+
+# Retrieve the new data slice
+google_cloud_blog_data = cached_data.get('google_cloud_blog', [])
+
 # Tabs
 main_tabs = st.tabs([
-    "Dashboard", 
-    "Videos", 
-    "Noticias", 
+    "Dashboard",
+    "Videos",
+    "Noticias",
+    "Google Cloud Blog", # New tab added here
     "Juegos",
     "Cursos",
     "Eventos Tech",
@@ -93,9 +101,9 @@ main_tabs = st.tabs([
     "Innovación",
     "Plataformas IA",
     "Crypto",
-    "ArXiv", 
-    "Monitoreo", 
-    "Eventos Valencia", 
+    "ArXiv",
+    "Monitoreo",
+    "Eventos Valencia",
     "Admin"
 ])
 
@@ -118,7 +126,10 @@ with main_tabs[1]:
 with main_tabs[2]:
     render_tab_safely("Noticias", news_tab.render, logger)
 
-with main_tabs[3]:
+with main_tabs[3]: # Google Cloud Blog
+    render_tab_safely("Google Cloud Blog", google_cloud_blog_tab.render, logger, google_cloud_blog_data)
+
+with main_tabs[4]: # Juegos
     games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
     if isinstance(games_data, tuple) and len(games_data) == 3:
         deals_df, bundles_df, giveaways_df = games_data
@@ -126,29 +137,29 @@ with main_tabs[3]:
         deals_df = bundles_df = giveaways_df = pd.DataFrame()
     render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, logger)
 
-with main_tabs[4]:
+with main_tabs[5]: # Cursos
     courses_data = cached_data.get('courses', {})
     render_tab_safely("Cursos", courses_tab.render, courses_data, logger)
 
-with main_tabs[5]:
+with main_tabs[6]: # Eventos Tech
     render_tab_safely("Eventos Tech", tech_events_tab.render, logger, data_service)
 
-with main_tabs[6]:
+with main_tabs[7]: # Comunidades Dev
     render_tab_safely("Comunidades Dev", dev_communities_tab.render, logger)
 
-with main_tabs[7]:
+with main_tabs[8]: # Seguridad
     render_tab_safely("Seguridad", security_tab.render, logger, data_service)
 
-with main_tabs[8]:
+with main_tabs[9]: # Innovación
     render_tab_safely("Innovación", enhanced_innovation_tab.render, logger, data_service)
 
-with main_tabs[9]:
+with main_tabs[10]: # Plataformas IA
     render_tab_safely("Plataformas IA", ai_platforms_tab.render, logger)
 
-with main_tabs[10]:
+with main_tabs[11]: # Crypto
     render_tab_safely("Crypto", crypto_tab.render, logger)
 
-with main_tabs[11]:
+with main_tabs[12]: # ArXiv
     arxiv_subtabs = st.tabs(["Mejorado", "Papers", "Búsqueda"])
     
     with arxiv_subtabs[0]:
@@ -160,11 +171,11 @@ with main_tabs[11]:
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 
-with main_tabs[12]:
+with main_tabs[13]: # Monitoreo
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[13]:
+with main_tabs[14]: # Eventos Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[14]:
+with main_tabs[15]: # Admin
     render_tab_safely("Admin", admin_tab.render, logger)
