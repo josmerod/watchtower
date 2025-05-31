@@ -29,6 +29,7 @@ from src.web.fullstreamlit.components import (
     dev_communities_tab,
     innovation_tab,
     crypto_tab,
+    ecommerce_tab, # Added import
     security_tab,
     enhanced_arxiv_papers,
     monitoring_tab,
@@ -93,6 +94,7 @@ main_tabs = st.tabs([
     "Innovación",
     "Plataformas IA",
     "Crypto",
+    "E-commerce", # Added tab
     "ArXiv", 
     "Monitoreo", 
     "Eventos Valencia", 
@@ -148,7 +150,10 @@ with main_tabs[9]:
 with main_tabs[10]:
     render_tab_safely("Crypto", crypto_tab.render, logger)
 
-with main_tabs[11]:
+with main_tabs[11]: # This is the new E-commerce tab
+    render_tab_safely("E-commerce", ecommerce_tab.render, logger)
+
+with main_tabs[12]: # This index was ArXiv, now shifted
     arxiv_subtabs = st.tabs(["Mejorado", "Papers", "Búsqueda"])
     
     with arxiv_subtabs[0]:
@@ -160,11 +165,11 @@ with main_tabs[11]:
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 
-with main_tabs[12]:
+with main_tabs[13]: # Was 12
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[13]:
+with main_tabs[14]: # Was 13
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[14]:
+with main_tabs[15]: # Was 14
     render_tab_safely("Admin", admin_tab.render, logger)
