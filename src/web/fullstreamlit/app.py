@@ -33,7 +33,8 @@ from src.web.fullstreamlit.components import (
     enhanced_arxiv_papers,
     monitoring_tab,
     tech_events_tab,
-    ai_platforms_tab
+    ai_platforms_tab,
+    museums_tab # Added import for museums_tab
 )
 
 # Import enhanced components
@@ -73,6 +74,7 @@ def get_cached_data():
         data['videos'] = data_service.get_videos_data()
         data['arxiv'] = data_service.get_arxiv_data()
         data['events'] = data_service.get_events_data()
+        data['museums'] = data_service.get_museum_data() # Added museum data loading
         return data
     except Exception as e:
         logger.error(f"Error loading data: {str(e)}")
@@ -95,9 +97,19 @@ main_tabs = st.tabs([
     "Crypto",
     "ArXiv", 
     "Monitoreo", 
-    "Eventos Valencia", 
+    "Eventos Valencia",
+    "Museos Virtuales", # New tab added
     "Admin"
 ])
+
+# Define the expected order of tab titles for robust index finding
+# This list should exactly match the list passed to st.tabs above
+EXPECTED_TAB_TITLES = [
+    "Dashboard", "Videos", "Noticias", "Juegos", "Cursos",
+    "Eventos Tech", "Comunidades Dev", "Seguridad", "Innovación",
+    "Plataformas IA", "Crypto", "ArXiv", "Monitoreo",
+    "Eventos Valencia", "Museos Virtuales", "Admin"
+]
 
 def render_tab_safely(tab_name, render_func, *args, **kwargs):
     """Safely render a tab with error handling"""
@@ -163,8 +175,12 @@ with main_tabs[11]:
 with main_tabs[12]:
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[13]:
+with main_tabs[EXPECTED_TAB_TITLES.index("Eventos Valencia")]: # Index 13
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[14]:
+with main_tabs[EXPECTED_TAB_TITLES.index("Museos Virtuales")]: # Index 14 - New tab
+    museum_data = cached_data.get('museums', pd.DataFrame())
+    render_tab_safely("Museos Virtuales", museums_tab.render, logger, museum_data)
+
+with main_tabs[EXPECTED_TAB_TITLES.index("Admin")]: # Index 15 - Shifted Admin tab
     render_tab_safely("Admin", admin_tab.render, logger)
