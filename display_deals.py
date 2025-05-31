@@ -1,29 +1,9 @@
 # display_deals.py
 from deal_aggregator import get_all_deals
 
-# Monkey patch fetchers for local testing, same as in deal_aggregator.py
-# This is necessary because the actual fetchers are not implemented.
-from deal_fetchers import chollometro_fetcher, producthunt_fetcher, limitedtimed_fetcher
-
-def mock_fetch_chollometro():
-    return [
-        {'title': 'Super Laptop Offer', 'category': 'electronics', 'location': None, 'discounted_price': 700, 'currency': 'EUR', 'url': '#', 'source_platform': 'Chollometro', 'description': 'A great laptop.'},
-        {'title': 'Weekend Getaway Valencia', 'category': 'travel', 'location': 'Valencia, Spain', 'discounted_price': 150, 'currency': 'EUR', 'url': '#', 'source_platform': 'Chollometro', 'description': 'Visit Valencia!'},
-        {'title': 'Beach Holiday Alicante', 'category': 'travel', 'location': 'Alicante, Spain', 'discounted_price': 200, 'currency': 'EUR', 'url': '#', 'source_platform': 'Chollometro', 'description': 'Sun and sand.'},
-        {'title': 'Michelin Star Restaurant Deal', 'category': 'food', 'location': 'Valencia, Spain', 'discounted_price': 50, 'currency': 'EUR', 'url': '#', 'source_platform': 'Chollometro', 'description': 'Fine dining.'},
-    ]
-def mock_fetch_producthunt():
-    return [
-        {'title': 'New SaaS Tool', 'category': 'software', 'location': None, 'discounted_price': 10, 'currency': 'USD', 'url': '#', 'source_platform': 'Product Hunt', 'description': 'Useful software.'},
-        {'title': 'Madrid City Tour', 'category': 'travel', 'location': 'Madrid, Spain', 'discounted_price': 90, 'currency': 'EUR', 'url': '#', 'source_platform': 'Product Hunt', 'description': 'Explore Madrid.'},
-    ]
-def mock_fetch_limitedtimed():
-    return []
-
-chollometro_fetcher.fetch_chollometro_deals = mock_fetch_chollometro
-producthunt_fetcher.fetch_producthunt_deals = mock_fetch_producthunt
-limitedtimed_fetcher.fetch_limitedtimed_deals = mock_fetch_limitedtimed
-# --- End monkey patch ---
+# Removed monkey-patching of individual fetchers.
+# display_deals.py will now rely on deal_aggregator.get_all_deals()
+# to use the actual (simulated) fetchers from the deal_fetchers package.
 
 def display_deals_console(deals):
     """Prints a list of deals to the console in a structured way."""
