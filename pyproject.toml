@@ -1,13 +1,10 @@
-[project]
+[tool.poetry]
 name = "watchtower"
 version = "0.1.0"
 description = "A versatile data collection, processing, and application platform."
-authors = [
-    { name = "Your Name", email = "your@email.com" }, # Optional: Add your details
-]
+authors = ["Your Name <your@email.com>"] # Optional: Add your details
 readme = "README.md"
-license = { text = "MIT" }
-requires-python = ">=3.10"
+license = "MIT" # Assuming MIT license identifier
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -16,71 +13,81 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-    "playwright>=1.51.0",
-    "requests>=2.32.3",
-    "paperswithcode-client>=0.3.1", # Known Pydantic v1 conflict; kept for now.
-    "beautifulsoup4>=4.13.3",
-    "feedparser>=6.0.11",
-    "nltk>=3.9.1",
-    "numpy>=2.2.5",
-    "pandas>=2.2.3",
-    "scikit-learn>=1.6.1",
-    "scipy>=1.15.2", # Potentially transitive, review if truly unused by core logic.
-    "joblib>=1.5.0", # Potentially transitive, review if truly unused by core logic.
-    "tqdm>=4.67.1",
-    "python-dateutil>=2.9.0.post0",
-    "pytz>=2025.2", # Potentially transitive, review if truly unused by core logic.
-    "streamlit>=1.45.0", # Updated version
-    "polars>=0.20.0",
-    "pydantic>=2.11.5", # Moved from web optional, version updated
-    "pydantic-settings>=2.9.1",
-    "typing-extensions>=4.13.2", # Often a Pydantic peer dependency
-    "aiohttp>=3.11.18",
-    "yt-dlp>=2024.3.10",
-    "cloudscraper>=1.2.60",
-    "plotly>=5.0.0",
-    "toml>=0.10.2",
-    "google-api-python-client>=2.0.0",
-    "isodate>=0.6.0",
-    "psutil>=6.0.0",
-    "tenacity>=9.1.2",
-    "blinker>=1.9.0",
-    "cachetools>=5.5.2",
-    "GitPython>=3.1.44",
+packages = [  # Assuming the src layout means 'src' contains the package
+    { include = "watchtower", from = "src" },
 ]
 
-[project.optional-dependencies]
-dev = [
-    "ruff>=0.2.0",
-    "pytest>=7.0",
-    "pytest-cov>=4.1.0",
-    "pre-commit>=3.5.0",
-    "mypy>=1.7.0",
-    "black>=24.1.0",
-]
+# Project URLs can be defined here if desired, matching [project.urls]
+homepage = "https://github.com/yourusername/watchtower"
+repository = "https://github.com/yourusername/watchtower" # Common for Poetry
+documentation = "https://github.com/yourusername/watchtower/blob/main/README.md" # Example
+# "Bug Tracker" can be listed under repository or documentation, or kept as a separate URL if Poetry supports it directly.
+# For now, adding common ones.
 
-ml = [
-    "langgraph>=0.0.20",
-    "faiss-cpu>=1.7.4",
-    "chromadb>=0.4.22",
-]
+[tool.poetry.dependencies]
+python = ">=3.10"
+playwright = ">=1.51.0"
+requests = ">=2.32.3"
+paperswithcode-client = ">=0.3.1" # Known Pydantic v1 conflict; kept for now.
+beautifulsoup4 = ">=4.13.3"
+feedparser = ">=6.0.11"
+nltk = ">=3.9.1"
+numpy = ">=2.2.5"
+pandas = ">=2.2.3"
+scikit-learn = ">=1.6.1"
+scipy = ">=1.15.2" # Potentially transitive, review if truly unused by core logic.
+joblib = ">=1.5.0" # Potentially transitive, review if truly unused by core logic.
+tqdm = ">=4.67.1"
+python-dateutil = ">=2.9.0.post0"
+pytz = ">=2025.2" # Potentially transitive, review if truly unused by core logic.
+streamlit = ">=1.45.0" # Updated version
+polars = ">=0.20.0"
+pydantic = ">=2.11.5" # Moved from web optional, version updated
+pydantic-settings = ">=2.9.1"
+typing-extensions = ">=4.13.2" # Often a Pydantic peer dependency
+aiohttp = ">=3.11.18"
+yt-dlp = ">=2024.3.10"
+cloudscraper = ">=1.2.60"
+plotly = ">=5.0.0"
+toml = ">=0.10.2" # Note: toml is also used by pyproject.toml itself. Poetry handles this.
+google-api-python-client = ">=2.0.0"
+isodate = ">=0.6.0"
+psutil = ">=6.0.0"
+tenacity = ">=9.1.2"
+blinker = ">=1.9.0"
+cachetools = ">=5.5.2"
+GitPython = ">=3.1.44"
 
-web = [
-    "fastapi>=0.110.0",
-    "uvicorn>=0.27.0",
-    # pydantic was moved to core dependencies
-    "httpx>=0.27.0",
-]
+[tool.poetry.group.dev]
+optional = true
+[tool.poetry.group.dev.dependencies]
+ruff = ">=0.2.0"
+pytest = ">=7.0"
+pytest-cov = ">=4.1.0"
+pre-commit = ">=3.5.0"
+mypy = ">=1.7.0"
+black = ">=2.4.0"
 
-[project.urls]
-"Homepage" = "https://github.com/yourusername/watchtower"
-"Bug Tracker" = "https://github.com/yourusername/watchtower/issues"
+[tool.poetry.group.ml]
+optional = true
+[tool.poetry.group.ml.dependencies]
+langgraph = ">=0.0.20"
+faiss-cpu = ">=1.7.4"
+chromadb = ">=0.4.22"
+
+[tool.poetry.group.web]
+optional = true
+[tool.poetry.group.web.dependencies]
+fastapi = ">=0.110.0"
+uvicorn = ">=0.27.0"
+# pydantic was moved to core dependencies
+httpx = ">=0.27.0"
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
+# Preserving existing tool configurations
 [tool.uv]
 # uv specific configurations can go here if needed in the future
 
@@ -118,7 +125,7 @@ line-ending = "auto"
 docstring-code-format = true
 
 [tool.ruff.isort]
-known-first-party = ["watchtower"]
+known-first-party = ["watchtower"] # This might need adjustment if package structure changes with Poetry
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
 [tool.mypy]
@@ -136,12 +143,12 @@ warn_no_return = true
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["nltk.*", "scipy.*", "sklearn.*", "streamlit.*"]
+module = ["nltk.*", "scipy.*", "sklearn.*", "streamlit.*"] # May need to add others if they cause issues
 ignore_missing_imports = true
 
-[tool.pytest.ini_options]
+[tool.pytest.ini_options] # This section is for pytest, not directly used by Poetry but good to keep
 minversion = "7.0"
-addopts = "-ra -q --cov=src --cov-report=term-missing"
+addopts = "-ra -q --cov=src --cov-report=term-missing" # --cov=src might need to be --cov=watchtower
 testpaths = [
     "tests",
 ]
