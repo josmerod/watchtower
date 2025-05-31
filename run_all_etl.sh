@@ -49,6 +49,7 @@ run_etl "src/etl/news/news_get_techjobs.py" && pids+=($!)
 run_etl "src/etl/news/news_get_hackernews_ask.py" && pids+=($!)
 run_etl "src/etl/news/news_get_discord_trending.py" && pids+=($!)
 run_etl "src/etl/news/news_get_stackoverflow_trends.py" && pids+=($!)
+run_etl "src/etl/news/news_get_home_server_trends.py" && pids+=($!)
 
 # NEW MINING TOOLS
 run_etl "src/miners/crypto_sentiment_miner.py" && pids+=($!)
@@ -80,3 +81,4 @@ echo "- data/games/"
 echo "- data/news/"
 echo "- data/goldigging/"
 echo "- data/watchers/"
+echo "- data/home_server_trends/"
