@@ -97,11 +97,11 @@ Implement a powerful, unified search functionality that allows users to query ac
     -   **Content-Type Filters:** Filter by specific types like "research paper," "tutorial," "news analysis," "job posting," "free game."
     -   **Metadata Filters:**
         -   For ArXiv: Filter by TRL (Technology Readiness Level), commercial potential score, specific arXiv categories (e.g., cs.AI, cs.CV).
-        -   For News/Communities: Filter by sentiment score, engagement metrics (comments, upvotes), tags.
-        -   For Games: Filter by discount percentage, price range, platform.
-        -   For Courses: Filter by platform, duration, rating.
-    -   **Boolean Operators:** Support for AND, OR, NOT in search queries.
-    -   **Saved Searches:** Allow users to save complex search queries or filter combinations for quick re-use.
+        *   For News/Communities: Filter by sentiment score, engagement metrics (comments, upvotes), tags.
+        *   For Games: Filter by discount percentage, price range, platform.
+        *   For Courses: Filter by platform, duration, rating.
+    *   **Boolean Operators:** Support for AND, OR, NOT in search queries.
+    *   **Saved Searches:** Allow users to save complex search queries or filter combinations for quick re-use.
 
 **Implementation Notes:**
 -   This would likely require a dedicated search backend (e.g., Elasticsearch, OpenSearch, or a robust database search solution) if performance with direct data querying becomes an issue, especially with growing datasets.
@@ -120,18 +120,18 @@ A dedicated feature allowing users to save or bookmark interesting items (articl
 
 **Details:**
 -   **Save/Bookmark Functionality:**
-    -   Add a "Save to Watchlist" or "Bookmark" button/icon to each content item card or page (e.g., next to a news article title, a game deal, an arXiv paper).
-    -   Clicking this button adds the item to the user's personal watchlist.
+    *   Add a "Save to Watchlist" or "Bookmark" button/icon to each content item card or page (e.g., next to a news article title, a game deal, an arXiv paper).
+    *   Clicking this button adds the item to the user's personal watchlist.
 -   **Dedicated Watchlist Page/Tab:**
-    -   A new tab or section titled "My Watchlist" or "Saved Items" where users can view all their bookmarked content.
-    -   Items in the watchlist should display key information (title, source, date saved) and link back to the original item within Watchtower.
+    *   A new tab or section titled "My Watchlist" or "Saved Items" where users can view all their bookmarked content.
+    *   Items in the watchlist should display key information (title, source, date saved) and link back to the original item within Watchtower.
 -   **Organization and Filtering:**
-    -   Allow users to filter their watchlist by content type (e.g., show only saved articles, or only saved courses).
-    -   Potentially allow users to add short notes or tags to their saved items.
-    -   Option to sort watchlist items by date saved, original publication date, etc.
+    *   Allow users to filter their watchlist by content type (e.g., show only saved articles, or only saved courses).
+    *   Potentially allow users to add short notes or tags to their saved items.
+    *   Option to sort watchlist items by date saved, original publication date, etc.
 -   **Persistence:**
-    -   The watchlist should be tied to the user's account (if user profiles are implemented) and persist across sessions.
-    -   For simpler implementations without full user accounts, browser local storage could be a temporary solution, but with limitations.
+    *   The watchlist should be tied to the user's account (if user profiles are implemented) and persist across sessions.
+    *   For simpler implementations without full user accounts, browser local storage could be a temporary solution, but with limitations.
 
 **Benefits:**
 -   **Content Curation:** Users can easily curate a collection of items they find valuable or want to revisit later.
@@ -355,3 +355,379 @@ This tab covers technology events. The existing `tech_conference_etl.py` likely 
         *   Links to slide decks (e.g., from SlideShare, or conference websites).
         *   Blog posts summarizing key takeaways from the event.
     *   **Benefit:** Extends the value of the event listing by providing access to the actual content shared.
+
+### Enhancements for 'Dashboard (Shortcuts)' Tab
+
+The Dashboard tab, acting as a central place for shortcuts (`shortcuts_tab.render`), can be made more dynamic and personalized:
+
+1.  **Introduce New Shortcut Categories:**
+    *   **Proposal:** Expand the predefined shortcuts with new relevant categories.
+    *   **Examples:**
+        *   **"Developer Tools:"** Links to IDEs, version control platforms (GitHub, GitLab), CI/CD services, API testing tools (Postman).
+        *   **"AI Tools & Resources:"** Links to popular LLM interfaces (ChatGPT, Claude), AI model repositories (Hugging Face), AI research sites.
+        *   **"Design Resources:"** Links to Figma, Adobe XD, stock photo sites, icon libraries.
+        *   **"Productivity Suites:"** Links to Google Workspace, Microsoft 365, project management tools (Jira, Trello, Asana).
+        *   **"Cloud Platforms:"** Quick links to AWS, Azure, GCP consoles or documentation.
+    *   **Benefit:** Provides quick access to a wider range of frequently used external tools and resources directly from Watchtower.
+
+2.  **User-Defined Custom Shortcuts:**
+    *   **Proposal:** Allow users to add their own custom shortcuts to the dashboard.
+    *   **Details:** Users could specify a name, URL, and optionally an icon and category for their shortcut. These would be saved (ideally per user profile, or in browser local storage).
+    *   **Benefit:** Makes the dashboard highly personal and adaptable to individual workflows, turning Watchtower into a more central hub for the user's online activities.
+
+3.  **Dynamic Shortcut Sections:**
+    *   **Proposal:** Add dynamically populated shortcut sections.
+    *   **Examples:**
+        *   **"Frequently Used Shortcuts:"** Automatically populated based on user's click frequency.
+        *   **"Recently Added Shortcuts:"** Shows shortcuts recently added by the user or by admins.
+        *   **"Recommended Shortcuts:"** Based on user's role or interests (if profiles are implemented).
+    *   **Benefit:** Improves discoverability and ease of access for the most relevant shortcuts.
+
+4.  **Integration with Internal Watchtower Sections:**
+    *   **Proposal:** Allow shortcuts to deep-link into specific sections or pre-filtered views within Watchtower itself.
+    *   **Examples:**
+        *   A shortcut to "My Saved ArXiv Papers on LLMs."
+        *   A shortcut to "Latest Security Vulnerabilities for Python."
+    *   **Benefit:** Faster navigation to personalized or critical views within the Watchtower application.
+
+### Enhancements for 'Videos' Tab
+
+The 'Videos' tab currently sources from "100+ YouTube channels across 10+ categories". To diversify and enrich video content:
+
+1.  **Integrate Additional Video Platforms:**
+    *   **Proposal:** Expand beyond YouTube to include other platforms known for quality tech content.
+    *   **Examples:**
+        *   **Vimeo:** Search for channels or showcases focusing on technology, design, or software development.
+        *   **InfoQ:** Provides a wealth of conference talks and interviews with software engineers and architects. Many are freely available.
+        *   **Academic Video Repositories:** Some universities or research institutions host their own video portals for lectures and seminars (e.g., MIT Video, Stanford Online's YouTube channel could be further curated).
+    *   **Benefit:** Access to a broader range of professionally produced talks, lectures, and high-quality independent content.
+
+2.  **Introduce Video Sub-Categories/Filters:**
+    *   **Proposal:** Allow users to filter or browse videos by more granular categories beyond the existing 10+.
+    *   **Examples:**
+        *   **"Tutorials & How-Tos"**
+        *   **"Conference Talks & Presentations"**
+        *   **"Product Demos & Reviews"**
+        *   **"Tech News & Analysis Segments"**
+        *   **"Documentaries & Deep Dives"**
+        *   **"Interviews & Panel Discussions"**
+    *   **Benefit:** Helps users find specific types of video content more easily.
+
+3.  **Track Specific Conference Talk Repositories:**
+    *   **Proposal:** Dedicate ETLs or sections to pull video content directly from the archives of major tech conferences if they host their own videos outside of general YouTube channels.
+    *   **Examples:**
+        *   Archives of Linux Foundation events, specific open-source project conferences, etc.
+    *   **Benefit:** Ensures comprehensive coverage of valuable conference content that might not be on generic video platforms.
+
+4.  **"Short Tech Clips" or "Explainer Videos":**
+    *   **Proposal:** Identify sources or channels that specialize in short (e.g., under 5-10 minutes) tech explainer videos or clips.
+    *   **Benefit:** Caters to users looking for quick, digestible information on specific tech topics.
+
+5.  **Integration with Podcast Video Feeds:**
+    *   **Proposal:** If the "Podcast Intelligence ETL" identifies podcasts that also have video versions (e.g., on YouTube or their own sites), ensure these are also captured and categorized under the Videos tab.
+    *   **Benefit:** Consolidates video content from various multimedia sources.
+
+### Enhancements for 'Juegos (Games)' Tab
+
+The 'Juegos' tab focuses on "Gaming industry intelligence with deal analysis and value assessment." Enhancements can broaden its scope:
+
+1.  **Integrate Indie Game Platforms:**
+    *   **Proposal:** Add data sources that showcase new and popular indie games.
+    *   **Examples:**
+        *   **itch.io:** API or scraping for new releases, top sellers, or highly rated indie games.
+        *   **Game Jolt:** Similar to itch.io, focusing on indie game distribution.
+        *   Steam sections for "Indie Games," "Early Access," or "New Releases" with filtering for indie tags.
+    *   **Benefit:** Provides visibility into the vibrant indie gaming scene beyond mainstream titles and deals.
+
+2.  **Track Gaming News from Major Publishers & Studios:**
+    *   **Proposal:** Aggregate news, announcements, and developer blogs from major game publishers and development studios.
+    *   **Examples:**
+        *   Official blogs/newsrooms of Nintendo, Sony PlayStation, Microsoft Xbox, EA, Ubisoft, Activision Blizzard, etc.
+        *   News feeds from large game-specific media like IGN, GameSpot, Kotaku, Polygon (if not already in the general News tab, could be cross-referenced or specifically tagged for Games).
+    *   **Benefit:** Keeps users updated on official announcements, upcoming titles, and updates from major players in the gaming industry.
+
+3.  **"Upcoming Releases" & "Most Anticipated" Sections:**
+    *   **Proposal:** Create sections dedicated to tracking upcoming game releases and titles generating significant buzz.
+    *   **Details:** Could be sourced from gaming news sites, publisher announcements, or platforms like Steam's upcoming releases list. "Most Anticipated" could be curated based on news mentions, community discussions, or wishlists (if accessible).
+    *   **Benefit:** Helps users stay informed about future games and plan their purchases or playtime.
+
+4.  **Game Reviews Aggregation:**
+    *   **Proposal:** Aggregate game reviews from multiple reputable sources for new and popular titles.
+    *   **Examples:**
+        *   Metacritic, OpenCritic API (if available) or scraping.
+        *   Review scores/links from major gaming publications.
+    *   **Benefit:** Provides a consolidated view of critical reception for games, aiding in purchasing decisions.
+
+5.  **Esports News and Event Tracking:**
+    *   **Proposal:** If there's user interest, add a section for Esports news, tournament schedules, and results.
+    *   **Examples:**
+        *   Feeds from dedicated Esports news sites (e.g., ESPN Esports, The Esports Observer, Dot Esports).
+        *   Schedules/results from major Esports leagues (e.g., for League of Legends, CS:GO, Dota 2).
+    *   **Benefit:** Caters to users interested in the competitive gaming scene.
+
+6.  **Game Development News & Resources:**
+    *   **Proposal:** Include news and resources relevant to game developers.
+    *   **Examples:**
+        *   Gamasutra (now Game Developer - gamedeveloper.com).
+        *   80 Level (80.lv) for game art and development insights.
+        *   News from game engine providers (Unity blog, Unreal Engine blog).
+    *   **Benefit:** Useful for users interested in the creation and business side of gaming.
+
+### Enhancements for 'Seguridad (Security)' Tab
+
+The 'Seguridad' tab provides "Cybersecurity intelligence with multi-source vulnerability aggregation." To expand its scope:
+
+1.  **Integrate Leading Security Research Blogs & News Sources:**
+    *   **Proposal:** Add feeds from highly respected security researchers, news sites, and organizations.
+    *   **Examples:**
+        *   **Krebs on Security (krebsonsecurity.com)**
+        *   **Schneier on Security (schneier.com)**
+        *   **Google Project Zero Blog (googleprojectzero.blogspot.com)**
+        *   **Threatpost (threatpost.com)**
+        *   **The Hacker News (thehackernews.com)**
+        *   **Dark Reading (darkreading.com)**
+        *   **Bleeping Computer (bleepingcomputer.com)**
+        *   **US-CERT Alerts (us-cert.cisa.gov/ncas/alerts)** and Current Activity.
+    *   **Benefit:** Provides expert analysis, breaking news on breaches, and in-depth research beyond vulnerability databases.
+
+2.  **Track Vendor-Specific Security Advisories:**
+    *   **Proposal:** Include feeds for security advisories directly from major software and hardware vendors, complementing CVE data.
+    *   **Examples:**
+        *   Microsoft Security Response Center (MSRC)
+        *   Apple Security Updates
+        *   Oracle Security Alerts
+        *   Cisco Security Advisories
+        *   VMware Security Advisories
+        *   Linux distribution security mailing lists (e.g., for Debian, Ubuntu, Red Hat).
+    *   **Benefit:** Offers vendor-specific details, workarounds, and patch information that might be more timely or detailed than generic CVE entries.
+
+3.  **Cybersecurity Podcasts and Video Channels:**
+    *   **Proposal:** Curate and list reputable cybersecurity-focused podcasts and video channels.
+    *   **Examples:**
+        *   **Podcasts:** Risky Business, Darknet Diaries, Security Now, Smashing Security.
+        *   **Video Channels:** Channels of security researchers, conference talks (e.g., DEF CON, Black Hat).
+    *   **Benefit:** Provides alternative formats for consuming security information and learning.
+
+4.  **Threat Intelligence Reports & Feeds:**
+    *   **Proposal:** Integrate publicly available threat intelligence reports or feeds from cybersecurity companies.
+    *   **Examples:**
+        *   Blogs and report sections from companies like FireEye (Mandiant), CrowdStrike, Kaspersky, Palo Alto Networks Unit 42.
+        *   Open-source threat intelligence feeds (e.g., MISP instances, AlienVault OTX pulses - if accessible and relevant).
+    *   **Benefit:** Offers insights into ongoing attack campaigns, malware trends, and attacker TTPs (Tactics, Techniques, and Procedures).
+
+5.  **Security Awareness and Best Practices Section:**
+    *   **Proposal:** Include resources aimed at general security awareness and best practices for individuals and organizations.
+    *   **Examples:**
+        *   Guides from SANS Institute, NIST cybersecurity resources.
+        *   Tips on phishing prevention, password security, secure configurations.
+    *   **Benefit:** Adds an educational component to the security tab, making it useful for a broader audience.
+
+6.  **Dark Web Monitoring (High-Level Trends - CAUTION):**
+    *   **Proposal:** *Approach with extreme caution and ethical considerations.* If feasible and legally permissible, track high-level, anonymized trends or notable public discussions from dark web forums related to new exploits or data breaches (without accessing illegal content directly). This is highly complex and may not be appropriate.
+    *   **Benefit:** Potential for early warnings on emerging threats, but carries significant risks and ethical hurdles. *This would require extensive research and legal/ethical review.*
+
+### Enhancements for 'Innovación (Innovation)' Tab
+
+The 'Innovación' tab covers Product Hunt, Indie Hackers, and YC HackerNews. To add new dimensions to innovation tracking:
+
+1.  **Track Technology Patent Filings:**
+    *   **Proposal:** Integrate data on new patent applications and grants in key technology sectors.
+    *   **Examples:**
+        *   **Google Patents:** Search for recent patents in specific CPC codes (Cooperative Patent Classification) relevant to technology.
+        *   **USPTO (United States Patent and Trademark Office):** Bulk data or APIs for new patent applications.
+        *   **EPO (European Patent Office):** Similar resources for European patents.
+    *   **Benefit:** Provides early insights into corporate R&D directions, emerging technologies, and potential future products.
+
+2.  **Monitor Startup Funding News & Trends:**
+    *   **Proposal:** Aggregate news and data related to startup funding rounds (seed, Series A, B, etc.).
+    *   **Examples:**
+        *   **Crunchbase News (news.crunchbase.com):** Reports on funding deals.
+        *   **TechCrunch:** "Funding Rounds" section.
+        *   Newsletters or sections of VC firm websites that discuss funding trends.
+        *   Potentially filterable by industry, region, or funding stage.
+    *   **Benefit:** Offers a view into which sectors and startups are attracting investment, indicating market confidence and growth areas.
+
+3.  **Track Innovation Awards, Challenges, and Grants:**
+    *   **Proposal:** List major innovation awards, government grants for R&D, or prestigious tech challenges.
+    *   **Examples:**
+        *   **XPRIZE Foundation:** Announcements of new prizes and winners.
+        *   **SBIR/STTR (Small Business Innovation Research/Small Business Technology Transfer) grant award announcements in the US.**
+        *   Major industry awards for innovation (e.g., CES Innovation Awards).
+    *   **Benefit:** Highlights recognized innovations and funding opportunities for R&D.
+
+4.  **Corporate Innovation Labs & Intrapreneurship News:**
+    *   **Proposal:** Track news and publications from corporate innovation labs or initiatives focused on intrapreneurship.
+    *   **Examples:**
+        *   Blogs or news sections from labs like Google X (now X Development), Microsoft Garage, Amazon's Lab126 (if public-facing content exists).
+    *   **Benefit:** Provides insights into how large corporations are fostering and developing new technologies and products internally.
+
+5.  **University Tech Transfer & Spin-offs:**
+    *   **Proposal:** Include news and announcements related to technology transfer offices at major universities, focusing on licensing deals and new company spin-offs based on academic research.
+    *   **Examples:**
+        *   News sections of university tech transfer offices (e.g., Stanford OTL, MIT TLO).
+    *   **Benefit:** Tracks the commercialization of academic research, an important source of deep tech innovation.
+
+### Enhancements for 'Crypto' Tab
+
+The 'Crypto' tab currently features a "Multi-platform cryptocurrency sentiment analysis." To expand its utility:
+
+1.  **DeFi (Decentralized Finance) News and Project Updates:**
+    *   **Proposal:** Add dedicated sources for news, analysis, and updates on DeFi projects and protocols.
+    *   **Examples:**
+        *   **The Defiant (thedefiant.io):** News and analysis on DeFi.
+        *   **DeFi Pulse (defipulse.com):** Data and rankings (though more data-focused, news sections can be relevant).
+        *   **Bankless (newsletter.banklesshq.com):** Newsletter and content on DeFi and Ethereum.
+        *   Official blogs or community updates from major DeFi protocols (e.g., Aave, Uniswap, MakerDAO).
+    *   **Benefit:** Keeps users informed about the rapidly evolving DeFi ecosystem, new products, and governance changes.
+
+2.  **NFT (Non-Fungible Token) Market News & Project Announcements:**
+    *   **Proposal:** If user interest exists, integrate news related to the NFT market, major project launches, and platform updates.
+    *   **Examples:**
+        *   **CoinDesk, Cointelegraph, Decrypt:** Sections covering NFTs.
+        *   **NFT-specific news sites:** (e.g., NFT Evening, NFT Plazas).
+        *   Announcements from major NFT marketplaces (e.g., OpenSea, Magic Eden) and popular NFT projects.
+    *   **Benefit:** Provides insights into trends, new collections, and developments in the NFT space.
+
+3.  **Blockchain Platform Development Updates:**
+    *   **Proposal:** Track news, development roadmaps, and significant updates from major blockchain platforms (Layer 1s and Layer 2s).
+    *   **Examples:**
+        *   **Ethereum Foundation Blog (blog.ethereum.org)**
+        *   **Solana Blog (solana.com/news)**
+        *   **Cardano Announcements (cardano.org/announcements/)**
+        *   **Polkadot Blog (polkadot.network/blog/)**
+        *   News from Layer 2 scaling solutions (e.g., Polygon, Arbitrum, Optimism).
+    *   **Benefit:** Informs users about protocol upgrades, new features, and the technical evolution of underlying blockchain infrastructure.
+
+4.  **Crypto Regulation and Policy News:**
+    *   **Proposal:** Include a section or filter for news and analysis regarding cryptocurrency regulation and government policies worldwide.
+    *   **Examples:**
+        *   Major financial news outlets covering crypto regulation (e.g., Reuters, Bloomberg Crypto).
+        *   Law firm blogs or publications specializing in crypto law.
+        *   Announcements from regulatory bodies (e.g., SEC, ESMA) regarding crypto.
+    *   **Benefit:** Helps users stay aware of the changing legal and regulatory landscape impacting the crypto industry.
+
+5.  **Web3 and Metaverse Development News:**
+    *   **Proposal:** Broaden to include news on Web3 development, decentralized applications (dApps) beyond DeFi/NFTs, and Metaverse projects.
+    *   **Examples:**
+        *   News sources covering Web3 gaming, decentralized identity, DAOs (Decentralized Autonomous Organizations).
+        *   Updates from prominent Metaverse platforms or projects.
+    *   **Benefit:** Provides a wider view of the emerging Web3 space.
+
+### Enhancements for 'ArXiv' Tab
+
+The 'ArXiv' tab already provides "Academic research intelligence with TRL assessment and commercial potential evaluation," along with improved paper views and search. Further enhancements could focus on community context and discoverability:
+
+1.  **Integration with ArXiv Visualization & Discovery Tools:**
+    *   **Proposal:** Provide direct links or embedded views from external tools that help users explore and understand ArXiv content.
+    *   **Examples:**
+        *   **Connected Papers (connectedpapers.com):** For a given ArXiv paper, link to its graph of related papers.
+        *   **ArXiv Sanity Preserver (arxiv-sanity.com):** Link to the paper on ArXiv Sanity for recommendations and filtering (if not replicating its features internally).
+        *   **Litmaps (litmaps.com):** Another tool for visualizing and discovering academic literature.
+    *   **Benefit:** Leverages powerful existing tools to enhance the user's research and discovery process without needing to rebuild those features from scratch.
+
+2.  **Highlighting Papers with Associated Code/Data:**
+    *   **Proposal:** Clearly indicate or filter for ArXiv papers that have linked code repositories (e.g., on GitHub, GitLab) or publicly available datasets.
+    *   **Details:** This could involve parsing the paper's metadata, abstract, or full text for links to code/data, or integrating with services like Papers with Code.
+    *   **Benefit:** Immensely valuable for researchers and practitioners looking to reproduce results, build upon existing work, or apply research to practical problems.
+
+3.  **"Trending from ArXiv on Social Media" Section:**
+    *   **Proposal:** Identify and display ArXiv papers that are generating significant discussion on social media platforms like Twitter/X.
+    *   **Details:** This could involve monitoring specific hashtags (e.g., #arXiv) or academic Twitter accounts, and linking discussions back to the papers. APIs or scraping tools might be needed.
+    *   **Benefit:** Helps users discover papers that are currently capturing the attention of the wider research community and see what the buzz is about.
+
+4.  **Author-Specific Pages or Alerts:**
+    *   **Proposal:** Allow users to follow specific ArXiv authors and get notifications or see a dedicated feed of their new preprints.
+    *   **Details:** Could also display author metrics like total publications on ArXiv, citation counts (via Semantic Scholar or similar APIs).
+    *   **Benefit:** Enables users to stay up-to-date with the work of researchers they are interested in.
+
+5.  **Integration with Semantic Scholar or Google Scholar:**
+    *   **Proposal:** For displayed ArXiv papers, provide direct links to their profiles on Semantic Scholar or Google Scholar.
+    *   **Benefit:** Allows users to easily access citation data, related works, and author information on these comprehensive academic search engines.
+
+6.  **Conference Acceptance Information:**
+    *   **Proposal:** Where possible, indicate if an ArXiv preprint was later published in a peer-reviewed conference or journal.
+    *   **Details:** This is challenging to track systematically but could be done by cross-referencing with conference proceedings or services that track this (e.g., DBLP, Semantic Scholar).
+    *   **Benefit:** Adds context about the paper's peer-review status and impact.
+
+### Enhancements for 'Monitoreo (Monitoring)' Tab
+
+The 'Monitoreo' tab (`monitoring_tab.render`) can serve as a vital dashboard for understanding the operational status and health of the Watchtower system and its data pipelines.
+
+1.  **ETL Process & Watcher Status Overview:**
+    *   **Proposal:** Display a list of all defined ETL processes and watchers, along with their current status.
+    *   **Details:**
+        *   **Last Run Timestamp:** When the process last executed.
+        *   **Next Scheduled Run:** (If applicable).
+        *   **Status:** Success, Failed, Running, Pending.
+        *   **Items Processed/Fetched:** Number of new items retrieved in the last successful run.
+        *   **Errors in Last Run:** Count of errors or link to error logs.
+    *   **Benefit:** Provides a quick overview of the health and activity of all data collection components.
+
+2.  **Data Source Health Indicators:**
+    *   **Proposal:** Show the status or health of key external data sources (APIs, websites being scraped).
+    *   **Details:**
+        *   Indicate if an API is currently responsive or returning errors.
+        *   Show if a website structure has potentially changed (e.g., based on consistent scraping failures).
+        *   Timestamp of the last successful connection to each source.
+    *   **Benefit:** Helps identify if data collection issues are due to problems with external sources.
+
+3.  **Data Quality Metrics Display:**
+    *   **Proposal:** If data quality checks are implemented during ETL, display key quality metrics.
+    *   **Examples:**
+        *   Percentage of items with missing critical fields.
+        *   Duplicate detection rates.
+        *   Data validation error counts.
+        *   Freshness of data in different categories.
+    *   **Benefit:** Gives an insight into the reliability and completeness of the collected data.
+
+4.  **System Resource Monitoring (Basic):**
+    *   **Proposal:** Display basic system resource usage if the Watchtower application has access to this information (might be OS-dependent or require specific libraries).
+    *   **Examples:**
+        *   CPU load related to Watchtower processes.
+        *   Memory usage.
+        *   Disk space used by data storage.
+    *   **Benefit:** Helps in diagnosing performance issues or capacity planning.
+
+5.  **Log Viewer/Access:**
+    *   **Proposal:** Provide easy access to recent logs for different components (ETL, watchers, web app) directly from the Monitoring tab, perhaps with basic filtering.
+    *   **Benefit:** Facilitates quicker troubleshooting without needing to access the server's file system directly.
+
+6.  **Alerting System Summary (if an alerting system is implemented):**
+    *   **Proposal:** If a system-wide alerting feature (Proposal #6 from the first set of enhancements) is in place for data or system issues, this tab could show a summary of recent alerts.
+    *   **Benefit:** Centralizes information about critical system events or data anomalies that require attention.
+
+### Enhancements for 'Eventos Valencia' Tab
+
+The 'Eventos Valencia' tab provides "Regional technology community intelligence for Valencia, Spain." To make it even more comprehensive for the Valencian tech ecosystem:
+
+1.  **Integrate Valencia-Based Tech Company Blogs & News:**
+    *   **Proposal:** Track news, blogs, and career pages from prominent technology companies headquartered or with significant operations in Valencia.
+    *   **Examples:** Identify key local tech employers and monitor their public announcements or blogs for relevant news (e.g., new projects, local hiring, community involvement).
+    *   **Benefit:** Provides insights into the activities and growth of local tech companies.
+
+2.  **Valencia Startup Ecosystem News & Incubator/Accelerator Updates:**
+    *   **Proposal:** Aggregate news specifically about the Valencian startup scene, including updates from local incubators, accelerators, and venture capital firms focused on the region.
+    *   **Examples:**
+        *   News feeds from Startup Valencia (startupvalencia.org) if available.
+        *   Announcements from Valencian incubators like Demium, Lanzadera (if they have public news feeds relevant to Valencia).
+        *   Local tech news sites that cover Valencia's startup funding, launches, and events.
+    *   **Benefit:** Offers a focused view on the growth and development of early-stage tech companies in Valencia.
+
+3.  **Feeds from Valencian Universities' Tech Departments & Research Groups:**
+    *   **Proposal:** Include news, publications, and event announcements from the technology, computer science, and engineering departments of Valencian universities.
+    *   **Examples:**
+        *   Universitat Politècnica de València (UPV) - relevant departments.
+        *   Universitat de València (UV) - relevant departments.
+        *   Specific research institute blogs or news feeds within these universities.
+    *   **Benefit:** Highlights local research, academic events, and potential talent emerging from Valencia's educational institutions.
+
+4.  **Valencia Digital Nomad & Remote Work Scene:**
+    *   **Proposal:** If relevant, include resources or news related to the digital nomad community or remote work opportunities and discussions in Valencia.
+    *   **Examples:**
+        *   Blogs or forums discussing Valencia as a tech/remote work hub.
+        *   Local co-working space news or event feeds.
+    *   **Benefit:** Caters to individuals interested in or part of Valencia's growing remote tech community.
+
+5.  **Collaboration with Official Valencia Tech Promotion Agencies:**
+    *   **Proposal:** Explore partnerships or data feeds from official city or regional agencies tasked with promoting Valencia as a tech hub (e.g., Valencia Activa, Invest in Valencia).
+    *   **Benefit:** Access to official information, event calendars, and reports on the Valencian tech sector.
