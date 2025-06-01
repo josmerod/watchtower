@@ -101,7 +101,7 @@ Implement a powerful, unified search functionality that allows users to query ac
         -   For Games: Filter by discount percentage, price range, platform.
         -   For Courses: Filter by platform, duration, rating.
     -   **Boolean Operators:** Support for AND, OR, NOT in search queries.
-    -   **Saved Searches:** Allow users to save complex search queries and filter combinations for quick re-use.
+    -   **Saved Searches:** Allow users to save complex search queries or filter combinations for quick re-use.
 
 **Implementation Notes:**
 -   This would likely require a dedicated search backend (e.g., Elasticsearch, OpenSearch, or a robust database search solution) if performance with direct data querying becomes an issue, especially with growing datasets.
@@ -138,3 +138,220 @@ A dedicated feature allowing users to save or bookmark interesting items (articl
 -   **Improved Workflow:** Prevents users from losing track of interesting discoveries as they browse different sections.
 -   **Personalized Archive:** Creates a personal archive of relevant information within the Watchtower platform.
 -   **Increased Engagement:** Encourages users to return to the platform to manage and review their saved content.
+
+---
+
+## Content and Data Source Enhancements
+
+This section focuses on proposals for expanding the breadth and depth of content within existing Watchtower tabs by integrating new data sources or tracking additional types of information.
+
+### Enhancements for 'Noticias (News)' Tab
+
+The 'Noticias' tab currently aggregates from over 15 technology news platforms. To further enrich this, consider:
+
+1.  **Adding Mainstream Tech News Outlets:**
+    *   **Proposal:** Integrate feeds from widely recognized technology news websites.
+    *   **Examples:**
+        *   The Verge (theverge.com)
+        *   TechCrunch (techcrunch.com)
+        *   Wired (wired.com)
+        *   Ars Technica (arstechnica.com) - *If not already included*
+        *   Bloomberg Technology (bloomberg.com/technology)
+    *   **Benefit:** Provides a broader perspective on major tech happenings, product launches, and industry analyses.
+
+2.  **Incorporating Specialized Tech Blogs/Media:**
+    *   **Proposal:** Identify and add feeds from influential blogs or media outlets that focus on specific niches within technology.
+    *   **Examples:**
+        *   Stratechery by Ben Thompson (for tech strategy and analysis) - *If a feed is available*
+        *   Specific newsletters or blogs focused on AI, cybersecurity, cloud computing, etc., that are not yet covered.
+        *   Techmeme (techmeme.com) - For a curated overview of top tech news.
+    *   **Benefit:** Offers deeper insights and expert opinions on particular technology domains.
+
+3.  **Adding "Research News" Sub-Category:**
+    *   **Proposal:** Create a dedicated sub-section or filter for news originating from university research labs, corporate research divisions, or scientific journals that publish tech-related findings.
+    *   **Examples:**
+        *   MIT News (news.mit.edu) - Technology section
+        *   Stanford Engineering News (engineering.stanford.edu/news)
+        *   Google Research Blog (research.googleblog.com)
+        *   Microsoft Research Blog (microsoft.com/en-us/research/blog/)
+    *   **Benefit:** Highlights cutting-edge research and innovations before they become mainstream news, bridging the gap between academic findings (like arXiv) and general tech news.
+
+4.  **Regional Tech News (Beyond Valencia):**
+    *   **Proposal:** Expand beyond "Eventos Valencia" to include options for tech news from other specific regions or countries, if user interest exists.
+    *   **Examples:**
+        *   Tech.eu (for European tech news)
+        *   News sources specific to other major tech hubs (e.g., Silicon Valley, Berlin, Bangalore).
+    *   **Benefit:** Provides localized tech ecosystem insights for a broader audience.
+
+### Enhancements for 'Cursos (Courses)' Tab
+
+The 'Cursos' tab currently tracks platforms like Udemy, Coursera, and Microsoft Applied Skills. To broaden the educational offerings:
+
+1.  **Integrate Additional MOOC Platforms:**
+    *   **Proposal:** Add support for other major Massive Open Online Course (MOOC) providers.
+    *   **Examples:**
+        *   **edX (edx.org):** Offers courses from top universities worldwide.
+        *   **FutureLearn (futurelearn.com):** Another prominent MOOC platform with diverse course offerings.
+    *   **Benefit:** Significantly increases the catalog of available courses, especially from academic institutions.
+
+2.  **Include Professional Learning Platforms:**
+    *   **Proposal:** Integrate platforms focused on professional development and specialized technical skills.
+    *   **Examples:**
+        *   **LinkedIn Learning (linkedin.com/learning/):** Offers a wide range of business, technology, and creative skills courses.
+        *   **Pluralsight (pluralsight.com):** Focuses on technology skills for professionals, including software development, IT ops, and cybersecurity.
+        *   **Skillsoft (skillsoft.com):** Provides corporate learning solutions covering various technical and business domains.
+    *   **Benefit:** Caters to users looking to upskill or reskill for professional roles.
+
+3.  **Add Free Learning Resources:**
+    *   **Proposal:** Include platforms known for their extensive free educational content.
+    *   **Examples:**
+        *   **freeCodeCamp (freecodecamp.org):** Offers thousands of hours of free coding tutorials and certifications.
+        *   **Khan Academy (khanacademy.org):** While known for K-12, also offers computer programming and other relevant courses.
+        *   **Class Central (classcentral.com):** A search engine for free online courses; could be a source for discovering new free offerings.
+    *   **Benefit:** Makes a wealth of free learning opportunities easily accessible.
+
+4.  **Track Workshops, Bootcamps, and Short Courses:**
+    *   **Proposal:** Expand beyond traditional full courses to include shorter learning formats.
+    *   **Examples:**
+        *   **Eventbrite (eventbrite.com) / Meetup.com (meetup.com):** Filter for online tech workshops or short training sessions.
+        *   Platforms specializing in coding bootcamps (e.g., General Assembly, Le Wagon) if they offer shorter, trackable modules or events.
+    *   **Benefit:** Provides options for users seeking quick learning on specific topics or intensive, focused training.
+
+5.  **Specialized Platform Integration:**
+    *   **Proposal:** Add niche platforms that are highly regarded in specific domains.
+    *   **Examples:**
+        *   **DataCamp (datacamp.com) / DataQuest (dataquest.io):** For data science and analytics.
+        *   **A Cloud Guru (acloud.guru) / CloudAcademy (cloudacademy.com):** For cloud computing certifications and training (AWS, Azure, GCP).
+    *   **Benefit:** Offers deep learning paths for specialized and in-demand tech skills.
+
+### Enhancements for 'Comunidades Dev (Dev Communities)' Tab
+
+This tab already covers a good range of developer communities (Dev.to, HackerNews Ask, Lobsters, Discord, Stack Overflow, GitHub Trends). Further expansions could include:
+
+1.  **Niche Subreddit Integration (Beyond General Feeds):**
+    *   **Proposal:** Allow users to specify or discover and add specific, niche subreddits relevant to particular technologies, programming languages, or developer interests, if the current Reddit integration (`news_get_subreddits.py`) is too broad.
+    *   **Examples:**
+        *   `r/MachineLearning`, `r/rust`, `r/gamedev`, `r/webdev`
+        *   Subreddits for specific tools or frameworks (e.g., `r/reactjs`, `r/kubernetes`).
+    *   **Benefit:** Provides highly focused discussions and Q&A for specialized areas.
+
+2.  **Integration of Additional Blogging/Article Platforms:**
+    *   **Proposal:** Add other platforms where developers publish articles and tutorials.
+    *   **Examples:**
+        *   **Hashnode (hashnode.com):** A popular blogging platform for developers.
+        *   **Medium (medium.com):** While GenAI on Medium is covered, expand to other tech tags or publications on Medium if not already done.
+        *   **DEV Community (dev.to):** Ensure comprehensive coverage of tags and potentially individual author feeds if desired. *(Already listed as a source, but ensure depth)*.
+    *   **Benefit:** Increases the diversity of available developer articles and perspectives.
+
+3.  **Specialized Forums and Q&A Sites:**
+    *   **Proposal:** Integrate more specialized forums or Q&A sites that are key resources for certain developer ecosystems.
+    *   **Examples:**
+        *   **Specific Discourse communities:** Many open-source projects or tech communities host their forums on Discourse.
+        *   **Game Development Forums:** (e.g., Unity Forums, Unreal Engine Forums - if public feeds/APIs exist).
+        *   **Security Forums:** (e.g., specific sub-forums on Stack Exchange beyond Stack Overflow, or other security-focused communities).
+    *   **Benefit:** Access to expert knowledge and solutions within particular technology domains.
+
+4.  **Focused Discord Server Integration (Beyond Trending):**
+    *   **Proposal:** If `news_get_discord_trending.py` provides a general overview, consider ways to integrate or allow users to track specific, highly relevant Discord servers (publicly accessible channels). This is technically challenging due to Discord's structure but could be valuable.
+    *   **Benefit:** Real-time insights from active developer communities focused on specific projects or technologies. Requires careful consideration of Discord's ToS and API capabilities.
+
+5.  **Expand GitHub Monitoring (Beyond Trends):**
+    *   **Proposal:** While GitHub Trends is covered, consider expanding to:
+        *   **Tracking specific repository discussions/issues:** For projects a user is interested in.
+        *   **New releases/tags for starred or specified repositories.**
+        *   **Activity from specific GitHub organizations or curated lists of developers.**
+    *   **Benefit:** Deeper insights into open-source project development and activity.
+
+### Enhancements for 'Plataformas IA (AI Platforms)' Tab
+
+This tab aims to provide insights into AI platforms. The `src/etl/ai_platforms/` directory suggests existing ETLs for Gemini, Hugging Face, OpenAI, etc. To further enhance this:
+
+1.  **Track Major AI Research Lab Publications & Blogs:**
+    *   **Proposal:** Systematically track announcements, research papers, and blog posts from leading AI research institutions and corporate labs.
+    *   **Examples:**
+        *   **DeepMind (deepmind.google):** Publications and blog.
+        *   **Meta AI (ai.meta.com):** Publications and blog.
+        *   **Stanford AI Lab (SAIL) (ai.stanford.edu):** News and publications.
+        *   **Berkeley AI Research (BAIR) (bair.berkeley.edu):** Blog and publications.
+        *   **OpenAI Blog (openai.com/blog):** *Ensure comprehensive tracking if not already complete.*
+        *   **Google AI Blog (ai.googleblog.com):** *Consolidate with Google Research Blog if different.*
+        *   **Microsoft AI Blog (blogs.microsoft.com/ai/):**
+    *   **Benefit:** Centralized access to cutting-edge research and official announcements from key AI players.
+
+2.  **Comprehensive Open-Source AI Model Tracking (Beyond Basic Hugging Face):**
+    *   **Proposal:** While Hugging Face is a key source, expand to track significant open-source AI model releases, updates, and discussions around them, potentially from other platforms or aggregators.
+    *   **Examples:**
+        *   **Hugging Face:**
+            *   New trending models across different categories (NLP, CV, Audio).
+            *   Major updates to influential models.
+            *   Potentially track discussions or community activity around specific models on Hugging Face.
+        *   **GitHub:** Track repositories tagged with "artificial-intelligence," "machine-learning," "llm," etc., filtering for highly starred or active new model releases.
+        *   **Papers with Code (paperswithcode.com):** New models achieving state-of-the-art results, along with their code implementations.
+    *   **Benefit:** Keeps users updated on the rapidly evolving landscape of open-source AI models.
+
+3.  **AI Ethics and Governance News/Publications:**
+    *   **Proposal:** Dedicate a subsection or tag for news, research, and publications specifically focused on AI ethics, responsible AI, and AI governance.
+    *   **Examples:**
+        *   AI Ethics-focused sections of major news outlets.
+        *   Publications from organizations like AI Now Institute, Partnership on AI.
+        *   Relevant academic papers from ArXiv categories like cs.CY (Computers and Society).
+    *   **Benefit:** Provides insights into the crucial societal and ethical dimensions of AI development.
+
+4.  **AI Hardware and Infrastructure News:**
+    *   **Proposal:** Include news and announcements related to AI hardware (GPUs, TPUs, specialized chips) and cloud AI infrastructure.
+    *   **Examples:**
+        *   NVIDIA blogs/announcements.
+        *   Google Cloud AI, AWS AI, Azure AI platform updates related to hardware.
+        *   News from chip manufacturers (Intel, AMD, etc.) regarding AI hardware.
+    *   **Benefit:** Informs users about the underlying hardware advancements that power AI.
+
+5.  **Tracking AI Benchmarks and Leaderboards:**
+    *   **Proposal:** Aggregate or link to key AI benchmarks and leaderboards to track model performance.
+    *   **Examples:**
+        *   SuperGLUE, SQuAD for NLP.
+        *   ImageNet for computer vision.
+        *   Various leaderboards hosted on Hugging Face or other platforms.
+    *   **Benefit:** Offers a way to see how different models are performing on standardized tasks.
+
+### Enhancements for 'Eventos Tech (Tech Events)' Tab
+
+This tab covers technology events. The existing `tech_conference_etl.py` likely focuses on larger conferences. To enhance this:
+
+1.  **Integrate Local Tech Meetups and Community Events:**
+    *   **Proposal:** Add data sources that list smaller, local, or community-organized tech events.
+    *   **Examples:**
+        *   **Meetup.com API:** Filter for technology-related meetups in specified cities or regions.
+        *   **Eventbrite.com API:** Search for tech workshops, seminars, and local conferences.
+        *   Community-specific calendars if available (e.g., local Linux User Groups, AWS User Groups).
+    *   **Benefit:** Provides visibility into local networking and learning opportunities, complementing larger national/international conferences.
+
+2.  **Comprehensive Tracking of Virtual Conferences and Webinars:**
+    *   **Proposal:** Ensure robust coverage of online-only tech events, which have become increasingly prevalent.
+    *   **Examples:**
+        *   Platforms specializing in hosting or listing webinars (e.g., BrightTALK, Livestorm, or sections of major tech company websites).
+        *   Virtual conference tracks from major conference organizers.
+        *   Online summits and workshops advertised on platforms like LinkedIn or specialized tech communities.
+    *   **Benefit:** Captures a significant portion of tech events that are accessible globally without travel.
+
+3.  **Call for Papers (CFP) Tracking:**
+    *   **Proposal:** Add a feature or section to track Call for Papers/Proposals for major tech conferences.
+    *   **Examples:**
+        *   Aggregator sites for CFPs (e.g., papercall.io, confs.tech for some).
+        *   Directly from conference websites if APIs or structured data are available.
+    *   **Benefit:** Useful for academics, researchers, and professionals looking for speaking opportunities.
+
+4.  **Hackathon and Coding Competition Listings:**
+    *   **Proposal:** Include listings for online and in-person hackathons, coding challenges, and tech competitions.
+    *   **Examples:**
+        *   **Devpost (devpost.com):** A major platform for hackathon listings.
+        *   **Major League Hacking (mlh.io):** For student-focused hackathons.
+        *   Platforms like HackerEarth, Kaggle (for competitions).
+    *   **Benefit:** Provides opportunities for developers to test their skills, learn new technologies, and collaborate.
+
+5.  **Post-Event Content Aggregation:**
+    *   **Proposal:** For major conferences, attempt to link to or aggregate post-event content.
+    *   **Examples:**
+        *   Links to official YouTube channels where talk recordings are posted.
+        *   Links to slide decks (e.g., from SlideShare, or conference websites).
+        *   Blog posts summarizing key takeaways from the event.
+    *   **Benefit:** Extends the value of the event listing by providing access to the actual content shared.
