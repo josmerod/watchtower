@@ -14,45 +14,47 @@ run_etl() {
     local name=$(basename "$script" .py)
     echo "Starting $name..."
     python "$script" > "logs/${name}.log" 2>&1 &
-    local pid=$!
-    echo "$name started with PID $pid"
-    return $pid
+    local script_pid=$! # PID of the python script
+    pids+=($script_pid) # Add script_pid to the global pids array
+    echo "$name started with PID $script_pid"
+    # The function can return 0 to indicate success for the && operator
+    return 0
 }
 
 # Run all ETL scripts in parallel and store their PIDs
 pids=()
-run_etl "src/etl/games/games_get_deals.py" && pids+=($!)
-run_etl "src/etl/news/news_get_ycombinator.py" && pids+=($!)
-run_etl "src/etl/news/news_get_futuretools.py" && pids+=($!)
-run_etl "src/etl/news/news_get_genai_medium.py" && pids+=($!)
-run_etl "src/etl/news/news_get_kdnuggets.py" && pids+=($!)
-run_etl "src/etl/news/news_get_bensbites.py" && pids+=($!)
-run_etl "src/etl/news/news_get_planesvalencia.py" && pids+=($!)
-run_etl "src/etl/news/news_get_gooddevs.py" && pids+=($!)
-run_etl "src/etl/news/news_get_podcasts.py" && pids+=($!)
-run_etl "src/etl/goldigging/goldigging_youtube_posts.py" && pids+=($!)
-run_etl "src/watchers/ms_skills_watcher.py" && pids+=($!)
-run_etl "src/etl/goldigging/goldigging_coursera_courses.py" && pids+=($!)
-run_etl "src/etl/games/games_get_humblebundles.py" && pids+=($!)
-run_etl "src/etl/news/news_get_subreddits.py" && pids+=($!)
-run_etl "src/etl/news/news_get_media_rss.py" && pids+=($!)
+run_etl "src/etl/games/games_get_deals.py" # Modified call
+run_etl "src/etl/news/news_get_ycombinator.py" # Modified call
+run_etl "src/etl/news/news_get_futuretools.py" # Modified call
+run_etl "src/etl/news/news_get_genai_medium.py"
+run_etl "src/etl/news/news_get_kdnuggets.py"
+run_etl "src/etl/news/news_get_bensbites.py"
+run_etl "src/etl/news/news_get_planesvalencia.py"
+run_etl "src/etl/news/news_get_gooddevs.py"
+run_etl "src/etl/news/news_get_podcasts.py"
+run_etl "src/etl/goldigging/goldigging_youtube_posts.py"
+run_etl "src/watchers/ms_skills_watcher.py"
+run_etl "src/etl/goldigging/goldigging_coursera_courses.py"
+run_etl "src/etl/games/games_get_humblebundles.py"
+run_etl "src/etl/news/news_get_subreddits.py"
+run_etl "src/etl/news/news_get_media_rss.py"
 
 # NEW MODULES - Developer Communities & Innovation Tracking
-run_etl "src/etl/news/news_get_devto.py" && pids+=($!)
-run_etl "src/etl/news/news_get_producthunt.py" && pids+=($!)
-run_etl "src/etl/news/news_get_indiehackers.py" && pids+=($!)
-run_etl "src/etl/news/news_get_lobsters.py" && pids+=($!)
-run_etl "src/etl/news/news_get_gittrends.py" && pids+=($!)
-run_etl "src/etl/news/news_get_techjobs.py" && pids+=($!)
+run_etl "src/etl/news/news_get_devto.py"
+run_etl "src/etl/news/news_get_producthunt.py"
+run_etl "src/etl/news/news_get_indiehackers.py"
+run_etl "src/etl/news/news_get_lobsters.py"
+run_etl "src/etl/news/news_get_gittrends.py"
+run_etl "src/etl/news/news_get_techjobs.py"
 
 # LATEST NEW MODULES - Community & Developer Intelligence
-run_etl "src/etl/news/news_get_hackernews_ask.py" && pids+=($!)
-run_etl "src/etl/news/news_get_discord_trending.py" && pids+=($!)
-run_etl "src/etl/news/news_get_stackoverflow_trends.py" && pids+=($!)
-run_etl "src/etl/news/news_get_home_server_trends.py" && pids+=($!)
+run_etl "src/etl/news/news_get_hackernews_ask.py"
+run_etl "src/etl/news/news_get_discord_trending.py"
+run_etl "src/etl/news/news_get_stackoverflow_trends.py"
+run_etl "src/etl/news/news_get_home_server_trends.py"
 
 # NEW MINING TOOLS
-run_etl "src/miners/crypto_sentiment_miner.py" && pids+=($!)
+run_etl "src/miners/crypto_sentiment_miner.py"
 
 echo "All ETL processes started in parallel"
 echo "Process PIDs: ${pids[*]}"
