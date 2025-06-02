@@ -32,7 +32,8 @@ $etl_scripts = @(
     "src/etl/games/games_get_humblebundles.py",
     "src/etl/news/news_get_subreddits.py",
     "src/etl/news/news_get_media_rss.py",
-    "src/etl/anime/mal_etl.py"
+    "src/etl/anime/mal_etl.py",
+    "src/etl/news/news_get_newsapi.py"
 )
 
 # New community & developer intelligence scripts
