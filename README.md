@@ -60,9 +60,10 @@ This project is ideal for users who need to stay updated on specific topics, tra
 -   **Watchers**:
     -   Monitors web pages for content changes (e.g., Microsoft Applied Skills credentials, new arXiv submissions).
     -   Extensible `BaseWatcher` class for straightforward creation of custom watchers.
--   **Orchestrator**:
-    -   Robust `MetaOrchestrator` to manage and monitor multiple specific orchestrators (e.g., ETL, GenAI, Golddigging tasks) concurrently.
-    -   Designed for high availability with auto-restart capabilities for managed scripts.
+-   **Orchestration (New)**:
+    -   Uses **Prefect** for defining, scheduling, and monitoring data workflows.
+    -   Flow definitions are located in the `prefect_flows/` directory.
+    -   Example flows like `prefect_flows/news_flow.py` (for daily news aggregation) and `prefect_flows/data_collection_flow.py` (for ArXiv and game deals) serve as templates.
 -   **Web Dashboard**:
     -   Interactive Streamlit application providing a holistic view of collected data.
     -   Categorized data presentation: Shortcuts, Videos, News, Games, Courses, Watchers, and Administrative functionalities.
@@ -278,13 +279,66 @@ Convenience scripts are also provided for running all watchers (typically in con
 -   Windows: `.\run_watcher.bat [optional_watcher_name]`
 -   macOS/Linux: `bash run_watcher.sh [optional_watcher_name]`
 
-### Running the Orchestrator
+### Running Workflows with Prefect
 
-The `meta_orchestrator.py` in `src/orchestrator/` is the primary entry point for starting and managing multiple processes or sub-orchestrators.
-```bash
-python src/orchestrator/meta_orchestrator.py
-```
-This script will monitor and manage defined tasks, often including ETL jobs and watchers, providing fault tolerance. Check its configuration for details on managed processes.
+With the transition to Prefect, the orchestration and execution of ETL pipelines and other tasks are managed by Prefect flows.
+
+1.  **Install Prefect**:
+    Prefect is included in the project's dependencies. Ensure it's installed by following the main [Installation](#installation) steps (e.g., `poetry install` or `pip install -r requirements.txt`).
+
+2.  **Start the Prefect Server**:
+    To visualize flow runs, manage deployments, and see logs, start the Prefect UI server:
+    ```bash
+    prefect server start
+    ```
+    This will typically make the UI available at `http://127.0.0.1:4200`.
+
+3.  **Define and Build Deployments**:
+    Deployments are how Prefect manages scheduled or triggerable flow runs. Flow definitions are in `prefect_flows/`.
+
+    To create a deployment for a flow (e.g., `daily_news_flow` to run daily at 8 AM):
+    ```bash
+    prefect deployment build ./prefect_flows/news_flow.py:daily_news_flow -n daily_news_deployment -q default --cron "0 8 * * *" --apply
+    ```
+    -   `./prefect_flows/news_flow.py:daily_news_flow`: Path to the Python file and the flow function name.
+    -   `-n daily_news_deployment`: Name for this deployment.
+    -   `-q default`: Assigns the deployment to the "default" work queue.
+    -   `--cron "0 8 * * *"`: Sets a CRON schedule (e.g., daily at 8:00 AM).
+    -   `--apply`: Registers the deployment with the Prefect server immediately.
+
+    You can create similar deployments for other flows like `periodic_data_collection_flow` from `prefect_flows/data_collection_flow.py`, adjusting the schedule and parameters as needed.
+
+4.  **Start a Prefect Agent**:
+    An agent polls a work queue for scheduled or ad-hoc flow runs and executes them.
+    ```bash
+    prefect agent start -q default
+    ```
+    Ensure the agent is running in an environment where it can access the project code and necessary configurations (e.g., activated virtual environment, correct `PYTHONPATH`).
+
+5.  **Monitoring Flow Runs**:
+    Use the Prefect UI (e.g., `http://127.0.0.1:4200`) to monitor the status of flow runs, view logs, and manage deployments.
+
+### Decommissioning the Old Orchestration System
+
+If you were using the previous `meta_orchestrator.py` with system-level schedulers (like `launchd` on macOS or Task Scheduler on Windows), you should disable or remove those configurations:
+
+-   **macOS (`launchd`)**:
+    ```bash
+    # Unload the launch agent
+    launchctl unload ~/Library/LaunchAgents/com.watchtower.etl.plist
+    # Optionally, delete the plist file
+    # rm ~/Library/LaunchAgents/com.watchtower.etl.plist
+    ```
+    Verify the path to your `.plist` file if it differs.
+
+-   **Windows (Task Scheduler)**:
+    1.  Open Task Scheduler.
+    2.  Navigate to the Task Scheduler Library.
+    3.  Find the task previously set up for `meta_orchestrator.py` or `run_all_etl.bat`.
+    4.  Right-click the task and select "Disable" or "Delete".
+
+-   **Old Scripts**:
+    It's recommended to rename or remove the old `run_all_etl.bat`/`.sh` scripts and `src/orchestrator/meta_orchestrator.py` to avoid confusion, once you have fully migrated to Prefect.
 
 ### Launching the Web Dashboard
 
@@ -314,18 +368,26 @@ docker run -p 8501:8501 --env-file .env megalith-app
 -   For persistent data, mount volumes: `-v /path/on/host:/app/data` (adjust paths accordingly).
 -   Refer to the `Dockerfile` for build stages, exposed ports, and entry points.
 
-## Scheduling and Automation
+## Scheduling and Automation (Legacy)
 
-The project includes scripts to assist in setting up automated execution of its components. For robust production deployments, consider using system-level process managers.
+The information below pertains to the older, script-based scheduling methods. **With the introduction of Prefect, it is highly recommended to use Prefect Deployments for scheduling and automation as described in the "Running Workflows with Prefect" section.**
 
+If you are still using or maintaining parts of the older system:
 -   **ETL Scheduler & Watchers**:
-    -   **Linux**: Use `cron` or `systemd` timers. The `setup_etl_scheduler.sh` might provide a basic cron setup. For more advanced control, create custom `systemd` service and timer units.
-    -   **Windows**: Use Task Scheduler. The `setup_etl_scheduler.ps1` script likely assists in creating scheduled tasks.
+    -   **Linux**: Use `cron` or `systemd` timers. The `setup_etl_scheduler.sh` might provide a basic cron setup.
+    -   **Windows**: Use Task Scheduler. The `setup_etl_scheduler.ps1` script likely assists.
 -   **Streamlit Service**:
-    -   **Linux**: Use `systemd` to run Streamlit as a background service. The `setup_streamlit_service.sh` might help generate a basic service file.
-    -   **Windows**: The `setup_streamlit_service.ps1` script can help set up the Streamlit dashboard to run as a service or a background task. Tools like `NSSM (Non-Sucking Service Manager)` can also be used for more robust service creation.
+    -   **Linux**: Use `systemd` to run Streamlit as a background service.
+    -   **Windows**: The `setup_streamlit_service.ps1` script can help.
 
-Consult the contents of these scripts for their specific actions. Always review and adapt them to your system's configuration and security policies.
+*Review and adapt any legacy scripts if you choose to continue using them, but migration to Prefect is preferred.*
+
+## Important Notes & Known Issues (Prefect Implementation)
+
+-   **PapersWithCode Client**: The `paperswithcode-client` dependency is currently commented out in `requirements.txt` due to historical Pydantic v1 conflicts. Consequently, its usage within `src/etl/arxiv/arxiv_etl.py` (for enriching ArXiv papers with PwC data) is also commented out. This part of the ArXiv ETL is therefore disabled.
+-   **Python Path for Flows**: The Prefect flow scripts located in `prefect_flows/` (e.g., `news_flow.py`, `data_collection_flow.py`) have had `sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))` added at the beginning. This is a workaround to ensure that modules from the `src/` directory can be imported correctly when these flows are executed. For long-term stability and best practices, consider setting up the project as an installable Python package or managing `PYTHONPATH` externally.
+-   **NLTK Resource Downloads**: The `src/utils/nlp_classifier.py` (used by the ArXiv ETL) now automatically attempts to download missing NLTK resources (`punkt`, `stopwords`, `wordnet`, `averaged_perceptron_tagger`, `punkt_tab`, `averaged_perceptron_tagger_eng`) if they are not found. This was added to resolve errors during flow execution.
+-   **Click Dependency**: The `requirements.txt` file includes `click>=8.0,<8.2`. This specific version range for the `click` library is required by Prefect 3.x and was adjusted to resolve dependency conflicts.
 
 ## Development Standards
 

@@ -229,6 +229,7 @@ class ArxivWatcher(BaseWatcher):
             papers (List[Dict[str, Any]]): Papers to save
             filename (str): Filename without extension
         """
+        self.logger.info(f"Attempting to save papers to {filename}.json in {self.data_dir}")
         filepath = os.path.join(self.data_dir, f"{filename}.json")
         try:
             with open(filepath, 'w', encoding='utf-8') as f:
