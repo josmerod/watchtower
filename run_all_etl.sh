@@ -37,6 +37,7 @@ run_etl "src/etl/games/games_get_humblebundles.py" && pids+=($!)
 run_etl "src/etl/games/games_get_itchio_trending.py" && pids+=($!)
 run_etl "src/etl/news/news_get_subreddits.py" && pids+=($!)
 run_etl "src/etl/news/news_get_media_rss.py" && pids+=($!)
+run_etl "src/etl/anime/mal_etl.py" && pids+=($!)
 
 # NEW MODULES - Developer Communities & Innovation Tracking
 run_etl "src/etl/news/news_get_devto.py" && pids+=($!)
@@ -81,3 +82,4 @@ echo "- data/games/"
 echo "- data/news/"
 echo "- data/goldigging/"
 echo "- data/watchers/"
+echo "- data/anime/"

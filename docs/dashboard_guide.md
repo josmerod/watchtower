@@ -86,6 +86,20 @@ The dashboard is organized into several key sections, each providing unique insi
 -   **Data:** Course titles, providers, descriptions, enrollment links, new module announcements.
 -   **Interactivity:** Filter by platform or topic, search for courses, direct links to course pages.
 
+### ⛩️ Anime Calendar & Guide Tab
+-   **Purpose:** Provides a curated view of anime, including currently airing shows, popular series, and top-rated titles.
+-   **Data Source:** Data is sourced from MyAnimeList (MAL) via a dedicated ETL process.
+-   **Features:**
+    -   **Current Season:** Displays anime currently airing in the ongoing season (Winter, Spring, Summer, Fall).
+    -   **Top Popular:** Showcases anime series that are most popular among users.
+    -   **Top Rated:** Lists anime series with the highest user scores.
+    -   For each anime, details typically include:
+        -   Title and cover image.
+        -   Average score, overall rank, and popularity rank.
+        -   Number of episodes, media type (TV, Movie, OVA), and airing status.
+        -   Synopsis, genres, and animation studios.
+-   **Updates:** The data for this tab is updated when the main ETL processes (e.g., `run_all_etl.sh`) are executed.
+
 ### Watchers Status
 -   **Purpose:** Provides an overview of the status of different content watchers.
 -   **Data:** Watcher names, last run time, status (e.g., success, failed, changed, unchanged), links to detected changes or logs.
