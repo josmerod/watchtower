@@ -171,7 +171,16 @@ def main():
         # Ensure output directory exists
         project_root = get_project_root()
         output_dir = os.path.join(project_root, "data/hackernews")
-        ensure_directories(["data/hackernews"])
+        ensure_directories(["data/hackernews"]) # This should create /app/data/hackernews
+
+        # Create a simple test file to verify directory creation and write access
+        test_file_path = os.path.join(output_dir, "test_output.txt")
+        try:
+            with open(test_file_path, "w") as f_test:
+                f_test.write("Test output from news_get_ycombinator.py main()")
+            logger.info(f"Successfully wrote test file to {test_file_path}")
+        except Exception as e_test:
+            logger.error(f"Failed to write test file to {test_file_path}: {e_test}")
 
         # Get articles from the RSS feeds
         articles = get_ycombinator_data()
