@@ -1,7 +1,7 @@
 [project]
-name = "watchtower"
+name = "megalith"
 version = "0.1.0"
-description = "A versatile data collection, processing, and application platform."
+description = "A comprehensive monitoring and ETL framework for scraping, aggregating, and visualizing data from diverse online sources."
 authors = [
     { name = "Your Name", email = "your@email.com" }, # Optional: Add your details
 ]
@@ -59,8 +59,8 @@ web = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/yourusername/watchtower"
-"Bug Tracker" = "https://github.com/yourusername/watchtower/issues"
+"Homepage" = "https://github.com/yourusername/megalith"
+"Bug Tracker" = "https://github.com/yourusername/megalith/issues"
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -103,7 +103,7 @@ line-ending = "auto"
 docstring-code-format = true
 
 [tool.ruff.isort]
-known-first-party = ["watchtower"]
+known-first-party = ["megalith"]
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
 [tool.mypy]

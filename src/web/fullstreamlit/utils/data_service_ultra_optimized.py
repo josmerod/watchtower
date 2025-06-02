@@ -153,18 +153,19 @@ class UltraOptimizedDataService:
             return []
     
     @st.cache_data(ttl=3600, max_entries=10, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
-    def get_games_data_ultra(_self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def get_games_data_ultra(_self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Ultra-optimized games data loading with parallel processing"""
         _self._log("Loading games data (ultra-optimized)")
         
         games_dir = _self.cached_paths['games_dir']
         
-        # Define file operations
+        # Define file operations, including Itch.io trending
         file_operations = [
             ('deals', games_dir / "deals.json"),
             ('bundles', games_dir / "bundles.json"),
             ('humble', games_dir / "humblebundles.json"),
-            ('giveaways', games_dir / "giveaways.json")
+            ('giveaways', games_dir / "giveaways.json"),
+            ('itchio', games_dir / "itchio_trending.json")
         ]
         
         # Load files in parallel using cached operations
@@ -221,8 +222,15 @@ class UltraOptimizedDataService:
                 })
                 giveaways_df = clean_dataframe_for_caching(giveaways_df)
         
-        _self._log(f"Ultra-loaded: {len(deals_df)} deals, {len(bundles_df)} bundles, {len(giveaways_df)} giveaways")
-        return deals_df, bundles_df, giveaways_df
+        # Process Itch.io trending games
+        itchio_df = pd.DataFrame()
+        if loaded_data.get('itchio'):
+            itchio_df = pd.DataFrame(loaded_data['itchio'])
+            if not itchio_df.empty:
+                itchio_df = clean_dataframe_for_caching(itchio_df)
+        
+        _self._log(f"Ultra-loaded: {len(deals_df)} deals, {len(bundles_df)} bundles, {len(giveaways_df)} giveaways, {len(itchio_df)} itch.io trending")
+        return deals_df, bundles_df, giveaways_df, itchio_df
     
     @st.cache_data(ttl=1800, max_entries=10, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
     def get_videos_data_ultra(_self) -> Dict[str, pd.DataFrame]:
@@ -400,11 +408,12 @@ class UltraOptimizedDataService:
             videos_data = _self.get_videos_data_ultra()
             
             # Games summary
-            deals_df, bundles_df, giveaways_df = games_data
+            deals_df, bundles_df, giveaways_df, itchio_df = games_data
             summary["games"] = {
                 "deals": len(deals_df),
                 "bundles": len(bundles_df), 
                 "giveaways": len(giveaways_df),
+                "itchio_trending": len(itchio_df),
                 "latest_deal": deals_df.iloc[0]["title"] if not deals_df.empty and "title" in deals_df.columns else None,
                 "latest_bundle": bundles_df.iloc[0]["title"] if not bundles_df.empty and "title" in bundles_df.columns else None
             }
@@ -449,7 +458,7 @@ class UltraOptimizedDataService:
     def _get_fallback_summary(self) -> Dict[str, Dict]:
         """Fallback summary when errors occur"""
         return {
-            "games": {"deals": 0, "bundles": 0, "giveaways": 0, "latest_deal": None, "latest_bundle": None},
+            "games": {"deals": 0, "bundles": 0, "giveaways": 0, "itchio_trending": 0, "latest_deal": None, "latest_bundle": None},
             "courses": {"total": 0, "platforms": [], "by_platform": {}},
             "news": {"total": 0, "sources": [], "by_source": {}},
             "videos": {"total": 0, "channels": 0, "by_channel": {}},
@@ -477,8 +486,8 @@ class UltraOptimizedDataService:
         return self.get_data_summary_ultra()
 
     # Compatibility methods for existing code
-    def get_games_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """Compatibility method that calls get_games_data_ultra"""
+    def get_games_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Compatibility method that calls get_games_data_ultra including Itch.io trending"""
         return self.get_games_data_ultra()
     
     def get_videos_data(self) -> Dict[str, pd.DataFrame]:

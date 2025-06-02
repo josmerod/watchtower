@@ -7,12 +7,12 @@ import streamlit as st
 import pandas as pd
 from src.web.fullstreamlit.utils.helpers import make_clickable
 
-def render(deals_df, bundles_df, giveaways_df, logger=None):
+def render(deals_df, bundles_df, giveaways_df, trending_df, logger=None):
     """Render the games tab"""
     st.header("🎮 Juegos")
 
     # Check if all dataframes are empty
-    if deals_df.empty and bundles_df.empty and giveaways_df.empty:
+    if deals_df.empty and bundles_df.empty and giveaways_df.empty and trending_df.empty:
         if logger:
             logger.warning("No game data available to display (deals, bundles, giveaways).")
         st.warning("No hay datos de juegos disponibles para mostrar.")
@@ -26,6 +26,8 @@ def render(deals_df, bundles_df, giveaways_df, logger=None):
         tab_titles.append("Paquetes de Juegos")
     if not deals_df.empty:
         tab_titles.append("Ofertas de Juegos")
+    if not trending_df.empty:
+        tab_titles.append("Tendencias Itch.io")
 
     if not tab_titles: # Should not happen if the initial check passed, but good practice
         st.warning("No hay datos de juegos válidos para mostrar en las pestañas.")
@@ -46,6 +48,10 @@ def render(deals_df, bundles_df, giveaways_df, logger=None):
     if "Ofertas de Juegos" in tab_map:
         with tab_map["Ofertas de Juegos"]:
             display_deals(deals_df)
+
+    if "Tendencias Itch.io" in tab_map:
+        with tab_map["Tendencias Itch.io"]:
+            display_trending(trending_df)
 
     # Removed the multiselect and the old sequential display logic.
     # The container div is also removed as tabs handle the layout.
@@ -319,4 +325,35 @@ def display_giveaways(giveaways_df):
 
     # Close the card div
     giveaways_html += '</div>'
-    st.markdown(giveaways_html, unsafe_allow_html=True) 
+    st.markdown(giveaways_html, unsafe_allow_html=True)
+
+# New function for Itch.io trending games
+def display_trending(trending_df):
+    """Display Itch.io trending games"""
+    cards_html = '<div class="deals-card">'
+    cards_html += '<h2>Tendencias en Itch.io</h2>'
+
+    if not trending_df.empty:
+        df = trending_df.copy()
+        # Add clickable link
+        if "link" in df.columns:
+            df["Ver Juego"] = df["link"].apply(lambda x: make_clickable(x, "Ver"))
+        # Rename columns for display
+        rename_map = {}
+        if "title" in df.columns:
+            rename_map["title"] = "Título"
+        if "author" in df.columns:
+            rename_map["author"] = "Autor"
+        if "price" in df.columns:
+            rename_map["price"] = "Precio"
+        if "description" in df.columns:
+            rename_map["description"] = "Descripción"
+        if rename_map:
+            df.rename(columns=rename_map, inplace=True)
+
+        cards_html += df.to_html(escape=False, index=False)
+    else:
+        cards_html += '<p>No hay tendencias disponibles.</p>'
+
+    cards_html += '</div>'
+    st.markdown(cards_html, unsafe_allow_html=True) 

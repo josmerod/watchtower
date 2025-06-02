@@ -21,6 +21,7 @@ start /B python3 src/etl/goldigging/goldigging_youtube_posts.py
 start /B python3 src/watchers/ms_skills_watcher.py
 start /B python3 src/etl/goldigging/goldigging_coursera_courses.py
 start /B python3 src/etl/games/games_get_humblebundles.py
+start /B python3 src/etl/games/games_get_itchio_trending.py
 start /B python3 src/etl/news/news_get_subreddits.py
 start /B python3 src/etl/news/news_get_media_rss.py
 

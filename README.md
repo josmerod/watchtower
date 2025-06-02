@@ -1,12 +1,12 @@
-# Watchtower
+# MEGALITH
 
 **A comprehensive monitoring and ETL framework for scraping, aggregating, and visualizing data from diverse online sources.**
 
-Watchtower is designed to automate the collection of information from news sites, game deal aggregators, online course platforms, and other web content. It features robust ETL (Extract, Transform, Load) pipelines, intelligent watchers for monitoring content changes, an orchestrator for managing and scheduling tasks, and a user-friendly Streamlit web dashboard for real-time data visualization and interaction.
+MEGALITH is designed to automate the collection of information from news sites, game deal aggregators, online course platforms, and other web content. It features robust ETL (Extract, Transform, Load) pipelines, intelligent watchers for monitoring content changes, an orchestrator for managing and scheduling tasks, and a user-friendly Streamlit web dashboard for real-time data visualization and interaction.
 
 ## Table of Contents
 
-- [Watchtower](#watchtower)
+- [MEGALITH](#megalith)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Features](#features)
@@ -41,7 +41,7 @@ Watchtower is designed to automate the collection of information from news sites
 
 ## Overview
 
-Watchtower is an integrated solution for automated data acquisition, processing, and monitoring. Its core capabilities include:
+MEGALITH is an integrated solution for automated data acquisition, processing, and monitoring. Its core capabilities include:
 
 -   **Automated Data Collection**: Regularly scrapes data from various websites, including news portals, e-learning platforms, and gaming sites.
 -   **Change Detection**: Monitors specified web pages for any changes in content, providing alerts or updates.
@@ -90,7 +90,7 @@ This project is ideal for users who need to stay updated on specific topics, tra
 ## Project Structure
 
 ```
-watchtower/
+megalith/
 ├── .streamlit/            # Configuration for Streamlit (if any global settings)
 ├── .venv/                 # Python virtual environment (typically ignored by VCS)
 ├── api/                   # Potential future location for FastAPI or other APIs
@@ -154,8 +154,8 @@ watchtower/
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/watchtower.git  # Replace with your actual repo URL
-cd watchtower
+git clone https://github.com/yourusername/megalith.git  # Replace with your actual repo URL
+cd megalith
 ```
 
 ### Set up Development Environment
@@ -224,7 +224,7 @@ Convenience scripts might also be available:
 
 ## Configuration
 
-Application configuration is crucial for tailoring Watchtower to your needs and providing necessary credentials.
+Application configuration is crucial for tailoring MEGALITH to your needs and providing necessary credentials.
 
 -   **Environment Variables (`.env` files)**:
     -   The primary method for providing sensitive information (API keys, database URLs, etc.) and environment-specific settings.
@@ -300,13 +300,13 @@ This project includes a `Dockerfile` for building a container image, simplifying
 
 **Build the Docker Image:**
 ```bash
-docker build -t watchtower-app .
+docker build -t megalith-app .
 ```
 *Ensure your `.dockerignore` file is comprehensive to optimize build times and image size.*
 
 **Run the Docker Container:**
 ```bash
-docker run -p 8501:8501 --env-file .env watchtower-app
+docker run -p 8501:8501 --env-file .env megalith-app
 ```
 -   Adjust port mapping (`-p HOST_PORT:CONTAINER_PORT`) as needed.
 -   Use `--env-file .env` to pass environment variables from a local `.env` file. Alternatively, pass variables individually with `-e VAR_NAME=value`.
@@ -345,8 +345,8 @@ We welcome contributions! Please follow these guidelines to ensure a smooth proc
 1.  **Fork the Repository**: Create your fork on GitHub.
 2.  **Clone Your Fork**:
     ```bash
-    git clone https://github.com/YOUR_USERNAME/watchtower.git # Use your fork's URL
-    cd watchtower
+    git clone https://github.com/YOUR_USERNAME/megalith.git # Use your fork's URL
+    cd megalith
     ```
 3.  **Set up Environment**: Follow the [Installation](#installation) section, preferably using Poetry.
 4.  **Create a Feature Branch**:
@@ -405,7 +405,7 @@ We welcome contributions! Please follow these guidelines to ensure a smooth proc
 -   Maintain communication and address review comments promptly.
 -   Once approved and all checks pass, your PR will be merged. Maintainers may squash or rebase commits.
 
-Thank you for contributing to Watchtower!
+Thank you for contributing to MEGALITH!
 
 ## Troubleshooting
 
@@ -441,5 +441,5 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 ## Contact
 
 For questions, issues, or collaboration, please refer to:
--   **GitHub Issues**: [Project's GitHub Issues Page](https://github.com/yourusername/watchtower/issues) (Replace with actual link)
+-   **GitHub Issues**: [Project's GitHub Issues Page](https://github.com/yourusername/megalith/issues) (Replace with actual link)
 -   **Project Maintainer**: `<your.email@example.com>` or [GitHub Profile](https://github.com/yourusername) (Update with actual contact information)
