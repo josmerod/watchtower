@@ -31,5 +31,9 @@ src/miners/udemy-universal/debug_rd_page.html
 src/miners/asf-winonly/config/
 src/miners/asf-winonly/logs/
 
+# Environment variables file
+# Contains sensitive information like API keys, do not commit.
+.env
+
 # Temporary files
 *.tmp*

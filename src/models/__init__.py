@@ -19,6 +19,7 @@ from src.models.events import (
     TechEventModel, SpeakerModel, VenueModel, EventRecommendationModel, 
     UserEventPreferencesModel, EventType, EventFormat, EventStatus
 )
+from src.models.anime import AnimeItem
 # from src.models.news import NewsArticleModel, FeedSourceModel  # Temporarily disabled
 
 __all__ = [
@@ -69,6 +70,9 @@ __all__ = [
     "EventType",
     "EventFormat",
     "EventStatus",
+
+    # Anime models
+    "AnimeItem",
     
     # News models (temporarily disabled)
     # "NewsArticleModel",
