@@ -14,6 +14,7 @@ The Watchtower platform is a sophisticated technology intelligence system that a
 2. **[Security Vulnerabilities ETL](02-Security-Vulnerabilities-ETL.md)** - Cybersecurity intelligence with multi-source vulnerability aggregation
 3. **[News Aggregation ETL](03-News-Aggregation-ETL.md)** - Multi-source news intelligence from 15+ technology news platforms
 4. **[Gaming Deals ETL](04-Gaming-Deals-ETL.md)** - Gaming industry intelligence with deal analysis and value assessment
+* [Observador de Nuevos Lanzamientos de Videojuegos](35-New-Game-Releases-ETL.md)
 5. **[Crypto Sentiment Miner](05-Crypto-Sentiment-Miner.md)** - Multi-platform cryptocurrency sentiment analysis and market intelligence
 
 ### Professional Development & Education
