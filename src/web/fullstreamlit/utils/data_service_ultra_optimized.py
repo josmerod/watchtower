@@ -640,6 +640,45 @@ class UltraOptimizedDataService:
         
         return pd.DataFrame()
     
+    def get_new_game_releases_data(self) -> pd.DataFrame:
+        """
+        Loads new game releases data from the JSON file.
+        Uses ultra_fast_json_load for optimized loading and caching.
+        """
+        self._log("Loading new game releases data")
+        games_dir = self.cached_paths.get('games_dir')
+        if not games_dir or not games_dir.exists():
+            self._log("Games directory not found in cached_paths or does not exist.", "warning")
+            return pd.DataFrame()
+
+        file_path = games_dir / "new_releases.json"
+
+        if not file_path.exists():
+            self._log(f"New releases file not found at {file_path}. Returning empty DataFrame.", "warning")
+            return pd.DataFrame()
+
+        cache_key = self._get_cache_key(str(file_path), "new_game_releases")
+        data = self._ultra_fast_json_load(file_path, cache_key)
+
+        if not data:
+            self._log(f"No data loaded from {file_path} for new game releases.", "info")
+            return pd.DataFrame()
+
+        try:
+            df = pd.DataFrame(data)
+            if not df.empty:
+                # Basic type optimization, can be expanded if needed
+                df = self._optimize_dataframe_dtypes(df, {
+                    'released': 'datetime', # Assuming 'released' is a date string
+                    'metacritic': 'float'
+                })
+                df = clean_dataframe_for_caching(df) # Ensure cache compatibility
+            self._log(f"Successfully loaded and processed new game releases data. Shape: {df.shape}", "info")
+            return df
+        except Exception as e:
+            self._log(f"Error converting new game releases data to DataFrame: {e}", "error")
+            return pd.DataFrame()
+
     def get_security_vulnerabilities_data(self) -> pd.DataFrame:
         """Get security vulnerabilities data"""
         vulnerabilities_dir = self.cached_paths.get('security_vulnerabilities_dir')

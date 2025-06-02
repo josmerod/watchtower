@@ -55,6 +55,7 @@ This project is ideal for users who need to stay updated on specific topics, tra
 -   **ETL Pipelines**:
     -   Comprehensive news scraping: Hacker News, Future Tools, Bensbites, GoodDevs, Valencia Events, Medium GenAI, arXiv papers, and more.
     -   Game Deals: Aggregates deals, bundles, and free game offerings.
+    -   New Game Releases: Fetches and filters recent and upcoming game releases from RAWG.io based on Metacritic score.
     -   Online Courses: Tracks courses from platforms like Coursera and content from sources like DeepLearning.AI.
 -   **Watchers**:
     -   Monitors web pages for content changes (e.g., Microsoft Applied Skills credentials, new arXiv submissions).
