@@ -1,7 +1,7 @@
 # Metadata
 
 - Caso de uso: Multi-Source News Intelligence Aggregation System
-- Plataformas involucradas: Hacker News, Product Hunt, GitHub Trends, Reddit, Dev.to, Stack Overflow, Discord, Lobsters, Indie Hackers, Valencia Events, Ben's Bites, Medium Gen AI, Future Tools, KDnuggets, Meneame
+- Plataformas involucradas: Hacker News, Product Hunt, GitHub Trends, Reddit, Dev.to, Stack Overflow, Discord, Lobsters, Indie Hackers, Valencia Events, Ben's Bites, Medium Gen AI, Future Tools, KDnuggets, Meneame, NewsAPI
 - Descripción corta: Sistema de agregación inteligente de noticias tecnológicas desde múltiples fuentes con análisis de tendencias y clasificación automática
 - Patrón de ejecución: Periódico (cada 2-4 horas) con capacidad de ejecución en lotes para análisis histórico
 
@@ -16,6 +16,7 @@
   - Stack Overflow API
   - Discord servers públicos
   - RSS feeds de múltiples fuentes
+  - NewsAPI (newsapi.org)
 - Bibliotecas de Python principales:
   - `feedparser`: Procesamiento de feeds RSS/Atom
   - `requests`: Comunicación HTTP con APIs
@@ -43,6 +44,7 @@ La implementación consta de múltiples módulos ETL especializados:
    - `news_get_gittrends.py`: GitHub trending repositories
    - `news_get_devto.py`: Dev.to community articles
    - `news_get_stackoverflow_trends.py`: Stack Overflow trending topics
+   - `news_get_newsapi.py`: Fetches global news from NewsAPI via configurable queries.
 
 2. **Community Platforms**:
    - `news_get_discord_trending.py`: Discord server trending discussions
@@ -196,6 +198,12 @@ def multi_source_news_etl_process():
    - Artículos de AI en Medium
    - Análisis de trends en AI
    - Expert opinions
+
+### General News Feeds
+10. **NewsAPI** (`news_get_newsapi.py`)
+    - Access to global news articles from various sources via NewsAPI.org.
+    - Supports querying by keywords, categories, language, and date.
+    - Used for tracking general tech news, specific company mentions, or broader industry trends.
 
 ## Métricas y KPIs
 
