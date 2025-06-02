@@ -4,134 +4,113 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from src.exceptions.base import WatchtowerError
+from src.exceptions.base import MegalithError
 
 
-class ETLError(WatchtowerError):
+class ETLError(MegalithError):
     """Base exception for ETL-related errors."""
     
     def __init__(
         self,
         message: str,
-        etl_name: Optional[str] = None,
-        phase: Optional[str] = None,
-        **kwargs,
-    ):
+        source: Optional[str] = None,
+        stage: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialize ETL error.
         
         Args:
-            message: Error message.
-            etl_name: Name of the ETL process.
-            phase: ETL phase where error occurred (extract, transform, load).
-            **kwargs: Additional arguments for base class.
+            message: Error message
+            source: Data source that caused the error
+            stage: ETL stage where error occurred (extract, transform, load)
+            **kwargs: Additional arguments passed to parent
         """
         context = kwargs.get("context", {})
-        if etl_name:
-            context["etl_name"] = etl_name
-        if phase:
-            context["phase"] = phase
+        if source:
+            context["source"] = source
+        if stage:
+            context["stage"] = stage
             
-        kwargs["context"] = context
-        kwargs["error_code"] = kwargs.get("error_code", "WT_ETL_ERROR")
-        
-        super().__init__(message, **kwargs)
+        super().__init__(
+            message,
+            error_code="ETL_ERROR",
+            context=context,
+        )
 
 
 class ExtractionError(ETLError):
-    """Exception raised during data extraction phase."""
+    """Raised when data extraction fails."""
     
     def __init__(
         self,
         message: str,
-        source_url: Optional[str] = None,
-        source_type: Optional[str] = None,
-        **kwargs,
-    ):
+        url: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialize extraction error.
         
         Args:
-            message: Error message.
-            source_url: URL of the data source.
-            source_type: Type of data source (api, rss, html, etc.).
-            **kwargs: Additional arguments for base class.
+            message: Error message
+            url: URL that failed to be extracted
+            **kwargs: Additional arguments passed to parent
         """
         context = kwargs.get("context", {})
-        if source_url:
-            context["source_url"] = source_url
-        if source_type:
-            context["source_type"] = source_type
+        if url:
+            context["url"] = url
             
         kwargs["context"] = context
-        kwargs["error_code"] = kwargs.get("error_code", "WT_EXTRACTION_ERROR")
-        kwargs["phase"] = "extract"
-        
-        super().__init__(message, **kwargs)
+        kwargs["stage"] = "extract"
+        super().__init__(message, error_code="EXTRACTION_ERROR", **kwargs)
 
 
 class TransformationError(ETLError):
-    """Exception raised during data transformation phase."""
+    """Raised when data transformation fails."""
     
     def __init__(
         self,
         message: str,
-        transformation_step: Optional[str] = None,
-        invalid_data: Optional[Any] = None,
-        **kwargs,
-    ):
+        transformer: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialize transformation error.
         
         Args:
-            message: Error message.
-            transformation_step: Specific transformation step that failed.
-            invalid_data: Sample of invalid data that caused the error.
-            **kwargs: Additional arguments for base class.
+            message: Error message
+            transformer: Name of transformer that failed
+            **kwargs: Additional arguments passed to parent
         """
         context = kwargs.get("context", {})
-        if transformation_step:
-            context["transformation_step"] = transformation_step
-        if invalid_data is not None:
-            context["invalid_data_sample"] = str(invalid_data)[:500]  # Limit size
+        if transformer:
+            context["transformer"] = transformer
             
         kwargs["context"] = context
-        kwargs["error_code"] = kwargs.get("error_code", "WT_TRANSFORMATION_ERROR")
-        kwargs["phase"] = "transform"
-        
-        super().__init__(message, **kwargs)
+        kwargs["stage"] = "transform"
+        super().__init__(message, error_code="TRANSFORMATION_ERROR", **kwargs)
 
 
 class LoadError(ETLError):
-    """Exception raised during data loading phase."""
+    """Raised when data loading fails."""
     
     def __init__(
         self,
         message: str,
         destination: Optional[str] = None,
-        destination_type: Optional[str] = None,
-        records_failed: Optional[int] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize load error.
         
         Args:
-            message: Error message.
-            destination: Destination where data was being loaded.
-            destination_type: Type of destination (file, database, api, etc.).
-            records_failed: Number of records that failed to load.
-            **kwargs: Additional arguments for base class.
+            message: Error message
+            destination: Destination that failed to load data
+            **kwargs: Additional arguments passed to parent
         """
         context = kwargs.get("context", {})
         if destination:
             context["destination"] = destination
-        if destination_type:
-            context["destination_type"] = destination_type
-        if records_failed is not None:
-            context["records_failed"] = records_failed
             
         kwargs["context"] = context
-        kwargs["error_code"] = kwargs.get("error_code", "WT_LOAD_ERROR")
-        kwargs["phase"] = "load"
-        
-        super().__init__(message, **kwargs)
+        kwargs["stage"] = "load"
+        super().__init__(message, error_code="LOAD_ERROR", **kwargs)
 
 
 class DataSourceError(ETLError):

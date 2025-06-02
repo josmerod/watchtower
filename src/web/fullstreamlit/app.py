@@ -119,12 +119,15 @@ with main_tabs[2]:
     render_tab_safely("Noticias", news_tab.render, logger)
 
 with main_tabs[3]:
-    games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
-    if isinstance(games_data, tuple) and len(games_data) == 3:
+    games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
+    if isinstance(games_data, tuple) and len(games_data) == 4:
+        deals_df, bundles_df, giveaways_df, trending_df = games_data
+    elif isinstance(games_data, tuple) and len(games_data) == 3:
         deals_df, bundles_df, giveaways_df = games_data
+        trending_df = pd.DataFrame()
     else:
-        deals_df = bundles_df = giveaways_df = pd.DataFrame()
-    render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, logger)
+        deals_df = bundles_df = giveaways_df = trending_df = pd.DataFrame()
+    render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, trending_df, logger)
 
 with main_tabs[4]:
     courses_data = cached_data.get('courses', {})
