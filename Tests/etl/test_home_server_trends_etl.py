@@ -9,8 +9,6 @@ import json
 import csv
 
 # Add project root to sys.path to allow imports from src
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 # Now import the module to be tested
 from src.etl.news import news_get_home_server_trends as etl_script
 from src.models.home_server import HomeServerTrendItem

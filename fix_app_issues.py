@@ -17,8 +17,6 @@ import subprocess
 from pathlib import Path
 
 # Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
-
 from src.utils.logging import get_logger
 
 logger = get_logger("AppFixer")

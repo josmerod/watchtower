@@ -17,8 +17,6 @@ from pathlib import Path
 import re
 
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
-
 from src.utils.file_system import get_project_root
 from src.utils.logging import get_logger
 

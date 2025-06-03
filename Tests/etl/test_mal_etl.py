@@ -12,8 +12,6 @@ import sys
 # Assuming the script is run from the project root or Tests/
 # Adjust if your test runner has a different CWD
 project_root = pathlib.Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(project_root))
-
 from src.etl.anime.mal_etl import MalETL, FIELDS_TO_REQUEST, API_BASE_URL
 from src.models.anime import AnimeItem
 

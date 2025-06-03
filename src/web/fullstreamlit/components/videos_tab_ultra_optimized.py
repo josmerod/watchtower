@@ -156,7 +156,6 @@ def render(logger=None, videos_data: Optional[Dict[str, pd.DataFrame]] = None):
         try:
             import sys
             import os
-            sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
             from src.web.fullstreamlit.utils.data_service import DataService
             
             data_service = DataService(logger)

@@ -7,8 +7,6 @@ from datetime import datetime
 
 # Add project root for imports if tests are run from a different directory
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
 from src.etl.news.news_get_media_rss import fetch_media_feeds, save_media_entries, RSS_FEEDS as ORIGINAL_RSS_FEEDS
 from src.utils.file_system import get_project_root
 

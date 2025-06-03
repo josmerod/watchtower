@@ -6,8 +6,6 @@ from pathlib import Path
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
 def test_configuration():
     """Test configuration system."""
     print("Testing Configuration System...")

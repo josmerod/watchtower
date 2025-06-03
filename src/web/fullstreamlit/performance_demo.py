@@ -11,8 +11,6 @@ import sys
 import os
 
 # Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
 from src.web.fullstreamlit.utils.data_service import DataService
 from src.web.fullstreamlit.utils.performance import PerformanceTracker, setup_session_state_defaults
 from src.utils.logging import get_logger

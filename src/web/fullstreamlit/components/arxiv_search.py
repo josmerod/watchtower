@@ -15,8 +15,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
-
 from src.utils.file_system import get_project_root
 
 

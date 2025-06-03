@@ -10,8 +10,6 @@ from datetime import datetime
 from typing import List
 
 # Add the project root to the path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 from src.models.arxiv import (
     EnhancedArxivPaperModel, 
     TechnologyReadinessLevel, 

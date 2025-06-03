@@ -12,8 +12,6 @@ from pathlib import Path
 from datetime import datetime
 
 # Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
-
 from src.watchers.ms_skills_watcher import MSAppliedSkillsWatcher
 from src.utils.logging import get_logger
 

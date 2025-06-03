@@ -7,8 +7,6 @@ from collections import Counter
 from datetime import datetime
 from typing import Any
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
 from src.etl.base import BaseETL
 from src.exceptions.etl import ExtractionError, LoadError, TransformationError
 from src.models.arxiv import (

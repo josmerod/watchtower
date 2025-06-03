@@ -10,8 +10,6 @@ from datetime import datetime
 import time
 
 # Add the project root to the path to ensure imports work correctly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
 # Import utilities from our modules
 from src.utils.logging import get_logger
 from src.web.fullstreamlit.styles.main import get_main_style

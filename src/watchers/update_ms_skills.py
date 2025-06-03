@@ -11,8 +11,6 @@ import argparse
 from typing import List, Optional
 
 # Add the project root to the path to ensure imports work correctly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
 

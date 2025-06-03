@@ -19,8 +19,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 # Add the project root to the path to ensure imports work correctly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 from src.watchers.base_watcher import BaseWatcher
 from src.utils.logging import get_logger
 
@@ -927,8 +925,6 @@ if __name__ == "__main__":
     from pathlib import Path
     
     # Add the project root to the path to ensure imports work correctly
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-    
     parser = argparse.ArgumentParser(description="MS Skills Watcher")
     parser.add_argument("--once", action="store_true", help="Run once and exit")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
