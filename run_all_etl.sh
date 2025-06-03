@@ -56,6 +56,9 @@ run_etl "src/etl/news/news_get_discord_trending.py"
 run_etl "src/etl/news/news_get_stackoverflow_trends.py"
 run_etl "src/etl/news/news_get_home_server_trends.py"
 
+# NEW ECOMMERCE TRACKERS
+run_etl "src/etl/ecommerce/shoppy_etl.py" && pids+=($!)
+
 # NEW MINING TOOLS
 run_etl "src/miners/crypto_sentiment_miner.py"
 
@@ -89,3 +92,4 @@ echo "- data/goldigging/"
 echo "- data/watchers/"
 echo "- data/anime/"
 echo "- data/home_server_trends/"
+echo "- data/shoppy/"
