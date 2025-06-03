@@ -1,3 +1,9 @@
+"""Streamlit component for displaying ArXiv papers.
+
+This module provides the `ArxivPapersComponent` class, which handles
+the loading, processing, and display of ArXiv research papers,
+including classification, clustering, and personalized recommendations.
+"""
 import os
 import sys
 import json

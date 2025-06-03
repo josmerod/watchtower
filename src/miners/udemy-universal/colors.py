@@ -1,7 +1,13 @@
+"""Terminal text color definitions using the colorama library.
+
+This module initializes colorama and provides convenient shorthand
+variables for foreground, background, and style codes to be used
+for coloring terminal output.
+"""
 # TODO: Standardize the code with the other projects. Current code has been migrated from other project.
 
 
-from colorama import init, Fore, Back, Style
+from colorama import Back, Fore, Style, init
 
 init(autoreset=True)
 # colors foreground text:

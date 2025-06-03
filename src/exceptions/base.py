@@ -1,81 +1,112 @@
-"""Base exception classes for the MEGALITH framework."""
+"""Base exception classes for Watchtower."""
 
 from __future__ import annotations
 
 import traceback
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 
-class MegalithError(Exception):
-    """Base exception class for MEGALITH-related errors.
-    
-    This is the root exception class for all errors that occur within
-    the MEGALITH framework. It provides enhanced error handling with
-    context and error codes.
-    
-    Attributes:
-        message: Human-readable error message
-        error_code: Optional error code for categorization
-        context: Additional context information
+class WatchtowerError(Exception):
+    """Base exception for all Watchtower errors.
+
+    This provides a rich exception with context information,
+    error codes, and structured error data.
     """
-    
+
     def __init__(
         self,
         message: str,
-        error_code: Optional[str] = None,
-        context: Optional[dict[str, Any]] = None,
-    ) -> None:
-        """Initialize the MEGALITH error.
-        
+        error_code: str | None = None,
+        context: dict[str, Any] | None = None,
+        cause: Exception | None = None,
+        user_message: str | None = None,
+    ):
+        """Initialize the exception.
+
         Args:
-            message: Human-readable error message
-            error_code: Optional error code for categorization
-            context: Additional context information
+            message: Technical error message for developers.
+            error_code: Unique error code for this error type.
+            context: Additional context about the error.
+            cause: The underlying exception that caused this error.
+            user_message: User-friendly error message.
         """
         super().__init__(message)
+
         self.message = message
-        self.error_code = error_code
+        self.error_code = error_code or self._generate_error_code()
         self.context = context or {}
-    
-    def __str__(self) -> str:
-        """Return string representation of the error."""
-        error_parts = [self.message]
-        
-        if self.error_code:
-            error_parts.append(f"Error Code: {self.error_code}")
-            
-        if self.context:
-            context_str = ", ".join(f"{k}={v}" for k, v in self.context.items())
-            error_parts.append(f"Context: {context_str}")
-            
-        return " | ".join(error_parts)
-    
-    def __repr__(self) -> str:
-        """Return detailed representation of the error."""
-        return (
-            f"{self.__class__.__name__}("
-            f"message={self.message!r}, "
-            f"error_code={self.error_code!r}, "
-            f"context={self.context!r})"
-        )
+        self.cause = cause
+        self.user_message = user_message or message
+        self.timestamp = datetime.utcnow()
+        self.traceback_str = traceback.format_exc()
+
+        # Chain the exception if cause is provided
+        if cause:
+            self.__cause__ = cause
+
+    def _generate_error_code(self) -> str:
+        """Generate a default error code based on class name.
+
+        Returns:
+            Generated error code.
+        """
+        return f"WT_{self.__class__.__name__.upper()}"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert exception to dictionary representation.
+
+        Returns:
+            Dictionary representation of the exception.
+        """
+        return {
+            "error_code": self.error_code,
+            "message": self.message,
+            "user_message": self.user_message,
+            "context": self.context,
+            "timestamp": self.timestamp.isoformat(),
+            "exception_type": self.__class__.__name__,
+            "traceback": self.traceback_str,
+            "cause": str(self.cause) if self.cause else None,
+        }
+
+    def add_context(self, key: str, value: Any) -> WatchtowerError:
+        """Add context information to the exception.
+
+        Args:
+            key: Context key.
+            value: Context value.
+
+        Returns:
+            Self for method chaining.
+        """
+        self.context[key] = value
+        return self
+
+    def with_user_message(self, message: str) -> WatchtowerError:
+        """Set a user-friendly message.
+
+        Args:
+            message: User-friendly error message.
+
+        Returns:
+            Self for method chaining.
+        """
+        self.user_message = message
+        return self
 
 
-# Alias for backward compatibility with Watchtower codebase
-WatchtowerError = MegalithError
+class WatchtowerWarning(UserWarning):
+    """Base warning class for Watchtower warnings."""
 
-
-class MegalithWarning(UserWarning):
-    """Base warning class for MEGALITH warnings."""
-    
     def __init__(
         self,
         message: str,
-        category: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
+        category: str | None = None,
+        context: dict[str, Any] | None = None,
     ):
         """Initialize the warning.
-        
+
         Args:
             message: Warning message.
             category: Warning category.
@@ -88,91 +119,93 @@ class MegalithWarning(UserWarning):
         self.timestamp = datetime.utcnow()
 
 
-# Alias for backward compatibility with Watchtower codebase
-WatchtowerWarning = MegalithWarning
+class ConfigurationError(WatchtowerError):
+    """Exception raised for configuration-related errors."""
 
-
-class ConfigurationError(MegalithError):
-    """Raised when there's a configuration-related error."""
-    
     def __init__(
         self,
         message: str,
-        config_key: Optional[str] = None,
-        **kwargs: Any,
-    ) -> None:
+        config_key: str | None = None,
+        config_value: Any | None = None,
+        **kwargs,
+    ):
         """Initialize configuration error.
-        
+
         Args:
-            message: Error message
-            config_key: The configuration key that caused the error
-            **kwargs: Additional arguments passed to parent
+            message: Error message.
+            config_key: Configuration key that caused the error.
+            config_value: Configuration value that caused the error.
+            **kwargs: Additional arguments for base class.
         """
         context = kwargs.get("context", {})
         if config_key:
             context["config_key"] = config_key
-            
-        super().__init__(
-            message,
-            error_code="CONFIG_ERROR",
-            context=context,
-        )
+        if config_value is not None:
+            context["config_value"] = str(config_value)
+
+        kwargs["context"] = context
+        kwargs["error_code"] = kwargs.get("error_code", "WT_CONFIG_ERROR")
+
+        super().__init__(message, **kwargs)
 
 
-class ValidationError(MegalithError):
-    """Raised when data validation fails."""
-    
+class ValidationError(WatchtowerError):
+    """Exception raised for data validation errors."""
+
     def __init__(
         self,
         message: str,
-        field_name: Optional[str] = None,
-        field_value: Optional[Any] = None,
-        **kwargs: Any,
-    ) -> None:
+        field_name: str | None = None,
+        field_value: Any | None = None,
+        validation_rule: str | None = None,
+        **kwargs,
+    ):
         """Initialize validation error.
-        
+
         Args:
-            message: Error message
-            field_name: The field that failed validation
-            field_value: The value that failed validation
-            **kwargs: Additional arguments passed to parent
+            message: Error message.
+            field_name: Name of the field that failed validation.
+            field_value: Value that failed validation.
+            validation_rule: Validation rule that was violated.
+            **kwargs: Additional arguments for base class.
         """
         context = kwargs.get("context", {})
         if field_name:
             context["field_name"] = field_name
         if field_value is not None:
             context["field_value"] = str(field_value)
-            
-        super().__init__(
-            message,
-            error_code="VALIDATION_ERROR",
-            context=context,
-        )
+        if validation_rule:
+            context["validation_rule"] = validation_rule
+
+        kwargs["context"] = context
+        kwargs["error_code"] = kwargs.get("error_code", "WT_VALIDATION_ERROR")
+
+        super().__init__(message, **kwargs)
 
 
-class AuthenticationError(MegalithError):
+class AuthenticationError(WatchtowerError):
     """Exception raised for authentication-related errors."""
-    
+
     def __init__(self, message: str, **kwargs):
         """Initialize authentication error.
-        
+
         Args:
             message: Error message.
             **kwargs: Additional arguments for base class.
         """
-        super().__init__(
-            message,
-            error_code="AUTH_ERROR",
-            context=kwargs.get("context", {}),
-        )
+        kwargs["error_code"] = kwargs.get("error_code", "WT_AUTH_ERROR")
+        kwargs["user_message"] = "Authentication failed. Please check your credentials."
+        super().__init__(message, **kwargs)
 
 
-class AuthorizationError(MegalithError):
+class AuthorizationError(WatchtowerError):
     """Exception raised for authorization-related errors."""
-    
-    def __init__(self, message: str, required_permission: Optional[str] = None, **kwargs):
+
+    def __init__(
+        self, message: str, required_permission: str | None = None, **kwargs
+    ):
         """Initialize authorization error.
-        
+
         Args:
             message: Error message.
             required_permission: Permission that was required.
@@ -181,26 +214,25 @@ class AuthorizationError(MegalithError):
         context = kwargs.get("context", {})
         if required_permission:
             context["required_permission"] = required_permission
-            
-        super().__init__(
-            message,
-            error_code="AUTHZ_ERROR",
-            context=context,
-        )
+
+        kwargs["context"] = context
+        kwargs["error_code"] = kwargs.get("error_code", "WT_AUTHZ_ERROR")
+        kwargs["user_message"] = "You don't have permission to perform this action."
+        super().__init__(message, **kwargs)
 
 
-class ResourceNotFoundError(MegalithError):
+class ResourceNotFoundError(WatchtowerError):
     """Exception raised when a resource is not found."""
-    
+
     def __init__(
         self,
         message: str,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         **kwargs,
     ):
         """Initialize resource not found error.
-        
+
         Args:
             message: Error message.
             resource_type: Type of resource that was not found.
@@ -212,30 +244,31 @@ class ResourceNotFoundError(MegalithError):
             context["resource_type"] = resource_type
         if resource_id:
             context["resource_id"] = resource_id
-            
-        super().__init__(
-            message,
-            error_code="RESOURCE_NOT_FOUND",
-            context=context,
+
+        kwargs["context"] = context
+        kwargs["error_code"] = kwargs.get("error_code", "WT_RESOURCE_NOT_FOUND")
+        kwargs["user_message"] = (
+            f"The requested {resource_type or 'resource'} was not found."
         )
+        super().__init__(message, **kwargs)
 
 
-class DependencyError(MegalithError):
+class DependencyError(WatchtowerError):
     """Exception raised for dependency-related errors."""
-    
+
     def __init__(
         self,
         message: str,
-        dependency_name: Optional[str] = None,
-        dependency_version: Optional[str] = None,
+        dependency_name: str | None = None,
+        dependency_version: str | None = None,
         **kwargs,
     ):
         """Initialize dependency error.
-        
+
         Args:
             message: Error message.
-            dependency_name: Name of the dependency.
-            dependency_version: Version of the dependency.
+            dependency_name: Name of the missing/incompatible dependency.
+            dependency_version: Required version of the dependency.
             **kwargs: Additional arguments for base class.
         """
         context = kwargs.get("context", {})
@@ -243,57 +276,55 @@ class DependencyError(MegalithError):
             context["dependency_name"] = dependency_name
         if dependency_version:
             context["dependency_version"] = dependency_version
-            
-        super().__init__(
-            message,
-            error_code="DEPENDENCY_ERROR",
-            context=context,
-        )
+
+        kwargs["context"] = context
+        kwargs["error_code"] = kwargs.get("error_code", "WT_DEPENDENCY_ERROR")
+        super().__init__(message, **kwargs)
 
 
 def handle_exception(
     exception: Exception,
     logger=None,
     reraise: bool = True,
-    add_context: Optional[Dict[str, Any]] = None,
-) -> Optional[MegalithError]:
-    """Handle and optionally convert exceptions to MegalithError.
-    
+    add_context: dict[str, Any] | None = None,
+) -> WatchtowerError | None:
+    """Handle and optionally convert exceptions to WatchtowerError.
+
     Args:
         exception: The exception to handle.
         logger: Logger to use for logging the exception.
         reraise: Whether to reraise the exception.
         add_context: Additional context to add to the exception.
-        
+
     Returns:
-        MegalithError if not reraising, None otherwise.
-        
+        WatchtowerError if not reraising, None otherwise.
+
     Raises:
-        The original exception or a MegalithError.
+        The original exception or a WatchtowerError.
     """
-    # Convert to MegalithError if not already
-    if isinstance(exception, MegalithError):
-        megalith_error = exception
+    # Convert to WatchtowerError if not already
+    if isinstance(exception, WatchtowerError):
+        watchtower_error = exception
     else:
-        megalith_error = MegalithError(
+        watchtower_error = WatchtowerError(
             message=str(exception),
             cause=exception,
             context=add_context or {},
         )
-    
+
     # Add additional context if provided
     if add_context:
         for key, value in add_context.items():
-            megalith_error.add_context(key, value)
-    
+            watchtower_error.add_context(key, value)
+
     # Log the exception if logger is provided
     if logger:
         logger.error(
-            f"Exception occurred: {megalith_error.message}",
-            extra={"extra_fields": megalith_error.to_dict()},
+            f"Exception occurred: {watchtower_error.message}",
+            extra={"extra_fields": watchtower_error.to_dict()},
         )
-    
+
     if reraise:
-        raise megalith_error
-    
-    return megalith_error 
+        raise watchtower_error
+
+    return watchtower_error

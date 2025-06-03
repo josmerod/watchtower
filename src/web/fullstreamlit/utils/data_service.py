@@ -16,6 +16,12 @@ class DataService:
     """Centralized data service for loading and caching application data"""
     
     def __init__(self, logger=None):
+        """Initialize the DataService.
+
+        Args:
+            logger: Optional logger instance. If None, logging will be disabled
+                    or use a default logger if implemented in _log.
+        """
         self.logger = logger
         # Fix path resolution to work from any location
         current_dir = Path(__file__).parent

@@ -1,3 +1,9 @@
+"""Utility script for managing the list of Microsoft Applied Skills.
+
+This script provides command-line functions to list, add, or remove skills
+from the `KNOWN_SKILLS` list within the `ms_skills_watcher.py` file and
+optionally update the watcher's state file.
+"""
 import os
 import sys
 import json

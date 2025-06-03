@@ -1,3 +1,8 @@
+"""Data loading utilities for the Watchtower Streamlit application.
+
+This module provides functions to load course data from various platforms
+like Coursera, typically from JSON files, and returns them as Pandas DataFrames.
+"""
 import json
 import pandas as pd
 import os
