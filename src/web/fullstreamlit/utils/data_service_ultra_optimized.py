@@ -71,7 +71,8 @@ class UltraOptimizedDataService:
             'dev_community_dir': self.data_dir / "dev_community",
             'product_hunt_dir': self.data_dir / "product_hunt",
             'github_trends_dir': self.data_dir / "github_trends",
-            'security_vulnerabilities_dir': self.data_dir / "security_vulnerabilities"
+            'security_vulnerabilities_dir': self.data_dir / "security_vulnerabilities",
+            'home_server_trends_dir': self.data_dir / "home_server_trends"
         }
         
     def _init_memory_cache(self):
@@ -1557,6 +1558,20 @@ class UltraOptimizedDataService:
             self._log(f"Failed to calculate overall confidence: {e}", "warning")
             return 0.5  # Default moderate confidence
 
+    def get_home_server_trends_data(self):
+        file_path = self.cached_paths['home_server_trends_dir'] / "home_server_trends_latest.json"
+        if not file_path.exists():
+            self._log(f"Home server trends data file not found: {file_path}", "warning")
+            return []
+        try:
+            cache_key = self._get_cache_key(str(file_path), "home_server_trends")
+            data = self._ultra_fast_json_load(file_path, cache_key)
+            # Optionally convert to DataFrame if other tabs expect it, otherwise list of dicts is fine
+            # For example: return pd.DataFrame(data) if data else pd.DataFrame()
+            return data # Returning list of dicts for flexibility
+        except Exception as e:
+            self._log(f"Error loading home server trends data from {file_path}: {e}", "error")
+            return []
 
 # Factory function for easy instantiation
 def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:

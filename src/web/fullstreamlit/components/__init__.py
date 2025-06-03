@@ -20,5 +20,6 @@ from src.web.fullstreamlit.components import (
     enhanced_arxiv_papers,
     enhanced_innovation_tab,
     tech_events_tab,
-    ai_platforms_tab
+    ai_platforms_tab,
+    home_server_tab
 ) 
