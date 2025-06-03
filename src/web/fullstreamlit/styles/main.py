@@ -30,7 +30,13 @@ def get_main_style():
         font-family: 'Poppins', sans-serif !important;
         font-weight: 400;
         line-height: 1.6;
-        color: #E2E8F0;
+        color: #CDD6F4; /* Changed from #E2E8F0 */
+    }
+
+    /* Muted text style */
+    .text-muted {
+        color: #A6ADC8;
+        font-size: 0.9em;
     }
     
     /* Tabs styling */
@@ -86,6 +92,7 @@ def get_main_style():
         width: 100%;
         box-sizing: border-box;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        border-left: 3px solid #A37FFF; /* Added for consistency */
     }
     
     .video-card:hover {
@@ -271,7 +278,7 @@ def get_main_style():
         padding: 10px 12px;
         border-bottom: 1px solid #3C3970;
         vertical-align: middle;
-        color: #E2E8F0;
+        color: #BAC2DE; /* Changed from #E2E8F0 */
     }
     tr:nth-child(even) {
         background-color: #252343 !important;

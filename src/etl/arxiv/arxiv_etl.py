@@ -8,8 +8,6 @@ from typing import Any
 
 import pandas as pd
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
 from paperswithcode import PapersWithCodeClient
 
 from src.utils.file_system import ensure_directories, get_project_root

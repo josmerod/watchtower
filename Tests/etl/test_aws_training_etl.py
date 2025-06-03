@@ -7,8 +7,6 @@ from datetime import datetime, timezone
 
 # Add project root for imports
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
 from src.etl.courses.aws_training_etl import fetch_aws_training_feed, save_aws_training_entries
 from src.utils.file_system import get_project_root # To be mocked for controlling output
 

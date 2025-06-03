@@ -6,8 +6,6 @@ from typing import List, Dict, Any
 
 # Add project root to sys.path to allow direct imports
 # This might be handled by your test runner in a real environment
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-
 try:
     from src.etl.museums.museum_etl import VirtualMuseumsETL
     from src.models.museums import VirtualMuseumModel

@@ -8,8 +8,6 @@ import os
 from datetime import datetime
 
 # Add the project root to the path to ensure imports work correctly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
 # Import utilities from our modules
 from src.utils.logging import get_logger
 from src.web.fullstreamlit.styles.main import get_main_style
@@ -107,29 +105,29 @@ azure_training_data = cached_data.get('azure_training', [])
 
 # Tabs
 main_tabs = st.tabs([
-    "Dashboard",
-    "Videos",
-    "Noticias",
-    "Google Cloud Blog",
-    "AWS Training",      # New tab
-    "Azure Training",    # New tab
-    "Juegos",
-    "Cursos",
-    "Eventos Tech",
-    "Comunidades Dev",
-    "Seguridad",
-    "Innovación",
-    "Plataformas IA",
-    "Home Server", # New Tab
-    "Crypto",
-    "E-commerce", # Added tab
-    "ArXiv",
+    "📊 Dashboard",
+    "📺 Videos",
+    "📰 Noticias",
+    "☁️ Google Cloud Blog",
+    "🎓 AWS Training",      # New tab
+    "🔷 Azure Training",    # New tab
+    "🎮 Juegos",
+    "📚 Cursos",
+    "🗓️ Eventos Tech",
+    "🧑‍💻 Comunidades Dev",
+    "🛡️ Seguridad",
+    "💡 Innovación",
+    "🤖 Plataformas IA",
+    "🏠 Home Server", # New Tab
+    "🪙 Crypto",
+    "🛒 E-commerce", # Added tab
+    "🔬 ArXiv",
     "⛩️ Anime", # New Tab
-    "ADHD Research", # Added ADHD tab
-    "Monitoreo",
-    "Eventos Valencia",
-    "Museos Virtuales", # New tab added
-    "Admin"
+    "🧠 ADHD Research", # Added ADHD tab
+    "📈 Monitoreo",
+    "📍 Eventos Valencia",
+    "🏛️ Museos Virtuales", # New tab added
+    "⚙️ Admin"
 ])
 
 # --- Anime Tab Specific Functions ---

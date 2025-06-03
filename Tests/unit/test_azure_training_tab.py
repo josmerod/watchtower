@@ -5,8 +5,6 @@ import logging
 # Add project root for imports
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
 from src.web.fullstreamlit.components.azure_training_tab import render as render_azure_training_tab
 
 mock_logger = MagicMock()

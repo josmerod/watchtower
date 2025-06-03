@@ -7,8 +7,6 @@ from datetime import datetime
 from pathlib import Path
 
 # Add the src directory to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
 from etl.events.tech_conference_etl import TechConferenceETL
 
 

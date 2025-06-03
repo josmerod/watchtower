@@ -10,8 +10,6 @@ import requests # Import requests for requests.exceptions.RequestException
 # Add project root to sys.path to allow imports from src
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from src.etl.games.games_get_new_releases import fetch_games, process_games_data, get_new_releases
 from src.utils.logging import get_logger # For logger interactions if needed
 

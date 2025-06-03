@@ -152,36 +152,32 @@ def render_upcoming_events(events_data: Dict[str, Any], logger):
     if not upcoming_events:
         st.info("📅 No upcoming events found. Check back later for new events!")
         return
-    
-    # Event filters
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
+
+    with st.expander("Filtros para Eventos Próximos", expanded=False):
+        # Event filters moved into expander
         # Event type filter
         all_types = list(set(e.get('event_type', 'unknown') for e in upcoming_events))
         selected_types = st.multiselect(
             "Event Types",
             all_types,
             default=all_types,
-            key="upcoming_event_types"
+            key="upcoming_event_types"  # Existing key preserved
         )
     
-    with col2:
         # Format filter
         all_formats = list(set(e.get('format', 'unknown') for e in upcoming_events))
         selected_formats = st.multiselect(
             "Event Formats",
             all_formats,
             default=all_formats,
-            key="upcoming_event_formats"
+            key="upcoming_event_formats"  # Existing key preserved
         )
     
-    with col3:
         # Cost filter
         cost_filter = st.selectbox(
             "Cost Filter",
             ["All", "Free Only", "Paid Only"],
-            key="upcoming_cost_filter"
+            key="upcoming_cost_filter"  # Existing key preserved
         )
     
     # Apply filters
@@ -918,7 +914,7 @@ def display_event_card(
             location = event.get('location', 'TBD')
             event_type = event.get('event_type', 'unknown').title()
             
-            st.markdown(f"🏢 **{organizer}** • 📍 **{location}** • 📋 **{event_type}**")
+            st.markdown(f"🏢 <span class='text-muted'>Organizado por:</span> **{organizer}** • 📍 <span class='text-muted'>Lugar:</span> **{location}** • 📋 <span class='text-muted'>Tipo:</span> **{event_type}**")
         
         with col2:
             # Date and cost
@@ -931,19 +927,21 @@ def display_event_card(
                 if days_until > 0:
                     date_str += f" ({days_until} days)"
                 elif days_until == 0:
-                    date_str += " (Today!)"
+                    date_str += " (Hoy!)" # Changed to Spanish
                 else:
-                    date_str += " (Past)"
+                    date_str += " (Pasado)" # Changed to Spanish
             except:
-                date_str = "Date TBD"
+                date_str = "Fecha TBD" # Changed to Spanish
             
-            st.markdown(f"📅 **{date_str}**")
+            st.markdown(f"<span class='text-muted'>📅 Fecha:</span> **{date_str}**")
             
+            cost_display_str = ""
             if event.get('is_free'):
-                st.markdown("💰 **FREE**")
+                cost_display_str = "GRATIS"
             else:
                 cost = event.get('estimated_cost', 0)
-                st.markdown(f"💰 **${cost:.0f}**")
+                cost_display_str = f"${cost:.0f}"
+            st.markdown(f"<span class='text-muted'>💰 Costo:</span> **{cost_display_str}**")
         
         # Description
         description = event.get('description', 'No description available.')
@@ -956,17 +954,17 @@ def display_event_card(
             topics = event.get('topics', [])
             if topics:
                 topic_tags = " ".join([f"`{topic}`" for topic in topics[:5]])
-                st.markdown(f"🏷️ **Topics:** {topic_tags}")
+                st.markdown(f"🏷️ <span class='text-muted'>Temas:</span> {topic_tags}")
         
         with col2:
             categories = event.get('categories', [])
             if categories:
                 category_tags = " ".join([f"`{cat}`" for cat in categories])
-                st.markdown(f"📂 **Categories:** {category_tags}")
+                st.markdown(f"📂 <span class='text-muted'>Categorías:</span> {category_tags}")
         
         # Scores section
         if any([event.get('quality_score', 0), event.get('relevance_score', 0), event.get('networking_score', 0), event.get('roi_score', 0)]):
-            st.markdown("**📊 Event Scores:**")
+            st.markdown("<span class='text-muted'>📊 Puntuaciones del Evento:</span>")
             
             score_col1, score_col2, score_col3, score_col4 = st.columns(4)
             
@@ -988,7 +986,7 @@ def display_event_card(
         
         # Recommendation score
         if show_recommendation_score:
-            st.markdown(f"🎯 **Recommendation Score:** {rec_score:.1f}/100")
+            st.markdown(f"🎯 <span class='text-muted'>Puntuación de Recomendación:</span> **{rec_score:.1f}/100**")
         
         # Action buttons
         col1, col2, col3 = st.columns(3)

@@ -21,5 +21,12 @@ from src.web.fullstreamlit.components import (
     enhanced_innovation_tab,
     tech_events_tab,
     ai_platforms_tab,
-    home_server_tab
+    home_server_tab,
+    google_cloud_blog_tab,
+    aws_training_tab,
+    azure_training_tab,
+    museums_tab,
+    adhd_tab,
+    ecommerce_tab,
+    anime_display,
 ) 

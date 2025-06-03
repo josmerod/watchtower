@@ -8,8 +8,6 @@ from datetime import datetime
 
 # Add project root to Python path
 project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(project_root))
-
 # Ensure the module can be imported
 try:
     from src.etl.ecommerce.shoppy_etl import ShoppyScraper, run_shoppy_etl

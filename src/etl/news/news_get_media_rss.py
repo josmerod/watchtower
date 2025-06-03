@@ -7,8 +7,6 @@ from typing import List, Dict, Any
 import feedparser
 
 # Ensure project root is on path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
 from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
 

@@ -16,8 +16,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
 from src.utils.logging import get_logger
 
 def measure_memory():

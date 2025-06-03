@@ -21,8 +21,6 @@ import argparse
 from datetime import datetime
 
 # Add project root to Python path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-
 from src.utils.logging import get_logger
 from src.etl.ai_platforms.ai_model_monitoring_etl import AIModelMonitoringETL
 from src.etl.ai_platforms.openai_platform_etl import OpenAIPlatformETL

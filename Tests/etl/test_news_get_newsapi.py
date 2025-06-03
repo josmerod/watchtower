@@ -8,8 +8,6 @@ import json
 
 # Add project root to sys.path to allow importing project modules
 project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(project_root))
-
 # Modules to be tested
 from src.etl.news.news_get_newsapi import (
     create_session,

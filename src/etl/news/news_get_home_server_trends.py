@@ -11,8 +11,6 @@ import hashlib
 from typing import Dict, List, Any, Optional
 
 # Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
 from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
 from src.models.home_server import HomeServerTrendItem # Assuming the model is created

@@ -12,8 +12,6 @@ import psutil
 import gc
 
 # Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
 from src.web.fullstreamlit.utils.data_service import DataService
 from src.utils.logging import get_logger
 

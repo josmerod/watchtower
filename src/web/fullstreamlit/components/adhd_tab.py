@@ -7,7 +7,6 @@ import sys
 
 # Add project root to path for module access if not already handled by app.py
 # This might be needed if running this component standalone or for robust pathing
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
 from src.utils.file_system import get_project_root
 
 class ADHDPapersComponent:

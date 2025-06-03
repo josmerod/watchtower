@@ -13,8 +13,6 @@ import streamlit as st
 import plotly.express as px
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
-
 from src.utils.file_system import get_project_root
 from src.utils.recommender import PersonalRecommender
 

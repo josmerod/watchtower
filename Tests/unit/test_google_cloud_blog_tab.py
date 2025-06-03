@@ -5,8 +5,6 @@ import streamlit as st # We'll be mocking st functions
 # Add project root for imports
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
 from src.web.fullstreamlit.components.google_cloud_blog_tab import render as render_google_cloud_blog_tab
 from src.utils.logging import get_logger # Actual logger for type hint, or use MagicMock
 

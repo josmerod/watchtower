@@ -13,8 +13,6 @@ import asyncio
 from datetime import datetime
 
 # Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 def test_meme_economics_etl():
     """Test the Meme Economics ETL."""
     print("🐸 Testing Meme Economics ETL...")

@@ -17,8 +17,6 @@ from pathlib import Path
 from datetime import datetime
 
 # Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
-
 def check_data_availability():
     """Verificar que los datos necesarios estén disponibles"""
     results = {

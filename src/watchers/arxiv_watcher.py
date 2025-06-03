@@ -11,8 +11,6 @@ from typing import Dict, Any, List, Set
 from datetime import datetime, timezone, timedelta
 
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 from src.watchers.base_watcher import BaseWatcher
 
 
