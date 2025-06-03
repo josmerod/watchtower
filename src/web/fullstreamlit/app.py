@@ -29,6 +29,7 @@ from src.web.fullstreamlit.components import (
     dev_communities_tab,
     innovation_tab,
     crypto_tab,
+    ecommerce_tab, # Added import
     security_tab,
     enhanced_arxiv_papers,
     monitoring_tab,
@@ -121,6 +122,7 @@ main_tabs = st.tabs([
     "Plataformas IA",
     "Home Server", # New Tab
     "Crypto",
+    "E-commerce", # Added tab
     "ArXiv",
     "⛩️ Anime", # New Tab
     "ADHD Research", # Added ADHD tab
@@ -258,7 +260,10 @@ with main_tabs[13]: # Home Server
 with main_tabs[14]: # Crypto
     render_tab_safely("Crypto", crypto_tab.render, logger)
 
-with main_tabs[15]: # ArXiv
+with main_tabs[15]: # E-commerce tab
+    render_tab_safely("E-commerce", ecommerce_tab.render, logger)
+
+with main_tabs[16]: # ArXiv
     arxiv_subtabs = st.tabs(["Mejorado", "Papers", "Búsqueda"])
     
     with arxiv_subtabs[0]:
@@ -270,21 +275,21 @@ with main_tabs[15]: # ArXiv
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 
-with main_tabs[16]: # Index for Anime Tab
+with main_tabs[17]: # Index for Anime Tab
     render_tab_safely("Anime Calendar", display_anime_calendar_tab)
 
-with main_tabs[17]: # Index for ADHD Research - NEW TAB
+with main_tabs[18]: # Index for ADHD Research - NEW TAB
     render_tab_safely("ADHD Research", adhd_tab.display)
 
-with main_tabs[18]: # Index for Monitoreo
+with main_tabs[19]: # Index for Monitoreo
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[19]: # Index for Eventos Valencia
+with main_tabs[20]: # Index for Eventos Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[20]: # Index for Museos Virtuales - New tab
+with main_tabs[21]: # Index for Museos Virtuales - New tab
     museum_data = cached_data.get('museums', pd.DataFrame())
     render_tab_safely("Museos Virtuales", museums_tab.render, logger, museum_data)
 
-with main_tabs[21]: # Index for Admin
+with main_tabs[22]: # Index for Admin
     render_tab_safely("Admin", admin_tab.render, logger)
