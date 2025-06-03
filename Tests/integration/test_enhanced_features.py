@@ -103,11 +103,11 @@ try:
         title="Test Article",
         url="https://example.com/article",
         content="This is a test article content.",
-        source="Test Source"
+        source_name="Test Source"
     )
     print(f"✓ News article model: {article.title} ({article.word_count} words)")
     print(f"✓ Reading time: {article.reading_time_minutes} minutes")
-    print(f"✓ Domain: {article.domain}")
+    print(f"✓ Domain: {article.get_domain()}")
     
 except Exception as e:
     print(f"❌ Data models error: {e}")

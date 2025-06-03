@@ -1,3 +1,10 @@
+"""Fetches game deals, bundles, and giveaways from IsThereAnyDeal RSS feeds.
+
+This module retrieves information about current game discounts, bundles,
+and giveaways from various RSS feeds provided by IsThereAnyDeal.com.
+The fetched data is processed and saved into JSON and CSV files.
+"""
+
 # Use Case: 01-Get-game-deals
 
 """Pseudocódigo
@@ -14,15 +21,17 @@ Generar alertas si aplica, guardarlos y triggerear notificaciones.
 
 """
 
-import sys
-import feedparser
-from datetime import datetime, timedelta
-import pandas as pd
-import re
 import os
+import re
+import sys
+from datetime import datetime, timedelta
+
+import feedparser
+import pandas as pd
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 # Configurar el logger centralizado
 logger = get_logger("Games_ETL")
@@ -33,158 +42,162 @@ GIVEAWAYS_RSS = "https://isthereanydeal.com/feeds/ES/EUR/giveaways.rss"  # Limit
 
 
 def get_deals():
+    """Fetches game deals from IsThereAnyDeal RSS feed and saves them to CSV and JSON.
+
+    Extracts title, link, publication date, price, discount, and store name for each deal.
+    The deals are sorted by discount percentage.
+    """
     logger.info("Fetching deals...")
-
-    # Obtener los datos de los RSS
-    deals = feedparser.parse(DEALS_RSS)
-    logger.debug(f"Retrieved {len(deals.entries)} deals from RSS feed")
-
-    # Convert feedparser entries to list of dicts for DataFrame
     deals_list = []
-    for entry in deals.entries:
-        # Extract description content between CDATA tags
-        desc = entry.description
+    try:
+        deals_feed = feedparser.parse(DEALS_RSS)
+        if deals_feed.bozo:
+            logger.warning(f"Deals RSS feed is malformed or could not be parsed properly. Bozo exception: {deals_feed.bozo_exception}")
+        logger.debug(f"Retrieved {len(deals_feed.entries)} deals from RSS feed: {DEALS_RSS}")
 
-        # Find all prices using regex pattern that matches numbers with commas/dots
-        # The pattern needs to handle prices like "19,99 €" or "26,36 €"
-        prices = re.findall(r"<b>([\d,\.]+)", desc)
+        for entry in deals_feed.entries:
+            try:
+                desc = entry.description
+                prices_str = re.findall(r"<b>([\d,\.]+)", desc)
+                prices_float = [float(price.replace(",", ".")) for price in prices_str]
+                lowest_price = min(prices_float) if prices_float else None
 
-        # Convert prices to floats
-        prices_float = [float(price.replace(",", ".")) for price in prices]
+                discounts_str = re.findall(r"-\d+%", desc)
+                discounts_int = [int(d.strip("%").strip("-")) for d in discounts_str]
+                best_discount = max(discounts_int) if discounts_int else None
 
-        if prices_float:
-            lowest_price = min(prices_float)
-        else:
-            lowest_price = None
+                store_match = re.search(r"on <a[^>]*>([^<]+)</a>", desc)
+                store_name = store_match.group(1) if store_match else None
 
-        # Find all discounts using regex pattern that matches negative percentages
-        discounts = re.findall(r"-\d+%", desc)
-        # Convert percentage strings to integers
-        discounts = [int(d.strip("%").strip("-")) for d in discounts]
+                pub_date_str = entry.get("published", "")
+                pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z") if pub_date_str else None
 
-        # Get best price (lowest) and best discount (highest)
-        best_discount = max(discounts) if discounts else None
+                deals_list.append({
+                    "title": entry.title,
+                    "link": entry.link,
+                    "published": pub_date,
+                    "price": lowest_price,
+                    "discount": f"-{best_discount}%" if best_discount else None,
+                    "store": store_name,
+                })
+            except (ValueError, TypeError, AttributeError) as e:
+                logger.error(f"Error processing deal entry '{entry.get('title', 'Unknown title')}': {e}", exc_info=True)
+                continue # Skip to next entry
 
-        # Find store name
-        store = re.search(r"on <a[^>]*>([^<]+)</a>", desc)
-        store_name = store.group(1) if store else None
+    except Exception as e:
+        logger.error(f"Failed to fetch or parse deals RSS feed {DEALS_RSS}: {e}", exc_info=True)
+        # Decide if we want to return partial data or nothing
+        # For now, we'll proceed with what we have in deals_list
 
-        # Parse publication date
-        pub_date = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z")
+    if not deals_list:
+        logger.warning("No deals were successfully processed.")
+        return
 
-        deals_list.append(
-            {
-                "title": entry.title,
-                "link": entry.link,
-                "published": pub_date,
-                "price": lowest_price,
-                "discount": f"-{best_discount}%" if best_discount else None,
-                "store": store_name,
-            }
-        )
+    try:
+        deals_df = pd.DataFrame(deals_list)
+        logger.debug(f"Created DataFrame with {len(deals_df)} deals")
+        deals_df = deals_df.sort_values(by="discount", ascending=False)
 
-    # Create DataFrames from lists of dicts
-    deals_df = pd.DataFrame(deals_list)
-    logger.debug(f"Created DataFrame with {len(deals_df)} deals")
+        project_root = get_project_root()
+        output_dir = os.path.join(project_root, "data/games")
+        ensure_directories(["data/games"])
 
-    # Order deals by percentage discount
-    deals_df = deals_df.sort_values(by="discount", ascending=False)
+        deals_csv_path = os.path.join(output_dir, "deals.csv")
+        deals_json_path = os.path.join(output_dir, "deals.json")
 
-    # Create output directory if it doesn't exist
-    project_root = get_project_root()
-    output_dir = os.path.join(project_root, "data/games")
-    ensure_directories(["data/games"])
+        if os.path.exists(deals_csv_path):
+            os.remove(deals_csv_path)
+            logger.debug(f"Removed existing {deals_csv_path}")
 
-    # Replace current csv file if exists
-    deals_csv = os.path.join(output_dir, "deals.csv")
-    if os.path.exists(deals_csv):
-        os.remove(deals_csv)
-        logger.debug("Removed existing deals.csv file")
+        deals_df.to_json(deals_json_path, orient="records", date_format="iso")
+        logger.info(f"Deals saved to {deals_json_path}")
+        deals_df.to_csv(deals_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
+        logger.info(f"Deals saved to {deals_csv_path}")
 
-    # Save deals to json
-    deals_df.to_json(os.path.join(output_dir, "deals.json"), orient="records")
-    logger.info("Deals saved to json")
-
-    # Save deals to csv
-    deals_df.to_csv(deals_csv, index=False, sep="|")
-    logger.info("Deals saved to csv")
+    except (IOError, OSError) as e:
+        logger.error(f"Error saving deals data: {e}", exc_info=True)
+    except ImportError:
+        logger.error("Pandas library not found. Cannot save deals to CSV/JSON.", exc_info=True)
+    except Exception as e: # Catch other potential errors during DataFrame ops or saving
+        logger.error(f"An unexpected error occurred while saving deals: {e}", exc_info=True)
 
 
 def get_bundles():
-    """
-    Fetches game bundles from IsThereAnyDeal RSS feed and saves them to CSV.
+    """Fetches game bundles from IsThereAnyDeal RSS feed and saves them to CSV.
 
-    Values to extract: 
+    Values to extract:
     - title : name of the bundle (of the publisher), not the name of the games
     - link : link to isthereanydeal
     - published : date of publication, in GMT+0100
     - price : highest price of the bundle (highest tier)
     - games : list of all included games in the bundle, using a python list
     """
-
     logger.info("Fetching bundles...")
-    bundles = feedparser.parse(BUNDLES_RSS)
-    logger.debug(f"Retrieved {len(bundles.entries)} bundles from RSS feed")
-
     bundles_list = []
-    for entry in bundles.entries:
-        # Extract bundle name from title
-        bundle_name = entry.title
+    try:
+        bundles_feed = feedparser.parse(BUNDLES_RSS)
+        if bundles_feed.bozo:
+            logger.warning(f"Bundles RSS feed is malformed. Bozo exception: {bundles_feed.bozo_exception}")
+        logger.debug(f"Retrieved {len(bundles_feed.entries)} bundles from RSS feed: {BUNDLES_RSS}")
 
-        # Extract link
-        bundle_link = entry.link
+        for entry in bundles_feed.entries:
+            try:
+                pub_date_str = entry.get("published", "")
+                pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z") if pub_date_str else None
 
-        # Parse publication date
-        pub_date = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z")
+                games = re.findall(
+                    r'<a href="https://isthereanydeal.com/game/[^"]+/info/">([^<]+)</a>',
+                    entry.description,
+                )
+                prices_str = re.findall(r"Price: ([0-9,.]+)", entry.description)
+                prices_float = [float(price.replace(",", ".")) for price in prices_str]
+                highest_price = max(prices_float) if prices_float else None
 
-        # Extract games from description
-        games = re.findall(
-            r'<a href="https://isthereanydeal.com/game/[^"]+/info/">([^<]+)</a>',
-            entry.description,
-        )
+                bundles_list.append({
+                    "title": entry.title,
+                    "link": entry.link,
+                    "published": pub_date,
+                    "price": highest_price,
+                    "games": games,
+                })
+            except (ValueError, TypeError, AttributeError) as e:
+                logger.error(f"Error processing bundle entry '{entry.get('title', 'Unknown title')}': {e}", exc_info=True)
+                continue
 
-        # Extract prices
-        prices = re.findall(r"Price: ([0-9,.]+)", entry.description)
-        # Convert prices to float
-        if prices:
-            prices = [float(price.replace(",", ".")) for price in prices]
-            highest_price = max(prices)
-        else:
-            highest_price = None
+    except Exception as e:
+        logger.error(f"Failed to fetch or parse bundles RSS feed {BUNDLES_RSS}: {e}", exc_info=True)
 
-        bundles_list.append(
-            {
-                "title": bundle_name,
-                "link": bundle_link,
-                "published": pub_date,
-                "price": highest_price,
-                "games": games,
-            }
-        )
+    if not bundles_list:
+        logger.warning("No bundles were successfully processed.")
+        return
 
-    # Create DataFrame from list of dicts
-    bundles_df = pd.DataFrame(bundles_list)
-    logger.debug(f"Created DataFrame with {len(bundles_df)} bundles")
+    try:
+        bundles_df = pd.DataFrame(bundles_list)
+        logger.debug(f"Created DataFrame with {len(bundles_df)} bundles")
+        bundles_df = bundles_df.sort_values(by="published", ascending=False)
 
-    # Sort bundles by publication date (newest first)
-    bundles_df = bundles_df.sort_values(by="published", ascending=False)
+        project_root = get_project_root()
+        output_dir = os.path.join(project_root, "data/games")
+        ensure_directories(["data/games"]) # Ensure_directories should ideally be called once
 
-    # Create output directory if it doesn't exist
-    project_root = get_project_root()
-    output_dir = os.path.join(project_root, "data/games")
-    ensure_directories(["data/games"])
+        bundles_json_path = os.path.join(output_dir, "bundles.json")
+        bundles_csv_path = os.path.join(output_dir, "bundles.csv")
 
-    # Save bundles to json
-    bundles_df.to_json(os.path.join(output_dir, "bundles.json"), orient="records")
-    logger.info("Bundles saved to json")
+        bundles_df.to_json(bundles_json_path, orient="records", date_format="iso")
+        logger.info(f"Bundles saved to {bundles_json_path}")
+        bundles_df.to_csv(bundles_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
+        logger.info(f"Bundles saved to {bundles_csv_path}")
 
-    bundles_df.to_csv(os.path.join(output_dir, "bundles.csv"), index=False, sep="|")
-    logger.info("Bundles saved to csv")
+    except (IOError, OSError) as e:
+        logger.error(f"Error saving bundles data: {e}", exc_info=True)
+    except ImportError:
+        logger.error("Pandas library not found. Cannot save bundles to CSV/JSON.", exc_info=True)
+    except Exception as e:
+        logger.error(f"An unexpected error occurred while saving bundles: {e}", exc_info=True)
 
 
 def get_giveaways():
-    """
-    Fetches game giveaways from IsThereAnyDeal RSS feed and saves them to CSV.
+    """Fetches game giveaways from IsThereAnyDeal RSS feed and saves them to CSV.
 
     Values to extract:
     - title
@@ -192,80 +205,83 @@ def get_giveaways():
     - published
     - expires
     """
-
     logger.info("Fetching giveaways...")
-    # Parse the RSS feed
-    giveaways_feed = feedparser.parse(
-        "https://isthereanydeal.com/feeds/ES/giveaways.rss"
-    )
-    logger.debug(f"Retrieved {len(giveaways_feed.entries)} giveaways from RSS feed")
-
-    # Create a list to store giveaway data
     giveaways_list = []
+    try:
+        giveaways_feed = feedparser.parse(GIVEAWAYS_RSS)
+        if giveaways_feed.bozo:
+            logger.warning(f"Giveaways RSS feed is malformed. Bozo exception: {giveaways_feed.bozo_exception}")
+        logger.debug(f"Retrieved {len(giveaways_feed.entries)} giveaways from RSS feed: {GIVEAWAYS_RSS}")
 
-    # Process each entry in the feed
-    for entry in giveaways_feed.entries:
-        # Extract basic information
-        title = entry.title
-        link = entry.link
-        published = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z")
+        for entry in giveaways_feed.entries:
+            try:
+                title = entry.title
+                link = entry.link
+                published_str = entry.get("published", "")
+                published = datetime.strptime(published_str, "%a, %d %b %Y %H:%M:%S %z") if published_str else None
 
-        # Parse the description to extract game info and expiry date
-        description = entry.description
+                description = entry.description
+                expires_match = re.search(r"expires on ([^<|]+)", description)
+                expires_str = expires_match.group(1).strip() if expires_match else None
+                expires = datetime.strptime(expires_str, "%a, %d %b %Y %H:%M:%S %z") if expires_str else None
 
-        # Extract expiry date
-        expires_match = re.search(r"expires on ([^<|]+)", description)
-        expires = expires_match.group(1) if expires_match else "unknown expiry"
+                if expires and expires < datetime.now(expires.tzinfo):
+                    logger.debug(f"Skipping expired giveaway: {title}")
+                    continue
+                if published and published < datetime.now(published.tzinfo) - timedelta(days=14):
+                    logger.debug(f"Skipping old giveaway (published > 14 days ago): {title}")
+                    continue
 
-        # Convert expiry date to datetime object
-        if expires != "unknown expiry":
-            expires = datetime.strptime(expires.strip(), "%a, %d %b %Y %H:%M:%S %z")
+                giveaways_list.append({
+                    "title": title,
+                    "link": link,
+                    "published": published,
+                    "expires": expires,
+                })
+            except (ValueError, TypeError, AttributeError) as e:
+                logger.error(f"Error processing giveaway entry '{entry.get('title', 'Unknown title')}': {e}", exc_info=True)
+                continue
 
-        # Filter if the giveaway is expired
-        if expires != "unknown expiry" and expires < datetime.now(expires.tzinfo):
-            logger.debug(f"Skipping expired giveaway: {title}")
-            continue
+    except Exception as e:
+        logger.error(f"Failed to fetch or parse giveaways RSS feed {GIVEAWAYS_RSS}: {e}", exc_info=True)
 
-        # Filter if the giveaway date is more than 2 weeks old
-        if published < datetime.now(published.tzinfo) - timedelta(days=14):
-            logger.debug(f"Skipping old giveaway: {title}")
-            continue
+    if not giveaways_list:
+        logger.warning("No giveaways were successfully processed.")
+        return
 
-        # Add to list
-        giveaways_list.append(
-            {
-                "title": title,
-                "link": link,
-                "published": published,
-                "expires": expires,
-            }
-        )
+    try:
+        giveaways_df = pd.DataFrame(giveaways_list)
+        logger.debug(f"Created DataFrame with {len(giveaways_df)} active giveaways")
+        if not giveaways_df.empty:
+            giveaways_df = giveaways_df.sort_values(by="published", ascending=False)
 
-    # Create DataFrame from list of dicts
-    giveaways_df = pd.DataFrame(giveaways_list)
-    logger.debug(f"Created DataFrame with {len(giveaways_df)} active giveaways")
+        project_root = get_project_root()
+        output_dir = os.path.join(project_root, "data/games")
+        ensure_directories(["data/games"]) # Ensure_directories should ideally be called once at start of main
 
-    # If there is at least one giveaway, sort giveaways by publication date (newest first)
-    if len(giveaways_df) > 0:
-        giveaways_df = giveaways_df.sort_values(by="published", ascending=False)
+        giveaways_json_path = os.path.join(output_dir, "giveaways.json")
+        giveaways_csv_path = os.path.join(output_dir, "giveaways.csv")
 
-    # Create output directory if it doesn't exist
-    project_root = get_project_root()
-    output_dir = os.path.join(project_root, "data/games")
-    ensure_directories(["data/games"])
+        giveaways_df.to_json(giveaways_json_path, orient="records", date_format="iso")
+        logger.info(f"Giveaways saved to {giveaways_json_path}")
+        giveaways_df.to_csv(giveaways_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
+        logger.info(f"Giveaways saved to {giveaways_csv_path}")
 
-    # Save giveaways to json
-    giveaways_df.to_json(os.path.join(output_dir, "giveaways.json"), orient="records")
-    logger.info("Giveaways saved to json")
-
-    # Save giveaways to csv
-    giveaways_df.to_csv(os.path.join(output_dir, "giveaways.csv"), index=False, sep="|")
-    logger.info("Giveaways saved to csv")
+    except (IOError, OSError) as e:
+        logger.error(f"Error saving giveaways data: {e}", exc_info=True)
+    except ImportError:
+        logger.error("Pandas library not found. Cannot save giveaways to CSV/JSON.", exc_info=True)
+    except Exception as e:
+        logger.error(f"An unexpected error occurred while saving giveaways: {e}", exc_info=True)
 
 
 if __name__ == "__main__":
     logger.info("Starting Games ETL process")
-    get_deals()
-    get_bundles()
-    get_giveaways()
-    logger.info("Games ETL process completed successfully")
+    try:
+        get_deals()
+        get_bundles()
+        get_giveaways()
+        logger.info("Games ETL process completed successfully")
+    except Exception as e:
+        logger.error(f"Games ETL process failed: {e}", exc_info=True)
+        sys.exit(1)

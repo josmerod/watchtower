@@ -1,13 +1,13 @@
+import concurrent.futures
 import json
 import logging
 import os
 import sys
 from datetime import datetime, timedelta
-from typing import Dict, List, Any
-import concurrent.futures
+from typing import Any
 
-import yt_dlp
 import pandas as pd
+import yt_dlp
 
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
@@ -23,15 +23,17 @@ BASE_OUTPUT_DIR = "data/youtube"
 MAX_VIDEOS_PER_CHANNEL = 50
 DEFAULT_DAYS_LOOKBACK = 42  # 6 weeks
 
+
 # Load channel topics from JSON file
-def load_channel_topics() -> Dict[str, Any]:
+def load_channel_topics() -> dict[str, Any]:
     """Load the channel topics configuration from the JSON file."""
     # Get the directory this file is in
     current_dir = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(current_dir, "channels.json")
-    
-    with open(json_path, 'r') as json_file:
+
+    with open(json_path) as json_file:
         return json.load(json_file)
+
 
 # Channel configurations by topic
 CHANNEL_TOPICS = load_channel_topics()
@@ -42,7 +44,7 @@ def get_channel_videos_by_id(
     published_after: str = (
         datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)
     ).isoformat(),
-) -> List[Dict]:
+) -> list[dict]:
     """Fetch videos from a channel using yt-dlp."""
     try:
         ydl_opts = {
@@ -131,25 +133,25 @@ def get_channel_videos_by_id(
 
                 except Exception as e:
                     logger.error(
-                        f"Error processing video {entry.get('id', 'unknown')}: {str(e)}"
+                        f"Error processing video {entry.get('id', 'unknown')}: {e!s}"
                     )
                     continue
 
         return videos
 
     except Exception as e:
-        logger.error(f"Error al obtener videos para {channel_handle}: {str(e)}")
+        logger.error(f"Error al obtener videos para {channel_handle}: {e!s}")
         return []
 
 
 def process_youtube_channels(
-    channel_handles: List[str], published_after: str = None
-) -> List[Dict]:
+    channel_handles: list[str], published_after: str = None
+) -> list[dict]:
     """Process multiple YouTube channels concurrently and combine their videos."""
     all_videos = []
     # Determine a reasonable number of workers, e.g., based on CPU cores or a fixed number
     # Let's start with a sensible default, adjust as needed based on performance
-    max_workers = min(10, os.cpu_count() + 4) # Example: Use up to 10 workers
+    max_workers = min(10, os.cpu_count() + 4)  # Example: Use up to 10 workers
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Create a future for each channel processing task
@@ -170,14 +172,16 @@ def process_youtube_channels(
                 else:
                     logger.info(f"No new videos found for {handle}")
             except Exception as e:
-                logger.error(f"Error processing channel {handle}: {str(e)}")
-                continue # Continue with other channels even if one fails
+                logger.error(f"Error processing channel {handle}: {e!s}")
+                continue  # Continue with other channels even if one fails
 
-    logger.info(f"Finished processing all channels. Total videos collected: {len(all_videos)}")
+    logger.info(
+        f"Finished processing all channels. Total videos collected: {len(all_videos)}"
+    )
     return all_videos
 
 
-def process_topic(topic: str, channels: List[str], published_after: str = None):
+def process_topic(topic: str, channels: list[str], published_after: str = None):
     """Process a specific topic and save its results to separate files."""
     logger.info(f"Procesando tema: {topic}")
 
@@ -218,7 +222,7 @@ def process_topic(topic: str, channels: List[str], published_after: str = None):
     )
 
 
-def main(topics: List[str] = None):
+def main(topics: list[str] = None):
     """Main function to fetch and process YouTube channel videos by topic."""
     logger.info("Iniciando proceso ETL de canales de YouTube")
 
@@ -243,7 +247,7 @@ def main(topics: List[str] = None):
                 logger.warning(f"Tema no reconocido: {topic}")
 
     except Exception as e:
-        logger.error(f"Error en el proceso ETL de YouTube: {str(e)}", exc_info=True)
+        logger.error(f"Error en el proceso ETL de YouTube: {e!s}", exc_info=True)
 
 
 if __name__ == "__main__":
