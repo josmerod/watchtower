@@ -7,120 +7,181 @@
 - Clear communication and comprehensive documentation
 - Security-first approach for data handling and API access
 
-## Tech Stack
+## Actual Tech Stack (Based on Implementation Analysis)
 - **Core**: Python 3.10+
-- **Development**: Poetry/Rye, Ruff, pytest, venv
-- **Web**: FastAPI (APIs), Streamlit (dashboards)
-- **Data Processing**: polars (primary), pandas (secondary)
-- **ML/AI**: langgraph (optional), transformers, scikit-learn
-- **Storage**: faiss/chroma (vector), SQLite/PostgreSQL (relational)
-- **Process Management**: systemd/supervisor
-- **Monitoring**: logging, metrics collection
-- **Deployment**: Docker, GitHub Actions
+- **Package Management**: pyproject.toml with setuptools, pip with requirements.txt (compatibility)
+- **Code Quality**: Ruff (linting & formatting), mypy (type checking), pytest (testing)
+- **Web Framework**: Streamlit (primary dashboard), FastAPI (optional APIs)
+- **Data Processing**: pandas (primary), polars (declared but pandas dominant), NumPy
+- **ML/NLP**: scikit-learn, NLTK, transformers (text classification)
+- **Web Scraping**: requests, BeautifulSoup4, Playwright, feedparser
+- **Configuration**: Pydantic Settings with nested configuration models
+- **Storage**: JSON files (primary), CSV exports, SQLite/PostgreSQL (optional)
+- **Caching**: Streamlit @st.cache_data decorators
+- **Logging**: Python logging with structured formats
+- **APIs**: GitHub API, ArXiv API, various content APIs
 
-## Platform Architecture
-1. **ETL Pipeline Design**
-   - Modular data extractors for different sources
-   - Standardized data transformation patterns
-   - Robust error handling and retry mechanisms
-   - Parallel processing for performance
-   - Data validation and quality checks
+## Actual Architecture Patterns (Found in Codebase)
+1. **ETL Framework Pattern** (`src/etl/base.py`)
+   - BaseETL abstract class with template method pattern
+   - ETLMetrics and ETLCheckpoint models for state management
+   - Retry mechanisms with exponential backoff
+   - Batch processing with configurable batch sizes
+   - Comprehensive error handling and recovery
 
-2. **Data Intelligence Layer**
-   - Real-time sentiment analysis
-   - Trend detection algorithms
-   - Anomaly detection systems
-   - Predictive analytics capabilities
-   - Cross-source data correlation
+2. **Watcher Pattern** (`src/watchers/`)
+   - BaseWatcher abstract class for monitoring systems
+   - State persistence with JSON checkpoints
+   - Event-driven change detection
+   - Configurable polling intervals
 
-3. **API & Web Services**
-   - RESTful API design with FastAPI
-   - Real-time data streaming endpoints
-   - Interactive Streamlit dashboards
-   - WebSocket support for live updates
-   - Rate limiting and authentication
+3. **Pydantic Settings Pattern** (`src/config/`)
+   - Nested configuration models (DatabaseConfig, ETLConfig, etc.)
+   - Environment variable support with double underscore delimiter
+   - Auto-discovery of project root
+   - Path resolution for relative/absolute paths
 
-## Code Standards
+4. **Streamlit Component Pattern** (`src/web/fullstreamlit/`)
+   - Tab-based modular architecture
+   - Ultra-optimized data service with caching
+   - Component-based rendering with error handling
+   - Performance optimization with TTL caching
+
+5. **Pydantic Model Pattern** (`src/models/`)
+   - Domain-specific models: ArxivPaperModel, TechnologyModel, SecurityModel
+   - Enum-based classifications (TrendDirection, AdoptionLevel, etc.)
+   - Timestamped and status models inheritance
+   - Validation and serialization for APIs
+
+## Data Flow Architecture (Actual Implementation)
+```
+External Sources → Watchers → ETL Pipelines → JSON/CSV Storage → Streamlit Dashboard
+     ↓                ↓            ↓              ↓                    ↓
+- ArXiv RSS       - Monitor    - Extract      - File-based        - Tab Components
+- Course APIs     - Parse      - Transform    - Event logs        - Data Services  
+- News Feeds      - Store      - Classify     - Checkpoints       - Interactive UI
+```
+
+## Code Standards (Reflecting Actual Patterns)
 1. **Pythonic Practices**
-   - PEP 8 compliance via Ruff
-   - Explicit, readable code following Zen of Python
-   - Type hints for all functions and classes
-   - Descriptive variable and function names
-   - Consistent code formatting
-
-2. **Architecture Patterns**
-   - Single responsibility principle
-   - Composition over inheritance
-   - Dependency injection for testability
-   - Factory patterns for data source creation
-   - Observer patterns for real-time updates
-   - Logical package structure with clear boundaries
-
-3. **Quality Assurance**
-   - Comprehensive type hints (mypy compliance)
+   - PEP 8 compliance via Ruff configuration in pyproject.toml
+   - Type hints with Python 3.10+ features (Union, Optional, TypeVar)
    - Google-style docstrings with examples
-   - 90%+ test coverage with pytest
-   - Integration tests for ETL pipelines
-   - Robust error handling with custom exceptions
-   - Strategic logging with structured formats
-   - Code reviews and automated quality checks
+   - F-string formatting for logging and string operations
+   - Context managers for file operations and resources
 
-4. **Performance Optimization**
-   - Async/await for I/O operations
-   - Strategic caching with TTL policies
-   - Resource monitoring and alerting
-   - Memory-efficient data processing
-   - Concurrent processing for ETL jobs
-   - Database query optimization
-   - Connection pooling for external APIs
+2. **Architecture Patterns (Actually Used)**
+   - Template Method: BaseETL.run() orchestrates extract/transform/load
+   - Factory Pattern: get_settings() with @lru_cache singleton
+   - State Pattern: Watcher state management with JSON persistence
+   - Component Pattern: Streamlit tab-based modular components
+   - Observer Pattern: Event logging in watchers and ETL processes
 
-5. **Data Management**
-   - Standardized data schemas with Pydantic
-   - Data versioning and lineage tracking
-   - Incremental data loading strategies
-   - Data retention and archival policies
-   - Privacy-compliant data handling
-   - Backup and recovery procedures
+3. **Error Handling Pattern**
+   - Custom exception hierarchy (WatchtowerError, ETLError, etc.)
+   - Retry mechanisms with configurable max_retries and retry_delay
+   - Structured error context with timestamps and metadata
+   - Graceful degradation in data loading operations
+   - Safe tab rendering with error boundaries
 
-6. **Security & Compliance**
-   - API authentication (OAuth/JWT)
-   - Input validation and sanitization
-   - Secure credential management
-   - Rate limiting and DDoS protection
-   - Data encryption at rest and in transit
-   - Audit logging for sensitive operations
-   - GDPR compliance for user data
+4. **Performance Optimization (Actual Implementation)**
+   - Streamlit caching with @st.cache_data(ttl=3600)
+   - Batch processing in ETL with configurable batch_size
+   - JSON file-based storage for fast read operations
+   - Ultra-optimized data services with lazy loading
+   - Memory-efficient pandas operations
 
-7. **Monitoring & Observability**
-   - Application performance monitoring
-   - ETL pipeline health checks
-   - Data quality metrics
-   - Error tracking and alerting
-   - Resource utilization monitoring
-   - Business metrics dashboards
+5. **Data Management (Implementation Patterns)**
+   - Pydantic models for data validation and serialization
+   - JSON-first storage with CSV export capabilities
+   - Incremental processing with checkpoint support
+   - Event-driven change tracking in watchers
+   - File-based data organization by domain (arxiv/, courses/, etc.)
 
-## Platform-Specific Best Practices
-- **ETL Development**: Idempotent operations, graceful degradation, source-specific error handling
-- **Data Processing**: Batch and streaming patterns, data validation pipelines, schema evolution
-- **Web Development**: Responsive design, real-time updates, user experience optimization
-- **API Design**: Versioning strategy, documentation, backward compatibility
-- **Deployment**: Blue-green deployments, rollback strategies, environment parity
-- **Documentation**: Architecture decisions, API documentation, operational runbooks
+## Project-Specific Patterns
+1. **ETL Development**
+   - Inherit from BaseETL and implement extract/transform/load methods
+   - Use ETLMetrics for performance tracking
+   - Implement checkpointing for long-running processes
+   - Handle API rate limits with retry mechanisms
 
-## Development Workflow
-- Feature branch development with pull requests
-- Automated testing and quality gates
-- Code review requirements
-- Continuous integration/deployment
-- Environment-specific configurations
-- Regular dependency updates and security patches
+2. **Streamlit Components**
+   - Create tab functions in `src/web/fullstreamlit/components/`
+   - Use ultra-optimized data service for data access
+   - Implement error boundaries with render_tab_safely pattern
+   - Cache data loading with appropriate TTL values
 
-## Best Practices
-- Prioritize Python 3.10+ features (pattern matching, improved type hints)
-- Clear code documentation with practical examples
-- Justified technology choices with trade-off analysis
-- Security-first approach in all development decisions
-- Task-specific best practices for different platform components
-- Balance between modularity and simplicity
-- Regular refactoring and technical debt management
-- Performance benchmarking and optimization
+3. **Data Models**
+   - Use Pydantic BaseModel for all data structures
+   - Implement domain-specific enums for classifications
+   - Add validation methods and computed properties
+   - Support JSON serialization for storage
+
+4. **Configuration Management**
+   - Nested Pydantic Settings with double underscore env vars
+   - Auto-discovery of project root directory
+   - Component-specific configuration classes
+   - Environment-based configuration overrides
+
+5. **Monitoring & Logging**
+   - Structured logging with component-specific loggers
+   - Performance logging for ETL operations
+   - Event logging for state changes
+   - Metrics collection with ETLMetrics model
+
+## File Organization Patterns (Actual Structure)
+```
+src/
+├── config/                 # Pydantic settings management
+│   ├── settings.py        # Main Settings class with auto-discovery
+│   └── models.py          # Component-specific config models
+├── etl/                   # ETL pipelines by domain
+│   ├── base.py           # BaseETL framework with metrics
+│   ├── arxiv/            # ArXiv paper processing
+│   ├── courses/          # Course aggregation ETLs
+│   └── news/             # News and content ETLs
+├── models/               # Pydantic data models by domain
+│   ├── base.py           # Base models (TimestampedModel, etc.)
+│   ├── arxiv.py          # Research paper models
+│   └── technology.py     # Technology analysis models
+├── watchers/             # Monitoring and change detection
+│   ├── base_watcher.py   # BaseWatcher with state management
+│   └── enhanced_watcher.py # Advanced watcher patterns
+├── web/fullstreamlit/    # Streamlit dashboard
+│   ├── app.py           # Main application with tab routing
+│   ├── components/      # Tab-specific components
+│   └── utils/           # Data services and utilities
+└── utils/               # Shared utilities
+    ├── logging.py       # Structured logging setup
+    └── file_system.py   # File operations and path handling
+```
+
+## Development Workflow (Project-Specific)
+- Use `pyproject.toml` for dependency management and tool configuration
+- Run ETL pipelines via convenience scripts (run_all_etl.bat/.sh)
+- Test with pytest and maintain coverage reports
+- Use Ruff for code formatting and linting
+- Streamlit development with hot reload and caching
+
+## Domain-Specific Best Practices
+- **ArXiv ETL**: Use RSS feeds, implement NLP classification, track research trends
+- **Course ETL**: Handle multiple platforms, deduplicate content, track pricing
+- **News ETL**: Parse RSS feeds, extract metadata, categorize content
+- **Watcher Development**: Implement state persistence, event logging, change detection
+- **Streamlit Apps**: Use component pattern, implement caching, handle errors gracefully
+
+## Technology Adoption Guidelines
+- **Primary Data Processing**: pandas for most operations, polars for specific performance needs
+- **Web Scraping**: requests + BeautifulSoup for simple scraping, Playwright for complex sites  
+- **Configuration**: Pydantic Settings with environment variable support
+- **Storage**: JSON files for structured data, CSV for exports and analysis
+- **Caching**: Streamlit native caching for web apps, manual caching for ETL processes
+- **Async Operations**: Use when dealing with multiple API calls or I/O operations
+
+## Quality Assurance (Implementation-Based)
+- Type hints for all functions with Python 3.10+ syntax
+- Comprehensive error handling with custom exception classes
+- Unit tests with pytest focusing on ETL and data processing logic
+- Integration tests for web scraping and API interactions
+- Performance monitoring with metrics collection
+- Code review focusing on data processing efficiency and error handling
