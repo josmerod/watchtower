@@ -36,7 +36,8 @@ from src.web.fullstreamlit.components import (
     ai_platforms_tab,
     google_cloud_blog_tab,
     aws_training_tab,
-    azure_training_tab
+    azure_training_tab,
+    home_server_tab
 )
 # Import for Anime Tab
 from src.web.fullstreamlit.components.anime_display import display_anime_section
@@ -87,6 +88,7 @@ def get_cached_data():
         data['google_cloud_blog'] = data_service.get_google_cloud_blog_data()
         data['aws_training'] = data_service.get_aws_training_data()
         data['azure_training'] = data_service.get_azure_training_data()
+        data['home_server_trends'] = data_service.get_home_server_trends_data()
         return data
     except Exception as e:
         logger.error(f"Error loading data: {str(e)}")
@@ -114,6 +116,7 @@ main_tabs = st.tabs([
     "Seguridad",
     "Innovación",
     "Plataformas IA",
+    "Home Server", # New Tab
     "Crypto",
     "ArXiv",
     "⛩️ Anime", # New Tab
@@ -244,10 +247,13 @@ with main_tabs[11]: # Innovación
 with main_tabs[12]: # Plataformas IA
     render_tab_safely("Plataformas IA", ai_platforms_tab.render, logger)
 
-with main_tabs[13]: # Crypto
+with main_tabs[13]: # Home Server
+    render_tab_safely("Home Server", home_server_tab.render, logger, data_service)
+
+with main_tabs[14]: # Crypto
     render_tab_safely("Crypto", crypto_tab.render, logger)
 
-with main_tabs[14]: # ArXiv
+with main_tabs[15]: # ArXiv
     arxiv_subtabs = st.tabs(["Mejorado", "Papers", "Búsqueda"])
     
     with arxiv_subtabs[0]:
@@ -259,14 +265,14 @@ with main_tabs[14]: # ArXiv
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 
-with main_tabs[15]: # Index for Anime Tab
+with main_tabs[16]: # Index for Anime Tab
     render_tab_safely("Anime Calendar", display_anime_calendar_tab)
 
-with main_tabs[16]: # Index for Monitoreo
+with main_tabs[17]: # Index for Monitoreo
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[17]: # Index for Eventos Valencia
+with main_tabs[18]: # Index for Eventos Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[18]: # Index for Admin
+with main_tabs[19]: # Index for Admin
     render_tab_safely("Admin", admin_tab.render, logger)

@@ -14,9 +14,11 @@ run_etl() {
     local name=$(basename "$script" .py)
     echo "Starting $name..."
     python "$script" > "logs/${name}.log" 2>&1 &
-    local pid=$!
-    echo "$name started with PID $pid"
-    return $pid
+    local script_pid=$! # PID of the python script
+    pids+=($script_pid) # Add script_pid to the global pids array
+    echo "$name started with PID $script_pid"
+    # The function can return 0 to indicate success for the && operator
+    return 0
 }
 
 # Run all ETL scripts in parallel and store their PIDs
@@ -41,20 +43,21 @@ run_etl "src/etl/anime/mal_etl.py" && pids+=($!)
 run_etl "src/etl/news/news_get_newsapi.py" && pids+=($!)
 
 # NEW MODULES - Developer Communities & Innovation Tracking
-run_etl "src/etl/news/news_get_devto.py" && pids+=($!)
-run_etl "src/etl/news/news_get_producthunt.py" && pids+=($!)
-run_etl "src/etl/news/news_get_indiehackers.py" && pids+=($!)
-run_etl "src/etl/news/news_get_lobsters.py" && pids+=($!)
-run_etl "src/etl/news/news_get_gittrends.py" && pids+=($!)
-run_etl "src/etl/news/news_get_techjobs.py" && pids+=($!)
+run_etl "src/etl/news/news_get_devto.py"
+run_etl "src/etl/news/news_get_producthunt.py"
+run_etl "src/etl/news/news_get_indiehackers.py"
+run_etl "src/etl/news/news_get_lobsters.py"
+run_etl "src/etl/news/news_get_gittrends.py"
+run_etl "src/etl/news/news_get_techjobs.py"
 
 # LATEST NEW MODULES - Community & Developer Intelligence
-run_etl "src/etl/news/news_get_hackernews_ask.py" && pids+=($!)
-run_etl "src/etl/news/news_get_discord_trending.py" && pids+=($!)
-run_etl "src/etl/news/news_get_stackoverflow_trends.py" && pids+=($!)
+run_etl "src/etl/news/news_get_hackernews_ask.py"
+run_etl "src/etl/news/news_get_discord_trending.py"
+run_etl "src/etl/news/news_get_stackoverflow_trends.py"
+run_etl "src/etl/news/news_get_home_server_trends.py"
 
 # NEW MINING TOOLS
-run_etl "src/miners/crypto_sentiment_miner.py" && pids+=($!)
+run_etl "src/miners/crypto_sentiment_miner.py"
 
 echo "All ETL processes started in parallel"
 echo "Process PIDs: ${pids[*]}"
@@ -85,3 +88,4 @@ echo "- data/raw/newsapi/"
 echo "- data/goldigging/"
 echo "- data/watchers/"
 echo "- data/anime/"
+echo "- data/home_server_trends/"
