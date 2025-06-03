@@ -37,7 +37,8 @@ from src.web.fullstreamlit.components import (
     google_cloud_blog_tab,
     aws_training_tab,
     azure_training_tab,
-    home_server_tab
+    home_server_tab,
+    museums_tab # Added import for museums_tab
 )
 # Import for Anime Tab
 from src.web.fullstreamlit.components.anime_display import display_anime_section
@@ -89,6 +90,7 @@ def get_cached_data():
         data['aws_training'] = data_service.get_aws_training_data()
         data['azure_training'] = data_service.get_azure_training_data()
         data['home_server_trends'] = data_service.get_home_server_trends_data()
+        data['museums'] = data_service.get_museum_data() # Added museum data loading
         return data
     except Exception as e:
         logger.error(f"Error loading data: {str(e)}")
@@ -122,6 +124,7 @@ main_tabs = st.tabs([
     "⛩️ Anime", # New Tab
     "Monitoreo",
     "Eventos Valencia",
+    "Museos Virtuales", # New tab added
     "Admin"
 ])
 
@@ -274,5 +277,9 @@ with main_tabs[17]: # Index for Monitoreo
 with main_tabs[18]: # Index for Eventos Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[19]: # Index for Admin
+with main_tabs[19]: # Index for Museos Virtuales - New tab
+    museum_data = cached_data.get('museums', pd.DataFrame())
+    render_tab_safely("Museos Virtuales", museums_tab.render, logger, museum_data)
+
+with main_tabs[20]: # Index for Admin
     render_tab_safely("Admin", admin_tab.render, logger)
