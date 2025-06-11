@@ -29,4 +29,6 @@ from web.fullstreamlit.components import (
     adhd_tab,
     ecommerce_tab,
     anime_display,
+    chan_generals_tab,
+    scavenging_tab,
 ) 
