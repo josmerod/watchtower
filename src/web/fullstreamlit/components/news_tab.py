@@ -8,7 +8,7 @@ import pandas as pd
 import os
 import json
 import sys
-# from src.web.fullstreamlit.utils.helpers import make_clickable # Removed as make_clickable is no longer used here
+# from web.fullstreamlit.utils.helpers import make_clickable # Removed as make_clickable is no longer used here
 
 # Get the project root directory
 def get_project_root():
@@ -41,6 +41,35 @@ MENEAME_GENERAL_FILE = os.path.join(MENEAME_DATA_DIR, "meneame_general_latest.js
 MENEAME_TECNO_FILE = os.path.join(MENEAME_DATA_DIR, "meneame_tecnologia_latest.json")
 PODCASTS_FILE = os.path.join(PODCASTS_DATA_DIR, "podcasts_latest.json")
 
+def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean DataFrame to avoid unhashable type errors."""
+    if df.empty:
+        return df
+    
+    # Create a copy to avoid modifying the original
+    df_clean = df.copy()
+    
+    # Convert any dictionary or list columns to strings
+    for col in df_clean.columns:
+        if df_clean[col].dtype == 'object':
+            # Check if column contains dictionaries or lists
+            try:
+                # Sample a few non-null values to check type
+                sample_values = df_clean[col].dropna().head(3)
+                if not sample_values.empty:
+                    for val in sample_values:
+                        if isinstance(val, (dict, list)):
+                            # Convert all values that are dict or list to JSON strings
+                            df_clean[col] = df_clean[col].apply(
+                                lambda x: json.dumps(x, default=str) if isinstance(x, (dict, list)) else x
+                            )
+                            break
+            except (TypeError, ValueError):
+                # If there's any issue, convert the entire column to string
+                df_clean[col] = df_clean[col].astype(str)
+    
+    return df_clean
+
 # Local version of load_data
 def load_data(file_path, _logger=None):
     """Load data from JSON file with error handling"""
@@ -51,6 +80,8 @@ def load_data(file_path, _logger=None):
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             df = pd.DataFrame(data)
+            # Clean the dataframe to avoid unhashable type errors
+            df = clean_dataframe_for_caching(df)
             if _logger:
                 _logger.info(f"Successfully loaded {len(df)} records from {file_path}")
             return df
@@ -271,8 +302,8 @@ def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
             # Sort by published_date (now guaranteed to exist)
             combined_news_df = combined_news_df.sort_values("published_date", ascending=False)
             
-            # Format date for display
-            combined_news_df["published_display"] = combined_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
+            # Format date for display - ensure it's a string to avoid column type issues
+            combined_news_df["published_display"] = combined_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M').astype(str)
 
             # Prepare DataFrame for st.data_editor
             source_name_for_download = "ft_bensbites" # Define unique source name
@@ -334,8 +365,8 @@ def render_hackernews(ycombinator_news_df):
         # Sort by published_date (now guaranteed to exist)
         display_news_df = ycombinator_news_df.sort_values("published_date", ascending=False)
         
-        # Format date for display
-        display_news_df["published_display"] = display_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
+        # Format date for display - ensure it's a string to avoid column type issues
+        display_news_df["published_display"] = display_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M').astype(str)
 
         # Prepare DataFrame for st.data_editor
         source_name_for_download = "hackernews" # Define unique source name
@@ -371,12 +402,6 @@ def render_hackernews(ycombinator_news_df):
             use_container_width=True,
             disabled=True
         )
-    else: # This else corresponds to if ycombinator_news_df.empty:
-        source_name_for_download = "hackernews"
-        if st.session_state.get("active_source_name") == source_name_for_download:
-            st.session_state.active_df_for_export = None
-            st.session_state.active_source_name = None
-        # The warning is already handled by the initial check: st.warning("No hay noticias disponibles de Hacker News.")
 
 
 def render_medium(medium_news_df):
@@ -515,12 +540,6 @@ def render_kdnuggets(kdnuggets_news_df):
             use_container_width=True,
             disabled=True
         )
-    else: # This else corresponds to if kdnuggets_news_df.empty:
-        source_name_for_download = "kdnuggets"
-        if st.session_state.get("active_source_name") == source_name_for_download:
-            st.session_state.active_df_for_export = None
-            st.session_state.active_source_name = None
-        # The warning is already handled by the initial check
 
 
 def render_gooddevs(gooddevs_df):
@@ -531,41 +550,75 @@ def render_gooddevs(gooddevs_df):
     else:
         display_df = gooddevs_df.copy()
 
+        # Handle date parsing with improved error handling
         date_col_present = False
         sort_col = None
-        if "published_date" in display_df.columns:
-            display_df["published_date"] = pd.to_datetime(display_df["published_date"], errors="coerce")
-            display_df.dropna(subset=["published_date"], inplace=True)
-            if not display_df.empty:
-                 display_df = display_df.sort_values("published_date", ascending=False)
-                 sort_col = "published_date"
-                 date_col_present = True
-        elif "published_at" in display_df.columns:
-            display_df["published_at"] = pd.to_datetime(display_df["published_at"], errors="coerce")
-            display_df.dropna(subset=["published_at"], inplace=True)
-            if not display_df.empty:
-                display_df = display_df.sort_values("published_at", ascending=False)
-                sort_col = "published_at"
-                date_col_present = True
+        
+        # Check for published_at column (which is what gooddevs data uses)
+        if "published_at" in display_df.columns:
+            try:
+                # Parse dates with UTC handling for mixed timezones
+                display_df["published_at_parsed"] = pd.to_datetime(
+                    display_df["published_at"], 
+                    errors="coerce",
+                    utc=True
+                )
+                # Remove rows with invalid dates
+                valid_date_mask = display_df["published_at_parsed"].notna()
+                display_df = display_df[valid_date_mask]
+                
+                if not display_df.empty:
+                    display_df = display_df.sort_values("published_at_parsed", ascending=False)
+                    # Create formatted date for display
+                    display_df["formatted_date"] = display_df["published_at_parsed"].dt.strftime('%Y-%m-%d %H:%M')
+                    sort_col = "published_at_parsed"
+                    date_col_present = True
+                    
+            except Exception as e:
+                st.warning(f"Error parsing dates: {str(e)}")
+                # Fallback: use data as-is without sorting
+                date_col_present = False
+                
+        elif "published_date" in display_df.columns:
+            try:
+                display_df["published_date"] = pd.to_datetime(display_df["published_date"], errors="coerce")
+                # Remove rows with invalid dates
+                valid_date_mask = display_df["published_date"].notna()
+                display_df = display_df[valid_date_mask]
+                
+                if not display_df.empty:
+                    display_df = display_df.sort_values("published_date", ascending=False)
+                    display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
+                    sort_col = "published_date"
+                    date_col_present = True
+                    
+            except Exception as e:
+                st.warning(f"Error parsing published_date: {str(e)}")
+                date_col_present = False
 
-        if date_col_present and sort_col:
-            if pd.api.types.is_datetime64_any_dtype(display_df[sort_col]):
-                display_df["formatted_date"] = display_df[sort_col].dt.strftime('%Y-%m-%d')
-                date_col_for_editor = "formatted_date"
-            else:
-                date_col_for_editor = sort_col
-        else:
-            date_col_for_editor = None
-
-        source_name_for_download = "gooddevs" # Define unique source name
-        df_for_editor = display_df.rename(columns={
+        # Prepare columns for display
+        source_name_for_download = "gooddevs"
+        
+        # Base column mapping
+        column_mapping = {
             "title": "Título",
             "source": "Fuente",
-            date_col_for_editor if date_col_for_editor else "non_existent_date_col": "Fecha de Publicación",
             "url": "URL_Enlace"
-        })
+        }
+        
+        # Add date column if available
+        if date_col_present and "formatted_date" in display_df.columns:
+            column_mapping["formatted_date"] = "Fecha de Publicación"
+        
+        df_for_editor = display_df.rename(columns=column_mapping)
 
+        # Define columns to display
         required_cols = ["Título", "Fuente"]
+        if "Fecha de Publicación" in df_for_editor.columns:
+            required_cols.append("Fecha de Publicación")
+        required_cols.append("URL_Enlace")
+
+        # Configure columns
         column_config = {
             "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
             "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
@@ -576,20 +629,36 @@ def render_gooddevs(gooddevs_df):
                 help="Enlace directo al post"
             )
         }
+        
+        if "Fecha de Publicación" in df_for_editor.columns:
+            column_config["Fecha de Publicación"] = st.column_config.TextColumn(
+                width="small", 
+                help="Fecha de publicación original"
+            )
 
-        if date_col_for_editor and "Fecha de Publicación" in df_for_editor.columns:
-            required_cols.append("Fecha de Publicación")
-            column_config["Fecha de Publicación"] = st.column_config.TextColumn(width="small", help="Fecha de publicación original")
-
-        required_cols.append("URL_Enlace")
-
+        # Filter to only existing columns
         cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
         df_for_editor = df_for_editor[cols_to_display]
 
         if not df_for_editor.empty:
+            # Show metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("📄 Total Articles", len(df_for_editor))
+            with col2:
+                if date_col_present:
+                    st.metric("📅 Date Coverage", f"{len(df_for_editor)}/{len(gooddevs_df)} parsed")
+                else:
+                    st.metric("⚠️ Date Issues", "No valid dates")
+            with col3:
+                unique_sources = display_df["source"].nunique() if "source" in display_df.columns else 0
+                st.metric("📊 Sources", unique_sources)
+
+            # Set session state for export
             st.session_state.active_df_for_export = df_for_editor
             st.session_state.active_source_name = source_name_for_download
 
+            # Display data
             st.data_editor(
                 df_for_editor,
                 column_config=column_config,
@@ -598,10 +667,13 @@ def render_gooddevs(gooddevs_df):
                 disabled=True
             )
         else:
+            st.error("❌ No se pudieron procesar los datos de Good Devs.")
+            st.info("Los datos pueden tener problemas de formato o fechas inválidas.")
+            
+            # Clear session state
             if st.session_state.get("active_source_name") == source_name_for_download:
                 st.session_state.active_df_for_export = None
                 st.session_state.active_source_name = None
-            # Initial warning handles general no data
 
 def render_meneame_general(df):
     """Render Meneame General posts"""
@@ -647,12 +719,6 @@ def render_meneame_general(df):
             use_container_width=True,
             disabled=True
         )
-    else: # This else corresponds to if df.empty:
-        source_name_for_download = "meneame_general"
-        if st.session_state.get("active_source_name") == source_name_for_download:
-            st.session_state.active_df_for_export = None
-            st.session_state.active_source_name = None
-        # Warning already handled
 
 
 def render_meneame_tecnologia(df):
@@ -699,12 +765,6 @@ def render_meneame_tecnologia(df):
             use_container_width=True,
             disabled=True
         )
-    else: # This else corresponds to if df.empty:
-        source_name_for_download = "meneame_tecnologia"
-        if st.session_state.get("active_source_name") == source_name_for_download:
-            st.session_state.active_df_for_export = None
-            st.session_state.active_source_name = None
-        # Warning already handled
 
 def render_podcasts(podcasts_df):
     """Render Podcast Episodes"""
@@ -752,9 +812,3 @@ def render_podcasts(podcasts_df):
             use_container_width=True,
             disabled=True
         )
-    else: # This else corresponds to if podcasts_df.empty:
-        source_name_for_download = "podcasts"
-        if st.session_state.get("active_source_name") == source_name_for_download:
-            st.session_state.active_df_for_export = None
-            st.session_state.active_source_name = None
-        # Warning already handled

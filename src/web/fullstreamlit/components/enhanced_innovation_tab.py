@@ -19,8 +19,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import asyncio
 
-from src.web.fullstreamlit.utils.enhanced_data_service import UltraOptimizedDataService
-from src.utils.logging import get_logger
+from web.fullstreamlit.utils.enhanced_data_service import UltraOptimizedDataService
+from utils.logging import get_logger
 
 
 def create_technology_radar_chart(radar_data: Dict[str, Any]) -> go.Figure:

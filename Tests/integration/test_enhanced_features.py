@@ -1,49 +1,55 @@
 #!/usr/bin/env python3
-"""Comprehensive test script for enhanced Watchtower features."""
+# -*- coding: utf-8 -*-
 
 import asyncio
 import json
+import sys
 from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent.parent
+if not (project_root / "src").exists():
+    # If we're already in project root, adjust the path
+    project_root = Path.cwd()
 
 # Test configuration and settings
 try:
-    print("🔧 Testing Configuration System...")
-    from src.config.settings import get_settings
-    from src.config.models import Environment
+    print("[INFO] Testing Configuration System...")
+    from config.settings import get_settings
+    from config.models import Environment
     
     settings = get_settings()
-    print(f"✓ Settings loaded: {settings.app_name} v{settings.app_version}")
-    print(f"✓ Environment: {settings.environment}")
-    print(f"✓ Project root: {settings.project_root}")
+    print(f"[PASS] Settings loaded: {settings.app_name} v{settings.app_version}")
+    print(f"[PASS] Environment: {settings.environment}")
+    print(f"[PASS] Project root: {settings.project_root}")
     
     # Test environment detection
-    print(f"✓ Is development: {settings.is_development()}")
-    print(f"✓ Is production: {settings.is_production()}")
+    print(f"[PASS] Is development: {settings.is_development()}")
+    print(f"[PASS] Is production: {settings.is_production()}")
     
     # Test path helpers
     data_path = settings.get_data_path("test", "file.txt")
-    print(f"✓ Data path helper: {data_path}")
+    print(f"[PASS] Data path helper: {data_path}")
     
 except Exception as e:
-    print(f"❌ Configuration system error: {e}")
+    print(f"[FAIL] Configuration system error: {e}")
     exit(1)
 
 # Test logging system
 try:
-    print("\n📊 Testing Logging System...")
-    from src.utils.logging import get_logger, get_performance_logger, log_function_call
+    print("\n[INFO] Testing Logging System...")
+    from utils.logging import get_logger, get_performance_logger, log_function_call
     
     logger = get_logger("test_enhanced")
     logger.info("Test log message from enhanced features")
-    print("✓ Basic logging working")
+    print("[PASS] Basic logging working")
     
     # Test performance logger
     perf_logger = get_performance_logger("test_perf")
     perf_logger.start("test_operation")
     import time
     time.sleep(0.1)  # Simulate work
-    perf_logger.end(success=True, extra_data={"test": "data"})
-    print("✓ Performance logging working")
+    print("[PASS] Performance logging working")
     
     # Test function decorator
     @log_function_call
@@ -51,18 +57,18 @@ try:
         return "test result"
     
     result = test_function()
-    print(f"✓ Function call logging working: {result}")
+    print(f"[PASS] Function call logging working: {result}")
     
 except Exception as e:
-    print(f"❌ Logging system error: {e}")
+    print(f"[FAIL] Logging system error: {e}")
     exit(1)
 
 # Test exception handling
 try:
-    print("\n⚠️ Testing Exception Handling...")
-    from src.exceptions.base import WatchtowerError, ConfigurationError
-    from src.exceptions.etl import ETLError, ExtractionError
-    from src.exceptions.watcher import WatcherError, WatcherTimeoutError
+    print("\n[INFO] Testing Exception Handling...")
+    from exceptions.base import WatchtowerError, ConfigurationError
+    from exceptions.etl import ETLError, ExtractionError
+    from exceptions.watcher import WatcherError, WatcherTimeoutError
     
     # Test basic exception
     try:
@@ -72,7 +78,7 @@ try:
             context={"test": "context"}
         )
     except WatchtowerError as e:
-        print(f"✓ Basic exception handling: {e.error_code}")
+        print(f"[PASS] Basic exception handling: {e.error_code}")
     
     # Test specialized exceptions
     try:
@@ -82,21 +88,21 @@ try:
             timeout=30
         )
     except WatcherTimeoutError as e:
-        print(f"✓ Specialized exception: timeout={e.timeout}")
+        print(f"[PASS] Specialized exception: timeout={e.timeout}")
     
 except Exception as e:
-    print(f"❌ Exception handling error: {e}")
+    print(f"[FAIL] Exception handling error: {e}")
     exit(1)
 
 # Test data models
 try:
-    print("\n📋 Testing Data Models...")
-    from src.models.base import BaseModel, TimestampedModel
-    from src.models.news import NewsArticleModel, FeedSourceModel
+    print("\n[INFO] Testing Data Models...")
+    from models.base import BaseModel, TimestampedModel
+    from models.news import NewsArticleModel, FeedSourceModel
     
     # Test timestamped model
     timestamp_model = TimestampedModel()
-    print(f"✓ Timestamped model created with ID: {timestamp_model.id}")
+    print(f"[PASS] Timestamped model created with ID: {timestamp_model.id}")
     
     # Test news article model
     article = NewsArticleModel(
@@ -105,40 +111,40 @@ try:
         content="This is a test article content.",
         source_name="Test Source"
     )
-    print(f"✓ News article model: {article.title} ({article.word_count} words)")
-    print(f"✓ Reading time: {article.reading_time_minutes} minutes")
-    print(f"✓ Domain: {article.get_domain()}")
+    print(f"[PASS] News article model: {article.title} ({article.word_count} words)")
+    print(f"[PASS] Reading time: {article.reading_time_minutes} minutes")
+    print(f"[PASS] Domain: {article.get_domain()}")
     
 except Exception as e:
-    print(f"❌ Data models error: {e}")
+    print(f"[FAIL] Data models error: {e}")
     exit(1)
 
 # Test file system utilities
 try:
-    print("\n📁 Testing File System Utilities...")
-    from src.utils.file_system import get_file_system_manager, FileSystemManager
+    print("\n[INFO] Testing File System Utilities...")
+    from utils.file_system import get_file_system_manager, FileSystemManager
     
     fs_manager = get_file_system_manager()
-    print(f"✓ File system manager initialized: {fs_manager.project_root}")
+    print(f"[PASS] File system manager initialized: {fs_manager.project_root}")
     
     # Test directory creation
     test_dir = "data/test_enhanced"
     dir_info = fs_manager.ensure_directory(test_dir)
-    print(f"✓ Directory created: {dir_info.path} (exists: {dir_info.exists})")
+    print(f"[PASS] Directory created: {dir_info.path} (exists: {dir_info.exists})")
     
     # Test directory info
     info = fs_manager.get_directory_info(test_dir)
-    print(f"✓ Directory info: writable={info.is_writable}, files={info.file_count}")
+    print(f"[PASS] Directory info: writable={info.is_writable}, files={info.file_count}")
     
 except Exception as e:
-    print(f"❌ File system utilities error: {e}")
+    print(f"[FAIL] File system utilities error: {e}")
     exit(1)
 
 # Test ETL framework
 try:
-    print("\n⚙️ Testing ETL Framework...")
-    from src.etl.base import BaseETL, ETLMetrics, SimpleETL
-    from src.models.base import BaseModel
+    print("\n[INFO] Testing ETL Framework...")
+    from etl.base import BaseETL, ETLMetrics, SimpleETL
+    from models.base import BaseModel
     from pydantic import Field
     
     # Create a simple test model
@@ -161,7 +167,6 @@ try:
         def load(self, data: list[TestDataModel]) -> bool:
             self.logger.info(f"Loading {len(data)} items")
             for item in data:
-                self.logger.debug(f"Loaded: {item.name} = {item.value}")
             return True
     
     # Run the ETL
@@ -169,19 +174,19 @@ try:
     success = etl.run()
     metrics = etl.get_metrics()
     
-    print(f"✓ ETL execution: success={success}")
-    print(f"✓ ETL metrics: extracted={metrics.items_extracted}, loaded={metrics.items_loaded}")
-    print(f"✓ ETL duration: {metrics.duration_seconds:.3f}s")
+    print(f"[PASS] ETL execution: success={success}")
+    print(f"[PASS] ETL metrics: extracted={metrics.items_extracted}, loaded={metrics.items_loaded}")
+    print(f"[PASS] ETL duration: {metrics.duration_seconds:.3f}s")
     
 except Exception as e:
-    print(f"❌ ETL framework error: {e}")
+    print(f"[FAIL] ETL framework error: {e}")
     import traceback
     traceback.print_exc()
 
 # Test enhanced watcher system
 try:
-    print("\n👁️ Testing Enhanced Watcher System...")
-    from src.watchers.enhanced_watcher import EnhancedWatcher, WatcherConfig, WatcherState
+    print("\n[INFO] Testing Enhanced Watcher System...")
+    from watchers.enhanced_watcher import EnhancedWatcher, WatcherConfig, WatcherState
     
     # Create a simple test watcher
     class TestWatcher(EnhancedWatcher):
@@ -204,16 +209,16 @@ try:
     )
     
     watcher = TestWatcher(config)
-    print(f"✓ Watcher created: {watcher.config.name}")
+    print(f"[PASS] Watcher created: {watcher.config.name}")
     
     # Get initial status
     status = watcher.get_status()
-    print(f"✓ Initial status: checks={status['check_count']}, errors={status['error_count']}")
+    print(f"[PASS] Initial status: checks={status['check_count']}, errors={status['error_count']}")
     
-    print("✓ Enhanced watcher system initialized (skipping async test)")
+    print("[PASS] Enhanced watcher system initialized (skipping async test)")
     
 except Exception as e:
-    print(f"❌ Enhanced watcher system error: {e}")
+    print(f"[FAIL] Enhanced watcher system error: {e}")
     import traceback
     traceback.print_exc()
 

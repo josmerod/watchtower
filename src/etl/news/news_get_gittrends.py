@@ -24,8 +24,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 # Add the project root to the path to ensure imports work correctly
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("GitHubTrendsETL")
@@ -298,8 +298,8 @@ def process_github_data(
                 activity_level = "inactive"
 
             # Determine project category
-            description = repo.get("description", "").lower()
-            language = repo.get("language", "").lower()
+            description = (repo.get("description") or "").lower()
+            language = (repo.get("language") or "").lower()
             topics_list = repo.get("topics", [])
 
             if any(

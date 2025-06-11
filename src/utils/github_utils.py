@@ -9,7 +9,7 @@ import requests
 from typing import Optional, Dict, Any, Tuple
 from urllib.parse import urlparse
 
-from src.utils.logging import get_logger
+from utils.logging import get_logger
 
 logger = get_logger(__name__)
 

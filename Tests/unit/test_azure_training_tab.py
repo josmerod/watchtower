@@ -15,18 +15,18 @@ class TestAzureTrainingTab(unittest.TestCase):
     def test_render_with_azure_data(self, mock_st):
         sample_posts_data = [
             {
-                "title": "Azure Post 1: AI Services",
-                "link": "http://example.com/azure_post1",
-                "published": "2024-07-22T09:00:00Z",
-                "summary": "Overview of Azure AI.",
-                "categories": ["AI", "Azure Cognitive Services"]
+
+
+
+
+
             },
             {
-                "title": "Azure Post 2: DevOps Solutions",
-                "link": "http://example.com/azure_post2",
-                "published": "2024-07-21T11:45:00+00:00",
-                "summary": "Azure DevOps features.",
-                "categories": ["DevOps", "Azure Repos", "Pipelines"]
+
+
+
+
+
             }
         ]
 
@@ -76,7 +76,6 @@ class TestAzureTrainingTab(unittest.TestCase):
     @patch('src.web.fullstreamlit.components.azure_training_tab.st')
     def test_render_azure_error_handling(self, mock_st):
         faulty_data = [{"title": "Bad Post"}] # Missing other fields might cause issues or get default values
-        mock_st.expander.side_effect = Exception("Simulated Azure Tab Error")
 
         render_azure_training_tab(logger=mock_logger, posts_data=faulty_data)
 
@@ -88,5 +87,4 @@ class TestAzureTrainingTab(unittest.TestCase):
         self.assertTrue(mock_logger.error.call_args[1]['exc_info'])
 
 if __name__ == '__main__':
-    unittest.main(argv=['first-arg-is-ignored'], exit=False)
-```
+

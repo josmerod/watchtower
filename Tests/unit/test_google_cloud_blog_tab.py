@@ -18,28 +18,28 @@ class TestGoogleCloudBlogTab(unittest.TestCase):
     def test_render_with_data(self, mock_st):
         sample_posts_data = [
             {
-                "title": "Post 1: Learn Skills",
-                "link": "http://example.com/post1",
-                "published": "2024-07-20T10:00:00Z",
-                "categories": ["skill", "training"]
+
+
+
+
             },
             {
-                "title": "Post 2: Get Certified",
-                "link": "http://example.com/post2",
-                "published": "2024-07-19T12:00:00Z",
-                "categories": ["certification"]
+
+
+
+
             },
             {
-                "title": "Post 3: No Categories",
-                "link": "http://example.com/post3",
-                "published": "2024-07-18T14:00:00Z",
-                "categories": [] # Empty categories
+
+
+
+
             },
             {
-                "title": "Post 4: No Date",
-                "link": "http://example.com/post4",
+
+
                 # "published" key missing
-                "categories": ["learn"]
+
             }
         ]
 
@@ -116,10 +116,10 @@ class TestGoogleCloudBlogTab(unittest.TestCase):
 
         posts_data_no_keywords_match = [
             {
-                "title": "General Cloud News",
-                "link": "http://example.com/news",
-                "published": "2024-07-20T10:00:00Z",
-                "categories": ["gcp", "updates"]
+
+
+
+
             }
         ]
         render_google_cloud_blog_tab(logger=mock_logger, posts_data=posts_data_no_keywords_match)
@@ -135,13 +135,9 @@ class TestGoogleCloudBlogTab(unittest.TestCase):
     @patch('src.web.fullstreamlit.components.google_cloud_blog_tab.st')
     def test_render_general_exception_handling(self, mock_st):
         faulty_posts_data = [
-            {"title": "Post 1", "link": "link1", "published": "date1", "categories": ["cat1"]},
-            None, # Adding a None to cause an error during processing
-            {"title": "Post 2", "link": "link2", "published": "date2", "categories": ["cat2"]},
         ]
 
         # Mock a function that will be called during rendering to raise an exception
-        mock_st.subheader.side_effect = Exception("Test rendering error")
 
         render_google_cloud_blog_tab(logger=mock_logger, posts_data=faulty_posts_data)
 
@@ -155,5 +151,4 @@ class TestGoogleCloudBlogTab(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main(argv=['first-arg-is-ignored'], exit=False)
-```
+

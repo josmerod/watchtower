@@ -15,18 +15,18 @@ class TestAWSTrainingTab(unittest.TestCase):
     def test_render_with_aws_data(self, mock_st):
         sample_posts_data = [
             {
-                "title": "AWS Post 1: Lambda Basics",
-                "link": "http://example.com/aws_post1",
-                "published": "2024-07-20T10:00:00Z",
-                "summary": "Summary for AWS Lambda post.",
-                "categories": ["Serverless", "Lambda", "AWS"]
+
+
+
+
+
             },
             {
-                "title": "AWS Post 2: S3 Storage Classes",
-                "link": "http://example.com/aws_post2",
-                "published": "2024-07-19T12:30:00+00:00",
-                "summary": "Deep dive into S3.",
-                "categories": ["Storage", "S3"]
+
+
+
+
+
             }
         ]
 
@@ -86,7 +86,6 @@ class TestAWSTrainingTab(unittest.TestCase):
         # If st.subheader is called with None, it might raise an error internally,
         # or the .get method on None would.
         # Let's make a specific st call fail:
-        mock_st.subheader.side_effect = Exception("Simulated Streamlit Error")
 
         render_aws_training_tab(logger=mock_logger, posts_data=faulty_data)
 
@@ -98,5 +97,4 @@ class TestAWSTrainingTab(unittest.TestCase):
         self.assertTrue(mock_logger.error.call_args[1]['exc_info'])
 
 if __name__ == '__main__':
-    unittest.main(argv=['first-arg-is-ignored'], exit=False)
-```
+

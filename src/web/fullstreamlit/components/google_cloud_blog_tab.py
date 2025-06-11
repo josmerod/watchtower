@@ -5,7 +5,7 @@ import logging # For logger type hint
 
 # Assuming data_service_ultra_optimized has UltraOptimizedDataService
 # This is for type hinting and would typically be imported if it's a separate module
-# from src.web.fullstreamlit.utils.data_service_ultra_optimized import UltraOptimizedDataService
+# from web.fullstreamlit.utils.data_service_ultra_optimized import UltraOptimizedDataService
 
 # Define keywords for filtering (case-insensitive)
 KEYWORDS = ['skill', 'skills', 'training', 'certification', 'learn', 'boost', 'course', 'courses', 'badge', 'prepare', 'exam']

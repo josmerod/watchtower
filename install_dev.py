@@ -12,15 +12,15 @@ from pathlib import Path
 
 def run_command(command: list, description: str) -> bool:
     """Run a command and return success status."""
-    print(f"🔄 {description}...")
+    print(f"[INFO] {description}...")
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True)
-        print(f"✅ {description} completed successfully")
+        print(f"[PASS] {description} completed successfully")
         if result.stdout:
             print(f"   Output: {result.stdout.strip()}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"❌ {description} failed: {e}")
+        print(f"[FAIL] {description} failed: {e}")
         if e.stderr:
             print(f"   Error: {e.stderr.strip()}")
         return False
@@ -28,12 +28,12 @@ def run_command(command: list, description: str) -> bool:
 
 def main():
     """Main installation function."""
-    print("🗼 Watchtower Development Setup")
+    print("[INFO] Watchtower Development Setup")
     print("=" * 50)
     
     # Check if we're in the right directory
     if not Path("pyproject.toml").exists():
-        print("❌ Error: pyproject.toml not found. Please run this script from the project root.")
+        print("[FAIL] Error: pyproject.toml not found. Please run this script from the project root.")
         sys.exit(1)
     
     # Install package in development mode
@@ -43,7 +43,7 @@ def main():
          "Installing Watchtower in development mode"),
         
         # Verify installation
-        ([sys.executable, "-c", "import src; print('✅ Package installed successfully')"], 
+        ([sys.executable, "-c", "from config.settings import get_settings; print('[PASS] Package installed successfully')"], 
          "Verifying installation"),
     ]
     
@@ -52,14 +52,14 @@ def main():
         if run_command(command, description):
             success_count += 1
         else:
-            print(f"\n❌ Setup failed at step: {description}")
+            print(f"\n[FAIL] Setup failed at step: {description}")
             print("Please check the error messages above and try again.")
             sys.exit(1)
     
     print("\n" + "=" * 50)
-    print("🎉 Development setup completed successfully!")
+    print("[PASS] Development setup completed successfully!")
     print("\nNext steps:")
-    print("2. Use normal imports like: from src.config.settings import get_settings")
+    print("2. Use normal imports like: from config.settings import get_settings")
     print("3. Run 'python -m pytest' to run tests")
     print("4. Run 'streamlit run src/web/fullstreamlit/app.py' to start the dashboard")
     print("\nNote: If you add new dependencies, run 'pip install -e .[dev,ml,web,all]' again")

@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
-# from src.web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols # Removed as unused
+# from web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols # Removed as unused
 from typing import Dict, List, Optional, Any, Union
 
 # Get the project root directory

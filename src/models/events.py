@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import Field, HttpUrl, computed_field, field_validator
 
-from src.models.base import TimestampedModel
+from models.base import TimestampedModel
 
 
 class EventType(str, Enum):

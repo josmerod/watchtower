@@ -10,8 +10,8 @@ import argparse
 from typing import List, Optional
 
 # Add the project root to the path to ensure imports work correctly
-from src.utils.logging import get_logger
-from src.watchers.ms_skills_watcher import MSAppliedSkillsWatcher
+from utils.logging import get_logger
+from watchers.ms_skills_watcher import MSAppliedSkillsWatcher
 
 # Initialize logger
 logger = get_logger("WatcherRunner")

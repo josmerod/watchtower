@@ -10,7 +10,7 @@ import requests # Import requests for requests.exceptions.RequestException
 # Add project root to sys.path to allow imports from src
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 if project_root not in sys.path:
-from src.etl.games.games_get_new_releases import fetch_games, process_games_data, get_new_releases
+    from src.etl.games.games_get_new_releases import fetch_games, process_games_data, get_new_releases
 from src.utils.logging import get_logger # For logger interactions if needed
 
 # Initialize a logger for the test module itself, or mock where script's logger is used
@@ -25,44 +25,44 @@ class TestNewGameReleasesETL(unittest.TestCase):
 
         # Sample RAWG API game data
         self.sample_game_high_score = {
-            "id": 1, "slug": "game-1", "name": "Awesome Game 1", "released": "2023-10-01",
-            "platforms": [{"platform": {"name": "PC"}}, {"platform": {"name": "PlayStation 5"}}],
-            "genres": [{"name": "Action"}, {"name": "Adventure"}],
+
+
+
             "metacritic": 90, "description_raw": "Description for awesome game 1."
         }
         self.sample_game_low_score = {
-            "id": 2, "slug": "game-2", "name": "Mediocre Game 2", "released": "2023-09-15",
-            "platforms": [{"platform": {"name": "PC"}}],
-            "genres": [{"name": "Indie"}],
+
+
+
             "metacritic": 50, "description_raw": "Description for mediocre game 2."
         }
         self.sample_game_no_score = {
-            "id": 3, "slug": "game-3", "name": "Unrated Game 3", "released": "2023-11-01",
-            "platforms": [{"platform": {"name": "Xbox Series X"}}],
-            "genres": [{"name": "RPG"}],
+
+
+
             "metacritic": None, "description_raw": "Description for unrated game 3."
         }
         self.sample_game_meets_score = {
-            "id": 4, "slug": "game-4", "name": "Good Game 4", "released": "2023-12-01",
-            "platforms": [{"platform": {"name": "Nintendo Switch"}}],
-            "genres": [{"name": "Platformer"}],
+
+
+
             "metacritic": self.MIN_METACRITIC_SCORE, "description_raw": "Description for good game 4."
         }
 
         self.sample_rawg_response_page1 = {
-            "count": 4,
-            "next": "https://api.rawg.io/api/games?key=YOUR_KEY&page=2",
-            "previous": None,
-            "results": [self.sample_game_high_score, self.sample_game_low_score]
+
+
+
+
         }
         self.sample_rawg_response_page2 = {
-            "count": 4,
-            "next": None,
-            "previous": "https://api.rawg.io/api/games?key=YOUR_KEY&page=1",
-            "results": [self.sample_game_no_score, self.sample_game_meets_score]
+
+
+
+
         }
         self.empty_rawg_response = {
-            "count": 0, "next": None, "previous": None, "results": []
+
         }
 
     # Helper methods can be added here if needed, e.g., _get_mock_response()
@@ -129,7 +129,6 @@ class TestNewGameReleasesETL(unittest.TestCase):
         # Configure the mock response for a JSON decode error
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.side_effect = json.JSONDecodeError("Error decoding JSON", "doc", 0)
         mock_get.return_value = mock_response
 
         params = {'key': self.mock_api_key, 'page': 1}
@@ -170,19 +169,19 @@ class TestNewGameReleasesETL(unittest.TestCase):
 
     def test_process_games_data_missing_optional_fields(self):
         game_missing_some_fields = {
-            "id": 5, "slug": "game-5", "name": "Game With Missing Info",
-            "released": "2024-01-01",
-            "platforms": [], # Empty platforms
-            "genres": [],    # Empty genres
-            "metacritic": 80, # Valid score
+
+
+
+
+
             # "description_raw" is missing
         }
         game_no_platforms_or_genres = {
-            "id": 6, "slug": "game-6", "name": "Game No Platforms/Genres",
-            "released": "2024-02-01",
+
+
             # platforms missing
             # genres missing
-            "metacritic": 75,
+
             "description_raw": "A description."
         }
         raw_games = [game_missing_some_fields, game_no_platforms_or_genres]
@@ -215,7 +214,6 @@ class TestNewGameReleasesETL(unittest.TestCase):
         # Mock configurations
         mock_getenv.return_value = self.mock_api_key # Avoid API key warning
         mock_get_root.return_value = "/fake/project/root"
-        mock_fetch.side_effect = [self.sample_rawg_response_page1, self.sample_rawg_response_page2, self.empty_rawg_response] # Provide multiple pages, then empty to stop
 
         get_new_releases()
 
@@ -234,7 +232,6 @@ class TestNewGameReleasesETL(unittest.TestCase):
         # self.assertEqual(len(df_json), 2) # Expecting 2 valid games (high_score, meets_score)
 
         # Verify that the first call to fetch_games used the correct parameters (dates are dynamic)
-        args_page1, kwargs_page1 = mock_fetch.call_args_list[0]
         self.assertEqual(kwargs_page1['page_num'], 1)
         self.assertTrue('key' in kwargs_page1['params'])
         self.assertTrue('dates' in kwargs_page1['params'])
@@ -310,7 +307,7 @@ class TestNewGameReleasesETL(unittest.TestCase):
         mock_getenv.return_value = self.mock_api_key
         # Simulate API returning only games that will be filtered out
         response_low_score_only = {
-            "count": 1, "next": None, "results": [self.sample_game_low_score]
+
         }
         mock_fetch.return_value = response_low_score_only
         mock_get_root.return_value = "/fake/project/root"

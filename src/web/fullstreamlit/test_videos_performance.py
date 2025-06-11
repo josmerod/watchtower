@@ -12,8 +12,8 @@ import psutil
 import gc
 
 # Add the project root to the path
-from src.web.fullstreamlit.utils.data_service import DataService
-from src.utils.logging import get_logger
+from web.fullstreamlit.utils.data_service import DataService
+from utils.logging import get_logger
 
 def measure_memory():
     """Get current memory usage"""
@@ -98,19 +98,19 @@ def main():
             
             # Test search filtering
             start_time = time.time()
-            from src.web.fullstreamlit.components.videos_tab import filter_videos_by_search
+            from web.fullstreamlit.components.videos_tab import filter_videos_by_search
             filtered_search = filter_videos_by_search(test_df, "test")
             search_filter_time = time.time() - start_time
             
             # Test date filtering  
             start_time = time.time()
-            from src.web.fullstreamlit.components.videos_tab import filter_videos_by_date_range
+            from web.fullstreamlit.components.videos_tab import filter_videos_by_date_range
             filtered_date = filter_videos_by_date_range(test_df, 30)
             date_filter_time = time.time() - start_time
             
             # Test pagination
             start_time = time.time()
-            from src.web.fullstreamlit.components.videos_tab import paginate_dataframe
+            from web.fullstreamlit.components.videos_tab import paginate_dataframe
             paginated, total_pages, total_items = paginate_dataframe(test_df, 24, 1)
             pagination_time = time.time() - start_time
             
@@ -135,7 +135,7 @@ def main():
             test_df = videos_data[largest_category].head(50)  # Test with 50 videos
             
             start_time = time.time()
-            from src.web.fullstreamlit.components.videos_tab import render_video_card_optimized
+            from web.fullstreamlit.components.videos_tab import render_video_card_optimized
             import pandas as pd
             
             html_parts = []

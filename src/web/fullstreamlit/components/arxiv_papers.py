@@ -13,8 +13,8 @@ import streamlit as st
 import plotly.express as px
 
 # Add project root to path
-from src.utils.file_system import get_project_root
-from src.utils.recommender import PersonalRecommender
+from utils.file_system import get_project_root
+from utils.recommender import PersonalRecommender
 
 
 class ArxivPapersComponent:
@@ -359,7 +359,7 @@ class ArxivPapersComponent:
                 st.info("Starting paper collection... This may take a few minutes.")
                 with st.spinner("Fetching papers from ArXiv..."):
                     # Import here to avoid circular imports
-                    from src.etl.arxiv.arxiv_etl import ArxivETL
+                    from etl.arxiv.arxiv_etl import ArxivETL
                     etl = ArxivETL(days_back=7, max_results=50)
                     etl.run()
                 st.success("✅ Paper collection complete! Refresh the page to see results.")

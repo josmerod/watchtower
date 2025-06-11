@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 import os
 import json
-from src.web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols
+from web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols
 
 # Get the project root directory
 def get_project_root():

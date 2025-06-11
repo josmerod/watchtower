@@ -20,8 +20,8 @@ from typing import Dict, List, Any, Optional
 import requests
 from bs4 import BeautifulSoup
 
-from src.etl.base import BaseETL
-from src.utils.logging import get_logger
+from etl.base import BaseETL
+from utils.logging import get_logger
 
 
 class MemeEconomicsETL(BaseETL):

@@ -17,19 +17,19 @@ def test_shoppy_product_valid_creation():
     try:
         now = datetime.now()
         product_data = {
-            "product_id": "test_prod_001",
-            "name": "Test Product",
-            "price": "9.99 USD",
-            "seller": "Test Seller",
-            "description": "A great test product.",
-            "url": "http://example.com/product/test_prod_001",
-            "fetched_at": now,
-            "parsed_at": now,
-            "category": "Test Category",
-            "stock_status": "In Stock",
-            "rating": 4.5,
-            "num_reviews": 100,
-            "additional_info": {"key": "value"}
+
+
+
+
+
+
+
+
+
+
+
+
+
         }
         product = ShoppyProduct(**product_data)
         assert product.product_id == "test_prod_001"
@@ -90,9 +90,9 @@ def test_shoppy_raw_data_creation():
     try:
         now = datetime.now()
         raw_data_payload = {
-            "product_id": "raw_001",
-            "raw_content": "<html>Some HTML content</html>",
-            "fetched_at": now
+
+
+
         }
         raw_data_obj = ShoppyRawData(**raw_data_payload)
         assert raw_data_obj.product_id == "raw_001"

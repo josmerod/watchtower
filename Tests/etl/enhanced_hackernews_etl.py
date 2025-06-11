@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Enhanced Hacker News ETL using the new BaseETL framework."""
 
 import re
 from datetime import datetime
@@ -14,15 +13,7 @@ from src.exceptions.etl import ExtractionError, TransformationError
 
 
 class HackerNewsArticle(BaseModel):
-    """Data model for Hacker News articles."""
-    
-    title: str = Field(..., description="Article title")
-    url: HttpUrl = Field(..., description="Article URL")
-    source: str = Field(default="news.ycombinator.com", description="Source domain")
-    published_at: str = Field(..., description="Publication timestamp")
-    hn_id: str = Field(..., description="Hacker News ID")
-    points: int = Field(default=0, description="Number of points")
-    comments_url: str = Field(default="", description="Comments URL")
+
     
     class Config:
         """Pydantic configuration."""
@@ -32,20 +23,18 @@ class HackerNewsArticle(BaseModel):
 
 
 class HackerNewsETL(SimpleETL):
-    """Enhanced ETL for Hacker News using modern architecture."""
-    
+
     def __init__(self):
         """Initialize the HackerNews ETL."""
         super().__init__(name="hackernews_etl")
         self.rss_urls = [
-            "https://hnrss.org/frontpage",
+
             "https://hnrss.org/best"
         ]
         self.settings = get_settings()
     
     def extract(self) -> List[Dict[str, Any]]:
-        """Extract articles from Hacker News RSS feeds.
-        
+
         Returns:
             List of raw article dictionaries.
             
@@ -70,13 +59,11 @@ class HackerNewsETL(SimpleETL):
                     try:
                         article = self._parse_rss_entry(entry)
                         articles.append(article)
-                        self.logger.debug(f"Extracted article: {article.get('title', 'Unknown')}")
                     except Exception as e:
                         self.logger.error(f"Error parsing RSS entry: {e}")
                         continue
                         
             except Exception as e:
-                self.logger.error(f"Error fetching RSS feed {url}: {e}")
                 raise ExtractionError(
                     message=f"Failed to fetch RSS feed: {url}",
                     url=url,
@@ -89,12 +76,10 @@ class HackerNewsETL(SimpleETL):
                 context={"rss_urls": self.rss_urls}
             )
         
-        self.logger.info(f"Successfully extracted {len(articles)} articles")
         return articles
     
     def _parse_rss_entry(self, entry) -> Dict[str, Any]:
-        """Parse a single RSS entry into article data.
-        
+
         Args:
             entry: RSS feed entry object.
             
@@ -126,12 +111,12 @@ class HackerNewsETL(SimpleETL):
         
         # Create article object
         article = {
-            "title": title,
-            "url": story_url,
-            "published_at": published_at,
-            "source": source,
-            "hn_id": story_id,
-            "points": 0,
+
+
+
+
+
+
             "comments_url": ""
         }
         
@@ -139,7 +124,6 @@ class HackerNewsETL(SimpleETL):
         if hasattr(entry, 'summary'):
             # Parse comments URL from summary
             comments_match = re.search(
-                r'Comments URL: &lt;(https://news.ycombinator.com/item\?id=\d+)&gt;', 
                 entry.summary
             )
             if comments_match:
@@ -153,8 +137,7 @@ class HackerNewsETL(SimpleETL):
         return article
     
     def transform_item(self, item: Dict[str, Any]) -> HackerNewsArticle:
-        """Transform raw article data into HackerNewsArticle model.
-        
+
         Args:
             item: Raw article dictionary.
             
@@ -172,7 +155,6 @@ class HackerNewsETL(SimpleETL):
             # Create and validate the model
             article = HackerNewsArticle(**item)
             
-            self.logger.debug(f"Transformed article: {article.title}")
             return article
             
         except Exception as e:
@@ -183,15 +165,12 @@ class HackerNewsETL(SimpleETL):
             ) from e
     
     def load(self, data: List[HackerNewsArticle]) -> bool:
-        """Load processed articles to storage.
-        
+
         Args:
-            data: List of processed HackerNewsArticle instances.
             
         Returns:
             True if load was successful.
         """
-        self.logger.info(f"Loading {len(data)} HackerNews articles")
         
         try:
             # Prepare output directory
@@ -205,7 +184,6 @@ class HackerNewsETL(SimpleETL):
             with open(json_file, 'w', encoding='utf-8') as f:
                 json.dump(articles_data, f, indent=2, default=str)
             
-            self.logger.info(f"Saved {len(articles_data)} articles to {json_file}")
             
             # Save as CSV using pandas
             try:
@@ -226,7 +204,6 @@ class HackerNewsETL(SimpleETL):
                 self.logger.info(f"Saved CSV to {csv_file}")
                 
             except ImportError:
-                self.logger.warning("pandas not available, skipping CSV export")
             except Exception as e:
                 self.logger.error(f"Error saving CSV: {e}")
             

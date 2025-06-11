@@ -6,15 +6,15 @@ import pandas as pd
 import sys
 import os
 from datetime import datetime
+from pathlib import Path
 
-# Add the project root to the path to ensure imports work correctly
 # Import utilities from our modules
-from src.utils.logging import get_logger
-from src.web.fullstreamlit.styles.main import get_main_style
-from src.web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
+from utils.logging import get_logger
+from web.fullstreamlit.styles.main import get_main_style
+from web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
 
 # Import all components
-from src.web.fullstreamlit.components import (
+from web.fullstreamlit.components import (
     shortcuts_tab,
     videos_tab,
     news_tab,
@@ -41,15 +41,14 @@ from src.web.fullstreamlit.components import (
     adhd_tab # Added ADHD tab
 )
 # Import for Anime Tab
-from src.web.fullstreamlit.components.anime_display import display_anime_section
-from src.models.anime import AnimeItem
+from web.fullstreamlit.components.anime_display import display_anime_section
+from models.anime import AnimeItem
 import json
-from pathlib import Path
 from typing import List, Dict, Optional # Already imported but good for clarity
 
 
 # Import enhanced components
-from src.web.fullstreamlit.components import enhanced_innovation_tab
+from web.fullstreamlit.components import enhanced_innovation_tab
 
 # Initialize logger and data service
 logger = get_logger("WatchtowerApp")

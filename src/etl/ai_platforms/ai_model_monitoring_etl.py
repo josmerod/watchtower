@@ -22,8 +22,8 @@ import requests
 from bs4 import BeautifulSoup
 
 # Ensure project root is on path
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
 
 logger = get_logger("AIModelMonitoringETL")
 

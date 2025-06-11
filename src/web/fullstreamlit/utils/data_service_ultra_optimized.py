@@ -22,8 +22,8 @@ import threading
 
 # Import technology intelligence components
 try:
-    from src.analytics.technology_adoption import TechnologyAdoptionAnalyzer
-    from src.models.technology import FrameworkBattleModel, TechnologyCategory, TechnologyPredictionModel
+    from analytics.technology_adoption import TechnologyAdoptionAnalyzer
+    from models.technology import FrameworkBattleModel, TechnologyCategory, TechnologyPredictionModel
 except ImportError:
     # Fallback if modules not available
     TechnologyAdoptionAnalyzer = None
@@ -31,7 +31,7 @@ except ImportError:
     TechnologyCategory = None
     TechnologyPredictionModel = None
 
-from src.utils.logging import get_logger
+from utils.logging import get_logger
 
 class UltraOptimizedDataService:
     """Ultra-optimized data service with advanced caching and memory management"""
@@ -154,7 +154,7 @@ class UltraOptimizedDataService:
             self._log(f"Error loading {file_path}: {str(e)}", "error")
             return []
     
-    @st.cache_data(ttl=3600, max_entries=10, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
+    @st.cache_data(ttl=3600, max_entries=10, show_spinner=False)
     def get_games_data_ultra(_self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Ultra-optimized games data loading with parallel processing"""
         _self._log("Loading games data (ultra-optimized)")
@@ -182,6 +182,11 @@ class UltraOptimizedDataService:
             deals_df = pd.DataFrame(loaded_data['deals'])
             # Optimize data types in one pass
             if not deals_df.empty:
+                # Fix column name mismatches - convert 'published' to 'published_date'
+                if 'published' in deals_df.columns and 'published_date' not in deals_df.columns:
+                    deals_df['published_date'] = deals_df['published']
+                    deals_df = deals_df.drop('published', axis=1)
+                
                 deals_df = _self._optimize_dataframe_dtypes(deals_df, {
                     'published_date': 'datetime',
                     'price': 'float'
@@ -208,6 +213,12 @@ class UltraOptimizedDataService:
         if bundles_data:
             bundles_df = pd.DataFrame(bundles_data)
             if not bundles_df.empty:
+                # Fix column name mismatches - convert 'published' to 'published_date'
+                if 'published' in bundles_df.columns:
+                    if 'published_date' not in bundles_df.columns:
+                        bundles_df['published_date'] = bundles_df['published']
+                    bundles_df = bundles_df.drop('published', axis=1)
+                
                 bundles_df = _self._optimize_dataframe_dtypes(bundles_df, {
                     'published_date': 'datetime'
                 })
@@ -218,6 +229,22 @@ class UltraOptimizedDataService:
         if loaded_data['giveaways']:
             giveaways_df = pd.DataFrame(loaded_data['giveaways'])
             if not giveaways_df.empty:
+                # Fix column name mismatches - convert 'published' to 'published_date' and 'expires' to 'expires_date'
+                if 'published' in giveaways_df.columns:
+                    giveaways_df['published_date'] = giveaways_df['published']
+                    giveaways_df = giveaways_df.drop('published', axis=1)
+                if 'expires' in giveaways_df.columns:
+                    giveaways_df['expires_date'] = giveaways_df['expires']
+                    giveaways_df = giveaways_df.drop('expires', axis=1)
+                
+                # Convert Unix timestamps to datetime strings
+                for col in ['published_date', 'expires_date']:
+                    if col in giveaways_df.columns:
+                        # Check if values are Unix timestamps (integers)
+                        if giveaways_df[col].dtype in ['int64', 'float64']:
+                            # Convert Unix timestamps (milliseconds) to datetime strings
+                            giveaways_df[col] = pd.to_datetime(giveaways_df[col], unit='ms', errors='coerce').dt.strftime('%Y-%m-%d %H:%M:%S')
+                
                 giveaways_df = _self._optimize_dataframe_dtypes(giveaways_df, {
                     'published_date': 'datetime',
                     'expires_date': 'datetime'
@@ -285,13 +312,19 @@ class UltraOptimizedDataService:
         
         # Define news sources with their possible file names
         news_sources = [
-            ('hackernews', _self.cached_paths['hackernews_dir'], ["stories.json", "hackernews.json", "hackernews_simple.json"]),
-            ('futuretools', _self.cached_paths['futuretools_dir'], ["news.json", "futuretoolsnews.json"]),
-            ('medium', _self.cached_paths['medium_dir'], ["articles.json"])
+            ('hackernews', _self.cached_paths.get('hackernews_dir'), ["hackernews.json", "hackernews_simple.json", "stories.json"]),
+            ('futuretools', _self.cached_paths.get('futuretools_dir'), ["futuretoolsnews.json", "news.json"]),
+            ('medium', _self.cached_paths.get('medium_dir'), ["medium_genai.json", "articles.json"]),
+            ('bensbites', _self.data_dir / "bensbites", ["bensbites_news.json"]),
+            ('kdnuggets', _self.data_dir / "kdnuggets", ["kdnuggets.json"]),
+            ('gooddevs', _self.data_dir / "gooddevs", ["gooddevs_latest.json"]),
+            ('meneame_general', _self.data_dir / "meneame", ["meneame_general_latest.json"]),
+            ('meneame_tech', _self.data_dir / "meneame", ["meneame_tecnologia_latest.json"]),
+            ('podcasts', _self.data_dir / "podcasts", ["podcasts_latest.json"])
         ]
         
         for source_name, source_dir, file_names in news_sources:
-            if not source_dir.exists():
+            if not source_dir or not source_dir.exists():
                 continue
                 
             for filename in file_names:
@@ -1651,6 +1684,8 @@ def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:
 
 def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
     """Clean DataFrame to avoid unhashable type errors during Streamlit caching."""
+    import json
+    
     if df.empty:
         return df
     
@@ -1667,10 +1702,20 @@ def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
                 if not sample_values.empty:
                     for val in sample_values:
                         if isinstance(val, (dict, list)):
-                            # Convert all values that are dict or list to JSON strings
-                            df_clean[col] = df_clean[col].apply(
-                                lambda x: json.dumps(x, default=str) if isinstance(x, (dict, list)) else x
-                            )
+                            # Convert all values that are dict or list to formatted strings
+                            def format_value(x):
+                                if isinstance(x, list):
+                                    # For game lists, create readable comma-separated strings
+                                    return ', '.join(str(item) for item in x) if x else ''
+                                elif isinstance(x, dict):
+                                    try:
+                                        return json.dumps(x, default=str)
+                                    except:
+                                        return str(x)
+                                else:
+                                    return x
+                            
+                            df_clean[col] = df_clean[col].apply(format_value)
                             break
             except (TypeError, ValueError):
                 # If there's any issue, convert the entire column to string

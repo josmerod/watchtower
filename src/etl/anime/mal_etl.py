@@ -10,8 +10,8 @@ import requests
 from pydantic.json import pydantic_encoder
 from dotenv import load_dotenv
 
-from src.etl.base import BaseETL, ETLError
-from src.models.anime import AnimeItem
+from etl.base import BaseETL, ETLError
+from models.anime import AnimeItem
 
 # Load environment variables from .env file
 load_dotenv()
@@ -83,7 +83,7 @@ class MalETL(BaseETL):
             self.metrics.error_count += 1
         return None
 
-    def _get_seasonal_anime_raw(self, year: int, season: str, limit: int = 20) -> Optional[Dict[str, Any]]:
+    def _get_seasonal_anime_raw(self, year: int, season: str, limit: int = 100) -> Optional[Dict[str, Any]]:
         """Fetches raw seasonal anime data."""
         endpoint = f"/anime/season/{year}/{season}"
         params = {
@@ -93,7 +93,7 @@ class MalETL(BaseETL):
         }
         return self._make_request(endpoint, params)
 
-    def _get_ranked_anime_raw(self, ranking_type: str, limit: int = 20) -> Optional[Dict[str, Any]]:
+    def _get_ranked_anime_raw(self, ranking_type: str, limit: int = 100) -> Optional[Dict[str, Any]]:
         """Fetches raw ranked anime data."""
         endpoint = "/anime/ranking"
         params = {
@@ -206,11 +206,11 @@ class MalETL(BaseETL):
             except IOError as e:
                 logger.error(f"Failed to save data for {key} to {file_path}: {e}")
                 self.metrics.error_count +=1
-                raise LoadError(f"Failed to save data for {key}: {e}") from e
+                raise Exception(f"Failed to save data for {key}: {e}") from e
             except Exception as e: # Catch any other unexpected errors during save
                 logger.error(f"An unexpected error occurred while saving data for {key} to {file_path}: {e}")
                 self.metrics.error_count += 1
-                raise LoadError(f"Unexpected error saving data for {key}: {e}") from e
+                raise Exception(f"Unexpected error saving data for {key}: {e}") from e
 
         self.metrics.records_loaded = loaded_count
         if loaded_count == 0 and self.metrics.records_transformed > 0 :

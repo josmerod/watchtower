@@ -4,13 +4,13 @@
 
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 import pandas as pd
 
 # Add the project root to the path for imports
-from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("ItchIo_Trending_ETL")
 ITC_API_URL = "https://itch.io/games?sort=trending&format=json"
@@ -38,7 +38,7 @@ def get_itchio_trending() -> None:
         return
 
     trending_list: list[dict[str, str]] = []
-    fetched_at = datetime.utcnow().isoformat()
+    fetched_at = datetime.now(timezone.utc).isoformat()
     for game in games:
         trending_list.append({
             "id": game.get("id"),
@@ -48,7 +48,12 @@ def get_itchio_trending() -> None:
         })
 
     df = pd.DataFrame(trending_list)
-    df = df.sort_values(by="title")
+    
+    # Only sort if DataFrame is not empty and has required columns
+    if not df.empty and "title" in df.columns:
+        df = df.sort_values(by="title")
+    else:
+        logger.warning("DataFrame is empty or missing 'title' column, skipping sort")
 
     output_dir = os.path.join(get_project_root(), "data/games")
     ensure_directories(["data/games"])

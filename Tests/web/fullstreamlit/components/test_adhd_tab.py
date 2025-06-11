@@ -16,7 +16,6 @@ def adhd_component_instance(tmp_path):
     # Override the data_file_path to use a temporary directory
     # The original component sets this path based on project_root and etl_output_dir
     # For testing _load_data in isolation, we directly set data_file_path.
-    component.data_file_path = str(tmp_path / "test_latest_papers.json")
     return component
 
 def test_load_data_successful(adhd_component_instance, tmp_path):
@@ -83,7 +82,6 @@ def test_load_data_generic_exception(mock_st_error, adhd_component_instance, tmp
     # adhd_component_instance.data_file_path = str(data_file)
 
     with patch('builtins.open', mock_open()) as m_open: # Ensure this mock_open is from unittest.mock
-        m_open.side_effect = Exception("Unexpected I/O error")
 
         loaded_data = adhd_component_instance._load_data()
 
@@ -114,8 +112,6 @@ def test_render_no_data_shows_warning(mock_load_data, mock_st_warning, mock_st_t
 def test_render_with_data_displays_papers(mock_render_card, mock_st_text_input, mock_st_markdown, mock_st_title, adhd_component_instance):
     """Tests that papers are displayed when data is available."""
     sample_papers = [
-        {'title': 'Paper 1', 'abstract': 'Abstract 1', 'authors': ['A'], 'publication_date': '2021', 'source': 'PubMed', 'url': 'url1'},
-        {'title': 'Paper 2', 'abstract': 'Abstract 2', 'authors': ['B'], 'publication_date': '2022', 'source': 'PubMed', 'url': 'url2'}
     ]
     # Patch _load_data on the specific instance to control its return value
     with patch.object(adhd_component_instance, '_load_data', return_value=sample_papers) as mock_load_data:
@@ -139,8 +135,6 @@ def test_render_with_data_displays_papers(mock_render_card, mock_st_text_input, 
 def test_render_search_filters_papers(mock_render_card, mock_st_info, mock_st_text_input, mock_st_markdown, mock_st_title, adhd_component_instance):
     """Tests search functionality filters papers correctly."""
     sample_papers = [
-        {'title': 'ADHD Research in Children', 'abstract': 'Focus on child attention.', 'authors':['A'], 'publication_date':'2021', 'source':'S1', 'url':'u1'},
-        {'title': 'Other Study on Adults', 'abstract': 'Completely different topic.', 'authors':['B'], 'publication_date':'2022', 'source':'S2', 'url':'u2'}
     ]
     with patch.object(adhd_component_instance, '_load_data', return_value=sample_papers) as mock_load_data:
         # Test 1: Search term "ADHD" - should match the first paper
@@ -155,7 +149,6 @@ def test_render_search_filters_papers(mock_render_card, mock_st_info, mock_st_te
         mock_render_card.reset_mock() # Reset call count from previous assertion
         mock_st_markdown.reset_mock()
         mock_st_text_input.return_value = "nonexistent"
-        adhd_component_instance.render() # Call render again
 
         mock_st_markdown.assert_any_call("Found 0 papers matching your search.")
         mock_render_card.assert_not_called()
@@ -168,12 +161,12 @@ def test_render_search_filters_papers(mock_render_card, mock_st_info, mock_st_te
 def test_render_paper_card_displays_details(mock_st_write, mock_st_markdown, mock_st_expander, adhd_component_instance):
     """Tests that render_paper_card displays all details of a paper."""
     paper = {
-        'title': 'Detailed Test Title',
-        'authors': ['Author Alpha', 'Author Beta'],
-        'publication_date': '2023 Dec',
-        'source': 'PubMed Central',
-        'doi': '10.12345/test.doi.123',
-        'url': 'http://example.com/detailed_paper',
+
+
+
+
+
+
         'abstract': 'This is a very detailed test abstract for the paper card.'
     }
 
@@ -181,7 +174,6 @@ def test_render_paper_card_displays_details(mock_st_write, mock_st_markdown, moc
     # mock_expander_context = mock_st_expander.return_value.__enter__.return_value
     # No, st.expander itself is the context manager. If it's called, it's "entered".
 
-    adhd_component_instance.render_paper_card(paper, 0)
 
     mock_st_expander.assert_called_once_with(f"{paper['title']}")
 
@@ -202,15 +194,14 @@ def test_render_paper_card_displays_details(mock_st_write, mock_st_markdown, moc
 def test_render_paper_card_handles_missing_optional_fields(mock_st_write, mock_st_markdown, mock_st_expander, adhd_component_instance):
     """Tests that render_paper_card gracefully handles missing optional fields like DOI or abstract."""
     paper_minimal = {
-        'title': 'Minimal Paper',
-        'authors': ['Author Gamma'],
-        'publication_date': '2024',
-        'source': 'arXiv',
-        'url': 'http://example.com/minimal_paper',
-        'doi': None, # Missing DOI
-        'abstract': None # Missing abstract
+
+
+
+
+
+
+
     }
-    adhd_component_instance.render_paper_card(paper_minimal, 0)
 
     mock_st_expander.assert_called_once_with(f"{paper_minimal['title']}")
     mock_st_markdown.assert_any_call(f"**Authors:** {', '.join(paper_minimal['authors'])}")
@@ -232,7 +223,6 @@ def test_render_paper_card_handles_missing_optional_fields(mock_st_write, mock_s
     # Test with empty string abstract
     mock_st_write.reset_mock()
     paper_empty_abstract = {**paper_minimal, 'abstract': ''}
-    adhd_component_instance.render_paper_card(paper_empty_abstract, 1)
     mock_st_write.assert_called_once_with(f"**Abstract:** No abstract available.")
 
-```
+

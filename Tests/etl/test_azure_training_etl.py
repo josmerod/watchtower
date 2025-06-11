@@ -13,25 +13,25 @@ from src.utils.file_system import get_project_root # To be mocked
 # Mock data for Azure Training feed
 MOCK_AZURE_FEED_ENTRIES_RAW = [
     {
-        "title": "Azure AI Fundamentals Workshop",
-        "link": "https://learn.microsoft.com/en-us/blogs/azure-ai-fundamentals-workshop/",
-        "published": "Thu, 26 Jul 2024 11:00:00 GMT",
-        "summary": "Join our interactive workshop on Azure AI.",
-        "description": "Detailed description for Azure AI workshop.",
-        "tags": [{"term": "Azure AI"}, {"term": "Workshop"}, {"term": "Microsoft Learn"}],
+
+
+
+
+
+
     },
     {
-        "title": "New Microsoft Certified: Azure Solutions Architect Expert Path",
-        "link": "https://learn.microsoft.com/en-us/blogs/new-exam-az-305/",
-        "published": "Wed, 25 Jul 2024 15:00:00 +0000",
-        "summary": "Updated learning path for AZ-305 exam.",
-        "tags": [{"term": "Certification"}, {"term": "Azure Architect"}],
+
+
+
+
+
     },
     {
-        "title": "Exploring Azure DevOps Best Practices",
-        "link": "https://learn.microsoft.com/en-us/blogs/azure-devops-best-practices/",
-        "published": "Tue, 24 Jul 2024 08:00:00 EST", # EST is UTC-5
-        "summary": "Learn how to optimize your CI/CD pipelines with Azure DevOps.",
+
+
+
+
         # Missing tags
     }
 ]
@@ -39,12 +39,8 @@ MOCK_AZURE_FEED_ENTRIES_RAW = [
 class TestAzureTrainingETL(unittest.TestCase):
 
     def setUp(self):
-        self.project_root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-        self.test_data_dir = os.path.join(self.project_root_path, "data", "courses")
         os.makedirs(self.test_data_dir, exist_ok=True)
 
-        self.json_path = os.path.join(self.test_data_dir, "azure_training_updates.json")
-        self.csv_path = os.path.join(self.test_data_dir, "azure_training_updates.csv")
 
     def tearDown(self):
         if os.path.exists(self.json_path):
@@ -62,9 +58,7 @@ class TestAzureTrainingETL(unittest.TestCase):
             entry_mock = MagicMock()
             entry_mock.title = raw_entry_data.get("title")
             entry_mock.link = raw_entry_data.get("link")
-            entry_mock.published = raw_entry_data.get("published")
             entry_mock.summary = raw_entry_data.get("summary")
-            entry_mock.description = raw_entry_data.get("description")
 
             raw_tags = raw_entry_data.get("tags", [])
             entry_mock.tags = [MagicMock(term=t_dict.get("term")) for t_dict in raw_tags]
@@ -107,10 +101,10 @@ class TestAzureTrainingETL(unittest.TestCase):
 
         mock_entries_to_save = [
             {
-                "source": "azure_microsoft_learn_blog", "title": "Azure Save Test 1",
-                "link": "http://example.com/azuresavetest1",
-                "published": datetime(2024, 7, 2, 11, 0, 0, tzinfo=timezone.utc).isoformat(),
-                "summary": "Azure Summary 1", "categories": ["az_cat1", "az_cat2"]
+
+
+
+
             },
         ]
         save_azure_training_entries(mock_entries_to_save)
@@ -124,8 +118,6 @@ class TestAzureTrainingETL(unittest.TestCase):
         saved_csv_df = pd.read_csv(self.csv_path)
 
         expected_df = pd.DataFrame(mock_entries_to_save)
-        expected_df['categories'] = expected_df['categories'].astype(str)
-        saved_csv_df['categories'] = saved_csv_df['categories'].astype(str)
 
         expected_columns_order = ["source", "title", "link", "published", "summary", "categories"]
         saved_csv_df = saved_csv_df[expected_columns_order]
@@ -134,5 +126,4 @@ class TestAzureTrainingETL(unittest.TestCase):
         pd.testing.assert_frame_equal(saved_csv_df, expected_df)
 
 if __name__ == '__main__':
-    unittest.main(argv=['first-arg-is-ignored'], exit=False)
-```
+

@@ -14,7 +14,6 @@ import pandas as pd
 
 # Sample XML Data
 SAMPLE_ESEARCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE eSearchResult PUBLIC "-//NLM//DTD eSearchResult, 11 May 2002//EN" "https://eutils.ncbi.nlm.nih.gov/eutils/dtd/20060628/esearch.dtd">
 <eSearchResult>
     <Count>2</Count>
     <RetMax>2</RetMax>
@@ -35,10 +34,8 @@ SAMPLE_ESEARCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
         </TermSet>
     </TranslationStack>
 </eSearchResult>
-"""
 
 SAMPLE_EFETCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE PubmedArticleSet PUBLIC "-//NLM//DTD PubMedArticle, 1st January 2019//EN" "https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_190101.dtd">
 <PubmedArticleSet>
 <PubmedArticle>
     <MedlineCitation Status="MEDLINE" Owner="NLM">
@@ -62,7 +59,6 @@ SAMPLE_EFETCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
                 <Title>Journal of ADHD Research</Title>
                 <ISOAbbreviation>J ADHD Res</ISOAbbreviation>
             </Journal>
-            <ArticleTitle>A Study on ADHD Interventions.</ArticleTitle>
             <Abstract>
                 <AbstractText>This is an abstract for the first paper on ADHD interventions.</AbstractText>
             </Abstract>
@@ -80,7 +76,6 @@ SAMPLE_EFETCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
             </AuthorList>
             <Language>eng</Language>
             <PublicationTypeList>
-                <PublicationType UI="D016428">Journal Article</PublicationType>
             </PublicationTypeList>
         </Article>
         <MedlineJournalInfo>
@@ -100,7 +95,6 @@ SAMPLE_EFETCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
             <PublicationStatus>ppublish</PublicationStatus>
             <ArticleIdList>
                 <ArticleId IdType="pubmed">30000001</ArticleId>
-                <ArticleId IdType="doi">10.1000/j.jadhdres.2023.001</ArticleId>
             </ArticleIdList>
         </PubmedData>
     </MedlineCitation>
@@ -124,18 +118,12 @@ SAMPLE_EFETCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
                         <Month>Feb</Month>
                     </PubDate>
                 </JournalIssue>
-                <Title>International Journal of Neurodevelopmental Disorders</Title>
-                <ISOAbbreviation>Int J Neurodev Dis</ISOAbbreviation>
             </Journal>
-            <ArticleTitle>Exploring Genetic Markers in ADHD.</ArticleTitle>
             <Abstract>
-                <AbstractText Label="BACKGROUND">Background: ADHD has a strong genetic component.</AbstractText>
-                <AbstractText Label="OBJECTIVE">Objective: To identify new genetic markers.</AbstractText>
                 <AbstractText>This abstract explores genetic markers for ADHD.</AbstractText>
             </Abstract>
             <AuthorList CompleteYN="Y">
                 <Author ValidYN="Y">
-                    <CollectiveName>The ADHD Genetics Consortium</CollectiveName>
                 </Author>
             </AuthorList>
             <Language>eng</Language>
@@ -157,13 +145,11 @@ SAMPLE_EFETCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
             <PublicationStatus>epublish</PublicationStatus>
             <ArticleIdList>
                 <ArticleId IdType="pubmed">30000002</ArticleId>
-                <ArticleId IdType="doi">10.1001/ijnd.2023.002</ArticleId>
             </ArticleIdList>
         </PubmedData>
     </MedlineCitation>
 </PubmedArticle>
 </PubmedArticleSet>
-"""
 
 @pytest.fixture
 def adhd_etl_instance(tmp_path):
@@ -183,11 +169,8 @@ def mock_requests_get_side_effect(*args, **kwargs):
     mock_response = MagicMock()
     if args[0] == ESEARCH_URL:
         mock_response.status_code = 200
-        mock_response.content = SAMPLE_ESEARCH_XML.encode('utf-8') # requests.get().content is bytes
-        mock_response.text = SAMPLE_ESEARCH_XML # requests.get().text is str
     elif args[0] == EFETCH_URL:
         mock_response.status_code = 200
-        mock_response.content = SAMPLE_EFETCH_XML.encode('utf-8')
         mock_response.text = SAMPLE_EFETCH_XML
     else:
         mock_response.status_code = 404
@@ -195,7 +178,6 @@ def mock_requests_get_side_effect(*args, **kwargs):
 
 @patch('requests.get')
 def test_extract_successful_fetch_and_parse(mock_get, adhd_etl_instance):
-    mock_get.side_effect = mock_requests_get_side_effect
 
     extracted_data = adhd_etl_instance.extract()
 
@@ -272,7 +254,6 @@ def test_extract_handles_efetch_api_error(mock_get, adhd_etl_instance):
         if args[0] == ESEARCH_URL: # Successful esearch
             mock_esearch_ok = MagicMock()
             mock_esearch_ok.status_code = 200
-            mock_esearch_ok.content = SAMPLE_ESEARCH_XML.encode('utf-8')
             mock_esearch_ok.text = SAMPLE_ESEARCH_XML
             return mock_esearch_ok
         elif args[0] == EFETCH_URL: # Failed efetch
@@ -306,7 +287,6 @@ def test_extract_handles_empty_pmids_from_esearch(mock_get, adhd_etl_instance):
         if args[0] == ESEARCH_URL:
             mock_response = MagicMock()
             mock_response.status_code = 200
-            mock_response.content = SAMPLE_ESEARCH_XML_NO_PMIDS.encode('utf-8')
             mock_response.text = SAMPLE_ESEARCH_XML_NO_PMIDS
             return mock_response
         # Should not reach efetch
@@ -337,7 +317,6 @@ def test_extract_handles_esearch_xml_parse_error(mock_fromstring, mock_get, adhd
     mock_esearch_response.content = b"<malformed_xml>"
     mock_get.return_value = mock_esearch_response
 
-    mock_fromstring.side_effect = ET.ParseError("Malformed XML")
 
     with patch.object(adhd_etl_instance.logger, 'error') as mock_logger_error:
         extracted_data = adhd_etl_instance.extract()
@@ -354,8 +333,6 @@ def test_extract_handles_efetch_xml_parse_error(mock_fromstring, mock_get, adhd_
 
     # First call to fromstring (esearch) should succeed
     esearch_root_mock = ET.Element("eSearchResult")
-    ET.SubElement(esearch_root_mock, "WebEnv").text = "SAMPLE_WEBENV"
-    ET.SubElement(esearch_root_mock, "QueryKey").text = "SAMPLE_QKEY"
     id_list_mock = ET.SubElement(esearch_root_mock, "IdList")
     ET.SubElement(id_list_mock, "Id").text = "12345"
 
@@ -369,13 +346,11 @@ def test_extract_handles_efetch_xml_parse_error(mock_fromstring, mock_get, adhd_
     # requests.get will also be called twice.
     mock_esearch_response = MagicMock()
     mock_esearch_response.status_code = 200
-    mock_esearch_response.content = SAMPLE_ESEARCH_XML.encode('utf-8') # Content doesn't matter as fromstring is mocked
 
     mock_efetch_response = MagicMock()
     mock_efetch_response.status_code = 200
     mock_efetch_response.content = b"<malformed_efetch_xml>" # Content for efetch
 
-    mock_get.side_effect = [mock_esearch_response, mock_efetch_response]
 
     with patch.object(adhd_etl_instance.logger, 'error') as mock_logger_error:
         extracted_data = adhd_etl_instance.extract()
@@ -390,33 +365,33 @@ def test_extract_handles_efetch_xml_parse_error(mock_fromstring, mock_get, adhd_
 def sample_raw_papers_data():
     return [
         {
-            'pmid': '12345',
-            'title': 'Test Title 1',
-            'abstract': 'This is an abstract.',
-            'authors': ['Author A', 'Author B'],
-            'publication_date': '2023 Jan 1',
-            'journal_title': 'Test Journal 1', # Added as extract method includes it
-            'doi': '10.1234/test.doi.1',
+
+
+
+
+
+
+
             'url': 'https://pubmed.ncbi.nlm.nih.gov/12345/'
             # 'source' is added by transform, not expected in raw data from extract
         },
         {
-            'pmid': '67890',
-            'title': 'Test Title 2: No DOI or Abstract',
-            'abstract': None, # Missing abstract
-            'authors': ['Author C'],
-            'publication_date': '2022', # Different date format
-            'journal_title': 'Test Journal 2',
-            'doi': None, # Missing DOI
+
+
+
+
+
+
+
             'url': 'https://pubmed.ncbi.nlm.nih.gov/67890/'
         },
         { # Paper with minimal required data by Pydantic model (title, authors, source)
           # 'source' will be added by transform
-            'pmid': '11121',
-            'title': 'Test Title 3: Minimal Data',
-            'authors': ['Author D'],
-            'publication_date': '2021 Dec',
-            'url': 'https://pubmed.ncbi.nlm.nih.gov/11121/',
+
+
+
+
+
             # 'abstract', 'doi', 'journal_title' are optional in Pydantic model or not directly used
         }
     ]
@@ -450,28 +425,26 @@ def test_transform_handles_missing_critical_fields(adhd_etl_instance, caplog):
 
     malformed_data = [
         { # Missing title
-            'pmid': '00001',
-            'abstract': 'Abstract for item with no title.',
-            'authors': ['Author X'],
-            'publication_date': '2023',
-            'doi': '10.x/no.title',
+
+
+
+
+
             'url': 'https://pubmed.ncbi.nlm.nih.gov/00001/'
         },
-        { # Valid item to ensure list is not entirely empty
-            'pmid': '12345',
-            'title': 'Valid Title',
-            'abstract': 'This is a valid abstract.',
-            'authors': ['Author A', 'Author B'],
-            'publication_date': '2023 Jan 1',
-            'doi': '10.1234/test.doi.1',
+
+
+
+
+
+
             'url': 'https://pubmed.ncbi.nlm.nih.gov/12345/'
         },
-        { # Missing authors (should also cause validation error)
-            'pmid': '00002',
-            'title': 'Title with no authors',
-            'abstract': 'Abstract for item with no authors.',
-            'publication_date': '2023',
-            'doi': '10.x/no.authors',
+
+
+
+
+
             'url': 'https://pubmed.ncbi.nlm.nih.gov/00002/'
         }
     ]
@@ -646,7 +619,6 @@ def test_load_handles_empty_input(mock_df_to_csv, mock_file_open, mock_os_makedi
 def test_load_creates_output_directories(mock_df_to_csv, mock_file_open, adhd_etl_instance, sample_transformed_papers_data, tmp_path):
     adhd_etl_instance.output_dir = str(tmp_path)
 
-    adhd_etl_instance.load(sample_transformed_papers_data) # sample_transformed_papers_data is not empty
 
     json_dir = tmp_path / "json"
     csv_dir = tmp_path / "csv"
@@ -769,4 +741,4 @@ def test_run_handles_general_exception_during_load(m_extract, m_transform, m_loa
 
     assert f"Error during ETL pipeline: {adhd_etl_instance.name}: Load Exploded" in caplog.text
 
-```
+

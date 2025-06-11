@@ -8,34 +8,29 @@ from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text(encoding="utf-8")
 
-# Read requirements from requirements.txt
-requirements = []
-with open("requirements.txt", "r", encoding="utf-8") as f:
-    requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+def read_requirements(filename):
+    """Read requirements from a file, filtering out comments and empty lines."""
+    requirements = []
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                # Skip empty lines, comments, and lines starting with -
+                if line and not line.startswith("#") and not line.startswith("-"):
+                    # Remove inline comments
+                    if "#" in line:
+                        line = line.split("#")[0].strip()
+                    if line:
+                        requirements.append(line)
+    except FileNotFoundError:
+        print(f"Warning: {filename} not found")
+    return requirements
 
-# Read dev requirements from requirements-dev.txt
-dev_requirements = []
-try:
-    with open("requirements-dev.txt", "r", encoding="utf-8") as f:
-        dev_requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-except FileNotFoundError:
-    pass
-
-# Read ML requirements from requirements-ml.txt
-ml_requirements = []
-try:
-    with open("requirements-ml.txt", "r", encoding="utf-8") as f:
-        ml_requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-except FileNotFoundError:
-    pass
-
-# Read web requirements from requirements-web.txt
-web_requirements = []
-try:
-    with open("requirements-web.txt", "r", encoding="utf-8") as f:
-        web_requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-except FileNotFoundError:
-    pass
+# Read requirements from all files  
+requirements = read_requirements("requirements-minimal.txt")
+dev_requirements = read_requirements("requirements-dev.txt")  
+ml_requirements = read_requirements("requirements-ml.txt")
+web_requirements = read_requirements("requirements-web.txt")
 
 setup(
     name="watchtower",

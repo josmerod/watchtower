@@ -1,6 +1,6 @@
 """Data models for Watchtower."""
 
-from src.models.arxiv import (
+from models.arxiv import (
     ArxivPaperModel,
     CommercialPotential,
     EnhancedArxivPaperModel,
@@ -9,14 +9,14 @@ from src.models.arxiv import (
     ResearchCategory,
     TechnologyReadinessLevel,
 )
-from src.models.base import (
+from models.base import (
     BaseModel,
     ErrorModel,
     PaginationModel,
     StatusModel,
     TimestampedModel,
 )
-from src.models.events import (
+from models.events import (
     EventFormat,
     EventRecommendationModel,
     EventStatus,
@@ -26,7 +26,7 @@ from src.models.events import (
     UserEventPreferencesModel,
     VenueModel,
 )
-from src.models.security import (
+from models.security import (
     AttackComplexity,
     AttackVector,
     PrivilegesRequired,
@@ -37,7 +37,7 @@ from src.models.security import (
     VulnerabilitySourceModel,
     VulnerabilityStatus,
 )
-from src.models.technology import (
+from models.technology import (
     AdoptionLevel,
     FrameworkBattleModel,
     MaturityLevel,
@@ -49,7 +49,7 @@ from src.models.technology import (
     TrendDirection,
 )
 
-# from src.models.news import NewsArticleModel, FeedSourceModel  # Temporarily disabled
+# from models.news import NewsArticleModel, FeedSourceModel  # Temporarily disabled
 
 __all__ = [
     # Base models

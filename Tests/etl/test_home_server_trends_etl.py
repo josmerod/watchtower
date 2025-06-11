@@ -49,14 +49,10 @@ class TestHomeServerTrendsETL(unittest.TestCase):
 ## Some Section
 
 ### Analytics
-- [Plausible Analytics](https://plausible.io/) - Simple, lightweight (< 1 KB) and privacy-friendly web analytics. `AGPL-3.0` `Elixir`
-- [Matomo](https://matomo.org/) - Web analytics that protects your data. `GPL-3.0` `PHP`
 
 ### Not Interesting Category
-- [NotInListApp](http://notinlist.com) - Some other app.
 
 ### Automation
-- [Huginn](https://github.com/huginn/huginn) - Build agents that monitor and act on your behalf. `MIT` `Ruby`
 - [changedetection.io](https://changedetection.io/) - Stay up-to-date with web-site content changes. `Apache-2.0` `Python/Docker`
         """
         test_categories = ["Analytics", "Automation"]
@@ -91,9 +87,6 @@ class TestHomeServerTrendsETL(unittest.TestCase):
         mock_markdown = """
 ### Personal Dashboards
 - [Dashy](https://dashy.to/) - Feature-rich homepage for your homelab, with easy YAML configuration. `MIT` `Nodejs/Docker`
-- [Homer](https://github.com/bastienwirtz/homer) - Dead simple static homepage. `Apache-2.0`
-- [Homepage by gethomepage](https://github.com/gethomepage/homepage) - Highly customizable homepage.
-- [NoTagsApp](https://notags.com) - Just a description.
         """
         test_categories = ["Personal Dashboards"]
         test_source_name = "test_source_variations"
@@ -133,16 +126,16 @@ class TestHomeServerTrendsETL(unittest.TestCase):
     def test_process_items(self):
         raw_data = [
             {
-                "id": "1", "name": "App1", "url": "http://app1.com",
-                "description": "Desc1", "category": "Cat1",
-                "tags": ["Tag1"], "source": "awesome-selfhosted",
-                "added_date": datetime(2023, 1, 1)
+
+
+
+
             },
             {
-                "id": "2", "name": "App2", "url": "http://app2.com",
-                "description": "Desc2", "category": "Cat2",
-                "tags": None, "source": "awesome-selfhosted",
-                "added_date": datetime(2023, 1, 2)
+
+
+
+
             }
         ]
         processed = etl_script.process_items(raw_data)
@@ -206,7 +199,6 @@ class TestHomeServerTrendsETL(unittest.TestCase):
 ## Software Platforms
 - [App1](http://app1.com) - Desc1 from HA list. `MIT`
 - [App3](http://app3.com) - Desc3 for HA. `Apache-2.0`
-        """
 
         def fetch_side_effect(session, url, source_name_for_log):
             if url == etl_script.AWESOME_SELFHOSTED_URL:
@@ -222,8 +214,6 @@ class TestHomeServerTrendsETL(unittest.TestCase):
         original_as_categories = etl_script.AWESOME_SELFHOSTED_CATEGORIES
         original_ha_categories = etl_script.HOME_AUTOMATION_CATEGORIES
 
-        etl_script.AWESOME_SELFHOSTED_CATEGORIES = ["Analytics"]
-        etl_script.HOME_AUTOMATION_CATEGORIES = ["Software Platforms"]
 
         # Call the main function
         etl_script.main()
@@ -254,8 +244,6 @@ class TestHomeServerTrendsETL(unittest.TestCase):
         self.assertTrue(mock_save_data.called)
 
         # Restore original categories
-        etl_script.AWESOME_SELFHOSTED_CATEGORIES = original_as_categories
-        etl_script.HOME_AUTOMATION_CATEGORIES = original_ha_categories
 
 
 if __name__ == '__main__':

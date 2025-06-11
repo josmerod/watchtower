@@ -23,8 +23,8 @@ from typing import Any
 import requests
 
 # Add the project root to the path to ensure imports work correctly
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("CryptoSentimentMiner")
@@ -316,7 +316,7 @@ class CryptoSentimentMiner:
             "sentiment_label": sentiment_label,
             "engagement_score": post_data.get("score", 0)
             + post_data.get("num_comments", 0),
-            "fetched_at": datetime.utcnow().isoformat(),
+            "fetched_at": datetime.now(datetime.UTC).isoformat(),
         }
 
     def _analyze_news_article(
@@ -357,7 +357,7 @@ class CryptoSentimentMiner:
             "sentiment_score": sentiment_score,
             "sentiment_label": sentiment_label,
             "credibility_score": self._calculate_news_credibility(source),
-            "fetched_at": datetime.utcnow().isoformat(),
+            "fetched_at": datetime.now(datetime.UTC).isoformat(),
         }
 
     def _analyze_social_media_post(
@@ -397,7 +397,7 @@ class CryptoSentimentMiner:
             "sentiment_score": sentiment_score,
             "sentiment_label": sentiment_label,
             "influence_score": self._calculate_influence_score(post),
-            "fetched_at": datetime.utcnow().isoformat(),
+            "fetched_at": datetime.now(datetime.UTC).isoformat(),
         }
 
     def _detect_cryptocurrencies(self, text: str) -> list[str]:
@@ -520,14 +520,14 @@ class CryptoSentimentMiner:
                 "content": "Bitcoin has surged to a new all-time high following increased institutional adoption...",
                 "url": f"https://{source}/bitcoin-ath-institutional-adoption",
                 "author": "Crypto Reporter",
-                "published_at": datetime.utcnow().isoformat(),
+                "published_at": datetime.now(datetime.UTC).isoformat(),
             },
             {
                 "title": "Ethereum 2.0 Upgrade Shows Promising Results for Scalability",
                 "content": "The Ethereum 2.0 upgrade continues to show positive results for network scalability...",
                 "url": f"https://{source}/ethereum-2-upgrade-scalability",
                 "author": "Tech Analyst",
-                "published_at": datetime.utcnow().isoformat(),
+                "published_at": datetime.now(datetime.UTC).isoformat(),
             },
         ]
 
@@ -551,7 +551,7 @@ class CryptoSentimentMiner:
                 "followers_count": 10000,
                 "likes_count": 150,
                 "retweets_count": 75,
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(datetime.UTC).isoformat(),
             },
             {
                 "id": f"{platform}_002",
@@ -560,7 +560,7 @@ class CryptoSentimentMiner:
                 "followers_count": 25000,
                 "likes_count": 200,
                 "retweets_count": 120,
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(datetime.UTC).isoformat(),
             },
         ]
 
@@ -643,7 +643,7 @@ class CryptoSentimentMiner:
                 }
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(datetime.UTC).isoformat(),
             "total_items_analyzed": len(sentiment_data),
             "cryptocurrencies_mentioned": len(aggregated_data),
             "crypto_sentiment": aggregated_data,

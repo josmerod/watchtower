@@ -34,7 +34,7 @@ nltk>=3.9.1
 tqdm>=4.67.1
 
 # Research API integrations
-# paperswithcode-client>=0.3.1  # Removed due to pydantic v1 dependency conflict
+# Note: paperswithcode-client removed due to pydantic v1 dependency conflict
 
 # Configuration and utilities
 schedule>=1.0.0

@@ -19,8 +19,8 @@ import json
 from datetime import datetime
 from typing import Any
 
-from src.etl.base import BaseETL
-from src.utils.logging import get_logger
+from etl.base import BaseETL
+from utils.logging import get_logger
 
 
 class AIMonitoringETL(BaseETL):

@@ -16,7 +16,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import requests
@@ -24,8 +24,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 # Add the project root to the path to ensure imports work correctly
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("ProductHuntETL")
@@ -323,7 +323,7 @@ def generate_mock_products(category: str, count: int) -> list[dict[str, Any]]:
         List of mock product dictionaries
     """
     import random
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     products = []
 
@@ -393,7 +393,7 @@ def generate_mock_products(category: str, count: int) -> list[dict[str, Any]]:
         comments = random.randint(5, 200)
         created_days_ago = random.randint(0, 30)
 
-        created_at = datetime.utcnow() - timedelta(days=created_days_ago)
+        created_at = datetime.now(timezone.utc) - timedelta(days=created_days_ago)
 
         product = {
             "id": f"mock_product_{category}_{i}",
@@ -459,7 +459,7 @@ def process_product_hunt_data(products: list[dict[str, Any]]) -> list[dict[str, 
     Returns:
         List of processed and enriched product data
     """
-    current_time = datetime.utcnow()
+    current_time = datetime.now(timezone.utc)
     processed_products = []
 
     for product in products:

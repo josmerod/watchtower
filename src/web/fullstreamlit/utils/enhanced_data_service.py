@@ -11,10 +11,10 @@ import json
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from src.analytics.technology_adoption import TechnologyAdoptionAnalyzer
-from src.models.technology import FrameworkBattleModel, TechnologyCategory, TechnologyPredictionModel
-from src.utils.logging import get_logger
-from src.web.fullstreamlit.utils.data_service import DataService
+from analytics.technology_adoption import TechnologyAdoptionAnalyzer
+from models.technology import FrameworkBattleModel, TechnologyCategory, TechnologyPredictionModel
+from utils.logging import get_logger
+from web.fullstreamlit.utils.data_service import DataService
 
 
 class UltraOptimizedDataService(DataService):

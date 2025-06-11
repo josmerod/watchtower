@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 
 from pydantic import Field, HttpUrl, field_validator
 
-from src.models.base import TimestampedModel
+from models.base import TimestampedModel
 
 
 class FeedType(str, Enum):

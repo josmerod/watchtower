@@ -20,7 +20,7 @@ except ImportError:
 # Import exceptions if the client library defines specific ones for retries
 # from paperswithcode.exceptions import RateLimitError, ServerError # Example
 
-from src.utils.logging import get_logger
+from utils.logging import get_logger
 
 logger = get_logger(__name__)
 

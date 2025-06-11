@@ -55,9 +55,9 @@ def test_shoppy_scraper_parse_product_data_mock():
         product_id = "test_parse_123"
         now = datetime.now()
         raw_data = {
-            "product_id": product_id,
-            "raw_content": "<html><body>Mock HTML for parsing</body></html>",
-            "fetched_at": now.isoformat()
+
+
+
         }
         # This method is a placeholder, so we test its current mock behavior
         parsed_data = scraper.parse_product_data(raw_data)
@@ -82,10 +82,10 @@ def test_run_shoppy_etl_mock_flow(MockShoppyScraper, mock_file_open, mock_os_mak
 
         raw_data_sample = {"product_id": "prod1", "raw_content": "raw", "fetched_at": datetime.now().isoformat()}
         processed_data_sample = {
-            "product_id": "prod1", "name": "Test Product", "price": "1 USD",
-            "seller": "Test Seller", "url": "http://example.com/prod1",
-            "description": "Test desc",
-            "fetched_at": datetime.now().isoformat(), "parsed_at": datetime.now().isoformat()
+
+
+
+
         }
 
         mock_scraper_instance.fetch_product_data.return_value = raw_data_sample

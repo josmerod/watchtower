@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Add project root to path
-from src.utils.logging import get_logger
+from utils.logging import get_logger
 
 def measure_memory():
     """Get current memory usage in MB"""
@@ -89,7 +89,7 @@ def main():
                 st.write("**Testing Original Data Service**")
                 
                 try:
-                    from src.web.fullstreamlit.utils.data_service import DataService
+                    from web.fullstreamlit.utils.data_service import DataService
                     
                     original_times = []
                     original_memory = []
@@ -129,7 +129,7 @@ def main():
                 st.write("**Testing Ultra-Optimized Data Service**")
                 
                 try:
-                    from src.web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
+                    from web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
                     
                     ultra_times = []
                     ultra_memory = []
@@ -188,7 +188,7 @@ def main():
                 
                 # Prepare test data
                 try:
-                    from src.web.fullstreamlit.utils.data_service import DataService
+                    from web.fullstreamlit.utils.data_service import DataService
                     data_service = DataService(logger)
                     test_videos_data = data_service.get_videos_data()
                     
@@ -201,7 +201,7 @@ def main():
                         st.write("**Testing Original Videos Tab**")
                         
                         try:
-                            from src.web.fullstreamlit.components.videos_tab import render as original_render
+                            from web.fullstreamlit.components.videos_tab import render as original_render
                             
                             original_video_times = []
                             original_video_memory = []
@@ -230,7 +230,7 @@ def main():
                         st.write("**Testing Ultra-Optimized Videos Tab**")
                         
                         try:
-                            from src.web.fullstreamlit.components.videos_tab_ultra_optimized import render_ultra_optimized
+                            from web.fullstreamlit.components.videos_tab_ultra_optimized import render_ultra_optimized
                             
                             ultra_video_times = []
                             ultra_video_memory = []

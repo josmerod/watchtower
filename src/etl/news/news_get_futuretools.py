@@ -14,9 +14,9 @@ from typing import Any
 import requests
 from bs4 import BeautifulSoup
 
-# Add the project root to the path to ensure imports work correctly
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
+# Import from the installed package
+from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("FuturetoolsETL")

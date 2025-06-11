@@ -38,7 +38,6 @@ except ImportError as e:
 
     class VirtualMuseumModel: # Placeholder Pydantic model
         def __init__(self, **kwargs):
-            self.name = kwargs.get("name") # Simulate Pydantic behavior
             if not self.name:
                 raise ValueError("Name is required") # Simulate Pydantic ValidationError
             for k,v in kwargs.items():
@@ -47,24 +46,24 @@ except ImportError as e:
 
 # Sample data for mocking Wikidata API response
 SAMPLE_WIKIDATA_RESPONSE = {
-    "results": {
-        "bindings": [
+
+
             {
-                "museum": {"type": "uri", "value": "http://www.wikidata.org/entity/Q1"},
-                "museumLabel": {"xml:lang": "en", "type": "literal", "value": "Test Museum 1"},
-                "museumDescription": {"xml:lang": "en", "type": "literal", "value": "A great museum."},
-                "website": {"type": "uri", "value": "http://example.com/museum1"},
-                "virtualTourURL": {"type": "uri", "value": "http://example.com/museum1/virtualtour"},
-                "countryLabel": {"xml:lang": "en", "type": "literal", "value": "Testland"},
-                "cityLabel": {"xml:lang": "en", "type": "literal", "value": "Testville"},
-                "mainSubjectLabel": {"xml:lang": "en", "type": "literal", "value": "History"},
-                "image": {"type": "uri", "value": "http://example.com/image1.jpg"},
-                "coordinates": {"datatype": "http://www.opengis.net/ont/geosparql#wktLiteral", "type": "literal", "value": "Point(10.0 20.0)"}
+
+
+
+
+
+
+
+
+
+
             },
             {
-                "museum": {"type": "uri", "value": "http://www.wikidata.org/entity/Q2"},
-                "museumLabel": {"xml:lang": "en", "type": "literal", "value": "Test Museum 2"},
-                "virtualTourURL": {"type": "uri", "value": "http://example.com/museum2/virtualtour"},
+
+
+
                 # Note: Other fields are optional and might be missing
             }
         ]
@@ -74,32 +73,32 @@ SAMPLE_WIKIDATA_RESPONSE = {
 # Sample raw items that mimic the output of a successful extract call
 SAMPLE_RAW_ITEMS_FOR_TRANSFORM = [
     {
-        'wikidata_url': 'http://www.wikidata.org/entity/Q101',
-        'name': 'Test Museum 1 Transformed',
-        'description': 'Description for transformed museum 1.',
-        'website_url': 'http://example.com/museum1_transformed',
-        'virtual_tour_url': 'http://example.com/museum1_transformed/virtualtour',
-        'country_label': 'Testland Transformed',
-        'city_label': 'Testville Transformed',
-        'main_subject_label': 'Art',
-        'image_url': 'http://example.com/image1_transformed.jpg',
-        'latitude': 20.0,
-        'longitude': 10.0
+
+
+
+
+
+
+
+
+
+
+
     },
     { # Item missing 'name' for validation error test
-        'wikidata_url': 'http://www.wikidata.org/entity/Q102',
+
         # 'name': None, # Name is missing
-        'description': 'This museum has no name.',
-        'virtual_tour_url': 'http://example.com/museum102/virtualtour',
+
+
     },
     {
-        'wikidata_url': 'http://www.wikidata.org/entity/Q103',
-        'name': 'Test Museum 3 Valid',
-        'description': 'A perfectly valid museum for testing.',
-        'virtual_tour_url': 'http://example.com/museum103/virtualtour',
-        'country_label': 'Validland',
-        'latitude': 40.0,
-        'longitude': 30.0
+
+
+
+
+
+
+
     }
 ]
 
@@ -215,7 +214,7 @@ if __name__ == '__main__':
     import requests
     unittest.main()
 
-```
+
 
 **Note on Placeholders:**
 I've added placeholder classes for `SimpleETL`, `VirtualMuseumsETL`, and `VirtualMuseumModel` inside a `try-except ImportError` block. This is a common pattern for making sure the tool can create the file even if the exact project structure and dependencies aren't perfectly resolvable in its isolated environment. These placeholders would not be used if the actual modules are found in `sys.path`. The `requests` import is also handled carefully for the `__main__` block.
@@ -225,7 +224,6 @@ The `test_transform_validation_error` assumes that `name` is a required field in
 Here's a summary of what's included:
 
 1.  **Imports**:
-    *   `unittest` and `unittest.mock.patch`, `MagicMock`.
     *   `sys` and `os` for path manipulation to help with imports in various environments.
     *   `VirtualMuseumsETL` from `src.etl.museums.museum_etl` and `VirtualMuseumModel` from `src.models.museums` (with placeholder fallbacks in case of `ImportError` which is useful for the tool's execution environment).
     *   `List`, `Dict`, `Any` from `typing`.
@@ -234,13 +232,11 @@ Here's a summary of what's included:
     *   `SAMPLE_WIKIDATA_RESPONSE`: A dictionary mimicking a typical successful JSON response from the Wikidata SPARQL endpoint for two museum entries.
     *   `SAMPLE_RAW_ITEMS_FOR_TRANSFORM`: A list of three dictionaries, where the first and third are valid for transformation, and the second is intentionally missing the 'name' field to test validation error handling.
 
-3.  **Test Class `TestVirtualMuseumsETL(unittest.TestCase)`**:
     *   **`setUp` method**: Instantiates `self.etl = VirtualMuseumsETL()` and mocks `self.etl.logger` to suppress log output during tests and allow for assertions on log calls.
     *   **`test_extract_successful` method**:
         *   Uses `@patch('requests.get')` to mock the HTTP GET request.
         *   Configures the mock response with `status_code = 200` and JSON content from `SAMPLE_WIKIDATA_RESPONSE`.
         *   Calls `self.etl.extract()` and asserts that the output is a list, its length matches the sample, and the content of the first processed item is as expected (checking field mapping, including coordinate parsing).
-        *   Asserts that `requests.get` was called and relevant log messages were produced.
     *   **`test_extract_api_error` method**:
         *   Uses `@patch('requests.get')` and configures the mock to raise `requests.exceptions.RequestException`.
         *   Calls `self.etl.extract()` and asserts that the output is an empty list and an error was logged.
@@ -248,15 +244,10 @@ Here's a summary of what's included:
         *   Uses `@patch('requests.get')` and configures the mock response with `status_code = 404` and to raise `requests.exceptions.HTTPError` when `raise_for_status()` is called.
         *   Calls `self.etl.extract()` and asserts that the output is an empty list and an error was logged.
     *   **`test_transform_successful` method**:
-        *   Creates a sample list of valid raw dictionaries.
         *   Calls `self.etl.transform()` and asserts that the output is a list, all items are instances of `VirtualMuseumModel`, and key fields are correctly mapped.
         *   Asserts a success log message.
     *   **`test_transform_validation_error` method**:
-        *   Uses `SAMPLE_RAW_ITEMS_FOR_TRANSFORM` which contains one item designed to fail validation (missing 'name').
         *   Calls `self.etl.transform()`.
-        *   Asserts that the problematic item was skipped (checking the length of the output list).
-        *   Asserts that valid items were still transformed correctly.
-        *   Asserts logging of successful transformations and failed/skipped items.
 
 4.  **`if __name__ == '__main__': unittest.main()`** block for running the tests directly. Includes a local import of `requests` to ensure it's in scope for the tests when run this way.
 
