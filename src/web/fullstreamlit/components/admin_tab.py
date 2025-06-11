@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 
 import sys
-from src.utils.file_system import get_project_root
+from utils.file_system import get_project_root
 
 
 # Get the project root directory
@@ -327,7 +327,7 @@ def render(logger):
             st.info("Starting ArXiv ETL process...")
             
             try:
-                from src.etl.arxiv.arxiv_etl import ArxivETL
+                from etl.arxiv.arxiv_etl import ArxivETL
                 
                 with st.spinner("Running ETL..."):
                     etl = ArxivETL(days_back=7, max_results=50)
@@ -341,7 +341,7 @@ def render(logger):
         if st.button("Run Humble Bundle ETL"):
             st.info("Starting Humble Bundle ETL process...")
             try:
-                from src.etl.games.games_get_humblebundles import main as run_humble
+                from etl.games.games_get_humblebundles import main as run_humble
                 with st.spinner("Running Humble Bundle ETL..."):
                     run_humble()
                 st.success("Humble Bundle ETL process completed!")
@@ -352,7 +352,7 @@ def render(logger):
         if st.button("Run Subreddits ETL"):
             st.info("Starting Subreddits ETL process...")
             try:
-                from src.etl.news.news_get_subreddits import main as run_subreddits
+                from etl.news.news_get_subreddits import main as run_subreddits
                 with st.spinner("Running Subreddits ETL..."):
                     run_subreddits()
                 st.success("Subreddits ETL process completed!")
@@ -363,7 +363,7 @@ def render(logger):
         if st.button("Run Media RSS ETL"):
             st.info("Starting Media RSS ETL process...")
             try:
-                from src.etl.news.news_get_media_rss import main as run_media_rss
+                from etl.news.news_get_media_rss import main as run_media_rss
                 with st.spinner("Running Media RSS ETL..."):
                     run_media_rss()
                 st.success("Media RSS ETL process completed!")

@@ -1,12 +1,12 @@
 """Exception handling for Watchtower."""
 
-from src.exceptions.base import (
+from exceptions.base import (
     ConfigurationError,
     ValidationError,
     WatchtowerError,
     WatchtowerWarning,
 )
-from src.exceptions.etl import (
+from exceptions.etl import (
     DataSourceError,
     DataValidationError,
     ETLError,
@@ -14,14 +14,14 @@ from src.exceptions.etl import (
     LoadError,
     TransformationError,
 )
-from src.exceptions.scraping import (
+from exceptions.scraping import (
     ParsingError,
     RateLimitError,
     RequestError,
     ScrapingError,
     TimeoutError,
 )
-from src.exceptions.watcher import (
+from exceptions.watcher import (
     WatcherConfigurationError,
     WatcherError,
     WatcherRuntimeError,

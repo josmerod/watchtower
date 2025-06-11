@@ -19,8 +19,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 # Add the project root to the path to ensure imports work correctly
-from src.watchers.base_watcher import BaseWatcher
-from src.utils.logging import get_logger
+from watchers.base_watcher import BaseWatcher
+from utils.logging import get_logger
 
 
 class MSAppliedSkillsWatcher(BaseWatcher):

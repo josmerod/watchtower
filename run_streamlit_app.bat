@@ -9,6 +9,7 @@ echo ========================================================
 cd /d %~dp0
 echo Working directory: %CD%
 
+
 echo.
 echo Step 1: Checking virtual environment...
 if not exist .venv (
@@ -28,25 +29,15 @@ if !errorlevel! neq 0 (
 echo Virtual environment activated successfully.
 
 echo.
-echo Step 2: Installing/updating required packages...
-python -m pip install -U pip
-python -m pip install streamlit
-if !errorlevel! neq 0 (
-    echo Error installing required packages.
-    goto error
-)
-echo Packages installed successfully.
-
+echo Step 2: Running Streamlit application...
 echo.
-echo Step 3: Running Streamlit application...
-echo.
-echo You can access the application at http://localhost:8501
+echo You can access the application at http://localhost:5555
 echo.
 echo Press Ctrl+C to stop the application
 echo ========================================================
 echo.
 
-python -m streamlit run src/web/fullstreamlit/app.py
+python -m streamlit run src/web/fullstreamlit/app.py --server.port 5555
 if !errorlevel! neq 0 (
     echo Error running Streamlit application.
     goto error

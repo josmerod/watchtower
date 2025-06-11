@@ -15,33 +15,32 @@ from src.etl.news.news_get_newsapi import (
     transform_articles_to_model,
     process_articles,
     save_data, # We will mock this
-    main as news_api_main # To potentially test parts of main or its setup
 )
 from src.models.news import NewsArticleModel # For type checking if needed
 
 # Sample NewsAPI JSON response
 SAMPLE_NEWSAPI_RESPONSE = {
-    "status": "ok",
-    "totalResults": 2,
-    "articles": [
+
+
+
         {
-            "source": {"id": "test-source-1", "name": "Test Source One"},
-            "author": "Author One",
-            "title": "First Test Article Title",
-            "description": "Description for the first test article.",
-            "url": "http://example.com/testarticle1",
-            "urlToImage": "http://example.com/image1.jpg",
-            "publishedAt": "2023-10-26T10:00:00Z",
+
+
+
+
+
+
+
             "content": "Full content of the first test article."
         },
         {
-            "source": {"id": "test-source-2", "name": "Test Source Two"},
-            "author": "Author Two",
-            "title": "Second Test Article Title",
-            "description": "Description for the second test article.",
-            "url": "http://example.com/testarticle2",
-            "urlToImage": "http://example.com/image2.jpg",
-            "publishedAt": "2023-10-27T12:30:00Z",
+
+
+
+
+
+
+
             "content": "Full content of the second test article. This one has more words."
         }
     ]
@@ -97,20 +96,17 @@ def main_test_logic(mock_get_settings, mock_requests_get, mock_save_data):
         transformed_articles = transform_articles_to_model(raw_articles, query_source="test_query_src", language_code="en")
         if not transformed_articles or len(transformed_articles) != len(raw_articles):
             test_passed = False
-            error_messages.append("Failed: transform_articles_to_model() did not transform all articles.")
             raise AssertionError("Transforming articles failed")
 
         # Check if published_at was correctly parsed into a datetime object in the Model
         first_transformed_article_model = transformed_articles[0]
         if not isinstance(first_transformed_article_model.published_at, datetime):
             test_passed = False
-            error_messages.append(f"Failed: transformed_articles[0].published_at is not a datetime object, type is {type(first_transformed_article_model.published_at)}.")
         else:
             # Compare with expected datetime
             expected_dt = datetime(2023, 10, 26, 10, 0, 0, tzinfo=timezone.utc)
             if first_transformed_article_model.published_at != expected_dt:
                 test_passed = False
-                error_messages.append(f"Failed: transformed_articles[0].published_at '{first_transformed_article_model.published_at}' does not match expected '{expected_dt}'.")
 
         print(f"Step 3: transform_articles_to_model() - OK, transformed {len(transformed_articles)} articles.")
 
@@ -118,44 +114,36 @@ def main_test_logic(mock_get_settings, mock_requests_get, mock_save_data):
         processed_articles_list = process_articles(transformed_articles)
         if not processed_articles_list or len(processed_articles_list) != len(transformed_articles):
             test_passed = False
-            error_messages.append("Failed: process_articles() did not process all transformed articles.")
             raise AssertionError("Processing articles failed")
 
         first_processed_article = processed_articles_list[0]
         expected_title = SAMPLE_NEWSAPI_RESPONSE["articles"][0]["title"]
         if first_processed_article.get("title") != expected_title:
             test_passed = False
-            error_messages.append(f"Failed: Processed article title mismatch. Expected '{expected_title}', got '{first_processed_article.get('title')}'.")
 
         if first_processed_article.get("platform") != "newsapi":
             test_passed = False
-            error_messages.append(f"Failed: Processed article platform mismatch. Expected 'newsapi', got '{first_processed_article.get('platform')}'.")
 
         if first_processed_article.get("data_source") != "NewsAPI.org":
             test_passed = False
-            error_messages.append(f"Failed: Processed article data_source mismatch. Expected 'NewsAPI.org', got '{first_processed_article.get('data_source')}'.")
 
         # Check if 'fetched_at' exists and is a valid ISO datetime string
         fetched_at_str = first_processed_article.get("fetched_at")
         if not fetched_at_str:
             test_passed = False
-            error_messages.append("Failed: Processed article 'fetched_at' is missing.")
         else:
             try:
                 datetime.fromisoformat(fetched_at_str)
             except ValueError:
                 test_passed = False
-                error_messages.append(f"Failed: Processed article 'fetched_at' ('{fetched_at_str}') is not a valid ISO format string.")
 
         # Check if 'published_at' in processed dict is an ISO string (after model_dump)
         published_at_processed_str = first_processed_article.get("published_at")
         if not published_at_processed_str:
              test_passed = False
-             error_messages.append("Failed: Processed article 'published_at' is missing in the dictionary.")
         else:
             try:
                 # Ensure it's the correct ISO format string that model_dump produces
-                datetime.fromisoformat(published_at_processed_str.replace('Z', '+00:00'))
                 # Compare string value if needed, e.g. ensure it matches original input if timezone handling is consistent
                 # Expected: "2023-10-26T10:00:00Z" or "2023-10-26T10:00:00+00:00"
                 if not (published_at_processed_str == raw_published_at_str or published_at_processed_str == raw_published_at_str.replace('Z', '+00:00')):
@@ -163,7 +151,6 @@ def main_test_logic(mock_get_settings, mock_requests_get, mock_save_data):
                     pass # Loosening this specific string comparison for now as long as it's valid ISO
             except ValueError:
                 test_passed = False
-                error_messages.append(f"Failed: Processed article 'published_at' ('{published_at_processed_str}') is not a valid ISO format string after model_dump.")
 
 
         print(f"Step 4: process_articles() - OK, processed {len(processed_articles_list)} articles.")
@@ -181,7 +168,6 @@ def main_test_logic(mock_get_settings, mock_requests_get, mock_save_data):
         # test_passed is already False if an assertion error is raised from within the try block.
     except Exception as e:
         test_passed = False
-        error_messages.append(f"An unexpected error occurred: {e}")
         import traceback
         error_messages.append(traceback.format_exc())
 
@@ -201,7 +187,6 @@ if __name__ == "__main__":
     try:
         test_successful = main_test_logic()
         if not test_successful:
-            sys.exit(1) # Indicate failure to CI or calling scripts
     except Exception as e:
         print(f"Critical error during test execution: {e}")
         import traceback

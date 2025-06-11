@@ -9,8 +9,8 @@ from typing import Any
 import requests
 
 # Ensure project root is on path
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
 
 logger = get_logger("SubredditsETL")
 
@@ -44,8 +44,8 @@ def get_subreddits_posts(limit: int = 50) -> list[dict[str, Any]]:
                     "subreddit": subreddit,
                     "title": p.get("title"),
                     "url": p.get("url"),
-                    "created_utc": datetime.utcfromtimestamp(
-                        p.get("created_utc", 0)
+                    "created_utc": datetime.fromtimestamp(
+                        p.get("created_utc", 0), datetime.UTC
                     ).isoformat(),
                     "score": p.get("score"),
                     "num_comments": p.get("num_comments"),

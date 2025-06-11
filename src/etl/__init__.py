@@ -5,5 +5,5 @@
 # from . import arxiv
 # etc.
 
-# Or define an __all__ variable if you want to control `from src.etl import *`
+# Or define an __all__ variable if you want to control `from etl import *`
 # __all__ = ["anime", "arxiv", "base"]

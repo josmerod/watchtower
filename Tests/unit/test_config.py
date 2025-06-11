@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Test script for configuration system."""
 
 import sys
 from pathlib import Path
@@ -7,8 +6,8 @@ from pathlib import Path
 # Add project root to Python path
 project_root = Path(__file__).parent.parent.parent
 try:
-    from src.config.settings import get_settings
-    from src.utils.logging import get_logger
+    from config.settings import get_settings
+    from utils.logging import get_logger
     
     print("Testing configuration system...")
     

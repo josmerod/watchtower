@@ -112,4 +112,3 @@ if __name__ == '__main__':
 
     st.header("Test with No Data")
     render(logger=mock_logger_main, posts_data=[])
-```

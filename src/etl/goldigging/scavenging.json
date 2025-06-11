@@ -1,0 +1,27 @@
+{
+    "anime": {
+        "ipt": {
+            "type": "rss",
+            "url": "https://iptorrents.com/t.rss?u=1610514;tp=5a96c5bb45b6bb1be96b9aa9f54f087a;60;download"
+        },
+        "nyaa": {
+            "type": "rss",
+            "url": "https://nyaa.si/?page=rss"
+        }
+    },
+    "audiobooks": {
+        "ipt": {
+            "type": "rss",
+            "url": "https://iptorrents.com/t.rss?u=1610514;tp=5a96c5bb45b6bb1be96b9aa9f54f087a;64;download"
+        }
+
+    },
+    "courses": {
+        "ipt": {
+            "type": "rss",
+            "url": "https://iptorrents.com/t.rss?u=1610514;tp=5a96c5bb45b6bb1be96b9aa9f54f087a;95;download"
+        }
+    }
+
+
+}

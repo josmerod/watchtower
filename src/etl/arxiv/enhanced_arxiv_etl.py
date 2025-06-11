@@ -7,9 +7,9 @@ from collections import Counter
 from datetime import datetime
 from typing import Any
 
-from src.etl.base import BaseETL
-from src.exceptions.etl import ExtractionError, LoadError, TransformationError
-from src.models.arxiv import (
+from etl.base import BaseETL
+from exceptions.etl import ExtractionError, LoadError, TransformationError
+from models.arxiv import (
     CommercialPotential,
     EnhancedArxivPaperModel,
     GitHubRepositoryModel,
@@ -17,10 +17,10 @@ from src.models.arxiv import (
     ResearchCategory,
     TechnologyReadinessLevel,
 )
-from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
-from src.utils.nlp_classifier import NLPContentClassifier
-from src.utils.pwc_utils import get_pwc_details_for_paper
-from src.watchers.enhanced_arxiv_watcher import EnhancedArxivWatcher
+from utils.github_utils import find_github_links_in_text, get_github_repo_info
+from utils.nlp_classifier import NLPContentClassifier
+from utils.pwc_utils import get_pwc_details_for_paper
+from watchers.enhanced_arxiv_watcher import EnhancedArxivWatcher
 
 try:
     from paperswithcode import PapersWithCodeClient

@@ -9,8 +9,8 @@ import os
 from pathlib import Path
 
 # Add the project root to the path
-from src.web.fullstreamlit.utils.data_service import DataService
-from src.utils.logging import get_logger
+from web.fullstreamlit.utils.data_service import DataService
+from utils.logging import get_logger
 
 def main():
     """Test quick actions functionality"""

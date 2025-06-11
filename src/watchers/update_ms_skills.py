@@ -11,8 +11,8 @@ import argparse
 from typing import List, Optional
 
 # Add the project root to the path to ensure imports work correctly
-from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("MSSkillsUpdater")
 

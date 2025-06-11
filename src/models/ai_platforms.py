@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import Field, HttpUrl
 
-from src.models.base import TimestampedModel
+from models.base import TimestampedModel
 
 
 class ModelType(str, Enum):

@@ -1,6 +1,6 @@
 import streamlit as st
 from typing import List
-from src.models.anime import AnimeItem
+from models.anime import AnimeItem
 
 def render_anime_item(anime: AnimeItem, col_index: int):
     """

@@ -19,7 +19,7 @@ from plotly.subplots import make_subplots
 import json
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
-from src.web.fullstreamlit.utils.helpers import make_clickable
+from web.fullstreamlit.utils.helpers import make_clickable
 
 def prepare_vulnerability_chart_data(security_data: Dict[str, Any]) -> go.Figure:
     """Prepare vulnerability trends chart data."""

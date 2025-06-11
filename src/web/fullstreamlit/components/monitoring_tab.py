@@ -17,8 +17,8 @@ from pathlib import Path
 import re
 
 import sys
-from src.utils.file_system import get_project_root
-from src.utils.logging import get_logger
+from utils.file_system import get_project_root
+from utils.logging import get_logger
 
 logger = get_logger("MonitoringTab")
 

@@ -17,15 +17,15 @@ import random
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import requests
 
 # Add the project root to the path to ensure imports work correctly
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("LobstersETL")
@@ -230,7 +230,7 @@ class LobstersAPI:
                 # Add metadata
                 story["source"] = "lobste.rs"
                 story["filter_tag"] = filter_tag
-                story["fetched_at"] = datetime.utcnow().isoformat()
+                story["fetched_at"] = datetime.now(timezone.utc).isoformat()
 
                 stories.append(story)
 
@@ -502,7 +502,7 @@ def process_lobsters_stories(stories: list[dict[str, Any]]) -> list[dict[str, An
                 # Parse various timestamp formats that Lobsters might use
                 pub_date = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
                 hours_since_pub = (
-                    datetime.utcnow().replace(tzinfo=pub_date.tzinfo) - pub_date
+                    datetime.now(timezone.utc).replace(tzinfo=pub_date.tzinfo) - pub_date
                 ).total_seconds() / 3600
 
                 if hours_since_pub <= 2:
@@ -539,9 +539,10 @@ def main():
 
     try:
         # Create output directory
-        project_root = get_project_root()
+        from pathlib import Path
+        project_root = Path(get_project_root())
         output_dir = project_root / "data" / "lobsters"
-        ensure_directories([output_dir])
+        ensure_directories([str(output_dir)])
 
         # Fetch data
         stories = get_lobsters_data()

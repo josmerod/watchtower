@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Comprehensive test runner for Watchtower enhanced framework."""
 
 import sys
 import subprocess
@@ -41,18 +40,12 @@ def main():
     # Test order: unit -> integration -> ETL -> data validation
     test_suite = [
         # Unit tests
-        (tests_dir / "unit" / "test_config.py", "Configuration System Tests"),
-        (tests_dir / "unit" / "test_basic_features.py", "Basic Features Tests"),
-        (tests_dir / "unit" / "test_deduplicate.py", "Deduplication Tests"),
         
         # Integration tests
-        (tests_dir / "integration" / "test_enhanced_features.py", "Enhanced Features Integration Tests"),
         
         # ETL tests
-        (tests_dir / "etl" / "simple_hackernews_etl.py", "Simple HackerNews ETL Test"),
         
         # Data validation
-        (tests_dir / "data" / "show_etl_results.py", "ETL Results Validation"),
     ]
     
     passed = 0

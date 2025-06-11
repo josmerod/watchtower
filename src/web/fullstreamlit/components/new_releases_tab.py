@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from src.utils.logging import get_logger # Assuming logger is passed or fetched
+from utils.logging import get_logger # Assuming logger is passed or fetched
 
 # If a logger instance is not passed, you can initialize one like this:
 # logger = get_logger(__name__) # Or use a more specific name

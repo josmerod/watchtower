@@ -7,7 +7,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, validator
 
-from src.exceptions.base import WatchtowerError
+from exceptions.base import WatchtowerError
 
 
 class PathError(WatchtowerError):

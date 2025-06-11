@@ -24,8 +24,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 # Add the project root to the path to ensure imports work correctly
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("DevCommunityETL")
@@ -230,7 +230,7 @@ def process_dev_data(
     Returns:
         List of processed and enriched article data
     """
-    current_time = datetime.utcnow()
+    current_time = datetime.now(datetime.UTC)
     processed_articles = []
 
     # Create tag lookup for popularity scoring

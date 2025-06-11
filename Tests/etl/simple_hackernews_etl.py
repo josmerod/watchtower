@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Simple HackerNews ETL test script."""
 
 import sys
 from pathlib import Path
@@ -16,12 +15,11 @@ try:
     import aiohttp
     import feedparser
     
-    from src.config.settings import get_settings
-    from src.utils.logging import get_logger
+    from config.settings import get_settings
+    from utils.logging import get_logger
 
     class SimpleHackerNewsETL:
-        """Simple ETL for HackerNews RSS feed."""
-        
+
         def __init__(self):
             self.settings = get_settings()
             self.logger = get_logger("simple_hn_etl")
@@ -39,15 +37,14 @@ try:
             articles = []
             for entry in feed.entries[:10]:  # Limit to 10 for testing
                 article = {
-                    'title': entry.title,
-                    'url': entry.link,
-                    'published': entry.published,
-                    'summary': getattr(entry, 'summary', ''),
-                    'extracted_at': datetime.utcnow().isoformat()
+
+
+
+
+
                 }
                 articles.append(article)
             
-            self.logger.info(f"Extracted {len(articles)} articles")
             return articles
         
         def transform(self, articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -58,16 +55,15 @@ try:
             for article in articles:
                 # Simple transformations
                 transformed_article = {
-                    'title': article['title'].strip(),
-                    'url': article['url'],
-                    'published_at': article['published'],
-                    'summary': article['summary'][:200] + '...' if len(article['summary']) > 200 else article['summary'],
-                    'source': 'hackernews',
-                    'extracted_at': article['extracted_at']
+
+
+
+
+
+
                 }
                 transformed.append(transformed_article)
             
-            self.logger.info(f"Transformed {len(transformed)} articles")
             return transformed
         
         def load(self, articles: List[Dict[str, Any]]) -> None:
@@ -83,9 +79,7 @@ try:
             json_file = output_dir / f"hackernews_{timestamp}.json"
             
             with open(json_file, 'w', encoding='utf-8') as f:
-                json.dump(articles, f, ensure_ascii=False, indent=2)
             
-            self.logger.info(f"Loaded {len(articles)} articles to {json_file}")
             print(f"Output saved to: {json_file}")
         
         def run(self) -> bool:

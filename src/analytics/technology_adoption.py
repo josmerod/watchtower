@@ -15,8 +15,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 
-from src.exceptions.base import WatchtowerError
-from src.models.technology import (
+from exceptions.base import WatchtowerError
+from models.technology import (
     AdoptionLevel,
     FrameworkBattleModel,
     MaturityLevel,
@@ -25,7 +25,7 @@ from src.models.technology import (
     TechnologyPredictionModel,
     TrendDirection,
 )
-from src.utils.logging import get_logger
+from utils.logging import get_logger
 
 
 class TechnologyAdoptionAnalysisError(WatchtowerError):

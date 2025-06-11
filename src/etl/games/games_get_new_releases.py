@@ -9,8 +9,8 @@ import sys
 # Add project root to sys.path to allow imports from src
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 if project_root not in sys.path:
-from src.utils.logging import get_logger # Example
-from src.utils.file_system import ensure_directories, get_project_root # Example
+from utils.logging import get_logger # Example
+from utils.file_system import ensure_directories, get_project_root # Example
 
 # Constants
 RAWG_API_URL = "https://api.rawg.io/api/games"

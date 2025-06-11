@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.exceptions.base import WatchtowerError
+from exceptions.base import WatchtowerError
 
 
 class ScrapingError(WatchtowerError):

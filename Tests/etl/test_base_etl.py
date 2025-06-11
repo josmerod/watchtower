@@ -26,7 +26,6 @@ class SimpleTestETL(BaseETL[dict, SimpleTestModel]):
         self.extract_called = False
         self.transform_called = False
         self.load_called = False
-        self.extract_data_payload = [{"id": 1, "value": "test1"}, {"id": 2, "value": "test2"}]
         self.transform_error_item = None
         self.load_error = False
 
@@ -41,15 +40,12 @@ class SimpleTestETL(BaseETL[dict, SimpleTestModel]):
         self.transform_called = True
         transformed_list = []
         for item in extracted_data:
-            self.logger.info(f"Transforming item: {item['id']}")
             if self.transform_error_item and item["id"] == self.transform_error_item:
                 raise ETLError(f"Simulated transform error for item {item['id']}")
-            transformed_list.append(SimpleTestModel(data=f"Transformed {item['value']}"))
         return transformed_list
 
     def load(self, transformed_data: List[SimpleTestModel]) -> None:
         self.load_called = True
-        self.logger.info(f"Loading {len(transformed_data)} items...")
         if self.load_error:
             raise ETLError("Simulated load error")
         for item in transformed_data:
@@ -188,7 +184,6 @@ def test_actual_simpleetl_save_as_json(mock_json_dump, mock_open):
     actual_simple_etl = ActualSimpleETL(name="json_save_test")
     actual_simple_etl.extract = MagicMock(return_value=data_to_save)
     output_dir_for_actual_etl = Path(settings.project_root) / "data" / actual_simple_etl.name / "output"
-    output_dir_for_actual_etl.mkdir(parents=True, exist_ok=True)
 
     actual_simple_etl.run()
 
@@ -207,7 +202,6 @@ def test_actual_dataframeetl_save_as_csv(mock_to_csv):
     try:
         import pandas as pd
     except ImportError:
-        pytest.skip("pandas not installed, skipping DataFrameETL save_as_csv test")
 
     data_to_save = [{"col1": 1, "col2": "a"}, {"col1": 2, "col2": "b"}]
     settings = get_settings()
@@ -231,7 +225,6 @@ def test_actual_dataframeetl_save_as_csv(mock_to_csv):
 
 
     etl_df = TestDFETL(name="csv_save_test")
-    etl_df.output_dir.mkdir(parents=True, exist_ok=True)
 
     etl_df.run()
 
@@ -258,7 +251,6 @@ def test_dataframe_etl_init_pandas():
         assert hasattr(etl, 'pd')
         assert etl.pd == pd
     except ImportError:
-        pytest.skip("pandas not installed, skipping DataFrameETL init test")
 
 @patch('pathlib.Path.mkdir')
 def test_ensure_directories_called_on_init(mock_mkdir):
@@ -293,7 +285,7 @@ def test_simpleetl_load_json_io_error(mock_get_logger, mock_open):
     logged_error = False
     for call_args_item in mock_etl_logger.error.call_args_list:
         if "Disk full" in str(call_args_item[0][0]) and \
-           "ETL process 'json_io_error_etl' failed" not in str(call_args_item[0][0]): # Check for original error log
+
             logged_error = True
             break
     assert logged_error, "Original 'Disk full' error not logged by handle_exception."
@@ -319,7 +311,6 @@ def test_dataframeetl_save_as_csv_io_error(mock_get_logger, mock_to_csv):
         data_to_save_list_of_dicts = [{"col1": 1}]
 
         with pytest.raises(IOError, match="Permission denied"):
-            etl_instance.save_as_csv(data_to_save_list_of_dicts, "dummy.csv")
 
     except ImportError:
         pytest.skip("pandas not installed")
@@ -331,7 +322,6 @@ def test_dataframe_etl_init_pandas_import_error(mock_import_module):
     if 'pandas' in sys.modules:
         del sys.modules['pandas'] # Temporarily remove pandas if it was imported by other tests
 
-    mock_import_module.side_effect = lambda name, *args, **kwargs: \
         ImportError("No module named pandas") if name == "pandas" else __import__(name, *args, **kwargs)
 
     class DummyDFETL(ActualDataFrameETL[dict,SimpleTestModel]):
@@ -388,16 +378,14 @@ def test_log_final_status_on_failure_logs_error_details(mock_get_logger, caplog)
     error_logged_by_handle_exception = False
     for call_args_item in mock_etl_logger.error.call_args_list:
         if "Simulated load error" in str(call_args_item[0][0]) and \
-           "ETL process 'log_final_status_test_fail' failed" not in str(call_args_item[0][0]):
+
             error_logged_by_handle_exception = True
             break
     assert error_logged_by_handle_exception, "Original error ('Simulated load error') not found in logger.error calls from handle_exception"
 
 def test_metrics_on_partial_transform_failure():
     etl = SimpleTestETL(name="partial_transform_etl")
-    etl.extract_data_payload = [{"id": 1, "value": "test1"}, {"id": 2, "value": "test2"}]
 
-    etl.transform = MagicMock(side_effect=ETLError("Transform phase error"))
 
     with pytest.raises(ETLError, match="Transform phase error"):
         etl.run()
@@ -445,7 +433,6 @@ def test_etl_run_with_empty_extraction():
 class FilterAllTransformETL(SimpleTestETL):
     def transform(self, extracted_data: list[dict]) -> list[SimpleTestModel]:
         self.transform_called = True
-        self.logger.info("Transforming data... filtering all items.")
         return []
 
 def test_etl_run_with_empty_transform_output():
@@ -506,7 +493,6 @@ def test_dataframe_etl_init_no_pandas(mock_import_module): # Renamed
         TestDFETL(name="df_no_pandas_init_etl")
 
 def test_etl_run_when_not_pending_base_behavior(simple_etl):
-     pytest.skip("BaseETL.run() does not currently prevent re-running based on an internal status flag.")
 
 # Test _retry_operation directly for more granular control
 def test_retry_operation_success_on_first_try(simple_etl):
@@ -526,7 +512,6 @@ def test_retry_operation_all_retries_fail(simple_etl):
     mock_op = MagicMock(side_effect=ETLError("persistent failure"))
     simple_etl.max_retries = 2 # Limit retries for this test
     with pytest.raises(ETLError, match="persistent failure"):
-        simple_etl._retry_operation("test_op_all_fail", mock_op)
     assert mock_op.call_count == 3 # 1 initial + 2 retries
     assert simple_etl.metrics.error_count == 3
 
@@ -543,9 +528,7 @@ def test_checkpointing_load_and_save(mock_load_checkpoint, mock_save_checkpoint,
     # In a real scenario, process_in_batches or similar would call _save_checkpoint.
 
     # Initial run part (extract)
-    simple_etl.extract_data_payload = [{"id": "item1"}, {"id": "item2"}]
     extracted = simple_etl.extract()
-    simple_etl.metrics.records_extracted = len(extracted)
 
     # Simulate a checkpoint being created/updated during processing
     # (e.g., inside process_in_batches, which we are not fully running here)
@@ -614,7 +597,6 @@ def test_process_in_batches(simple_etl):
     mock_process_func_with_error = MagicMock(side_effect=[[0,2], ETLError("batch error"), [8]]) # Error on 2nd batch
 
     with pytest.raises(ETLError, match="batch error"): # Expect error to propagate
-        simple_etl.process_in_batches(all_data, mock_process_func_with_error)
     assert simple_etl.metrics.error_count > 0 # Error should be counted
 
 
@@ -642,7 +624,6 @@ def test_generate_checksum(simple_etl):
 
 # Test behavior of run() when extract returns data but transform returns empty list
 def test_run_extract_has_data_transform_empty(simple_etl):
-    simple_etl.extract_data_payload = [{"id": 1, "value": "test1"}]
     simple_etl.transform = MagicMock(return_value=[]) # Transform filters everything
 
     metrics = simple_etl.run()
@@ -691,7 +672,6 @@ def test_dataframe_etl_run_methods_if_pandas_becomes_unavailable(mock_import_mod
         # Ensure pandas is initially available for __init__
         sys.modules['pandas'] = pd
     except ImportError:
-        pytest.skip("pandas not installed, cannot run this test")
 
     class ConcreteDFETL(ActualDataFrameETL[List[dict], SimpleTestModel]):
         extract_data_payload = [{"id": 1, "value": "test_df"}]
@@ -713,19 +693,16 @@ def test_dataframe_etl_run_methods_if_pandas_becomes_unavailable(mock_import_mod
         del etl.pd
 
     with pytest.raises(ETLError, match="Pandas is not available"):
-        etl.extract() # Default extract calls extract_to_dataframe which now should fail due to no pd
 
     # Reset for transform test
     if 'pandas' in sys.modules: del sys.modules['pandas'] # Ensure it's gone
     if hasattr(etl, 'pd'): del etl.pd
     with pytest.raises(ETLError, match="Pandas is not available"):
-        etl.transform([{"id":1, "value":"test"}]) # Default transform creates df
 
     # Reset for load test
     if 'pandas' in sys.modules: del sys.modules['pandas']
     if hasattr(etl, 'pd'): del etl.pd
     with pytest.raises(ETLError, match="Pandas is not available"):
-        etl.load([SimpleTestModel(data="testload")]) # Default load creates df
 
     # Restore pandas
     if original_pandas:

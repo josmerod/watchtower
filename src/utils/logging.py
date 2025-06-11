@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional, Union
 def _get_settings():
     """Lazy import of settings to avoid circular imports."""
     try:
-        from src.config.settings import get_settings
+        from config.settings import get_settings
         return get_settings()
     except ImportError:
         # Fallback for basic logging configuration

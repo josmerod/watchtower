@@ -156,7 +156,7 @@ def render(logger=None, videos_data: Optional[Dict[str, pd.DataFrame]] = None):
         try:
             import sys
             import os
-            from src.web.fullstreamlit.utils.data_service import DataService
+            from web.fullstreamlit.utils.data_service import DataService
             
             data_service = DataService(logger)
             videos_data = data_service.get_videos_data()

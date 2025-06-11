@@ -7,7 +7,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field, computed_field, field_validator
 
-from src.models.base import TimestampedModel
+from models.base import TimestampedModel
 
 
 class TrendDirection(str, Enum):

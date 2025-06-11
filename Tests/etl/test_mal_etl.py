@@ -34,15 +34,11 @@ class TestMalETL(unittest.TestCase):
     def setUp(self): # Original signature
         """Set up for each test method."""
         # Start patch for load_dotenv manually
-        self.load_dotenv_patcher = patch('src.etl.anime.mal_etl.load_dotenv')
-        self.mock_load_dotenv = self.load_dotenv_patcher.start()
 
         self.test_client_id = "test_mal_client_id_12345"
         os.environ["MAL_CLIENT_ID"] = self.test_client_id
 
         # Create a temporary directory for test outputs
-        self.test_output_dir = pathlib.Path("Tests/temp_anime_data")
-        self.test_output_dir.mkdir(parents=True, exist_ok=True)
 
         # Instantiate ETL and override its output directory
         self.etl = MalETL()
@@ -50,32 +46,31 @@ class TestMalETL(unittest.TestCase):
 
         # Sample API responses
         self.sample_anime_node_1 = {
-            "id": 1, "title": "Anime Title 1", "mean": 8.5, "rank": 100,
-            "popularity": 150, "num_episodes": 12, "media_type": "tv",
-            "main_picture": {"medium": "url_m1", "large": "url_l1"}
+
+
+
         }
         self.sample_anime_node_2 = {
-            "id": 2, "title": "Anime Title 2", "mean": 9.0, "rank": 50,
-            "popularity": 10, "num_episodes": 24, "media_type": "movie",
-            "main_picture": {"medium": "url_m2", "large": "url_l2"}
+
+
+
         }
-        self.sample_anime_node_3 = { # For a different category
-            "id": 3, "title": "Anime Title 3", "mean": 7.5, "rank": 500,
-            "popularity": 300, "num_episodes": 1, "media_type": "ova",
-            "main_picture": {"medium": "url_m3", "large": "url_l3"}
+
+
+
         }
 
         self.seasonal_response = {
-            "data": [{"node": self.sample_anime_node_1}],
-            "paging": {"next": "next_url"}
+
+
         }
         self.popular_response = {
-            "data": [{"node": self.sample_anime_node_2}],
-            "paging": {"next": "next_url"}
+
+
         }
         self.favorite_response = {
-            "data": [{"node": self.sample_anime_node_3}],
-            "paging": {"next": "next_url"}
+
+
         }
         self.empty_response = {"data": [], "paging": {}}
 
@@ -141,7 +136,6 @@ class TestMalETL(unittest.TestCase):
         # Create an HTTPError instance with a 'response' attribute
         http_error = requests.exceptions.HTTPError("404 Client Error")
         error_response_mock = MagicMock()
-        error_response_mock.text = "Mocked error response text"
         http_error.response = error_response_mock
 
         mock_response.raise_for_status.side_effect = http_error
@@ -166,9 +160,9 @@ class TestMalETL(unittest.TestCase):
     def test_transform_data(self): # Removed mock_load_dotenv
         """Test transformation of raw API data to AnimeItem models."""
         raw_data_input = {
-            "seasonal": self.seasonal_response,
-            "popular": self.popular_response,
-            "favorite": self.empty_response
+
+
+
         }
 
         transformed_output = self.etl.transform(raw_data_input)
@@ -191,12 +185,12 @@ class TestMalETL(unittest.TestCase):
     def test_transform_data_malformed_node(self): # Removed mock_load_dotenv
         """Test transformation with some items having malformed/missing node data."""
         malformed_seasonal_response = {
-            "data": [
+
                 {"node": self.sample_anime_node_1},
                 {"node": None},
                 {}
             ],
-            "paging": {"next": "next_url"}
+
         }
         raw_data_input = {"seasonal": malformed_seasonal_response}
 
@@ -207,7 +201,6 @@ class TestMalETL(unittest.TestCase):
 
     @patch.object(MalETL, '_make_request')
     def test_extract_transform_load_flow(self, mock_make_request): # Removed mock_load_dotenv
-        """Test the full ETL flow: extract, transform, and load."""
 
         mock_make_request.side_effect = [
             self.seasonal_response,
@@ -227,11 +220,8 @@ class TestMalETL(unittest.TestCase):
 
         expected_calls = [
             call(f"/anime/season/{current_year}/{current_season}",
-                 {"limit": 20, "sort": "anime_num_list_users", "fields": FIELDS_TO_REQUEST}),
             call("/anime/ranking",
-                 {"ranking_type": "bypopularity", "limit": 20, "fields": FIELDS_TO_REQUEST}),
             call("/anime/ranking",
-                 {"ranking_type": "favorite", "limit": 20, "fields": FIELDS_TO_REQUEST})
         ]
         mock_make_request.assert_has_calls(expected_calls, any_order=False)
         self.assertEqual(mock_make_request.call_count, 3)

@@ -5,7 +5,7 @@ Displays game deals, bundles, and giveaways.
 
 import streamlit as st
 import pandas as pd
-# from src.web.fullstreamlit.utils.helpers import make_clickable # Removed
+# from web.fullstreamlit.utils.helpers import make_clickable # Removed
 from . import new_releases_tab # Added import
 
 def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, logger=None):

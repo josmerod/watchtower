@@ -13,8 +13,8 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 import sys
-from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
 
 
 class BaseWatcher(ABC):

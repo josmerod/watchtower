@@ -1,6 +1,5 @@
 """
 Test script to deduplicate courses from JSON files.
-"""
 
 import os
 import sys
@@ -35,7 +34,6 @@ def deduplicate_courses(input_file, output_file=None, key_field="url"):
             courses = json.load(f)
         
         if not isinstance(courses, list):
-            logging.error(f"File {input_file} does not contain a list of courses")
             return False
             
         logging.info(f"Read {len(courses)} courses from {input_file}")
@@ -58,17 +56,13 @@ def deduplicate_courses(input_file, output_file=None, key_field="url"):
             unique_courses[key.strip().lower()] = course
         
         deduplicated_courses = list(unique_courses.values())
-        logging.info(f"Removed {duplicate_count} duplicate courses based on {key_field}")
         
         # Save deduplicated courses
         with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(deduplicated_courses, f, ensure_ascii=False, indent=2)
             
-        logging.info(f"Saved {len(deduplicated_courses)} unique courses to {output_file}")
         return True
         
     except Exception as e:
-        logging.error(f"Error processing {input_file}: {e}")
         return False
 
 if __name__ == "__main__":
@@ -81,7 +75,6 @@ if __name__ == "__main__":
     key_field = sys.argv[2] if len(sys.argv) > 2 else "url"
     
     if deduplicate_courses(input_file, key_field=key_field):
-        logging.info("Deduplication completed successfully")
     else:
         logging.error("Deduplication failed")
         sys.exit(1) 

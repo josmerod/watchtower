@@ -17,7 +17,7 @@ from typing import Dict, List, Any, Optional
 import json
 from pathlib import Path
 
-from src.utils.logging import get_logger
+from utils.logging import get_logger
 
 logger = get_logger("StreamlitAIPlatforms")
 
@@ -923,7 +923,9 @@ def display_platform_status(data: Dict[str, Any]):
     st.subheader("🔧 Platform Status Monitoring")
     
     status_data = data.get('status_monitoring', {})
-    if not status_data:
+    
+    # Safety check: ensure status_data is a dictionary
+    if not isinstance(status_data, dict) or not status_data:
         st.info("No platform status data available")
         return
     

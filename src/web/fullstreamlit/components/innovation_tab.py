@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import plotly.express as px
 import plotly.graph_objects as go
-from src.web.fullstreamlit.utils.helpers import make_clickable
+from web.fullstreamlit.utils.helpers import make_clickable
 
 # Get the project root directory
 def get_project_root():

@@ -17,15 +17,15 @@ import random
 import re
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Any
 from urllib.parse import urljoin
 
 import requests
 
 # Add the project root to the path to ensure imports work correctly
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
+from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("IndieHackersETL")
@@ -211,7 +211,7 @@ class IndieHackersAPI:
                     "url": urljoin(self.base_url, post_url) if post_url else "",
                     "path": post_url,
                     "group_slug": group_slug,
-                    "fetched_at": datetime.utcnow().isoformat(),
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
                     "source": "indiehackers.com",
                 }
 
@@ -228,7 +228,7 @@ class IndieHackersAPI:
                     )
 
                     # Convert to approximate timestamp
-                    now = datetime.utcnow()
+                    now = datetime.now(timezone.utc)
                     if time_unit == "minute":
                         estimated_time = now - timedelta(minutes=int(time_value))
                     elif time_unit == "hour":
@@ -540,9 +540,10 @@ def main():
 
     try:
         # Create output directory
-        project_root = get_project_root()
+        from pathlib import Path
+        project_root = Path(get_project_root())
         output_dir = project_root / "data" / "indie_hackers"
-        ensure_directories([output_dir])
+        ensure_directories([str(output_dir)])
 
         # Fetch data
         posts = get_indiehackers_data()

@@ -9,7 +9,7 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-from src.config.models import (
+from config.models import (
     APIConfig,
     DatabaseConfig,
     Environment,
@@ -62,6 +62,7 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         env_nested_delimiter = "__"
         case_sensitive = False
+        extra = "ignore"  # Allow extra fields to be ignored instead of causing validation errors
 
         # Allow environment variables to override nested config
         @classmethod

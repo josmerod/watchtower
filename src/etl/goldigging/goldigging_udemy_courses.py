@@ -11,12 +11,10 @@ from typing import Any
 global_project_root = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "../../..")
 )
-sys.path.append(global_project_root)
-
 import pandas as pd
 
-from src.utils.course_deduplication import deduplicate_courses
-from src.utils.file_system import ensure_directories, get_project_root
+from utils.course_deduplication import deduplicate_courses
+from utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
 logger = logging.getLogger("udemy_universal_etl")

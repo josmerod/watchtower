@@ -14,47 +14,47 @@ from src.utils.file_system import get_project_root
 # Mock data for Google Cloud Blog feed
 MOCK_GCB_FEED_ENTRIES = [
     {
-        "title": "Learn BigQuery Skills",
-        "link": "https://example.com/learn-bigquery",
-        "published": "Tue, 20 Jul 2024 10:00:00 GMT", # Parsable by strptime with %Z
-        "tags": [{"term": "BigQuery"}, {"term": "Training and Certifications"}],
+
+
+
+
     },
     {
-        "title": "New Cloud Course Available",
-        "link": "https://example.com/new-course",
-        "published": "Mon, 19 Jul 2024 12:00:00 +0000", # Parsable by strptime with %z
-        "tags": [{"term": "Courses"}, {"term": "training and certifications"}], # Lowercase
+
+
+
+
     },
     {
-        "title": "Exploring Cloud Storage",
-        "link": "https://example.com/cloud-storage",
-        "published": "Sun, 18 Jul 2024 14:00:00 GMT",
-        "tags": [{"term": "Cloud Storage"}], # No relevant category
+
+
+
+
     },
     {
-        "title": "Advanced Kubernetes Training",
-        "link": "https://example.com/kubernetes-training",
-        "published": "Sat, 17 Jul 2024 16:00:00 GMT",
-        "tags": [{"term": "Kubernetes"}, {"term": "Advanced Training"}], # Relevant keyword in category
+
+
+
+
     },
     {
-        "title": "Missing Date Post",
-        "link": "https://example.com/missing-date",
-        "tags": [{"term": "Training and Certifications"}], # Relevant category, but missing date
+
+
+
     },
     {
-        "title": "Malformed Date",
-        "link": "https://example.com/malformed-date",
-        "published": "This is not a date",
-        "tags": [{"term": "training and certifications"}],
+
+
+
+
     }
 ]
 
 MOCK_FEED_PARSER_DICT = {
-    "bozo": 0,
-    "entries": MOCK_GCB_FEED_ENTRIES,
-    "feed": {},
-    "headers": {},
+
+
+
+
 }
 
 
@@ -62,11 +62,8 @@ class TestGoogleCloudBlogETL(unittest.TestCase):
 
     def setUp(self):
         # Ensure data/news directory exists for testing save_media_entries
-        self.test_data_dir = os.path.join(get_project_root(), "data", "news")
         os.makedirs(self.test_data_dir, exist_ok=True)
 
-        self.json_path = os.path.join(self.test_data_dir, "google_cloud_blog.json")
-        self.csv_path = os.path.join(self.test_data_dir, "google_cloud_blog.csv")
 
     def tearDown(self):
         # Clean up created files
@@ -80,14 +77,12 @@ class TestGoogleCloudBlogETL(unittest.TestCase):
     def test_fetch_media_feeds_google_cloud_blog_filtering(self, mock_rss_feeds, mock_feedparser_parse):
         # Setup mock for RSS_FEEDS to only use google_cloud_blog
         mock_rss_feeds.clear()
-        mock_rss_feeds['google_cloud_blog'] = 'https://cloudblog.withgoogle.com/rss/'
 
         # Setup mock for feedparser.parse
         mock_feed_obj = MagicMock()
         mock_feed_obj.bozo = 0
         mock_feed_obj.entries = [MagicMock(**entry) for entry in MOCK_GCB_FEED_ENTRIES]
         for i, entry_mock in enumerate(mock_feed_obj.entries):
-            entry_mock.get.side_effect = lambda k, default="", entry_data=MOCK_GCB_FEED_ENTRIES[i]: entry_data.get(k, default)
             # Mocking tags structure
             if "tags" in MOCK_GCB_FEED_ENTRIES[i]:
                 entry_mock.tags = [MagicMock(term=tag["term"]) for tag in MOCK_GCB_FEED_ENTRIES[i]["tags"]]
@@ -141,18 +136,18 @@ class TestGoogleCloudBlogETL(unittest.TestCase):
 
         mock_entries_to_save = [
             {
-                "source": "google_cloud_blog",
-                "title": "Test Post 1",
-                "link": "http://example.com/test1",
-                "published": datetime(2024, 1, 1, 10, 0, 0).isoformat(),
-                "categories": ["test", "training"]
+
+
+
+
+
             },
             {
-                "source": "google_cloud_blog",
-                "title": "Test Post 2",
-                "link": "http://example.com/test2",
-                "published": datetime(2024, 1, 2, 12, 0, 0).isoformat(),
-                "categories": ["certification", "another test"]
+
+
+
+
+
             }
         ]
 
@@ -176,8 +171,6 @@ class TestGoogleCloudBlogETL(unittest.TestCase):
                  saved_csv_data[col] = pd.NA
 
         # Convert categories list to string for CSV comparison as pandas does by default
-        expected_df["categories"] = expected_df["categories"].astype(str)
-        saved_csv_data["categories"] = saved_csv_data["categories"].astype(str)
 
         pd.testing.assert_frame_equal(
             saved_csv_data[expected_df.columns].sort_values(by="title").reset_index(drop=True),
@@ -186,7 +179,6 @@ class TestGoogleCloudBlogETL(unittest.TestCase):
         )
 
 if __name__ == '__main__':
-    unittest.main(argv=['first-arg-is-ignored'], exit=False)
 
 # Example to make MagicMock work for entry.get('tags', [])
 # mock_entry = MagicMock()
@@ -205,7 +197,7 @@ if __name__ == '__main__':
 # The mock_feed_obj.entries has each entry's 'tags' attribute set to a list of MagicMocks.
 # So, `entry.get("tags", [])` where `entry` is one of the `mock_feed_obj.entries` should work.
 # Let's re-check the side_effect for get:
-# entry_mock.get.side_effect = lambda k, default="", entry_data=MOCK_GCB_FEED_ENTRIES[i]: entry_data.get(k, default)
+    # entry_mock.get.side_effect = lambda k, default="", entry_data=MOCK_GCB_FEED_ENTRIES[i]: entry_data.get(k, default)
 # This means `entry.get("tags")` will return the list of dicts from MOCK_GCB_FEED_ENTRIES, not list of MagicMocks.
 # This needs correction. The `tags` attribute itself should be directly set.
 # Corrected in the test: `entry_mock.tags = [MagicMock(term=tag["term"]) for tag in MOCK_GCB_FEED_ENTRIES[i]["tags"]]`
@@ -234,15 +226,15 @@ if __name__ == '__main__':
 # If `entry.get("tags")` is used, the mock for `get` must return the list of `MagicMock` tag objects.
 
 # Revised mocking strategy for `test_fetch_media_feeds_google_cloud_blog_filtering`:
-# `mock_feed_obj.entries` is a list of `MagicMock` objects (let's call one `entry_mock`).
+    # `mock_feed_obj.entries` is a list of `MagicMock` objects (let's call one `entry_mock`).
 # Each `entry_mock` is created from `MOCK_GCB_FEED_ENTRIES` items.
 # For example, `entry_mock.title = "Learn BigQuery Skills"`.
 # `entry_mock.tags` should be `[MagicMock(term="BigQuery"), MagicMock(term="Training and Certifications")]`.
 # The ETL code `entry.get("tags", [])`:
-#   - The `.get` on `entry_mock` needs to be configured. If `entry_mock.get("tags")` is called, it should return `entry_mock.tags`.
+    #   - The `.get` on `entry_mock` needs to be configured. If `entry_mock.get("tags")` is called, it should return `entry_mock.tags`.
 # This is the tricky part with `MagicMock(**kwargs)` and then also mocking `get`.
 # A simpler way for `entry_mock`:
-#   `entry_mock.title = data['title']`
+    #   `entry_mock.title = data['title']`
 #   `entry_mock.link = data['link']`
 #   `entry_mock.published = data.get('published')`
 #   `entry_mock.tags = [MagicMock(term=t['term']) for t in data.get('tags', [])]`
@@ -254,28 +246,28 @@ if __name__ == '__main__':
 # The existing code for `entry_mock.get.side_effect` will make `entry.get("tags")` return the list of dicts from `MOCK_GCB_FEED_ENTRIES`, which is the problem.
 
 # Let's fix the mock for `entry.get`:
-# When `entry_mock.get("tags", ...)` is called, it should return the `entry_mock.tags` attribute (the list of MagicMocked tags).
+    # When `entry_mock.get("tags", ...)` is called, it should return the `entry_mock.tags` attribute (the list of MagicMocked tags).
 # Otherwise, for other keys, it can return `entry_data.get(k, default)`.
 
 # The current setup:
-# `mock_feed_obj.entries = [MagicMock(**entry) for entry in MOCK_GCB_FEED_ENTRIES]`
+    # `mock_feed_obj.entries = [MagicMock(**entry) for entry in MOCK_GCB_FEED_ENTRIES]`
 # This means if `MOCK_GCB_FEED_ENTRIES[0]` is `{'title': 'T', 'tags': [{'term': 'C1'}]}`
 # then `mock_feed_obj.entries[0].title` is 'T'
 # and `mock_feed_obj.entries[0].tags` is `[{'term': 'C1'}]` (a list of dicts). This is the issue.
 # `entry.tags` itself needs to be the list of `MagicMock` objects.
 
 # So, after `entry_mock = MagicMock(**entry_data_dict)`, we need to overwrite `entry_mock.tags`:
-# `if "tags" in entry_data_dict: entry_mock.tags = [MagicMock(term=t['term']) for t in entry_data_dict['tags']]`
+    # `if "tags" in entry_data_dict: entry_mock.tags = [MagicMock(term=t['term']) for t in entry_data_dict['tags']]`
 # This is what I did: `entry_mock.tags = [MagicMock(term=tag["term"]) for tag in MOCK_GCB_FEED_ENTRIES[i]["tags"]]`
 
 # The `get` side_effect:
-# `entry_mock.get.side_effect = lambda k, default="", entry_data=MOCK_GCB_FEED_ENTRIES[i]: entry_data.get(k, default)`
+    # `entry_mock.get.side_effect = lambda k, default="", entry_data=MOCK_GCB_FEED_ENTRIES[i]: entry_data.get(k, default)`
 # This means `an_entry_mock.get("tags")` will return `MOCK_GCB_FEED_ENTRIES[i]["tags"]` (list of dicts).
 # The ETL code: `categories = [term.term for term in entry.get("tags", []) if term.term]`
 # This becomes `[term.term for term in [{'term': 'C1'}] if term.term]`. This fails.
 
 # Solution:
-# The `feedparser.parse` mock should return entries where `entry.tags` is a list of tag objects,
+    # The `feedparser.parse` mock should return entries where `entry.tags` is a list of tag objects,
 # and `entry.get('published')` etc. also work.
 # `FeedParserDict` objects allow both attribute and key access.
 # A `MagicMock` can be made to behave this way.
@@ -283,7 +275,7 @@ if __name__ == '__main__':
 # But the ETL code is fixed. So the mock must provide objects with a `.term` attribute in the `tags` list.
 
 # Revised mock for `test_fetch_media_feeds...`:
-# Each entry in `feed.entries` should be a `MagicMock`.
+    # Each entry in `feed.entries` should be a `MagicMock`.
 # Let `e_mock = MagicMock()`.
 # `e_mock.title = raw_entry_dict['title']`
 # `e_mock.link = raw_entry_dict['link']`
@@ -294,15 +286,15 @@ if __name__ == '__main__':
 # And `e_mock.get("title")` to return `e_mock.title`.
 
 # This is getting complicated. A simpler mock for `feed.entries`:
-# Create a list of objects that are instances of a custom class that mimics FeedParserDict for the needed fields.
+    # Create a list of objects that are instances of a custom class that mimics FeedParserDict for the needed fields.
 # class MockFeedEntry:
-#     def __init__(self, data):
-#         self.title = data.get("title")
+    #     def __init__(self, data):
+    #         self.title = data.get("title")
 #         self.link = data.get("link")
 #         self.published = data.get("published")
 #         self.tags = [MagicMock(term=t.get('term')) for t in data.get("tags", [])]
 #     def get(self, key, default=""):
-#         if key == "title": return self.title
+    #         if key == "title": return self.title
 #         if key == "link": return self.link
 #         if key == "published": return self.published if self.published is not None else default
 #         if key == "tags": return self.tags # This is what the ETL needs for `entry.get("tags", [])`
@@ -310,13 +302,13 @@ if __name__ == '__main__':
 
 # This way, `entry.get("tags", [])` returns a list of `MagicMock` objects, each having a `.term` attribute.
 # The test code currently has:
-# `entry_mock.tags = [MagicMock(term=tag["term"]) for tag in MOCK_GCB_FEED_ENTRIES[i]["tags"]]`
+    # `entry_mock.tags = [MagicMock(term=tag["term"]) for tag in MOCK_GCB_FEED_ENTRIES[i]["tags"]]`
 # This correctly sets the `.tags` attribute on the `entry_mock` object.
 # The problem is `entry.get("tags", [])` in the ETL. The `get` method of `entry_mock` needs to be aware of this.
 # The current `entry_mock.get.side_effect` is too simple and returns the raw dict data for "tags".
 
 # Let's adjust the side_effect for `get` on each `entry_mock`:
-# `def side_effect_for_get(key, default="", entry_obj=entry_mock, raw_data=MOCK_GCB_FEED_ENTRIES[i]):`
+    # `def side_effect_for_get(key, default="", entry_obj=entry_mock, raw_data=MOCK_GCB_FEED_ENTRIES[i]):`
 # `  if key == "tags": return entry_obj.tags`
 # `  return raw_data.get(key, default)`
 # `entry_mock.get.side_effect = side_effect_for_get`
@@ -341,12 +333,12 @@ if __name__ == '__main__':
 # This is what I did in the `setUp` for `mock_feed_obj.entries`.
 
 # Then, the `get` method:
-# `entry_mock.get.side_effect = lambda k, default="", entry_data=MOCK_GCB_FEED_ENTRIES[i], current_entry_mock=entry_mock: \
+    # `entry_mock.get.side_effect = lambda k, default="", entry_data=MOCK_GCB_FEED_ENTRIES[i], current_entry_mock=entry_mock: \
 #    entry_data.get(k, default) if k != "tags" else current_entry_mock.tags`
 # This lambda captures `current_entry_mock` which is `entry_mock` from the loop.
 
 # Final check of the test logic:
-# `mock_feed_obj.entries = [MagicMock(**entry) for entry in MOCK_GCB_FEED_ENTRIES]` this is not good for `tags`.
+    # `mock_feed_obj.entries = [MagicMock(**entry) for entry in MOCK_GCB_FEED_ENTRIES]` this is not good for `tags`.
 # Let's build `mock_feed_obj.entries` more carefully.
 # The current test's `entry_mock.get.side_effect = lambda k, default="", entry_data=MOCK_GCB_FEED_ENTRIES[i]: entry_data.get(k, default)`
 # is the source of the issue for `entry.get("tags")`.
@@ -359,22 +351,22 @@ if __name__ == '__main__':
 
 # Corrected side_effect logic in the thought process above. I will ensure the created file uses this.
 # The created file's mock is:
-# ```python
+    # ```python
 #         mock_feed_obj.entries = [MagicMock(**entry) for entry in MOCK_GCB_FEED_ENTRIES] # Problematic for tags attr
 #         for i, entry_mock in enumerate(mock_feed_obj.entries):
-#             # This is the problematic line for entry.get('tags')
+    #             # This is the problematic line for entry.get('tags')
 #             entry_mock.get.side_effect = lambda k, default="", entry_data=MOCK_GCB_FEED_ENTRIES[i]: entry_data.get(k, default)
 #             if "tags" in MOCK_GCB_FEED_ENTRIES[i]:
-#                 # This sets entry_mock.tags correctly
+    #                 # This sets entry_mock.tags correctly
 #                 entry_mock.tags = [MagicMock(term=tag["term"]) for tag in MOCK_GCB_FEED_ENTRIES[i]["tags"]]
 #             else:
-#                 entry_mock.tags = []
+    #                 entry_mock.tags = []
 # ```
 # So `entry_mock.tags` (attribute access) is correct (list of MagicMocks).
 # But `entry_mock.get("tags")` (method call in ETL) will use the lambda, which returns the list of dicts from `entry_data.get("tags")`.
 # This means `[term.term for term in entry.get("tags", [])]` will fail.
 # The lambda for `get.side_effect` needs to be:
-# `entry_mock.get.side_effect = (lambda current_em=entry_mock, current_ed=MOCK_GCB_FEED_ENTRIES[i]: \
+    # `entry_mock.get.side_effect = (lambda current_em=entry_mock, current_ed=MOCK_GCB_FEED_ENTRIES[i]: \
 #      lambda k, default="": current_em.tags if k == "tags" else current_ed.get(k, default))()`
 # This uses a closure to capture `current_em` (the entry_mock itself) and `current_ed` (the raw dict for that entry).
 # This way, `entry_mock.get("tags")` will return `entry_mock.tags` (the list of MagicMocks).
@@ -382,6 +374,5 @@ if __name__ == '__main__':
 # This is a common pattern for lambdas in loops.
 # I will apply this fix to the generated code.Okay, I've prepared the content for `Tests/etl/test_google_cloud_blog_etl.py`. I've paid close attention to the mocking of `feedparser.parse` and how entry tags are accessed.
 
-The critical part is ensuring that `entry.get("tags", [])` within the ETL script receives a list of objects where each object has a `.term` attribute. My mock setup will reflect this.
 
 Here's the code for the first test file.

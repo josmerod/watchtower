@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""Basic test script for core Watchtower features."""
 
 import sys
 from pathlib import Path
 
-# Add project root to Python path
+# Add project root to Python path for fallback
+# When run via subprocess from project root, __file__ will be Tests/unit/test_basic_features.py
+# When run directly, __file__ will be the full path
 project_root = Path(__file__).parent.parent.parent
+if not (project_root / "src").exists():
+    # If we're already in project root, adjust the path
+    project_root = Path.cwd()
+
 def test_configuration():
     """Test configuration system."""
     print("Testing Configuration System...")
     try:
-        from src.config.settings import get_settings
+        from config.settings import get_settings
         
         settings = get_settings()
         print(f"Settings loaded: {settings.app_name} v{settings.app_version}")
@@ -25,7 +30,7 @@ def test_logging():
     """Test logging system."""
     print("\nTesting Logging System...")
     try:
-        from src.utils.logging import get_logger
+        from utils.logging import get_logger
         
         logger = get_logger("test_basic")
         logger.info("Test log message from basic features")
@@ -39,8 +44,8 @@ def test_exceptions():
     """Test exception handling."""
     print("\nTesting Exception Handling...")
     try:
-        from src.exceptions.base import WatchtowerError
-        from src.exceptions.watcher import WatcherTimeoutError
+        from exceptions.base import WatchtowerError
+        from exceptions.watcher import WatcherTimeoutError
         
         # Test basic exception
         try:
@@ -62,7 +67,7 @@ def test_data_models():
     """Test data models."""
     print("\nTesting Data Models...")
     try:
-        from src.models.base import TimestampedModel
+        from models.base import TimestampedModel
         
         model = TimestampedModel()
         print(f"Timestamped model created with ID: {model.id}")
@@ -75,7 +80,7 @@ def test_file_system():
     """Test file system utilities."""
     print("\nTesting File System Utilities...")
     try:
-        from src.utils.file_system import get_file_system_manager
+        from utils.file_system import get_file_system_manager
         
         fs_manager = get_file_system_manager()
         print(f"File system manager initialized: {fs_manager.project_root}")
