@@ -38,7 +38,9 @@ from web.fullstreamlit.components import (
     azure_training_tab,
     home_server_tab,
     museums_tab, # Added import for museums_tab
-    adhd_tab # Added ADHD tab
+    adhd_tab, # Added ADHD tab
+    chan_generals_tab, # 4chan Generals Tab
+    scavenging_tab  # Scavenging Tab
 )
 # Import for Anime Tab
 from web.fullstreamlit.components.anime_display import display_anime_section
@@ -126,7 +128,9 @@ main_tabs = st.tabs([
     "📈 Monitoreo",
     "📍 Eventos Valencia",
     "🏛️ Museos Virtuales", # New tab added
-    "⚙️ Admin"
+    "⚙️ Admin",
+    "📑 4chan Generals",
+    "⛏️ Scavenging",
 ])
 
 # --- Anime Tab Specific Functions ---
@@ -290,3 +294,11 @@ with main_tabs[21]: # Index for Museos Virtuales - New tab
 
 with main_tabs[22]: # Index for Admin
     render_tab_safely("Admin", admin_tab.render, logger)
+
+# New 4chan Generals Tab
+with main_tabs[23]:
+    render_tab_safely("4chan Generals", chan_generals_tab.render, logger)
+
+# Scavenging Tab
+with main_tabs[24]:
+    render_tab_safely("Scavenging", scavenging_tab.render, logger)
