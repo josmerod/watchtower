@@ -46,7 +46,7 @@ start /B python src/etl/anime/mal_etl.py
 
 start /B python src/miners/crypto_sentiment_miner.py
 
-start /B python src/etl/4chan/4chan_generals_etl.py
+start /B python src/etl/fourchan/fourchan_generals_etl.py
 
 start /B python src/watchers/ms_skills_watcher.py
 
