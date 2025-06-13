@@ -43,6 +43,7 @@ python-dotenv>=1.0.0
 
 # YouTube API utilities
 google-api-python-client>=2.0.0
+PyDrive2>=1.11.1
 isodate>=0.6.0
 
 # System monitoring

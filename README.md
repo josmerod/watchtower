@@ -28,6 +28,7 @@ MEGALITH is designed to automate the collection of information from news sites, 
     - [Launching the Web Dashboard](#launching-the-web-dashboard)
   - [Docker](#docker)
   - [Scheduling and Automation](#scheduling-and-automation)
+  - [Automated Backups](#automated-backups)
   - [Development Standards](#development-standards)
   - [Contributing](#contributing)
     - [Adherence to Development Standards](#adherence-to-development-standards)
@@ -382,6 +383,12 @@ If you are still using or maintaining parts of the older system:
     -   **Windows**: The `setup_streamlit_service.ps1` script can help.
 
 *Review and adapt any legacy scripts if you choose to continue using them, but migration to Prefect is preferred.*
+
+## Automated Backups
+
+This project includes a feature to automatically back up the `/data` and `/logs` directories to Google Drive after all ETL processes are complete. This ensures data persistence and allows for versioned recovery.
+
+For detailed setup instructions, please see [Google Drive Backup Configuration](./docs/google_drive_backup.md).
 
 ## Important Notes & Known Issues (Prefect Implementation)
 
