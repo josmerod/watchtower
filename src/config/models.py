@@ -210,3 +210,13 @@ class ETLConfig(BaseModel):
     cleanup_old_data_days: int = Field(
         default=90, ge=1, le=730, description="Days to keep old data"
     )
+
+
+class GoogleDriveConfig(BaseModel):
+    credentials_file: str = Field(
+        default="client_secrets.json",
+        description="Path to the Google Drive API credentials JSON file (relative to project root or absolute).",
+    )
+    backup_folder_id: str = Field(
+        default="", description="Google Drive folder ID for backups."
+    )
