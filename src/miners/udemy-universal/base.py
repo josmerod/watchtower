@@ -483,6 +483,7 @@ class Scraper:
         button clicks or redirect following.
         """
         site_code = "uf"
+        processed_count = 0  # Initialize processed_count at the beginning to avoid UnboundLocalError
         try:
             all_items = []
             head = {
@@ -510,20 +511,26 @@ class Scraper:
 
                 if use_playwright:
                     # Use Playwright for the main page to handle any JS rendering
-                    with sync_playwright() as p:
-                        browser = p.chromium.launch(
-                            headless=True,
-                            args=["--no-sandbox", "--disable-dev-shm-usage"],
-                        )
-                        context = browser.new_context(user_agent=head["user-agent"])
-                        page_obj = context.new_page()
-                        page_obj.goto(
-                            url,
-                            wait_until="networkidle",
-                            timeout=scrapper_timeout_period * 1000,
-                        )
-                        content = page_obj.content()
-                        browser.close()
+                    try:
+                        with sync_playwright() as p:
+                            browser = p.chromium.launch(
+                                headless=True,
+                                args=["--no-sandbox", "--disable-dev-shm-usage"],
+                            )
+                            context = browser.new_context(user_agent=head["user-agent"])
+                            page_obj = context.new_page()
+                            page_obj.goto(
+                                url,
+                                wait_until="networkidle",
+                                timeout=scrapper_timeout_period * 1000,
+                            )
+                            content = page_obj.content()
+                            browser.close()
+                    except Exception as browser_error:
+                        if self.debug:
+                            print(f"{site_code.upper()}: Playwright browser error: {browser_error}")
+                        use_playwright = False  # Fall back to requests
+                        content = self.fetch_page_content(url, headers=head)
                 else:
                     # Fallback to standard requests if Playwright not available
                     content = self.fetch_page_content(url, headers=head)
@@ -546,8 +553,6 @@ class Scraper:
                 print(
                     f"{site_code.upper()} Length: {getattr(self, f'{site_code}_length')}"
                 )
-
-            processed_count = 0
             for index, item in enumerate(all_items):
                 setattr(self, f"{site_code}_progress", index + 1)
 
@@ -894,18 +899,19 @@ class Scraper:
         visits intermediate pages to find the final Udemy course link.
         """
         site_code = "rd"
+        processed_count = 0  # Initialize processed_count at the beginning to avoid UnboundLocalError
         try:
             # Ensure Playwright is available
             try:
                 from playwright.sync_api import sync_playwright
             except ImportError:
-                print(
-                    fr
-                    + f"Playwright not installed. Run 'pip install playwright && playwright install'. Skipping {site_code.upper()} scraper."
-                )
-                self.handle_exception(
-                    site_code
-                )  # Mark as failed due to missing dependency
+                if self.debug:
+                    print(
+                        f"{site_code.upper()}: Playwright not installed. Run 'pip install playwright && playwright install'. Skipping scraper."
+                    )
+                setattr(self, f"{site_code}_error", "Playwright not installed")
+                setattr(self, f"{site_code}_length", -1)
+                setattr(self, f"{site_code}_done", True)
                 return
 
             all_items_details = []
@@ -2313,13 +2319,13 @@ class Scraper:
             try:
                 from playwright.sync_api import sync_playwright
             except ImportError:
-                print(
-                    fr
-                    + f"Playwright not installed. Run 'pip install playwright && playwright install'. Skipping {site_code.upper()} scraper."
-                )
-                self.handle_exception(
-                    site_code
-                )  # Mark as failed due to missing dependency
+                if self.debug:
+                    print(
+                        f"{site_code.upper()}: Playwright not installed. Run 'pip install playwright && playwright install'. Skipping scraper."
+                    )
+                setattr(self, f"{site_code}_error", "Playwright not installed")
+                setattr(self, f"{site_code}_length", -1)
+                setattr(self, f"{site_code}_done", True)
                 return
 
             if self.debug:
@@ -2349,9 +2355,19 @@ class Scraper:
             ]
 
             with sync_playwright() as p:
-                browser = p.chromium.launch(
-                    headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"]
-                )
+                try:
+                    browser = p.chromium.launch(
+                        headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"]
+                    )
+                except Exception as browser_error:
+                    if self.debug:
+                        print(
+                            f"{site_code.upper()}: Playwright browsers not installed. Run 'playwright install'. Error: {browser_error}"
+                        )
+                    setattr(self, f"{site_code}_error", f"Playwright browsers not installed: {browser_error}")
+                    setattr(self, f"{site_code}_length", -1)
+                    setattr(self, f"{site_code}_done", True)
+                    return
 
                 # Create a persistent context that we'll reuse
                 page_context = browser.new_context(
