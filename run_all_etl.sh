@@ -79,6 +79,20 @@ for pid in "${pids[@]}"; do
 done
 
 echo "All ETL processes completed at $(date)"
+
+echo "All ETL processes completed. Starting backup process..."
+
+# Ensure python executable is available, might need to specify python3
+# Assuming run_backup.py is in the project root and executable
+# Log output of the backup script as well
+if python run_backup.py >> "logs/backup_process.log" 2>&1; then
+    echo "Backup process completed successfully at $(date)."
+else
+    echo "Backup process failed. Check logs/backup_process.log for details."
+fi
+
+echo "ETL and Backup workflow finished at $(date)."
+
 echo "Data has been saved to respective directories:"
 echo "- data/dev_community/"
 echo "- data/product_hunt/"
