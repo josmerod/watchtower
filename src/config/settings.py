@@ -14,6 +14,7 @@ from config.models import (
     DatabaseConfig,
     Environment,
     ETLConfig,
+    GoogleDriveConfig,
     LoggingConfig,
     MonitoringConfig,
     NotificationConfig,
@@ -54,6 +55,7 @@ class Settings(BaseSettings):
     notifications: NotificationConfig = Field(default_factory=NotificationConfig)
     watchers: WatcherConfig = Field(default_factory=WatcherConfig)
     etl: ETLConfig = Field(default_factory=ETLConfig)
+    google_drive: GoogleDriveConfig = Field(default_factory=GoogleDriveConfig)
 
     class Config:
         """Pydantic configuration."""
