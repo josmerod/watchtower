@@ -14,13 +14,27 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import numpy as np
+import json
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
+import requests
+import numpy as np
+from pathlib import Path
+import hashlib
+import time
 import asyncio
+import aiohttp
+import sys
+import os
+import subprocess
+import re
+import base64
+import urllib.parse
+
+# Use centralized path setup and safe logger
+from ._path_setup import get_safe_logger
 
 from web.fullstreamlit.utils.enhanced_data_service import UltraOptimizedDataService
-from utils.logging import get_logger
 
 
 def create_technology_radar_chart(radar_data: Dict[str, Any]) -> go.Figure:

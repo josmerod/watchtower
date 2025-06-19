@@ -7,6 +7,7 @@ from web.fullstreamlit.components import (
     videos_tab,
     news_tab,
     games_tab,
+    allkeyshop_tab,
     courses_tab,
     events_tab,
     admin_tab,

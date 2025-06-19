@@ -12,7 +12,9 @@ import pandas as pd
 import psutil
 import gc
 from typing import Dict, List, Tuple, Optional
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 import numpy as np
 
 # Add project root to path
@@ -316,7 +318,12 @@ def main():
             if benchmark_results['data_service'].get('original') and benchmark_results['data_service'].get('ultra'):
                 st.subheader("🔧 Data Service Performance Comparison")
                 
-                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+                # Create subplots
+                fig = make_subplots(
+                    rows=1, cols=2,
+                    subplot_titles=('Execution Time Comparison', 'Memory Usage Comparison'),
+                    specs=[[{"secondary_y": False}, {"secondary_y": False}]]
+                )
                 
                 # Time comparison
                 categories = ['Original', 'Ultra-Optimized']
@@ -325,10 +332,12 @@ def main():
                     benchmark_results['data_service']['ultra']['avg_time']
                 ]
                 
-                ax1.bar(categories, times, color=['#ff6b6b', '#4ecdc4'])
-                ax1.set_ylabel('Time (seconds)')
-                ax1.set_title('Execution Time Comparison')
-                ax1.grid(True, alpha=0.3)
+                fig.add_trace(
+                    go.Bar(x=categories, y=times, 
+                          marker_color=['#ff6b6b', '#4ecdc4'],
+                          name='Execution Time'),
+                    row=1, col=1
+                )
                 
                 # Memory comparison
                 memory_usage = [
@@ -336,32 +345,47 @@ def main():
                     benchmark_results['data_service']['ultra']['avg_memory']
                 ]
                 
-                ax2.bar(categories, memory_usage, color=['#ff6b6b', '#4ecdc4'])
-                ax2.set_ylabel('Memory (MB)')
-                ax2.set_title('Memory Usage Comparison')
-                ax2.grid(True, alpha=0.3)
+                fig.add_trace(
+                    go.Bar(x=categories, y=memory_usage,
+                          marker_color=['#ff6b6b', '#4ecdc4'],
+                          name='Memory Usage'),
+                    row=1, col=2
+                )
                 
-                plt.tight_layout()
-                st.pyplot(fig)
+                fig.update_yaxes(title_text="Time (seconds)", row=1, col=1)
+                fig.update_yaxes(title_text="Memory (MB)", row=1, col=2)
+                fig.update_layout(height=400, showlegend=False)
+                
+                st.plotly_chart(fig, use_container_width=True)
             
             # Memory Timeline Chart
             if benchmark_results.get('memory_usage'):
                 st.subheader("💾 Memory Usage Timeline")
                 
-                fig, ax = plt.subplots(figsize=(12, 6))
-                
                 timeline_data = benchmark_results['memory_usage']['timeline']
                 operations, memory_values = zip(*timeline_data)
                 
-                ax.plot(range(len(operations)), memory_values, marker='o', linewidth=2, markersize=8)
-                ax.set_xticks(range(len(operations)))
-                ax.set_xticklabels(operations, rotation=45, ha='right')
-                ax.set_ylabel('Memory Usage (MB)')
-                ax.set_title('Memory Usage Over Time')
-                ax.grid(True, alpha=0.3)
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=list(operations),
+                    y=list(memory_values),
+                    mode='lines+markers',
+                    line=dict(width=3),
+                    marker=dict(size=8),
+                    name='Memory Usage'
+                ))
                 
-                plt.tight_layout()
-                st.pyplot(fig)
+                fig.update_layout(
+                    title='Memory Usage Over Time',
+                    xaxis_title='Operations',
+                    yaxis_title='Memory Usage (MB)',
+                    height=400,
+                    xaxis_tickangle=-45
+                )
+                
+                fig.update_xaxes(tickmode='array', tickvals=list(range(len(operations))), ticktext=list(operations))
+                
+                st.plotly_chart(fig, use_container_width=True)
         
         # Performance Summary
         st.header("📋 Performance Summary")

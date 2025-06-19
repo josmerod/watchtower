@@ -11,8 +11,15 @@ from typing import Dict, List
 
 import pandas as pd  # type: ignore
 import streamlit as st
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import numpy as np
+import requests
+import json
 
-from utils.logging import get_logger
+# Use centralized path setup and safe logger
+from ._path_setup import get_safe_logger
 
 
 DATA_DIR = Path("data/scavenging")
@@ -43,7 +50,7 @@ def _discover_categories() -> Dict[str, Path]:
 def render(logger=None):
     """Render the Scavenging tab."""
     if logger is None:
-        logger = get_logger("ScavengingTab")
+        logger = get_safe_logger("ScavengingTab")
 
     st.header("⛏️ Scavenging RSS Feeds")
 

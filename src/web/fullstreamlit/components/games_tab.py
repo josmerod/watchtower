@@ -5,35 +5,63 @@ Displays game deals, bundles, and giveaways.
 
 import streamlit as st
 import pandas as pd
-# from web.fullstreamlit.utils.helpers import make_clickable # Removed
-from . import new_releases_tab # Added import
+from pathlib import Path
+import json
+import logging
 
 def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, logger=None):
     """Render the games tab"""
+    if logger is None:
+        logger = logging.getLogger(__name__)
+    
     st.header("🎮 Juegos")
 
-    # Check if all dataframes are empty
-    if (deals_df.empty and bundles_df.empty and giveaways_df.empty and 
-        trending_df.empty and (new_releases_df is None or new_releases_df.empty)):
-        if logger:
-            logger.warning("No game data available to display (deals, bundles, giveaways, trending, new releases).")
-        st.warning("No hay datos de juegos disponibles para mostrar.")
-        return # Exit if no data
+    # Check if all dataframes are empty or None with safer logic
+    data_available = False
+    
+    if deals_df is not None and not deals_df.empty:
+        data_available = True
+    if bundles_df is not None and not bundles_df.empty:
+        data_available = True
+    if giveaways_df is not None and not giveaways_df.empty:
+        data_available = True
+    if trending_df is not None and not trending_df.empty:
+        data_available = True
+    if new_releases_df is not None and not new_releases_df.empty:
+        data_available = True
 
-    # Create tabs for different game sections
+    # Debug information in sidebar
+    if st.sidebar.checkbox("🐛 Show Debug Info"):
+        st.markdown("### Debug Information:")
+        st.write(f"- **Deals**: {len(deals_df) if deals_df is not None and hasattr(deals_df, '__len__') else 'None/Empty'} records")
+        st.write(f"- **Bundles**: {len(bundles_df) if bundles_df is not None and hasattr(bundles_df, '__len__') else 'None/Empty'} records")
+        st.write(f"- **Giveaways**: {len(giveaways_df) if giveaways_df is not None and hasattr(giveaways_df, '__len__') else 'None/Empty'} records")
+        st.write(f"- **Trending**: {len(trending_df) if trending_df is not None and hasattr(trending_df, '__len__') else 'None/Empty'} records")
+        st.write(f"- **New Releases**: {len(new_releases_df) if new_releases_df is not None and hasattr(new_releases_df, '__len__') else 'None/Empty'} records")
+
+    if not data_available:
+        st.warning("No hay datos de juegos disponibles para mostrar.")
+        st.info("💡 **Posibles soluciones:**")
+        st.info("• Haz clic en '🔄 Bypass Cache (Debug)' en la barra lateral")
+        st.info("• Ejecuta los ETLs de juegos para obtener datos actualizados")
+        st.info("• Verifica que los archivos de datos en `data/games/` no estén vacíos")
+        st.info("• Revisa los logs para identificar errores en la carga de datos")
+        return
+
+    # Create tabs for different game sections - only for non-empty dataframes
     tab_titles = []
-    if not giveaways_df.empty:
+    if giveaways_df is not None and not giveaways_df.empty:
         tab_titles.append("Juegos Gratuitos")
-    if not bundles_df.empty:
+    if bundles_df is not None and not bundles_df.empty:
         tab_titles.append("Paquetes de Juegos")
-    if not deals_df.empty:
+    if deals_df is not None and not deals_df.empty:
         tab_titles.append("Ofertas de Juegos")
-    if not trending_df.empty:
+    if trending_df is not None and not trending_df.empty:
         tab_titles.append("Tendencias Itch.io")
     if new_releases_df is not None and not new_releases_df.empty:
         tab_titles.append("Nuevos Lanzamientos")
 
-    if not tab_titles: # Should not happen if the initial check passed, but good practice
+    if not tab_titles:
         st.warning("No hay datos de juegos válidos para mostrar en las pestañas.")
         return
 
@@ -43,481 +71,436 @@ def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, log
     # Display content within each tab
     if "Juegos Gratuitos" in tab_map:
         with tab_map["Juegos Gratuitos"]:
-            display_giveaways(giveaways_df)
+            display_giveaways(giveaways_df, logger)
 
     if "Paquetes de Juegos" in tab_map:
         with tab_map["Paquetes de Juegos"]:
-            display_bundles(bundles_df)
+            display_bundles(bundles_df, logger)
 
     if "Ofertas de Juegos" in tab_map:
         with tab_map["Ofertas de Juegos"]:
-            display_deals(deals_df)
+            display_deals(deals_df, logger)
 
     if "Tendencias Itch.io" in tab_map:
         with tab_map["Tendencias Itch.io"]:
-            display_trending(trending_df)
+            display_trending(trending_df, logger)
 
     if "Nuevos Lanzamientos" in tab_map:
         with tab_map["Nuevos Lanzamientos"]:
-            new_releases_tab.render(new_releases_df, logger)
-
-    # Removed the multiselect and the old sequential display logic.
-    # The container div is also removed as tabs handle the layout.
+            display_new_releases(new_releases_df, logger)
 
 
-def display_deals(deals_df):
+def display_deals(deals_df, logger):
     """Display game deals"""
-    if deals_df.empty:
+    if deals_df is None or deals_df.empty:
         st.info("No hay ofertas de juegos disponibles en este momento.")
         return
 
-    filtered_deals_df = deals_df.copy()
-    available_columns = filtered_deals_df.columns.tolist()
+    try:
+        filtered_deals_df = deals_df.copy()
+        available_columns = filtered_deals_df.columns.tolist()
 
-    # Determine title column
-    title_col_actual = None
-    if "title" in available_columns:
-        title_col_actual = "title"
-    elif "name" in available_columns:
-        title_col_actual = "name"
+        # Determine title column
+        title_col = None
+        if "title" in available_columns:
+            title_col = "title"
+        elif "name" in available_columns:
+            title_col = "name"
 
-    if not title_col_actual:
-        st.error("Los datos de ofertas no tienen una columna de título ('title' or 'name').")
-        return
+        if not title_col:
+            st.error("Los datos de ofertas no tienen una columna de título ('title' or 'name').")
+            return
 
-    # Define source columns for selection
-    source_columns_to_select = [title_col_actual]
-    if "store" in available_columns:
-        source_columns_to_select.append("store")
-    if "price" in available_columns:
-        source_columns_to_select.append("price")
-    if "discount" in available_columns: # This is often a string like "-90%"
-        source_columns_to_select.append("discount")
-    if "published_date" in available_columns:
-        source_columns_to_select.append("published_date")
-    if "link" in available_columns: # Needed for the clickable link
-        source_columns_to_select.append("link")
+        # Sort by discount value if available
+        if "discount" in available_columns:
+            # Extract numeric discount value for sorting
+            try:
+                filtered_deals_df['discount_numeric'] = filtered_deals_df['discount'].str.extract('(\d+)').astype(float)
+                filtered_deals_df = filtered_deals_df.sort_values(by="discount_numeric", ascending=False)
+            except:
+                pass
 
-    # Sort by discount value if available (assuming 'discount_value' is numeric for sorting)
-    if "discount_value" in available_columns:
-        filtered_deals_df = filtered_deals_df.sort_values(by="discount_value", ascending=False)
+        # Select columns for display
+        display_columns = [title_col]
+        column_config = {
+            "Título": st.column_config.TextColumn(width="medium", help="Título del juego")
+        }
+        
+        if "store" in available_columns:
+            display_columns.append("store")
+            column_config["Tienda"] = st.column_config.TextColumn(width="small", help="Tienda de la oferta")
+        
+        if "price" in available_columns:
+            display_columns.append("price")
+            column_config["Precio"] = st.column_config.TextColumn(width="small", help="Precio actual")
+        
+        if "discount" in available_columns:
+            display_columns.append("discount")
+            column_config["Descuento"] = st.column_config.TextColumn(width="small", help="Porcentaje de descuento")
+        
+        if "link" in available_columns:
+            display_columns.append("link")
+            column_config["Enlace"] = st.column_config.LinkColumn(label="Enlace", display_text="Ver Oferta", width="small")
 
-    display_deals_df = filtered_deals_df[source_columns_to_select].copy()
+        display_df = filtered_deals_df[display_columns].copy()
 
-    # Format price
-    if "price" in display_deals_df.columns:
-        display_deals_df["price"] = display_deals_df["price"].apply(
-            lambda x: f"€{x:.2f}" if pd.notna(x) and isinstance(x, (int, float)) else x
+        # Rename columns to Spanish
+        rename_map = {
+            title_col: "Título",
+            "store": "Tienda",
+            "price": "Precio", 
+            "discount": "Descuento",
+            "link": "Enlace"
+        }
+        
+        display_df.rename(columns={k: v for k, v in rename_map.items() if k in display_df.columns}, inplace=True)
+
+        # Format price column
+        if "Precio" in display_df.columns:
+            display_df["Precio"] = display_df["Precio"].apply(
+                lambda x: f"€{x:.2f}" if pd.notna(x) and isinstance(x, (int, float)) else str(x)
+            )
+
+        st.write(f"Mostrando {len(display_df)} ofertas")
+        st.dataframe(
+            display_df,
+            column_config=column_config,
+            hide_index=True,
+            use_container_width=True
         )
 
-    # Rename columns
-    rename_map = {
-        title_col_actual: "Título",
-        "store": "Tienda",
-        "price": "Precio",
-        "discount": "Descuento",
-        "published_date": "Fecha de Publicación",
-        "link": "URL_Enlace"  # Raw URL column
-    }
-
-    # Select only the source columns that exist and are needed, then rename
-    actual_source_columns_for_rename = [col for col in rename_map.keys() if col in display_deals_df.columns]
-    df_for_editor = display_deals_df[actual_source_columns_for_rename].copy()
-    df_for_editor.rename(columns=rename_map, inplace=True)
-
-    # Final column order for data_editor
-    final_columns_ordered = ["Título", "Tienda", "Precio", "Descuento", "Fecha de Publicación", "URL_Enlace"]
-
-    # Filter to include only columns present in df_for_editor
-    columns_for_editor_display = [col for col in final_columns_ordered if col in df_for_editor.columns]
-    df_for_editor = df_for_editor[columns_for_editor_display]
-
-    st.write(f"Mostrando {len(df_for_editor)} ofertas")
-    st.data_editor(
-        df_for_editor,
-        column_config={
-            "Título": st.column_config.TextColumn(width="medium", help="Título del juego"),
-            "Tienda": st.column_config.TextColumn(width="small", help="Tienda de la oferta"),
-            "Precio": st.column_config.TextColumn(width="small", help="Precio actual"),
-            "Descuento": st.column_config.TextColumn(width="small", help="Porcentaje de descuento"),
-            "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación de la oferta"),
-            "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Oferta", width="small", help="Enlace directo a la oferta")
-        },
-        disabled=True,
-        hide_index=True,
-        use_container_width=True
-    )
-
-    if not df_for_editor.empty:
-        st.markdown("---")
+        # Download buttons
         col1, col2 = st.columns(2)
         with col1:
             st.download_button(
-                label="📥 Descargar CSV (Ofertas)",
-                data=df_for_editor.to_csv(index=False).encode('utf-8'),
-                file_name="game_deals_data.csv",
-                mime='text/csv',
-                key="csv_download_deals"
+                label="📥 Descargar CSV",
+                data=display_df.to_csv(index=False).encode('utf-8'),
+                file_name="game_deals.csv",
+                mime='text/csv'
             )
         with col2:
             st.download_button(
-                label="📥 Descargar JSON (Ofertas)",
-                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
-                file_name="game_deals_data.json",
-                mime='application/json',
-                key="json_download_deals"
+                label="📥 Descargar JSON",
+                data=display_df.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="game_deals.json",
+                mime='application/json'
             )
 
-def display_bundles(bundles_df):
+    except Exception as e:
+        logger.error(f"Error displaying deals: {e}")
+        st.error(f"Error mostrando ofertas: {e}")
+
+
+def display_bundles(bundles_df, logger):
     """Display game bundles"""
-    if bundles_df.empty:
+    if bundles_df is None or bundles_df.empty:
         st.info("No hay paquetes de juegos disponibles en este momento.")
         return
 
-    filtered_bundles_df = bundles_df.copy()
-    available_columns = filtered_bundles_df.columns.tolist()
+    try:
+        filtered_bundles_df = bundles_df.copy()
+        available_columns = filtered_bundles_df.columns.tolist()
 
-    title_col_actual = "title" if "title" in available_columns else "name"
-    if not title_col_actual:
-        st.error("Los datos de paquetes no tienen una columna de título.")
-        return
+        # Determine title column
+        title_col = "title" if "title" in available_columns else "name"
+        if title_col not in available_columns:
+            st.error("Los datos de paquetes no tienen una columna de título.")
+            return
 
-    with st.expander("Filtros y Opciones para Paquetes", expanded=False):
-        group_col_actual = None
-        if "store" in available_columns: # Prioritize 'store' as filter key
-            group_col_actual = "store"
-        elif "type" in available_columns:
-            group_col_actual = "type"
+        # Select columns for display
+        display_columns = [title_col]
+        column_config = {
+            "Título": st.column_config.TextColumn(width="medium", help="Título del paquete")
+        }
+        
+        if "store" in available_columns:
+            display_columns.append("store")
+            column_config["Fuente"] = st.column_config.TextColumn(width="small", help="Fuente del paquete")
+        
+        if "price" in available_columns:
+            display_columns.append("price")
+            column_config["Precio"] = st.column_config.TextColumn(width="small", help="Precio del paquete")
+        
+        if "game_count" in available_columns:
+            display_columns.append("game_count")
+            column_config["Juegos"] = st.column_config.NumberColumn(width="small", help="Número de juegos")
+        
+        if "link" in available_columns:
+            display_columns.append("link")
+            column_config["Enlace"] = st.column_config.LinkColumn(label="Enlace", display_text="Ver Paquete", width="small")
 
-        if group_col_actual:
-            unique_groups = sorted(filtered_bundles_df[group_col_actual].dropna().unique().tolist())
-            options = ["Todos"] + unique_groups
-            selected_group = st.selectbox(
-                f"Filtrar por {group_col_actual.replace('_', ' ').capitalize()}:",
-                options=options,
-                index=0,
-                key="bundle_filter_selectbox"
+        display_df = filtered_bundles_df[display_columns].copy()
+
+        # Rename columns to Spanish
+        rename_map = {
+            title_col: "Título",
+            "store": "Fuente",
+            "price": "Precio",
+            "game_count": "Juegos",
+            "link": "Enlace"
+        }
+        
+        display_df.rename(columns={k: v for k, v in rename_map.items() if k in display_df.columns}, inplace=True)
+
+        # Format price column
+        if "Precio" in display_df.columns:
+            display_df["Precio"] = display_df["Precio"].apply(
+                lambda x: f"€{x:.2f}" if pd.notna(x) and isinstance(x, (int, float)) else str(x)
             )
-            if selected_group != "Todos":
-                filtered_bundles_df = filtered_bundles_df[filtered_bundles_df[group_col_actual] == selected_group]
 
-    # Determine date column and its display name
-    date_col_actual = None
-    date_col_display_name = None
-    if "published_date" in available_columns:
-        date_col_actual = "published_date"
-        date_col_display_name = "Fecha de Publicación"
-    elif "end_date" in available_columns:
-        date_col_actual = "end_date"
-        date_col_display_name = "Fecha de Expiración"
-
-    if date_col_actual: # Sort by date if available
-        filtered_bundles_df[date_col_actual] = pd.to_datetime(filtered_bundles_df[date_col_actual], errors='coerce')
-        filtered_bundles_df = filtered_bundles_df.sort_values(by=date_col_actual, ascending=False)
-    else: # Fallback sort by title
-        filtered_bundles_df = filtered_bundles_df.sort_values(by=title_col_actual)
-
-    # Add game_count if 'games' list exists and 'game_count' doesn't
-    if "game_count" not in available_columns and "games" in available_columns:
-        filtered_bundles_df["game_count"] = filtered_bundles_df["games"].apply(lambda x: len(x) if isinstance(x, list) else 0)
-        available_columns.append("game_count") # Add to available if created
-
-    # Select columns for display
-    source_columns_to_select = [title_col_actual]
-    if "store" in available_columns: source_columns_to_select.append("store")
-    if "game_count" in available_columns: source_columns_to_select.append("game_count")
-    if "price" in available_columns: source_columns_to_select.append("price")
-    if "type" in available_columns: source_columns_to_select.append("type") # This is bundle category like "Humble Choice"
-    if date_col_actual: source_columns_to_select.append(date_col_actual)
-    if "link" in available_columns: source_columns_to_select.append("link")
-
-    # Ensure no duplicates if title_col_actual or date_col_actual is already in the list by name
-    source_columns_to_select = sorted(list(set(source_columns_to_select)), key=source_columns_to_select.index)
-
-
-    display_bundles_df_intermediate = filtered_bundles_df[source_columns_to_select].copy()
-
-    # Price formatting (moved before rename)
-    if "price" in display_bundles_df_intermediate.columns:
-        display_bundles_df_intermediate["price"] = display_bundles_df_intermediate["price"].apply(
-            lambda x: f"€{x:.2f}" if pd.notna(x) and isinstance(x, (int, float)) else x
+        st.write(f"Mostrando {len(display_df)} paquetes de juegos")
+        st.dataframe(
+            display_df,
+            column_config=column_config,
+            hide_index=True,
+            use_container_width=True
         )
 
-    if date_col_actual and date_col_actual in display_bundles_df_intermediate.columns:
-         if pd.api.types.is_datetime64_any_dtype(display_bundles_df_intermediate[date_col_actual]):
-            display_bundles_df_intermediate[date_col_actual] = display_bundles_df_intermediate[date_col_actual].dt.strftime('%Y-%m-%d')
-
-    # Prepare df_for_editor
-    df_for_editor_rename_map = {
-        title_col_actual: "Título",
-        "store": "Fuente",
-        "game_count": "Juegos", # Renamed as per instruction
-        "price": "Precio",
-        "type": "Tipo",
-        "link": "URL_Enlace"
-    }
-    # Add the actual date column to the rename map, using its display name as the target
-    # This ensures the column in df_for_editor has the name like "Fecha de Publicación"
-    if date_col_actual and date_col_display_name:
-        df_for_editor_rename_map[date_col_actual] = date_col_display_name
-
-    actual_source_columns_for_rename = [col for col in df_for_editor_rename_map.keys() if col in display_bundles_df_intermediate.columns]
-    df_for_editor = display_bundles_df_intermediate[actual_source_columns_for_rename].copy()
-    df_for_editor.rename(columns=df_for_editor_rename_map, inplace=True)
-
-    # Define final column order for data_editor
-    # The date column now has its display name (e.g., "Fecha de Publicación") in df_for_editor
-    final_columns_ordered = ["Título", "Fuente", "Juegos", "Precio", "Tipo"]
-    if date_col_display_name and date_col_display_name in df_for_editor.columns:
-        final_columns_ordered.append(date_col_display_name)
-    final_columns_ordered.append("URL_Enlace")
-
-    columns_for_editor_display = [col for col in final_columns_ordered if col in df_for_editor.columns]
-    df_for_editor = df_for_editor[columns_for_editor_display]
-
-    # Determine column config for 'Juegos' based on data type
-    juegos_column_config = None
-    if "Juegos" in df_for_editor.columns and pd.api.types.is_numeric_dtype(df_for_editor["Juegos"]):
-        juegos_column_config = st.column_config.NumberColumn(width="small", help="Número de juegos en el paquete", format="%d")
-    else:
-        juegos_column_config = st.column_config.TextColumn(width="small", help="Número de juegos en el paquete")
-
-    column_config_data_editor = {
-        "Título": st.column_config.TextColumn(width="medium", help="Título del paquete"),
-        "Fuente": st.column_config.TextColumn(width="small", help="Fuente/Origen del paquete"),
-        "Juegos": juegos_column_config,
-        "Precio": st.column_config.TextColumn(width="small", help="Precio del paquete"),
-        "Tipo": st.column_config.TextColumn(width="small", help="Categoría del paquete"),
-        "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Paquete", width="small", help="Enlace directo al paquete")
-    }
-    if date_col_display_name and date_col_display_name in df_for_editor.columns: # Add date to column_config if it exists
-        column_config_data_editor[date_col_display_name] = st.column_config.TextColumn(label="Fecha", width="small", help="Fecha de publicación o expiración")
-
-    st.write(f"Mostrando {len(df_for_editor)} paquetes de juegos")
-    st.data_editor(
-        df_for_editor,
-        column_config=column_config_data_editor,
-        disabled=True,
-        hide_index=True,
-        use_container_width=True
-    )
-
-    if not df_for_editor.empty:
-        st.markdown("---")
+        # Download buttons
         col1, col2 = st.columns(2)
         with col1:
             st.download_button(
-                label="📥 Descargar CSV (Paquetes)",
-                data=df_for_editor.to_csv(index=False).encode('utf-8'),
-                file_name="game_bundles_data.csv",
-                mime='text/csv',
-                key="csv_download_bundles"
+                label="📥 Descargar CSV",
+                data=display_df.to_csv(index=False).encode('utf-8'),
+                file_name="game_bundles.csv",
+                mime='text/csv'
             )
         with col2:
             st.download_button(
-                label="📥 Descargar JSON (Paquetes)",
-                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
-                file_name="game_bundles_data.json",
-                mime='application/json',
-                key="json_download_bundles"
+                label="📥 Descargar JSON",
+                data=display_df.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="game_bundles.json",
+                mime='application/json'
             )
 
-def display_giveaways(giveaways_df):
+    except Exception as e:
+        logger.error(f"Error displaying bundles: {e}")
+        st.error(f"Error mostrando paquetes: {e}")
+
+
+def display_giveaways(giveaways_df, logger):
     """Display game giveaways"""
-    if giveaways_df.empty:
+    if giveaways_df is None or giveaways_df.empty:
         st.info("No hay juegos gratuitos disponibles en este momento.")
         return
 
-    filtered_giveaways_df = giveaways_df.copy()
-    available_columns = filtered_giveaways_df.columns.tolist()
+    try:
+        filtered_giveaways_df = giveaways_df.copy()
+        available_columns = filtered_giveaways_df.columns.tolist()
 
-    title_col_actual = None
-    if "title" in available_columns: title_col_actual = "title"
-    elif "name" in available_columns: title_col_actual = "name"
+        # Determine title column
+        title_col = None
+        if "title" in available_columns:
+            title_col = "title"
+        elif "name" in available_columns:
+            title_col = "name"
 
-    if not title_col_actual:
-        st.error("Los datos de juegos gratuitos no tienen columna de título.")
-        return
+        if not title_col:
+            st.error("Los datos de juegos gratuitos no tienen columna de título.")
+            return
 
-    published_date_col_actual = None
-    if "published_date" in available_columns: published_date_col_actual = "published_date"
-    elif "date" in available_columns: published_date_col_actual = "date" # Fallback for 'date'
+        # Select columns for display
+        display_columns = [title_col]
+        column_config = {
+            "Título": st.column_config.TextColumn(width="medium", help="Título del juego gratuito")
+        }
+        
+        if "published_date" in available_columns:
+            display_columns.append("published_date")
+            column_config["Publicado"] = st.column_config.TextColumn(width="small", help="Fecha de publicación")
+        
+        if "expires_date" in available_columns:
+            display_columns.append("expires_date")
+            column_config["Expira"] = st.column_config.TextColumn(width="small", help="Fecha de expiración")
+        
+        if "link" in available_columns:
+            display_columns.append("link")
+            column_config["Enlace"] = st.column_config.LinkColumn(label="Enlace", display_text="Reclamar", width="small")
 
-    # Select columns for display
-    source_columns_to_select = [title_col_actual]
-    if published_date_col_actual: source_columns_to_select.append(published_date_col_actual)
-    if "expires_date" in available_columns: source_columns_to_select.append("expires_date")
-    if "link" in available_columns: source_columns_to_select.append("link")
+        display_df = filtered_giveaways_df[display_columns].copy()
 
-    # Ensure no duplicates
-    source_columns_to_select = sorted(list(set(source_columns_to_select)), key=source_columns_to_select.index)
+        # Rename columns to Spanish
+        rename_map = {
+            title_col: "Título",
+            "published_date": "Publicado",
+            "expires_date": "Expira",
+            "link": "Enlace"
+        }
+        
+        display_df.rename(columns={k: v for k, v in rename_map.items() if k in display_df.columns}, inplace=True)
 
-    display_giveaways_df = filtered_giveaways_df[source_columns_to_select].copy()
+        st.write(f"Mostrando {len(display_df)} juegos gratuitos")
+        st.dataframe(
+            display_df,
+            column_config=column_config,
+            hide_index=True,
+            use_container_width=True
+        )
 
-    # Format dates if they exist and are datetime objects
-    if published_date_col_actual and published_date_col_actual in display_giveaways_df.columns and \
-       pd.api.types.is_datetime64_any_dtype(display_giveaways_df[published_date_col_actual]):
-        display_giveaways_df[published_date_col_actual] = display_giveaways_df[published_date_col_actual].dt.strftime('%Y-%m-%d')
-
-    if "expires_date" in display_giveaways_df.columns and \
-       pd.api.types.is_datetime64_any_dtype(display_giveaways_df[published_date_col_actual]):
-        display_giveaways_df[published_date_col_actual] = display_giveaways_df[published_date_col_actual].dt.strftime('%Y-%m-%d')
-
-    if "expires_date" in display_giveaways_df.columns and \
-       pd.api.types.is_datetime64_any_dtype(display_giveaways_df["expires_date"]):
-        display_giveaways_df["expires_date"] = display_giveaways_df["expires_date"].dt.strftime('%Y-%m-%d')
-
-    # Prepare df_for_editor
-    df_for_editor_rename_map = {
-        title_col_actual: "Título",
-        "link": "URL_Enlace"
-    }
-    if published_date_col_actual: # This is the original name of the column with published date
-        df_for_editor_rename_map[published_date_col_actual] = "Publicado"
-    if "expires_date" in display_giveaways_df.columns: # Check if original column exists before adding to map
-        df_for_editor_rename_map["expires_date"] = "Expira"
-
-    actual_source_columns_for_rename = [col for col in df_for_editor_rename_map.keys() if col in display_giveaways_df.columns]
-    df_for_editor = display_giveaways_df[actual_source_columns_for_rename].copy()
-    df_for_editor.rename(columns=df_for_editor_rename_map, inplace=True)
-
-    # Define final column order for data_editor
-    final_columns_ordered = ["Título"]
-    if "Publicado" in df_for_editor.columns: final_columns_ordered.append("Publicado")
-    if "Expira" in df_for_editor.columns: final_columns_ordered.append("Expira")
-    final_columns_ordered.append("URL_Enlace")
-
-    columns_for_editor_display = [col for col in final_columns_ordered if col in df_for_editor.columns]
-    df_for_editor = df_for_editor[columns_for_editor_display]
-
-    st.write(f"Mostrando {len(df_for_editor)} juegos gratuitos")
-    st.data_editor(
-        df_for_editor,
-        column_config={
-            "Título": st.column_config.TextColumn(width="medium", help="Título del juego gratuito"),
-            "Publicado": st.column_config.TextColumn(width="small", help="Fecha de publicación del juego gratuito"),
-            "Expira": st.column_config.TextColumn(width="small", help="Fecha de expiración de la oferta"),
-            "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Reclamar", width="small", help="Enlace para obtener el juego")
-        },
-        disabled=True,
-        hide_index=True,
-        use_container_width=True
-    )
-
-    if not df_for_editor.empty:
-        st.markdown("---")
+        # Download buttons
         col1, col2 = st.columns(2)
         with col1:
             st.download_button(
-                label="📥 Descargar CSV (Gratuitos)",
-                data=df_for_editor.to_csv(index=False).encode('utf-8'),
-                file_name="game_giveaways_data.csv",
-                mime='text/csv',
-                key="csv_download_giveaways"
+                label="📥 Descargar CSV",
+                data=display_df.to_csv(index=False).encode('utf-8'),
+                file_name="game_giveaways.csv",
+                mime='text/csv'
             )
         with col2:
             st.download_button(
-                label="📥 Descargar JSON (Gratuitos)",
-                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
-                file_name="game_giveaways_data.json",
-                mime='application/json',
-                key="json_download_giveaways"
+                label="📥 Descargar JSON",
+                data=display_df.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="game_giveaways.json",
+                mime='application/json'
             )
 
-def display_trending(trending_df):
+    except Exception as e:
+        logger.error(f"Error displaying giveaways: {e}")
+        st.error(f"Error mostrando juegos gratuitos: {e}")
+
+
+def display_trending(trending_df, logger):
     """Display Itch.io trending games"""
-    if trending_df.empty:
+    if trending_df is None or trending_df.empty:
         st.info("No hay tendencias de Itch.io disponibles en este momento.")
         return
 
-    filtered_trending_df = trending_df.copy()
-    available_columns = filtered_trending_df.columns.tolist()
+    try:
+        filtered_trending_df = trending_df.copy()
+        available_columns = filtered_trending_df.columns.tolist()
 
-    # Determine title column
-    title_col_actual = None
-    if "title" in available_columns:
-        title_col_actual = "title"
-    elif "name" in available_columns:
-        title_col_actual = "name"
+        # Determine title column
+        title_col = None
+        if "title" in available_columns:
+            title_col = "title"
+        elif "name" in available_columns:
+            title_col = "name"
 
-    if not title_col_actual:
-        st.error("Los datos de tendencias no tienen una columna de título.")
-        return
+        if not title_col:
+            st.error("Los datos de tendencias no tienen una columna de título.")
+            return
 
-    # Select columns for display
-    source_columns_to_select = [title_col_actual]
-    if "author" in available_columns:
-        source_columns_to_select.append("author")
-    if "price" in available_columns:
-        source_columns_to_select.append("price")
-    if "description" in available_columns:
-        source_columns_to_select.append("description")
-    if "link" in available_columns:
-        source_columns_to_select.append("link")
+        # Select columns for display
+        display_columns = [title_col]
+        column_config = {
+            "Título": st.column_config.TextColumn(width="medium", help="Título del juego")
+        }
+        
+        if "author" in available_columns:
+            display_columns.append("author")
+            column_config["Autor"] = st.column_config.TextColumn(width="small", help="Autor/Desarrollador")
+        
+        if "price" in available_columns:
+            display_columns.append("price")
+            column_config["Precio"] = st.column_config.TextColumn(width="small", help="Precio del juego")
+        
+        if "link" in available_columns:
+            display_columns.append("link")
+            column_config["Enlace"] = st.column_config.LinkColumn(label="Enlace", display_text="Ver Juego", width="small")
 
-    display_trending_df = filtered_trending_df[source_columns_to_select].copy()
+        display_df = filtered_trending_df[display_columns].copy()
 
-    # Format price
-    if "price" in display_trending_df.columns:
-        display_trending_df["price"] = display_trending_df["price"].apply(
-            lambda x: f"€{x:.2f}" if pd.notna(x) and isinstance(x, (int, float)) else x
+        # Rename columns to Spanish
+        rename_map = {
+            title_col: "Título",
+            "author": "Autor",
+            "price": "Precio",
+            "link": "Enlace"
+        }
+        
+        display_df.rename(columns={k: v for k, v in rename_map.items() if k in display_df.columns}, inplace=True)
+
+        # Format price column
+        if "Precio" in display_df.columns:
+            display_df["Precio"] = display_df["Precio"].apply(
+                lambda x: f"€{x:.2f}" if pd.notna(x) and isinstance(x, (int, float)) else str(x)
+            )
+
+        st.write(f"Mostrando {len(display_df)} juegos en tendencia de Itch.io")
+        st.dataframe(
+            display_df,
+            column_config=column_config,
+            hide_index=True,
+            use_container_width=True
         )
 
-    # Rename columns
-    rename_map = {
-        title_col_actual: "Título",
-        "author": "Autor",
-        "price": "Precio",
-        "description": "Descripción",
-        "link": "URL_Enlace"
-    }
-
-    actual_source_columns_for_rename = [col for col in rename_map.keys() if col in display_trending_df.columns]
-    df_for_editor = display_trending_df[actual_source_columns_for_rename].copy()
-    df_for_editor.rename(columns=rename_map, inplace=True)
-
-    # Final column order for data_editor
-    final_columns_ordered = ["Título", "Autor", "Precio", "Descripción", "URL_Enlace"]
-    columns_for_editor_display = [col for col in final_columns_ordered if col in df_for_editor.columns]
-    df_for_editor = df_for_editor[columns_for_editor_display]
-
-    # Truncate description for better display
-    if "Descripción" in df_for_editor.columns:
-        df_for_editor["Descripción"] = df_for_editor["Descripción"].apply(
-            lambda x: x[:100] + "..." if isinstance(x, str) and len(x) > 100 else x
-        )
-
-    st.write(f"Mostrando {len(df_for_editor)} juegos en tendencia de Itch.io")
-    st.data_editor(
-        df_for_editor,
-        column_config={
-            "Título": st.column_config.TextColumn(width="medium", help="Título del juego"),
-            "Autor": st.column_config.TextColumn(width="small", help="Autor/Desarrollador del juego"),
-            "Precio": st.column_config.TextColumn(width="small", help="Precio del juego"),
-            "Descripción": st.column_config.TextColumn(width="large", help="Descripción del juego"),
-            "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Juego", width="small", help="Enlace al juego en Itch.io")
-        },
-        disabled=True,
-        hide_index=True,
-        use_container_width=True
-    )
-
-    if not df_for_editor.empty:
-        st.markdown("---")
+        # Download buttons
         col1, col2 = st.columns(2)
         with col1:
             st.download_button(
-                label="📥 Descargar CSV (Tendencias)",
-                data=df_for_editor.to_csv(index=False).encode('utf-8'),
-                file_name="itchio_trending_data.csv",
-                mime='text/csv',
-                key="csv_download_trending"
+                label="📥 Descargar CSV",
+                data=display_df.to_csv(index=False).encode('utf-8'),
+                file_name="itchio_trending.csv",
+                mime='text/csv'
             )
         with col2:
             st.download_button(
-                label="📥 Descargar JSON (Tendencias)",
-                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
-                file_name="itchio_trending_data.json",
-                mime='application/json',
-                key="json_download_trending"
+                label="📥 Descargar JSON",
+                data=display_df.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="itchio_trending.json",
+                mime='application/json'
             )
+
+    except Exception as e:
+        logger.error(f"Error displaying trending: {e}")
+        st.error(f"Error mostrando tendencias: {e}")
+
+
+def display_new_releases(new_releases_df, logger):
+    """Display new game releases"""
+    if new_releases_df is None or new_releases_df.empty:
+        st.info("No hay nuevos lanzamientos disponibles en este momento.")
+        return
+
+    try:
+        st.subheader("Próximos Lanzamientos y Novedades")
+
+        # Sort by release date if available
+        sorted_df = new_releases_df.copy()
+        if 'released' in sorted_df.columns:
+            try:
+                sorted_df['released_dt'] = pd.to_datetime(sorted_df['released'], errors='coerce')
+                sorted_df = sorted_df.sort_values(by="released_dt", ascending=False)
+            except Exception as e:
+                logger.warning(f"Could not sort by release date: {e}")
+
+        # Display games in expandable sections
+        for idx, game in sorted_df.iterrows():
+            game_name = game.get('name', 'Nombre no disponible')
+            
+            with st.expander(f"{game_name}"):
+                st.markdown(f"**Título:** {game_name}")
+
+                # Release date
+                release_date = game.get('released', 'Fecha no disponible')
+                if pd.notna(release_date) and hasattr(release_date, 'strftime'):
+                    release_date = release_date.strftime('%Y-%m-%d')
+                st.markdown(f"**Fecha de Lanzamiento:** {release_date}")
+
+                # Platforms
+                platforms = game.get('platforms', [])
+                if isinstance(platforms, list):
+                    platforms_str = ', '.join(platforms) if platforms else "No especificadas"
+                else:
+                    platforms_str = str(platforms) if platforms else "No especificadas"
+                st.markdown(f"**Plataformas:** {platforms_str}")
+
+                # Metacritic score
+                metacritic = game.get('metacritic', 'N/A')
+                st.markdown(f"**Puntuación Metacritic:** {metacritic if pd.notna(metacritic) else 'N/A'}")
+
+                # RAWG link
+                rawg_link = game.get('rawg_link')
+                if rawg_link and pd.notna(rawg_link):
+                    st.markdown(f"**Enlace RAWG:** [Ver en RAWG]({rawg_link})")
+
+                # Description
+                description = game.get('description_raw', "No hay descripción disponible.")
+                if pd.notna(description) and description:
+                    st.caption(description)
+
+        logger.info(f"Successfully rendered {len(sorted_df)} new game releases.")
+
+    except Exception as e:
+        logger.error(f"Error displaying new releases: {e}")
+        st.error(f"Error mostrando nuevos lanzamientos: {e}")

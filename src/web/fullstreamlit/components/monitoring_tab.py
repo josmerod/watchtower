@@ -15,10 +15,23 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 import re
+import numpy as np
+import requests
+import time
+import hashlib
+import io
+import base64
+import urllib.parse
+import traceback
+import asyncio
+import aiohttp
 
 import sys
 from utils.file_system import get_project_root
 from utils.logging import get_logger
+
+# Use centralized path setup and safe logger
+from ._path_setup import get_safe_logger
 
 logger = get_logger("MonitoringTab")
 

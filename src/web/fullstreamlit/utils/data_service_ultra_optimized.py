@@ -8,7 +8,7 @@ import pandas as pd
 import json
 import os
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Tuple, Optional, Any, Union
 from pathlib import Path
 from functools import lru_cache
@@ -19,19 +19,39 @@ from concurrent.futures import ThreadPoolExecutor
 import asyncio
 import time
 import threading
+import sys
+
+# Add the src directory to the Python path for imports
+current_dir = Path(__file__).parent
+src_dir = current_dir.parent.parent.parent  # Go up from utils -> fullstreamlit -> web -> src
+sys.path.insert(0, str(src_dir))
+
+# Alternative approach - add absolute path
+watchtower_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+src_absolute = os.path.join(watchtower_root, 'src')
+if src_absolute not in sys.path:
+    sys.path.insert(0, src_absolute)
 
 # Import technology intelligence components
 try:
     from analytics.technology_adoption import TechnologyAdoptionAnalyzer
     from models.technology import FrameworkBattleModel, TechnologyCategory, TechnologyPredictionModel
 except ImportError:
-    # Fallback if modules not available
+    # Fallback if models are not available
     TechnologyAdoptionAnalyzer = None
     FrameworkBattleModel = None
     TechnologyCategory = None
     TechnologyPredictionModel = None
 
-from utils.logging import get_logger
+# Import logging utility with error handling
+try:
+    from utils.logging import get_logger
+except ImportError as e:
+    print(f"❌ Failed to import get_logger in data_service: {e}")
+    # Fallback - create a simple logger
+    import logging
+    def get_logger(name):
+        return logging.getLogger(name)
 
 class UltraOptimizedDataService:
     """Ultra-optimized data service with advanced caching and memory management"""
@@ -58,6 +78,7 @@ class UltraOptimizedDataService:
         # Pre-cache all important paths
         self.cached_paths = {
             'games_dir': self.data_dir / "games",
+            'allkeyshop_games_dir': self.data_dir / "allkeyshop_games" / "output",
             'youtube_dir': self.data_dir / "youtube", 
             'hackernews_dir': self.data_dir / "hackernews",
             'futuretools_dir': self.data_dir / "futuretools",
@@ -1605,6 +1626,41 @@ class UltraOptimizedDataService:
             return data # Returning list of dicts for flexibility
         except Exception as e:
             self._log(f"Error loading home server trends data from {file_path}: {e}", "error")
+            return []
+
+    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False)
+    def get_allkeyshop_data(_self) -> List[Dict[str, Any]]:
+        """Get AllKeyShop game deals data from the ETL."""
+        _self._log("Loading AllKeyShop games data")
+        
+        try:
+            allkeyshop_dir = _self.cached_paths['allkeyshop_games_dir']
+            
+            # Try to load latest data file first
+            latest_file = allkeyshop_dir / "latest_allkeyshop_games.json"
+            
+            if latest_file.exists():
+                cache_key = _self._get_cache_key(str(latest_file), "allkeyshop_latest")
+                data = _self._ultra_fast_json_load(latest_file, cache_key)
+                _self._log(f"Loaded {len(data)} AllKeyShop games from latest file")
+                return data
+            
+            # Fallback to timestamped files if latest doesn't exist
+            if allkeyshop_dir.exists():
+                json_files = list(allkeyshop_dir.glob("allkeyshop_games_*.json"))
+                if json_files:
+                    # Get the most recent file
+                    latest_timestamped = max(json_files, key=lambda x: x.stat().st_mtime)
+                    cache_key = _self._get_cache_key(str(latest_timestamped), "allkeyshop_timestamped")
+                    data = _self._ultra_fast_json_load(latest_timestamped, cache_key)
+                    _self._log(f"Loaded {len(data)} AllKeyShop games from timestamped file: {latest_timestamped.name}")
+                    return data
+            
+            _self._log("No AllKeyShop data files found", "warning")
+            return []
+            
+        except Exception as e:
+            _self._log(f"Error loading AllKeyShop data: {e}", "error")
             return []
 
 # Factory function for easy instantiation
