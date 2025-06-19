@@ -284,7 +284,7 @@ def main():
     settings = get_settings()
     api_key = settings.api.news_api_key
     if not api_key:
-        logger.error("NewsAPI key not found in settings (checked API__NEWS_API_KEY). Please ensure it is set in your .env file or environment variables.")
+        logger.error("NewsAPI key not found in settings (checked API_NEWS_API_KEY). Please ensure it is set in your .env file or environment variables.")
         return
 
     session = create_session()

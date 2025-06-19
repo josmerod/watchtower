@@ -8,8 +8,28 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+# Add the src directory to the Python path
+current_dir = Path(__file__).parent
+src_dir = current_dir.parent.parent
+sys.path.insert(0, str(src_dir))
+
+# Alternative approach - add absolute path
+import os
+watchtower_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+src_absolute = os.path.join(watchtower_root, 'src')
+if src_absolute not in sys.path:
+    sys.path.insert(0, src_absolute)
+
 # Import utilities from our modules
-from utils.logging import get_logger
+try:
+    from utils.logging import get_logger
+except ImportError as e:
+    print(f"❌ Failed to import get_logger: {e}")
+    # Fallback - create a simple logger
+    import logging
+    def get_logger(name):
+        return logging.getLogger(name)
+
 from web.fullstreamlit.styles.main import get_main_style
 from web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
 
@@ -19,6 +39,7 @@ from web.fullstreamlit.components import (
     videos_tab,
     news_tab,
     games_tab,
+    allkeyshop_tab,
     courses_tab,
     events_tab,
     admin_tab,
@@ -79,8 +100,16 @@ if st.button("🔄 Actualizar"):
 def get_cached_data():
     """Load and cache data"""
     try:
+        logger.info("Loading cached data...")
         data = {}
-        data['games'] = data_service.get_games_data()
+        
+        # Test games data loading specifically
+        logger.info("Loading games data...")
+        games_data = data_service.get_games_data()
+        logger.info(f"Games data loaded: type={type(games_data)}, len={len(games_data) if isinstance(games_data, (tuple, list)) else 'not tuple/list'}")
+        data['games'] = games_data
+        
+        data['allkeyshop'] = data_service.get_allkeyshop_data()
         data['courses'] = data_service.get_courses_data()
         data['news'] = data_service.get_news_data()
         data['videos'] = data_service.get_videos_data()
@@ -92,10 +121,14 @@ def get_cached_data():
         data['azure_training'] = data_service.get_azure_training_data()
         data['home_server_trends'] = data_service.get_home_server_trends_data()
         data['museums'] = data_service.get_museum_data() # Added museum data loading
+        
+        logger.info("All data loaded successfully")
         return data
     except Exception as e:
         logger.error(f"Error loading data: {str(e)}")
         return {}
+
+
 
 cached_data = get_cached_data()
 
@@ -103,6 +136,7 @@ cached_data = get_cached_data()
 google_cloud_blog_data = cached_data.get('google_cloud_blog', [])
 aws_training_data = cached_data.get('aws_training', [])
 azure_training_data = cached_data.get('azure_training', [])
+allkeyshop_data = cached_data.get('allkeyshop', [])
 
 # Tabs
 main_tabs = st.tabs([
@@ -113,6 +147,7 @@ main_tabs = st.tabs([
     "🎓 AWS Training",      # New tab
     "🔷 Azure Training",    # New tab
     "🎮 Juegos",
+    "🎯 AllKeyShop Deals",  # New AllKeyShop tab
     "📚 Cursos",
     "🗓️ Eventos Tech",
     "🧑‍💻 Comunidades Dev",
@@ -226,45 +261,55 @@ with main_tabs[6]: # Juegos
     games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
     new_releases_df = cached_data.get('new_game_releases', pd.DataFrame())
     
+    # Debug information
+    logger.debug(f"Raw games_data type: {type(games_data)}, length: {len(games_data) if isinstance(games_data, (tuple, list)) else 'not tuple/list'}")
+    logger.debug(f"New releases type: {type(new_releases_df)}, shape: {new_releases_df.shape if hasattr(new_releases_df, 'shape') else 'no shape'}")
+    
     if isinstance(games_data, tuple) and len(games_data) == 4:
         deals_df, bundles_df, giveaways_df, trending_df = games_data
+        logger.debug(f"Unpacked 4-tuple: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending={len(trending_df)}")
     elif isinstance(games_data, tuple) and len(games_data) == 3:
         deals_df, bundles_df, giveaways_df = games_data
         trending_df = pd.DataFrame()
+        logger.debug(f"Unpacked 3-tuple: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending=0")
     else:
         deals_df = bundles_df = giveaways_df = trending_df = pd.DataFrame()
+        logger.warning(f"Games data format unexpected: {type(games_data)} - creating empty dataframes")
     
     render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, logger)
 
-with main_tabs[7]: # Cursos
+with main_tabs[7]: # AllKeyShop Deals
+    render_tab_safely("AllKeyShop Deals", allkeyshop_tab.render, allkeyshop_data, logger)
+
+with main_tabs[8]: # Cursos
     courses_data = cached_data.get('courses', {})
     render_tab_safely("Cursos", courses_tab.render, courses_data, logger)
 
-with main_tabs[8]: # Eventos Tech
+with main_tabs[9]: # Eventos Tech
     render_tab_safely("Eventos Tech", tech_events_tab.render, logger, data_service)
 
-with main_tabs[9]: # Comunidades Dev
+with main_tabs[10]: # Comunidades Dev
     render_tab_safely("Comunidades Dev", dev_communities_tab.render, logger)
 
-with main_tabs[10]: # Seguridad
+with main_tabs[11]: # Seguridad
     render_tab_safely("Seguridad", security_tab.render, logger, data_service)
 
-with main_tabs[11]: # Innovación
+with main_tabs[12]: # Innovación
     render_tab_safely("Innovación", enhanced_innovation_tab.render, logger, data_service)
 
-with main_tabs[12]: # Plataformas IA
+with main_tabs[13]: # Plataformas IA
     render_tab_safely("Plataformas IA", ai_platforms_tab.render, logger)
 
-with main_tabs[13]: # Home Server
+with main_tabs[14]: # Home Server
     render_tab_safely("Home Server", home_server_tab.render, logger, data_service)
 
-with main_tabs[14]: # Crypto
+with main_tabs[15]: # Crypto
     render_tab_safely("Crypto", crypto_tab.render, logger)
 
-with main_tabs[15]: # E-commerce tab
+with main_tabs[16]: # E-commerce tab
     render_tab_safely("E-commerce", ecommerce_tab.render, logger)
 
-with main_tabs[16]: # ArXiv
+with main_tabs[17]: # ArXiv
     arxiv_subtabs = st.tabs(["Mejorado", "Papers", "Búsqueda"])
     
     with arxiv_subtabs[0]:
@@ -276,29 +321,29 @@ with main_tabs[16]: # ArXiv
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 
-with main_tabs[17]: # Index for Anime Tab
+with main_tabs[18]: # Index for Anime Tab
     render_tab_safely("Anime Calendar", display_anime_calendar_tab)
 
-with main_tabs[18]: # Index for ADHD Research - NEW TAB
+with main_tabs[19]: # Index for ADHD Research - NEW TAB
     render_tab_safely("ADHD Research", adhd_tab.display)
 
-with main_tabs[19]: # Index for Monitoreo
+with main_tabs[20]: # Index for Monitoreo
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[20]: # Index for Eventos Valencia
+with main_tabs[21]: # Index for Eventos Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[21]: # Index for Museos Virtuales - New tab
+with main_tabs[22]: # Index for Museos Virtuales - New tab
     museum_data = cached_data.get('museums', pd.DataFrame())
     render_tab_safely("Museos Virtuales", museums_tab.render, logger, museum_data)
 
-with main_tabs[22]: # Index for Admin
+with main_tabs[23]: # Index for Admin
     render_tab_safely("Admin", admin_tab.render, logger)
 
 # New 4chan Generals Tab
-with main_tabs[23]:
+with main_tabs[24]:
     render_tab_safely("4chan Generals", chan_generals_tab.render, logger)
 
 # Scavenging Tab
-with main_tabs[24]:
+with main_tabs[25]:
     render_tab_safely("Scavenging", scavenging_tab.render, logger)

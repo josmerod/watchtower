@@ -17,6 +17,7 @@ REM Run all ETL and watcher scripts in parallel
 start /B python src/etl/games/games_get_deals.py
 start /B python src/etl/games/games_get_humblebundles.py
 start /B python src/etl/games/games_get_itchio_trending.py
+start /B python src/etl/games/games_get_allkeyshop.py
 
 start /B python src/etl/news/news_get_ycombinator.py
 start /B python src/etl/news/news_get_futuretools.py
