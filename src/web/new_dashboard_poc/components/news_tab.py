@@ -56,23 +56,59 @@ ALL_NEWS_DATA = {
 
 # --- Helper function to parse dates ---
 def parse_date(date_str):
-    if not date_str:
+    if date_str is None or str(date_str).strip() == "":
         return None
+
+    s_date = str(date_str)
+
+    # List of datetime formats to try for string parsing
+    # Ordered from more specific/complex to more general
+    datetime_formats = [
+        "%Y-%m-%dT%H:%M:%S.%f%z",  # ISO 8601 with microseconds and timezone
+        "%Y-%m-%dT%H:%M:%S%z",     # ISO 8601 without microseconds, with timezone
+        "%Y-%m-%d %H:%M:%S%z",     # Common format with timezone
+        "%Y-%m-%dT%H:%M:%S",       # ISO 8601, no timezone (assumed UTC later)
+        "%Y-%m-%d %H:%M:%S",       # Common format, no timezone (assumed UTC later)
+        "%a, %d %b %Y %H:%M:%S %Z", # RFC 822/1123 (e.g., "Mon, 01 Jan 2024 12:00:00 GMT")
+        "%a, %d %b %Y %H:%M:%S %z", # RFC 822/1123 with numeric timezone
+        "%Y-%m-%d",                # Date only
+        "%m/%d/%Y %I:%M:%S %p",    # e.g., 01/20/2024 10:00:00 AM
+        "%d/%m/%Y %H:%M:%S",       # e.g., 20/01/2024 10:00:00
+    ]
+
+    # Attempt 1: ISO 8601 format (handles 'Z' correctly if present, or timezone offsets)
+    # fromisoformat is quite flexible for true ISO strings.
     try:
-        # Handle various possible ISO 8601 formats, including those with 'Z' or timezone offsets
-        dt = datetime.fromisoformat(str(date_str).replace('Z', '+00:00'))
-        # Convert to UTC if timezone aware, otherwise assume UTC
+        # Ensure 'Z' is converted to +00:00 for fromisoformat
+        dt = datetime.fromisoformat(s_date.replace('Z', '+00:00'))
         return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     except (ValueError, TypeError):
+        pass # Continue to other formats
+
+    # Attempt 2: Try common string formats using strptime
+    for fmt in datetime_formats:
         try:
-            # Fallback for simpler date formats if fromisoformat fails
-            return datetime.strptime(str(date_str), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+            dt = datetime.strptime(s_date, fmt)
+            # If parsing succeeds but dt is naive, assume UTC. If tz-aware, convert to UTC.
+            return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
         except (ValueError, TypeError):
-            try: #epoch time
-                return datetime.fromtimestamp(float(date_str), tz=timezone.utc)
-            except (ValueError, TypeError):
-                 print(f"Warning: Could not parse date string: {date_str}")
-                 return None
+            continue # Try next format
+
+    # Attempt 3: Epoch timestamp (integer or float string)
+    # Check if it's likely an epoch timestamp (e.g. all digits, possibly with a decimal point)
+    # Common epoch lengths are 10 (seconds) or 13 (milliseconds) or more with fractions.
+    if s_date.replace('.', '', 1).isdigit() and len(s_date) >=10 :
+        try:
+            timestamp = float(s_date)
+            # Heuristic: if timestamp is very large (e.g. > 3e9), it might be milliseconds
+            if timestamp > 3 * (10**9): # Roughly year 2065 in seconds
+                timestamp /= 1000.0
+            return datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        except (ValueError, TypeError):
+            pass # Not a valid float or timestamp
+
+    print(f"Warning: Could not parse date string: {s_date} with any known format.")
+    return None
 
 # --- Layout Generation ---
 
@@ -91,31 +127,11 @@ def format_article_date(article):
     parsed_dt = parse_date(date_str)
     return parsed_dt.strftime('%Y-%m-%d %H:%M UTC') if parsed_dt else "Date N/A"
 
-def create_article_card(article, source_name="N/A"):
-    """Creates a dbc.Card for a single news article."""
-    title = article.get('title', 'No Title')
-    url = article.get('url', article.get('link')) # 'link' is common in RSS-like structures
-    # Description/summary can also be added if available and desired
-    # description = article.get('description', article.get('summary', ''))
-
-    date_display = format_article_date(article)
-
-    card_content = [
-        dbc.CardHeader(html.H5(title, className="card-title")),
-        dbc.CardBody([
-            html.P(f"Source: {article.get('source', source_name)}", className="card-text text-muted small"),
-            html.P(f"Published: {date_display}", className="card-text text-muted small"),
-            # Can add description here: html.P(description, className="card-text")
-        ]),
-        dbc.CardFooter(
-            dbc.Button("Read More", href=url, target="_blank", color="primary", size="sm") if url else "No link available"
-        )
-    ]
-    return dbc.Card(card_content, className="mb-3")
+# Removed create_article_card function as it's no longer needed for table view
 
 def create_news_source_tab_content(source_keys, combined_name=None):
     """
-    Creates the content for a news tab, potentially combining multiple sources.
+    Creates the content for a news tab as a table, potentially combining multiple sources.
     Sorts articles by date before limiting.
     """
     all_articles_for_tab = []
@@ -126,34 +142,65 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         source_display_name = combined_name or "Combined News"
 
     for key in source_keys:
-        articles = ALL_NEWS_DATA.get(key, [])
-        # Add source name to each article if not already present (for combined views)
-        for article in articles:
-            if 'source' not in article: # Some datasets like hackernews might not have it
-                 article['source_display'] = NEWS_SOURCES_CONFIG[key]['name'] # Use specific source name
-            else: # Use existing source if available
-                 article['source_display'] = article['source']
-        all_articles_for_tab.extend(articles)
+        articles_from_source = ALL_NEWS_DATA.get(key, [])
+        # Add source name to each article for display in the table
+        for article in articles_from_source:
+            # Use 'source_display' to ensure we have a consistent field for the table
+            article['source_display_name'] = article.get('source', NEWS_SOURCES_CONFIG[key]['name'])
+        all_articles_for_tab.extend(articles_from_source)
 
     # Sort all articles by date (descending)
-    # We need a reliable date for sorting. parse_date can return None.
     def get_sortable_date(article):
-        date_str = article.get('published_at') or article.get('published_date') or article.get('created_at') or article.get('time') or article.get('pubDate')
+        date_str = article.get('published_at') or article.get('published_date') or \
+                   article.get('created_at') or article.get('time') or article.get('pubDate')
         parsed = parse_date(date_str)
-        return parsed if parsed else datetime.min.replace(tzinfo=timezone.utc) # Use min datetime for items without a valid date
+        return parsed if parsed else datetime.min.replace(tzinfo=timezone.utc)
 
     all_articles_for_tab.sort(key=get_sortable_date, reverse=True)
 
-    # Limit after sorting
     articles_to_display = all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]
 
     if not articles_to_display:
         return dbc.Alert(f"No news items available for {source_display_name}.", color="info")
 
-    return html.Div([
-        create_article_card(article, source_name=article.get('source_display', source_display_name)) for article in articles_to_display
-    ], style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"})
+    # Create table header
+    table_header = [
+        html.Thead(html.Tr([
+            html.Th("Title"),
+            html.Th("Source"),
+            html.Th("Date")
+        ]))
+    ]
 
+    # Create table body
+    table_body_rows = []
+    for article in articles_to_display:
+        title = article.get('title', 'No Title')
+        url = article.get('url', article.get('link'))
+        # Use the 'source_display_name' we added earlier
+        source_for_display = article.get('source_display_name', source_display_name)
+        date_display = format_article_date(article)
+
+        table_body_rows.append(html.Tr([
+            html.Td(html.A(title, href=url, target="_blank") if url else title),
+            html.Td(source_for_display),
+            html.Td(date_display)
+        ]))
+
+    table_body = [html.Tbody(table_body_rows)]
+
+    # Combine header and body into a dbc.Table
+    table = dbc.Table(
+        table_header + table_body,
+        striped=True,
+        bordered=True,
+        hover=True,
+        responsive=True, # Makes table scroll horizontally on small screens
+        className="mb-0" # Remove default bottom margin if wrapped in Div with padding
+    )
+
+    # Return the table wrapped in a Div for consistent styling (e.g. maxHeight, overflow)
+    return html.Div(table, style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"})
 
 # Main function to render the news tab
 def render_news_tab():
