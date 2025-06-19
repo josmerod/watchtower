@@ -1,0 +1,107 @@
+/* Custom CSS for New Dashboard POC */
+
+body {
+    background-color: #f0f2f6 !important; /* Main background */
+    color: #333333; /* Default text color */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* Common sans-serif stack */
+}
+
+h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6 {
+    color: #333333; /* Header text */
+    font-weight: 500; /* Slightly bolder headers */
+}
+
+/* Override Bootstrap's default H1 size to be a bit smaller if needed */
+h1, .h1 {
+    font-size: 2rem; /* Default is 2.5rem, this is a bit smaller */
+}
+
+
+/* Style for dbc.Tabs */
+/* Targeting the specific classes Dash uses for dbc.Tabs */
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6; /* A slightly more pronounced bottom border for the tab bar */
+}
+
+.nav-tabs .nav-item .nav-link { /* Adjusted selector for more specificity */
+    background-color: #e9ecef; /* Inactive tab background */
+    color: #007bff; /* Tab text color */
+    border: 1px solid #dee2e6; /* Add border to inactive tabs */
+    border-bottom-width: 0px; /* Remove bottom border for inactive, handled by .nav-tabs border */
+    margin-right: 2px; /* Small spacing between tabs */
+    border-radius: 0.25rem 0.25rem 0 0; /* Rounded top corners */
+    font-weight: 500;
+}
+
+.nav-tabs .nav-item .nav-link:hover { /* Hover state for inactive tabs */
+    background-color: #d8dde2; /* Slightly darker on hover */
+    border-color: #caced1;
+}
+
+.nav-tabs .nav-item .nav-link.active {
+    background-color: #ffffff !important; /* Active tab background - important to override Bootstrap */
+    color: #333333 !important; /* Active tab text - darker for better contrast on white */
+    border-color: #dee2e6 #dee2e6 #ffffff !important; /* Match Bootstrap active tab borders, white bottom border to "connect" with content */
+    border-bottom-width: 2px !important; /* Ensure bottom border is white and overlaps container border */
+    margin-bottom: -2px; /* Pull active tab down to overlap container border */
+    font-weight: 600;
+}
+
+/* General link color */
+a, .btn-link { /* Apply to general links and Bootstrap btn-link */
+    color: #007bff;
+    text-decoration: none; /* Optional: remove underline from links */
+}
+a:hover, .btn-link:hover {
+    color: #0056b3; /* Darker blue on hover */
+    text-decoration: underline; /* Optional: add underline on hover */
+}
+
+/* Style for dbc.Card (used in Shortcuts) */
+.card {
+    background-color: #ffffff; /* Card background */
+    border: 1px solid rgba(0,0,0,.125); /* Standard Bootstrap card border */
+    border-radius: 0.35rem; /* Slightly more rounded cards */
+}
+
+.card-header {
+    background-color: #f8f9fa; /* Light gray card header */
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    font-weight: 600;
+}
+
+/* Primary button styling (e.g., shortcut buttons) */
+.btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+}
+.btn-outline-primary:hover {
+    color: #ffffff;
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* Table styling (News Tab) */
+.table { /* General table styling */
+    background-color: #ffffff; /* White background for tables */
+}
+
+.table thead th { /* Table header styling */
+    background-color: #e9ecef; /* Light gray for table headers */
+    color: #333333;
+    font-weight: 600;
+    border-bottom-width: 2px; /* Stronger bottom border for header cells */
+    border-top-width: 0px; /* No top border for header cells */
+}
+
+/* Adding some padding to cells for better readability */
+.table td, .table th {
+    padding: 0.85rem;
+    vertical-align: middle;
+}
+
+/* Ensure container has some padding */
+.container-fluid {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
