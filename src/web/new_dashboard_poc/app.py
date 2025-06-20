@@ -7,6 +7,18 @@ from src.web.new_dashboard_poc.components.shortcuts_tab import render_shortcuts_
 
 from src.web.new_dashboard_poc.components.news_tab import render_news_tab
 
+from src.web.new_dashboard_poc.components.videos_tab import render_videos_tab, register_video_callbacks
+
+from src.web.new_dashboard_poc.components.google_cloud_blog_tab import render_gcp_blog_tab
+
+from src.web.new_dashboard_poc.components.aws_training_tab import render_aws_training_tab
+
+from src.web.new_dashboard_poc.components.azure_training_tab import render_azure_training_tab
+
+from src.web.new_dashboard_poc.components.games_tab import render_games_tab
+
+from src.web.new_dashboard_poc.components.allkeyshop_tab import render_allkeyshop_tab, register_allkeyshop_callbacks
+
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
@@ -26,7 +38,25 @@ app.layout = dbc.Container(
                             render_shortcuts_tab()
                         ]),
                         dbc.Tab(label="News", tab_id="tab-news", children=[
-                            render_news_tab() # Content from news_tab.py
+                            render_news_tab()
+                        ]),
+                        dbc.Tab(label="Videos", tab_id="tab-videos", children=[
+                            render_videos_tab()
+                        ]),
+                        dbc.Tab(label="Google Cloud Blog", tab_id="tab-gcp-blog", children=[
+                            render_gcp_blog_tab()
+                        ]),
+                        dbc.Tab(label="AWS Training", tab_id="tab-aws-training", children=[
+                            render_aws_training_tab()
+                        ]),
+                        dbc.Tab(label="Azure Training", tab_id="tab-azure-training", children=[
+                            render_azure_training_tab()
+                        ]),
+                        dbc.Tab(label="Juegos", tab_id="tab-games", children=[
+                            render_games_tab()
+                        ]),
+                        dbc.Tab(label="AllKeyShop Deals", tab_id="tab-aks", children=[
+                            render_allkeyshop_tab() # Content from allkeyshop_tab.py
                         ]),
                         dbc.Tab(label="Other Tab (Placeholder)", tab_id="tab-other", children=[
                             html.P("This is content for another future tab.")
@@ -50,25 +80,30 @@ def update_main_app_shortcuts(search_value):
     # ALL_SHORTCUTS_DATA is imported from shortcuts_tab.py
     return render_shortcuts_tab_layout(ALL_SHORTCUTS_DATA, search_value)
 
+# Register callbacks from other modules
+register_video_callbacks(app)
+register_allkeyshop_callbacks(app) # Register AllKeyShop tab callbacks
+
 if __name__ == "__main__":
-    # Note: The `get_all_shortcuts` function in `shortcuts_tab.py` uses relative paths
-    # like '../../../data/shortcuts/predefined_shortcuts.json'.
-    # This assumes that `app.py` (or wherever the main app is run from) is located
-    # such that these relative paths correctly point to the data files.
-    # If app.py is in src/web/new_dashboard_poc/, then ../../../data/ is correct.
-    # Project Root
-    # |- data/
-    #    |- shortcuts/
-    #       |- predefined_shortcuts.json
-    # |- src/
-    #    |- web/
-    #       |- new_dashboard_poc/
-    #          |- app.py  <-- Running this
-    #          |- components/
-    #             |- shortcuts_tab.py (contains the relative path logic)
-    print("Verifying ALL_SHORTCUTS_DATA in app.py context:")
+    # Note on data loading:
+    # - Shortcuts data (ALL_SHORTCUTS_DATA) is loaded when shortcuts_tab.py is imported.
+    # - News data (ALL_NEWS_DATA) is loaded when news_tab.py is imported.
+    # - Videos data (ALL_VIDEOS_DATA) is loaded when videos_tab.py is imported.
+    # These imports happen when app.py itself is imported (e.g., by run_new_dashboard_poc.py).
+    # The relative paths within each component (e.g., '../../../data/...') are resolved
+    # based on the Current Working Directory (CWD) when the Python interpreter loads those modules.
+    # If run_new_dashboard_poc.py is at project root, CWD is project root, so paths should be correct.
+
+    print("Verifying data loaded for main app context (run from app.py directly):")
+    # Simple check, more detailed checks are in individual tab's __main__ blocks
     if ALL_SHORTCUTS_DATA:
-        print(f"  Successfully loaded {sum(len(items) for items in ALL_SHORTCUTS_DATA.values())} shortcuts in {len(ALL_SHORTCUTS_DATA)} categories.")
+        print("  Shortcuts data seems loaded.")
     else:
-        print("  Warning: No shortcut data loaded in app.py context. Check paths in shortcuts_tab.py relative to project root.")
-    app.run_server(debug=True)
+        print("  Warning: Shortcuts data might be missing.")
+
+    # Accessing ALL_NEWS_DATA and ALL_VIDEOS_DATA directly here would require importing them into app.py
+    # For now, we assume their respective tabs handle their data loading messages.
+    # If this script (app.py) is run directly, ensure CWD allows components to find their data.
+    # Typically, one would run `run_new_dashboard_poc.py` from the project root.
+
+    app.run_server(debug=True, port=8050) # Default Dash port for direct app run
