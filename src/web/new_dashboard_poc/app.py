@@ -71,4 +71,4 @@ if __name__ == "__main__":
         print(f"  Successfully loaded {sum(len(items) for items in ALL_SHORTCUTS_DATA.values())} shortcuts in {len(ALL_SHORTCUTS_DATA)} categories.")
     else:
         print("  Warning: No shortcut data loaded in app.py context. Check paths in shortcuts_tab.py relative to project root.")
-    app.run_server(debug=True)
+    app.run(debug=True)

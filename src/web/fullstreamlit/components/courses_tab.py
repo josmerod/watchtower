@@ -24,9 +24,11 @@ DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
 COURSERA_DATA_DIR = os.path.join(DATA_DIR, "classcentral")
 UDEMY_DATA_DIR = os.path.join(DATA_DIR, "udemy")
+DEEPLEARNINGAI_DATA_DIR = os.path.join(DATA_DIR, "deeplearningai")
 
 COURSERA_FILE = os.path.join(COURSERA_DATA_DIR, "coursera_courses.json")
 UDEMY_FILE = os.path.join(UDEMY_DATA_DIR, "udemy_courses.json")
+DEEPLEARNINGAI_FILE = os.path.join(DEEPLEARNINGAI_DATA_DIR, "deeplearningai_courses.json")
 
 def load_coursera_courses_from_multiple_paths():
     """Try loading Coursera courses from multiple potential paths"""
@@ -56,6 +58,21 @@ def load_udemy_courses_from_multiple_paths():
     
     # If main path fails, return empty data
     st.warning("No se encontraron cursos de Udemy en las rutas esperadas")
+    return []
+
+def load_deeplearningai_courses_from_multiple_paths():
+    """Try loading DeepLearning.AI courses from multiple potential paths"""
+    
+    # Try the main path first
+    if os.path.exists(DEEPLEARNINGAI_FILE):
+        try:
+            with open(DEEPLEARNINGAI_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            st.warning(f"Error reading DeepLearning.AI data from main path: {str(e)}")
+    
+    # If main path fails, return empty data
+    st.warning("No se encontraron cursos de DeepLearning.AI en las rutas esperadas")
     return []
 
 def render(courses_data: Dict[str, pd.DataFrame], logger=None):
@@ -105,6 +122,20 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
             if logger:
                 logger.error("Could not find udemy_courses.json in any path")
             st.info("No se pudo encontrar el archivo de cursos de Udemy.")
+        
+        deeplearningai_json = load_deeplearningai_courses_from_multiple_paths()
+        if deeplearningai_json:
+            try:
+                st.success(f"¡Cargados {len(deeplearningai_json)} cursos de DeepLearning.AI directamente del archivo!")
+                loaded_data["deeplearningai"] = pd.DataFrame(deeplearningai_json)
+            except Exception as e:
+                if logger:
+                    logger.error(f"Error loading DeepLearning.AI data directly: {str(e)}")
+                st.error(f"Error cargando datos de DeepLearning.AI: {str(e)}")
+        else:
+            if logger:
+                logger.error("Could not find deeplearningai_courses.json in any path")
+            st.info("No se pudo encontrar el archivo de cursos de DeepLearning.AI.")
         
         courses_data = loaded_data
 
