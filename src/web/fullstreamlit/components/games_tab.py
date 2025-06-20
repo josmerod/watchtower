@@ -16,33 +16,36 @@ def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, log
     
     st.header("🎮 Juegos")
 
-    # Check if all dataframes are empty or None with safer logic
+    # Check if all dataframes are empty or None
     data_available = False
     
     if deals_df is not None and not deals_df.empty:
         data_available = True
+        
     if bundles_df is not None and not bundles_df.empty:
         data_available = True
+        
     if giveaways_df is not None and not giveaways_df.empty:
         data_available = True
+        
     if trending_df is not None and not trending_df.empty:
         data_available = True
+        
     if new_releases_df is not None and not new_releases_df.empty:
         data_available = True
 
     # Debug information in sidebar
     if st.sidebar.checkbox("🐛 Show Debug Info"):
-        st.markdown("### Debug Information:")
-        st.write(f"- **Deals**: {len(deals_df) if deals_df is not None and hasattr(deals_df, '__len__') else 'None/Empty'} records")
-        st.write(f"- **Bundles**: {len(bundles_df) if bundles_df is not None and hasattr(bundles_df, '__len__') else 'None/Empty'} records")
-        st.write(f"- **Giveaways**: {len(giveaways_df) if giveaways_df is not None and hasattr(giveaways_df, '__len__') else 'None/Empty'} records")
-        st.write(f"- **Trending**: {len(trending_df) if trending_df is not None and hasattr(trending_df, '__len__') else 'None/Empty'} records")
-        st.write(f"- **New Releases**: {len(new_releases_df) if new_releases_df is not None and hasattr(new_releases_df, '__len__') else 'None/Empty'} records")
+        st.sidebar.markdown("### Debug Information:")
+        st.sidebar.write(f"- **Deals**: {len(deals_df) if deals_df is not None and hasattr(deals_df, '__len__') else 'None/Empty'} records")
+        st.sidebar.write(f"- **Bundles**: {len(bundles_df) if bundles_df is not None and hasattr(bundles_df, '__len__') else 'None/Empty'} records")
+        st.sidebar.write(f"- **Giveaways**: {len(giveaways_df) if giveaways_df is not None and hasattr(giveaways_df, '__len__') else 'None/Empty'} records")
+        st.sidebar.write(f"- **Trending**: {len(trending_df) if trending_df is not None and hasattr(trending_df, '__len__') else 'None/Empty'} records")
+        st.sidebar.write(f"- **New Releases**: {len(new_releases_df) if new_releases_df is not None and hasattr(new_releases_df, '__len__') else 'None/Empty'} records")
 
     if not data_available:
         st.warning("No hay datos de juegos disponibles para mostrar.")
         st.info("💡 **Posibles soluciones:**")
-        st.info("• Haz clic en '🔄 Bypass Cache (Debug)' en la barra lateral")
         st.info("• Ejecuta los ETLs de juegos para obtener datos actualizados")
         st.info("• Verifica que los archivos de datos en `data/games/` no estén vacíos")
         st.info("• Revisa los logs para identificar errores en la carga de datos")

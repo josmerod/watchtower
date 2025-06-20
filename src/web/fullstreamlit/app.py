@@ -82,7 +82,7 @@ st.set_page_config(
     page_title="Watchtower",
     page_icon="🗼",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # Apply CSS styles
@@ -96,31 +96,26 @@ if st.button("🔄 Actualizar"):
     st.rerun()
 
 # Load data
-@st.cache_data(ttl=1800)
+# @st.cache_data(ttl=1800)  # TEMPORARILY DISABLED FOR DEBUGGING
 def get_cached_data():
     """Load and cache data"""
     try:
         logger.info("Loading cached data...")
         data = {}
         
-        # Test games data loading specifically
-        logger.info("Loading games data...")
-        games_data = data_service.get_games_data()
-        logger.info(f"Games data loaded: type={type(games_data)}, len={len(games_data) if isinstance(games_data, (tuple, list)) else 'not tuple/list'}")
-        data['games'] = games_data
-        
+        data['games'] = data_service.get_games_data()
         data['allkeyshop'] = data_service.get_allkeyshop_data()
         data['courses'] = data_service.get_courses_data()
         data['news'] = data_service.get_news_data()
         data['videos'] = data_service.get_videos_data()
         data['arxiv'] = data_service.get_arxiv_data()
         data['events'] = data_service.get_events_data()
-        data['new_game_releases'] = data_service.get_new_game_releases_data() # Added
+        data['new_game_releases'] = data_service.get_new_game_releases_data()
         data['google_cloud_blog'] = data_service.get_google_cloud_blog_data()
         data['aws_training'] = data_service.get_aws_training_data()
         data['azure_training'] = data_service.get_azure_training_data()
         data['home_server_trends'] = data_service.get_home_server_trends_data()
-        data['museums'] = data_service.get_museum_data() # Added museum data loading
+        data['museums'] = data_service.get_museum_data()
         
         logger.info("All data loaded successfully")
         return data
@@ -260,21 +255,22 @@ with main_tabs[5]: # Azure Training
 with main_tabs[6]: # Juegos
     games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
     new_releases_df = cached_data.get('new_game_releases', pd.DataFrame())
-    
-    # Debug information
-    logger.debug(f"Raw games_data type: {type(games_data)}, length: {len(games_data) if isinstance(games_data, (tuple, list)) else 'not tuple/list'}")
     logger.debug(f"New releases type: {type(new_releases_df)}, shape: {new_releases_df.shape if hasattr(new_releases_df, 'shape') else 'no shape'}")
     
     if isinstance(games_data, tuple) and len(games_data) == 4:
         deals_df, bundles_df, giveaways_df, trending_df = games_data
         logger.debug(f"Unpacked 4-tuple: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending={len(trending_df)}")
+        st.sidebar.write(f"🔍 DEBUG: Unpacked 4-tuple successfully")
     elif isinstance(games_data, tuple) and len(games_data) == 3:
         deals_df, bundles_df, giveaways_df = games_data
         trending_df = pd.DataFrame()
         logger.debug(f"Unpacked 3-tuple: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending=0")
+        st.sidebar.write(f"🔍 DEBUG: Unpacked 3-tuple, created empty trending_df")
     else:
         deals_df = bundles_df = giveaways_df = trending_df = pd.DataFrame()
         logger.warning(f"Games data format unexpected: {type(games_data)} - creating empty dataframes")
+        st.sidebar.write(f"🔍 DEBUG: ❌ Unexpected games_data format, creating empty dataframes")
+        st.sidebar.write(f"🔍 DEBUG: games_data content: {games_data}")
     
     render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, logger)
 

@@ -5,16 +5,22 @@ import dash_bootstrap_components as dbc
 from datetime import datetime, timezone
 
 # --- Data Loading ---
+import os
+
+# Get absolute paths from project root
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+
 NEWS_SOURCES_CONFIG = {
-    "futuretools": {"path": "../../../data/futuretools/futuretoolsnews.json", "name": "FutureTools"},
-    "bensbites": {"path": "../../../data/bensbites/bensbites_news.json", "name": "Ben's Bites"},
-    "hackernews": {"path": "../../../data/hackernews/hackernews.json", "name": "Hacker News"},
-    "medium_genai": {"path": "../../../data/medium_genai/medium_genai.json", "name": "Medium GenAI"},
-    "kdnuggets": {"path": "../../../data/kdnuggets/kdnuggets.json", "name": "KDnuggets"},
-    "gooddevs": {"path": "../../../data/gooddevs/gooddevs_latest.json", "name": "Good Devs"},
-    "meneame_general": {"path": "../../../data/meneame/meneame_general_latest.json", "name": "Meneame General"},
-    "meneame_tecnologia": {"path": "../../../data/meneame/meneame_tecnologia_latest.json", "name": "Meneame Tech"},
-    "podcasts": {"path": "../../../data/podcasts/podcasts_latest.json", "name": "Podcasts"},
+    "futuretools": {"path": os.path.join(project_root, "data", "futuretools", "futuretoolsnews.json"), "name": "FutureTools"},
+    "bensbites": {"path": os.path.join(project_root, "data", "bensbites", "bensbites_news.json"), "name": "Ben's Bites"},
+    "hackernews": {"path": os.path.join(project_root, "data", "hackernews", "hackernews.json"), "name": "Hacker News"},
+    "medium_genai": {"path": os.path.join(project_root, "data", "medium_genai", "medium_genai.json"), "name": "Medium GenAI"},
+    "kdnuggets": {"path": os.path.join(project_root, "data", "kdnuggets", "kdnuggets.json"), "name": "KDnuggets"},
+    "gooddevs": {"path": os.path.join(project_root, "data", "gooddevs", "gooddevs_latest.json"), "name": "Good Devs"},
+    "meneame_general": {"path": os.path.join(project_root, "data", "meneame", "meneame_general_latest.json"), "name": "Meneame General"},
+    "meneame_tecnologia": {"path": os.path.join(project_root, "data", "meneame", "meneame_tecnologia_latest.json"), "name": "Meneame Tech"},
+    "podcasts": {"path": os.path.join(project_root, "data", "podcasts", "podcasts_latest.json"), "name": "Podcasts"},
 }
 
 def load_news_from_file(file_path):
@@ -242,4 +248,4 @@ if __name__ == '__main__':
     print(f"Displaying max {MAX_ARTICLES_PER_SOURCE} articles per tab, sorted by date.")
     print("Expected news JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json")
     print("Check console for warnings about missing files or parsing errors, especially date parsing.")
-    app_test.run_server(debug=True, port=8052)
+    app_test.run(debug=True, port=8052)

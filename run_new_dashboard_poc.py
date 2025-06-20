@@ -36,7 +36,7 @@ if __name__ == '__main__':
              # are resolved based on the CWD when app.py is imported.
              # Since this run script is at the project root, and app.py is imported,
              # the CWD during the import of app.py and its components should be the project root.
-            app.run_server(debug=True, port=8051, host='0.0.0.0')
+            app.run(debug=True, port=8051, host='0.0.0.0')
         else:
             print("Error: The Dash 'app' object was not loaded correctly. Cannot start server.")
             sys.exit(1)

@@ -178,6 +178,7 @@ class UltraOptimizedDataService:
     @st.cache_data(ttl=3600, max_entries=10, show_spinner=False)
     def get_games_data_ultra(_self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Ultra-optimized games data loading with parallel processing"""
+        _self._log("🔍 DEBUG: get_games_data_ultra called!")
         _self._log("Loading games data (ultra-optimized)")
         
         games_dir = _self.cached_paths['games_dir']
@@ -194,13 +195,19 @@ class UltraOptimizedDataService:
         # Load files in parallel using cached operations
         loaded_data = {}
         for op_name, file_path in file_operations:
+            _self._log(f"🔍 DEBUG: Loading {op_name} from {file_path}")
+            _self._log(f"🔍 DEBUG: File exists: {file_path.exists()}")
             cache_key = _self._get_cache_key(str(file_path), op_name)
-            loaded_data[op_name] = _self._ultra_fast_json_load(file_path, cache_key)
+            data = _self._ultra_fast_json_load(file_path, cache_key)
+            _self._log(f"🔍 DEBUG: Loaded {len(data) if data else 0} items for {op_name}")
+            loaded_data[op_name] = data
         
         # Process deals
         deals_df = pd.DataFrame()
+        _self._log(f"🔍 DEBUG: Processing deals, raw data length: {len(loaded_data.get('deals', []))}")
         if loaded_data['deals']:
             deals_df = pd.DataFrame(loaded_data['deals'])
+            _self._log(f"🔍 DEBUG: Created deals DataFrame with shape: {deals_df.shape}")
             # Optimize data types in one pass
             if not deals_df.empty:
                 # Fix column name mismatches - convert 'published' to 'published_date'
@@ -212,10 +219,13 @@ class UltraOptimizedDataService:
                     'published_date': 'datetime',
                     'price': 'float'
                 })
-                deals_df = clean_dataframe_for_caching(deals_df)
+                _self._log(f"🔍 DEBUG: Deals DataFrame before cleaning: {deals_df.shape}")
+                # TEMPORARILY DISABLED: deals_df = clean_dataframe_for_caching(deals_df)
+                _self._log(f"🔍 DEBUG: Deals DataFrame after cleaning (SKIPPED): {deals_df.shape}")
         
         # Process bundles (combine regular and humble)
         bundles_data = []
+        _self._log(f"🔍 DEBUG: Processing bundles, raw bundles: {len(loaded_data.get('bundles', []))}, humble: {len(loaded_data.get('humble', []))}")
         if loaded_data['bundles']:
             for bundle in loaded_data['bundles']:
                 bundle["store"] = bundle.get("store", "Unknown")
@@ -231,8 +241,10 @@ class UltraOptimizedDataService:
             bundles_data.extend(loaded_data['humble'])
         
         bundles_df = pd.DataFrame()
+        _self._log(f"🔍 DEBUG: Combined bundles_data length: {len(bundles_data)}")
         if bundles_data:
             bundles_df = pd.DataFrame(bundles_data)
+            _self._log(f"🔍 DEBUG: Created bundles DataFrame with shape: {bundles_df.shape}")
             if not bundles_df.empty:
                 # Fix column name mismatches - convert 'published' to 'published_date'
                 if 'published' in bundles_df.columns:
@@ -243,12 +255,16 @@ class UltraOptimizedDataService:
                 bundles_df = _self._optimize_dataframe_dtypes(bundles_df, {
                     'published_date': 'datetime'
                 })
-                bundles_df = clean_dataframe_for_caching(bundles_df)
+                _self._log(f"🔍 DEBUG: Bundles DataFrame before cleaning: {bundles_df.shape}")
+                # TEMPORARILY DISABLED: bundles_df = clean_dataframe_for_caching(bundles_df)
+                _self._log(f"🔍 DEBUG: Bundles DataFrame after cleaning (SKIPPED): {bundles_df.shape}")
         
         # Process giveaways
         giveaways_df = pd.DataFrame()
+        _self._log(f"🔍 DEBUG: Processing giveaways, raw data length: {len(loaded_data.get('giveaways', []))}")
         if loaded_data['giveaways']:
             giveaways_df = pd.DataFrame(loaded_data['giveaways'])
+            _self._log(f"🔍 DEBUG: Created giveaways DataFrame with shape: {giveaways_df.shape}")
             if not giveaways_df.empty:
                 # Fix column name mismatches - convert 'published' to 'published_date' and 'expires' to 'expires_date'
                 if 'published' in giveaways_df.columns:
@@ -270,16 +286,20 @@ class UltraOptimizedDataService:
                     'published_date': 'datetime',
                     'expires_date': 'datetime'
                 })
-                giveaways_df = clean_dataframe_for_caching(giveaways_df)
+                _self._log(f"🔍 DEBUG: Giveaways DataFrame before cleaning: {giveaways_df.shape}")
+                # TEMPORARILY DISABLED: giveaways_df = clean_dataframe_for_caching(giveaways_df)
+                _self._log(f"🔍 DEBUG: Giveaways DataFrame after cleaning (SKIPPED): {giveaways_df.shape}")
         
         # Process Itch.io trending games
         itchio_df = pd.DataFrame()
         if loaded_data.get('itchio'):
             itchio_df = pd.DataFrame(loaded_data['itchio'])
             if not itchio_df.empty:
-                itchio_df = clean_dataframe_for_caching(itchio_df)
+                # TEMPORARILY DISABLED: itchio_df = clean_dataframe_for_caching(itchio_df)
+                _self._log(f"🔍 DEBUG: Itch.io DataFrame cleaning (SKIPPED): {itchio_df.shape}")
         
-        _self._log(f"Ultra-loaded: {len(deals_df)} deals, {len(bundles_df)} bundles, {len(giveaways_df)} giveaways, {len(itchio_df)} itch.io trending")
+        _self._log(f"🔍 DEBUG: Ultra-loaded: {len(deals_df)} deals, {len(bundles_df)} bundles, {len(giveaways_df)} giveaways, {len(itchio_df)} itch.io trending")
+        _self._log(f"🔍 DEBUG: Returning tuple with shapes: {deals_df.shape}, {bundles_df.shape}, {giveaways_df.shape}, {itchio_df.shape}")
         return deals_df, bundles_df, giveaways_df, itchio_df
     
     @st.cache_data(ttl=1800, max_entries=10, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
@@ -544,7 +564,12 @@ class UltraOptimizedDataService:
     # Compatibility methods for existing code
     def get_games_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Compatibility method that calls get_games_data_ultra including Itch.io trending"""
-        return self.get_games_data_ultra()
+        self._log("🔍 DEBUG: get_games_data wrapper called!")
+        result = self.get_games_data_ultra()
+        self._log(f"🔍 DEBUG: get_games_data wrapper got result type: {type(result)}")
+        if isinstance(result, tuple):
+            self._log(f"🔍 DEBUG: get_games_data wrapper tuple lengths: {[len(df) if hasattr(df, '__len__') else 'no len' for df in result]}")
+        return result
     
     def get_videos_data(self) -> Dict[str, pd.DataFrame]:
         """Compatibility method that calls get_videos_data_ultra"""
@@ -736,34 +761,34 @@ class UltraOptimizedDataService:
             return pd.DataFrame()
 
     @st.cache_data(ttl=1800, max_entries=5, show_spinner=False) # Cache for 30 mins
-    def get_google_cloud_blog_data(self) -> List[Dict[str, Any]]:
+    def get_google_cloud_blog_data(_self) -> List[Dict[str, Any]]:
         """
         Reads Google Cloud Blog data from data/news/google_cloud_blog.json.
         Handles FileNotFoundError and json.JSONDecodeError.
         Returns a list of blog post dictionaries.
         """
-        self._log("Loading Google Cloud Blog data")
+        _self._log("Loading Google Cloud Blog data")
 
-        # Construct the path using self.data_dir for consistency
-        gcb_file_path = self.data_dir / "news" / "google_cloud_blog.json"
+        # Construct the path using _self.data_dir for consistency
+        gcb_file_path = _self.data_dir / "news" / "google_cloud_blog.json"
 
         if not gcb_file_path.exists():
-            self._log(f"Google Cloud Blog data file not found: {gcb_file_path}", "error")
+            _self._log(f"Google Cloud Blog data file not found: {gcb_file_path}", "error")
             return []
 
-        cache_key = self._get_cache_key(str(gcb_file_path), "google_cloud_blog")
+        cache_key = _self._get_cache_key(str(gcb_file_path), "google_cloud_blog")
 
         # Check memory cache first (using the class's caching mechanism)
-        if cache_key in self.memory_cache:
-            self._log(f"Returning cached Google Cloud Blog data for key: {cache_key}", "debug")
-            return self.memory_cache[cache_key]
+        if cache_key in _self.memory_cache:
+            _self._log(f"Returning cached Google Cloud Blog data for key: {cache_key}", "debug")
+            return _self.memory_cache[cache_key]
 
         try:
             with open(gcb_file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             if not isinstance(data, list):
-                self._log(f"Google Cloud Blog data is not a list: {type(data)}", "warning")
+                _self._log(f"Google Cloud Blog data is not a list: {type(data)}", "warning")
                 # Attempt to wrap if it's a single dictionary, otherwise return empty
                 if isinstance(data, dict):
                     data = [data]
@@ -771,108 +796,108 @@ class UltraOptimizedDataService:
                     return []
 
             # Store in memory cache
-            if len(self.memory_cache) < 50: # Adhering to existing cache size limit
-                self.memory_cache[cache_key] = data
+            if len(_self.memory_cache) < 50: # Adhering to existing cache size limit
+                _self.memory_cache[cache_key] = data
 
-            self._log(f"Successfully loaded {len(data)} entries from {gcb_file_path}")
+            _self._log(f"Successfully loaded {len(data)} entries from {gcb_file_path}")
             return data
 
         except FileNotFoundError: # This case is technically covered by the gcb_file_path.exists() check
-            self._log(f"Google Cloud Blog data file not found during read: {gcb_file_path}", "error")
+            _self._log(f"Google Cloud Blog data file not found during read: {gcb_file_path}", "error")
             return []
         except json.JSONDecodeError as e:
-            self._log(f"Error decoding JSON from {gcb_file_path}: {e}", "error")
+            _self._log(f"Error decoding JSON from {gcb_file_path}: {e}", "error")
             return []
         except Exception as e:
-            self._log(f"An unexpected error occurred while reading {gcb_file_path}: {e}", "error")
+            _self._log(f"An unexpected error occurred while reading {gcb_file_path}: {e}", "error")
             return []
 
     @st.cache_data(ttl=1800, max_entries=10, show_spinner=False)
-    def get_aws_training_data(self) -> List[Dict[str, Any]]:
+    def get_aws_training_data(_self) -> List[Dict[str, Any]]:
         """
         Reads AWS Training data from data/courses/aws_training_updates.json.
         Handles FileNotFoundError and json.JSONDecodeError.
         Returns a list of AWS training post dictionaries.
         """
-        self._log("Loading AWS Training data")
-        file_path = self.data_dir / "courses" / "aws_training_updates.json"
+        _self._log("Loading AWS Training data")
+        file_path = _self.data_dir / "courses" / "aws_training_updates.json"
         cache_key_op_name = "aws_training_data"
 
         if not file_path.exists():
-            self._log(f"AWS Training data file not found: {file_path}", "error")
+            _self._log(f"AWS Training data file not found: {file_path}", "error")
             return []
 
-        cache_key = self._get_cache_key(str(file_path), cache_key_op_name)
-        if cache_key in self.memory_cache:
-            self._log(f"Returning cached AWS Training data for key: {cache_key}", "debug")
-            return self.memory_cache[cache_key]
+        cache_key = _self._get_cache_key(str(file_path), cache_key_op_name)
+        if cache_key in _self.memory_cache:
+            _self._log(f"Returning cached AWS Training data for key: {cache_key}", "debug")
+            return _self.memory_cache[cache_key]
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             if not isinstance(data, list):
-                self._log(f"AWS Training data is not a list: {type(data)}", "warning")
+                _self._log(f"AWS Training data is not a list: {type(data)}", "warning")
                 if isinstance(data, dict): # Wrap if single dict
                     data = [data]
                 else:
                     return [] # Invalid format
 
-            if len(self.memory_cache) < 50: # Adhere to L1 cache size
-                self.memory_cache[cache_key] = data
+            if len(_self.memory_cache) < 50: # Adhere to L1 cache size
+                _self.memory_cache[cache_key] = data
 
-            self._log(f"Successfully loaded {len(data)} entries from {file_path}")
+            _self._log(f"Successfully loaded {len(data)} entries from {file_path}")
             return data
 
         except json.JSONDecodeError as e:
-            self._log(f"Error decoding JSON from {file_path}: {e}", "error")
+            _self._log(f"Error decoding JSON from {file_path}: {e}", "error")
             return []
         except Exception as e: # Catch any other reading errors
-            self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
+            _self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
             return []
 
     @st.cache_data(ttl=1800, max_entries=10, show_spinner=False)
-    def get_azure_training_data(self) -> List[Dict[str, Any]]:
+    def get_azure_training_data(_self) -> List[Dict[str, Any]]:
         """
         Reads Azure Training data from data/courses/azure_training_updates.json.
         Handles FileNotFoundError and json.JSONDecodeError.
         Returns a list of Azure training post dictionaries.
         """
-        self._log("Loading Azure Training data")
-        file_path = self.data_dir / "courses" / "azure_training_updates.json"
+        _self._log("Loading Azure Training data")
+        file_path = _self.data_dir / "courses" / "azure_training_updates.json"
         cache_key_op_name = "azure_training_data"
 
         if not file_path.exists():
-            self._log(f"Azure Training data file not found: {file_path}", "error")
+            _self._log(f"Azure Training data file not found: {file_path}", "error")
             return []
 
-        cache_key = self._get_cache_key(str(file_path), cache_key_op_name)
-        if cache_key in self.memory_cache:
-            self._log(f"Returning cached Azure Training data for key: {cache_key}", "debug")
-            return self.memory_cache[cache_key]
+        cache_key = _self._get_cache_key(str(file_path), cache_key_op_name)
+        if cache_key in _self.memory_cache:
+            _self._log(f"Returning cached Azure Training data for key: {cache_key}", "debug")
+            return _self.memory_cache[cache_key]
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             if not isinstance(data, list):
-                self._log(f"Azure Training data is not a list: {type(data)}", "warning")
+                _self._log(f"Azure Training data is not a list: {type(data)}", "warning")
                 if isinstance(data, dict): # Wrap if single dict
                     data = [data]
                 else:
                     return [] # Invalid format
 
-            if len(self.memory_cache) < 50: # Adhere to L1 cache size
-                self.memory_cache[cache_key] = data
+            if len(_self.memory_cache) < 50: # Adhere to L1 cache size
+                _self.memory_cache[cache_key] = data
 
-            self._log(f"Successfully loaded {len(data)} entries from {file_path}")
+            _self._log(f"Successfully loaded {len(data)} entries from {file_path}")
             return data
 
         except json.JSONDecodeError as e:
-            self._log(f"Error decoding JSON from {file_path}: {e}", "error")
+            _self._log(f"Error decoding JSON from {file_path}: {e}", "error")
             return []
         except Exception as e: # Catch any other reading errors
-            self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
+            _self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
             return []
 
     def get_security_vulnerabilities_data(self) -> pd.DataFrame:
@@ -1756,25 +1781,33 @@ def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
                 # Sample a few non-null values to check type
                 sample_values = df_clean[col].dropna().head(3)
                 if not sample_values.empty:
+                    has_complex_types = False
                     for val in sample_values:
                         if isinstance(val, (dict, list)):
-                            # Convert all values that are dict or list to formatted strings
-                            def format_value(x):
-                                if isinstance(x, list):
-                                    # For game lists, create readable comma-separated strings
-                                    return ', '.join(str(item) for item in x) if x else ''
-                                elif isinstance(x, dict):
-                                    try:
-                                        return json.dumps(x, default=str)
-                                    except:
-                                        return str(x)
-                                else:
-                                    return x
-                            
-                            df_clean[col] = df_clean[col].apply(format_value)
+                            has_complex_types = True
                             break
-            except (TypeError, ValueError):
-                # If there's any issue, convert the entire column to string
-                df_clean[col] = df_clean[col].astype(str)
+                    
+                    if has_complex_types:
+                        # Convert all values that are dict or list to formatted strings
+                        def format_value(x):
+                            if pd.isna(x):
+                                return x
+                            elif isinstance(x, list):
+                                # For game lists, create readable comma-separated strings
+                                return ', '.join(str(item) for item in x) if x else ''
+                            elif isinstance(x, dict):
+                                try:
+                                    return json.dumps(x, default=str)
+                                except:
+                                    return str(x)
+                            else:
+                                return x
+                        
+                        df_clean[col] = df_clean[col].apply(format_value)
+                        
+            except Exception as e:
+                # If there's any issue, keep the column as-is rather than corrupting it
+                print(f"Warning: Could not clean column {col}: {e}")
+                continue
     
     return df_clean 
