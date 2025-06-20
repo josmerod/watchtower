@@ -105,3 +105,26 @@ a:hover, .btn-link:hover {
     padding-top: 1rem;
     padding-bottom: 1rem;
 }
+
+/* Video Tab Card Styling */
+.video-card {
+    transition: transform .2s ease-in-out, box-shadow .2s ease-in-out;
+}
+
+.video-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.video-card .card-img-top {
+    border-bottom: 1px solid #eee; /* Subtle separator for image */
+}
+
+.video-card .card-title a {
+    color: #333333; /* Match header text color for titles */
+    text-decoration: none;
+}
+.video-card .card-title a:hover {
+    color: #0056b3; /* Standard link hover color */
+    text-decoration: underline;
+}
