@@ -159,7 +159,7 @@ def render_ultra_optimized(logger=None, videos_data: Optional[Dict[str, pd.DataF
         
         try:
             import sys
-        import os
+            import os
             from web.fullstreamlit.utils.data_service import DataService
             
             data_service = DataService(logger)
