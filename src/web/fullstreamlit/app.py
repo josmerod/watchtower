@@ -31,7 +31,6 @@ except ImportError as e:
         return logging.getLogger(name)
 
 from web.fullstreamlit.styles.main import get_main_style
-from web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
 
 # Import all components
 from web.fullstreamlit.components import (
@@ -47,7 +46,6 @@ from web.fullstreamlit.components import (
     arxiv_search,
     dev_communities_tab,
     innovation_tab,
-    crypto_tab,
     ecommerce_tab, # Added import
     security_tab,
     enhanced_arxiv_papers,
@@ -69,13 +67,11 @@ from models.anime import AnimeItem
 import json
 from typing import List, Dict, Optional # Already imported but good for clarity
 
-
 # Import enhanced components
 from web.fullstreamlit.components import enhanced_innovation_tab
 
-# Initialize logger and data service
+# Initialize logger
 logger = get_logger("WatchtowerApp")
-data_service = create_ultra_optimized_service(logger)
 
 # Set page configuration
 st.set_page_config(
@@ -91,41 +87,132 @@ st.markdown(get_main_style(), unsafe_allow_html=True)
 # Header
 st.title("🗼 Watchtower")
 
-if st.button("🔄 Actualizar"):
-    st.cache_data.clear()
-    st.rerun()
+# Improved cache clear button
+col1, col2, col3 = st.columns([1, 1, 8])
+with col1:
+    if st.button("🔄 Refresh Data"):
+        # Clear cache with better error handling
+        try:
+            st.cache_data.clear()
+            if 'cached_data' in st.session_state:
+                del st.session_state['cached_data']
+            st.success("Cache cleared successfully!")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error clearing cache: {e}")
 
-# Load data
-# @st.cache_data(ttl=1800)  # TEMPORARILY DISABLED FOR DEBUGGING
+# Initialize data service with error handling
+try:
+    logger.info("Initializing data service...")
+    from web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
+    data_service = create_ultra_optimized_service(logger)
+    
+    if data_service is None:
+        logger.error("Data service initialization returned None")
+        st.error("⚠️ Data service failed to initialize. Please check the logs.")
+        st.stop()
+    
+    logger.info("Data service initialized successfully")
+    
+    # Verify critical methods exist
+    required_methods = ['get_security_intelligence', 'get_home_server_trends_data', 'get_ai_platforms_data']
+    missing_methods = []
+    for method in required_methods:
+        if not hasattr(data_service, method):
+            missing_methods.append(method)
+    
+    if missing_methods:
+        logger.warning(f"Data service missing methods: {missing_methods}")
+        # Don't stop the app, just log the warning
+    
+except Exception as e:
+    logger.error(f"Failed to initialize data service: {e}")
+    st.error(f"⚠️ Failed to initialize data service: {e}")
+    st.info("The application will continue with limited functionality.")
+    data_service = None
+
+# Load data with improved error handling and simplified threading
+@st.cache_data(ttl=900, max_entries=1, show_spinner=True)
 def get_cached_data():
-    """Load and cache data"""
+    """Load and cache data with improved error handling"""
+    if not data_service:
+        logger.error("Data service not available")
+        return _get_default_data_structure()
+    
     try:
         logger.info("Loading cached data...")
         data = {}
         
-        data['games'] = data_service.get_games_data()
-        data['allkeyshop'] = data_service.get_allkeyshop_data()
-        data['courses'] = data_service.get_courses_data()
-        data['news'] = data_service.get_news_data()
-        data['videos'] = data_service.get_videos_data()
-        data['arxiv'] = data_service.get_arxiv_data()
-        data['events'] = data_service.get_events_data()
-        data['new_game_releases'] = data_service.get_new_game_releases_data()
-        data['google_cloud_blog'] = data_service.get_google_cloud_blog_data()
-        data['aws_training'] = data_service.get_aws_training_data()
-        data['azure_training'] = data_service.get_azure_training_data()
-        data['home_server_trends'] = data_service.get_home_server_trends_data()
-        data['museums'] = data_service.get_museum_data()
+        # Sequential loading with timeout protection for better stability
+        data_loaders = [
+            ('games', data_service.get_games_data),
+            ('allkeyshop', data_service.get_allkeyshop_data),
+            ('courses', data_service.get_courses_data),
+            ('news', data_service.get_news_data),
+            ('videos', data_service.get_videos_data),
+            ('arxiv', data_service.get_arxiv_data),
+            ('events', data_service.get_events_data),
+            ('new_game_releases', data_service.get_new_game_releases_data),
+            ('google_cloud_blog', data_service.get_google_cloud_blog_data),
+            ('aws_training', data_service.get_aws_training_data),
+            ('azure_training', data_service.get_azure_training_data),
+            ('home_server_trends', data_service.get_home_server_trends_data),
+            ('museums', data_service.get_museum_data),
+        ]
         
-        logger.info("All data loaded successfully")
+        # Load data sequentially with individual timeouts
+        for data_key, loader_func in data_loaders:
+            try:
+                logger.info(f"Loading {data_key} data...")
+                result = loader_func()
+                data[data_key] = result
+                logger.info(f"✅ {data_key} data loaded successfully")
+            except Exception as e:
+                logger.error(f"❌ Error loading {data_key}: {str(e)}")
+                data[data_key] = _get_default_empty_value(data_key)
+        
+        logger.info("All data loading completed")
         return data
+        
     except Exception as e:
-        logger.error(f"Error loading data: {str(e)}")
+        logger.error(f"Critical error in get_cached_data: {str(e)}")
+        return _get_default_data_structure()
+
+
+def _get_default_empty_value(data_key: str):
+    """Get appropriate default empty value for a data key"""
+    if data_key == 'games':
+        return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
+    elif data_key in ['courses', 'news', 'videos']:
         return {}
+    elif data_key in ['museums', 'arxiv', 'events', 'new_game_releases']:
+        return pd.DataFrame()
+    else:
+        return []
 
 
+def _get_default_data_structure():
+    """Get complete default data structure for app crash prevention"""
+    return {
+        'games': (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()),
+        'allkeyshop': [],
+        'courses': {},
+        'news': {},
+        'videos': {},
+        'arxiv': pd.DataFrame(),
+        'events': pd.DataFrame(),
+        'new_game_releases': pd.DataFrame(),
+        'google_cloud_blog': [],
+        'aws_training': [],
+        'azure_training': [],
+        'home_server_trends': [],
+        'museums': pd.DataFrame(),
+    }
 
-cached_data = get_cached_data()
+
+# Load cached data with status indicator
+with st.spinner("Loading data..."):
+    cached_data = get_cached_data()
 
 # Retrieve the new data slices
 google_cloud_blog_data = cached_data.get('google_cloud_blog', [])
@@ -150,7 +237,7 @@ main_tabs = st.tabs([
     "💡 Innovación",
     "🤖 Plataformas IA",
     "🏠 Home Server", # New Tab
-    "🪙 Crypto",
+
     "🛒 E-commerce", # Added tab
     "🔬 ArXiv",
     "⛩️ Anime", # New Tab
@@ -230,7 +317,8 @@ def render_tab_safely(tab_name, render_func, *args, **kwargs):
         render_func(*args, **kwargs)
     except Exception as e:
         logger.error(f"Error rendering {tab_name}: {str(e)}")
-        st.error(f"Error cargando {tab_name}")
+        st.error(f"Error cargando {tab_name}: {str(e)}")
+        st.info("Please try refreshing the data or contact support if the issue persists.")
 
 # Render tabs
 with main_tabs[0]:
@@ -255,22 +343,17 @@ with main_tabs[5]: # Azure Training
 with main_tabs[6]: # Juegos
     games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
     new_releases_df = cached_data.get('new_game_releases', pd.DataFrame())
-    logger.debug(f"New releases type: {type(new_releases_df)}, shape: {new_releases_df.shape if hasattr(new_releases_df, 'shape') else 'no shape'}")
     
     if isinstance(games_data, tuple) and len(games_data) == 4:
         deals_df, bundles_df, giveaways_df, trending_df = games_data
-        logger.debug(f"Unpacked 4-tuple: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending={len(trending_df)}")
-        st.sidebar.write(f"🔍 DEBUG: Unpacked 4-tuple successfully")
+        logger.info(f"Games data loaded: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending={len(trending_df)}")
     elif isinstance(games_data, tuple) and len(games_data) == 3:
         deals_df, bundles_df, giveaways_df = games_data
         trending_df = pd.DataFrame()
-        logger.debug(f"Unpacked 3-tuple: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending=0")
-        st.sidebar.write(f"🔍 DEBUG: Unpacked 3-tuple, created empty trending_df")
+        logger.info(f"Games data loaded (3-tuple): deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}")
     else:
         deals_df = bundles_df = giveaways_df = trending_df = pd.DataFrame()
         logger.warning(f"Games data format unexpected: {type(games_data)} - creating empty dataframes")
-        st.sidebar.write(f"🔍 DEBUG: ❌ Unexpected games_data format, creating empty dataframes")
-        st.sidebar.write(f"🔍 DEBUG: games_data content: {games_data}")
     
     render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, logger)
 
@@ -299,13 +382,10 @@ with main_tabs[13]: # Plataformas IA
 with main_tabs[14]: # Home Server
     render_tab_safely("Home Server", home_server_tab.render, logger, data_service)
 
-with main_tabs[15]: # Crypto
-    render_tab_safely("Crypto", crypto_tab.render, logger)
-
-with main_tabs[16]: # E-commerce tab
+with main_tabs[15]: # E-commerce tab
     render_tab_safely("E-commerce", ecommerce_tab.render, logger)
 
-with main_tabs[17]: # ArXiv
+with main_tabs[16]: # ArXiv
     arxiv_subtabs = st.tabs(["Mejorado", "Papers", "Búsqueda"])
     
     with arxiv_subtabs[0]:
@@ -317,29 +397,29 @@ with main_tabs[17]: # ArXiv
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 
-with main_tabs[18]: # Index for Anime Tab
+with main_tabs[17]: # Index for Anime Tab
     render_tab_safely("Anime Calendar", display_anime_calendar_tab)
 
-with main_tabs[19]: # Index for ADHD Research - NEW TAB
+with main_tabs[18]: # Index for ADHD Research - NEW TAB
     render_tab_safely("ADHD Research", adhd_tab.display)
 
-with main_tabs[20]: # Index for Monitoreo
+with main_tabs[19]: # Index for Monitoreo
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[21]: # Index for Eventos Valencia
+with main_tabs[20]: # Index for Eventos Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[22]: # Index for Museos Virtuales - New tab
+with main_tabs[21]: # Index for Museos Virtuales - New tab
     museum_data = cached_data.get('museums', pd.DataFrame())
     render_tab_safely("Museos Virtuales", museums_tab.render, logger, museum_data)
 
-with main_tabs[23]: # Index for Admin
+with main_tabs[22]: # Index for Admin
     render_tab_safely("Admin", admin_tab.render, logger)
 
 # New 4chan Generals Tab
-with main_tabs[24]:
+with main_tabs[23]:
     render_tab_safely("4chan Generals", chan_generals_tab.render, logger)
 
 # Scavenging Tab
-with main_tabs[25]:
+with main_tabs[24]:
     render_tab_safely("Scavenging", scavenging_tab.render, logger)

@@ -42,8 +42,11 @@ start /B python src/etl/news/news_get_media_rss.py
 
 start /B python src/etl/goldigging/goldigging_youtube_posts.py
 start /B python src/etl/goldigging/goldigging_coursera_courses.py
+start /B python src/etl/goldigging/goldigging_deeplearningai_courses.py
 
 start /B python src/etl/anime/mal_etl.py
+
+start /B python src/etl/adhd/adhd_publications_etl.py
 
 start /B python src/miners/crypto_sentiment_miner.py
 

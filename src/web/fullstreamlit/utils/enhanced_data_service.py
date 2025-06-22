@@ -758,7 +758,7 @@ class UltraOptimizedDataService(DataService):
                 'organizer': 'Web3 Community',
                 'estimated_cost': 150.0,
                 'is_free': False,
-                'topics': ['blockchain', 'web3', 'cryptocurrency', 'DeFi'],
+                'topics': ['blockchain', 'web3', 'DeFi'],
                 'categories': ['Blockchain/Web3'],
                 'quality_score': 78.0,
                 'relevance_score': 75.0,

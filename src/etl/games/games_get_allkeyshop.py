@@ -230,26 +230,41 @@ class AllKeyShopETL(BaseETL):
     
     def _extract_price_info(self, container: BeautifulSoup, game_data: Dict[str, Any]) -> None:
         """Extract price information from container."""
-        # Look for price elements
-        price_elements = container.find_all(string=re.compile(r'€\d+|EUR\d+|\$\d+|\d+\.?\d*€', re.I))
-        
+        # First, look for explicit attributes that often store numeric price values
         prices = []
+
+        # 1) Data attributes commonly used by AllKeyShop (e.g., data-price-final)
+        for attr in [
+            "data-price", "data-price-final", "data-price-discount", "data-price-amount"
+        ]:
+            attr_val = container.get(attr)
+            if attr_val:
+                match = re.search(r"(\d+\.?\d*)", str(attr_val))
+                if match:
+                    prices.append(float(match.group(1)))
+
+        # 2) Text inside elements that contain price symbols (€, $, £)
+        price_elements = container.find_all(string=re.compile(r"[€$£]\s?\d+|\d+\.?\d*\s?[€$£]", re.I))
         for price_elem in price_elements:
-            # Extract numeric price
-            price_match = re.search(r'(\d+\.?\d*)', str(price_elem))
+            price_match = re.search(r"(\d+\.?\d*)", str(price_elem))
             if price_match:
                 prices.append(float(price_match.group(1)))
-        
+
+        # Deduplicate and sort prices to make stable assignments
         if prices:
-            # Assume first price is current, second is original if available
-            game_data['current_price'] = min(prices)  # Use minimum as current price
+            prices = sorted(set(prices))
+
+            # Assume the lowest price is the current price (best offer)
+            game_data['current_price'] = prices[0]
+
+            # If there is a higher price, treat it as the original list price
             if len(prices) > 1:
-                game_data['original_price'] = max(prices)  # Use maximum as original price
+                game_data['original_price'] = prices[-1]
         
-        # Extract discount percentage
-        discount_elem = container.find(string=re.compile(r'-\d+%|\d+% off', re.I))
+        # Extract discount percentage (e.g., "-75%" or "75% off")
+        discount_elem = container.find(string=re.compile(r"-\s?\d+%|\d+%\s?off", re.I))
         if discount_elem:
-            discount_match = re.search(r'(\d+)', discount_elem)
+            discount_match = re.search(r"(\d+)", discount_elem)
             if discount_match:
                 game_data['discount_percentage'] = int(discount_match.group(1))
     
@@ -298,7 +313,13 @@ class AllKeyShopETL(BaseETL):
                 cleaned_data = self._clean_game_data(game_data)
                 
                 # Skip if essential data is missing
-                if not cleaned_data.get('title') or not cleaned_data.get('url'):
+                if (
+                    not cleaned_data.get('title') or not cleaned_data.get('url') or
+                    (
+                        cleaned_data.get('current_price') is None and
+                        cleaned_data.get('discount_percentage') is None
+                    )
+                ):
                     self.metrics.records_failed += 1
                     continue
                 

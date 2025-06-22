@@ -168,6 +168,8 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
                 display_coursera_courses(courses_data["coursera"])
             elif platform.lower() == "udemy":
                 display_udemy_courses(courses_data["udemy"])
+            elif platform.lower() == "deeplearningai":
+                display_deeplearningai_courses(courses_data["deeplearningai"])
             # Add other platforms as they are added
             # elif platform.lower() == "edx":
             #     display_edx_courses(courses_data["edx"])
@@ -409,3 +411,140 @@ def display_udemy_courses(courses_df: pd.DataFrame):
             )
     else:
         st.info("No hay cursos de Udemy para mostrar (después de procesar).")
+
+def display_deeplearningai_courses(courses_df: pd.DataFrame):
+    """
+    Display DeepLearning.AI courses
+    
+    Parameters
+    ----------
+    courses_df : pd.DataFrame
+        DataFrame containing DeepLearning.AI courses data
+    """
+    if courses_df.empty:
+        st.warning("No hay cursos de DeepLearning.AI disponibles.")
+        return
+
+    # Use the original DataFrame to preserve JSON order - create a copy first
+    filtered_courses_df = courses_df.copy()
+
+    # Store original index to maintain order
+    filtered_courses_df = filtered_courses_df.reset_index(drop=True)
+    original_order = filtered_courses_df.index.copy()
+
+    # Convert scraped_at to datetime if it exists (for display only, not sorting)
+    if "scraped_at" in filtered_courses_df.columns:
+        filtered_courses_df["scraped_at"] = pd.to_datetime(filtered_courses_df["scraped_at"], errors='coerce')
+        filtered_courses_df["fecha_adición"] = filtered_courses_df["scraped_at"].dt.strftime("%Y-%m-%d")
+        filtered_courses_df = filtered_courses_df.reindex(original_order) # Ensure original order
+    else:
+        # Ensure fecha_adición column exists even if scraped_at is missing, for schema consistency
+        filtered_courses_df["fecha_adición"] = None
+
+    with st.expander("Filtros y Opciones para DeepLearning.AI", expanded=True):
+        search_term = st.text_input("Buscar cursos:", placeholder="Ingrese palabras clave...", key="deeplearningai_search")
+        if search_term:
+            search_term_lower = search_term.lower()
+            title_mask = filtered_courses_df["title"].str.lower().str.contains(search_term_lower, na=False)
+            desc_mask = pd.Series([False] * len(filtered_courses_df)) # Default if no description
+            if "description" in filtered_courses_df.columns:
+                desc_mask = filtered_courses_df["description"].str.lower().str.contains(search_term_lower, na=False)
+            search_mask = title_mask | desc_mask
+            filtered_courses_df = filtered_courses_df[search_mask]
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if "level" in filtered_courses_df.columns:
+                levels = sorted(filtered_courses_df["level"].dropna().unique().tolist())
+                levels = ["Todos los niveles"] + levels
+                selected_level = st.selectbox("Filtrar por nivel:", levels, key="deeplearningai_level")
+                if selected_level != "Todos los niveles":
+                    filtered_courses_df = filtered_courses_df[filtered_courses_df["level"] == selected_level]
+        
+        with col2:
+            if "instructor" in filtered_courses_df.columns:
+                instructors = sorted(filtered_courses_df["instructor"].dropna().unique().tolist())
+                instructors = ["Todos los instructores"] + instructors
+                selected_instructor = st.selectbox("Filtrar por instructor:", instructors, key="deeplearningai_instructor")
+                if selected_instructor != "Todos los instructores":
+                    filtered_courses_df = filtered_courses_df[filtered_courses_df["instructor"] == selected_instructor]
+
+        if "is_free" in filtered_courses_df.columns:
+            show_only_free = st.checkbox("Mostrar solo cursos gratuitos", key="deeplearningai_free_checkbox")
+            if show_only_free:
+                filtered_courses_df = filtered_courses_df[filtered_courses_df["is_free"] == True]
+
+    st.write(f"Mostrando {len(filtered_courses_df)} cursos")
+
+    if not filtered_courses_df.empty:
+        # Prepare DataFrame for st.data_editor
+        # Ensure 'url' is present for the link column
+        if 'url' not in filtered_courses_df.columns:
+            st.error("La columna 'url' es necesaria y no está presente en los datos de DeepLearning.AI.")
+            return
+
+        df_for_editor = filtered_courses_df.copy()
+
+        # Rename source columns to target names for st.data_editor
+        rename_map_editor = {
+            "title": "Título",
+            "instructor": "Instructor",
+            "level": "Nivel",
+            "duration": "Duración",
+            "fecha_adición": "Añadido",
+            "is_free": "Gratis",
+            "certificate_offered": "Certificado",
+            "url": "URL_Enlace"
+        }
+
+        # Select only columns that exist in filtered_courses_df and apply renaming
+        cols_to_rename = {k: v for k, v in rename_map_editor.items() if k in df_for_editor.columns}
+        df_for_editor.rename(columns=cols_to_rename, inplace=True)
+
+        # Define the final column order for st.data_editor
+        final_ordered_columns = [
+            "Título", "Instructor", "Nivel", "Duración", "Añadido",
+            "Gratis", "Certificado", "URL_Enlace"
+        ]
+        
+        # Filter this list to include only columns that actually exist in df_for_editor
+        columns_for_editor_display = [col for col in final_ordered_columns if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[columns_for_editor_display]
+
+        st.data_editor(
+            df_for_editor,
+            column_config={
+                "Título": st.column_config.TextColumn(width="large", help="Título del curso"),
+                "Instructor": st.column_config.TextColumn(width="medium", help="Instructor del curso"),
+                "Nivel": st.column_config.TextColumn(width="small", help="Nivel de dificultad"),
+                "Duración": st.column_config.TextColumn(width="small", help="Duración estimada del curso"),
+                "Añadido": st.column_config.TextColumn(width="small", help="Fecha en que se añadió a la lista"),
+                "Gratis": st.column_config.CheckboxColumn(width="small", help="¿Es el curso gratuito?"),
+                "Certificado": st.column_config.CheckboxColumn(width="small", help="¿Ofrece certificado?"),
+                "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Curso", width="medium", help="Enlace directo al curso")
+            },
+            disabled=True,
+            hide_index=True,
+            use_container_width=True
+        )
+
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                label="📥 Descargar CSV (DeepLearning.AI)",
+                data=df_for_editor.to_csv(index=False).encode('utf-8'),
+                file_name="deeplearningai_courses_data.csv",
+                mime='text/csv',
+                key="csv_download_deeplearningai"
+            )
+        with col2:
+            st.download_button(
+                label="📥 Descargar JSON (DeepLearning.AI)",
+                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="deeplearningai_courses_data.json",
+                mime='application/json',
+                key="json_download_deeplearningai"
+            )
+    else:
+        st.info("No hay cursos de DeepLearning.AI que coincidan con los filtros seleccionados.")

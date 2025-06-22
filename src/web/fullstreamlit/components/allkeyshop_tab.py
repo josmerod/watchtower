@@ -10,6 +10,7 @@ from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import numpy as np  # Added to handle missing numeric values
 
 
 def render(allkeyshop_data: List[Dict[str, Any]], logger=None):
@@ -25,6 +26,21 @@ def render(allkeyshop_data: List[Dict[str, Any]], logger=None):
     
     # Convert to DataFrame for easier manipulation
     df = pd.DataFrame(allkeyshop_data)
+    
+    # Ensure required columns exist to prevent KeyError if some fields are missing
+    required_columns = [
+        'current_price', 'discount_percentage', 'deal_score', 'title',
+        'store_name', 'original_price', 'rating', 'is_dlc'
+    ]
+    for col in required_columns:
+        if col not in df.columns:
+            # Use appropriate default based on expected data type
+            if col in {'title', 'store_name'}:
+                df[col] = None
+            elif col == 'is_dlc':
+                df[col] = False
+            else:
+                df[col] = np.nan
     
     # Display summary statistics
     display_summary_stats(df)
