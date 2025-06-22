@@ -19,6 +19,7 @@ start /B python src/etl/games/games_get_humblebundles.py
 start /B python src/etl/games/games_get_itchio_trending.py
 start /B python src/etl/games/games_get_allkeyshop.py
 
+
 start /B python src/etl/news/news_get_ycombinator.py
 start /B python src/etl/news/news_get_futuretools.py
 start /B python src/etl/news/news_get_genai_medium.py
@@ -39,6 +40,8 @@ start /B python src/etl/news/news_get_discord_trending.py
 start /B python src/etl/news/news_get_stackoverflow_trends.py
 start /B python src/etl/news/news_get_subreddits.py
 start /B python src/etl/news/news_get_media_rss.py
+start /B python src/etl/news/news_get_expatcircle.py
+start /B python src/etl/news/news_get_meneame.py
 
 start /B python src/etl/goldigging/goldigging_youtube_posts.py
 start /B python src/etl/goldigging/goldigging_coursera_courses.py
@@ -48,7 +51,7 @@ start /B python src/etl/anime/mal_etl.py
 
 start /B python src/etl/adhd/adhd_publications_etl.py
 
-start /B python src/miners/crypto_sentiment_miner.py
+REM start /B python src/miners/crypto_sentiment_miner.py
 
 start /B python src/etl/fourchan/fourchan_generals_etl.py
 
