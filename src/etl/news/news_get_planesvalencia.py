@@ -54,7 +54,7 @@ def get_valencia_events(
     for attempt in range(max_retries):
         try:
             # Send GET request to the webpage with increased timeout
-            response = requests.get(url, timeout=30)
+            response = requests.get(url, timeout=15)
             response.raise_for_status()  # Raise exception for HTTP errors
 
             # Parse HTML content

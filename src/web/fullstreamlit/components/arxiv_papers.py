@@ -363,7 +363,7 @@ class ArxivPapersComponent:
                     etl = ArxivETL(days_back=7, max_results=50)
                     etl.run()
                 st.success("✅ Paper collection complete! Refresh the page to see results.")
-                st.experimental_rerun()
+                st.rerun()
             return
         
         # Display statistics
@@ -413,7 +413,7 @@ class ArxivPapersComponent:
                 }
                 self.recommender.save_user_profile(user_id, empty_profile)
                 st.success("Profile reset successfully!")
-                st.experimental_rerun()
+                st.rerun()
         
         # Create tabs for different views
         tab1, tab2, tab3, tab4 = st.tabs(["Recommendations", "All Papers", "By Cluster", "Visualizations"])

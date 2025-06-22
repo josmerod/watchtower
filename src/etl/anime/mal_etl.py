@@ -69,7 +69,7 @@ class MalETL(BaseETL):
         logger.info(f"Making request to {url} with params: {params}")
 
         try:
-            response = requests.get(url, headers=headers, params=params, timeout=30)
+            response = requests.get(url, headers=headers, params=params, timeout=15)
             response.raise_for_status()  # Raises HTTPError for bad responses (4XX or 5XX)
             return response.json()
         except requests.exceptions.HTTPError as e:

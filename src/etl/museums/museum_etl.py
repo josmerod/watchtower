@@ -69,7 +69,7 @@ class VirtualMuseumsETL(SimpleETL):
 
         try:
             self.logger.info(f"Querying Wikidata SPARQL endpoint: {WIKIDATA_SPARQL_URL}")
-            response = requests.get(WIKIDATA_SPARQL_URL, headers=headers, params=params, timeout=30)
+            response = requests.get(WIKIDATA_SPARQL_URL, headers=headers, params=params, timeout=15)
             response.raise_for_status()  # Raises HTTPError for bad responses (4XX or 5XX)
 
             data = response.json()
