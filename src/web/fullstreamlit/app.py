@@ -275,6 +275,7 @@ main_tabs = st.tabs([
     "🔬 ArXiv",
     "⛩️ Anime", # New Tab
     "🧠 ADHD Research", # Added ADHD tab
+    "🌍 ExpatCircle", # Expat community news
     "📈 Monitoreo",
     "📍 Eventos Valencia",
     "🏛️ Museos Virtuales", # New tab added

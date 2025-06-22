@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
-# from web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols # Removed as unused
+
 from typing import Dict, List, Optional, Any, Union
 
 # Get the project root directory
@@ -337,7 +337,7 @@ def display_udemy_courses(courses_df: pd.DataFrame):
 
     # Store original index to maintain order if needed, though less critical here without complex filtering
     # filtered_df = filtered_df.reset_index(drop=True)
-    # original_order = filtered_df.index.copy()
+
         
     if "scraped_at" in filtered_df.columns:
         filtered_df["scraped_at"] = pd.to_datetime(filtered_df["scraped_at"], errors='coerce')

@@ -32,7 +32,7 @@ def get_epic_free_games() -> None:
     """
     logger.info("Fetching Epic Games free promotions")
     try:
-        response = requests.get(EPIC_API_URL, timeout=30)
+        response = requests.get(EPIC_API_URL, timeout=15)
         response.raise_for_status()
         data = response.json()
         logger.debug("Fetched data from Epic Games API")

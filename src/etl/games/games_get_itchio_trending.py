@@ -28,7 +28,7 @@ def get_itchio_trending() -> None:
     """
     logger.info("Fetching itch.io trending games")
     try:
-        response = requests.get(ITC_API_URL, timeout=30)
+        response = requests.get(ITC_API_URL, timeout=15)
         response.raise_for_status()
         data = response.json()
         games = data.get("games", [])

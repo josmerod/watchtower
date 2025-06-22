@@ -8,7 +8,7 @@ import pandas as pd
 import os
 import json
 import sys
-# from web.fullstreamlit.utils.helpers import make_clickable # Removed as make_clickable is no longer used here
+
 
 # Get the project root directory
 def get_project_root():

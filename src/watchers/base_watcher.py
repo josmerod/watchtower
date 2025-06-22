@@ -126,7 +126,7 @@ class BaseWatcher(ABC):
         """
         try:
             self.logger.info(f"Fetching {self.url}")
-            response = requests.get(self.url, timeout=30)
+            response = requests.get(self.url, timeout=15)
             response.raise_for_status()
             return response.text
         except Exception as e:

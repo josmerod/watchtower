@@ -221,7 +221,8 @@ class ADHDPublicationETL(BaseETL):
         try:
             df = pd.DataFrame(papers_dict_list)
             if 'authors' in df.columns:
-                df['authors'] = df['authors'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
+                # Vectorized author joining
+        df['authors'] = df['authors'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
 
             csv_file_path = os.path.join(csv_dir, f"papers_{timestamp}.csv")
             df.to_csv(csv_file_path, index=False, encoding='utf-8')
