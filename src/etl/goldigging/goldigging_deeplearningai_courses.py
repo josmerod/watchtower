@@ -224,7 +224,25 @@ class DeepLearningAIScraper:
             # Extract course title
             title_text = link_element.get_text(strip=True)
             if title_text:
-                course_data["title"] = title_text
+                # Clean up the title by removing common prefixes and suffixes
+                clean_title = title_text
+                
+                # Remove common prefixes
+                for prefix in ["Course", "Specialization", "Certificate"]:
+                    if clean_title.startswith(prefix):
+                        clean_title = clean_title[len(prefix):].strip()
+                
+                # If title contains "DeepLearning.AI" at the end, split there
+                if "DeepLearning.AI" in clean_title:
+                    parts = clean_title.split("DeepLearning.AI")
+                    clean_title = parts[0].strip()
+                
+                # If title contains "Stanford Online" at the end, split there
+                if "Stanford Online" in clean_title:
+                    parts = clean_title.split("Stanford Online")
+                    clean_title = parts[0].strip()
+                
+                course_data["title"] = clean_title
 
             # Extract URL
             href = link_element.get("href", "")
@@ -245,6 +263,24 @@ class DeepLearningAIScraper:
                 desc_elem = parent.find("p") or parent.find("div", class_="description")
                 if desc_elem:
                     course_data["description"] = desc_elem.get_text(strip=True)
+                    
+            # Extract description from the original title text if it seems to contain description
+            if title_text and len(title_text) > 100 and "description" not in course_data:
+                # If the original title is very long, likely contains description
+                parts = title_text.split("DeepLearning.AI")
+                if len(parts) > 1:
+                    potential_desc = parts[0].strip()
+                    # Split by course type and title
+                    for prefix in ["Course", "Specialization", "Certificate"]:
+                        if potential_desc.startswith(prefix):
+                            remaining = potential_desc[len(prefix):].strip()
+                            # Try to find where title ends and description starts
+                            sentences = remaining.split(". ")
+                            if len(sentences) > 1:
+                                # First sentence is likely the title, rest is description
+                                course_data["title"] = sentences[0].strip()
+                                course_data["description"] = ". ".join(sentences[1:]).strip()
+                            break
 
             course_data["scraped_at"] = datetime.now().isoformat()
 

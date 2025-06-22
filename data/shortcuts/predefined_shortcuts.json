@@ -21,10 +21,10 @@
   ],
   "Formación": [
     {
-      "name": "Uxcel",
-      "url": "https://uxcel.com/",
-      "icon": "👩‍💻",
-      "description": "Cursos de UX design"
+      "name": "Japanese With Hikari",
+      "url": "https://www.japanesewithhikari.com/library",
+      "icon": "🇯🇵",
+      "description": "Cursos de japonés"
     },
     {
       "name": "Udemy",
@@ -56,7 +56,7 @@
       "name": "Cursor",
       "url": "https://www.cursor.com/",
       "icon": "💻",
-      "description": "Editor de código"
+      "description": "Editor de código. Revisar consumo."
     }
   ]
 }

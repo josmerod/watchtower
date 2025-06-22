@@ -113,8 +113,13 @@ def parse_date(date_str):
         except (ValueError, TypeError):
             pass # Not a valid float or timestamp
 
-    print(f"Warning: Could not parse date string: {s_date} with any known format.")
-    return None
+    # Use more robust date parser
+    try:
+        from utils.date_parser import parse_date
+        return parse_date(s_date, suppress_warnings=True)
+    except ImportError:
+        print(f"Warning: Could not parse date string: {s_date} with any known format.")
+        return None
 
 # --- Layout Generation ---
 

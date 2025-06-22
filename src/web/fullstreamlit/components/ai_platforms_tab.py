@@ -30,7 +30,7 @@ class AIPlatformDataCollector:
         self.project_root = Path.cwd()
         self.ai_data_dir = self.project_root / "data" / "ai_models"
         
-    def _load_ai_monitoring_data(self) -> Dict[str, Any]:
+    def _load_ai_monitoring_data(self) -> List[Dict[str, Any]]:
         """Load actual AI monitoring data from files."""
         try:
             # Try to load the latest AI models data
@@ -39,6 +39,20 @@ class AIPlatformDataCollector:
             if latest_file.exists():
                 with open(latest_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
+                
+                # Ensure data is always a list
+                if isinstance(data, dict):
+                    # If it's a single dictionary, wrap it in a list
+                    data = [data]
+                elif isinstance(data, int):
+                    # If it's an integer (possibly count), return empty list
+                    logger.warning(f"AI monitoring data is an integer ({data}), returning empty list")
+                    return []
+                elif not isinstance(data, list):
+                    # If it's any other type, convert to empty list
+                    logger.warning(f"AI monitoring data is unexpected type {type(data)}, returning empty list")
+                    return []
+                
                 logger.info(f"Loaded {len(data)} AI model updates from monitoring system")
                 return data
             else:
@@ -73,6 +87,11 @@ class AIPlatformDataCollector:
     
     def _get_platform_overview(self, monitoring_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Get platform overview metrics from real data."""
+        # Ensure monitoring_data is a list
+        if not isinstance(monitoring_data, list):
+            logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
+            monitoring_data = []
+            
         # Analyze the monitoring data
         total_updates = len(monitoring_data)
         
@@ -112,6 +131,11 @@ class AIPlatformDataCollector:
     
     def _get_model_releases(self, monitoring_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Get recent model releases from real monitoring data."""
+        # Ensure monitoring_data is a list
+        if not isinstance(monitoring_data, list):
+            logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
+            monitoring_data = []
+            
         model_releases = []
         
         # Filter for model-related updates
@@ -222,6 +246,11 @@ class AIPlatformDataCollector:
     
     def _get_platform_updates(self, monitoring_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Get recent platform updates from real monitoring data."""
+        # Ensure monitoring_data is a list
+        if not isinstance(monitoring_data, list):
+            logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
+            monitoring_data = []
+            
         platform_updates = []
         
         # Filter for platform updates (not model releases)
@@ -309,6 +338,11 @@ class AIPlatformDataCollector:
     
     def _get_competitive_analysis(self, monitoring_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Get competitive analysis data from real monitoring data."""
+        # Ensure monitoring_data is a list
+        if not isinstance(monitoring_data, list):
+            logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
+            monitoring_data = []
+            
         # Analyze provider activity
         provider_activity = {}
         provider_recent_updates = {}
@@ -1004,12 +1038,33 @@ def render(logger, data_service=None):
     st.header("🤖 AI Platform Intelligence")
     st.markdown("Comprehensive monitoring of AI platforms, model releases, and market intelligence")
     
-    # Initialize data collector
-    collector = AIPlatformDataCollector()
+    # Use data service if available, otherwise use the collector
+    if data_service and hasattr(data_service, 'get_ai_platforms_data'):
+        with st.spinner("🔄 Loading AI platform data from service..."):
+            try:
+                monitoring_data = data_service.get_ai_platforms_data()
+                logger.info(f"Loaded {len(monitoring_data)} AI platform records from data service")
+            except Exception as e:
+                logger.error(f"Failed to load AI platform data from service: {e}")
+                monitoring_data = []
+    else:
+        # Fallback to direct data collection
+        collector = AIPlatformDataCollector()
+        with st.spinner("🔄 Collecting AI platform intelligence..."):
+            monitoring_data = collector._load_ai_monitoring_data()
+            logger.info(f"Loaded {len(monitoring_data)} AI platform records from collector")
     
-    # Data collection with progress indicator
-    with st.spinner("🔄 Collecting AI platform intelligence..."):
+    # Create intelligence data structure
+    if monitoring_data:
+        collector = AIPlatformDataCollector()
         ai_intelligence = collector.get_ai_platform_intelligence()
+        # Update with loaded data
+        ai_intelligence['monitoring_data'] = monitoring_data
+    else:
+        # Use fallback data if no monitoring data available
+        collector = AIPlatformDataCollector()
+        ai_intelligence = collector._get_fallback_data()
+        st.warning("⚠️ No AI platform monitoring data available. Displaying demo interface.")
     
     # Display overview
     display_ai_platform_overview(ai_intelligence)

@@ -28,7 +28,7 @@ from web.fullstreamlit.components import (
     arxiv_search,
     dev_communities_tab,
     innovation_tab,
-    crypto_tab,
+
     security_tab,
     enhanced_arxiv_papers,
     monitoring_tab,
@@ -219,7 +219,7 @@ with st.sidebar:
     tools_options = {
         "👨‍💻 Comunidades Dev": "DEV, Product Hunt, etc.",
         "🚀 Innovation Hub": "Tendencias y nuevas tecnologías",
-        "₿ Crypto Sentiment": "Análisis de sentimiento crypto",
+    
         "📚 Investigación ArXiv": "Papers y búsqueda académica",
         "👁️ Watchers": "Monitoreo automatizado",
         "🏙️ Eventos Valencia": "Eventos locales tech"
@@ -303,7 +303,7 @@ main_tabs = st.tabs([
     "👨‍💻 Dev Hub",
     "🛡️ Security",
     "🚀 Innovation",
-    "₿ Crypto",
+
     "📚 ArXiv Research", 
     "👁️ Monitoring", 
     "🏙️ Valencia", 
@@ -359,8 +359,7 @@ with main_tabs[7]:  # Security
 with main_tabs[8]:  # Innovation
     render_tab_safely("Innovation & Tech", enhanced_innovation_tab.render, logger, data_service)
 
-with main_tabs[9]:  # Crypto
-    render_tab_safely("Crypto Sentiment", crypto_tab.render, logger)
+
 
 with main_tabs[10]:  # ArXiv Research (combined tab)
     

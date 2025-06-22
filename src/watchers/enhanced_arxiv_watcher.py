@@ -369,7 +369,7 @@ class EnhancedArxivWatcher(BaseWatcher):
             'DevOps': ['devops', 'ci/cd', 'continuous integration', 'docker', 'kubernetes'],
             'Data Engineering': ['data pipeline', 'etl', 'data warehouse', 'big data'],
             'Cloud Computing': ['cloud', 'aws', 'azure', 'serverless'],
-            'Blockchain': ['blockchain', 'cryptocurrency', 'smart contract'],
+            'Blockchain': ['blockchain', 'smart contract'],
             'IoT': ['iot', 'internet of things', 'edge computing'],
             'Enterprise': ['enterprise', 'solution architecture', 'digital transformation']
         }
