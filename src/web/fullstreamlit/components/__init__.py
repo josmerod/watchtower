@@ -14,7 +14,6 @@ from web.fullstreamlit.components import (
     arxiv_papers,
     arxiv_search,
     dev_communities_tab,
-    innovation_tab,
     security_tab,
     monitoring_tab,
     enhanced_arxiv_papers,
@@ -31,4 +30,5 @@ from web.fullstreamlit.components import (
     anime_display,
     chan_generals_tab,
     scavenging_tab,
+    expatcircle_tab,
 ) 

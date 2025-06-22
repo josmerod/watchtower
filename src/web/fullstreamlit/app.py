@@ -45,8 +45,6 @@ from web.fullstreamlit.components import (
     arxiv_papers,
     arxiv_search,
     dev_communities_tab,
-    innovation_tab,
-    ecommerce_tab, # Added import
     security_tab,
     enhanced_arxiv_papers,
     monitoring_tab,
@@ -56,19 +54,20 @@ from web.fullstreamlit.components import (
     aws_training_tab,
     azure_training_tab,
     home_server_tab,
-    museums_tab, # Added import for museums_tab
-    adhd_tab, # Added ADHD tab
-    chan_generals_tab, # 4chan Generals Tab
-    scavenging_tab  # Scavenging Tab
+    museums_tab,
+    adhd_tab,
+    chan_generals_tab,
+    scavenging_tab,
+    ecommerce_tab,
+    enhanced_innovation_tab,
+    expatcircle_tab
 )
+
 # Import for Anime Tab
 from web.fullstreamlit.components.anime_display import display_anime_section
 from models.anime import AnimeItem
 import json
-from typing import List, Dict, Optional # Already imported but good for clarity
-
-# Import enhanced components
-from web.fullstreamlit.components import enhanced_innovation_tab
+from typing import List, Dict, Optional
 
 # Initialize logger
 logger = get_logger("WatchtowerApp")
@@ -101,11 +100,16 @@ with col1:
         except Exception as e:
             st.error(f"Error clearing cache: {e}")
 
-# Initialize data service with error handling
-try:
-    logger.info("Initializing data service...")
+# Initialize data service with caching to avoid re-creation on every rerun
+@st.cache_resource(ttl=1800, show_spinner=False)  # Reduced TTL for better data freshness
+def _get_data_service():
+    """Create and cache the ultra-optimised data service (30-minute TTL)."""
     from web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
-    data_service = create_ultra_optimized_service(logger)
+    return create_ultra_optimized_service(logger)
+
+try:
+    logger.info("Initializing data service (cached)…")
+    data_service = _get_data_service()
     
     if data_service is None:
         logger.error("Data service initialization returned None")
@@ -131,8 +135,8 @@ except Exception as e:
     st.info("The application will continue with limited functionality.")
     data_service = None
 
-# Load data with improved error handling and simplified threading
-@st.cache_data(ttl=900, max_entries=1, show_spinner=True)
+# Load data with improved error handling and optimized caching
+@st.cache_data(ttl=600, max_entries=1, show_spinner=True)  # Reduced TTL for more frequent updates
 def get_cached_data():
     """Load and cache data with improved error handling"""
     if not data_service:
@@ -140,23 +144,16 @@ def get_cached_data():
         return _get_default_data_structure()
     
     try:
-        logger.info("Loading cached data...")
+        logger.info("Loading cached meta data (lightweight)…")
         data = {}
         
-        # Sequential loading with timeout protection for better stability
+        # Only light / small datasets are eagerly loaded; heavy ones will be lazy-loaded per tab
         data_loaders = [
-            ('games', data_service.get_games_data),
             ('allkeyshop', data_service.get_allkeyshop_data),
-            ('courses', data_service.get_courses_data),
-            ('news', data_service.get_news_data),
-            ('videos', data_service.get_videos_data),
-            ('arxiv', data_service.get_arxiv_data),
-            ('events', data_service.get_events_data),
-            ('new_game_releases', data_service.get_new_game_releases_data),
             ('google_cloud_blog', data_service.get_google_cloud_blog_data),
             ('aws_training', data_service.get_aws_training_data),
             ('azure_training', data_service.get_azure_training_data),
-            ('home_server_trends', data_service.get_home_server_trends_data),
+            ('events', data_service.get_events_data),
             ('museums', data_service.get_museum_data),
         ]
         
@@ -185,7 +182,7 @@ def _get_default_empty_value(data_key: str):
         return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
     elif data_key in ['courses', 'news', 'videos']:
         return {}
-    elif data_key in ['museums', 'arxiv', 'events', 'new_game_releases']:
+    elif data_key in ['museums', 'events', 'new_game_releases']:
         return pd.DataFrame()
     else:
         return []
@@ -194,18 +191,15 @@ def _get_default_empty_value(data_key: str):
 def _get_default_data_structure():
     """Get complete default data structure for app crash prevention"""
     return {
-        'games': (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()),
         'allkeyshop': [],
+        # Heavy datasets default to empty; they will be lazy-loaded per tab
         'courses': {},
         'news': {},
         'videos': {},
-        'arxiv': pd.DataFrame(),
         'events': pd.DataFrame(),
-        'new_game_releases': pd.DataFrame(),
         'google_cloud_blog': [],
         'aws_training': [],
         'azure_training': [],
-        'home_server_trends': [],
         'museums': pd.DataFrame(),
     }
 
@@ -219,6 +213,45 @@ google_cloud_blog_data = cached_data.get('google_cloud_blog', [])
 aws_training_data = cached_data.get('aws_training', [])
 azure_training_data = cached_data.get('azure_training', [])
 allkeyshop_data = cached_data.get('allkeyshop', [])
+
+# ---------------------------------------------------------------------------
+# Lazy tab-specific data loaders (heavy datasets)
+# ---------------------------------------------------------------------------
+
+@st.cache_data(ttl=1200, show_spinner=True)  # Reduced TTL for better freshness
+def load_games_data():
+    """Lazy load games datasets (deals, bundles, giveaways, trending)."""
+    if data_service:
+        return data_service.get_games_data()
+    return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
+
+@st.cache_data(ttl=1200, show_spinner=True)  # Reduced TTL for better freshness
+def load_new_game_releases():
+    """Lazy load new game releases data."""
+    if data_service:
+        return data_service.get_new_game_releases_data()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=1200, show_spinner=True)  # Reduced TTL for better freshness
+def load_videos_data():
+    """Lazy load videos datasets."""
+    if data_service:
+        return data_service.get_videos_data()
+    return {}
+
+@st.cache_data(ttl=1200, show_spinner=True)  # Reduced TTL for better freshness
+def load_courses_data():
+    """Lazy load courses datasets."""
+    if data_service:
+        return data_service.get_courses_data()
+    return {}
+
+@st.cache_data(ttl=1200, show_spinner=True)  # Reduced TTL for better freshness
+def load_news_data():
+    """Lazy load news datasets."""
+    if data_service:
+        return data_service.get_news_data()
+    return {}
 
 # Tabs
 main_tabs = st.tabs([
@@ -325,7 +358,7 @@ with main_tabs[0]:
     render_tab_safely("Dashboard", shortcuts_tab.render, logger, data_service)
 
 with main_tabs[1]:
-    videos_data = cached_data.get('videos', {})
+    videos_data = load_videos_data()
     render_tab_safely("Videos", videos_tab.render, logger, videos_data)
 
 with main_tabs[2]:
@@ -341,8 +374,8 @@ with main_tabs[5]: # Azure Training
     render_tab_safely("Azure Training", azure_training_tab.render, logger, azure_training_data)
 
 with main_tabs[6]: # Juegos
-    games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
-    new_releases_df = cached_data.get('new_game_releases', pd.DataFrame())
+    games_data = load_games_data()
+    new_releases_df = load_new_game_releases()
     
     if isinstance(games_data, tuple) and len(games_data) == 4:
         deals_df, bundles_df, giveaways_df, trending_df = games_data
@@ -361,7 +394,7 @@ with main_tabs[7]: # AllKeyShop Deals
     render_tab_safely("AllKeyShop Deals", allkeyshop_tab.render, allkeyshop_data, logger)
 
 with main_tabs[8]: # Cursos
-    courses_data = cached_data.get('courses', {})
+    courses_data = load_courses_data()
     render_tab_safely("Cursos", courses_tab.render, courses_data, logger)
 
 with main_tabs[9]: # Eventos Tech
@@ -403,23 +436,26 @@ with main_tabs[17]: # Index for Anime Tab
 with main_tabs[18]: # Index for ADHD Research - NEW TAB
     render_tab_safely("ADHD Research", adhd_tab.display)
 
-with main_tabs[19]: # Index for Monitoreo
+with main_tabs[19]: # Index for ExpatCircle News
+    render_tab_safely("ExpatCircle News", expatcircle_tab.render, logger)
+
+with main_tabs[20]: # Index for Monitoreo
     render_tab_safely("Monitoreo", monitoring_tab.render, logger)
 
-with main_tabs[20]: # Index for Eventos Valencia
+with main_tabs[21]: # Index for Eventos Valencia
     render_tab_safely("Eventos Valencia", events_tab.render, logger)
 
-with main_tabs[21]: # Index for Museos Virtuales - New tab
+with main_tabs[22]: # Index for Museos Virtuales - New tab
     museum_data = cached_data.get('museums', pd.DataFrame())
     render_tab_safely("Museos Virtuales", museums_tab.render, logger, museum_data)
 
-with main_tabs[22]: # Index for Admin
+with main_tabs[23]: # Index for Admin
     render_tab_safely("Admin", admin_tab.render, logger)
 
 # New 4chan Generals Tab
-with main_tabs[23]:
+with main_tabs[24]:
     render_tab_safely("4chan Generals", chan_generals_tab.render, logger)
 
 # Scavenging Tab
-with main_tabs[24]:
+with main_tabs[25]:
     render_tab_safely("Scavenging", scavenging_tab.render, logger)
