@@ -192,7 +192,7 @@ def create_video_card(video_row):
     return dbc.Col(
         dbc.Card(
             [
-                dbc.CardImg(src=video_row.get('thumbnail_url', '/assets/placeholder_thumbnail.png'), top=True, alt=video_row.get('title', 'Video thumbnail'), style={"maxHeight": "180px", "objectFit": "cover"}),
+                dbc.CardImg(src=video_row.get('thumbnail_url', '/assets/placeholder_thumbnail.svg'), top=True, alt=video_row.get('title', 'Video thumbnail'), style={"maxHeight": "180px", "objectFit": "cover"}), # Changed to .svg
                 dbc.CardBody(
                     [
                         html.H5(

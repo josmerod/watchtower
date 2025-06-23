@@ -19,6 +19,20 @@ from src.web.new_dashboard_poc.components.games_tab import render_games_tab
 
 from src.web.new_dashboard_poc.components.allkeyshop_tab import render_allkeyshop_tab, register_allkeyshop_callbacks
 
+from src.web.new_dashboard_poc.components.courses_tab import render_courses_tab, register_courses_callbacks
+
+from src.web.new_dashboard_poc.components.tech_events_tab import render_tech_events_tab, register_tech_events_callbacks
+
+from src.web.new_dashboard_poc.components.dev_communities_tab import render_dev_communities_tab, register_dev_communities_callbacks
+
+from src.web.new_dashboard_poc.components.security_tab import render_security_tab, register_security_callbacks
+
+from src.web.new_dashboard_poc.components.innovation_tab import render_innovation_tab, register_innovation_callbacks
+
+from src.web.new_dashboard_poc.components.ai_platforms_tab import render_ai_platforms_tab, register_ai_platforms_callbacks
+
+from src.web.new_dashboard_poc.components.home_server_tab import render_home_server_tab, register_home_server_callbacks
+
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
@@ -56,7 +70,28 @@ app.layout = dbc.Container(
                             render_games_tab()
                         ]),
                         dbc.Tab(label="AllKeyShop Deals", tab_id="tab-aks", children=[
-                            render_allkeyshop_tab() # Content from allkeyshop_tab.py
+                            render_allkeyshop_tab()
+                        ]),
+                        dbc.Tab(label="Cursos", tab_id="tab-courses", children=[
+                            render_courses_tab()
+                        ]),
+                        dbc.Tab(label="Eventos Tech", tab_id="tab-tech-events", children=[
+                            render_tech_events_tab()
+                        ]),
+                        dbc.Tab(label="Comunidades Dev", tab_id="tab-dev-communities", children=[
+                            render_dev_communities_tab()
+                        ]),
+                        dbc.Tab(label="Seguridad", tab_id="tab-security", children=[
+                            render_security_tab()
+                        ]),
+                        dbc.Tab(label="Innovación", tab_id="tab-innovation", children=[
+                            render_innovation_tab()
+                        ]),
+                        dbc.Tab(label="Plataformas IA", tab_id="tab-ai-platforms", children=[
+                            render_ai_platforms_tab()
+                        ]),
+                        dbc.Tab(label="Home Server", tab_id="tab-home-server", children=[
+                            render_home_server_tab() # Content from home_server_tab.py
                         ]),
                         dbc.Tab(label="Other Tab (Placeholder)", tab_id="tab-other", children=[
                             html.P("This is content for another future tab.")
@@ -82,7 +117,14 @@ def update_main_app_shortcuts(search_value):
 
 # Register callbacks from other modules
 register_video_callbacks(app)
-register_allkeyshop_callbacks(app) # Register AllKeyShop tab callbacks
+register_allkeyshop_callbacks(app)
+register_courses_callbacks(app)
+register_tech_events_callbacks(app)
+register_dev_communities_callbacks(app)
+register_security_callbacks(app)
+register_innovation_callbacks(app)
+register_ai_platforms_callbacks(app)
+register_home_server_callbacks(app) # Register Home Server tab callbacks
 
 if __name__ == "__main__":
     # Note on data loading:
