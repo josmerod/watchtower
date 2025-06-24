@@ -95,16 +95,26 @@ def fetch_expatcircle_posts(
             
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # Find post containers (adjust selectors based on actual site structure)
-            post_containers = soup.find_all(['article', 'div'], class_=re.compile(r'post|item|entry|story'))
+            # More generic selectors for finding posts
+            post_containers = soup.find_all(['article', 'div'], class_=re.compile(r'post|item|entry|story|article|card', re.I))
             
+            # Fallback: try finding any divs with links that might be posts
             if not post_containers:
-                # Fallback: look for common post patterns
-                post_containers = soup.find_all('div', attrs={'data-post': True})
-                if not post_containers:
-                    post_containers = soup.select('div[class*="post"], article[class*="post"], .post-item, .story-item')
+                post_containers = soup.find_all('div', class_=True)
+                # Filter to only divs that contain links (likely posts)
+                post_containers = [div for div in post_containers if div.find('a', href=True)]
+            
+            # Another fallback: look for any elements with titles/headings
+            if not post_containers:
+                post_containers = soup.find_all(['h1', 'h2', 'h3', 'h4'], text=True)
+                post_containers = [h.parent for h in post_containers if h.parent]
             
             logger.info(f"Found {len(post_containers)} potential post containers on page {page}")
+            
+            if not post_containers:
+                logger.warning(f"No post containers found on page {page}. HTML preview: {str(soup)[:500]}")
+            
+            posts_found = 0
             
             for container in post_containers:
                 if len(posts) >= max_posts:
@@ -150,9 +160,9 @@ def parse_expatcircle_post(container, base_url: str) -> Optional[Dict[str, Any]]
             link_elem = title_elem.find('a', href=True) if title_elem.name != 'a' else title_elem
             if link_elem:
                 href = link_elem.get('href', '')
-                post_data['url'] = urljoin(base_url, href)
+                post_data['url'] = urljoin(EXPATCIRCLE_BASE_URL, href)
             else:
-                post_data['url'] = base_url
+                post_data['url'] = EXPATCIRCLE_BASE_URL
         else:
             return None  # Skip posts without titles
         
@@ -334,7 +344,7 @@ def process_expatcircle_posts(posts: List[Dict[str, Any]]) -> List[Dict[str, Any
                 quality_score += 2
             
             # Has URL
-            if post.get('url') and post['url'] != base_url:
+            if post.get('url') and post['url'] != EXPATCIRCLE_BASE_URL:
                 quality_score += 1
             
             # Has category

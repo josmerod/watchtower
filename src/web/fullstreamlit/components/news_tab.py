@@ -179,7 +179,7 @@ def render(logger=None):
     # Display summary metrics
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("📊 Fuentes Activas", f"{available_sources}/9")
+        st.metric("📊 Fuentes Activas", f"{available_sources}/8")
     with col2:
         st.metric("📰 Total Artículos", f"{total_articles:,}")
     with col3:
@@ -675,6 +675,7 @@ def render_gooddevs(gooddevs_df):
                 st.session_state.active_df_for_export = None
                 st.session_state.active_source_name = None
 
+
 def render_meneame_general(df):
     """Render Meneame General posts"""
     st.subheader("Meneame General")
@@ -682,22 +683,41 @@ def render_meneame_general(df):
         st.warning("No hay posts disponibles de Meneame General.")
     else:
         display_df = df.copy()
-        display_df["published_date"] = pd.to_datetime(display_df["published_at"], errors="coerce")
+        
+        # Handle date parsing - the new ETL uses 'scraped_at' field
+        if "scraped_at" in display_df.columns:
+            display_df["published_date"] = pd.to_datetime(display_df["scraped_at"], errors="coerce")
+        elif "published_at" in display_df.columns:
+            display_df["published_date"] = pd.to_datetime(display_df["published_at"], errors="coerce")
+        else:
+            display_df["published_date"] = pd.Timestamp("now")
+        
         display_df.dropna(subset=["published_date"], inplace=True)
         display_df = display_df.sort_values("published_date", ascending=False)
-        display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d')
+        display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
 
         source_name_for_download = "meneame_general" # Define unique source name
         df_for_editor = display_df.rename(columns={
             "title": "Título",
             "source": "Fuente",
-            "formatted_date": "Fecha de Publicación",
+            "formatted_date": "Fecha de Extracción",
             "url": "URL_Enlace"
         })
 
-        required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
+        required_cols = ["Título", "Fuente", "Fecha de Extracción", "URL_Enlace"]
         cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
         df_for_editor = df_for_editor[cols_to_display]
+
+        # Show metrics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("📄 Total Posts", len(df_for_editor))
+        with col2:
+            st.metric("🕒 Última Actualización", 
+                     display_df["formatted_date"].iloc[0] if not display_df.empty else "N/A")
+        with col3:
+            has_urls = "URL_Enlace" in df_for_editor.columns and not df_for_editor["URL_Enlace"].isna().all()
+            st.metric("🔗 Con Enlaces", "Sí" if has_urls else "No")
 
         st.session_state.active_df_for_export = df_for_editor
         st.session_state.active_source_name = source_name_for_download
@@ -707,7 +727,7 @@ def render_meneame_general(df):
             column_config={
                 "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
                 "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
-                "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
+                "Fecha de Extracción": st.column_config.TextColumn(width="small", help="Fecha de extracción"),
                 "URL_Enlace": st.column_config.LinkColumn(
                     label="Enlace",
                     display_text="Leer Artículo",
@@ -728,22 +748,41 @@ def render_meneame_tecnologia(df):
         st.warning("No hay posts disponibles de Meneame Tecnología.")
     else:
         display_df = df.copy()
-        display_df["published_date"] = pd.to_datetime(display_df["published_at"], errors="coerce")
+        
+        # Handle date parsing - the new ETL uses 'scraped_at' field
+        if "scraped_at" in display_df.columns:
+            display_df["published_date"] = pd.to_datetime(display_df["scraped_at"], errors="coerce")
+        elif "published_at" in display_df.columns:
+            display_df["published_date"] = pd.to_datetime(display_df["published_at"], errors="coerce")
+        else:
+            display_df["published_date"] = pd.Timestamp("now")
+        
         display_df.dropna(subset=["published_date"], inplace=True)
         display_df = display_df.sort_values("published_date", ascending=False)
-        display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d')
+        display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
 
         source_name_for_download = "meneame_tecnologia" # Define unique source name
         df_for_editor = display_df.rename(columns={
             "title": "Título",
             "source": "Fuente",
-            "formatted_date": "Fecha de Publicación",
+            "formatted_date": "Fecha de Extracción",
             "url": "URL_Enlace"
         })
 
-        required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
+        required_cols = ["Título", "Fuente", "Fecha de Extracción", "URL_Enlace"]
         cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
         df_for_editor = df_for_editor[cols_to_display]
+
+        # Show metrics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("📄 Total Posts", len(df_for_editor))
+        with col2:
+            st.metric("🕒 Última Actualización", 
+                     display_df["formatted_date"].iloc[0] if not display_df.empty else "N/A")
+        with col3:
+            has_urls = "URL_Enlace" in df_for_editor.columns and not df_for_editor["URL_Enlace"].isna().all()
+            st.metric("🔗 Con Enlaces", "Sí" if has_urls else "No")
 
         st.session_state.active_df_for_export = df_for_editor
         st.session_state.active_source_name = source_name_for_download
@@ -753,7 +792,7 @@ def render_meneame_tecnologia(df):
             column_config={
                 "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
                 "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
-                "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
+                "Fecha de Extracción": st.column_config.TextColumn(width="small", help="Fecha de extracción"),
                 "URL_Enlace": st.column_config.LinkColumn(
                     label="Enlace",
                     display_text="Leer Artículo",
