@@ -51,6 +51,13 @@ start /B python src/etl/anime/mal_etl.py
 
 start /B python src/etl/adhd/adhd_publications_etl.py
 
+REM ArXiv ETL disabled - missing paperswithcode-client dependency
+REM start /B python src/etl/arxiv/arxiv_etl.py
+REM start /B python src/etl/arxiv/enhanced_arxiv_etl.py
+
+REM Simple ArXiv ETL using official API (no dependencies)
+start /B python src/etl/arxiv/simple_arxiv_etl.py
+
 REM start /B python src/miners/crypto_sentiment_miner.py
 
 start /B python src/etl/fourchan/fourchan_generals_etl.py

@@ -1,28 +1,32 @@
-"""Menéame Spanish Tech News ETL Module
+"""Menéame Spanish Tech News ETL Module - Browser Automation Approach
 
 This module fetches and processes news posts from Menéame,
 a Spanish Reddit-like platform focused on technology and tech news.
+Uses Playwright browser automation to handle dynamic content and anti-bot measures.
 
 Usage:
     python src/etl/news/news_get_meneame.py
 
 Output:
-- JSON file: data/meneame/posts.json  
-- CSV file: data/meneame/posts.csv
+- JSON file: data/meneame/meneame_general_latest.json  
+- CSV file: data/meneame/meneame_general_latest.csv
+- JSON file: data/meneame/meneame_tecnologia_latest.json  
+- CSV file: data/meneame/meneame_tecnologia_latest.csv
 """
 
-import requests
-from bs4 import BeautifulSoup
+import asyncio
 import json
 import os
-import csv
+import random
 import sys
-from pathlib import Path
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+import logging
 import time
 import re
 from urllib.parse import urljoin, urlparse
+from bs4 import BeautifulSoup
 
 # Add the src directory to the Python path
 current_dir = Path(__file__).parent
@@ -33,382 +37,498 @@ from utils.logging import get_logger
 from config.settings import get_settings
 
 # Initialize logger and settings
-logger = get_logger("MeneameETL")
+logger = get_logger(__name__)
 settings = get_settings()
 
-# Menéame configuration
+# Constants
 MENEAME_BASE_URL = "https://www.meneame.net"
-MENEAME_TECH_URL = f"{MENEAME_BASE_URL}/queue/tecnologia"
-
-# Request headers
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive",
-    "Referer": "https://www.meneame.net/",
-}
+MENEAME_TECH_URL = "https://www.meneame.net/m/tecnologia"
+BASE_OUTPUT_DIR = "data/meneame"
+DEBUG_DIR = os.path.join(BASE_OUTPUT_DIR, "debug")
 
 
-def fetch_meneame_posts(
-    session: requests.Session,
-    max_posts: int = 50,
-    max_pages: int = 3
-) -> List[Dict[str, Any]]:
-    """Fetch tech posts from Menéame."""
-    posts = []
-    
-    try:
-        logger.info("Fetching posts from Menéame Tech section")
+class MeneameScraper:
+    """Scraper for retrieving Menéame posts using browser automation.
+
+    This class uses Playwright to scrape Menéame and handle dynamic content
+    and anti-bot measures that block traditional HTTP requests.
+    """
+
+    def __init__(self, max_posts: int = 50) -> None:
+        """Initialize the MeneameScraper.
+
+        Args:
+            max_posts: Maximum number of posts to scrape per section.
+        """
+        # Ensure base output directory exists
+        project_root = settings.project_root or os.getcwd()
+        self.output_dir = os.path.join(project_root, BASE_OUTPUT_DIR)
+        os.makedirs(self.output_dir, exist_ok=True)
+
+        # Ensure debug directory exists
+        self.debug_dir = os.path.join(self.output_dir, "debug")
+        os.makedirs(self.debug_dir, exist_ok=True)
+
+        # Define output files for both sections
+        self.general_posts_file = os.path.join(self.output_dir, "meneame_general_latest.json")
+        self.general_csv_file = os.path.join(self.output_dir, "meneame_general_latest.csv")
         
-        for page in range(1, max_pages + 1):
-            if len(posts) >= max_posts:
-                break
+        self.tech_posts_file = os.path.join(self.output_dir, "meneame_tecnologia_latest.json")
+        self.tech_csv_file = os.path.join(self.output_dir, "meneame_tecnologia_latest.csv")
+        
+        self.last_run_file = os.path.join(self.output_dir, "last_run_info.json")
+
+        # Configuration
+        self.max_posts = max_posts
+
+    async def scrape_posts(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Scrape posts from both general and technology sections."""
+        from bs4 import BeautifulSoup
+        from playwright.async_api import async_playwright
+
+        sections_data = {
+            "general": [],
+            "tecnologia": []
+        }
+
+        try:
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(
+                    headless=False,
+                    args=["--disable-blink-features=AutomationControlled"],
+                )
+                context = await browser.new_context(
+                    viewport={"width": 1920, "height": 1080},
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+                )
+                # Stealth: mask automation to bypass detection
+                await context.add_init_script(
+                    "() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }"
+                )
+                page = await context.new_page()
+
+                # Visit the main site first to establish cookies
+                logger.info("Visiting main site to establish cookies")
+                await page.goto(MENEAME_BASE_URL, timeout=60000)
+                await page.wait_for_timeout(3000)
+
+                # Define sections to scrape
+                sections_to_scrape = [
+                    (MENEAME_BASE_URL, "general"),
+                    (MENEAME_TECH_URL, "tecnologia"),
+                ]
+
+                for url, section_name in sections_to_scrape:
+                    logger.info(f"Fetching {section_name} section: {url}")
+
+                    try:
+                        await page.goto(url, timeout=60000)
+                        await page.wait_for_timeout(random.randint(3000, 6000))
+
+                        # Save debug info for the first page
+                        if section_name == "general":
+                            debug_file = os.path.join(self.debug_dir, f"meneame_{section_name}.html")
+                            debug_screenshot = os.path.join(self.debug_dir, f"meneame_{section_name}.png")
+                            content = await page.content()
+                            with open(debug_file, "w", encoding="utf-8") as f:
+                                f.write(content)
+                            await page.screenshot(path=debug_screenshot)
+                            logger.info(f"Saved debug info to {debug_file} and {debug_screenshot}")
+
+                        # Extract page content
+                        content = await page.content()
+                        
+                        # Parse content
+                        soup = BeautifulSoup(content, "html.parser")
+
+                        # Extract posts from this page
+                        section_posts = self.extract_posts_from_page(soup, section_name)
+                        logger.info(f"Found {len(section_posts)} posts in {section_name} section")
+                        
+                        # Limit posts per section
+                        limited_posts = section_posts[:self.max_posts]
+                        sections_data[section_name] = limited_posts
+
+                    except Exception as e:
+                        logger.error(f"Error processing {section_name} section: {e}")
+                        continue
+
+                await browser.close()
+
+        except Exception as e:
+            logger.error(f"Error in scrape_posts: {e}")
+
+        # Remove duplicates within each section
+        for section_name in sections_data:
+            sections_data[section_name] = self.deduplicate_posts(sections_data[section_name])
+        
+        logger.info(f"Scraped {len(sections_data['general'])} general posts and {len(sections_data['tecnologia'])} technology posts")
+        return sections_data
+
+    def extract_posts_from_page(self, soup: BeautifulSoup, section: str) -> List[Dict[str, Any]]:
+        """Extract posts from a Menéame page."""
+        posts = []
+        
+        try:
+            # Look for proper story containers - Menéame uses specific structure
+            story_containers = []
+            
+            # Primary approach: Look for story containers with h2 titles
+            stories_with_h2 = soup.find_all('div', class_=re.compile(r'story|news-item|item', re.I))
+            
+            for story in stories_with_h2:
+                if hasattr(story, 'find'):
+                    h2_title = story.find('h2')
+                    if h2_title:
+                        story_containers.append(story)
+            
+            logger.info(f"Found {len(story_containers)} stories with h2 titles")
+            
+            # Fallback: Look for direct h2 elements that might be story titles
+            if len(story_containers) < 5:
+                h2_elements = soup.find_all('h2')
+                for h2 in h2_elements:
+                    if hasattr(h2, 'find_parent'):
+                        # Find the parent container that likely contains the full story
+                        parent = h2.find_parent(['div', 'article', 'li'])
+                        if parent and parent not in story_containers:
+                            story_containers.append(parent)
                 
-            url = f"{MENEAME_TECH_URL}?page={page}" if page > 1 else MENEAME_TECH_URL
+                logger.info(f"Added {len(h2_elements)} h2-based containers")
             
-            logger.info(f"Scraping page {page}: {url}")
-            
-            response = session.get(url, headers=HEADERS, timeout=30)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Find story containers
-            story_containers = soup.find_all(['div', 'article'], class_=re.compile(r'story|item|news'))
-            
-            logger.info(f"Found {len(story_containers)} stories on page {page}")
-            
+            # Last resort: Look for links that look like story titles
+            if len(story_containers) < 5:
+                story_links = soup.find_all('a', href=True)
+                for link in story_links:
+                    if hasattr(link, 'get_text') and hasattr(link, 'get'):
+                        text = link.get_text(strip=True)
+                        href = link.get('href', '')
+                        # Filter for substantial titles
+                        if (len(text) > 15 and len(text) < 200 and 
+                            not any(skip in text.lower() for skip in [
+                                'comentar', 'votar', 'usuario', 'login', 'menéame', 
+                                'compartir', 'facebook', 'twitter', 'whatsapp'
+                            ]) and
+                            isinstance(href, str) and href.startswith(('http', '/'))):
+                            
+                            # Find parent container
+                            if hasattr(link, 'find_parent'):
+                                parent = link.find_parent(['div', 'article', 'li'])
+                                if parent and parent not in story_containers:
+                                    story_containers.append(parent)
+                
+                logger.info(f"Total story containers found: {len(story_containers)}")
+
+            # Process each container to extract clean post data
+            processed_count = 0
             for container in story_containers:
-                if len(posts) >= max_posts:
+                if processed_count >= self.max_posts:
                     break
-                
-                post_data = parse_meneame_post(container, MENEAME_BASE_URL)
-                if post_data:
+                    
+                post_data = self.extract_post_data(container, section)
+                if post_data and self.is_valid_post(post_data):
                     posts.append(post_data)
-            
-            time.sleep(1)  # Rate limiting
-        
-        logger.info(f"Collected {len(posts)} posts from Menéame")
+                    processed_count += 1
+
+        except Exception as e:
+            logger.error(f"Error extracting posts from {section} page: {e}")
+
         return posts
+    
+    def is_valid_post(self, post_data: Dict[str, Any]) -> bool:
+        """Validate if a post has the minimum required data quality."""
+        title = post_data.get('title', '')
         
-    except Exception as e:
-        logger.error(f"Error fetching Menéame posts: {e}")
-        return posts
-
-
-def parse_meneame_post(container, base_url: str) -> Optional[Dict[str, Any]]:
-    """Parse a Menéame post container."""
-    try:
-        post_data = {}
-        
-        # Title and URL
-        title_elem = container.find('h2') or container.find('h3') or container.find('a', class_=re.compile(r'title'))
-        if title_elem:
-            title_link = title_elem.find('a') if title_elem.name != 'a' else title_elem
-            if title_link:
-                post_data['title'] = title_link.get_text(strip=True)
-                post_data['url'] = urljoin(base_url, title_link.get('href', ''))
-            else:
-                post_data['title'] = title_elem.get_text(strip=True)
-                post_data['url'] = base_url
-        else:
-            return None
-        
-        # Description/summary
-        desc_elem = container.find(['p', 'div'], class_=re.compile(r'summary|description|content'))
-        if desc_elem:
-            post_data['description'] = desc_elem.get_text(strip=True)[:400]
-        else:
-            post_data['description'] = ""
-        
-        # Votes (meneos)
-        votes_elem = container.find(['span', 'div'], class_=re.compile(r'votes|meneos|karma'))
-        if votes_elem:
-            votes_text = votes_elem.get_text(strip=True)
-            votes_match = re.search(r'(\d+)', votes_text)
-            post_data['votes'] = int(votes_match.group(1)) if votes_match else 0
-        else:
-            post_data['votes'] = 0
-        
-        # Comments
-        comments_elem = container.find(['a', 'span'], href=re.compile(r'comment')) or \
-                       container.find(text=re.compile(r'\d+\s*comentario', re.I))
-        if comments_elem:
-            if hasattr(comments_elem, 'get_text'):
-                comments_text = comments_elem.get_text()
-            else:
-                comments_text = str(comments_elem)
+        # Must have a reasonable title
+        if not title or len(title) < 10 or len(title) > 300:
+            return False
             
-            comments_match = re.search(r'(\d+)', comments_text)
-            post_data['comments_count'] = int(comments_match.group(1)) if comments_match else 0
-        else:
-            post_data['comments_count'] = 0
+        # Filter out navigation/UI elements
+        invalid_patterns = [
+            'meneos', 'menéalo', 'clics', 'compartir', 'facebook', 'twitter',
+            'publicado:', 'hace ', 'min', 'actualidad', 'cultura', 'politica',
+            'user/', 'history'
+        ]
         
-        # Author
-        author_elem = container.find(['a', 'span'], class_=re.compile(r'user|author'))
-        if author_elem:
-            post_data['author'] = author_elem.get_text(strip=True)
-        else:
-            post_data['author'] = "Unknown"
-        
-        # Category/Tags
-        tag_elem = container.find(['span', 'a'], class_=re.compile(r'tag|category'))
-        if tag_elem:
-            post_data['category'] = tag_elem.get_text(strip=True)
-        else:
-            post_data['category'] = "Tecnología"
-        
-        # Publication date
-        date_elem = container.find(['time', 'span'], attrs={'datetime': True}) or \
-                   container.find(['span', 'div'], class_=re.compile(r'date|time'))
-        
-        if date_elem:
-            if date_elem.get('datetime'):
-                date_str = date_elem.get('datetime')
-            else:
-                date_str = date_elem.get_text(strip=True)
+        title_lower = title.lower()
+        if any(pattern in title_lower for pattern in invalid_patterns):
+            return False
             
-            post_data['published_date'] = parse_spanish_date(date_str)
-        else:
-            post_data['published_date'] = datetime.now().isoformat()
-        
-        # Source domain
-        if post_data.get('url'):
-            try:
-                parsed_url = urlparse(post_data['url'])
-                post_data['source_domain'] = parsed_url.netloc
-            except:
-                post_data['source_domain'] = "meneame.net"
-        else:
-            post_data['source_domain'] = "meneame.net"
-        
-        # Add metadata
-        post_data.update({
-            "source": "meneame",
-            "platform": "meneame",
-            "language": "es"
-        })
-        
-        return post_data
-        
-    except Exception as e:
-        logger.error(f"Error parsing Menéame post: {e}")
-        return None
+        # Must not be just numbers and symbols
+        if re.match(r'^[\d\s\-_.,;:!?]*$', title):
+            return False
+            
+        return True
 
-
-def parse_spanish_date(date_str: str) -> str:
-    """Parse Spanish date formats."""
-    if not date_str:
-        return datetime.now().isoformat()
-    
-    # Spanish month names
-    spanish_months = {
-        'enero': 'January', 'febrero': 'February', 'marzo': 'March',
-        'abril': 'April', 'mayo': 'May', 'junio': 'June',
-        'julio': 'July', 'agosto': 'August', 'septiembre': 'September',
-        'octubre': 'October', 'noviembre': 'November', 'diciembre': 'December'
-    }
-    
-    # Replace Spanish months with English
-    date_str_en = date_str.lower()
-    for es_month, en_month in spanish_months.items():
-        date_str_en = date_str_en.replace(es_month, en_month)
-    
-    # Common patterns
-    patterns = [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M:%SZ",
-        "%Y-%m-%d",
-        "%d/%m/%Y",
-        "%d de %B de %Y",
-        "%d %B %Y"
-    ]
-    
-    for pattern in patterns:
+    def extract_post_data(self, container, section: str) -> Optional[Dict[str, Any]]:
+        """Extract post data from a container element."""
         try:
-            if 'de' in date_str_en:
-                date_str_en = re.sub(r'\s+de\s+', ' ', date_str_en)
+            post_data = {}
             
-            parsed_date = datetime.strptime(date_str_en, pattern)
-            return parsed_date.isoformat()
-        except ValueError:
-            continue
-    
-    return datetime.now().isoformat()
-
-
-def process_meneame_posts(posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Process and enrich Menéame posts."""
-    if not posts:
-        return []
-    
-    logger.info(f"Processing {len(posts)} Menéame posts")
-    
-    # Tech keywords for better categorization
-    tech_keywords = {
-        'ai': ['ia', 'inteligencia artificial', 'machine learning', 'deep learning'],
-        'programming': ['programación', 'código', 'desarrollo', 'software'],
-        'web': ['web', 'internet', 'navegador', 'html', 'css', 'javascript'],
-        'mobile': ['móvil', 'android', 'ios', 'app', 'aplicación'],
-        'security': ['seguridad', 'hack', 'ciberseguridad', 'privacidad'],
-        'hardware': ['hardware', 'procesador', 'gpu', 'memoria'],
-        'social': ['redes sociales', 'facebook', 'twitter', 'instagram'],
-        'gaming': ['videojuegos', 'gaming', 'consola', 'pc gaming'],
-        'startup': ['startup', 'empresa', 'tecnológica', 'innovación']
-    }
-    
-    processed_posts = []
-    
-    for post in posts:
-        try:
-            processed_post = post.copy()
+            # Extract title and URL
+            title_element = None
+            url = None
             
-            # Enhanced categorization
-            title_lower = post.get('title', '').lower()
-            desc_lower = post.get('description', '').lower()
-            content = f"{title_lower} {desc_lower}"
+            # Look for title in various ways
+            if hasattr(container, 'find'):
+                # Try h1, h2, h3 tags first
+                for tag in ['h1', 'h2', 'h3']:
+                    title_element = container.find(tag)
+                    if title_element:
+                        # Look for link inside the header tag
+                        if hasattr(title_element, 'find'):
+                            link_in_header = title_element.find('a', href=True)
+                            if link_in_header and hasattr(link_in_header, 'get'):
+                                url = link_in_header.get('href')
+                                title_element = link_in_header  # Use the link as title element
+                        break
+                
+                # Try links with substantial text and specific Menéame patterns
+                if not title_element:
+                    # Look for links with Menéame-specific classes (l:xxxxx pattern)
+                    story_links = container.find_all('a', {'class': re.compile(r'l:\d+'), 'href': True})
+                    if story_links:
+                        title_element = story_links[0]
+                        if hasattr(title_element, 'get'):
+                            url = title_element.get('href')
+                    else:
+                        # Fallback to any substantial links
+                        links = container.find_all('a', href=True)
+                        for link in links:
+                            if hasattr(link, 'get_text') and hasattr(link, 'get'):
+                                text = link.get_text(strip=True)
+                                href = link.get('href', '')
+                                # Filter for story links (not navigation/UI)
+                                if (len(text) > 15 and len(text) < 300 and 
+                                    not any(skip in text.lower() for skip in [
+                                        'comentar', 'votar', 'usuario', 'login', 'menéame', 
+                                        'compartir', 'facebook', 'twitter', 'whatsapp',
+                                        'meneos', 'clics', 'karma', 'publicado'
+                                    ]) and
+                                    isinstance(href, str) and 
+                                    (href.startswith('http') or href.startswith('/story/'))):
+                                    title_element = link
+                                    url = href
+                                    break
             
-            category_scores = {}
-            for category, keywords in tech_keywords.items():
-                score = sum(1 for keyword in keywords if keyword in content)
-                if score > 0:
-                    category_scores[category] = score
+            # If container is a link itself
+            if not title_element and hasattr(container, 'get_text'):
+                text = container.get_text(strip=True)
+                if len(text) > 10:
+                    title_element = container
+                    if hasattr(container, 'get') and container.get('href'):
+                        url = container.get('href')
             
-            if category_scores:
-                best_category = max(category_scores, key=category_scores.get)
-                processed_post['tech_category'] = best_category
-            else:
-                processed_post['tech_category'] = 'general'
+            if not title_element:
+                return None
             
-            # Engagement score
-            votes = post.get('votes', 0)
-            comments = post.get('comments_count', 0)
+            # Extract title
+            title = title_element.get_text(strip=True)
+            if not title or len(title) < 5:
+                return None
             
-            engagement_score = votes * 1.5 + comments * 2
+            post_data['title'] = title
             
-            # Quality bonuses
-            title_len = len(post.get('title', ''))
-            if 20 <= title_len <= 100:
-                engagement_score += 2
+            # Extract URL - improved logic
+            if not url and hasattr(title_element, 'get'):
+                url = title_element.get('href')
             
-            if post.get('description') and len(post['description']) > 50:
-                engagement_score += 3
+            # Look for parent/child links if still no URL
+            if not url and hasattr(title_element, 'find_parent'):
+                parent_link = title_element.find_parent('a')
+                if parent_link and parent_link.get('href'):
+                    url = parent_link.get('href')
             
-            processed_post['engagement_score'] = round(engagement_score, 1)
+            if not url and hasattr(title_element, 'find'):
+                child_link = title_element.find('a', href=True)
+                if child_link:
+                    url = child_link.get('href')
             
-            # Trending detection (high votes relative to comments)
-            if votes > 20 and comments > 5:
-                processed_post['trending'] = True
-            else:
-                processed_post['trending'] = False
+            # Look in the broader container for story links
+            if not url and hasattr(container, 'find_all'):
+                # Try to find the actual source link (not Menéame internal links)
+                all_links = container.find_all('a', href=True)
+                for link in all_links:
+                    href = link.get('href', '')
+                    if href and not href.startswith('/') and href.startswith('http'):
+                        # This looks like an external source URL
+                        url = href
+                        break
+                
+                # If still no external URL, look for Menéame story links
+                if not url:
+                    for link in all_links:
+                        href = link.get('href', '')
+                        if href.startswith('/story/'):
+                            url = urljoin(MENEAME_BASE_URL, href)
+                            break
             
-            # Content quality score
-            quality_score = 0
+            if url:
+                if url.startswith('/'):
+                    url = urljoin(MENEAME_BASE_URL, url)
+                post_data['url'] = url
             
-            if votes > 10:
-                quality_score += 2
-            if comments > 3:
-                quality_score += 2
-            if post.get('source_domain') and 'meneame' not in post['source_domain']:
-                quality_score += 1  # External link bonus
+            # Extract description/summary
+            if hasattr(container, 'find'):
+                # Look for description in various places
+                desc_element = None
+                
+                # Try news-content class (common in Menéame)
+                desc_element = container.find(['div', 'p'], class_=re.compile(r'content|summary|description', re.I))
+                
+                if not desc_element:
+                    # Try any paragraph
+                    desc_element = container.find('p')
+                
+                if desc_element:
+                    description = desc_element.get_text(strip=True)
+                    if description and len(description) > 20:
+                        post_data['description'] = description[:500]
             
-            processed_post['quality_score'] = quality_score
-            processed_post['processed_at'] = datetime.now().isoformat()
+            # Extract metadata
+            post_data['source'] = 'meneame'
+            post_data['section'] = section
+            post_data['scraped_at'] = datetime.now().isoformat()
             
-            processed_posts.append(processed_post)
+            # Try to extract votes/karma if available
+            if hasattr(container, 'find'):
+                # Look for vote elements
+                vote_element = container.find(string=lambda x: x and any(
+                    keyword in str(x).lower() for keyword in ['votos', 'karma', 'puntos', 'meneos']
+                ))
+                if vote_element:
+                    vote_text = str(vote_element).strip()
+                    vote_match = re.search(r'(\d+)', vote_text)
+                    if vote_match:
+                        post_data['votes'] = int(vote_match.group(1))
+                
+                # Also try looking for specific vote classes
+                vote_div = container.find(['div', 'span'], class_=re.compile(r'vote|karma|meneos', re.I))
+                if vote_div and not post_data.get('votes'):
+                    vote_text = vote_div.get_text(strip=True)
+                    vote_match = re.search(r'(\d+)', vote_text)
+                    if vote_match:
+                        post_data['votes'] = int(vote_match.group(1))
+            
+            return post_data
             
         except Exception as e:
-            logger.error(f"Error processing post {post.get('title', 'Unknown')}: {e}")
-            processed_posts.append(post)
-    
-    logger.info(f"Successfully processed {len(processed_posts)} Menéame posts")
-    return processed_posts
+            logger.error(f"Error extracting post data: {e}")
+            return None
 
+    def deduplicate_posts(self, posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove duplicate posts based on title similarity."""
+        unique_posts = []
+        seen_titles = set()
+        
+        for post in posts:
+            title = post.get('title', '').lower().strip()
+            if title and title not in seen_titles:
+                seen_titles.add(title)
+                unique_posts.append(post)
+        
+        return unique_posts
 
-def save_meneame_data(data: List[Dict[str, Any]], output_dir: str):
-    """Save Menéame data to files."""
-    if not data:
-        logger.warning("No data to save")
-        return
-    
-    try:
-        # JSON
-        json_file = os.path.join(output_dir, "meneame_posts.json")
-        with open(json_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False, default=str)
-        
-        logger.info(f"Saved {len(data)} posts to {json_file}")
-        
-        # CSV
-        csv_file = os.path.join(output_dir, "meneame_posts.csv")
-        if data:
-            all_keys = set()
-            for item in data:
-                all_keys.update(item.keys())
-            
-            with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.DictWriter(f, fieldnames=sorted(all_keys))
-                writer.writeheader()
-                writer.writerows(data)
-            
-            logger.info(f"Saved {len(data)} posts to {csv_file}")
-            
-    except Exception as e:
-        logger.error(f"Error saving data: {e}")
-
-
-def main():
-    """Main ETL process for Menéame."""
-    logger.info("Starting Menéame ETL process")
-    
-    try:
-        # Setup
-        project_root = Path(__file__).parent.parent.parent.parent
-        output_dir = os.path.join(project_root, "data", "meneame")
-        os.makedirs(output_dir, exist_ok=True)
-        
-        session = requests.Session()
-        session.headers.update(HEADERS)
-        
-        # Fetch posts
-        posts = fetch_meneame_posts(session, max_posts=40)
-        
-        if not posts:
-            logger.warning("No posts fetched from Menéame")
+    def save_posts(self, sections_data: Dict[str, List[Dict[str, Any]]]) -> None:
+        """Save scraped posts to JSON and CSV files."""
+        if not sections_data:
+            logger.warning("No sections data to save")
             return
-        
-        # Process
-        processed_data = process_meneame_posts(posts)
-        
-        # Save
-        save_meneame_data(processed_data, output_dir)
-        
-        # Summary
-        logger.info(f"Menéame ETL completed! Processed {len(processed_data)} posts")
-        
-        if processed_data:
-            avg_votes = sum(p.get('votes', 0) for p in processed_data) / len(processed_data)
-            total_comments = sum(p.get('comments_count', 0) for p in processed_data)
+
+        try:
+            total_posts = 0
             
-            logger.info(f"Average votes: {avg_votes:.1f}")
-            logger.info(f"Total comments: {total_comments}")
-            
-            # Category breakdown
-            categories = {}
-            for post in processed_data:
-                cat = post.get('tech_category', 'unknown')
-                categories[cat] = categories.get(cat, 0) + 1
-            
-            logger.info("Tech categories:")
-            for cat, count in sorted(categories.items(), key=lambda x: x[1], reverse=True)[:5]:
-                logger.info(f"  {cat}: {count} posts")
-    
+            # Save posts for each section
+            for section_name, posts in sections_data.items():
+                if not posts:
+                    logger.warning(f"No posts to save for {section_name} section")
+                    continue
+                    
+                posts_file = self.general_posts_file if section_name == "general" else self.tech_posts_file
+                csv_file = self.general_csv_file if section_name == "general" else self.tech_csv_file
+                
+                # Save as JSON
+                with open(posts_file, "w", encoding="utf-8") as f:
+                    json.dump(posts, f, ensure_ascii=False, indent=2)
+                logger.info(f"Saved {len(posts)} posts to {posts_file}")
+                
+                # Save as CSV
+                try:
+                    import pandas as pd
+                    
+                    df = pd.DataFrame(posts)
+                    df.to_csv(csv_file, index=False)
+                    logger.info(f"Also saved posts to CSV: {csv_file}")
+                except Exception as e:
+                    logger.warning(f"Could not save {section_name} posts to CSV: {e}")
+                
+                total_posts += len(posts)
+
+            # Update last run information
+            last_run_info = {
+                "timestamp": datetime.now().isoformat(),
+                "general_posts_count": len(sections_data.get("general", [])),
+                "tecnologia_posts_count": len(sections_data.get("tecnologia", [])),
+                "total_posts_count": total_posts,
+                "status": "success"
+            }
+
+            with open(self.last_run_file, "w", encoding="utf-8") as f:
+                json.dump(last_run_info, f, ensure_ascii=False, indent=2)
+
+        except Exception as e:
+            logger.error(f"Error saving posts: {e}")
+
+    async def run(self) -> None:
+        """Run the scraper asynchronously."""
+        logger.info("Starting Menéame post scraper")
+        sections_data = await self.scrape_posts()
+        self.save_posts(sections_data)
+        logger.info("Menéame post scraping completed")
+
+
+async def main_async(max_posts: int = 50) -> None:
+    """Asynchronous main entry point for the script."""
+    logger.info("Starting Menéame post scraping process")
+
+    try:
+        scraper = MeneameScraper(max_posts=max_posts)
+        await scraper.run()
+        logger.info("Menéame post scraping completed successfully")
     except Exception as e:
-        logger.error(f"Menéame ETL failed: {e}")
-        raise
+        logger.error(f"Error during Menéame post scraping: {e}", exc_info=True)
+
+
+def main(max_posts: int = 50) -> None:
+    """Synchronous main entry point for the script."""
+    try:
+        # On Windows, use the ProactorEventLoop policy
+        if sys.platform == "win32":
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
+        asyncio.run(main_async(max_posts=max_posts))
+    except KeyboardInterrupt:
+        logger.info("Script interrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Unhandled exception: {e}", exc_info=True)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    # Parse command line arguments
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Scrape Menéame posts using browser automation"
+    )
+    parser.add_argument(
+        "--max-posts", type=int, help="Maximum number of posts to scrape", default=50
+    )
+    args = parser.parse_args()
+
+    main(max_posts=args.max_posts)
+    logger.info("Menéame scraper script completed")
 
 
  
