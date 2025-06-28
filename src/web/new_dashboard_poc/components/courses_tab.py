@@ -5,11 +5,16 @@ from datetime import datetime, timezone
 import dash
 from dash import html, dcc, Input, Output, State, Patch
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists
+
 from dash.exceptions import PreventUpdate
 
 # --- Constants ---
-COURSERA_DATA_PATH = "../../../data/classcentral/coursera_courses.json"
-UDEMY_DATA_PATH = "../../../data/udemy/udemy_courses.json"
+COURSERA_DATA_PATH = get_data_path("classcentral", "coursera_courses.json")
+UDEMY_DATA_PATH = get_data_path("udemy", "udemy_courses.json")
 
 ALL_COURSES_DATA = {
     'coursera': pd.DataFrame(),
@@ -60,7 +65,7 @@ def load_coursera_data():
     global ALL_COURSES_DATA, COURSES_DATA_LOADED
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), COURSERA_DATA_PATH))
 
-    if not os.path.exists(file_path):
+    if not file_exists(file_path):
         print(f"Warning (Coursera): File not found at {file_path}")
         ALL_COURSES_DATA['coursera'] = pd.DataFrame()
         COURSES_DATA_LOADED['coursera'] = True # Mark as attempt to prevent reload loop
@@ -115,7 +120,7 @@ def load_udemy_data():
     global ALL_COURSES_DATA, COURSES_DATA_LOADED
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), UDEMY_DATA_PATH))
 
-    if not os.path.exists(file_path):
+    if not file_exists(file_path):
         print(f"Warning (Udemy): File not found at {file_path}")
         ALL_COURSES_DATA['udemy'] = pd.DataFrame()
         COURSES_DATA_LOADED['udemy'] = True

@@ -9,7 +9,7 @@ from pathlib import Path
 import json
 import logging
 
-def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, logger=None):
+def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df=None, logger=None):
     """Render the games tab"""
     if logger is None:
         logger = logging.getLogger(__name__)

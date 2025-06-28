@@ -8,8 +8,8 @@ import json
 from unittest.mock import mock_open # Requires Python 3.8+ for new_callable in this specific way sometimes.
 
 # Ensure src directory is in path to import ADHDPublicationETL and models
-from etl.adhd.adhd_publications_etl import ADHDPublicationETL, ESEARCH_URL, EFETCH_URL
-from models.adhd import ADHDPublication # Import the Pydantic model
+from src.etl.adhd.adhd_publications_etl import ADHDPublicationETL, ESEARCH_URL, EFETCH_URL
+from src.models.adhd import ADHDPublication # Import the Pydantic model
 import pandas as pd
 
 # Sample XML Data

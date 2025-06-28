@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Set
 from datetime import datetime, timezone, timedelta
 
 import sys
-from watchers.base_watcher import BaseWatcher
+from src.watchers.base_watcher import BaseWatcher
 
 
 class ArxivWatcher(BaseWatcher):

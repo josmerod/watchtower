@@ -7,8 +7,8 @@ import requests
 from pydantic import ValidationError
 
 # Actual imports:
-from etl.base import SimpleETL #, ETLMetrics # ETLMetrics is part of BaseETL/SimpleETL typically
-from models.museums import VirtualMuseumModel
+from src.etl.base import SimpleETL #, ETLMetrics # ETLMetrics is part of BaseETL/SimpleETL typically
+from src.models.museums import VirtualMuseumModel
 
 # WIKIDATA_SPARQL_URL can be defined before the class or within if it's specific
 WIKIDATA_SPARQL_URL = "https://query.wikidata.org/sparql"

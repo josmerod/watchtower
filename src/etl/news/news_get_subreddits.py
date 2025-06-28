@@ -9,8 +9,8 @@ from typing import Any
 import requests
 
 # Ensure project root is on path
-from utils.file_system import ensure_directories, get_project_root
-from utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 logger = get_logger("SubredditsETL")
 

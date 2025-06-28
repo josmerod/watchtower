@@ -34,7 +34,7 @@ import urllib.parse
 # Use centralized path setup and safe logger
 from ._path_setup import get_safe_logger
 
-from web.fullstreamlit.utils.enhanced_data_service import UltraOptimizedDataService
+from src.web.fullstreamlit.utils.enhanced_data_service import UltraOptimizedDataService
 
 
 def create_technology_radar_chart(radar_data: Dict[str, Any]) -> go.Figure:

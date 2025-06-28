@@ -14,7 +14,7 @@ Hacer retrieve de los descuentos, campañas y bundles de juegos en PC (principal
 - Obtener los datos de los RSS
     -  https://isthereanydeal.com/feeds/ES/EUR/deals.rss
     -  https://isthereanydeal.com/feeds/ES/EUR/bundles.rss
-    -  https://isthereanydeal.com/feeds/ES/giveaways.rss
+    -  https://isthereanydeal.com/feeds/ES/EUR/giveaways.rss
 Guardar los datos de cada RSS en un dataframe
 
 Generar alertas si aplica, guardarlos y triggerear notificaciones.
@@ -24,13 +24,13 @@ Generar alertas si aplica, guardarlos y triggerear notificaciones.
 import os
 import re
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import feedparser
 import pandas as pd
 
-from utils.file_system import ensure_directories, get_project_root
-from utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 # Configurar el logger centralizado
 logger = get_logger("Games_ETL")
@@ -210,6 +210,8 @@ def get_giveaways():
         giveaways_feed = feedparser.parse(GIVEAWAYS_RSS)
         if giveaways_feed.bozo:
             logger.warning(f"Giveaways RSS feed is malformed. Bozo exception: {giveaways_feed.bozo_exception}")
+            # Still try to process what we can
+        
         logger.debug(f"Retrieved {len(giveaways_feed.entries)} giveaways from RSS feed: {GIVEAWAYS_RSS}")
 
         for entry in giveaways_feed.entries:
@@ -246,6 +248,25 @@ def get_giveaways():
 
     if not giveaways_list:
         logger.warning("No giveaways were successfully processed.")
+        # Create empty files to maintain consistency with data structure
+        try:
+            project_root = get_project_root()
+            output_dir = os.path.join(project_root, "data/games")
+            ensure_directories(["data/games"])
+
+            giveaways_json_path = os.path.join(output_dir, "giveaways.json")
+            giveaways_csv_path = os.path.join(output_dir, "giveaways.csv")
+
+            # Create empty JSON and CSV files
+            with open(giveaways_json_path, 'w') as f:
+                f.write('[]')
+            
+            with open(giveaways_csv_path, 'w') as f:
+                f.write('title|link|published|expires\n')  # Header only
+
+            logger.info(f"Empty giveaways files created at {giveaways_json_path} and {giveaways_csv_path}")
+        except Exception as e:
+            logger.error(f"Error creating empty giveaways files: {e}")
         return
 
     try:
@@ -256,7 +277,7 @@ def get_giveaways():
 
         project_root = get_project_root()
         output_dir = os.path.join(project_root, "data/games")
-        ensure_directories(["data/games"]) # Ensure_directories should ideally be called once at start of main
+        ensure_directories(["data/games"])
 
         giveaways_json_path = os.path.join(output_dir, "giveaways.json")
         giveaways_csv_path = os.path.join(output_dir, "giveaways.csv")

@@ -11,12 +11,12 @@ import time
 
 # Add the project root to the path to ensure imports work correctly
 # Import utilities from our modules
-from utils.logging import get_logger
-from web.fullstreamlit.styles.main import get_main_style
-from web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
+from src.utils.logging import get_logger
+from src.web.fullstreamlit.styles.main import get_main_style
+from src.web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
 
 # Import all components
-from web.fullstreamlit.components import (
+from src.web.fullstreamlit.components import (
     shortcuts_tab,
     videos_tab,
     news_tab,
@@ -36,7 +36,7 @@ from web.fullstreamlit.components import (
 )
 
 # Import enhanced components
-from web.fullstreamlit.components import enhanced_innovation_tab
+from src.web.fullstreamlit.components import enhanced_innovation_tab
 
 # Initialize logger and data service
 logger = get_logger("WatchtowerApp")

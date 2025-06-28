@@ -22,9 +22,9 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
-from etl.base import BaseETL
-from models.games import AllKeyShopGameModel, GamePlatform
-from utils.logging import get_logger
+from src.etl.base import BaseETL
+from src.models.games import AllKeyShopGameModel, GamePlatform
+from src.utils.logging import get_logger
 
 
 class AllKeyShopETL(BaseETL):

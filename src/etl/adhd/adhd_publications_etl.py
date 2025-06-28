@@ -4,8 +4,8 @@ import xml.etree.ElementTree as ET
 import json
 from datetime import datetime
 import pandas as pd
-from etl.base import BaseETL # BaseETL should handle logger and output_dir
-from models.adhd import ADHDPublication
+from src.etl.base import BaseETL # BaseETL should handle logger and output_dir
+from src.models.adhd import ADHDPublication
 # logging is configured by BaseETL, so specific configuration here might not be needed
 # import logging
 

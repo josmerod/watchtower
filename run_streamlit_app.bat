@@ -1,62 +1,49 @@
 @echo off
-setlocal EnableDelayedExpansion
+echo.
+echo ==========================================
+echo  Watchtower Streamlit Dashboard with UV
+echo ==========================================
+echo.
+echo Starting Streamlit dashboard using UV...
+echo.
 
-echo ========================================================
-echo Watchtower Streamlit Application Launcher
-echo ========================================================
-
-:: Change to the project directory
+REM Change to the project root directory
 cd /d %~dp0
-echo Working directory: %CD%
 
-
+REM Check if UV is available
+uv --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo UV not found. Please install UV first:
+    echo   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 echo.
-echo Step 1: Checking virtual environment...
-if not exist .venv (
-    echo Virtual environment not found. Creating new environment...
-    python -m venv .venv
-    if !errorlevel! neq 0 (
-        echo Error creating virtual environment.
-        goto error
-    )
+    pause
+    exit /b 1
 )
 
-call .venv\Scripts\activate.bat
-if !errorlevel! neq 0 (
-    echo Error activating virtual environment.
-    goto error
-)
-echo Virtual environment activated successfully.
-
-echo.
-echo Step 2: Running Streamlit application...
-echo.
-echo You can access the application at http://localhost:5555
-echo.
-echo Press Ctrl+C to stop the application
-echo ========================================================
-echo.
-
-python -m streamlit run src/web/fullstreamlit/app.py --server.port 5555
-if !errorlevel! neq 0 (
-    echo Error running Streamlit application.
-    goto error
+REM Check if pyproject.toml exists
+if not exist pyproject.toml (
+    echo Error: pyproject.toml not found. Please run from project root.
+    pause
+    exit /b 1
 )
 
-goto end
+REM Create logs directory if it doesn't exist
+if not exist logs mkdir logs
 
-:error
+echo Running: uv run streamlit run src/web/fullstreamlit/app.py
 echo.
-echo ========================================================
-echo An error occurred. Please check the following:
-echo 1. Python 3.10+ is installed and accessible
-echo 2. Virtual environment can be created/activated
-echo 3. Required packages can be installed
-echo 4. Streamlit app file exists at src/web/fullstreamlit/app.py
-echo ========================================================
-pause
-exit /b 1
+echo Dashboard will be available at: http://localhost:5555
+echo Press Ctrl+C to stop the server
+echo.
+echo ==========================================
+echo.
 
-:end
-echo Application closed successfully.
+REM Run the Streamlit app using UV
+uv run streamlit run src/web/fullstreamlit/app.py --server.port=5555 --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false
+
+echo.
+echo ==========================================
+echo Dashboard stopped
+echo ==========================================
+echo.
 pause

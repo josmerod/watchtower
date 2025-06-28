@@ -13,7 +13,7 @@ from pathlib import Path
 
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-from utils.course_deduplication import deduplicate_courses_file
+from src.utils.course_deduplication import deduplicate_courses_file
 
 # Set up logging
 logger = logging.getLogger("deduplicate_courses_cli")

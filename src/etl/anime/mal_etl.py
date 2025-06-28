@@ -10,8 +10,8 @@ import requests
 from pydantic.json import pydantic_encoder
 from dotenv import load_dotenv
 
-from etl.base import BaseETL, ETLError
-from models.anime import AnimeItem
+from src.etl.base import BaseETL, ETLError
+from src.models.anime import AnimeItem
 
 # Load environment variables from .env file
 load_dotenv()

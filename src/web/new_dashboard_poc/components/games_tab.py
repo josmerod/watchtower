@@ -5,10 +5,15 @@ from datetime import datetime, timezone
 import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists, log_missing_file, handle_data_loading_error
+
 import re # For parsing prices
 
 # --- Constants ---
-DATA_BASE_PATH = "../../../data/games/" # Relative to this file
+DATA_BASE_PATH = get_data_path("games", "") # Relative to this file
 ALL_GAMES_DATA = {
     'deals': pd.DataFrame(),
     'bundles': pd.DataFrame(),
@@ -69,8 +74,8 @@ def parse_game_date(date_str, source_format=None):
 
 # --- Price Parsing Utility ---
 def parse_price(price_str):
-    if pd.isna(price_str) or price_str is None:
-        return None
+    if pd.isna(price_str) or price_str is None or str(price_str).strip() == '':
+        return 0.0
     if isinstance(price_str, (int, float)): # Already a number
         return float(price_str)
 
@@ -93,12 +98,11 @@ def parse_price(price_str):
         else: # Multiple commas or not a typical decimal format, remove them
             cleaned_price = cleaned_price.replace(',', '')
 
-
     try:
         return float(cleaned_price)
     except ValueError:
-        # print(f"Warning: Could not parse price: {price_str} -> {cleaned_price}")
-        return None
+        # Return 0.0 for invalid prices instead of None
+        return 0.0
 
 
 # --- Data Loading Functions (to be implemented one by one) ---
@@ -106,7 +110,7 @@ def load_deals_data():
     global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), DATA_BASE_PATH, "deals.json"))
 
-    if not os.path.exists(file_path):
+    if not file_exists(file_path):
         print(f"Warning (Deals): File not found at {file_path}")
         ALL_GAMES_DATA['deals'] = pd.DataFrame()
         DATA_LOADED_SUCCESSFULLY['deals'] = False # Explicitly set to false
@@ -175,7 +179,7 @@ def load_bundles_data():
     any_file_processed_successfully = False
 
     for file_path, store_name_default in file_paths_with_store:
-        if not os.path.exists(file_path):
+        if not file_exists(file_path):
             print(f"Warning (Bundles): File not found at {file_path}")
             continue # Skip this file
 
@@ -238,7 +242,25 @@ def load_bundles_data():
              print("Warning (Bundles): No bundle files found or processed.")
         return
 
-    combined_df = pd.concat(all_bundles_dfs, ignore_index=True)
+    # Filter out empty DataFrames to avoid FutureWarning
+    non_empty_dfs = [df for df in all_bundles_dfs if not df.empty]
+    if non_empty_dfs:
+        # Ensure all DataFrames have consistent columns to avoid FutureWarning
+        if len(non_empty_dfs) > 1:
+            # Get all unique columns
+            all_columns = set()
+            for df in non_empty_dfs:
+                all_columns.update(df.columns)
+            
+            # Add missing columns with None values
+            for i, df in enumerate(non_empty_dfs):
+                for col in all_columns:
+                    if col not in df.columns:
+                        non_empty_dfs[i] = df.assign(**{col: None})
+        
+        combined_df = pd.concat(non_empty_dfs, ignore_index=True)
+    else:
+        combined_df = pd.DataFrame()  # Return empty DataFrame if no data
 
     # Use 'expiry_date' for sorting if available, otherwise it will sort Nones/NaTs
     # If bundles don't have a primary "published" date, expiry or a load date might be used.
@@ -255,7 +277,7 @@ def load_giveaways_data():
     global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), DATA_BASE_PATH, "giveaways.json"))
 
-    if not os.path.exists(file_path):
+    if not file_exists(file_path):
         print(f"Warning (Giveaways): File not found at {file_path}")
         ALL_GAMES_DATA['giveaways'] = pd.DataFrame()
         DATA_LOADED_SUCCESSFULLY['giveaways'] = False
@@ -310,7 +332,7 @@ def load_trending_data():
     global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), DATA_BASE_PATH, "itchio_trending.json"))
 
-    if not os.path.exists(file_path):
+    if not file_exists(file_path):
         print(f"Warning (Trending): File not found at {file_path}")
         ALL_GAMES_DATA['trending'] = pd.DataFrame()
         DATA_LOADED_SUCCESSFULLY['trending'] = False
@@ -371,8 +393,8 @@ def load_new_releases_data():
     global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), DATA_BASE_PATH, "new_releases.json"))
 
-    if not os.path.exists(file_path):
-        print(f"Warning (New Releases): File not found at {file_path}")
+    if not file_exists(file_path):
+        log_missing_file(file_path, "New Releases", is_optional=True)
         ALL_GAMES_DATA['new_releases'] = pd.DataFrame()
         DATA_LOADED_SUCCESSFULLY['new_releases'] = False
         return
@@ -612,7 +634,7 @@ def render_games_tab():
             if key == 'trending': file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), DATA_BASE_PATH, "itchio_trending.json"))
             if key == 'new_releases': file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), DATA_BASE_PATH, "new_releases.json"))
 
-            if os.path.exists(file_path): # A bit simplified, assumes direct mapping for check
+            if file_exists(file_path): # A bit simplified, assumes direct mapping for check
                 all_files_missing = False
                 break
         if all_files_missing:

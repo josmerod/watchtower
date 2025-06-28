@@ -7,6 +7,12 @@ import sys
 import os
 from datetime import datetime
 from pathlib import Path
+import logging
+import warnings
+
+# Suppress warnings for better performance
+warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 # Add the src directory to the Python path
 current_dir = Path(__file__).parent
@@ -20,21 +26,38 @@ src_absolute = os.path.join(watchtower_root, 'src')
 if src_absolute not in sys.path:
     sys.path.insert(0, src_absolute)
 
-# Import utilities from our modules
+# Import utilities from our modules with improved error handling
 try:
     from utils.logging import get_logger
+    # Configure logging with non-blocking settings
+    logging.getLogger().handlers.clear()  # Clear existing handlers
+    
+    # Create a simple console handler to avoid file permission issues
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    )
+    
+    # Add handler to root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(console_handler)
+    
+    # Prevent log file rotation issues by using a different approach
+    logger = logging.getLogger("WatchtowerApp")
+    
 except ImportError as e:
     print(f"❌ Failed to import get_logger: {e}")
     # Fallback - create a simple logger
-    import logging
-    def get_logger(name):
-        return logging.getLogger(name)
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logger = logging.getLogger("WatchtowerApp")
 
-from web.fullstreamlit.styles.main import get_main_style
-from web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
+from src.web.fullstreamlit.styles.main import get_main_style
+from src.web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
 
 # Import all components
-from web.fullstreamlit.components import (
+from src.web.fullstreamlit.components import (
     shortcuts_tab,
     videos_tab,
     news_tab,
@@ -64,17 +87,17 @@ from web.fullstreamlit.components import (
     scavenging_tab  # Scavenging Tab
 )
 # Import for Anime Tab
-from web.fullstreamlit.components.anime_display import display_anime_section
-from models.anime import AnimeItem
+from src.web.fullstreamlit.components.anime_display import display_anime_section
+from src.models.anime import AnimeItem
 import json
 from typing import List, Dict, Optional # Already imported but good for clarity
 
 
 # Import enhanced components
-from web.fullstreamlit.components import enhanced_innovation_tab
+from src.web.fullstreamlit.components import enhanced_innovation_tab
 
 # Initialize logger and data service
-logger = get_logger("WatchtowerApp")
+logger.info("Initializing Watchtower Streamlit application")
 data_service = create_ultra_optimized_service(logger)
 
 # Set page configuration
@@ -83,6 +106,10 @@ st.set_page_config(
     page_icon="🗼",
     layout="wide",
     initial_sidebar_state="expanded",
+    menu_items={
+        'Report a bug': None,
+        'About': None
+    }
 )
 
 # Apply CSS styles
@@ -91,48 +118,99 @@ st.markdown(get_main_style(), unsafe_allow_html=True)
 # Header
 st.title("🗼 Watchtower")
 
+# Improved refresh button with cache clearing
 if st.button("🔄 Actualizar"):
+    # Clear all caches
     st.cache_data.clear()
+    if hasattr(data_service, 'clear_cache'):
+        data_service.clear_cache()
+    # Force garbage collection
+    import gc
+    gc.collect()
     st.rerun()
 
-# Load data
-@st.cache_data(ttl=1800)
+# Optimized data loading with better error handling
+@st.cache_data(ttl=1800, show_spinner=False)
 def get_cached_data():
-    """Load and cache data"""
+    """Load and cache data with improved error handling"""
     try:
         logger.info("Loading cached data...")
         data = {}
         
-        # Test games data loading specifically
-        logger.info("Loading games data...")
-        games_data = data_service.get_games_data()
-        logger.info(f"Games data loaded: type={type(games_data)}, len={len(games_data) if isinstance(games_data, (tuple, list)) else 'not tuple/list'}")
-        data['games'] = games_data
+        # Use a try-except wrapper for each data loading operation
+        def safe_load_data(key, loader_func):
+            try:
+                return loader_func()
+            except Exception as e:
+                logger.error(f"Error loading {key}: {str(e)}")
+                return pd.DataFrame() if 'df' in key else {}
         
-        data['allkeyshop'] = data_service.get_allkeyshop_data()
-        data['courses'] = data_service.get_courses_data()
-        data['news'] = data_service.get_news_data()
-        data['videos'] = data_service.get_videos_data()
-        data['arxiv'] = data_service.get_arxiv_data()
-        data['events'] = data_service.get_events_data()
-        data['new_game_releases'] = data_service.get_new_game_releases_data() # Added
-        data['google_cloud_blog'] = data_service.get_google_cloud_blog_data()
-        data['aws_training'] = data_service.get_aws_training_data()
-        data['azure_training'] = data_service.get_azure_training_data()
-        data['home_server_trends'] = data_service.get_home_server_trends_data()
-        data['museums'] = data_service.get_museum_data() # Added museum data loading
+        # Load data with individual error handling for each source
+        data['games'] = safe_load_data('games', data_service.get_games_data)
+        data['allkeyshop'] = safe_load_data('allkeyshop', data_service.get_allkeyshop_data)
+        data['courses'] = safe_load_data('courses', data_service.get_courses_data)
+        data['news'] = safe_load_data('news', data_service.get_news_data)
+        data['videos'] = safe_load_data('videos', data_service.get_videos_data)
+        data['arxiv'] = safe_load_data('arxiv', data_service.get_arxiv_data)
+        data['events'] = safe_load_data('events', data_service.get_events_data)
+        data['new_game_releases'] = safe_load_data('new_game_releases', data_service.get_new_game_releases_data)
+        
+        # Load additional data with fallback handling
+        try:
+            data['google_cloud_blog'] = data_service.get_google_cloud_blog_data()
+        except Exception as e:
+            logger.error(f"Error loading Google Cloud blog data: {str(e)}")
+            data['google_cloud_blog'] = []
+            
+        try:
+            data['aws_training'] = data_service.get_aws_training_data()
+        except Exception as e:
+            logger.error(f"Error loading AWS training data: {str(e)}")
+            data['aws_training'] = []
+            
+        try:
+            data['azure_training'] = data_service.get_azure_training_data()
+        except Exception as e:
+            logger.error(f"Error loading Azure training data: {str(e)}")
+            data['azure_training'] = []
+            
+        try:
+            data['home_server_trends'] = data_service.get_home_server_trends_data()
+        except Exception as e:
+            logger.error(f"Error loading home server trends: {str(e)}")
+            data['home_server_trends'] = []
+            
+        try:
+            data['museums'] = data_service.get_museum_data()
+        except Exception as e:
+            logger.error(f"Error loading museum data: {str(e)}")
+            data['museums'] = pd.DataFrame()
         
         logger.info("All data loaded successfully")
         return data
     except Exception as e:
-        logger.error(f"Error loading data: {str(e)}")
-        return {}
+        logger.error(f"Critical error loading data: {str(e)}")
+        return {
+            'games': (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()),
+            'allkeyshop': [],
+            'courses': {},
+            'news': {},
+            'videos': {},
+            'arxiv': pd.DataFrame(),
+            'events': pd.DataFrame(),
+            'new_game_releases': pd.DataFrame(),
+            'google_cloud_blog': [],
+            'aws_training': [],
+            'azure_training': [],
+            'home_server_trends': [],
+            'museums': pd.DataFrame()
+        }
 
+# Load cached data with progress indicator
+with st.spinner("🔄 Cargando datos..."):
+    cached_data = get_cached_data()
 
-
-cached_data = get_cached_data()
-
-# Retrieve the new data slices
+# Retrieve the data slices with safe access
 google_cloud_blog_data = cached_data.get('google_cloud_blog', [])
 aws_training_data = cached_data.get('aws_training', [])
 azure_training_data = cached_data.get('azure_training', [])
@@ -230,14 +308,20 @@ def display_anime_calendar_tab():
 # --- End Anime Tab Specific Functions ---
 
 def render_tab_safely(tab_name, render_func, *args, **kwargs):
-    """Safely render a tab with error handling"""
+    """Safely render a tab with comprehensive error handling"""
     try:
-        render_func(*args, **kwargs)
+        with st.spinner(f"Cargando {tab_name}..."):
+            render_func(*args, **kwargs)
     except Exception as e:
-        logger.error(f"Error rendering {tab_name}: {str(e)}")
-        st.error(f"Error cargando {tab_name}")
+        logger.error(f"Error rendering {tab_name}: {str(e)}", exc_info=True)
+        st.error(f"❌ Error cargando {tab_name}")
+        st.info("Por favor, intenta refrescar la página o contacta al administrador si el problema persiste.")
+        
+        # Show error details in expander for debugging
+        with st.expander("🔍 Detalles del error (para desarrolladores)"):
+            st.code(f"Error: {str(e)}\nTab: {tab_name}")
 
-# Render tabs
+# Render tabs with improved error handling
 with main_tabs[0]:
     render_tab_safely("Dashboard", shortcuts_tab.render, logger, data_service)
 
@@ -261,17 +345,13 @@ with main_tabs[6]: # Juegos
     games_data = cached_data.get('games', (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()))
     new_releases_df = cached_data.get('new_game_releases', pd.DataFrame())
     
-    # Debug information
-    logger.debug(f"Raw games_data type: {type(games_data)}, length: {len(games_data) if isinstance(games_data, (tuple, list)) else 'not tuple/list'}")
-    logger.debug(f"New releases type: {type(new_releases_df)}, shape: {new_releases_df.shape if hasattr(new_releases_df, 'shape') else 'no shape'}")
-    
-    if isinstance(games_data, tuple) and len(games_data) == 4:
-        deals_df, bundles_df, giveaways_df, trending_df = games_data
-        logger.debug(f"Unpacked 4-tuple: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending={len(trending_df)}")
-    elif isinstance(games_data, tuple) and len(games_data) == 3:
-        deals_df, bundles_df, giveaways_df = games_data
-        trending_df = pd.DataFrame()
-        logger.debug(f"Unpacked 3-tuple: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending=0")
+    # Improved games data handling
+    if isinstance(games_data, tuple) and len(games_data) >= 3:
+        if len(games_data) == 4:
+            deals_df, bundles_df, giveaways_df, trending_df = games_data
+        else:
+            deals_df, bundles_df, giveaways_df = games_data[:3]
+            trending_df = pd.DataFrame()
     else:
         deals_df = bundles_df = giveaways_df = trending_df = pd.DataFrame()
         logger.warning(f"Games data format unexpected: {type(games_data)} - creating empty dataframes")
@@ -347,3 +427,12 @@ with main_tabs[24]:
 # Scavenging Tab
 with main_tabs[25]:
     render_tab_safely("Scavenging", scavenging_tab.render, logger)
+
+# Footer with performance info
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📊 Performance Info")
+st.sidebar.markdown(f"**Last updated:** {datetime.now().strftime('%H:%M:%S')}")
+st.sidebar.markdown(f"**Cache status:** {'✅ Active' if st.cache_data else '❌ Inactive'}")
+
+# Add refresh reminder
+st.sidebar.markdown("💡 **Tip:** Usa el botón 'Actualizar' si los datos parecen desactualizados")

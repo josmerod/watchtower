@@ -13,7 +13,7 @@ from typing import List, Dict, Any
 import pandas as pd
 import streamlit as st
 
-from utils.logging import get_logger
+from src.utils.logging import get_logger
 
 
 DATA_FILE = Path("data/4chan_generals/output/latest.json")

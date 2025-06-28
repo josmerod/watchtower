@@ -11,9 +11,9 @@ import hashlib
 from typing import Dict, List, Any, Optional
 
 # Add the project root to the path
-from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
-from models.home_server import HomeServerTrendItem # Assuming the model is created
+from src.utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
+from src.models.home_server import HomeServerTrendItem # Assuming the model is created
 
 logger = get_logger("HomeServerTrendsETL")
 

@@ -13,8 +13,8 @@ import streamlit as st
 import plotly.express as px
 
 # Add project root to path
-from utils.file_system import get_project_root
-from utils.recommender import PersonalRecommender
+from src.utils.file_system import get_project_root
+from src.utils.recommender import PersonalRecommender
 
 
 class ArxivPapersComponent:

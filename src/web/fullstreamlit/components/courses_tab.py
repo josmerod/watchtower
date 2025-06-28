@@ -7,7 +7,6 @@ import streamlit as st
 import pandas as pd
 import json
 import os
-# from web.fullstreamlit.utils.helpers import make_clickable, get_responsive_cols # Removed as unused
 from typing import Dict, List, Optional, Any, Union
 
 # Get the project root directory
@@ -28,35 +27,71 @@ UDEMY_DATA_DIR = os.path.join(DATA_DIR, "udemy")
 COURSERA_FILE = os.path.join(COURSERA_DATA_DIR, "coursera_courses.json")
 UDEMY_FILE = os.path.join(UDEMY_DATA_DIR, "udemy_courses.json")
 
-def load_coursera_courses_from_multiple_paths():
-    """Try loading Coursera courses from multiple potential paths"""
+def safe_json_load(file_path: str) -> List[Dict]:
+    """Safely load JSON file with proper error handling and encoding."""
+    if not os.path.exists(file_path):
+        return []
     
-    # Try the main path first
-    if os.path.exists(COURSERA_FILE):
+    try:
+        # Try UTF-8 first
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except UnicodeDecodeError:
         try:
-            with open(COURSERA_FILE, "r", encoding="utf-8") as f:
+            # Try with different encoding if UTF-8 fails
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 return json.load(f)
         except Exception as e:
-            st.warning(f"Error reading Coursera data from main path: {str(e)}")
-    
-    # If main path fails, return empty data
-    st.warning("No se encontraron cursos de Coursera en las rutas esperadas")
-    return []
+            st.error(f"Error reading file {file_path} with encoding fallback: {str(e)}")
+            return []
+    except json.JSONDecodeError as e:
+        st.error(f"Invalid JSON in file {file_path}: {str(e)}")
+        return []
+    except Exception as e:
+        st.error(f"Unexpected error reading file {file_path}: {str(e)}")
+        return []
+
+def load_coursera_courses_from_multiple_paths():
+    """Try loading Coursera courses from multiple potential paths"""
+    return safe_json_load(COURSERA_FILE)
 
 def load_udemy_courses_from_multiple_paths():
     """Try loading Udemy courses from multiple potential paths"""
+    return safe_json_load(UDEMY_FILE)
+
+def validate_course_data(courses_data: List[Dict], platform: str) -> List[Dict]:
+    """Validate and clean course data."""
+    if not courses_data:
+        return []
     
-    # Try the main path first
-    if os.path.exists(UDEMY_FILE):
-        try:
-            with open(UDEMY_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
-            st.warning(f"Error reading Udemy data from main path: {str(e)}")
+    validated_courses = []
+    for course in courses_data:
+        # Ensure required fields exist
+        if not isinstance(course, dict):
+            continue
+            
+        # Ensure title and url exist (minimum requirements)
+        if 'title' not in course or 'url' not in course:
+            continue
+            
+        # Clean up data types
+        cleaned_course = course.copy()
+        
+        # Handle boolean fields
+        for bool_field in ['is_free', 'certificate_offered']:
+            if bool_field in cleaned_course:
+                if isinstance(cleaned_course[bool_field], str):
+                    cleaned_course[bool_field] = cleaned_course[bool_field].lower() in ['true', '1', 'yes']
+                elif not isinstance(cleaned_course[bool_field], bool):
+                    cleaned_course[bool_field] = False
+        
+        # Handle missing fields with defaults
+        if 'scraped_at' not in cleaned_course:
+            cleaned_course['scraped_at'] = None
+        
+        validated_courses.append(cleaned_course)
     
-    # If main path fails, return empty data
-    st.warning("No se encontraron cursos de Udemy en las rutas esperadas")
-    return []
+    return validated_courses
 
 def render(courses_data: Dict[str, pd.DataFrame], logger=None):
     """
@@ -78,11 +113,18 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
         
         # Load available course data from JSON files
         loaded_data = {}
+        
+        # Load Coursera data
         coursera_json = load_coursera_courses_from_multiple_paths()
         if coursera_json:
             try:
-                st.success(f"¡Cargados {len(coursera_json)} cursos de Coursera directamente del archivo!")
-                loaded_data["coursera"] = pd.DataFrame(coursera_json)
+                # Validate data before creating DataFrame
+                validated_coursera = validate_course_data(coursera_json, "coursera")
+                if validated_coursera:
+                    st.success(f"¡Cargados {len(validated_coursera)} cursos de Coursera directamente del archivo!")
+                    loaded_data["coursera"] = pd.DataFrame(validated_coursera)
+                else:
+                    st.warning("Los datos de Coursera requieren validación.")
             except Exception as e:
                 if logger:
                     logger.error(f"Error loading Coursera data directly: {str(e)}")
@@ -90,13 +132,19 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
         else:
             if logger:
                 logger.error("Could not find coursera_courses.json in any path")
-            st.error("No se pudo encontrar el archivo de cursos de Coursera.")
+            st.info("No se encontraron cursos de Coursera.")
         
+        # Load Udemy data
         udemy_json = load_udemy_courses_from_multiple_paths()
         if udemy_json:
             try:
-                st.success(f"¡Cargados {len(udemy_json)} cursos de Udemy directamente del archivo!")
-                loaded_data["udemy"] = pd.DataFrame(udemy_json)
+                # Validate data before creating DataFrame
+                validated_udemy = validate_course_data(udemy_json, "udemy")
+                if validated_udemy:
+                    st.success(f"¡Cargados {len(validated_udemy)} cursos de Udemy directamente del archivo!")
+                    loaded_data["udemy"] = pd.DataFrame(validated_udemy)
+                else:
+                    st.warning("Los datos de Udemy requieren validación.")
             except Exception as e:
                 if logger:
                     logger.error(f"Error loading Udemy data directly: {str(e)}")
@@ -104,44 +152,49 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
         else:
             if logger:
                 logger.error("Could not find udemy_courses.json in any path")
-            st.info("No se pudo encontrar el archivo de cursos de Udemy.")
+            st.info("No se encontraron cursos de Udemy.")
         
         courses_data = loaded_data
 
     # Check if all dataframes are empty after emergency loading
-    all_empty = all(df.empty for df in courses_data.values())
-    if all_empty or not courses_data:
+    if not courses_data or all(df.empty for df in courses_data.values()):
         if logger:
             logger.warning("No course data available to display.")
         st.warning("No hay datos de cursos disponibles para mostrar.")
         return  # Exit if no data
 
     # Create tabs for different course platforms
-    tab_titles = []
+    available_platforms = []
     for platform, df in courses_data.items():
         if not df.empty:
-            # Capitalize first letter of platform name for display
-            tab_titles.append(platform.capitalize())
+            available_platforms.append(platform.capitalize())
 
-    if not tab_titles:  # Should not happen if the initial check passed, but good practice
+    if not available_platforms:
         st.warning("No hay datos de cursos válidos para mostrar en las pestañas.")
         return
 
-    tabs = st.tabs(tab_titles)
-    tab_map = {title: tab for title, tab in zip(tab_titles, tabs)}
-
+    tabs = st.tabs(available_platforms)
+    
     # Display content within each tab
-    for platform, tab in tab_map.items():
-        with tab:
-            if platform.lower() == "coursera":
-                display_coursera_courses(courses_data["coursera"])
-            elif platform.lower() == "udemy":
-                display_udemy_courses(courses_data["udemy"])
-            # Add other platforms as they are added
-            # elif platform.lower() == "edx":
-            #     display_edx_courses(courses_data["edx"])
-            # etc.
+    for i, platform in enumerate(available_platforms):
+        with tabs[i]:
+            platform_key = platform.lower()
+            if platform_key == "coursera" and platform_key in courses_data:
+                display_coursera_courses(courses_data[platform_key])
+            elif platform_key == "udemy" and platform_key in courses_data:
+                display_udemy_courses(courses_data[platform_key])
 
+def safe_datetime_conversion(df: pd.DataFrame, date_column: str) -> pd.DataFrame:
+    """Safely convert datetime column with error handling."""
+    if date_column not in df.columns:
+        return df
+    
+    try:
+        df[date_column] = pd.to_datetime(df[date_column], errors='coerce')
+        return df
+    except Exception as e:
+        st.warning(f"Error converting {date_column} to datetime: {str(e)}")
+        return df
 
 def display_coursera_courses(courses_df: pd.DataFrame):
     """
@@ -156,134 +209,189 @@ def display_coursera_courses(courses_df: pd.DataFrame):
         st.warning("No hay cursos de Coursera disponibles.")
         return
 
-    # Use the original DataFrame to preserve JSON order - create a copy first
-    filtered_courses_df = courses_df.copy()
+    # Create a working copy
+    try:
+        filtered_courses_df = courses_df.copy()
+        
+        # Safe datetime conversion
+        filtered_courses_df = safe_datetime_conversion(filtered_courses_df, "scraped_at")
+        
+        # Sort by scraped_at date in descending order (newest first)
+        if "scraped_at" in filtered_courses_df.columns:
+            try:
+                # Sort by scraped_at, putting NaT values at the end
+                filtered_courses_df = filtered_courses_df.sort_values(
+                    by="scraped_at", ascending=False, na_position='last'
+                )
+                st.info(f"📅 Cursos ordenados por fecha de adición (más recientes primero)")
+            except Exception as e:
+                st.warning(f"No se pudo ordenar por fecha: {str(e)}")
+        
+        # Create fecha_adición column safely
+        if "scraped_at" in filtered_courses_df.columns:
+            try:
+                filtered_courses_df["fecha_adición"] = filtered_courses_df["scraped_at"].dt.strftime("%Y-%m-%d")
+            except Exception:
+                filtered_courses_df["fecha_adición"] = "N/A"
+        else:
+            filtered_courses_df["fecha_adición"] = "N/A"
+    except Exception as e:
+        st.error(f"Error procesando datos de Coursera: {str(e)}")
+        return
 
-    # Store original index to maintain order
-    filtered_courses_df = filtered_courses_df.reset_index(drop=True)
-    original_order = filtered_courses_df.index.copy()
-
-    # Convert scraped_at to datetime if it exists (for display only, not sorting)
-    if "scraped_at" in filtered_courses_df.columns:
-        filtered_courses_df["scraped_at"] = pd.to_datetime(filtered_courses_df["scraped_at"], errors='coerce')
-        filtered_courses_df["fecha_adición"] = filtered_courses_df["scraped_at"].dt.strftime("%Y-%m-%d")
-        filtered_courses_df = filtered_courses_df.reindex(original_order) # Ensure original order
-    else:
-        # Ensure fecha_adición column exists even if scraped_at is missing, for schema consistency
-        filtered_courses_df["fecha_adición"] = None
-
+    # Filters
     with st.expander("Filtros y Opciones para Coursera", expanded=True):
         search_term = st.text_input("Buscar cursos:", placeholder="Ingrese palabras clave...", key="coursera_search")
+        
         if search_term:
             search_term_lower = search_term.lower()
-            title_mask = filtered_courses_df["title"].str.lower().str.contains(search_term_lower, na=False)
-            desc_mask = pd.Series([False] * len(filtered_courses_df)) # Default if no description
-            if "description" in filtered_courses_df.columns:
-                desc_mask = filtered_courses_df["description"].str.lower().str.contains(search_term_lower, na=False)
-            search_mask = title_mask | desc_mask
-            filtered_courses_df = filtered_courses_df[search_mask]
-            # Note: No st.write for search results here, count will be shown later
+            try:
+                title_mask = filtered_courses_df["title"].str.lower().str.contains(search_term_lower, na=False)
+                desc_mask = pd.Series([False] * len(filtered_courses_df))
+                if "description" in filtered_courses_df.columns:
+                    desc_mask = filtered_courses_df["description"].str.lower().str.contains(search_term_lower, na=False)
+                search_mask = title_mask | desc_mask
+                filtered_courses_df = filtered_courses_df[search_mask]
+                
+                # Re-sort after filtering to maintain newest-first order
+                if "scraped_at" in filtered_courses_df.columns and not filtered_courses_df.empty:
+                    filtered_courses_df = filtered_courses_df.sort_values(
+                        by="scraped_at", ascending=False, na_position='last'
+                    )
+            except Exception as e:
+                st.warning(f"Error en búsqueda: {str(e)}")
 
         col1, col2 = st.columns(2)
         with col1:
             if "subject" in filtered_courses_df.columns:
-                subjects = sorted(filtered_courses_df["subject"].dropna().unique().tolist())
-                subjects = ["Todos los temas"] + subjects
-                selected_subject = st.selectbox("Filtrar por tema:", subjects, key="coursera_subject")
-                if selected_subject != "Todos los temas":
-                    filtered_courses_df = filtered_courses_df[filtered_courses_df["subject"] == selected_subject]
+                try:
+                    subjects = sorted(filtered_courses_df["subject"].dropna().unique().tolist())
+                    subjects = ["Todos los temas"] + subjects
+                    selected_subject = st.selectbox("Filtrar por tema:", subjects, key="coursera_subject")
+                    if selected_subject != "Todos los temas":
+                        filtered_courses_df = filtered_courses_df[filtered_courses_df["subject"] == selected_subject]
+                        
+                        # Re-sort after filtering to maintain newest-first order
+                        if "scraped_at" in filtered_courses_df.columns and not filtered_courses_df.empty:
+                            filtered_courses_df = filtered_courses_df.sort_values(
+                                by="scraped_at", ascending=False, na_position='last'
+                            )
+                except Exception as e:
+                    st.warning(f"Error en filtro por tema: {str(e)}")
         
         with col2:
             if "language" in filtered_courses_df.columns:
-                languages = sorted(filtered_courses_df["language"].dropna().unique().tolist())
-                languages = ["Todos los idiomas"] + languages
-                selected_language = st.selectbox("Filtrar por idioma:", languages, key="coursera_language")
-                if selected_language != "Todos los idiomas":
-                    filtered_courses_df = filtered_courses_df[filtered_courses_df["language"] == selected_language]
+                try:
+                    languages = sorted(filtered_courses_df["language"].dropna().unique().tolist())
+                    languages = ["Todos los idiomas"] + languages
+                    selected_language = st.selectbox("Filtrar por idioma:", languages, key="coursera_language")
+                    if selected_language != "Todos los idiomas":
+                        filtered_courses_df = filtered_courses_df[filtered_courses_df["language"] == selected_language]
+                        
+                        # Re-sort after filtering to maintain newest-first order
+                        if "scraped_at" in filtered_courses_df.columns and not filtered_courses_df.empty:
+                            filtered_courses_df = filtered_courses_df.sort_values(
+                                by="scraped_at", ascending=False, na_position='last'
+                            )
+                except Exception as e:
+                    st.warning(f"Error en filtro por idioma: {str(e)}")
 
         if "is_free" in filtered_courses_df.columns:
             show_only_free = st.checkbox("Mostrar solo cursos gratuitos", key="coursera_free_checkbox")
             if show_only_free:
-                filtered_courses_df = filtered_courses_df[filtered_courses_df["is_free"] == True]
+                try:
+                    filtered_courses_df = filtered_courses_df[filtered_courses_df["is_free"] == True]
+                    
+                    # Re-sort after filtering to maintain newest-first order
+                    if "scraped_at" in filtered_courses_df.columns and not filtered_courses_df.empty:
+                        filtered_courses_df = filtered_courses_df.sort_values(
+                            by="scraped_at", ascending=False, na_position='last'
+                        )
+                except Exception as e:
+                    st.warning(f"Error en filtro de cursos gratuitos: {str(e)}")
 
     st.write(f"Mostrando {len(filtered_courses_df)} cursos")
 
     if not filtered_courses_df.empty:
-        # Prepare DataFrame for st.data_editor
-        # Ensure 'url' is present for the link column
-        if 'url' not in filtered_courses_df.columns:
-            st.error("La columna 'url' es necesaria y no está presente en los datos de Coursera.")
-            return
+        try:
+            # Ensure 'url' is present for the link column
+            if 'url' not in filtered_courses_df.columns:
+                st.error("La columna 'url' es necesaria y no está presente en los datos de Coursera.")
+                return
 
-        df_for_editor = filtered_courses_df.copy()
+            df_for_editor = filtered_courses_df.copy()
 
-        # Rename source columns to target names for st.data_editor
-        # and ensure boolean columns are suitable for CheckboxColumn
-        rename_map_editor = {
-            "title": "Título",
-            "institution": "Institución",
-            "subject": "Tema",
-            "language": "Idioma",
-            "duration": "Duración",
-            "start_date": "Fecha de Inicio", # Keep as is, TextColumn will handle string/None
-            "fecha_adición": "Añadido",   # Keep as is, TextColumn will handle string/None
-            "is_free": "Gratis",             # Will be boolean
-            "certificate_offered": "Certificado", # Will be boolean
-            "url": "URL_Enlace"
-        }
+            # Safe column renaming
+            rename_map_editor = {
+                "title": "Título",
+                "institution": "Institución", 
+                "subject": "Tema",
+                "language": "Idioma",
+                "duration": "Duración",
+                "start_date": "Fecha de Inicio",
+                "fecha_adición": "Añadido",
+                "is_free": "Gratis",
+                "certificate_offered": "Certificado",
+                "url": "URL_Enlace"
+            }
 
-        # Select only columns that exist in filtered_courses_df and apply renaming
-        cols_to_rename = {k: v for k, v in rename_map_editor.items() if k in df_for_editor.columns}
-        df_for_editor.rename(columns=cols_to_rename, inplace=True)
+            # Only rename columns that exist
+            existing_columns = {k: v for k, v in rename_map_editor.items() if k in df_for_editor.columns}
+            df_for_editor.rename(columns=existing_columns, inplace=True)
 
-        # Define the final column order for st.data_editor
-        final_ordered_columns = [
-            "Título", "Institución", "Tema", "Idioma",
-            "Duración", "Fecha de Inicio", "Añadido",
-            "Gratis", "Certificado", "URL_Enlace"
-        ]
-        
-        # Filter this list to include only columns that actually exist in df_for_editor
-        columns_for_editor_display = [col for col in final_ordered_columns if col in df_for_editor.columns]
-        df_for_editor = df_for_editor[columns_for_editor_display]
+            # Define column order, but only use existing columns
+            final_ordered_columns = [
+                "Título", "Institución", "Tema", "Idioma",
+                "Duración", "Fecha de Inicio", "Añadido",
+                "Gratis", "Certificado", "URL_Enlace"
+            ]
+            
+            available_columns = [col for col in final_ordered_columns if col in df_for_editor.columns]
+            df_for_editor = df_for_editor[available_columns]
 
-        st.data_editor(
-            df_for_editor,
-            column_config={
-                "Título": st.column_config.TextColumn(width="medium", help="Título del curso"),
-                "Institución": st.column_config.TextColumn(width="medium", help="Institución que ofrece el curso"),
-                "Tema": st.column_config.TextColumn(width="small", help="Tema principal del curso"),
-                "Idioma": st.column_config.TextColumn(width="small", help="Idioma del curso"),
-                "Duración": st.column_config.TextColumn(width="small", help="Duración estimada del curso"),
-                "Fecha de Inicio": st.column_config.TextColumn(width="small", help="Fecha de inicio del curso"),
-                "Añadido": st.column_config.TextColumn(width="small", help="Fecha en que se añadió a la lista"),
-                "Gratis": st.column_config.CheckboxColumn(width="small", help="¿Es el curso gratuito?"),
-                "Certificado": st.column_config.CheckboxColumn(width="small", help="¿Ofrece certificado?"),
-                "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Detalles", width="medium", help="Enlace directo al curso")
-            },
-            disabled=True,
-            hide_index=True,
-            use_container_width=True
-        )
+            # Create column config dynamically
+            column_config = {}
+            for col in available_columns:
+                if col == "URL_Enlace":
+                    column_config[col] = st.column_config.LinkColumn(
+                        label="Enlace", display_text="Ver Detalles", width="medium"
+                    )
+                elif col in ["Gratis", "Certificado"]:
+                    column_config[col] = st.column_config.CheckboxColumn(width="small")
+                else:
+                    column_config[col] = st.column_config.TextColumn(width="medium")
 
-        st.markdown("---")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.download_button(
-                label="📥 Descargar CSV (Coursera)",
-                data=df_for_editor.to_csv(index=False).encode('utf-8'),
-                file_name="coursera_courses_data.csv",
-                mime='text/csv',
-                key="csv_download_coursera"
+            st.data_editor(
+                df_for_editor,
+                column_config=column_config,
+                disabled=True,
+                hide_index=True,
+                use_container_width=True
             )
-        with col2:
-            st.download_button(
-                label="📥 Descargar JSON (Coursera)",
-                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
-                file_name="coursera_courses_data.json",
-                mime='application/json',
-                key="json_download_coursera"
-            )
+
+            # Download buttons
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            with col1:
+                csv_data = df_for_editor.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Descargar CSV (Coursera)",
+                    data=csv_data,
+                    file_name="coursera_courses_data.csv",
+                    mime='text/csv',
+                    key="csv_download_coursera"
+                )
+            with col2:
+                json_data = df_for_editor.to_json(orient='records', indent=2).encode('utf-8')
+                st.download_button(
+                    label="📥 Descargar JSON (Coursera)",
+                    data=json_data,
+                    file_name="coursera_courses_data.json",
+                    mime='application/json',
+                    key="json_download_coursera"
+                )
+        except Exception as e:
+            st.error(f"Error mostrando datos de Coursera: {str(e)}")
     else:
         st.info("No hay cursos que coincidan con los filtros seleccionados.")
 
@@ -300,81 +408,97 @@ def display_udemy_courses(courses_df: pd.DataFrame):
         st.warning("No hay cursos de Udemy disponibles.")
         return
 
-    filtered_df = courses_df.copy()
+    try:
+        filtered_df = courses_df.copy()
 
-    # Store original index to maintain order if needed, though less critical here without complex filtering
-    # filtered_df = filtered_df.reset_index(drop=True)
-    # original_order = filtered_df.index.copy()
+        # Safe datetime conversion
+        filtered_df = safe_datetime_conversion(filtered_df, "scraped_at")
         
-    if "scraped_at" in filtered_df.columns:
-        filtered_df["scraped_at"] = pd.to_datetime(filtered_df["scraped_at"], errors='coerce')
-        filtered_df["fecha_adición"] = filtered_df["scraped_at"].dt.strftime("%Y-%m-%d")
-        # filtered_df = filtered_df.reindex(original_order) # if maintaining original order strictly
-    else:
-        # Ensure fecha_adición column exists for schema consistency
-        filtered_df["fecha_adición"] = None
+        # Sort by scraped_at date in descending order (newest first)
+        if "scraped_at" in filtered_df.columns:
+            try:
+                # Sort by scraped_at, putting NaT values at the end
+                filtered_df = filtered_df.sort_values(
+                    by="scraped_at", ascending=False, na_position='last'
+                )
+                st.info(f"📅 Cursos ordenados por fecha de adición (más recientes primero)")
+            except Exception as e:
+                st.warning(f"No se pudo ordenar por fecha: {str(e)}")
+        
+        # Create fecha_adición column safely
+        if "scraped_at" in filtered_df.columns:
+            try:
+                filtered_df["fecha_adición"] = filtered_df["scraped_at"].dt.strftime("%Y-%m-%d")
+            except Exception:
+                filtered_df["fecha_adición"] = "N/A"
+        else:
+            filtered_df["fecha_adición"] = "N/A"
             
-    st.write(f"Mostrando {len(filtered_df)} cursos de Udemy")
+        st.write(f"Mostrando {len(filtered_df)} cursos de Udemy")
         
-    if not filtered_df.empty:
-        # Select and prepare display columns
-        cols_to_select = ["title"]
-        if "fecha_adición" in filtered_df.columns:
-             cols_to_select.append("fecha_adición")
+        if not filtered_df.empty:
+            # Ensure 'url' is present
+            if 'url' not in filtered_df.columns:
+                st.error("La columna 'url' es necesaria y no está presente en los datos de Udemy.")
+                return
 
-        # Ensure 'url' is present for the link, even if not directly in cols_to_select yet
-        if 'url' not in filtered_df.columns:
-            st.error("La columna 'url' es necesaria y no está presente en los datos de Udemy.")
-            return
+            df_for_editor = filtered_df.copy()
 
-        df_for_editor = filtered_df.copy()
+            # Safe column renaming
+            rename_map_editor = {
+                "title": "Título",
+                "fecha_adición": "Añadido",
+                "url": "URL_Enlace"
+            }
 
-        # Rename source columns for st.data_editor
-        rename_map_editor = {
-            "title": "Título",
-            "fecha_adición": "Añadido", # Already a string or None
-            "url": "URL_Enlace"
-        }
+            existing_columns = {k: v for k, v in rename_map_editor.items() if k in df_for_editor.columns}
+            df_for_editor.rename(columns=existing_columns, inplace=True)
 
-        cols_to_rename = {k: v for k, v in rename_map_editor.items() if k in df_for_editor.columns}
-        df_for_editor.rename(columns=cols_to_rename, inplace=True)
+            # Column order
+            final_ordered_columns = ["Título", "Añadido", "URL_Enlace"]
+            available_columns = [col for col in final_ordered_columns if col in df_for_editor.columns]
+            df_for_editor = df_for_editor[available_columns]
 
-        # Define final column order for st.data_editor
-        final_ordered_columns = ["Título", "Añadido", "URL_Enlace"]
+            # Create column config
+            column_config = {}
+            for col in available_columns:
+                if col == "URL_Enlace":
+                    column_config[col] = st.column_config.LinkColumn(
+                        label="Enlace", display_text="Ver Detalles", width="medium"
+                    )
+                else:
+                    column_config[col] = st.column_config.TextColumn(width="large" if col == "Título" else "medium")
 
-        # Filter to include only existing columns in df_for_editor
-        columns_for_editor_display = [col for col in final_ordered_columns if col in df_for_editor.columns]
-        df_for_editor = df_for_editor[columns_for_editor_display]
-
-        st.data_editor(
-            df_for_editor,
-            column_config={
-                "Título": st.column_config.TextColumn(width="large", help="Título del curso Udemy"),
-                "Añadido": st.column_config.TextColumn(width="medium", help="Fecha en que se añadió"),
-                "URL_Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Ver Detalles", width="medium", help="Enlace directo al curso Udemy")
-            },
-            disabled=True,
-            hide_index=True,
-            use_container_width=True
-        )
-
-        st.markdown("---")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.download_button(
-                label="📥 Descargar CSV (Udemy)",
-                data=df_for_editor.to_csv(index=False).encode('utf-8'),
-                file_name="udemy_courses_data.csv",
-                mime='text/csv',
-                key="csv_download_udemy"
+            st.data_editor(
+                df_for_editor,
+                column_config=column_config,
+                disabled=True,
+                hide_index=True,
+                use_container_width=True
             )
-        with col2:
-            st.download_button(
-                label="📥 Descargar JSON (Udemy)",
-                data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
-                file_name="udemy_courses_data.json",
-                mime='application/json',
-                key="json_download_udemy"
-            )
-    else:
-        st.info("No hay cursos de Udemy para mostrar (después de procesar).")
+
+            # Download buttons
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            with col1:
+                csv_data = df_for_editor.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Descargar CSV (Udemy)",
+                    data=csv_data,
+                    file_name="udemy_courses_data.csv",
+                    mime='text/csv',
+                    key="csv_download_udemy"
+                )
+            with col2:
+                json_data = df_for_editor.to_json(orient='records', indent=2).encode('utf-8')
+                st.download_button(
+                    label="📥 Descargar JSON (Udemy)",
+                    data=json_data,
+                    file_name="udemy_courses_data.json",
+                    mime='application/json',
+                    key="json_download_udemy"
+                )
+        else:
+            st.info("No hay cursos de Udemy para mostrar.")
+    except Exception as e:
+        st.error(f"Error procesando datos de Udemy: {str(e)}")

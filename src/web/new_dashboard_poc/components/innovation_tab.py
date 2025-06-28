@@ -5,14 +5,19 @@ from datetime import datetime, timezone
 import dash
 from dash import html, dcc, Input, Output, State, Patch
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists
+
 from dash.exceptions import PreventUpdate
 import re
 
 # --- Constants ---
 INNOVATION_DATA_SOURCES = {
-    'product_hunt': {"path": "../../../data/product_hunt/producthunt_products_latest.json", "name": "Product Hunt"},
-    'github_trends': {"path": "../../../data/github_trends/github_trending_latest.json", "name": "GitHub Trends"},
-    'tech_jobs': {"path": "../../../data/tech_jobs/tech_jobs_latest.json", "name": "Tech Jobs"},
+    'product_hunt': {"path": get_data_path("product_hunt", "producthunt_products_latest.json"), "name": "Product Hunt"},
+    'github_trends': {"path": get_data_path("github_trends", "github_trending_latest.json"), "name": "GitHub Trends"},
+    'tech_jobs': {"path": get_data_path("tech_jobs", "tech_jobs_latest.json"), "name": "Tech Jobs"},
 }
 
 ALL_INNOVATION_DATA = {} # Stores DataFrames
@@ -62,7 +67,7 @@ def load_single_innovation_source(source_key, file_info):
     global ALL_INNOVATION_DATA, INNOVATION_DATA_LOADED
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), file_info["path"]))
 
-    if not os.path.exists(file_path):
+    if not file_exists(file_path):
         print(f"Warning ({file_info['name']}): File not found at {file_path}")
         ALL_INNOVATION_DATA[source_key] = pd.DataFrame()
         INNOVATION_DATA_LOADED[source_key] = True # Attempted
@@ -104,14 +109,22 @@ def load_single_innovation_source(source_key, file_info):
         df['votes'] = df['stars'] # For a generic 'votes' like column if needed for sorting later
 
     elif source_key == 'tech_jobs':
-        df.rename(columns={'job_title': 'title', 'job_url': 'url',
-                           'company_name': 'company', 'job_location': 'location',
-                           'salary_range_min': 'salary_min_str',
-                           'salary_range_max': 'salary_max_str',
-                           'job_category': 'role_category', # Or 'category'
-                           'posted_date': 'date_str'}, inplace=True) # Or 'scrape_date'
-        df['salary_min_numeric'] = df['salary_min_str'].apply(parse_salary)
-        df['salary_max_numeric'] = df['salary_max_str'].apply(parse_salary)
+        # Extract nested salary information and create flat columns
+        if 'salary' in df.columns:
+            df['salary_min_numeric'] = df['salary'].apply(lambda x: x.get('min_range') if isinstance(x, dict) else None)
+            df['salary_max_numeric'] = df['salary'].apply(lambda x: x.get('max_range') if isinstance(x, dict) else None)
+        else:
+            df['salary_min_numeric'] = None
+            df['salary_max_numeric'] = None
+        
+        # Handle location field (might be nested or string)
+        if 'location_string' in df.columns:
+            df['location'] = df['location_string']
+        elif 'location' in df.columns and df['location'].apply(lambda x: isinstance(x, dict)).any():
+            df['location'] = df['location'].apply(lambda x: x.get('city', '') + ', ' + x.get('state', '') if isinstance(x, dict) else str(x))
+        
+        # Rename columns to standardized names (no need to rename if they already match)
+        df.rename(columns={'job_category': 'role_category', 'posted_date': 'date_str'}, inplace=True)
 
     # Generic date parsing
     if 'date_str' in df.columns:

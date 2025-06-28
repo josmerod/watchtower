@@ -10,8 +10,8 @@ from typing import Any
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 # Import utilities
-from utils.course_deduplication import deduplicate_courses
-from utils.file_system import ensure_directories, get_project_root
+from src.utils.course_deduplication import deduplicate_courses
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
 logger = logging.getLogger("classcentral_scraper")
@@ -104,7 +104,7 @@ class CourseraScraper:
                 await page.wait_for_timeout(3000)
 
                 while page_num <= self.max_pages:
-                    url = f"{self.BASE_URL}?sort=created-up&page={page_num}"
+                    url = f"{self.BASE_URL}?sort=created-down&page={page_num}"
                     logger.info(f"Fetching page {page_num}: {url}")
 
                     try:
@@ -329,6 +329,13 @@ class CourseraScraper:
             )
             if removed_count > 0:
                 logger.info(f"Removed {removed_count} duplicate courses")
+
+            # Sort courses by scraped_at date in descending order (newest first)
+            if deduplicated_courses and "scraped_at" in deduplicated_courses[0]:
+                deduplicated_courses.sort(
+                    key=lambda x: x.get("scraped_at", ""), reverse=True
+                )
+                logger.info("Sorted courses by newest first before saving")
 
             # Save courses as JSON
             with open(self.courses_file, "w", encoding="utf-8") as f:
