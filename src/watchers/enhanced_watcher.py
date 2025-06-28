@@ -11,12 +11,12 @@ from typing import Any, Dict, List, Optional, Type, Union
 import aiohttp
 from pydantic import BaseModel, Field, validator
 
-from config.settings import get_settings
-from exceptions.base import WatchtowerError
-from exceptions.watcher import WatcherError, WatcherTimeoutError, WatcherValidationError
-from models.base import BaseModel as BaseWatchtowerModel, TimestampedModel
-from utils.logging import get_logger, get_performance_logger
-from utils.file_system import get_file_system_manager
+from src.config.settings import get_settings
+from src.exceptions.base import WatchtowerError
+from src.exceptions.watcher import WatcherError, WatcherTimeoutError, WatcherValidationError
+from src.models.base import BaseModel as BaseWatchtowerModel, TimestampedModel
+from src.utils.logging import get_logger, get_performance_logger
+from src.utils.file_system import get_file_system_manager
 
 
 class WatcherState(TimestampedModel):

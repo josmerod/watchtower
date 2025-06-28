@@ -27,8 +27,8 @@ import asyncio
 import aiohttp
 
 import sys
-from utils.file_system import get_project_root
-from utils.logging import get_logger
+from src.utils.file_system import get_project_root
+from src.utils.logging import get_logger
 
 # Use centralized path setup and safe logger
 from ._path_setup import get_safe_logger

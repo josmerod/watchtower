@@ -5,7 +5,7 @@ import os
 import sys
 
 # Add project root to allow imports from src
-from web.fullstreamlit.components.adhd_tab import ADHDPapersComponent
+from src.web.fullstreamlit.components.adhd_tab import ADHDPapersComponent
 # Mock streamlit before it's used by the component, if necessary for other tests.
 # However, for _load_data, we only need to patch st.error.
 

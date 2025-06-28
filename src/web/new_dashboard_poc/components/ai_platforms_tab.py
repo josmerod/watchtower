@@ -5,11 +5,16 @@ from datetime import datetime, timezone
 import dash
 from dash import html, dcc, Input, Output, State, Patch
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists, parse_date_universal, log_missing_file
+
 from dash.exceptions import PreventUpdate
 import re
 
 # --- Constants ---
-AI_DATA_PATH = "../../../data/ai_models/ai_models_latest.json" # Assuming one consolidated file
+AI_DATA_PATH = get_data_path("ai_models", "ai_models_latest.json") # Assuming one consolidated file
 AI_PLATFORMS_DATA = {
     'models': pd.DataFrame(),
     'updates': pd.DataFrame()
@@ -23,33 +28,15 @@ PLATFORM_UPDATE_KEYWORDS = ['update', 'announcement', 'feature', 'api', 'pricing
 
 
 # --- Date Parsing Utility ---
-def parse_ai_date(date_str):
-    if pd.isna(date_str) or not date_str: return None
-    try:
-        dt = datetime.fromisoformat(str(date_str).replace('Z', '+00:00'))
-        return dt.astimezone(timezone.utc)
-    except ValueError: pass
-    common_formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%b %d, %Y", "%B %d, %Y", "%a, %d %b %Y %H:%M:%S %Z"]
-    for fmt in common_formats:
-        try:
-            dt = datetime.strptime(str(date_str), fmt)
-            return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
-        except ValueError: continue
-    try:
-        ts = float(date_str)
-        if ts > 10000000000: ts /= 1000
-        return datetime.fromtimestamp(ts, tz=timezone.utc)
-    except ValueError: pass
-    print(f"Warning (AI Platforms): Could not parse date: {date_str}")
-    return None
+# Using shared parse_date_universal function from utils.py
 
 # --- Data Loading & Categorization ---
 def load_ai_platforms_data():
     global AI_PLATFORMS_DATA, AI_DATA_LOADED
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), AI_DATA_PATH))
 
-    if not os.path.exists(file_path):
-        print(f"Warning (AI Platforms): File not found at {file_path}")
+    if not file_exists(file_path):
+        log_missing_file(file_path, "AI Platforms", is_optional=True)
         AI_DATA_LOADED = True # Mark as attempted
         return
 
@@ -81,23 +68,41 @@ def load_ai_platforms_data():
         if col not in df_raw.columns:
             df_raw[col] = "N/A" if col != 'summary' else "" # Default for provider, summary can be empty
 
-    df_raw['published_date'] = df_raw['published_date_str'].apply(parse_ai_date)
-    df_raw.dropna(subset=['published_date', 'title', 'url'], inplace=True) # Critical fields
+    # Parse dates with error handling using shared function
+    if 'published_date_str' in df_raw.columns:
+        df_raw['published_date'] = df_raw['published_date_str'].apply(lambda x: parse_date_universal(x, "AI Platforms"))
+    else:
+        df_raw['published_date'] = pd.NaT  # Not a Time value
+    
+    # Only drop rows if the columns exist
+    columns_to_check = [col for col in ['published_date', 'title', 'url'] if col in df_raw.columns]
+    if columns_to_check:
+        df_raw.dropna(subset=columns_to_check, inplace=True)
 
     # Normalize text for keyword search
-    df_raw['text_for_search'] = df_raw['title'].astype(str).str.lower() + " " + df_raw['summary'].astype(str).str.lower()
+    # Add defensive checks to prevent DataFrame.str accessor errors
+    if 'title' not in df_raw.columns:
+        df_raw['title'] = 'N/A'
+    if 'summary' not in df_raw.columns:
+        df_raw['summary'] = ''
+    
+    # Ensure we have valid data before applying string operations
+    if not df_raw.empty:
+        df_raw['text_for_search'] = df_raw['title'].fillna('').astype(str).str.lower() + " " + df_raw['summary'].fillna('').astype(str).str.lower()
+    else:
+        df_raw['text_for_search'] = ''
 
     # Categorize
     model_mask = df_raw['text_for_search'].apply(lambda text: any(keyword in text for keyword in MODEL_RELEASE_KEYWORDS))
     platform_mask = df_raw['text_for_search'].apply(lambda text: any(keyword in text for keyword in PLATFORM_UPDATE_KEYWORDS))
 
     # Prioritize model releases if overlap
-    AI_PLATFORMS_DATA['models'] = df_raw[model_mask].sort_values(by='published_date', ascending=False)
-    # For platform updates, take those that are platform-related AND NOT model-related to avoid duplication if desired,
-    # or allow duplication if an item can be both. For simplicity, let's allow some overlap for now,
-    # or one could do platform_mask & ~model_mask for exclusive platform updates.
-    # Let's do exclusive for cleaner separation for now:
-    AI_PLATFORMS_DATA['updates'] = df_raw[platform_mask & ~model_mask].sort_values(by='published_date', ascending=False)
+    if 'published_date' in df_raw.columns and not df_raw.empty:
+        AI_PLATFORMS_DATA['models'] = df_raw[model_mask].sort_values(by='published_date', ascending=False)
+        AI_PLATFORMS_DATA['updates'] = df_raw[platform_mask & ~model_mask].sort_values(by='published_date', ascending=False)
+    else:
+        AI_PLATFORMS_DATA['models'] = df_raw[model_mask] if not df_raw.empty else pd.DataFrame()
+        AI_PLATFORMS_DATA['updates'] = df_raw[platform_mask & ~model_mask] if not df_raw.empty else pd.DataFrame()
     # Alternative: if items can be in both, just use platform_mask
     # AI_PLATFORMS_DATA['updates'] = df_raw[platform_mask].sort_values(by='published_date', ascending=False)
 
@@ -160,12 +165,12 @@ def render_ai_platforms_tab():
     total_items_loaded = len(AI_PLATFORMS_DATA.get('models', pd.DataFrame())) + len(AI_PLATFORMS_DATA.get('updates', pd.DataFrame()))
 
     # Consolidate all providers for unique count
-    all_providers = pd.Series(dtype=str)
+    all_providers = []
     if not AI_PLATFORMS_DATA['models'].empty and 'provider' in AI_PLATFORMS_DATA['models'].columns:
-        all_providers = pd.concat([all_providers, AI_PLATFORMS_DATA['models']['provider']])
+        all_providers.extend(AI_PLATFORMS_DATA['models']['provider'].dropna().tolist())
     if not AI_PLATFORMS_DATA['updates'].empty and 'provider' in AI_PLATFORMS_DATA['updates'].columns:
-        all_providers = pd.concat([all_providers, AI_PLATFORMS_DATA['updates']['provider']])
-    unique_providers_count = len(all_providers.dropna().unique())
+        all_providers.extend(AI_PLATFORMS_DATA['updates']['provider'].dropna().tolist())
+    unique_providers_count = len(set(all_providers))
 
 
     summary_stats = dbc.Row([
@@ -206,12 +211,12 @@ def register_ai_platforms_callbacks(app):
             if provider_filter:
                 df_filtered = df_filtered[df_filtered['provider'] == provider_filter]
 
-            if search_term:
+            if search_term and not df_filtered.empty:
                 search_lower = search_term.lower()
-                df_filtered = df_filtered[
-                    df_filtered['title'].astype(str).str.lower().contains(search_lower, na=False) |
-                    df_filtered['summary'].astype(str).str.lower().contains(search_lower, na=False)
-                ]
+                # Add defensive checks for the search filtering
+                title_mask = df_filtered['title'].fillna('').astype(str).str.lower().contains(search_lower, na=False) if 'title' in df_filtered.columns else pd.Series([False] * len(df_filtered))
+                summary_mask = df_filtered['summary'].fillna('').astype(str).str.lower().contains(search_lower, na=False) if 'summary' in df_filtered.columns else pd.Series([False] * len(df_filtered))
+                df_filtered = df_filtered[title_mask | summary_mask]
 
             if df_filtered.empty:
                 return dbc.Alert(f"No items match your criteria in {cat_key}.", color="info"), 1, 1

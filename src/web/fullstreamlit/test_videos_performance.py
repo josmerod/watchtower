@@ -12,8 +12,8 @@ import psutil
 import gc
 
 # Add the project root to the path
-from web.fullstreamlit.utils.data_service import DataService
-from utils.logging import get_logger
+from src.web.fullstreamlit.utils.data_service import DataService
+from src.utils.logging import get_logger
 
 def measure_memory():
     """Get current memory usage"""

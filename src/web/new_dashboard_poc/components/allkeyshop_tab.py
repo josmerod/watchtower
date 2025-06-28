@@ -7,10 +7,15 @@ import re
 import dash
 from dash import html, dcc, Input, Output, State, Patch, dash_table
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists
+
 from dash.exceptions import PreventUpdate
 
 # --- Constants ---
-AKS_DATA_BASE_PATH = "../../../data/allkeyshop_games/output/" # Relative to this file
+AKS_DATA_BASE_PATH = get_data_path("allkeyshop_games", "output/") # Relative to this file
 ALLKEYSHOP_DF = pd.DataFrame()
 AKS_DATA_LOADED = False
 
@@ -59,7 +64,7 @@ def load_allkeyshop_data():
     current_script_dir = os.path.dirname(os.path.abspath(__file__))
     actual_data_path_dir = os.path.normpath(os.path.join(current_script_dir, AKS_DATA_BASE_PATH))
 
-    if not os.path.exists(actual_data_path_dir) or not os.path.isdir(actual_data_path_dir):
+    if not file_exists(actual_data_path_dir) or not os.path.isdir(actual_data_path_dir):
         print(f"Warning (AKS): Data directory not found: {actual_data_path_dir}")
         ALLKEYSHOP_DF = pd.DataFrame()
         AKS_DATA_LOADED = True # Prevent reload attempts
@@ -69,7 +74,7 @@ def load_allkeyshop_data():
     files = glob.glob(os.path.join(actual_data_path_dir, "allkeyshop_games_*.json"))
     latest_file_plain = os.path.join(actual_data_path_dir, "latest_allkeyshop_games.json")
 
-    if os.path.exists(latest_file_plain):
+    if file_exists(latest_file_plain):
         file_to_load = latest_file_plain
     elif files:
         files.sort(key=os.path.getmtime, reverse=True)
@@ -354,7 +359,7 @@ if __name__ == '__main__':
     if AKS_DATA_LOADED and not ALLKEYSHOP_DF.empty:
         print(ALLKEYSHOP_DF.head(2))
         # print(ALLKEYSHOP_DF.info())
-    elif not os.path.exists(os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), AKS_DATA_BASE_PATH))):
+    elif not file_exists(os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), AKS_DATA_BASE_PATH))):
          print(f"  Data directory missing: {os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), AKS_DATA_BASE_PATH))}")
 
     app_test.run_server(debug=True, port=8058)

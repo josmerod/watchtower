@@ -1,11 +1,13 @@
 import json
+import os
 import dash
 from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists
 
-# Store loaded data globally in the module for simplicity in this PoC
-# In a larger app, this might be handled by a data manager or passed around.
-ALL_SHORTCUTS_DATA = get_all_shortcuts()
 
 def create_shortcut_button(shortcut_info):
     """Creates a Bootstrap button for a shortcut."""
@@ -96,7 +98,7 @@ def render_shortcuts_tab():
 def load_shortcuts_from_file(file_path):
     """Loads shortcuts from a JSON file."""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         print(f"Warning: Shortcut file not found at {file_path}")
@@ -104,50 +106,75 @@ def load_shortcuts_from_file(file_path):
     except json.JSONDecodeError:
         print(f"Warning: Could not decode JSON from {file_path}")
         return []
+    except UnicodeDecodeError:
+        print(f"Warning: Could not decode file encoding from {file_path}")
+        return []
 
 def get_all_shortcuts():
     """Loads shortcuts from predefined and custom files."""
-    # Adjust path relative to the project root for data files
-    # Assuming app.py is in src/web/new_dashboard_poc/
-    # and shortcuts_tab.py is in src/web/new_dashboard_poc/components/
-    # The data directory is at the root.
-    # ../../../data/shortcuts/predefined_shortcuts.json
-
-    # Corrected paths assuming the script is run from the project root
-    # or paths are relative to where the main app is run.
-    # For modularity, it's better if paths are passed or configured.
-    # However, for this PoC, we'll use relative paths from a known structure.
-
-    # Path from src/web/new_dashboard_poc/components/
-    predefined_path = "../../../data/shortcuts/predefined_shortcuts.json"
-    custom_path = "../../../data/shortcuts/custom_shortcuts.json"
+    predefined_path = get_data_path('shortcuts', 'predefined_shortcuts.json')
+    custom_path = get_data_path('shortcuts', 'custom_shortcuts.json')
 
     predefined_shortcuts = load_shortcuts_from_file(predefined_path)
     custom_shortcuts = load_shortcuts_from_file(custom_path)
 
-    # Combine and give precedence to custom shortcuts if names conflict?
-    # For now, just concatenate. If categories are the same, they will merge visually.
-    all_s = []
-    if isinstance(predefined_shortcuts, list):
-        all_s.extend(predefined_shortcuts)
-    elif isinstance(predefined_shortcuts, dict) and 'categories' in predefined_shortcuts: # Assuming a structure like the old dashboard
-        all_s.extend(predefined_shortcuts['categories'])
-
-    if isinstance(custom_shortcuts, list):
-        all_s.extend(custom_shortcuts)
-    elif isinstance(custom_shortcuts, dict) and 'categories' in custom_shortcuts:
-        all_s.extend(custom_shortcuts['categories'])
-
-    # Consolidate shortcuts by category name
+    # Initialize the final shortcuts dictionary
     shortcuts_by_category = {}
-    for category_data in all_s:
-        category_name = category_data.get("category", "Uncategorized")
-        items = category_data.get("items", [])
-        if category_name not in shortcuts_by_category:
-            shortcuts_by_category[category_name] = []
-        shortcuts_by_category[category_name].extend(items)
+
+    # Process predefined shortcuts
+    if isinstance(predefined_shortcuts, dict):
+        if 'categories' in predefined_shortcuts:
+            # Old format: {"categories": [{"category": "name", "items": [...]}]}
+            for category_data in predefined_shortcuts['categories']:
+                category_name = category_data.get("category", "Uncategorized")
+                items = category_data.get("items", [])
+                if category_name not in shortcuts_by_category:
+                    shortcuts_by_category[category_name] = []
+                shortcuts_by_category[category_name].extend(items)
+        else:
+            # New format: {"Category Name": [{"name": "...", "url": "..."}]}
+            for category_name, items in predefined_shortcuts.items():
+                if category_name not in shortcuts_by_category:
+                    shortcuts_by_category[category_name] = []
+                shortcuts_by_category[category_name].extend(items)
+    elif isinstance(predefined_shortcuts, list):
+        # List of category objects
+        for category_data in predefined_shortcuts:
+            category_name = category_data.get("category", "Uncategorized")
+            items = category_data.get("items", [])
+            if category_name not in shortcuts_by_category:
+                shortcuts_by_category[category_name] = []
+            shortcuts_by_category[category_name].extend(items)
+
+    # Process custom shortcuts (same logic)
+    if isinstance(custom_shortcuts, dict):
+        if 'categories' in custom_shortcuts:
+            # Old format: {"categories": [{"category": "name", "items": [...]}]}
+            for category_data in custom_shortcuts['categories']:
+                category_name = category_data.get("category", "Uncategorized")
+                items = category_data.get("items", [])
+                if category_name not in shortcuts_by_category:
+                    shortcuts_by_category[category_name] = []
+                shortcuts_by_category[category_name].extend(items)
+        else:
+            # New format: {"Category Name": [{"name": "...", "url": "..."}]}
+            for category_name, items in custom_shortcuts.items():
+                if category_name not in shortcuts_by_category:
+                    shortcuts_by_category[category_name] = []
+                shortcuts_by_category[category_name].extend(items)
+    elif isinstance(custom_shortcuts, list):
+        # List of category objects
+        for category_data in custom_shortcuts:
+            category_name = category_data.get("category", "Uncategorized")
+            items = category_data.get("items", [])
+            if category_name not in shortcuts_by_category:
+                shortcuts_by_category[category_name] = []
+            shortcuts_by_category[category_name].extend(items)
 
     return shortcuts_by_category
+
+# Store loaded data globally in the module.
+ALL_SHORTCUTS_DATA = get_all_shortcuts()
 
 # Test data loading (can be removed or commented out later)
 # if __name__ == '__main__':

@@ -1,5 +1,12 @@
-import logging
+#!/usr/bin/env python3
+"""Backup script for Watchtower data using UV-compatible imports."""
+
+import os
 import sys
+import subprocess
+from pathlib import Path
+import logging
+from datetime import datetime
 
 # Attempt to set up project path for imports if needed.
 # This depends on how the project is structured and run.
@@ -15,92 +22,120 @@ try:
 except ImportError as e:
     # Fallback basic logging if custom setup fails or modules not found
     logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
-    logging.error(f"Failed to import necessary modules: {e}. Ensure PYTHONPATH is set correctly or script is run from project root.")
+    logging.error(f"Failed to import necessary modules: {e}. Ensure the project is properly set up with 'uv sync' or 'python install_dev.py'")
     sys.exit(1)
 
-def main():
-    # Setup centralized logging if available
-    # This might need adjustment based on how your logging is configured.
-    # If setup_logging() takes arguments or settings, pass them.
+def setup_logging():
+    """Set up logging configuration."""
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_dir / "backup_process.log"),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+    return logging.getLogger(__name__)
+
+def check_uv_available():
+    """Check if UV is available for running the backup utilities."""
     try:
-        # Assuming setup_logging configures root logger or specific loggers.
-        # If it returns a logger, you might want to use that.
-        setup_logging()
-        logger = logging.getLogger("watchtower.run_backup") # Use a named logger
-    except Exception as log_e:
-        # Fallback if setup_logging fails
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Could not initialize custom logging due to: {log_e}. Using basic logging.")
+        subprocess.run(["uv", "--version"], check=True, capture_output=True)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
 
-    logger.info("Starting backup process...")
-
+def run_backup_with_uv():
+    """Run backup using UV to ensure proper environment."""
+    logger = setup_logging()
+    logger.info("Starting Watchtower backup process with UV")
+    
+    # Change to project root
+    project_root = Path(__file__).parent
+    os.chdir(project_root)
+    
+    # Check if UV is available
+    if not check_uv_available():
+        logger.error("UV not available. Running backup without UV environment management.")
+        # Fallback to direct import
+        try:
+            from src.utils.backup_utils import run_backup_process
+            run_backup_process()
+        except ImportError as e:
+            logger.error(f"Failed to import backup utilities: {e}")
+            return False
+        return True
+    
+    # Run backup using UV
     try:
-        settings: Settings = get_settings()
-
-        # Validate essential settings for backup
-        if not hasattr(settings, 'google_drive') or \
-           not settings.google_drive.backup_folder_id or \
-           not settings.google_drive.credentials_file:
-            logger.error("Google Drive configuration (backup_folder_id, credentials_file) is missing or incomplete in settings.")
-            logger.error("Please ensure WATCHTOWER_GOOGLE_DRIVE__BACKUP_FOLDER_ID and WATCHTOWER_GOOGLE_DRIVE__CREDENTIALS_FILE are set in your .env file or environment variables.")
-            sys.exit(1)
-
-        if not settings.project_root:
-            logger.error("Project root is not defined in settings. Cannot determine paths for data/logs.")
-            sys.exit(1)
-
-        # Define folders to back up using paths from settings
-        # These should be relative paths from project_root, as BackupManager expects them.
-        # The Settings class should ideally resolve these to absolute paths or provide them as such.
-        # For BackupManager, we give paths relative to project_root if they are not absolute.
-        # Example: settings.data_dir could be "data" or "/path/to/project/data"
-        # BackupManager's compress_folders will handle making them absolute if needed.
-
-        folders_to_backup = []
-        if settings.data_dir:
-            folders_to_backup.append(settings.data_dir)
-        else:
-            logger.warning("settings.data_dir is not defined. Skipping data folder backup.")
-
-        if settings.logs_dir:
-            folders_to_backup.append(settings.logs_dir)
-        else:
-            logger.warning("settings.logs_dir is not defined. Skipping logs folder backup.")
-
-        if not folders_to_backup:
-            logger.error("No folders specified for backup (data_dir and logs_dir are not set in settings). Aborting.")
-            sys.exit(1)
-
-        logger.info(f"Target folders for backup: {folders_to_backup}")
-        logger.info(f"Using project root: {settings.project_root}")
-        logger.info(f"Google Drive Credentials File: {settings.google_drive.credentials_file}")
-        logger.info(f"Google Drive Backup Folder ID: {settings.google_drive.backup_folder_id}")
-
-
-        backup_manager = BackupManager(settings)
-        success = backup_manager.run_backup_process(folders_to_backup)
-
-        if success:
-            logger.info("Backup process completed successfully.")
-            sys.exit(0)
-        else:
-            logger.error("Backup process failed. Check logs for details.")
-            sys.exit(1)
-
-    except FileNotFoundError as fnf_error:
-        logger.error(f"Backup initialization failed: {fnf_error}. This often means the client_secrets.json file is missing or misconfigured.")
-        logger.error("Ensure the path in WATCHTOWER_GOOGLE_DRIVE__CREDENTIALS_FILE is correct and the file exists.")
-        sys.exit(1)
-    except ValueError as val_error: # Catch specific errors from BackupManager or settings
-        logger.error(f"Backup initialization failed due to a configuration value error: {val_error}")
-        sys.exit(1)
-    except ImportError as imp_error: # Should be caught above, but as a safeguard
-        logger.error(f"Import error during backup script execution: {imp_error}")
-        sys.exit(1)
+        logger.info("Running backup process with UV environment...")
+        cmd = [
+            "uv", "run", "python", "-c",
+            "from src.utils.backup_utils import run_backup_process; run_backup_process()"
+        ]
+        
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        
+        if result.stdout:
+            logger.info(f"Backup output: {result.stdout}")
+        
+        logger.info("Backup process completed successfully")
+        return True
+        
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Backup process failed: {e}")
+        if e.stderr:
+            logger.error(f"Error details: {e.stderr}")
+        return False
     except Exception as e:
-        logger.error(f"An unexpected error occurred during the backup script execution: {e}", exc_info=True)
+        logger.error(f"Unexpected error during backup: {e}")
+        return False
+
+def run_backup_direct():
+    """Run backup directly without UV (fallback method)."""
+    logger = setup_logging()
+    logger.info("Starting Watchtower backup process (direct mode)")
+    
+    try:
+        # Try to import and run backup utilities directly
+        from src.utils.backup_utils import run_backup_process
+        run_backup_process()
+        logger.info("Backup process completed successfully")
+        return True
+    except ImportError as e:
+        logger.error(f"Failed to import backup utilities: {e}")
+        logger.error("Please ensure the project is properly set up with 'uv sync' or 'python install_dev.py'")
+        return False
+    except Exception as e:
+        logger.error(f"Backup process failed: {e}")
+        return False
+
+def main():
+    """Main backup function."""
+    logger = setup_logging()
+    logger.info("=" * 50)
+    logger.info("Watchtower Backup Process Starting")
+    logger.info("=" * 50)
+
+    # Try UV-based backup first, fallback to direct if needed
+    success = run_backup_with_uv()
+    
+    if not success:
+        logger.warning("UV-based backup failed, trying direct method...")
+        success = run_backup_direct()
+
+    if success:
+        logger.info("✅ Backup completed successfully!")
+    else:
+        logger.error("❌ Backup failed. Check logs for details.")
         sys.exit(1)
+    
+    logger.info("=" * 50)
+    logger.info("Backup Process Finished")
+    logger.info("=" * 50)
 
 if __name__ == "__main__":
     main()

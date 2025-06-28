@@ -18,8 +18,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import Normalizer
 
 import sys
-from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
 
 
 class NLPContentClassifier:

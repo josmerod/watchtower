@@ -5,9 +5,14 @@ from datetime import datetime, timezone
 import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists
+
 
 # --- Constants ---
-AZURE_TRAINING_DATA_PATH = "../../../data/courses/azure_training_updates.json" # Relative to this file
+AZURE_TRAINING_DATA_PATH = get_data_path("courses", "azure_training_updates.json") # Relative to this file
 AZURE_TRAINING_POSTS = pd.DataFrame() # Store posts here
 
 # --- Data Loading ---
@@ -43,7 +48,7 @@ def load_azure_training_posts():
     actual_data_path = os.path.normpath(os.path.join(current_script_dir, AZURE_TRAINING_DATA_PATH))
 
     raw_posts = []
-    if os.path.exists(actual_data_path):
+    if file_exists(actual_data_path):
         try:
             with open(actual_data_path, 'r', encoding='utf-8') as f:
                 raw_posts = json.load(f)

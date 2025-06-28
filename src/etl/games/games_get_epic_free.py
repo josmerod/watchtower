@@ -9,8 +9,8 @@ import requests
 import pandas as pd
 
 # Add the project root to the path for imports
-from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("Epic_Free_Games_ETL")
 EPIC_API_URL = (

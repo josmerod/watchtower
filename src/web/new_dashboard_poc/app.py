@@ -148,4 +148,4 @@ if __name__ == "__main__":
     # If this script (app.py) is run directly, ensure CWD allows components to find their data.
     # Typically, one would run `run_new_dashboard_poc.py` from the project root.
 
-    app.run_server(debug=True, port=8050) # Default Dash port for direct app run
+    app.run_server(debug=False, port=8050) # Default Dash port for direct app run

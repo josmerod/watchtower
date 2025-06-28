@@ -7,10 +7,16 @@ from dash import html, dcc, Input, Output, State, Patch
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists
+
 # --- Data Loading ---
 ALL_VIDEOS_DATA = {} # Will store DataFrames by channel name
 VIDEO_DATA_LOADED = False
-BASE_VIDEOS_PATH = "../../../data/youtube/" # Relative to this file's location (src/web/new_dashboard_poc/components)
+
+BASE_VIDEOS_PATH = get_data_path("youtube")
 
 def parse_video_date(date_str):
     """Parses video date strings into datetime objects."""
@@ -27,48 +33,46 @@ def parse_video_date(date_str):
 
 def load_single_channel_videos(channel_path, channel_name):
     """Loads, processes, and returns a DataFrame for a single channel's videos."""
-    json_files_to_try = ["videos.json", "youtube_videos.json"]
+    json_files_to_try = ["youtube_videos.json", "videos.json"]
     loaded_videos = []
 
     for json_file in json_files_to_try:
         file_path = os.path.join(channel_path, json_file)
-        if os.path.exists(file_path):
+        if file_exists(file_path):
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     videos_raw = json.load(f)
                     if isinstance(videos_raw, list):
                         for video_data in videos_raw:
-                            # Adapt these keys based on actual JSON structure from YouTube ETLs
-                            title = video_data.get('title', video_data.get('snippet', {}).get('title'))
-                            url = "https://www.youtube.com/watch?v=" + video_data.get('video_id', video_data.get('id', {}).get('videoId',''))
-
-                            # Thumbnail: prefer high, then medium, then default
-                            thumbnails = video_data.get('thumbnails', video_data.get('snippet', {}).get('thumbnails', {}))
-                            thumbnail_url = thumbnails.get('high', {}).get('url') or \
-                                            thumbnails.get('medium', {}).get('url') or \
-                                            thumbnails.get('default', {}).get('url')
-
-                            published_at_str = video_data.get('published_at', video_data.get('snippet', {}).get('publishedAt'))
+                            # Handle the actual data structure from the JSON
+                            title = video_data.get('title', 'No Title')
+                            url = video_data.get('url', '')
+                            
+                            # Use the thumbnail field directly
+                            thumbnail_url = video_data.get('thumbnail', '')
+                            
+                            # Use published_at directly
+                            published_at_str = video_data.get('published_at', '')
+                            
+                            # Get channel from the data or use the folder name
+                            channel_display = video_data.get('channel', channel_name)
 
                             loaded_videos.append({
                                 'title': title,
                                 'url': url,
                                 'thumbnail_url': thumbnail_url,
-                                'published_date_str': published_at_str, # Keep original string for debugging
+                                'published_date_str': published_at_str,
                                 'published_date': parse_video_date(published_at_str),
-                                'channel_name': channel_name,
-                                # Add other fields if needed, e.g., description, views
-                                'description': video_data.get('description', video_data.get('snippet', {}).get('description')),
-                                'video_id': video_data.get('video_id', video_data.get('id', {}).get('videoId','')),
+                                'channel_name': channel_display,
+                                'description': video_data.get('description', ''),
+                                'views': video_data.get('views', 0),
+                                'length': video_data.get('length', 0),
                             })
                         break # Found and processed a JSON file
             except json.JSONDecodeError:
                 print(f"Error decoding JSON from {file_path} for channel {channel_name}")
             except Exception as e:
                 print(f"Error processing file {file_path}: {e}")
-        # else:
-            # print(f"Debug: File {file_path} not found for channel {channel_name}")
-
 
     if not loaded_videos:
         return pd.DataFrame()
@@ -82,16 +86,10 @@ def load_videos_data():
     """Loads video data from all channel subdirectories."""
     global ALL_VIDEOS_DATA, VIDEO_DATA_LOADED
 
-    # Correct base path relative to this script file
-    # src/web/new_dashboard_poc/components/videos_tab.py
-    # needs to go to project_root/data/youtube/
-    current_script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root_approx = os.path.join(current_script_dir, "..", "..", "..", "..") # up four levels
-    actual_videos_path = os.path.join(project_root_approx, "data", "youtube")
+    actual_videos_path = BASE_VIDEOS_PATH
     # print(f"Debug: Attempting to load videos from: {actual_videos_path}")
 
-
-    if not os.path.exists(actual_videos_path) or not os.path.isdir(actual_videos_path):
+    if not dir_exists(actual_videos_path):
         print(f"Warning: Videos base directory not found: {actual_videos_path}")
         ALL_VIDEOS_DATA = {}
         VIDEO_DATA_LOADED = True # Mark as loaded to prevent constant reload attempts
@@ -113,7 +111,6 @@ def load_videos_data():
             # print(f"Debug: Loaded {len(channel_df)} videos for channel {channel_name}")
         # else:
             # print(f"Debug: No videos loaded for channel {channel_name}")
-
 
     VIDEO_DATA_LOADED = True
     if not ALL_VIDEOS_DATA:

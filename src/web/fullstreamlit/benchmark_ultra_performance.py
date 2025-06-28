@@ -18,7 +18,7 @@ from plotly.subplots import make_subplots
 import numpy as np
 
 # Add project root to path
-from utils.logging import get_logger
+from src.utils.logging import get_logger
 
 def measure_memory():
     """Get current memory usage in MB"""

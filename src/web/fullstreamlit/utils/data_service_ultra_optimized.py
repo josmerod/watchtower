@@ -369,7 +369,7 @@ class UltraOptimizedDataService:
     
     @st.cache_data(ttl=3600, max_entries=5, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
     def get_courses_data_ultra(_self) -> Dict[str, pd.DataFrame]:
-        """Ultra-optimized courses data loading"""
+        """Ultra-optimized courses data loading with proper sorting"""
         _self._log("Loading courses data (ultra-optimized)")
         
         courses_data = {}
@@ -388,6 +388,17 @@ class UltraOptimizedDataService:
                 if data:
                     df = pd.DataFrame(data)
                     if not df.empty:
+                        # Sort by scraped_at date in descending order (newest first)
+                        if 'scraped_at' in df.columns:
+                            try:
+                                # Convert to datetime for proper sorting
+                                df['scraped_at'] = pd.to_datetime(df['scraped_at'], errors='coerce')
+                                # Sort newest first, put NaT values at the end
+                                df = df.sort_values(by='scraped_at', ascending=False, na_position='last')
+                                _self._log(f"Sorted {source_name} courses by scraped_at (newest first)")
+                            except Exception as e:
+                                _self._log(f"Warning: Could not sort {source_name} courses by date: {e}", "warning")
+                        
                         df = clean_dataframe_for_caching(df)
                         courses_data[source_name] = df
                         _self._log(f"Ultra-loaded {len(df)} {source_name} courses")
@@ -735,7 +746,7 @@ class UltraOptimizedDataService:
             self._log(f"Error converting new game releases data to DataFrame: {e}", "error")
             return pd.DataFrame()
 
-    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False) # Cache for 30 mins
+    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False)
     def get_google_cloud_blog_data(self) -> List[Dict[str, Any]]:
         """
         Reads Google Cloud Blog data from data/news/google_cloud_blog.json.
@@ -1663,45 +1674,80 @@ class UltraOptimizedDataService:
             _self._log(f"Error loading AllKeyShop data: {e}", "error")
             return []
 
-# Factory function for easy instantiation
-def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:
-    """Create an ultra-optimized data service instance"""
-    return UltraOptimizedDataService(logger) 
-
-    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
+    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False)
     def get_museum_data(_self) -> pd.DataFrame:
-        """Load and process virtual museum data."""
-        _self._log("Loading virtual museum data...")
+        """
+        Loads virtual museum data from the latest museum ETL output file.
+        Returns an empty DataFrame if no data is available.
+        """
+        _self._log("Loading museum data")
 
-        museums_output_dir = _self.cached_paths.get('museums_output_dir')
-
-        if not museums_output_dir:
-            _self._log("Museums output directory not configured.", "warning")
+        museum_dir = _self.data_dir / "museums"
+        if not museum_dir.exists():
+            _self._log(f"Museum data directory not found: {museum_dir}", "warning")
             return pd.DataFrame()
 
-        if not museums_output_dir.exists():
-            _self._log(f"Museums output directory not found: {museums_output_dir}", "warning")
-            return pd.DataFrame()
-
+        # Look for the latest museum data file
+        pattern = "museums_*.json"
+        latest_file_path = None
         try:
-            json_files = list(museums_output_dir.glob("virtual_museums_etl_*.json"))
-            if not json_files:
-                _self._log(f"No museum JSON files found in {museums_output_dir}", "warning")
+            museum_files = list(_self.data_dir.glob(pattern))
+            if museum_files:
+                # Sort by modification time, get the latest
+                latest_file_path = max(museum_files, key=lambda f: f.stat().st_mtime)
+            else:
+                _self._log(f"No museum data files found matching pattern {pattern} in {museum_dir}", "warning")
+                return pd.DataFrame()
+        except Exception as e:
+            _self._log(f"Error finding museum data files: {e}", "error")
+            return pd.DataFrame()
+
+        cache_key = _self._get_cache_key(str(latest_file_path), "museum_data")
+
+        # Check memory cache first
+        if cache_key in _self.memory_cache:
+            _self._log(f"Returning cached museum data for key: {cache_key}", "debug")
+            cached_data = _self.memory_cache[cache_key]
+            if isinstance(cached_data, pd.DataFrame):
+                return cached_data
+            # If cached data is raw JSON, convert to DataFrame
+            try:
+                df = pd.DataFrame(cached_data)
+                if not df.empty:
+                    df = clean_dataframe_for_caching(df)
+                return df
+            except Exception as e:
+                _self._log(f"Error converting cached museum data to DataFrame: {e}", "error")
                 return pd.DataFrame()
 
-            # Select the most recent file based on modification time
-            latest_file_path = max(json_files, key=lambda p: p.stat().st_mtime)
-            _self._log(f"Latest museum data file: {latest_file_path}")
+        # Load fresh data
+        try:
+            with open(latest_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
 
-        except Exception as e:
-            _self._log(f"Error finding latest museum file in {museums_output_dir}: {e}", "error")
+            if not isinstance(data, list):
+                _self._log(f"Museum data is not a list: {type(data)}", "warning")
+                if isinstance(data, dict):
+                    data = [data]
+                else:
+                    return pd.DataFrame()
+
+            if not data:
+                _self._log("Museum data list is empty.", "info")
+                return pd.DataFrame()
+
+            # Store raw data in memory cache
+            if len(_self.memory_cache) < 50:
+                _self.memory_cache[cache_key] = data
+
+        except FileNotFoundError:
+            _self._log(f"Museum data file not found: {latest_file_path}", "error")
             return pd.DataFrame()
-
-        cache_key = _self._get_cache_key(str(latest_file_path), "museums_data")
-        data = _self._ultra_fast_json_load(latest_file_path, cache_key)
-
-        if not data:
-            _self._log(f"No data loaded from {latest_file_path} or file is empty.", "warning")
+        except json.JSONDecodeError as e:
+            _self._log(f"Error decoding JSON from {latest_file_path}: {e}", "error")
+            return pd.DataFrame()
+        except Exception as e:
+            _self._log(f"An unexpected error occurred while reading {latest_file_path}: {e}", "error")
             return pd.DataFrame()
 
         try:
@@ -1711,21 +1757,12 @@ def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:
                 return pd.DataFrame()
 
             # Define type mappings based on VirtualMuseumModel
-            # id (uuid.UUID) becomes string, name (str), description (Optional[str])
-            # website_url (Optional[HttpUrl]) becomes string, virtual_tour_url (Optional[HttpUrl]) becomes string
-            # country_label (Optional[str]), city_label (Optional[str]), main_subject_label (Optional[str])
-            # image_url (Optional[HttpUrl]) becomes string, wikidata_url (Optional[HttpUrl]) becomes string
-            # latitude (Optional[float]), longitude (Optional[float])
-            # data_source (str) = "Wikidata"
-            # retrieved_at (datetime), created_at (datetime), updated_at (datetime)
             type_mapping = {
                 'retrieved_at': 'datetime',
                 'created_at': 'datetime',
                 'updated_at': 'datetime',
                 'latitude': 'float',
                 'longitude': 'float'
-                # Other fields are likely strings or will be handled correctly by default.
-                # Pydantic HttpUrl fields become strings in JSON.
             }
 
             df = _self._optimize_dataframe_dtypes(df, type_mapping)
@@ -1739,42 +1776,44 @@ def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:
             return pd.DataFrame()
 
 def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
-    """Clean DataFrame to avoid unhashable type errors during Streamlit caching."""
-    import json
-    
-    if df.empty:
+    """
+    Clean DataFrame to make it cache-compatible with Streamlit.
+    Removes unhashable dict columns and optimizes data types.
+    """
+    if df is None or df.empty:
         return df
     
-    # Create a copy to avoid modifying the original
-    df_clean = df.copy()
+    cleaned_df = df.copy()
     
-    # Convert any dictionary or list columns to strings
-    for col in df_clean.columns:
-        if df_clean[col].dtype == 'object':
-            # Check if column contains dictionaries or lists
-            try:
-                # Sample a few non-null values to check type
-                sample_values = df_clean[col].dropna().head(3)
-                if not sample_values.empty:
-                    for val in sample_values:
-                        if isinstance(val, (dict, list)):
-                            # Convert all values that are dict or list to formatted strings
-                            def format_value(x):
-                                if isinstance(x, list):
-                                    # For game lists, create readable comma-separated strings
-                                    return ', '.join(str(item) for item in x) if x else ''
-                                elif isinstance(x, dict):
-                                    try:
-                                        return json.dumps(x, default=str)
-                                    except:
-                                        return str(x)
-                                else:
-                                    return x
-                            
-                            df_clean[col] = df_clean[col].apply(format_value)
-                            break
-            except (TypeError, ValueError):
-                # If there's any issue, convert the entire column to string
-                df_clean[col] = df_clean[col].astype(str)
+    # Convert any dict columns to strings for cache compatibility
+    for col in cleaned_df.columns:
+        if cleaned_df[col].dtype == 'object':
+            # Check if column contains dictionaries
+            sample_val = cleaned_df[col].dropna().iloc[0] if not cleaned_df[col].dropna().empty else None
+            if isinstance(sample_val, dict):
+                # Convert dicts to JSON strings
+                cleaned_df[col] = cleaned_df[col].apply(
+                    lambda x: json.dumps(x, ensure_ascii=False) if isinstance(x, dict) else x
+                )
+            elif isinstance(sample_val, list):
+                # Convert lists to JSON strings
+                cleaned_df[col] = cleaned_df[col].apply(
+                    lambda x: json.dumps(x, ensure_ascii=False) if isinstance(x, list) else x
+                )
     
-    return df_clean 
+    # Optimize memory usage
+    for col in cleaned_df.select_dtypes(include=['object']).columns:
+        try:
+            # Try to convert to categorical if it has low cardinality
+            unique_ratio = cleaned_df[col].nunique() / len(cleaned_df)
+            if unique_ratio < 0.5:  # Less than 50% unique values
+                cleaned_df[col] = cleaned_df[col].astype('category')
+        except:
+            pass
+    
+    return cleaned_df
+
+# Factory function for easy instantiation
+def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:
+    """Create an ultra-optimized data service instance"""
+    return UltraOptimizedDataService(logger) 

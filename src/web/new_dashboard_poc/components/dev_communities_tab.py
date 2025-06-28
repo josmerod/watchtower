@@ -5,19 +5,24 @@ from datetime import datetime, timezone
 import dash
 from dash import html, dcc, Input, Output, State, Patch, callback_context
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists
+
 from dash.exceptions import PreventUpdate
 
 # --- Constants ---
 DEV_DATA_SOURCES = {
-    'devto': {"path": "../../../data/dev_community/dev_community_latest.json", "name": "DEV.to"},
-    'hackernews_ask': {"path": "../../../data/hackernews_ask/hackernews_ask_latest.json", "name": "Hacker News Ask"},
-    'hackernews_show': {"path": "../../../data/hackernews_show/hackernews_show_latest.json", "name": "Hacker News Show"},
-    'indiehackers': {"path": "../../../data/indiehackers/indiehackers_latest.json", "name": "Indie Hackers"},
-    'lobsters': {"path": "../../../data/lobsters/lobsters_latest.json", "name": "Lobsters"},
-    'producthunt': {"path": "../../../data/producthunt/producthunt_latest.json", "name": "Product Hunt"},
-    'stackoverflow': {"path": "../../../data/stackoverflow_trends/stackoverflow_trends_latest.json", "name": "Stack Overflow"},
+    'devto': {"path": get_data_path("dev_community", "dev_community_latest.json"), "name": "DEV.to"},
+    'hackernews_ask': {"path": get_data_path("hackernews_ask", "hackernews_ask_latest.json"), "name": "Hacker News Ask"},
+    'hackernews_show': {"path": get_data_path("hackernews_show", "hackernews_show_latest.json"), "name": "Hacker News Show"},
+    'indiehackers': {"path": get_data_path("indiehackers", "indiehackers_latest.json"), "name": "Indie Hackers"},
+    'lobsters': {"path": get_data_path("lobsters", "lobsters_latest.json"), "name": "Lobsters"},
+    'producthunt': {"path": get_data_path("producthunt", "producthunt_latest.json"), "name": "Product Hunt"},
+    'stackoverflow': {"path": get_data_path("stackoverflow_trends", "stackoverflow_trends_latest.json"), "name": "Stack Overflow"},
     # Add more sources here as they are created by ETLs
-    # e.g. 'reddit_programming': {"path": "../../../data/reddit_programming/...", "name": "r/programming"},
+    # e.g. 'reddit_programming': {"path": get_data_path("reddit_programming", "..."), "name": "r/programming"},
 }
 
 ALL_DEV_COMMUNITY_DATA = {} # Stores DataFrames
@@ -57,7 +62,7 @@ def load_single_dev_source(source_key, file_info):
     global ALL_DEV_COMMUNITY_DATA, DEV_DATA_LOADED
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), file_info["path"]))
 
-    if not os.path.exists(file_path):
+    if not file_exists(file_path):
         print(f"Warning ({file_info['name']}): File not found at {file_path}")
         ALL_DEV_COMMUNITY_DATA[source_key] = pd.DataFrame()
         DEV_DATA_LOADED[source_key] = True # Attempted

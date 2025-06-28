@@ -3,18 +3,25 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from datetime import datetime, timezone
+import os
+
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, parse_date_universal
 
 # --- Data Loading ---
+
 NEWS_SOURCES_CONFIG = {
-    "futuretools": {"path": "../../../data/futuretools/futuretoolsnews.json", "name": "FutureTools"},
-    "bensbites": {"path": "../../../data/bensbites/bensbites_news.json", "name": "Ben's Bites"},
-    "hackernews": {"path": "../../../data/hackernews/hackernews.json", "name": "Hacker News"},
-    "medium_genai": {"path": "../../../data/medium_genai/medium_genai.json", "name": "Medium GenAI"},
-    "kdnuggets": {"path": "../../../data/kdnuggets/kdnuggets.json", "name": "KDnuggets"},
-    "gooddevs": {"path": "../../../data/gooddevs/gooddevs_latest.json", "name": "Good Devs"},
-    "meneame_general": {"path": "../../../data/meneame/meneame_general_latest.json", "name": "Meneame General"},
-    "meneame_tecnologia": {"path": "../../../data/meneame/meneame_tecnologia_latest.json", "name": "Meneame Tech"},
-    "podcasts": {"path": "../../../data/podcasts/podcasts_latest.json", "name": "Podcasts"},
+    "futuretools": {"path": get_data_path("futuretools", "futuretoolsnews.json"), "name": "FutureTools"},
+    "bensbites": {"path": get_data_path("bensbites", "bensbites_news.json"), "name": "Ben's Bites"},
+    "hackernews": {"path": get_data_path("hackernews", "hackernews.json"), "name": "Hacker News"},
+    "medium_genai": {"path": get_data_path("medium_genai", "medium_genai.json"), "name": "Medium GenAI"},
+    "kdnuggets": {"path": get_data_path("kdnuggets", "kdnuggets.json"), "name": "KDnuggets"},
+    "gooddevs": {"path": get_data_path("gooddevs", "gooddevs_latest.json"), "name": "Good Devs"},
+    "meneame_general": {"path": get_data_path("meneame", "meneame_general_latest.json"), "name": "Meneame General"},
+    "meneame_tecnologia": {"path": get_data_path("meneame", "meneame_tecnologia_latest.json"), "name": "Meneame Tech"},
+    "podcasts": {"path": get_data_path("podcasts", "podcasts_latest.json"), "name": "Podcasts"},
 }
 
 def load_news_from_file(file_path):
@@ -107,8 +114,8 @@ def parse_date(date_str):
         except (ValueError, TypeError):
             pass # Not a valid float or timestamp
 
-    print(f"Warning: Could not parse date string: {s_date} with any known format.")
-    return None
+    # Use the shared date parsing function as fallback
+    return parse_date_universal(s_date, "News")
 
 # --- Layout Generation ---
 

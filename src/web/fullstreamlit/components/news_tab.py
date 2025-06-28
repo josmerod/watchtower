@@ -282,146 +282,233 @@ def render(logger=None):
 
 
 def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
-    """Render FutureTools and Ben's Bites news"""
-    st.subheader("FutureTools & Ben's Bites")
-    if futuretools_news_df.empty and bensbites_news_df.empty:
-        st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
-    else:
-        # Combine FutureTools and Ben's Bites news
-        combined_news_df = pd.concat([futuretools_news_df, bensbites_news_df])
+    """Render FutureTools and Ben's Bites news with improved error handling"""
+    st.subheader("FutureTools & Ben's Bites AI News")
+    
+    try:
+        # Combine FutureTools and Ben's Bites news with improved error handling
+        combined_news_df = pd.DataFrame()
+        
+        # Process each dataframe separately to handle column mismatches
+        dfs_to_combine = []
+        
+        # Process FutureTools data
+        if not futuretools_news_df.empty:
+            ft_df = futuretools_news_df.copy()
+            # Standardize column names
+            if 'published_at' in ft_df.columns and 'published_date' not in ft_df.columns:
+                ft_df['published_date'] = ft_df['published_at']
+            elif 'published_date' not in ft_df.columns:
+                ft_df['published_date'] = pd.Timestamp.now()
+            dfs_to_combine.append(ft_df)
+            
+        # Process Ben's Bites data
+        if not bensbites_news_df.empty:
+            bb_df = bensbites_news_df.copy()
+            # Standardize column names
+            if 'published_at' in bb_df.columns and 'published_date' not in bb_df.columns:
+                bb_df['published_date'] = bb_df['published_at']
+            elif 'published_date' not in bb_df.columns:
+                bb_df['published_date'] = pd.Timestamp.now()
+            dfs_to_combine.append(bb_df)
+        
+        # Combine dataframes if we have any
+        if dfs_to_combine:
+            combined_news_df = pd.concat(dfs_to_combine, ignore_index=True)
+        
         if not combined_news_df.empty:
-            # Ensure published_date column exists
-            if "published_date" not in combined_news_df.columns:
-                # Check if published_at exists and use it as a fallback
-                if "published_at" in combined_news_df.columns:
-                    combined_news_df["published_date"] = pd.to_datetime(combined_news_df["published_at"], errors="coerce")
-                else:
-                    # Create a default date column
-                    combined_news_df["published_date"] = pd.Timestamp("now")
+            # Ensure published_date column exists and is properly formatted
+            if "published_date" in combined_news_df.columns:
+                # Convert to datetime with error handling
+                try:
+                    combined_news_df["published_date"] = pd.to_datetime(combined_news_df["published_date"], errors="coerce")
+                except Exception as e:
+                    print(f"Warning: Could not convert published_date to datetime: {e}")
+                    combined_news_df["published_date"] = pd.Timestamp.now()
+            else:
+                # Create a default date column
+                combined_news_df["published_date"] = pd.Timestamp.now()
             
             # Sort by published_date (now guaranteed to exist)
             combined_news_df = combined_news_df.sort_values("published_date", ascending=False)
             
             # Format date for display - ensure it's a string to avoid column type issues
-            combined_news_df["published_display"] = combined_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M').astype(str)
+            try:
+                combined_news_df["published_display"] = combined_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M').astype(str)
+            except Exception as e:
+                print(f"Warning: Could not format display date: {e}")
+                combined_news_df["published_display"] = "Unknown Date"
 
-            # Prepare DataFrame for st.data_editor
-            source_name_for_download = "ft_bensbites" # Define unique source name
-            df_for_editor = combined_news_df.rename(columns={
-                "title": "Título",
-                "source": "Fuente",
-                "published_display": "Fecha de Publicación",
-                "url": "URL_Enlace"
-            })
+            # Prepare DataFrame for st.data_editor with safe column mapping
+            source_name_for_download = "ft_bensbites"
             
-            # Ensure required columns exist and select them in order
-            required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
-            cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
-            df_for_editor = df_for_editor[cols_to_display]
+            # Create a mapping of available columns
+            column_mapping = {}
+            if "title" in combined_news_df.columns:
+                column_mapping["title"] = "Título"
+            if "source" in combined_news_df.columns:
+                column_mapping["source"] = "Fuente"
+            if "published_display" in combined_news_df.columns:
+                column_mapping["published_display"] = "Fecha de Publicación"
+            if "url" in combined_news_df.columns:
+                column_mapping["url"] = "URL_Enlace"
+            
+            # Rename only existing columns
+            df_for_editor = combined_news_df.rename(columns=column_mapping)
+            
+            # Select only the columns that exist
+            display_columns = [col for col in column_mapping.values() if col in df_for_editor.columns]
+            df_for_editor = df_for_editor[display_columns]
 
             st.session_state.active_df_for_export = df_for_editor
             st.session_state.active_source_name = source_name_for_download
 
-            st.data_editor(
-                df_for_editor,
-                column_config={
-                    "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
-                    "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
-                    "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
-                    "URL_Enlace": st.column_config.LinkColumn(
-                        label="Enlace",
-                        display_text="Leer Artículo",
-                        width="small",
-                        help="Enlace directo al artículo"
-                    )
-                },
-                hide_index=True,
-                use_container_width=True,
-                disabled=True
-            )
-        else:
-            source_name_for_download = "ft_bensbites" # Must be defined in else branch too
-            if st.session_state.get("active_source_name") == source_name_for_download:
-                st.session_state.active_df_for_export = None
-                st.session_state.active_source_name = None
-            st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
-
-
-def render_hackernews(ycombinator_news_df):
-    """Render Hacker News"""
-    st.subheader("Hacker News")
-    if ycombinator_news_df.empty:
-        st.warning("No hay noticias disponibles de Hacker News.")
-    else:
-        # Ensure published_date column exists
-        if "published_date" not in ycombinator_news_df.columns:
-            # Check if published_at exists and use it as a fallback
-            if "published_at" in ycombinator_news_df.columns:
-                ycombinator_news_df["published_date"] = pd.to_datetime(ycombinator_news_df["published_at"], errors="coerce")
-            else:
-                # Create a default date column
-                ycombinator_news_df["published_date"] = pd.Timestamp("now")
-        
-        # Sort by published_date (now guaranteed to exist)
-        display_news_df = ycombinator_news_df.sort_values("published_date", ascending=False)
-        
-        # Format date for display - ensure it's a string to avoid column type issues
-        display_news_df["published_display"] = display_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M').astype(str)
-
-        # Prepare DataFrame for st.data_editor
-        source_name_for_download = "hackernews" # Define unique source name
-        df_for_editor = display_news_df.rename(columns={
-            "title": "Título",
-            "source": "Fuente",
-            "published_display": "Fecha de Publicación",
-            "url": "URL_Enlace"
-        })
-
-        # Ensure required columns exist and select them in order
-        required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
-        cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
-        df_for_editor = df_for_editor[cols_to_display]
-
-        st.session_state.active_df_for_export = df_for_editor
-        st.session_state.active_source_name = source_name_for_download
-        
-        st.data_editor(
-            df_for_editor,
-            column_config={
-                "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
-                "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
-                "Fecha de Publicación": st.column_config.TextColumn(width="small", help="Fecha de publicación original"),
-                "URL_Enlace": st.column_config.LinkColumn(
+            # Create column config only for existing columns
+            column_config = {}
+            if "Título" in df_for_editor.columns:
+                column_config["Título"] = st.column_config.TextColumn(width="medium", help="Título del artículo")
+            if "Fuente" in df_for_editor.columns:
+                column_config["Fuente"] = st.column_config.TextColumn(width="small", help="Fuente de la noticia")
+            if "Fecha de Publicación" in df_for_editor.columns:
+                column_config["Fecha de Publicación"] = st.column_config.TextColumn(width="small", help="Fecha de publicación original")
+            if "URL_Enlace" in df_for_editor.columns:
+                column_config["URL_Enlace"] = st.column_config.LinkColumn(
                     label="Enlace",
                     display_text="Leer Artículo",
                     width="small",
                     help="Enlace directo al artículo"
                 )
-            },
+
+            st.data_editor(
+                df_for_editor,
+                column_config=column_config,
+                hide_index=True,
+                use_container_width=True,
+                disabled=True
+            )
+        else:
+            source_name_for_download = "ft_bensbites"
+            if st.session_state.get("active_source_name") == source_name_for_download:
+                st.session_state.active_df_for_export = None
+                st.session_state.active_source_name = None
+            st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
+            
+    except Exception as e:
+        st.error(f"Error processing FutureTools/Ben's Bites news: {str(e)}")
+        st.info("Please try refreshing the page or contact support if the issue persists.")
+
+
+def render_hackernews(ycombinator_news_df):
+    """Render Hacker News with improved error handling"""
+    st.subheader("Hacker News")
+    
+    try:
+        if ycombinator_news_df.empty:
+            st.warning("No hay noticias disponibles de Hacker News.")
+            return
+        
+        display_news_df = ycombinator_news_df.copy()
+        
+        # Ensure published_date column exists with better error handling
+        if "published_date" not in display_news_df.columns:
+            # Check if published_at exists and use it as a fallback
+            if "published_at" in display_news_df.columns:
+                try:
+                    display_news_df["published_date"] = pd.to_datetime(display_news_df["published_at"], errors="coerce")
+                except Exception as e:
+                    print(f"Warning: Could not convert published_at to datetime: {e}")
+                    display_news_df["published_date"] = pd.Timestamp.now()
+            else:
+                # Create a default date column
+                display_news_df["published_date"] = pd.Timestamp.now()
+        
+        # Sort by published_date (now guaranteed to exist)
+        display_news_df = display_news_df.sort_values("published_date", ascending=False)
+        
+        # Format date for display with error handling
+        try:
+            display_news_df["published_display"] = display_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M').astype(str)
+        except Exception as e:
+            print(f"Warning: Could not format display date: {e}")
+            display_news_df["published_display"] = "Unknown Date"
+
+        # Prepare DataFrame for st.data_editor with safe column mapping
+        source_name_for_download = "hackernews"
+        
+        # Create a mapping of available columns
+        column_mapping = {}
+        if "title" in display_news_df.columns:
+            column_mapping["title"] = "Título"
+        if "source" in display_news_df.columns:
+            column_mapping["source"] = "Fuente"
+        if "published_display" in display_news_df.columns:
+            column_mapping["published_display"] = "Fecha de Publicación"
+        if "url" in display_news_df.columns:
+            column_mapping["url"] = "URL_Enlace"
+        
+        # Rename only existing columns
+        df_for_editor = display_news_df.rename(columns=column_mapping)
+        
+        # Select only the columns that exist
+        display_columns = [col for col in column_mapping.values() if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[display_columns]
+
+        st.session_state.active_df_for_export = df_for_editor
+        st.session_state.active_source_name = source_name_for_download
+        
+        # Create column config only for existing columns
+        column_config = {}
+        if "Título" in df_for_editor.columns:
+            column_config["Título"] = st.column_config.TextColumn(width="medium", help="Título del artículo")
+        if "Fuente" in df_for_editor.columns:
+            column_config["Fuente"] = st.column_config.TextColumn(width="small", help="Fuente de la noticia")
+        if "Fecha de Publicación" in df_for_editor.columns:
+            column_config["Fecha de Publicación"] = st.column_config.TextColumn(width="small", help="Fecha de publicación original")
+        if "URL_Enlace" in df_for_editor.columns:
+            column_config["URL_Enlace"] = st.column_config.LinkColumn(
+                label="Enlace",
+                display_text="Leer Artículo",
+                width="small",
+                help="Enlace directo al artículo"
+            )
+        
+        st.data_editor(
+            df_for_editor,
+            column_config=column_config,
             hide_index=True,
             use_container_width=True,
             disabled=True
         )
+        
+    except Exception as e:
+        st.error(f"Error processing Hacker News data: {str(e)}")
+        st.info("Please try refreshing the page or contact support if the issue persists.")
 
 
 def render_medium(medium_news_df):
-    """Render Medium GenAI news"""
+    """Render Medium GenAI news with improved error handling"""
     st.subheader("Medium GenAI")
-    if medium_news_df.empty:
-        st.warning("No hay noticias disponibles de Medium sobre IA.")
-    else:
-        display_news_df = medium_news_df.copy() # Work with a copy
+    
+    try:
+        if medium_news_df.empty:
+            st.warning("No hay noticias disponibles de Medium sobre IA.")
+            return
         
-        # Ensure we have a consistent date column
+        display_news_df = medium_news_df.copy()
+        
+        # Ensure we have a consistent date column with better error handling
         if "published_date" not in display_news_df.columns:
             # Convert published_at to datetime if it exists
             if "published_at" in display_news_df.columns:
-                display_news_df["published_date"] = pd.to_datetime(display_news_df["published_at"], errors="coerce")
-                # Sort by converted date
-                display_news_df = display_news_df.sort_values("published_date", ascending=False)
+                try:
+                    display_news_df["published_date"] = pd.to_datetime(display_news_df["published_at"], errors="coerce")
+                    # Sort by converted date
+                    display_news_df = display_news_df.sort_values("published_date", ascending=False)
+                except Exception as e:
+                    print(f"Warning: Could not convert published_at to datetime: {e}")
+                    display_news_df["published_date"] = pd.Timestamp.now()
             else:
-                # If no date column exists, don't sort
-                pass
+                display_news_df["published_date"] = pd.Timestamp.now()
         else:
             # Sort by existing published_date
             display_news_df = display_news_df.sort_values("published_date", ascending=False)
@@ -434,45 +521,56 @@ def render_medium(medium_news_df):
             date_column_to_format = "published_at"
         
         if date_column_to_format:
-            display_news_df["formatted_date"] = display_news_df[date_column_to_format].dt.strftime('%Y-%m-%d %H:%M')
-            date_col_for_editor = "formatted_date"
+            try:
+                display_news_df["formatted_date"] = display_news_df[date_column_to_format].dt.strftime('%Y-%m-%d %H:%M')
+                date_col_for_editor = "formatted_date"
+            except Exception as e:
+                print(f"Warning: Could not format date column: {e}")
+                display_news_df["formatted_date"] = "Unknown Date"
+                date_col_for_editor = "formatted_date"
         elif "published_at" in display_news_df.columns:
             date_col_for_editor = "published_at"
         else:
             date_col_for_editor = None
 
-        # Prepare DataFrame for st.data_editor
-        source_name_for_download = "medium_genai" # Define unique source name
-        df_for_editor = display_news_df.rename(columns={
-            "title": "Título",
-            "source": "Fuente",
-            date_col_for_editor if date_col_for_editor else "non_existent_date_col": "Fecha de Publicación",
-            "url": "URL_Enlace"
-        })
+        # Prepare DataFrame for st.data_editor with safe column mapping
+        source_name_for_download = "medium_genai"
+        
+        # Create a mapping of available columns
+        column_mapping = {}
+        if "title" in display_news_df.columns:
+            column_mapping["title"] = "Título"
+        if "source" in display_news_df.columns:
+            column_mapping["source"] = "Fuente"
+        if date_col_for_editor and date_col_for_editor in display_news_df.columns:
+            column_mapping[date_col_for_editor] = "Fecha de Publicación"
+        if "url" in display_news_df.columns:
+            column_mapping["url"] = "URL_Enlace"
+        
+        # Rename only existing columns
+        df_for_editor = display_news_df.rename(columns=column_mapping)
+        
+        # Select only the columns that exist
+        display_columns = [col for col in column_mapping.values() if col in df_for_editor.columns]
+        df_for_editor = df_for_editor[display_columns]
 
-        # Define base required columns and add date if available
-        required_cols = ["Título", "Fuente"]
-        column_config = {
-            "Título": st.column_config.TextColumn(width="medium", help="Título del artículo"),
-            "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la noticia"),
-            "URL_Enlace": st.column_config.LinkColumn(
+        # Create column config only for existing columns
+        column_config = {}
+        if "Título" in df_for_editor.columns:
+            column_config["Título"] = st.column_config.TextColumn(width="medium", help="Título del artículo")
+        if "Fuente" in df_for_editor.columns:
+            column_config["Fuente"] = st.column_config.TextColumn(width="small", help="Fuente de la noticia")
+        if "Fecha de Publicación" in df_for_editor.columns:
+            column_config["Fecha de Publicación"] = st.column_config.TextColumn(width="small", help="Fecha de publicación original")
+        if "URL_Enlace" in df_for_editor.columns:
+            column_config["URL_Enlace"] = st.column_config.LinkColumn(
                 label="Enlace",
                 display_text="Leer Artículo",
                 width="small",
                 help="Enlace directo al artículo"
             )
-        }
 
-        if date_col_for_editor and "Fecha de Publicación" in df_for_editor.columns:
-            required_cols.append("Fecha de Publicación")
-            column_config["Fecha de Publicación"] = st.column_config.TextColumn(width="small", help="Fecha de publicación original")
-
-        required_cols.append("URL_Enlace")
-
-        cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
-        df_for_editor = df_for_editor[cols_to_display]
-
-        if not df_for_editor.empty: # Check if df_for_editor itself is empty after selection/rename
+        if not df_for_editor.empty:
             st.session_state.active_df_for_export = df_for_editor
             st.session_state.active_source_name = source_name_for_download
 
@@ -483,11 +581,15 @@ def render_medium(medium_news_df):
                 use_container_width=True,
                 disabled=True
             )
-        else: # Handles case where df_for_editor becomes empty after processing, or was already
+        else:
             if st.session_state.get("active_source_name") == source_name_for_download:
                 st.session_state.active_df_for_export = None
                 st.session_state.active_source_name = None
-            # The initial warning for medium_news_df.empty handles the general "no data" case
+            st.warning("No medium data available after processing.")
+            
+    except Exception as e:
+        st.error(f"Error processing Medium news data: {str(e)}")
+        st.info("Please try refreshing the page or contact support if the issue persists.")
 
 def render_kdnuggets(kdnuggets_news_df):
     """Render KDnuggets news"""

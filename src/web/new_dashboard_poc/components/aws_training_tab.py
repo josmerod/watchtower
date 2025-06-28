@@ -6,8 +6,13 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists
+
 # --- Constants ---
-AWS_TRAINING_DATA_PATH = "../../../data/courses/aws_training_updates.json" # Relative to this file
+AWS_TRAINING_DATA_PATH = get_data_path("courses", "aws_training_updates.json")
 AWS_TRAINING_POSTS = pd.DataFrame() # Store posts here
 
 # --- Data Loading ---
@@ -40,11 +45,10 @@ def parse_aws_training_date(date_str):
 def load_aws_training_posts():
     global AWS_TRAINING_POSTS
 
-    current_script_dir = os.path.dirname(os.path.abspath(__file__))
-    actual_data_path = os.path.normpath(os.path.join(current_script_dir, AWS_TRAINING_DATA_PATH))
+    actual_data_path = AWS_TRAINING_DATA_PATH
 
     raw_posts = []
-    if os.path.exists(actual_data_path):
+    if file_exists(actual_data_path):
         try:
             with open(actual_data_path, 'r', encoding='utf-8') as f:
                 raw_posts = json.load(f)

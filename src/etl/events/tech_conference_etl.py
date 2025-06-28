@@ -9,9 +9,9 @@ from typing import Any
 
 from feedparser import parse as parse_feed
 
-from etl.base import BaseETL
-from exceptions.etl import ExtractionError, TransformationError
-from models.events import (
+from src.etl.base import BaseETL
+from src.exceptions.etl import ExtractionError, TransformationError
+from src.models.events import (
     EventFormat,
     EventStatus,
     EventType,

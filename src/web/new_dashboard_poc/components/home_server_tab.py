@@ -5,10 +5,15 @@ from datetime import datetime, timezone
 import dash
 from dash import html, dcc, Input, Output, State, Patch
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists
+
 from dash.exceptions import PreventUpdate
 
 # --- Constants ---
-HOME_SERVER_DATA_PATH = "../../../data/home_server_trends/home_server_trends_latest.json"
+HOME_SERVER_DATA_PATH = get_data_path("home_server_trends", "home_server_trends_latest.json")
 HOME_SERVER_DF = pd.DataFrame()
 HOME_SERVER_DATA_LOADED = False
 PAGE_SIZE_HOME_SERVER = 10
@@ -39,7 +44,7 @@ def load_home_server_data():
     global HOME_SERVER_DF, HOME_SERVER_DATA_LOADED
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), HOME_SERVER_DATA_PATH))
 
-    if not os.path.exists(file_path):
+    if not file_exists(file_path):
         print(f"Warning (HomeServer): File not found at {file_path}")
         HOME_SERVER_DF = pd.DataFrame()
         HOME_SERVER_DATA_LOADED = True # Mark as attempted

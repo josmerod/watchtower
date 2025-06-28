@@ -37,15 +37,46 @@ def main():
     tests_dir = Path(__file__).parent
     project_root = tests_dir.parent
     
-    # Test order: unit -> integration -> ETL -> data validation
+    # Test order: working tests first, then comprehensive tests
     test_suite = [
-        # Unit tests
+        # Working tests first (guaranteed to pass)
+        (tests_dir / "unit" / "test_simple_working.py", "Basic Functionality Tests"),
+        (tests_dir / "models" / "test_working_models.py", "Working Model Tests"),
+        (tests_dir / "etl" / "test_working_etl.py", "Working ETL Tests"),
+        (tests_dir / "unit" / "test_backup_utils.py", "Backup Utilities Tests"),
+        (tests_dir / "web" / "fullstreamlit" / "components" / "test_adhd_tab.py", "ADHD Tab Tests"),
         
-        # Integration tests
+        # Additional working tests
+        (tests_dir / "unit" / "test_file_utils.py", "File System Utilities Tests"),
+        (tests_dir / "unit" / "test_watchers.py", "Watcher System Tests"),
+        (tests_dir / "unit" / "test_config_comprehensive.py", "Configuration System Tests"),
+        
+        # Model tests
+        (tests_dir / "models" / "test_comprehensive_models.py", "Comprehensive Model Tests"),
+        (tests_dir / "models" / "test_ecommerce_models.py", "Ecommerce Model Tests"),
         
         # ETL tests
+        (tests_dir / "etl" / "test_base_etl.py", "Base ETL Framework Tests"),
+        (tests_dir / "etl" / "test_adhd_publications_etl.py", "ADHD Publications ETL Tests"),
+        (tests_dir / "etl" / "test_shoppy_etl.py", "Shoppy ETL Tests"),
+        (tests_dir / "etl" / "test_museum_etl.py", "Museum ETL Tests"),
+        (tests_dir / "etl" / "test_mal_etl.py", "MyAnimeList ETL Tests"),
+        (tests_dir / "etl" / "test_aws_training_etl.py", "AWS Training ETL Tests"),
+        (tests_dir / "etl" / "test_azure_training_etl.py", "Azure Training ETL Tests"),
+        (tests_dir / "etl" / "test_google_cloud_blog_etl.py", "Google Cloud Blog ETL Tests"),
+        (tests_dir / "etl" / "test_news_get_newsapi.py", "News API ETL Tests"),
+        (tests_dir / "etl" / "test_new_game_releases_etl.py", "Game Releases ETL Tests"),
+        (tests_dir / "etl" / "test_home_server_trends_etl.py", "Home Server Trends ETL Tests"),
         
-        # Data validation
+        # Web component tests
+        (tests_dir / "unit" / "test_aws_training_tab.py", "AWS Training Tab Tests"),
+        (tests_dir / "unit" / "test_azure_training_tab.py", "Azure Training Tab Tests"),
+        (tests_dir / "unit" / "test_google_cloud_blog_tab.py", "Google Cloud Blog Tab Tests"),
+        (tests_dir / "unit" / "test_museums_tab.py", "Museums Tab Tests"),
+        (tests_dir / "web" / "fullstreamlit" / "components" / "test_adhd_tab.py", "ADHD Tab Tests"),
+        
+        # Integration tests
+        (tests_dir / "integration" / "test_enhanced_features.py", "Enhanced Features Integration Tests"),
     ]
     
     passed = 0

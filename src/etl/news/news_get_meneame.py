@@ -8,8 +8,8 @@ from typing import Any
 import feedparser
 
 # Add the project root to the path to ensure imports work correctly
-from utils.file_system import ensure_directories, get_project_root
-from utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("MeneameETL")

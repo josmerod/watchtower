@@ -5,10 +5,15 @@ from datetime import datetime, timezone
 import dash
 from dash import html, dcc, Input, Output, State, Patch
 import dash_bootstrap_components as dbc
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, dir_exists
+
 from dash.exceptions import PreventUpdate
 
 # --- Constants ---
-SECURITY_DATA_PATH = "../../../data/security_vulnerabilities/vulnerabilities_latest.json"
+SECURITY_DATA_PATH = get_data_path("security_vulnerabilities", "vulnerabilities_latest.json")
 SECURITY_VULNS_DF = pd.DataFrame()
 SECURITY_DATA_LOADED = False
 PAGE_SIZE_SECURITY = 15
@@ -40,7 +45,7 @@ def load_security_vulnerabilities():
     global SECURITY_VULNS_DF, SECURITY_DATA_LOADED
     file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), SECURITY_DATA_PATH))
 
-    if not os.path.exists(file_path):
+    if not file_exists(file_path):
         print(f"Warning (Security): File not found at {file_path}")
         SECURITY_VULNS_DF = pd.DataFrame()
         SECURITY_DATA_LOADED = True # Mark as attempted
