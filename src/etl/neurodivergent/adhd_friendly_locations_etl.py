@@ -874,12 +874,12 @@ class ADHDFriendlyLocationsETL(BaseETL):
             locations = [d for d in data if d.get("data_type") == "location"]
             reviews = [d for d in data if d.get("data_type") == "neurodivergent_review"]
             highly_recommended = [
-                l for l in locations if l.get("adhd_friendliness_score", 0) >= 8
+                location for location in locations if location.get("adhd_friendliness_score", 0) >= 8
             ]
             low_overstimulation = [
-                l
-                for l in locations
-                if l.get("overstimulation_risk", {}).get("risk_level") == "low"
+                location
+                for location in locations
+                if location.get("overstimulation_risk", {}).get("risk_level") == "low"
             ]
 
             self.logger.info(
@@ -896,13 +896,13 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         # High ADHD-friendliness locations
         highly_adhd_friendly = [
-            l for l in locations if l.get("adhd_friendliness_score", 0) >= 8
+            location for location in locations if location.get("adhd_friendliness_score", 0) >= 8
         ]
 
         # Low sensory load locations
         low_sensory_load = [
-            l
-            for l in locations
+            location
+            for location in locations
             if l.get("sensory_assessment", {}).get("overall_sensory_load") == "low"
         ]
 

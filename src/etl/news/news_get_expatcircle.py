@@ -331,7 +331,8 @@ def process_expatcircle_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any
                     tzinfo=pub_date.tzinfo
                 ) - pub_date < timedelta(days=1):
                     engagement_score += 5
-            except:
+            except (ValueError, TypeError, AttributeError):
+                # Date parsing failed, skip recency bonus
                 pass
 
             processed_post["engagement_score"] = engagement_score

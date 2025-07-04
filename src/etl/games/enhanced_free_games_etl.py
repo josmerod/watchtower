@@ -490,7 +490,8 @@ class EnhancedFreeGamesETL(BaseETL):
                 return "moderate_few_days"
             else:
                 return "low_plenty_time"
-        except:
+        except (ValueError, TypeError, AttributeError) as e:
+            self.logger.debug(f"Failed to parse expiry date '{expires}': {e}")
             return "unknown"
 
     def _assess_claim_recommendation(self, record: dict[str, Any]) -> str:

@@ -1,5 +1,6 @@
 import sys
 import time
+import typing
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
@@ -439,7 +440,7 @@ def test_dataframe_etl_init_pandas_import_error(mock_import_module):
         if name == "pandas":
             raise ImportError("No module named pandas")
         return __import__(name, *args, **kwargs)
-    
+
     mock_import_module.side_effect = mock_side_effect
 
     class DummyDFETL(ActualDataFrameETL[dict, SimpleTestModel]):
@@ -879,7 +880,7 @@ def test_dataframe_etl_run_methods_if_pandas_becomes_unavailable(
         pytest.skip("pandas not available for test")
 
     class ConcreteDFETL(ActualDataFrameETL[list[dict], SimpleTestModel]):
-        extract_data_payload = [{"id": 1, "value": "test_df"}]
+        extract_data_payload: typing.ClassVar[list[dict]] = [{"id": 1, "value": "test_df"}]
 
         def extract_to_dataframe(self) -> pd.DataFrame:
             if not hasattr(self, "pd"):
