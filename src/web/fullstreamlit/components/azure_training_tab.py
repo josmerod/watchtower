@@ -17,11 +17,15 @@ def render(logger: logging.Logger, posts_data: list[dict[str, Any]]) -> None:
 
     try:
         if not posts_data:
-            st.info("No Azure training updates found or an error occurred while loading the data.")
+            st.info(
+                "No Azure training updates found or an error occurred while loading the data."
+            )
             logger.info("No Azure training data to display.")
             return
 
-        st.header("Azure Training & Certification Blog Updates (Microsoft Learn)") # Updated Header
+        st.header(
+            "Azure Training & Certification Blog Updates (Microsoft Learn)"
+        )  # Updated Header
         st.markdown(f"Displaying **{len(posts_data)}** latest updates.")
         st.markdown("---")
 
@@ -36,7 +40,9 @@ def render(logger: logging.Logger, posts_data: list[dict[str, Any]]) -> None:
 
             if published_str and published_str != "No Date Available":
                 try:
-                    dt_obj = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
+                    dt_obj = datetime.fromisoformat(
+                        published_str.replace("Z", "+00:00")
+                    )
                     st.caption(f"Published: {dt_obj.strftime('%B %d, %Y, %H:%M %Z')}")
                 except ValueError:
                     st.caption(f"Published: {published_str}")
@@ -60,9 +66,12 @@ def render(logger: logging.Logger, posts_data: list[dict[str, Any]]) -> None:
 
     except Exception as e:
         logger.error(f"An error occurred in the Azure Training tab: {e}", exc_info=True)
-        st.error("An unexpected error occurred while rendering Azure training updates. Please check the logs for more details.")
+        st.error(
+            "An unexpected error occurred while rendering Azure training updates. Please check the logs for more details."
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Mock setup for local testing
     mock_logger_main = logging.getLogger("AzureTabTest")
     mock_logger_main.setLevel(logging.INFO)
@@ -76,16 +85,16 @@ if __name__ == '__main__':
             "link": "https://learn.microsoft.com/en-us/blogs/new-azure-fundamentals",
             "published": "2023-10-01T09:00:00Z",
             "summary": "Explore the revamped AZ-900 certification with new learning modules and hands-on labs.",
-            "categories": ["Azure Fundamentals", "Certification", "Microsoft Learn"]
+            "categories": ["Azure Fundamentals", "Certification", "Microsoft Learn"],
         },
         {
             "source": "azure_microsoft_learn_blog",
             "title": "Advanced AI on Azure: Workshop Series",
             "link": "https://learn.microsoft.com/en-us/blogs/advanced-ai-azure",
-            "published": "2023-09-25T14:30:00+01:00", # Example with different timezone
+            "published": "2023-09-25T14:30:00+01:00",  # Example with different timezone
             "summary": "Join our free workshop series to dive deep into Azure AI capabilities.",
-            "categories": ["Azure AI", "Workshop", "Advanced"]
-        }
+            "categories": ["Azure AI", "Workshop", "Advanced"],
+        },
     ]
 
     st.set_page_config(layout="wide")

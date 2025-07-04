@@ -11,6 +11,7 @@ if not (project_root / "src").exists():
     # If we're already in project root, adjust the path
     project_root = Path.cwd()
 
+
 def test_configuration():
     """Test configuration system."""
     print("Testing Configuration System...")
@@ -26,6 +27,7 @@ def test_configuration():
         print(f"Configuration error: {e}")
         return False
 
+
 def test_logging():
     """Test logging system."""
     print("\nTesting Logging System...")
@@ -40,6 +42,7 @@ def test_logging():
         print(f"Logging error: {e}")
         return False
 
+
 def test_exceptions():
     """Test exception handling."""
     print("\nTesting Exception Handling...")
@@ -51,7 +54,7 @@ def test_exceptions():
             raise WatchtowerError(
                 message="Test error",
                 error_code="TEST_ERROR",
-                context={"test": "context"}
+                context={"test": "context"},
             )
         except WatchtowerError as e:
             print(f"Basic exception handling: {e.error_code}")
@@ -61,6 +64,7 @@ def test_exceptions():
     except Exception as e:
         print(f"Exception handling error: {e}")
         return False
+
 
 def test_data_models():
     """Test data models."""
@@ -74,6 +78,7 @@ def test_data_models():
     except Exception as e:
         print(f"Data models error: {e}")
         return False
+
 
 def test_file_system():
     """Test file system utilities."""
@@ -92,6 +97,7 @@ def test_file_system():
     except Exception as e:
         print(f"File system error: {e}")
         return False
+
 
 def main():
     """Run all tests."""
@@ -128,6 +134,7 @@ def main():
         sys.exit(1)
     else:
         print("All basic features tests passed!")
+
 
 if __name__ == "__main__":
     main()

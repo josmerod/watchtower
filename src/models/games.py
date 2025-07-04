@@ -12,6 +12,7 @@ from models.base import TimestampedModel
 
 class GamePlatform(str, Enum):
     """Supported game platforms."""
+
     PC = "pc"
     XBOX = "xbox"
     PLAYSTATION = "playstation"
@@ -22,6 +23,7 @@ class GamePlatform(str, Enum):
 
 class GameGenre(str, Enum):
     """Game genres."""
+
     ACTION = "action"
     ADVENTURE = "adventure"
     RPG = "rpg"
@@ -39,6 +41,7 @@ class GameGenre(str, Enum):
 
 class PriceType(str, Enum):
     """Price type for game deals."""
+
     STANDARD = "standard"
     DISCOUNTED = "discounted"
     FREE = "free"
@@ -53,9 +56,15 @@ class AllKeyShopGameModel(TimestampedModel):
     image_url: HttpUrl | None = Field(default=None, description="Game cover image URL")
 
     # Price information
-    current_price: float | None = Field(default=None, description="Current price in EUR")
-    original_price: float | None = Field(default=None, description="Original price in EUR")
-    discount_percentage: int | None = Field(default=None, description="Discount percentage")
+    current_price: float | None = Field(
+        default=None, description="Current price in EUR"
+    )
+    original_price: float | None = Field(
+        default=None, description="Original price in EUR"
+    )
+    discount_percentage: int | None = Field(
+        default=None, description="Discount percentage"
+    )
 
     # Deal information
     deal_score: int | None = Field(default=None, description="AllKeyShop deal score")
@@ -73,7 +82,9 @@ class AllKeyShopGameModel(TimestampedModel):
 
     # Additional metadata
     is_dlc: bool = Field(default=False, description="Whether this is DLC")
-    is_early_access: bool = Field(default=False, description="Whether this is early access")
+    is_early_access: bool = Field(
+        default=False, description="Whether this is early access"
+    )
     is_preorder: bool = Field(default=False, description="Whether this is a preorder")
 
     # Sorting criteria used
@@ -81,7 +92,9 @@ class AllKeyShopGameModel(TimestampedModel):
     page_number: int = Field(description="Page number from which this was extracted")
 
     # ETL metadata
-    extracted_at: datetime = Field(default_factory=datetime.utcnow, description="When this was extracted")
+    extracted_at: datetime = Field(
+        default_factory=datetime.utcnow, description="When this was extracted"
+    )
 
     @property
     def savings_amount(self) -> float | None:
@@ -123,19 +136,29 @@ class GameBundleModel(TimestampedModel):
 
     # Price information
     current_price: float = Field(description="Current bundle price")
-    original_total_price: float | None = Field(default=None, description="Original total price of all games")
-    savings_percentage: int | None = Field(default=None, description="Bundle savings percentage")
+    original_total_price: float | None = Field(
+        default=None, description="Original total price of all games"
+    )
+    savings_percentage: int | None = Field(
+        default=None, description="Bundle savings percentage"
+    )
 
     # Bundle content
     games: list[str] = Field(description="List of games in the bundle")
     games_count: int = Field(description="Number of games in bundle")
 
     # Bundle metadata
-    is_limited_time: bool = Field(default=False, description="Whether this is a limited time offer")
-    expires_at: datetime | None = Field(default=None, description="Bundle expiration date")
+    is_limited_time: bool = Field(
+        default=False, description="Whether this is a limited time offer"
+    )
+    expires_at: datetime | None = Field(
+        default=None, description="Bundle expiration date"
+    )
 
     # ETL metadata
-    extracted_at: datetime = Field(default_factory=datetime.utcnow, description="When this was extracted")
+    extracted_at: datetime = Field(
+        default_factory=datetime.utcnow, description="When this was extracted"
+    )
 
 
 class GameGiveawayModel(TimestampedModel):
@@ -146,18 +169,28 @@ class GameGiveawayModel(TimestampedModel):
     platform: str = Field(description="Platform offering the giveaway")
 
     # Giveaway information
-    original_price: float | None = Field(default=None, description="Original price of the game")
-    giveaway_type: str = Field(description="Type of giveaway (permanent, limited, etc.)")
+    original_price: float | None = Field(
+        default=None, description="Original price of the game"
+    )
+    giveaway_type: str = Field(
+        description="Type of giveaway (permanent, limited, etc.)"
+    )
 
     # Time information
     starts_at: datetime | None = Field(default=None, description="When giveaway starts")
-    expires_at: datetime | None = Field(default=None, description="When giveaway expires")
+    expires_at: datetime | None = Field(
+        default=None, description="When giveaway expires"
+    )
 
     # Requirements
-    requirements: list[str] = Field(default_factory=list, description="Requirements to claim")
+    requirements: list[str] = Field(
+        default_factory=list, description="Requirements to claim"
+    )
 
     # ETL metadata
-    extracted_at: datetime = Field(default_factory=datetime.utcnow, description="When this was extracted")
+    extracted_at: datetime = Field(
+        default_factory=datetime.utcnow, description="When this was extracted"
+    )
 
     @property
     def is_active(self) -> bool:

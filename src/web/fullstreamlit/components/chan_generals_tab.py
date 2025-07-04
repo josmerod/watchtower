@@ -17,6 +17,7 @@ from utils.logging import get_logger
 
 DATA_FILE = Path("data/4chan_generals/output/latest.json")
 
+
 def _load_data() -> list[dict[str, Any]]:
     if not DATA_FILE.exists():
         return []
@@ -26,6 +27,7 @@ def _load_data() -> list[dict[str, Any]]:
         logger = get_logger("4chanGeneralsTab")
         logger.error(f"Failed to load {DATA_FILE}: {exc}")
         return []
+
 
 def _display_board(board: str, threads: list[dict[str, Any]]):
     """Render a board section – simple table with clickable links."""
@@ -47,7 +49,13 @@ def _display_board(board: str, threads: list[dict[str, Any]]):
             ]
         ].copy()
 
-        display_df.columns = ["Subject", "Replies", "Images", "Last Modified", "Thread URL"]
+        display_df.columns = [
+            "Subject",
+            "Replies",
+            "Images",
+            "Last Modified",
+            "Thread URL",
+        ]
 
         # Use Streamlit's native dataframe display with clickable URLs
         st.dataframe(
@@ -57,28 +65,19 @@ def _display_board(board: str, threads: list[dict[str, Any]]):
                 "Thread URL": st.column_config.LinkColumn(
                     "Thread URL",
                     help="Click to open the thread on 4chan",
-                    display_text="View Thread"
+                    display_text="View Thread",
                 ),
-                "Subject": st.column_config.TextColumn(
-                    "Subject",
-                    width="large"
-                ),
-                "Replies": st.column_config.NumberColumn(
-                    "Replies",
-                    format="%d"
-                ),
-                "Images": st.column_config.NumberColumn(
-                    "Images",
-                    format="%d"
-                ),
+                "Subject": st.column_config.TextColumn("Subject", width="large"),
+                "Replies": st.column_config.NumberColumn("Replies", format="%d"),
+                "Images": st.column_config.NumberColumn("Images", format="%d"),
                 "Last Modified": st.column_config.NumberColumn(
-                    "Last Modified",
-                    format="%d"
-                )
-            }
+                    "Last Modified", format="%d"
+                ),
+            },
         )
     else:
         st.info("No data available for this board.")
+
 
 def render(logger=None):  # pylint: disable=unused-argument
     """Public render function expected by the main app."""

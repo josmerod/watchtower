@@ -82,7 +82,9 @@ def render(logger=None):
                 use_container_width=True,
                 disabled=True,
                 column_config={
-                    "Enlace": st.column_config.LinkColumn(label="Enlace", display_text="Abrir", width="small"),
+                    "Enlace": st.column_config.LinkColumn(
+                        label="Enlace", display_text="Abrir", width="small"
+                    ),
                 },
             )
 
@@ -98,7 +100,9 @@ def render(logger=None):
             with col2:
                 st.download_button(
                     label="📥 Descargar JSON",
-                    data=df.to_json(orient="records", indent=2, force_ascii=False).encode("utf-8"),
+                    data=df.to_json(
+                        orient="records", indent=2, force_ascii=False
+                    ).encode("utf-8"),
                     file_name=f"{cat}_scavenging.json",
                     mime="application/json",
                 )

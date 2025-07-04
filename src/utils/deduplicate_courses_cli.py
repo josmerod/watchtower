@@ -18,8 +18,7 @@ from utils.course_deduplication import deduplicate_courses_file
 # Set up logging
 logger = logging.getLogger("deduplicate_courses_cli")
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 
@@ -27,49 +26,47 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Deduplicate courses in JSON files",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     # Primary arguments
     parser.add_argument(
         "input_file",
-        help="Path to the input JSON file or directory containing JSON files"
+        help="Path to the input JSON file or directory containing JSON files",
     )
 
     parser.add_argument(
         "--output-file",
-        help="Path to save the deduplicated JSON file (defaults to input file)"
+        help="Path to save the deduplicated JSON file (defaults to input file)",
     )
 
     parser.add_argument(
         "--key-field",
         choices=["url", "title"],
         default="url",
-        help="Field to use for deduplication"
+        help="Field to use for deduplication",
     )
 
     parser.add_argument(
         "--prefer-older",
         action="store_true",
-        help="Keep older entries when duplicates are found (default: keep newer)"
+        help="Keep older entries when duplicates are found (default: keep newer)",
     )
 
     parser.add_argument(
         "--recursive",
         action="store_true",
-        help="Process directories recursively (only if input is a directory)"
+        help="Process directories recursively (only if input is a directory)",
     )
 
     parser.add_argument(
         "--backup",
         action="store_true",
-        help="Create backup of original files before modifying"
+        help="Create backup of original files before modifying",
     )
 
     parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose output"
+        "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
 
     return parser.parse_args()
@@ -82,6 +79,7 @@ def process_single_file(input_file, output_file, key_field, prefer_newer, backup
         backup_file = f"{input_file}.bak"
         try:
             import shutil
+
             shutil.copy2(input_file, backup_file)
             logger.info(f"Created backup at {backup_file}")
         except Exception as e:
@@ -93,11 +91,13 @@ def process_single_file(input_file, output_file, key_field, prefer_newer, backup
             input_file,
             key_field=key_field,
             prefer_newer=prefer_newer,
-            output_path=output_file
+            output_path=output_file,
         )
 
         if removed_count > 0:
-            logger.info(f"Successfully removed {removed_count} duplicates from {input_file}")
+            logger.info(
+                f"Successfully removed {removed_count} duplicates from {input_file}"
+            )
         else:
             logger.info(f"No duplicates found in {input_file}")
 
@@ -125,7 +125,9 @@ def process_directory(directory, key_field, prefer_newer, backup, recursive):
     logger.info(f"Found {len(json_files)} JSON files to process")
 
     for json_file in json_files:
-        if process_single_file(str(json_file), str(json_file), key_field, prefer_newer, backup):
+        if process_single_file(
+            str(json_file), str(json_file), key_field, prefer_newer, backup
+        ):
             success_count += 1
         else:
             error_count += 1
@@ -151,14 +153,18 @@ def main():
             args.key_field,
             not args.prefer_older,
             args.backup,
-            args.recursive
+            args.recursive,
         )
-        logger.info(f"Processed {success_count} files successfully, {error_count} files with errors")
+        logger.info(
+            f"Processed {success_count} files successfully, {error_count} files with errors"
+        )
     elif os.path.isfile(input_path):
         # Process single file
         output_file = args.output_file if args.output_file else input_path
         logger.info(f"Processing file: {input_path}")
-        if process_single_file(input_path, output_file, args.key_field, not args.prefer_older, args.backup):
+        if process_single_file(
+            input_path, output_file, args.key_field, not args.prefer_older, args.backup
+        ):
             logger.info("Processing completed successfully")
         else:
             logger.error("Processing failed")

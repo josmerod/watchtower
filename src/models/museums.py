@@ -7,8 +7,12 @@ from pydantic import Field, HttpUrl
 from models.base import TimestampedModel
 
 
-class VirtualMuseumModel(TimestampedModel): # Ensure this class correctly inherits from the imported TimestampedModel
-    id: uuid.UUID = Field(default_factory=uuid.uuid4)  # Redefined as per instruction, though TimestampedModel might provide it
+class VirtualMuseumModel(
+    TimestampedModel
+):  # Ensure this class correctly inherits from the imported TimestampedModel
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4
+    )  # Redefined as per instruction, though TimestampedModel might provide it
     name: str
     description: str | None = None
     website_url: HttpUrl | None = None

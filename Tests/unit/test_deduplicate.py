@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
 """
 Test script to deduplicate courses from JSON files.
-
+"""
 import os
 import sys
 import json

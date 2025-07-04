@@ -344,7 +344,9 @@ class TechnologyAdoptionAnalyzer:
         for repo in github_data:
             repo_name = (repo.get("name") or "").lower()
             repo_description = (repo.get("description") or "").lower()
-            repo_topics = [topic.lower() for topic in (repo.get("topics") or []) if topic]
+            repo_topics = [
+                topic.lower() for topic in (repo.get("topics") or []) if topic
+            ]
 
             # Check if repository is related to the framework
             if (

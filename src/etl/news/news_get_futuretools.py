@@ -4,6 +4,7 @@ This module fetches news articles related to AI tools and technologies
 by scraping the FutureTools.io news page. The scraped data is then
 processed and saved into JSON and CSV files.
 """
+
 import json
 import os
 import time

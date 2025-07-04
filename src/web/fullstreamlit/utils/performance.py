@@ -18,11 +18,12 @@ class PerformanceTracker:
         Ensures that a 'performance_metrics' dictionary exists in
         Streamlit's session state to store metrics.
         """
-        if 'performance_metrics' not in st.session_state:
+        if "performance_metrics" not in st.session_state:
             st.session_state.performance_metrics = {}
 
     def time_function(self, func_name: str):
         """Decorator to time function execution."""
+
         def decorator(func: Callable) -> Callable:
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
@@ -36,18 +37,20 @@ class PerformanceTracker:
                 if func_name not in st.session_state.performance_metrics:
                     st.session_state.performance_metrics[func_name] = []
 
-                st.session_state.performance_metrics[func_name].append({
-                    'timestamp': datetime.now(),
-                    'execution_time': execution_time
-                })
+                st.session_state.performance_metrics[func_name].append(
+                    {"timestamp": datetime.now(), "execution_time": execution_time}
+                )
 
                 # Keep only last 10 measurements
                 if len(st.session_state.performance_metrics[func_name]) > 10:
-                    st.session_state.performance_metrics[func_name] = \
+                    st.session_state.performance_metrics[func_name] = (
                         st.session_state.performance_metrics[func_name][-10:]
+                    )
 
                 return result
+
             return wrapper
+
         return decorator
 
     def get_average_time(self, func_name: str) -> float:
@@ -59,7 +62,7 @@ class PerformanceTracker:
         if not metrics:
             return 0.0
 
-        total_time = sum(m['execution_time'] for m in metrics)
+        total_time = sum(m["execution_time"] for m in metrics)
         return total_time / len(metrics)
 
     def get_performance_report(self) -> dict[str, dict[str, Any]]:
@@ -68,22 +71,23 @@ class PerformanceTracker:
 
         for func_name, metrics in st.session_state.performance_metrics.items():
             if metrics:
-                times = [m['execution_time'] for m in metrics]
+                times = [m["execution_time"] for m in metrics]
                 report[func_name] = {
-                    'count': len(times),
-                    'average': sum(times) / len(times),
-                    'min': min(times),
-                    'max': max(times),
-                    'last_execution': metrics[-1]['timestamp']
+                    "count": len(times),
+                    "average": sum(times) / len(times),
+                    "min": min(times),
+                    "max": max(times),
+                    "last_execution": metrics[-1]["timestamp"],
                 }
 
         return report
+
 
 def optimize_dataframe_display(df, max_rows: int = 100):
     """Optimize DataFrame display for better performance."""
     if len(df) > max_rows:
         # Show pagination controls
-        if 'page_number' not in st.session_state:
+        if "page_number" not in st.session_state:
             st.session_state.page_number = 0
 
         total_pages = len(df) // max_rows + (1 if len(df) % max_rows > 0 else 0)
@@ -99,7 +103,10 @@ def optimize_dataframe_display(df, max_rows: int = 100):
             st.write(f"Página {st.session_state.page_number + 1} de {total_pages}")
 
         with col3:
-            if st.button("Siguiente ➡️", disabled=(st.session_state.page_number >= total_pages - 1)):
+            if st.button(
+                "Siguiente ➡️",
+                disabled=(st.session_state.page_number >= total_pages - 1),
+            ):
                 st.session_state.page_number += 1
                 st.rerun()
 
@@ -110,14 +117,16 @@ def optimize_dataframe_display(df, max_rows: int = 100):
 
     return df
 
+
 def lazy_load_component(component_func: Callable, *args, **kwargs):
     """Lazy load components to improve initial page load time."""
     placeholder = st.empty()
 
-    with placeholder.container(), st.spinner('Cargando...'):
+    with placeholder.container(), st.spinner("Cargando..."):
         result = component_func(*args, **kwargs)
 
     return result
+
 
 @st.cache_data(ttl=1800)  # Cache for 30 minutes
 def get_summary_stats(data: dict[str, Any]) -> dict[str, int]:
@@ -125,26 +134,28 @@ def get_summary_stats(data: dict[str, Any]) -> dict[str, int]:
     stats = {}
 
     for key, value in data.items():
-        if hasattr(value, '__len__'):
+        if hasattr(value, "__len__"):
             stats[f"{key}_count"] = len(value)
         elif isinstance(value, int | float):
             stats[key] = value
 
     return stats
 
+
 def setup_session_state_defaults():
     """Setup default session state values to avoid repeated calculations."""
     defaults = {
-        'viewport_width': 1200,
-        'current_tab': 0,
-        'data_loaded': False,
-        'last_update': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'performance_tracking': True
+        "viewport_width": 1200,
+        "current_tab": 0,
+        "data_loaded": False,
+        "last_update": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "performance_tracking": True,
     }
 
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
 
 # Initialize performance tracker
 tracker = PerformanceTracker()

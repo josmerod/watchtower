@@ -6,7 +6,6 @@ and a TQDM-compatible handler.
 """
 # TODO: Standardize the code with the other projects. Current code has been migrated from other project.
 
-
 import logging
 import os
 import sys

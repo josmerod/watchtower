@@ -201,9 +201,7 @@ class AuthenticationError(WatchtowerError):
 class AuthorizationError(WatchtowerError):
     """Exception raised for authorization-related errors."""
 
-    def __init__(
-        self, message: str, required_permission: str | None = None, **kwargs
-    ):
+    def __init__(self, message: str, required_permission: str | None = None, **kwargs):
         """Initialize authorization error.
 
         Args:

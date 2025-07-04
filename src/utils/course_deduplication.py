@@ -11,14 +11,13 @@ from typing import Any
 # Set up logging
 logger = logging.getLogger("course_deduplication")
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 
-def deduplicate_courses(courses: list[dict[str, Any]],
-                        key_field: str = "url",
-                        prefer_newer: bool = True) -> tuple[list[dict[str, Any]], int]:
+def deduplicate_courses(
+    courses: list[dict[str, Any]], key_field: str = "url", prefer_newer: bool = True
+) -> tuple[list[dict[str, Any]], int]:
     """Remove duplicate courses based on a specified key field.
 
     Args:
@@ -36,7 +35,9 @@ def deduplicate_courses(courses: list[dict[str, Any]],
     # Check if the key field exists in at least one course
     key_exists = any(key_field in course for course in courses)
     if not key_exists:
-        logger.warning(f"Key field '{key_field}' not found in any course. Cannot deduplicate.")
+        logger.warning(
+            f"Key field '{key_field}' not found in any course. Cannot deduplicate."
+        )
         return courses, 0
 
     # Function to get a comparable key from a course
@@ -54,8 +55,10 @@ def deduplicate_courses(courses: list[dict[str, Any]],
     if prefer_newer and any("scraped_at" in course for course in courses):
         sorted_courses = sorted(
             courses,
-            key=lambda c: c.get("scraped_at", ""),  # Default to empty string if not present
-            reverse=True  # Newer entries first
+            key=lambda c: c.get(
+                "scraped_at", ""
+            ),  # Default to empty string if not present
+            reverse=True,  # Newer entries first
         )
     else:
         sorted_courses = courses
@@ -79,10 +82,12 @@ def deduplicate_courses(courses: list[dict[str, Any]],
     return list(unique_courses.values()), duplicate_count
 
 
-def deduplicate_courses_file(file_path: str,
-                            key_field: str = "url",
-                            prefer_newer: bool = True,
-                            output_path: str | None = None) -> tuple[str, int]:
+def deduplicate_courses_file(
+    file_path: str,
+    key_field: str = "url",
+    prefer_newer: bool = True,
+    output_path: str | None = None,
+) -> tuple[str, int]:
     """Deduplicate courses in a JSON file and save the result.
 
     Args:
@@ -131,11 +136,21 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Deduplicate courses in a JSON file")
     parser.add_argument("input_file", help="Path to the input JSON file")
-    parser.add_argument("--output-file", help="Path to save the deduplicated JSON file (defaults to input file)")
-    parser.add_argument("--key-field", choices=["url", "title"], default="url",
-                       help="Field to use for deduplication (default: url)")
-    parser.add_argument("--prefer-older", action="store_true",
-                       help="Keep older entries when duplicates are found (default: keep newer)")
+    parser.add_argument(
+        "--output-file",
+        help="Path to save the deduplicated JSON file (defaults to input file)",
+    )
+    parser.add_argument(
+        "--key-field",
+        choices=["url", "title"],
+        default="url",
+        help="Field to use for deduplication (default: url)",
+    )
+    parser.add_argument(
+        "--prefer-older",
+        action="store_true",
+        help="Keep older entries when duplicates are found (default: keep newer)",
+    )
 
     args = parser.parse_args()
 
@@ -143,7 +158,9 @@ if __name__ == "__main__":
         args.input_file,
         key_field=args.key_field,
         prefer_newer=not args.prefer_older,
-        output_path=args.output_file
+        output_path=args.output_file,
     )
 
-    print(f"Removed {removed_count} duplicates. Deduplicated courses saved to {output_file}")
+    print(
+        f"Removed {removed_count} duplicates. Deduplicated courses saved to {output_file}"
+    )

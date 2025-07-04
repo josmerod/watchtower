@@ -40,12 +40,14 @@ def get_itchio_trending() -> None:
     trending_list: list[dict[str, str]] = []
     fetched_at = datetime.now(timezone.utc).isoformat()
     for game in games:
-        trending_list.append({
-            "id": game.get("id"),
-            "title": game.get("title"),
-            "url": game.get("url"),
-            "fetched_at": fetched_at
-        })
+        trending_list.append(
+            {
+                "id": game.get("id"),
+                "title": game.get("title"),
+                "url": game.get("url"),
+                "fetched_at": fetched_at,
+            }
+        )
 
     df = pd.DataFrame(trending_list)
 

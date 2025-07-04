@@ -15,7 +15,7 @@ def run_test_script(script_path: Path, description: str) -> bool:
             [sys.executable, str(script_path)],
             capture_output=True,
             text=True,
-            cwd=script_path.parent.parent  # Run from project root
+            cwd=script_path.parent.parent,  # Run from project root
         )
 
         if result.returncode == 0:
@@ -30,22 +30,19 @@ def run_test_script(script_path: Path, description: str) -> bool:
         print(f"   ERROR: {description} - {e}")
         return False
 
+
 def main():
     """Run all tests in the proper order."""
     print("Watchtower Enhanced Framework - Test Suite Runner")
     print("=" * 60)
 
-    tests_dir = Path(__file__).parent
-    project_root = tests_dir.parent
+    Path(__file__).parent
 
     # Test order: unit -> integration -> ETL -> data validation
     test_suite = [
         # Unit tests
-
         # Integration tests
-
         # ETL tests
-
         # Data validation
     ]
 
@@ -77,6 +74,7 @@ def main():
     else:
         print(f"\n{failed} test(s) failed. Please check the output above.")
         return 1
+
 
 if __name__ == "__main__":
     exit(main())

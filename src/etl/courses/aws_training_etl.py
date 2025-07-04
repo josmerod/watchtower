@@ -20,6 +20,7 @@ RSS_FEEDS: dict[str, str] = {
     "aws_training_certification": "https://aws.amazon.com/blogs/training-and-certification/feed/"
 }
 
+
 def fetch_aws_training_feed() -> list[dict[str, Any]]:
     """Fetches and parses RSS feed from the AWS Training and Certification blog.
 
@@ -27,18 +28,20 @@ def fetch_aws_training_feed() -> list[dict[str, Any]]:
         List of entries with metadata from the RSS feed.
     """
     entries: list[dict[str, Any]] = []
-    source_name = "aws_training_certification" # Should be the key from RSS_FEEDS
+    source_name = "aws_training_certification"  # Should be the key from RSS_FEEDS
     url = RSS_FEEDS[source_name]
 
     logger.info(f"Fetching RSS feed from {source_name} at {url}")
     try:
         feed = feedparser.parse(url)
         if feed.bozo:
-            logger.warning(f"Error parsing feed from {source_name}: {feed.bozo_exception}")
-            return entries # Return empty list on feed parse error
+            logger.warning(
+                f"Error parsing feed from {source_name}: {feed.bozo_exception}"
+            )
+            return entries  # Return empty list on feed parse error
     except Exception as e:
         logger.error(f"Could not fetch or parse feed from {source_name}: {e}")
-        return entries # Return empty list on fetch error
+        return entries  # Return empty list on fetch error
 
     for entry in feed.entries:
         published_iso = ""
@@ -54,30 +57,40 @@ def fetch_aws_training_feed() -> list[dict[str, Any]]:
                     dt_obj = dt_obj.astimezone(timezone.utc)
                 published_iso = dt_obj.isoformat()
             except Exception as e:
-                logger.warning(f"Could not parse publication date '{published_raw}' for entry '{entry.get('title')}': {e}. Storing raw value.")
-                published_iso = published_raw # Store raw if parsing fails
+                logger.warning(
+                    f"Could not parse publication date '{published_raw}' for entry '{entry.get('title')}': {e}. Storing raw value."
+                )
+                published_iso = published_raw  # Store raw if parsing fails
         else:
-            logger.warning(f"No publication date found for entry '{entry.get('title')}'. Storing empty string.")
+            logger.warning(
+                f"No publication date found for entry '{entry.get('title')}'. Storing empty string."
+            )
 
-
-        summary = entry.get("summary", entry.get("description", "")) # Get summary or fallback to description
+        summary = entry.get(
+            "summary", entry.get("description", "")
+        )  # Get summary or fallback to description
 
         categories = []
-        if hasattr(entry, 'tags') and entry.tags:
-            categories = [tag.term for tag in entry.tags if hasattr(tag, 'term') and tag.term]
+        if hasattr(entry, "tags") and entry.tags:
+            categories = [
+                tag.term for tag in entry.tags if hasattr(tag, "term") and tag.term
+            ]
 
         if not categories:
-            logger.info(f"No categories found for entry '{entry.get('title')}' or tags attribute missing/malformed.")
+            logger.info(
+                f"No categories found for entry '{entry.get('title')}' or tags attribute missing/malformed."
+            )
 
-
-        entries.append({
-            "source": source_name,
-            "title": entry.get("title"),
-            "link": entry.get("link"),
-            "published": published_iso,
-            "summary": summary,
-            "categories": categories
-        })
+        entries.append(
+            {
+                "source": source_name,
+                "title": entry.get("title"),
+                "link": entry.get("link"),
+                "published": published_iso,
+                "summary": summary,
+                "categories": categories,
+            }
+        )
 
     logger.info(f"Retrieved {len(entries)} items from {source_name} RSS feed")
     return entries
@@ -95,7 +108,7 @@ def save_aws_training_entries(entries: list[dict[str, Any]]) -> None:
 
     project_root = get_project_root()
     output_dir = os.path.join(project_root, "data/courses")
-    ensure_directories([output_dir]) # Ensures data/courses exists
+    ensure_directories([output_dir])  # Ensures data/courses exists
 
     json_path = os.path.join(output_dir, "aws_training_updates.json")
     csv_path = os.path.join(output_dir, "aws_training_updates.csv")
@@ -110,25 +123,33 @@ def save_aws_training_entries(entries: list[dict[str, Any]]) -> None:
     try:
         df = pd.DataFrame(entries)
         # Ensure all expected columns are present
-        expected_columns = ["source", "title", "link", "published", "summary", "categories"]
+        expected_columns = [
+            "source",
+            "title",
+            "link",
+            "published",
+            "summary",
+            "categories",
+        ]
         for col in expected_columns:
             if col not in df.columns:
-                df[col] = None # Add missing columns with None/NaN
+                df[col] = None  # Add missing columns with None/NaN
 
         # Select columns in specific order for CSV
         df = df[expected_columns]
 
-        df.to_csv(csv_path, index=False, encoding='utf-8')
+        df.to_csv(csv_path, index=False, encoding="utf-8")
         logger.info(f"Saved {len(entries)} AWS Training entries to {csv_path}")
     except ImportError:
-        logger.warning("pandas library not found. Skipping CSV generation for AWS Training entries.")
+        logger.warning(
+            "pandas library not found. Skipping CSV generation for AWS Training entries."
+        )
     except Exception as e:
         logger.error(f"Error saving AWS Training entries to CSV at {csv_path}: {e}")
 
 
 def main() -> None:
-    """Main entry point for the AWS Training RSS ETL process.
-    """
+    """Main entry point for the AWS Training RSS ETL process."""
     logger.info("Starting AWS Training RSS ETL process")
     aws_entries = fetch_aws_training_feed()
     save_aws_training_entries(aws_entries)

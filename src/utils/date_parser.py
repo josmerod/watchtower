@@ -10,31 +10,32 @@ from dateutil import parser as dateutil_parser
 
 logger = logging.getLogger(__name__)
 
+
 class RobustDateParser:
     """Robust date parser that handles multiple formats and provides graceful fallbacks."""
 
     # Common date formats ordered by specificity
     DATETIME_FORMATS = [
         "%Y-%m-%dT%H:%M:%S.%f%z",  # ISO 8601 with microseconds and timezone
-        "%Y-%m-%dT%H:%M:%S%z",     # ISO 8601 without microseconds, with timezone
-        "%Y-%m-%d %H:%M:%S%z",     # Common format with timezone
-        "%Y-%m-%dT%H:%M:%S",       # ISO 8601, no timezone (assumed UTC later)
-        "%Y-%m-%d %H:%M:%S",       # Common format, no timezone (assumed UTC later)
-        "%a, %d %b %Y %H:%M:%S %Z", # RFC 822/1123 (e.g., "Mon, 01 Jan 2024 12:00:00 GMT")
-        "%a, %d %b %Y %H:%M:%S %z", # RFC 822/1123 with numeric timezone
-        "%Y-%m-%d",                # Date only
-        "%m/%d/%Y %I:%M:%S %p",    # e.g., 01/20/2024 10:00:00 AM
-        "%d/%m/%Y %H:%M:%S",       # e.g., 20/01/2024 10:00:00
-        "%d.%m.%Y",                # European format: 27.12.2024
-        "%d.%m.%y",                # European format short year: 27.12.24
-        "%m.%d.%y",                # US format short year: 12.27.24
-        "%d/%m/%Y",                # European format: 27/12/2024
-        "%m/%d/%Y",                # US format: 12/27/2024
-        "%Y%m%d",                  # Compact format: 20241227
-        "%B %d, %Y",               # Long format: December 27, 2024
-        "%b %d, %Y",               # Short format: Dec 27, 2024
-        "%d %B %Y",                # European long: 27 December 2024
-        "%d %b %Y",                # European short: 27 Dec 2024
+        "%Y-%m-%dT%H:%M:%S%z",  # ISO 8601 without microseconds, with timezone
+        "%Y-%m-%d %H:%M:%S%z",  # Common format with timezone
+        "%Y-%m-%dT%H:%M:%S",  # ISO 8601, no timezone (assumed UTC later)
+        "%Y-%m-%d %H:%M:%S",  # Common format, no timezone (assumed UTC later)
+        "%a, %d %b %Y %H:%M:%S %Z",  # RFC 822/1123 (e.g., "Mon, 01 Jan 2024 12:00:00 GMT")
+        "%a, %d %b %Y %H:%M:%S %z",  # RFC 822/1123 with numeric timezone
+        "%Y-%m-%d",  # Date only
+        "%m/%d/%Y %I:%M:%S %p",  # e.g., 01/20/2024 10:00:00 AM
+        "%d/%m/%Y %H:%M:%S",  # e.g., 20/01/2024 10:00:00
+        "%d.%m.%Y",  # European format: 27.12.2024
+        "%d.%m.%y",  # European format short year: 27.12.24
+        "%m.%d.%y",  # US format short year: 12.27.24
+        "%d/%m/%Y",  # European format: 27/12/2024
+        "%m/%d/%Y",  # US format: 12/27/2024
+        "%Y%m%d",  # Compact format: 20241227
+        "%B %d, %Y",  # Long format: December 27, 2024
+        "%b %d, %Y",  # Short format: Dec 27, 2024
+        "%d %B %Y",  # European long: 27 December 2024
+        "%d %b %Y",  # European short: 27 Dec 2024
     ]
 
     @staticmethod
@@ -55,17 +56,33 @@ class RobustDateParser:
 
         # Strategy 1: Try ISO 8601 format first (most reliable)
         try:
-            dt = datetime.fromisoformat(s_date.replace('Z', '+00:00'))
-            return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+            dt = datetime.fromisoformat(s_date.replace("Z", "+00:00"))
+            return (
+                dt.astimezone(timezone.utc)
+                if dt.tzinfo
+                else dt.replace(tzinfo=timezone.utc)
+            )
         except (ValueError, TypeError):
             pass
 
         # Strategy 2: Handle problematic formats like "6.12.25"
         problematic_patterns = [
-            (r'^(\d{1,2})\.(\d{1,2})\.(\d{2})$', RobustDateParser._parse_dot_format_short),
-            (r'^(\d{1,2})\.(\d{1,2})\.(\d{4})$', RobustDateParser._parse_dot_format_long),
-            (r'^(\d{1,2})/(\d{1,2})/(\d{2})$', RobustDateParser._parse_slash_format_short),
-            (r'^(\d{1,2})-(\d{1,2})-(\d{2})$', RobustDateParser._parse_dash_format_short),
+            (
+                r"^(\d{1,2})\.(\d{1,2})\.(\d{2})$",
+                RobustDateParser._parse_dot_format_short,
+            ),
+            (
+                r"^(\d{1,2})\.(\d{1,2})\.(\d{4})$",
+                RobustDateParser._parse_dot_format_long,
+            ),
+            (
+                r"^(\d{1,2})/(\d{1,2})/(\d{2})$",
+                RobustDateParser._parse_slash_format_short,
+            ),
+            (
+                r"^(\d{1,2})-(\d{1,2})-(\d{2})$",
+                RobustDateParser._parse_dash_format_short,
+            ),
         ]
 
         for pattern, parser_func in problematic_patterns:
@@ -79,7 +96,11 @@ class RobustDateParser:
         # Strategy 3: Try dateutil parser (very flexible)
         try:
             dt = dateutil_parser.parse(s_date)
-            return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+            return (
+                dt.astimezone(timezone.utc)
+                if dt.tzinfo
+                else dt.replace(tzinfo=timezone.utc)
+            )
         except (ValueError, TypeError):
             pass
 
@@ -87,12 +108,16 @@ class RobustDateParser:
         for fmt in RobustDateParser.DATETIME_FORMATS:
             try:
                 dt = datetime.strptime(s_date, fmt)
-                return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+                return (
+                    dt.astimezone(timezone.utc)
+                    if dt.tzinfo
+                    else dt.replace(tzinfo=timezone.utc)
+                )
             except (ValueError, TypeError):
                 continue
 
         # Strategy 5: Try epoch timestamp
-        if s_date.replace('.', '', 1).isdigit() and len(s_date) >= 10:
+        if s_date.replace(".", "", 1).isdigit() and len(s_date) >= 10:
             try:
                 timestamp = float(s_date)
                 # Heuristic: if timestamp is very large, it might be milliseconds
@@ -109,7 +134,9 @@ class RobustDateParser:
 
         # All strategies failed
         if not suppress_warnings:
-            logger.debug(f"Could not parse date string: {s_date} with any known format.")
+            logger.debug(
+                f"Could not parse date string: {s_date} with any known format."
+            )
 
         return None
 
@@ -168,7 +195,7 @@ class RobustDateParser:
         from datetime import timedelta
 
         # Pattern for relative time: number + unit + ago
-        pattern = r'(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago'
+        pattern = r"(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago"
         match = re.search(pattern, date_str.lower())
 
         if not match:
@@ -179,25 +206,27 @@ class RobustDateParser:
 
         now = datetime.now(timezone.utc)
 
-        if unit == 'second':
+        if unit == "second":
             return now - timedelta(seconds=amount)
-        elif unit == 'minute':
+        elif unit == "minute":
             return now - timedelta(minutes=amount)
-        elif unit == 'hour':
+        elif unit == "hour":
             return now - timedelta(hours=amount)
-        elif unit == 'day':
+        elif unit == "day":
             return now - timedelta(days=amount)
-        elif unit == 'week':
+        elif unit == "week":
             return now - timedelta(weeks=amount)
-        elif unit == 'month':
+        elif unit == "month":
             return now - timedelta(days=amount * 30)  # Approximate
-        elif unit == 'year':
+        elif unit == "year":
             return now - timedelta(days=amount * 365)  # Approximate
 
         return None
 
     @staticmethod
-    def format_datetime(dt: datetime | None, format_str: str = '%Y-%m-%d %H:%M UTC') -> str:
+    def format_datetime(
+        dt: datetime | None, format_str: str = "%Y-%m-%d %H:%M UTC"
+    ) -> str:
         """Format datetime with fallback for None values."""
         if dt is None:
             return "Date N/A"
@@ -213,12 +242,14 @@ def parse_date(date_str: str, suppress_warnings: bool = False) -> datetime | Non
     return RobustDateParser.parse_date(date_str, suppress_warnings)
 
 
-def format_date(dt: datetime | None, format_str: str = '%Y-%m-%d') -> str:
+def format_date(dt: datetime | None, format_str: str = "%Y-%m-%d") -> str:
     """Format a datetime object with fallback."""
     return RobustDateParser.format_datetime(dt, format_str)
 
 
-def parse_and_format_date(date_str: str, format_str: str = '%Y-%m-%d', suppress_warnings: bool = False) -> str:
+def parse_and_format_date(
+    date_str: str, format_str: str = "%Y-%m-%d", suppress_warnings: bool = False
+) -> str:
     """Parse and format a date string in one step."""
     parsed_dt = parse_date(date_str, suppress_warnings)
     return format_date(parsed_dt, format_str)

@@ -55,12 +55,16 @@ def fetch_rss_entries(url: str) -> list[dict[str, Any]]:
         if feed.bozo:
             logger.warning(f"Malformed feed at {url}: {feed.bozo_exception}")
         for entry in feed.entries:
-            items.append({
-                "title": entry.get("title"),
-                "link": entry.get("link"),
-                "published": parse_published(entry.get("published", entry.get("pubDate", ""))),
-                "summary": entry.get("summary", entry.get("description", "")),
-            })
+            items.append(
+                {
+                    "title": entry.get("title"),
+                    "link": entry.get("link"),
+                    "published": parse_published(
+                        entry.get("published", entry.get("pubDate", ""))
+                    ),
+                    "summary": entry.get("summary", entry.get("description", "")),
+                }
+            )
     except Exception as e:
         logger.error(f"Failed fetching {url}: {e}")
     return items
@@ -75,15 +79,19 @@ def process_category(category: str, sources: dict[str, dict[str, str]]) -> None:
             continue
         url = source_info.get("url")
         if not url:
-            logger.warning(f"Missing URL for source {source_name} in category {category}")
+            logger.warning(
+                f"Missing URL for source {source_name} in category {category}"
+            )
             continue
         logger.info(f"Fetching {category}/{source_name} -> {url}")
         entries = fetch_rss_entries(url)
         for item in entries:
-            item.update({
-                "category": category,
-                "source": source_name,
-            })
+            item.update(
+                {
+                    "category": category,
+                    "source": source_name,
+                }
+            )
         all_entries.extend(entries)
 
         # Save per-source entries as well (optional useful for debugging)
@@ -101,12 +109,16 @@ def process_category(category: str, sources: dict[str, dict[str, str]]) -> None:
         json_file = save_path / f"{category}_rss_entries.json"
         csv_file = save_path / f"{category}_rss_entries.csv"
         _write_output(all_entries, json_file, csv_file)
-        logger.info(f"Saved {len(all_entries)} combined entries for category '{category}'")
+        logger.info(
+            f"Saved {len(all_entries)} combined entries for category '{category}'"
+        )
     else:
         logger.warning(f"No entries fetched for category '{category}'")
 
 
-def _write_output(entries: list[dict[str, Any]], json_path: Path, csv_path: Path) -> None:
+def _write_output(
+    entries: list[dict[str, Any]], json_path: Path, csv_path: Path
+) -> None:
     """Helper to write JSON and CSV output."""
     try:
         with open(json_path, "w", encoding="utf-8") as f:

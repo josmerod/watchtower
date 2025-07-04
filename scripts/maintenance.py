@@ -23,7 +23,9 @@ DOCS_DIR = ROOT / "docs"
 SRC_DIR = ROOT / "src"
 
 
-def run(cmd: list[str], description: str, check: bool = True) -> subprocess.CompletedProcess[bytes]:
+def run(
+    cmd: list[str], description: str, check: bool = True
+) -> subprocess.CompletedProcess[bytes]:
     """Run a shell command with echo and optional failure short-circuit."""
     print(f"\n🛠️  {description}\n$ {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=ROOT)
@@ -59,7 +61,10 @@ def main() -> None:
     run(["mypy", "src", "--install-types", "--non-interactive"], "Type checking (MyPy)")
 
     # Run the test suite with coverage
-    run(["pytest", "-q", "--cov=src", "--cov-report=term-missing"], "Running test suite with coverage")
+    run(
+        ["pytest", "-q", "--cov=src", "--cov-report=term-missing"],
+        "Running test suite with coverage",
+    )
 
     # Dead code detection
     whitelist = ROOT / ".vulture_whitelist.py"
@@ -76,7 +81,9 @@ def main() -> None:
         "Scanning for dead code (Vulture)",
         check=False,
     )
-    print(f"\n🕊️  Vulture whitelist saved to {whitelist}. Review it to decide what to delete.")
+    print(
+        f"\n🕊️  Vulture whitelist saved to {whitelist}. Review it to decide what to delete."
+    )
 
     # Stale documentation detection
     stale_docs = find_stale_docs()

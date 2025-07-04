@@ -13,6 +13,7 @@ def _get_settings():
     """Lazy import of settings to avoid circular imports."""
     try:
         from config.settings import get_settings
+
         return get_settings()
     except ImportError:
         # Fallback for basic logging configuration
@@ -79,7 +80,7 @@ class WatchtowerLogger:
         if settings is None:
             logging.basicConfig(
                 level=logging.INFO,
-                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             )
             cls._configured = True
             return
@@ -102,9 +103,7 @@ class WatchtowerLogger:
             if settings.logging.structured:
                 console_handler.setFormatter(StructuredFormatter())
             else:
-                console_handler.setFormatter(
-                    logging.Formatter(settings.logging.format)
-                )
+                console_handler.setFormatter(logging.Formatter(settings.logging.format))
 
             root_logger.addHandler(console_handler)
 
@@ -123,9 +122,7 @@ class WatchtowerLogger:
             if settings.logging.structured:
                 file_handler.setFormatter(StructuredFormatter())
             else:
-                file_handler.setFormatter(
-                    logging.Formatter(settings.logging.format)
-                )
+                file_handler.setFormatter(logging.Formatter(settings.logging.format))
 
             root_logger.addHandler(file_handler)
 
@@ -133,9 +130,7 @@ class WatchtowerLogger:
 
     @classmethod
     def get_logger(
-        cls,
-        name: str | None = None,
-        extra_fields: dict[str, Any] | None = None
+        cls, name: str | None = None, extra_fields: dict[str, Any] | None = None
     ) -> logging.Logger:
         """Get a logger with optional extra fields.
 
@@ -152,6 +147,7 @@ class WatchtowerLogger:
         if name is None:
             # Auto-detect caller's module name
             import inspect
+
             frame = inspect.stack()[1]
             module = inspect.getmodule(frame[0])
             name = module.__name__ if module else "watchtower"
@@ -223,7 +219,9 @@ class PerformanceLogger:
         self.operation = operation
         self.logger.info(f"Starting operation: {operation}")
 
-    def end(self, success: bool = True, extra_data: dict[str, Any] | None = None) -> None:
+    def end(
+        self, success: bool = True, extra_data: dict[str, Any] | None = None
+    ) -> None:
         """End timing an operation.
 
         Args:
@@ -256,8 +254,7 @@ class PerformanceLogger:
 
 
 def get_logger(
-    name: str | None = None,
-    extra_fields: dict[str, Any] | None = None
+    name: str | None = None, extra_fields: dict[str, Any] | None = None
 ) -> logging.Logger:
     """Get a configured logger instance.
 
@@ -304,6 +301,7 @@ def log_function_call(func):
     Returns:
         Decorated function.
     """
+
     def wrapper(*args, **kwargs):
         logger = get_logger(func.__module__)
         perf_logger = PerformanceLogger(logger)
@@ -318,7 +316,7 @@ def log_function_call(func):
         except Exception as e:
             perf_logger.end(
                 success=False,
-                extra_data={"error": str(e), "error_type": type(e).__name__}
+                extra_data={"error": str(e), "error_type": type(e).__name__},
             )
             raise
 

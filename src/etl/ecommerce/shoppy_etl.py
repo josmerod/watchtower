@@ -5,7 +5,9 @@ import os
 from datetime import datetime
 
 # Configure basic logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 # Placeholder for where data might be stored
 DATA_DIR = "data/shoppy"
@@ -28,19 +30,27 @@ class ShoppyScraper:
         """Placeholder for fetching raw data for a specific product.
         In reality, this would involve HTTP requests to the product page.
         """
-        logging.info(f"Attempting to fetch data for product ID: {product_id} (placeholder)")
+        logging.info(
+            f"Attempting to fetch data for product ID: {product_id} (placeholder)"
+        )
         # Simulate fetching data
         # Replace this with actual web scraping logic (e.g., using requests, BeautifulSoup, Playwright)
         # Example: response = requests.get(f"{self.base_url}/product/{product_id}")
         # response.raise_for_status()
         # raw_html = response.text
-        raw_html = f"<html><body>Mock HTML for product {product_id}</body></html>" # Placeholder
+        raw_html = f"<html><body>Mock HTML for product {product_id}</body></html>"  # Placeholder
         logging.warning("Using MOCK HTML data for product fetching.")
-        return {"product_id": product_id, "raw_content": raw_html, "fetched_at": datetime.now().isoformat()}
+        return {
+            "product_id": product_id,
+            "raw_content": raw_html,
+            "fetched_at": datetime.now().isoformat(),
+        }
 
     def parse_product_data(self, raw_data: dict):
         """Placeholder for parsing raw product data (e.g., HTML) into a structured format."""
-        logging.info(f"Parsing raw data for product ID: {raw_data.get('product_id')} (placeholder)")
+        logging.info(
+            f"Parsing raw data for product ID: {raw_data.get('product_id')} (placeholder)"
+        )
         # Replace this with actual parsing logic (e.g., using BeautifulSoup)
         # Example: soup = BeautifulSoup(raw_data["raw_content"], "html.parser")
         # name = soup.find("h1", class_="product-title").text
@@ -48,14 +58,17 @@ class ShoppyScraper:
         parsed_product = {
             "product_id": raw_data.get("product_id"),
             "name": f"Placeholder Product Name for {raw_data.get('product_id')}",
-            "price": "0.00 USD", # Placeholder
-            "seller": "Placeholder Seller", # Placeholder
-            "description": "Placeholder product description.", # Placeholder
-            "url": f"{self.base_url}/product/{raw_data.get('product_id')}", # Placeholder
-            "parsed_at": datetime.now().isoformat()
+            "price": "0.00 USD",  # Placeholder
+            "seller": "Placeholder Seller",  # Placeholder
+            "description": "Placeholder product description.",  # Placeholder
+            "url": f"{self.base_url}/product/{raw_data.get('product_id')}",  # Placeholder
+            "parsed_at": datetime.now().isoformat(),
         }
-        logging.warning(f"Parsed data for product {raw_data.get('product_id')} is MOCK data.")
+        logging.warning(
+            f"Parsed data for product {raw_data.get('product_id')} is MOCK data."
+        )
         return parsed_product
+
 
 def run_shoppy_etl(product_ids: list[str]):
     """Runs the ETL process for Shoppy.gg for a list of product IDs."""
@@ -73,7 +86,9 @@ def run_shoppy_etl(product_ids: list[str]):
 
             processed_product = scraper.parse_product_data(raw_data)
             all_processed_data.append(processed_product)
-            logging.info(f"Successfully fetched and processed data for product ID: {product_id}")
+            logging.info(
+                f"Successfully fetched and processed data for product ID: {product_id}"
+            )
         except Exception as e:
             logging.error(f"Failed to process product ID {product_id}: {e}")
 
@@ -94,6 +109,7 @@ def run_shoppy_etl(product_ids: list[str]):
 
     logging.info("Shoppy.gg ETL process finished.")
     return all_processed_data
+
 
 if __name__ == "__main__":
     # Example usage:

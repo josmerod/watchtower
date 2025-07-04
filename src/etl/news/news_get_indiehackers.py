@@ -296,7 +296,9 @@ class IndieHackersAPI:
             return None
 
 
-def get_indiehackers_data(groups_to_track: list[str] | None = None) -> list[dict[str, Any]]:
+def get_indiehackers_data(
+    groups_to_track: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Fetches content from Indie Hackers.
 
     Args:
@@ -539,6 +541,7 @@ def main():
     try:
         # Create output directory
         from pathlib import Path
+
         project_root = Path(get_project_root())
         output_dir = project_root / "data" / "indie_hackers"
         ensure_directories([str(output_dir)])

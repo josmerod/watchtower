@@ -21,7 +21,9 @@ def render_pagination_controls(current_page: int, total_pages: int, prefix: str 
     col_prev, col_info, col_next = st.columns([1, 2, 1])
 
     with col_prev:
-        if st.button("⬅️ Anterior", disabled=current_page <= 1, key=f"prev_videos_{prefix}"):
+        if st.button(
+            "⬅️ Anterior", disabled=current_page <= 1, key=f"prev_videos_{prefix}"
+        ):
             return max(1, current_page - 1)
 
     with col_info:
@@ -31,7 +33,7 @@ def render_pagination_controls(current_page: int, total_pages: int, prefix: str 
                 "Ir a página:",
                 options=page_options,
                 index=current_page - 1,
-                key=f"page_jumper_{prefix}"
+                key=f"page_jumper_{prefix}",
             )
             if selected_page != current_page:
                 return selected_page
@@ -39,13 +41,20 @@ def render_pagination_controls(current_page: int, total_pages: int, prefix: str 
             st.write(f"Página {current_page} de {total_pages}")
 
     with col_next:
-        if st.button("➡️ Siguiente", disabled=current_page >= total_pages, key=f"next_videos_{prefix}"):
+        if st.button(
+            "➡️ Siguiente",
+            disabled=current_page >= total_pages,
+            key=f"next_videos_{prefix}",
+        ):
             return min(total_pages, current_page + 1)
 
     return current_page
 
+
 @st.cache_data(max_entries=20, show_spinner=False)
-def ultra_fast_search_filter(df_shape: tuple[int, int], search_term: str, titles: list[str], channels: list[str]) -> np.ndarray:
+def ultra_fast_search_filter(
+    df_shape: tuple[int, int], search_term: str, titles: list[str], channels: list[str]
+) -> np.ndarray:
     """Ultra-fast search using numpy operations instead of pandas."""
     if not search_term:
         return np.ones(df_shape[0], dtype=bool)
@@ -53,19 +62,29 @@ def ultra_fast_search_filter(df_shape: tuple[int, int], search_term: str, titles
     search_lower = search_term.lower()
 
     # Use numpy for much faster string operations
-    title_matches = np.array([search_lower in str(title).lower() for title in titles], dtype=bool)
-    channel_matches = np.array([search_lower in str(channel).lower() for channel in channels], dtype=bool)
+    title_matches = np.array(
+        [search_lower in str(title).lower() for title in titles], dtype=bool
+    )
+    channel_matches = np.array(
+        [search_lower in str(channel).lower() for channel in channels], dtype=bool
+    )
 
     return title_matches | channel_matches
 
+
 @st.cache_data(max_entries=15, show_spinner=False)
-def ultra_fast_date_filter(df_shape: tuple[int, int], days: int, dates: list[datetime]) -> np.ndarray:
+def ultra_fast_date_filter(
+    df_shape: tuple[int, int], days: int, dates: list[datetime]
+) -> np.ndarray:
     """Ultra-fast date filtering using numpy operations."""
     if days <= 0:
         return np.ones(df_shape[0], dtype=bool)
 
     cutoff_date = datetime.now() - timedelta(days=days)
-    return np.array([date >= cutoff_date if date else False for date in dates], dtype=bool)
+    return np.array(
+        [date >= cutoff_date if date else False for date in dates], dtype=bool
+    )
+
 
 @st.cache_data(max_entries=20, show_spinner=False, ttl=300)
 def precompute_html_batch(video_records: list[dict], batch_id: str) -> list[str]:
@@ -74,21 +93,21 @@ def precompute_html_batch(video_records: list[dict], batch_id: str) -> list[str]
 
     for video in video_records:
         # Ultra-optimized HTML generation using f-strings
-        thumbnail = video.get('thumbnail', '')
-        url = video.get('url', '#')
-        title = str(video.get('title', ''))[:100]
-        channel_name = video.get('channel_name', '')
+        thumbnail = video.get("thumbnail", "")
+        url = video.get("url", "#")
+        title = str(video.get("title", ""))[:100]
+        channel_name = video.get("channel_name", "")
 
         # Format date once
-        published_date = ''
-        if video.get('published_date'):
+        published_date = ""
+        if video.get("published_date"):
             try:
-                if hasattr(video['published_date'], 'strftime'):
-                    published_date = video['published_date'].strftime('%Y-%m-%d')
+                if hasattr(video["published_date"], "strftime"):
+                    published_date = video["published_date"].strftime("%Y-%m-%d")
                 else:
-                    published_date = str(video['published_date'])[:10]
+                    published_date = str(video["published_date"])[:10]
             except:
-                published_date = ''
+                published_date = ""
 
         # Single f-string for entire card (much faster than concatenation)
         html = f'''<div class="video-card">
@@ -104,20 +123,29 @@ def precompute_html_batch(video_records: list[dict], batch_id: str) -> list[str]
 
     return html_cards
 
+
 def get_ultra_responsive_cols() -> int:
     """Ultra-fast responsive columns using cached viewport width."""
-    width = st.session_state.get('viewport_width', 1200)
+    width = st.session_state.get("viewport_width", 1200)
 
     # Use bit operations for faster comparison
-    if width >= 1400: return 6
-    if width >= 1200: return 5
-    if width >= 992: return 4
-    if width >= 768: return 3
-    if width >= 576: return 2
+    if width >= 1400:
+        return 6
+    if width >= 1200:
+        return 5
+    if width >= 992:
+        return 4
+    if width >= 768:
+        return 3
+    if width >= 576:
+        return 2
     return 1
 
+
 @st.cache_data(max_entries=20, show_spinner=False)
-def extract_video_data_optimized(videos_data: dict[str, pd.DataFrame], category_id: str) -> tuple[list[str], list[str], list[datetime], list[dict]]:
+def extract_video_data_optimized(
+    videos_data: dict[str, pd.DataFrame], category_id: str
+) -> tuple[list[str], list[str], list[datetime], list[dict]]:
     """Extract and cache commonly used data to avoid repeated DataFrame operations."""
     if category_id not in videos_data:
         return [], [], [], []
@@ -127,24 +155,32 @@ def extract_video_data_optimized(videos_data: dict[str, pd.DataFrame], category_
         return [], [], [], []
 
     # Pre-extract all needed data in one pass
-    titles = df['title'].fillna('').astype(str).tolist()
-    channels = df.get('channel_name', pd.Series([''] * len(df))).fillna('').astype(str).tolist()
-    dates = df.get('published_date', pd.Series([None] * len(df))).tolist()
-    records = df.to_dict('records')
+    titles = df["title"].fillna("").astype(str).tolist()
+    channels = (
+        df.get("channel_name", pd.Series([""] * len(df)))
+        .fillna("")
+        .astype(str)
+        .tolist()
+    )
+    dates = df.get("published_date", pd.Series([None] * len(df))).tolist()
+    records = df.to_dict("records")
 
     return titles, channels, dates, records
 
-def render_ultra_optimized(logger=None, videos_data: dict[str, pd.DataFrame] | None = None):
+
+def render_ultra_optimized(
+    logger=None, videos_data: dict[str, pd.DataFrame] | None = None
+):
     """Ultra-optimized videos tab rendering with minimal Streamlit operations."""
     # Skip unnecessary timing for better performance
     st.header("📺 Videos (Ultra-Optimized)")
 
     # Initialize session state with defaults (faster than checking existence)
     session_defaults = {
-        'videos_page': 1,
-        'videos_search': "",
-        'videos_category_id': None,
-        'viewport_width': 1200
+        "videos_page": 1,
+        "videos_search": "",
+        "videos_category_id": None,
+        "viewport_width": 1200,
     }
 
     for key, value in session_defaults.items():
@@ -170,8 +206,7 @@ def render_ultra_optimized(logger=None, videos_data: dict[str, pd.DataFrame] | N
     else:
         # Pre-compute categories (cache this)
         video_categories = {
-            key: key.replace('_', ' ').replace('-', ' ').title()
-            for key in videos_data
+            key: key.replace("_", " ").replace("-", " ").title() for key in videos_data
         }
 
     if not videos_data:
@@ -191,8 +226,12 @@ def render_ultra_optimized(logger=None, videos_data: dict[str, pd.DataFrame] | N
     selected_display = st.selectbox(
         "🏷️ Selecciona una categoría:",
         options=category_options,
-        index=category_options.index(video_categories[st.session_state.videos_category_id]) if st.session_state.videos_category_id in video_categories else 0,
-        key="video_category_select_ultra"
+        index=category_options.index(
+            video_categories[st.session_state.videos_category_id]
+        )
+        if st.session_state.videos_category_id in video_categories
+        else 0,
+        key="video_category_select_ultra",
     )
 
     # Update category ID if changed
@@ -207,7 +246,9 @@ def render_ultra_optimized(logger=None, videos_data: dict[str, pd.DataFrame] | N
         st.session_state.videos_page = 1  # Reset page on category change
 
     # Extract optimized data
-    titles, channels, dates, records = extract_video_data_optimized(videos_data, st.session_state.videos_category_id)
+    titles, channels, dates, records = extract_video_data_optimized(
+        videos_data, st.session_state.videos_category_id
+    )
 
     if not records:
         st.info(f"ℹ️ No hay videos disponibles para '{selected_display}'.")
@@ -218,20 +259,20 @@ def render_ultra_optimized(logger=None, videos_data: dict[str, pd.DataFrame] | N
             "🔍 Buscar videos:",
             value=st.session_state.videos_search,
             placeholder="Buscar por título o canal...",
-            key="video_search_ultra"  # Existing key preserved
+            key="video_search_ultra",  # Existing key preserved
         )
 
         date_filter = st.selectbox(
             "📅 Filtrar por fecha:",
             options=["Todos", "Última semana", "Último mes", "Últimos 3 meses"],
-            key="video_date_filter_ultra"  # Existing key preserved
+            key="video_date_filter_ultra",  # Existing key preserved
         )
 
         page_size = st.selectbox(
             "📄 Por página:",
             options=[12, 24, 36, 48],
             index=1,  # Default to 24 videos per page
-            key="video_page_size_ultra"  # Existing key preserved
+            key="video_page_size_ultra",  # Existing key preserved
         )
 
     # Apply ultra-fast filtering
@@ -242,7 +283,9 @@ def render_ultra_optimized(logger=None, videos_data: dict[str, pd.DataFrame] | N
 
     # Date filtering
     date_days_map = {"Última semana": 7, "Último mes": 30, "Últimos 3 meses": 90}
-    date_mask = ultra_fast_date_filter(df_shape, date_days_map.get(date_filter, 0), dates)
+    date_mask = ultra_fast_date_filter(
+        df_shape, date_days_map.get(date_filter, 0), dates
+    )
 
     # Combine filters
     combined_mask = search_mask & date_mask
@@ -295,7 +338,7 @@ def render_ultra_optimized(logger=None, videos_data: dict[str, pd.DataFrame] | N
             # Render in batches to avoid too many columns
             for i in range(0, len(html_cards), num_cols):
                 cols = st.columns(num_cols)
-                batch_html = html_cards[i:i + num_cols]
+                batch_html = html_cards[i : i + num_cols]
 
                 for j, html in enumerate(batch_html):
                     col_idx = j % num_cols
@@ -305,7 +348,9 @@ def render_ultra_optimized(logger=None, videos_data: dict[str, pd.DataFrame] | N
     # Bottom pagination
     if total_pages > 1:
         st.markdown("---")
-        new_page_bottom = render_pagination_controls(current_page, total_pages, "bottom")
+        new_page_bottom = render_pagination_controls(
+            current_page, total_pages, "bottom"
+        )
         if new_page_bottom != current_page:
             st.session_state.videos_page = new_page_bottom
             st.rerun()
@@ -313,6 +358,7 @@ def render_ultra_optimized(logger=None, videos_data: dict[str, pd.DataFrame] | N
     # Performance optimization: Manual garbage collection for large datasets
     if total_items > 1000:
         gc.collect()
+
 
 # Alternative ultra-minimal version for maximum speed
 def render_minimal(logger=None, videos_data: dict[str, pd.DataFrame] | None = None):
@@ -333,11 +379,11 @@ def render_minimal(logger=None, videos_data: dict[str, pd.DataFrame] | None = No
 
     # Minimal pagination
     page_size = 24
-    page = st.session_state.get('minimal_page', 1)
+    page = st.session_state.get("minimal_page", 1)
 
     total_pages = math.ceil(len(df) / page_size)
     start_idx = (page - 1) * page_size
-    page_df = df.iloc[start_idx:start_idx + page_size]
+    page_df = df.iloc[start_idx : start_idx + page_size]
 
     # Simple pagination
     col1, col2, col3 = st.columns(3)
@@ -357,24 +403,25 @@ def render_minimal(logger=None, videos_data: dict[str, pd.DataFrame] | None = No
         with st.container():
             col1, col2 = st.columns([1, 3])
             with col1:
-                if video.get('thumbnail'):
-                    st.image(video['thumbnail'], width=150)
+                if video.get("thumbnail"):
+                    st.image(video["thumbnail"], width=150)
             with col2:
                 st.write(f"**{video.get('title', 'No title')}**")
                 st.write(f"Canal: {video.get('channel_name', 'Unknown')}")
-                if 'url' in video:
+                if "url" in video:
                     st.write(f"[Ver video]({video['url']})")
+
 
 # Main render function with performance mode selection
 def render(logger=None, videos_data: dict[str, pd.DataFrame] | None = None):
     """Main render function with performance mode selection."""
     # Performance mode selector (only show in debug/dev mode)
-    if st.session_state.get('show_performance_modes', False):
+    if st.session_state.get("show_performance_modes", False):
         mode = st.radio(
             "Performance Mode:",
             ["Ultra-Optimized", "Minimal"],
             horizontal=True,
-            key="perf_mode_videos"
+            key="perf_mode_videos",
         )
 
         if mode == "Minimal":

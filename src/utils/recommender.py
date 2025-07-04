@@ -4,6 +4,7 @@ This module provides the `PersonalRecommender` class, which uses
 content-based filtering techniques to generate personalized recommendations
 for users based on their interests, viewed items, and ratings.
 """
+
 import json
 import os
 from typing import Any
@@ -25,9 +26,7 @@ class PersonalRecommender:
     """
 
     def __init__(
-        self,
-        name: str = "arxiv_recommender",
-        user_profile_dir: str | None = None
+        self, name: str = "arxiv_recommender", user_profile_dir: str | None = None
     ):
         """Initialize the recommender system.
 
@@ -50,11 +49,7 @@ class PersonalRecommender:
         os.makedirs(self.user_profile_dir, exist_ok=True)
 
         # Initialize vectorizer for content representation
-        self.vectorizer = TfidfVectorizer(
-            max_df=0.7,
-            min_df=2,
-            stop_words='english'
-        )
+        self.vectorizer = TfidfVectorizer(max_df=0.7, min_df=2, stop_words="english")
 
         # Cache for item features
         self.item_features = {}
@@ -86,7 +81,9 @@ class PersonalRecommender:
         profile_path = self._get_user_profile_path(user_id)
 
         if not os.path.exists(profile_path):
-            self.logger.info(f"User profile for {user_id} not found, creating new profile")
+            self.logger.info(
+                f"User profile for {user_id} not found, creating new profile"
+            )
             return {
                 "user_id": user_id,
                 "interests": [],
@@ -94,11 +91,11 @@ class PersonalRecommender:
                 "rated_items": {},
                 "preferred_categories": [],
                 "created_at": "",
-                "updated_at": ""
+                "updated_at": "",
             }
 
         try:
-            with open(profile_path, encoding='utf-8') as f:
+            with open(profile_path, encoding="utf-8") as f:
                 profile = json.load(f)
                 self.logger.info(f"Loaded profile for user {user_id}")
                 return profile
@@ -111,7 +108,7 @@ class PersonalRecommender:
                 "rated_items": {},
                 "preferred_categories": [],
                 "created_at": "",
-                "updated_at": ""
+                "updated_at": "",
             }
 
     def save_user_profile(self, user_id: str, profile: dict[str, Any]) -> bool:
@@ -129,6 +126,7 @@ class PersonalRecommender:
         try:
             # Update timestamp
             from datetime import datetime
+
             now = datetime.now().isoformat()
 
             if not profile.get("created_at"):
@@ -136,7 +134,7 @@ class PersonalRecommender:
 
             profile["updated_at"] = now
 
-            with open(profile_path, 'w', encoding='utf-8') as f:
+            with open(profile_path, "w", encoding="utf-8") as f:
                 json.dump(profile, f, ensure_ascii=False, indent=2)
 
             self.logger.info(f"Saved profile for user {user_id}")
@@ -300,7 +298,9 @@ class PersonalRecommender:
         """
         return self.item_vectors is not None and len(self.item_ids) > 0
 
-    def _calculate_user_vector(self, profile: dict[str, Any]) -> tuple[np.ndarray, float]:
+    def _calculate_user_vector(
+        self, profile: dict[str, Any]
+    ) -> tuple[np.ndarray, float]:
         """Calculate a user's interest vector based on their profile.
 
         Args:
@@ -348,7 +348,9 @@ class PersonalRecommender:
                     viewed_vectors.append(self.item_vectors[idx])
 
             if viewed_vectors:
-                viewed_centroid = np.mean(np.vstack([v.toarray() for v in viewed_vectors]), axis=0)
+                viewed_centroid = np.mean(
+                    np.vstack([v.toarray() for v in viewed_vectors]), axis=0
+                )
                 user_vector += viewed_weight * viewed_centroid
                 components += 1
 
@@ -368,9 +370,7 @@ class PersonalRecommender:
             if rated_vectors:
                 # Weighted average of rated item vectors
                 rated_centroid = np.average(
-                    np.vstack(rated_vectors),
-                    axis=0,
-                    weights=weights
+                    np.vstack(rated_vectors), axis=0, weights=weights
                 )
                 user_vector += rating_weight * rated_centroid
                 components += 1
@@ -400,7 +400,7 @@ class PersonalRecommender:
         user_id: str,
         n_recommendations: int = 10,
         exclude_viewed: bool = True,
-        min_similarity: float = 0.0
+        min_similarity: float = 0.0,
     ) -> list[dict[str, Any]]:
         """Generate recommendations for a user.
 
@@ -424,12 +424,16 @@ class PersonalRecommender:
         user_vector, confidence = self._calculate_user_vector(profile)
 
         if user_vector is None:
-            self.logger.warning(f"Could not calculate interest vector for user {user_id}")
+            self.logger.warning(
+                f"Could not calculate interest vector for user {user_id}"
+            )
             return []
 
         # If confidence is too low, use a fallback strategy
         if confidence < 0.2:
-            self.logger.info(f"Low confidence ({confidence}) for user {user_id}, using fallback recommendations")
+            self.logger.info(
+                f"Low confidence ({confidence}) for user {user_id}, using fallback recommendations"
+            )
             return self._fallback_recommendations(n_recommendations)
 
         # Calculate similarities to all items
@@ -447,23 +451,25 @@ class PersonalRecommender:
             if exclude_viewed and item_id in profile.get("viewed_items", []):
                 continue
 
-            similarities.append({
-                "item_id": item_id,
-                "similarity": float(sim),
-                "item": self.item_features[item_id]
-            })
+            similarities.append(
+                {
+                    "item_id": item_id,
+                    "similarity": float(sim),
+                    "item": self.item_features[item_id],
+                }
+            )
 
         # Sort by similarity (descending)
         sorted_similarities = sorted(
-            similarities,
-            key=lambda x: x["similarity"],
-            reverse=True
+            similarities, key=lambda x: x["similarity"], reverse=True
         )
 
         # Return top N
         return sorted_similarities[:n_recommendations]
 
-    def _fallback_recommendations(self, n_recommendations: int = 10) -> list[dict[str, Any]]:
+    def _fallback_recommendations(
+        self, n_recommendations: int = 10
+    ) -> list[dict[str, Any]]:
         """Generate fallback recommendations when user profile is insufficient.
 
         Args:
@@ -489,10 +495,12 @@ class PersonalRecommender:
 
         recommendations = []
         for item_id in selected_ids:
-            recommendations.append({
-                "item_id": item_id,
-                "similarity": 0.0,  # No real similarity for random recommendations
-                "item": self.item_features[item_id]
-            })
+            recommendations.append(
+                {
+                    "item_id": item_id,
+                    "similarity": 0.0,  # No real similarity for random recommendations
+                    "item": self.item_features[item_id],
+                }
+            )
 
         return recommendations

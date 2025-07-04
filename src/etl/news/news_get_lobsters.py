@@ -500,7 +500,8 @@ def process_lobsters_stories(stories: list[dict[str, Any]]) -> list[dict[str, An
                 # Parse various timestamp formats that Lobsters might use
                 pub_date = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
                 hours_since_pub = (
-                    datetime.now(timezone.utc).replace(tzinfo=pub_date.tzinfo) - pub_date
+                    datetime.now(timezone.utc).replace(tzinfo=pub_date.tzinfo)
+                    - pub_date
                 ).total_seconds() / 3600
 
                 if hours_since_pub <= 2:
@@ -538,6 +539,7 @@ def main():
     try:
         # Create output directory
         from pathlib import Path
+
         project_root = Path(get_project_root())
         output_dir = project_root / "data" / "lobsters"
         ensure_directories([str(output_dir)])

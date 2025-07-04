@@ -4,6 +4,7 @@ This module provides the `ArxivSearchComponent` class, which allows users
 to search through a collection of ArXiv papers using text queries,
 category filters, and date range filters. It uses TF-IDF for relevance ranking.
 """
+
 import json
 import os
 from typing import Any
@@ -43,7 +44,7 @@ class ArxivSearchComponent:
             return []
 
         try:
-            with open(papers_file, encoding='utf-8') as f:
+            with open(papers_file, encoding="utf-8") as f:
                 papers = json.load(f)
             return papers
         except Exception as e:
@@ -80,11 +81,7 @@ class ArxivSearchComponent:
             texts.append(text)
 
         # Create TF-IDF vectorizer
-        self.vectorizer = TfidfVectorizer(
-            stop_words="english",
-            max_df=0.8,
-            min_df=2
-        )
+        self.vectorizer = TfidfVectorizer(stop_words="english", max_df=0.8, min_df=2)
 
         # Create TF-IDF matrix
         self.paper_vectors = self.vectorizer.fit_transform(texts)
@@ -98,7 +95,7 @@ class ArxivSearchComponent:
         categories: list[str] | None = None,
         date_range: tuple[str, str] | None = None,
         max_results: int = 20,
-        min_similarity: float = 0.1
+        min_similarity: float = 0.1,
     ) -> list[dict[str, Any]]:
         """Search for papers matching the query.
 
@@ -131,7 +128,9 @@ class ArxivSearchComponent:
                 paper = self.papers[i]
 
                 # Apply category filter if specified
-                if categories and not any(cat in paper.get("categories", []) for cat in categories):
+                if categories and not any(
+                    cat in paper.get("categories", []) for cat in categories
+                ):
                     continue
 
                 # Apply date filter if specified
@@ -143,10 +142,7 @@ class ArxivSearchComponent:
                     if not start_date <= pub_date <= end_date:
                         continue
 
-                paper_similarities.append({
-                    "paper": paper,
-                    "similarity": float(sim)
-                })
+                paper_similarities.append({"paper": paper, "similarity": float(sim)})
 
         # Sort by similarity (descending)
         paper_similarities.sort(key=lambda x: x["similarity"], reverse=True)
@@ -178,7 +174,7 @@ class ArxivSearchComponent:
             # Text query
             query = st.text_input(
                 "Search query",
-                help="Enter keywords to search in titles, abstracts, and more"
+                help="Enter keywords to search in titles, abstracts, and more",
             )
 
             col1, col2 = st.columns(2)
@@ -188,7 +184,7 @@ class ArxivSearchComponent:
                 selected_categories = st.multiselect(
                     "Filter by categories",
                     options=sorted(all_categories),
-                    help="Select categories to filter results"
+                    help="Select categories to filter results",
                 )
 
             # Date range filter
@@ -196,14 +192,14 @@ class ArxivSearchComponent:
                 date_range = st.date_input(
                     "Filter by date range",
                     value=[],
-                    help="Select date range for publications"
+                    help="Select date range for publications",
                 )
 
                 # Convert date range to strings if provided
                 if date_range and len(date_range) == 2:
                     date_range_str = (
                         date_range[0].strftime("%Y-%m-%d"),
-                        date_range[1].strftime("%Y-%m-%d")
+                        date_range[1].strftime("%Y-%m-%d"),
                     )
                 else:
                     date_range_str = None
@@ -213,11 +209,7 @@ class ArxivSearchComponent:
 
             with col1:
                 max_results = st.slider(
-                    "Maximum results",
-                    min_value=5,
-                    max_value=100,
-                    value=20,
-                    step=5
+                    "Maximum results", min_value=5, max_value=100, value=20, step=5
                 )
 
             with col2:
@@ -226,7 +218,7 @@ class ArxivSearchComponent:
                     min_value=0.0,
                     max_value=1.0,
                     value=0.1,
-                    step=0.05
+                    step=0.05,
                 )
 
             # Submit button
@@ -240,7 +232,7 @@ class ArxivSearchComponent:
                     categories=selected_categories if selected_categories else None,
                     date_range=date_range_str,
                     max_results=max_results,
-                    min_similarity=min_similarity
+                    min_similarity=min_similarity,
                 )
 
             # Display results count
@@ -260,7 +252,9 @@ class ArxivSearchComponent:
                     # Create paper card
                     with st.container():
                         # Add relevance indicator
-                        st.markdown(f"**Relevance: {relevance}%** - {paper.get('published', '').split('T')[0]}")
+                        st.markdown(
+                            f"**Relevance: {relevance}%** - {paper.get('published', '').split('T')[0]}"
+                        )
 
                         # Title with link
                         st.markdown(f"### [{paper['title']}]({paper['link']})")

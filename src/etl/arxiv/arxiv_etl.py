@@ -89,21 +89,34 @@ class ArxivETL:
         self.logger.info(f"Attempting to load papers from: {papers_file}")
 
         if not os.path.exists(papers_file):
-            self.logger.warning(f"File not found: {papers_file}. No papers found from watcher.")
+            self.logger.warning(
+                f"File not found: {papers_file}. No papers found from watcher."
+            )
             # Try to find any existing papers file as fallback
             try:
                 if os.path.exists(self.watcher.data_dir):
-                    json_files = [f for f in os.listdir(self.watcher.data_dir) if f.endswith('.json')]
+                    json_files = [
+                        f
+                        for f in os.listdir(self.watcher.data_dir)
+                        if f.endswith(".json")
+                    ]
                     if json_files:
                         # Use the most recent JSON file
-                        latest_file = max(json_files, key=lambda x: os.path.getctime(os.path.join(self.watcher.data_dir, x)))
+                        latest_file = max(
+                            json_files,
+                            key=lambda x: os.path.getctime(
+                                os.path.join(self.watcher.data_dir, x)
+                            ),
+                        )
                         papers_file = os.path.join(self.watcher.data_dir, latest_file)
                         self.logger.info(f"Using fallback papers file: {papers_file}")
                     else:
                         self.logger.warning("No JSON files found in watcher directory")
                         return []
                 else:
-                    self.logger.warning(f"Watcher data directory not found: {self.watcher.data_dir}")
+                    self.logger.warning(
+                        f"Watcher data directory not found: {self.watcher.data_dir}"
+                    )
                     return []
             except Exception as e:
                 self.logger.error(f"Error finding fallback papers file: {e}")
@@ -230,20 +243,20 @@ class ArxivETL:
             #     self.logger.info(
             #         f"Fetching PwC data for paper ArXiv ID: {arxiv_id_url if arxiv_id_url else 'N/A'}, Title: {paper_title if paper_title else 'N/A'} (PwC integration temporarily disabled)"
             #     )
-                # fetched_pwc_info = get_pwc_details_for_paper(
-                #     arxiv_id_url=arxiv_id_url,
-                #     title=paper_title,
-                #     pwc_client=self.pwc_client, # This would error as self.pwc_client is commented out
-                # )
-                # if fetched_pwc_info:
-                #     self.logger.info(
-                #         f"Fetched PwC info for paper {arxiv_id_url if arxiv_id_url else paper_title}"
-                #     )
-                #     pwc_data.update(fetched_pwc_info)
-                # else:
-                #     self.logger.warning(
-                #         f"No PwC info found for paper {arxiv_id_url if arxiv_id_url else paper_title}"
-                #     )
+            # fetched_pwc_info = get_pwc_details_for_paper(
+            #     arxiv_id_url=arxiv_id_url,
+            #     title=paper_title,
+            #     pwc_client=self.pwc_client, # This would error as self.pwc_client is commented out
+            # )
+            # if fetched_pwc_info:
+            #     self.logger.info(
+            #         f"Fetched PwC info for paper {arxiv_id_url if arxiv_id_url else paper_title}"
+            #     )
+            #     pwc_data.update(fetched_pwc_info)
+            # else:
+            #     self.logger.warning(
+            #         f"No PwC info found for paper {arxiv_id_url if arxiv_id_url else paper_title}"
+            #     )
 
             # Create transformed paper with classification, GitHub, and PwC data
             transformed_paper = {
@@ -437,7 +450,7 @@ class ArxivETL:
 
         except Exception as e:
             self.logger.error(f"Error in ETL pipeline: {e!s}")
-            raise # Re-raise the exception
+            raise  # Re-raise the exception
 
 
 if __name__ == "__main__":

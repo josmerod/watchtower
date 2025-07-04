@@ -16,8 +16,11 @@ def get_project_root():
     """Get the project root directory."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # Go up from src/web/fullstreamlit/components to project root
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+    project_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+    )
     return project_root
+
 
 # Define events data path using absolute path
 PROJECT_ROOT = get_project_root()
@@ -26,6 +29,7 @@ VALENCIA_EVENTS_DATA_DIR = os.path.join(DATA_DIR, "valencia_events")
 
 # Define event data path
 VALENCIA_EVENTS_FILE = os.path.join(VALENCIA_EVENTS_DATA_DIR, "valencia_events.json")
+
 
 # Local implementation of load_data
 def load_data(file_path, _logger=None):
@@ -51,6 +55,7 @@ def load_data(file_path, _logger=None):
         st.error(f"Error al cargar datos desde {file_path}: {e!s}")
         return pd.DataFrame()
 
+
 # Local implementation of get_valencia_events_data
 @st.cache_data(ttl=3600)
 def get_valencia_events_data(_logger=None):
@@ -72,6 +77,7 @@ def get_valencia_events_data(_logger=None):
 
     return valencia_events_df
 
+
 def render(logger=None):
     """Render the events tab."""
     st.header("🏙️ Eventos en Valencia")
@@ -91,9 +97,7 @@ def render(logger=None):
         categories = valencia_events_df["category"].dropna().unique().tolist()
         if categories:
             selected_categories = st.multiselect(
-                "Filtrar por categoría",
-                ["Todas", *categories],
-                default=["Todas"]
+                "Filtrar por categoría", ["Todas", *categories], default=["Todas"]
             )
 
         # Apply filters
@@ -128,18 +132,25 @@ def render(logger=None):
             num_cols = get_responsive_cols()
             for i in range(0, len(filtered_events_df), num_cols):
                 cols = st.columns(num_cols)
-                for j, (_, event) in enumerate(filtered_events_df.iloc[i:i + num_cols].iterrows()):
+                for j, (_, event) in enumerate(
+                    filtered_events_df.iloc[i : i + num_cols].iterrows()
+                ):
                     with cols[j % num_cols]:
                         # Build the entire card HTML string
                         card_html = "<div class='card'>"
-                        card_html += f"<h3>{event['title']}</h3>" # Use h3 for consistency
+                        card_html += (
+                            f"<h3>{event['title']}</h3>"  # Use h3 for consistency
+                        )
 
                         # Display dates if available
                         if pd.notna(event.get("date_text")):
                             card_html += f"<p><strong>Fechas:</strong> {event.get('date_text', 'No especificado')}</p>"
 
                         # Display category if available
-                        if pd.notna(event.get("category")) and event.get("category") != "":
+                        if (
+                            pd.notna(event.get("category"))
+                            and event.get("category") != ""
+                        ):
                             card_html += f"<p><strong>Categoría:</strong> {event.get('category', 'No especificado')}</p>"
 
                         # Display source
@@ -147,7 +158,9 @@ def render(logger=None):
 
                         # Add link to event
                         if "url" in event and pd.notna(event["url"]):
-                            card_html += make_clickable(event["url"], "Ver evento") # Already returns HTML
+                            card_html += make_clickable(
+                                event["url"], "Ver evento"
+                            )  # Already returns HTML
 
                         card_html += "</div>"
 
@@ -157,9 +170,19 @@ def render(logger=None):
             # Provide option to view as table
             if st.checkbox("Ver como tabla"):
                 # Ensure 'url' is included for the LinkColumn
-                display_cols_source = ["title", "date_text", "category", "source", "url"]
+                display_cols_source = [
+                    "title",
+                    "date_text",
+                    "category",
+                    "source",
+                    "url",
+                ]
                 # Select only columns that actually exist in filtered_events_df
-                actual_cols_to_select = [col for col in display_cols_source if col in filtered_events_df.columns]
+                actual_cols_to_select = [
+                    col
+                    for col in display_cols_source
+                    if col in filtered_events_df.columns
+                ]
 
                 df_for_editor = filtered_events_df[actual_cols_to_select].copy()
 
@@ -169,36 +192,54 @@ def render(logger=None):
                     "date_text": "Fechas",
                     "category": "Categoría",
                     "source": "Fuente",
-                    "url": "URL_Enlace" # New name for the raw URL column
+                    "url": "URL_Enlace",  # New name for the raw URL column
                 }
                 # Apply renaming only for columns that exist in df_for_editor
-                active_rename_map = {k: v for k, v in rename_map.items() if k in df_for_editor.columns}
+                active_rename_map = {
+                    k: v for k, v in rename_map.items() if k in df_for_editor.columns
+                }
                 df_for_editor.rename(columns=active_rename_map, inplace=True)
 
                 # Ensure final column order for st.data_editor
-                final_ordered_columns = ["Título", "Fechas", "Categoría", "Fuente", "URL_Enlace"]
+                final_ordered_columns = [
+                    "Título",
+                    "Fechas",
+                    "Categoría",
+                    "Fuente",
+                    "URL_Enlace",
+                ]
 
                 # Filter this list to include only columns that actually exist in df_for_editor
-                columns_for_editor_display = [col for col in final_ordered_columns if col in df_for_editor.columns]
+                columns_for_editor_display = [
+                    col for col in final_ordered_columns if col in df_for_editor.columns
+                ]
                 df_for_editor = df_for_editor[columns_for_editor_display]
 
                 st.data_editor(
                     df_for_editor,
                     column_config={
-                        "Título": st.column_config.TextColumn(width="medium", help="Nombre del evento"),
-                        "Fechas": st.column_config.TextColumn(width="medium", help="Fechas del evento"),
-                        "Categoría": st.column_config.TextColumn(width="small", help="Categoría del evento"),
-                        "Fuente": st.column_config.TextColumn(width="small", help="Fuente de la información"),
+                        "Título": st.column_config.TextColumn(
+                            width="medium", help="Nombre del evento"
+                        ),
+                        "Fechas": st.column_config.TextColumn(
+                            width="medium", help="Fechas del evento"
+                        ),
+                        "Categoría": st.column_config.TextColumn(
+                            width="small", help="Categoría del evento"
+                        ),
+                        "Fuente": st.column_config.TextColumn(
+                            width="small", help="Fuente de la información"
+                        ),
                         "URL_Enlace": st.column_config.LinkColumn(
                             label="Enlace",
                             display_text="Ver Evento",
                             width="medium",
-                            help="Enlace a la página del evento"
-                        )
+                            help="Enlace a la página del evento",
+                        ),
                     },
                     disabled=True,
                     hide_index=True,
-                    use_container_width=True
+                    use_container_width=True,
                 )
 
                 if not df_for_editor.empty:
@@ -207,16 +248,18 @@ def render(logger=None):
                     with col1:
                         st.download_button(
                             label="📥 Descargar CSV (Eventos Valencia)",
-                            data=df_for_editor.to_csv(index=False).encode('utf-8'),
+                            data=df_for_editor.to_csv(index=False).encode("utf-8"),
                             file_name="valencia_events_data.csv",
-                            mime='text/csv',
-                            key="csv_download_valencia_events"
+                            mime="text/csv",
+                            key="csv_download_valencia_events",
                         )
                     with col2:
                         st.download_button(
                             label="📥 Descargar JSON (Eventos Valencia)",
-                            data=df_for_editor.to_json(orient='records', indent=2).encode('utf-8'),
+                            data=df_for_editor.to_json(
+                                orient="records", indent=2
+                            ).encode("utf-8"),
                             file_name="valencia_events_data.json",
-                            mime='application/json',
-                            key="json_download_valencia_events"
+                            mime="application/json",
+                            key="json_download_valencia_events",
                         )

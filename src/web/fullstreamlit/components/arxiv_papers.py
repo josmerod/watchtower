@@ -4,6 +4,7 @@ This module provides the `ArxivPapersComponent` class, which handles
 the loading, processing, and display of ArXiv research papers,
 including classification, clustering, and personalized recommendations.
 """
+
 import json
 import os
 from typing import Any
@@ -41,7 +42,7 @@ class ArxivPapersComponent:
             return []
 
         try:
-            with open(papers_file, encoding='utf-8') as f:
+            with open(papers_file, encoding="utf-8") as f:
                 papers = json.load(f)
 
             # Load papers into recommender system
@@ -64,14 +65,16 @@ class ArxivPapersComponent:
             return {}
 
         try:
-            with open(stats_file, encoding='utf-8') as f:
+            with open(stats_file, encoding="utf-8") as f:
                 stats = json.load(f)
             return stats
         except Exception as e:
             st.error(f"Error loading cluster statistics: {e!s}")
             return {}
 
-    def _convert_authors_to_string(self, authors: list[str], max_authors: int = 3) -> str:
+    def _convert_authors_to_string(
+        self, authors: list[str], max_authors: int = 3
+    ) -> str:
         """Convert author list to a readable string.
 
         Args:
@@ -89,7 +92,12 @@ class ArxivPapersComponent:
         else:
             return f"{', '.join(authors[:max_authors])} et al."
 
-    def render_paper_card(self, paper: dict[str, Any], user_id: str | None = None, section: str = "default"):
+    def render_paper_card(
+        self,
+        paper: dict[str, Any],
+        user_id: str | None = None,
+        section: str = "default",
+    ):
         """Render a card for a single paper.
 
         Args:
@@ -97,37 +105,37 @@ class ArxivPapersComponent:
             user_id (Optional[str]): User ID for tracking views
             section (str): Section identifier to create unique widget keys
         """
-        paper_id = paper.get('id', '')
+        paper_id = paper.get("id", "")
 
         with st.container():
             # Title with link
             st.markdown(f"### [{paper['title']}]({paper['link']})")
 
             # Authors and date
-            authors_str = self._convert_authors_to_string(paper['authors'])
+            authors_str = self._convert_authors_to_string(paper["authors"])
             st.markdown(f"**Authors:** {authors_str}")
 
             # Published date
             st.markdown(f"**Published:** {paper.get('published', 'Unknown')}")
 
             # Categories
-            categories = ", ".join(paper.get('categories', []))
+            categories = ", ".join(paper.get("categories", []))
             st.markdown(f"**Categories:** {categories}")
 
             # Cluster information
             st.markdown(f"**Cluster:** {paper.get('cluster_label', 'Uncategorized')}")
 
             # Keywords
-            keywords = ", ".join(paper.get('extracted_keywords', []))
+            keywords = ", ".join(paper.get("extracted_keywords", []))
             st.markdown(f"**Keywords:** {keywords}")
 
             # PDF link
-            if paper.get('pdf_url'):
+            if paper.get("pdf_url"):
                 st.markdown(f"[PDF]({paper['pdf_url']}) | [ArXiv]({paper['link']})")
 
             # Summary (collapsible)
             with st.expander("Abstract"):
-                st.markdown(paper.get('summary', 'No abstract available'))
+                st.markdown(paper.get("summary", "No abstract available"))
 
             # User interactions
             if user_id:
@@ -145,7 +153,7 @@ class ArxivPapersComponent:
                         "Rate",
                         options=[1, 2, 3, 4, 5],
                         value=3,
-                        key=f"{section}_rate_{paper_id}"
+                        key=f"{section}_rate_{paper_id}",
                     )
                     if st.button("Submit", key=f"{section}_submit_{paper_id}"):
                         self.recommender.record_item_rating(user_id, paper_id, rating)
@@ -153,17 +161,27 @@ class ArxivPapersComponent:
 
                 # Save keywords - use section in the key
                 with col3:
-                    if st.button("➕ Add keywords to your interests", key=f"{section}_keywords_{paper_id}"):
-                        keywords_list = paper.get('extracted_keywords', [])
+                    if st.button(
+                        "➕ Add keywords to your interests",
+                        key=f"{section}_keywords_{paper_id}",
+                    ):
+                        keywords_list = paper.get("extracted_keywords", [])
                         if keywords_list:
-                            self.recommender.update_user_interests(user_id, keywords_list)
+                            self.recommender.update_user_interests(
+                                user_id, keywords_list
+                            )
                             st.success("Added keywords to your profile!")
                         else:
                             st.info("No keywords found for this paper")
 
             st.divider()
 
-    def render_paper_list(self, papers: list[dict[str, Any]], cluster_id: int | None = None, user_id: str | None = None):
+    def render_paper_list(
+        self,
+        papers: list[dict[str, Any]],
+        cluster_id: int | None = None,
+        user_id: str | None = None,
+    ):
         """Render a list of papers, optionally filtered by cluster.
 
         Args:
@@ -175,7 +193,7 @@ class ArxivPapersComponent:
         section = f"cluster_{cluster_id}" if cluster_id is not None else "all_papers"
 
         if cluster_id is not None:
-            filtered_papers = [p for p in papers if p.get('cluster_id') == cluster_id]
+            filtered_papers = [p for p in papers if p.get("cluster_id") == cluster_id]
             if not filtered_papers:
                 st.info(f"No papers found in cluster {cluster_id}")
                 return
@@ -185,9 +203,7 @@ class ArxivPapersComponent:
 
         # Sort papers by publication date (newest first)
         sorted_papers = sorted(
-            papers_to_show,
-            key=lambda p: p.get('published', ''),
-            reverse=True
+            papers_to_show, key=lambda p: p.get("published", ""), reverse=True
         )
 
         # Show paper count
@@ -203,27 +219,31 @@ class ArxivPapersComponent:
         Args:
             cluster_stats (Dict[str, Any]): Cluster statistics
         """
-        if not cluster_stats or 'clusters' not in cluster_stats:
+        if not cluster_stats or "clusters" not in cluster_stats:
             st.warning("No cluster statistics available")
             return
 
         # Create data for pie chart
-        clusters = cluster_stats['clusters']
+        clusters = cluster_stats["clusters"]
         fig = px.pie(
-            values=[c['paper_count'] for c in clusters],
-            names=[c['label'] for c in clusters],
-            title="Distribution of Papers by Topic Cluster"
+            values=[c["paper_count"] for c in clusters],
+            names=[c["label"] for c in clusters],
+            title="Distribution of Papers by Topic Cluster",
         )
-        fig.update_traces(textposition='inside', textinfo='percent+label')
+        fig.update_traces(textposition="inside", textinfo="percent+label")
 
         st.plotly_chart(fig, use_container_width=True)
 
         # Show cluster table
         clusters_df = pd.DataFrame(clusters)
         if not clusters_df.empty:
-            st.dataframe(clusters_df[['label', 'paper_count', 'percentage']], hide_index=True)
+            st.dataframe(
+                clusters_df[["label", "paper_count", "percentage"]], hide_index=True
+            )
 
-    def _safe_recommend_for_user(self, user_id: str, n_recommendations: int = 5, exclude_viewed: bool = True) -> list[dict[str, Any]]:
+    def _safe_recommend_for_user(
+        self, user_id: str, n_recommendations: int = 5, exclude_viewed: bool = True
+    ) -> list[dict[str, Any]]:
         """Safely call the recommender's recommend_for_user method with error handling.
 
         Args:
@@ -236,22 +256,26 @@ class ArxivPapersComponent:
         """
         try:
             # Check if the recommender has items loaded
-            if (not hasattr(self.recommender, 'item_vectors') or
-                self.recommender.item_vectors is None or
-                not hasattr(self.recommender, 'item_ids') or
-                len(self.recommender.item_ids) == 0):
+            if (
+                not hasattr(self.recommender, "item_vectors")
+                or self.recommender.item_vectors is None
+                or not hasattr(self.recommender, "item_ids")
+                or len(self.recommender.item_ids) == 0
+            ):
                 return []
 
             return self.recommender.recommend_for_user(
                 user_id=user_id,
                 n_recommendations=n_recommendations,
-                exclude_viewed=exclude_viewed
+                exclude_viewed=exclude_viewed,
             )
         except Exception as e:
             st.error(f"Error generating recommendations: {e!s}")
             return []
 
-    def render_personalized_recommendations(self, papers: list[dict[str, Any]], user_id: str, n_recommendations: int = 5):
+    def render_personalized_recommendations(
+        self, papers: list[dict[str, Any]], user_id: str, n_recommendations: int = 5
+    ):
         """Render personalized paper recommendations for the user.
 
         Args:
@@ -262,49 +286,66 @@ class ArxivPapersComponent:
         st.markdown("## 🔍 Personalized Recommendations")
 
         # Check if the recommender has items loaded (directly check attributes instead of using has_items)
-        if (not hasattr(self.recommender, 'item_vectors') or
-            self.recommender.item_vectors is None or
-            not hasattr(self.recommender, 'item_ids') or
-            len(self.recommender.item_ids) == 0):
-            st.warning("No papers loaded in the recommender system. Please check your data.")
+        if (
+            not hasattr(self.recommender, "item_vectors")
+            or self.recommender.item_vectors is None
+            or not hasattr(self.recommender, "item_ids")
+            or len(self.recommender.item_ids) == 0
+        ):
+            st.warning(
+                "No papers loaded in the recommender system. Please check your data."
+            )
             return
 
         # Get recommendations using the safe method
         recommendations = self._safe_recommend_for_user(
-            user_id=user_id,
-            n_recommendations=n_recommendations,
-            exclude_viewed=True
+            user_id=user_id, n_recommendations=n_recommendations, exclude_viewed=True
         )
 
         if not recommendations:
-            st.info("Start interacting with papers to get personalized recommendations!")
+            st.info(
+                "Start interacting with papers to get personalized recommendations!"
+            )
 
             # Show user profile setup form
             st.markdown("### ✏️ Set your research interests")
             with st.form("user_interests_form"):
                 interests = st.text_area(
                     "Enter your research interests (comma-separated keywords)",
-                    help="Example: machine learning, natural language processing, reinforcement learning"
+                    help="Example: machine learning, natural language processing, reinforcement learning",
                 )
 
                 categories = st.multiselect(
                     "Select your preferred categories",
-                    options=["cs.AI", "cs.LG", "cs.CL", "cs.CV", "cs.NE", "stat.ML", "cs.RO", "cs.IR"],
-                    default=["cs.AI"]
+                    options=[
+                        "cs.AI",
+                        "cs.LG",
+                        "cs.CL",
+                        "cs.CV",
+                        "cs.NE",
+                        "stat.ML",
+                        "cs.RO",
+                        "cs.IR",
+                    ],
+                    default=["cs.AI"],
                 )
 
                 submitted = st.form_submit_button("Save Interests")
 
                 if submitted:
                     # Split interests by commas
-                    interest_list = [i.strip() for i in interests.split(",") if i.strip()]
+                    interest_list = [
+                        i.strip() for i in interests.split(",") if i.strip()
+                    ]
 
                     # Update user profile
                     if interest_list:
                         self.recommender.update_user_interests(user_id, interest_list)
 
                     if categories:
-                        self.recommender.update_preferred_categories(user_id, categories)
+                        self.recommender.update_preferred_categories(
+                            user_id, categories
+                        )
 
                     st.success("Profile updated! Refresh to see your recommendations")
 
@@ -328,7 +369,10 @@ class ArxivPapersComponent:
 
             with st.container():
                 # Add match quality badge
-                st.markdown(f"<span style='padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; background-color: var(--{match_color}-50); color: var(--{match_color}-700);'>{match_quality}</span>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<span style='padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; background-color: var(--{match_color}-50); color: var(--{match_color}-700);'>{match_quality}</span>",
+                    unsafe_allow_html=True,
+                )
 
                 # Render paper with user ID for interaction tracking
                 # Use a recommendation-specific section with the recommendation index
@@ -350,15 +394,20 @@ class ArxivPapersComponent:
                 with st.spinner("Fetching papers from ArXiv..."):
                     # Import here to avoid circular imports
                     from etl.arxiv.arxiv_etl import ArxivETL
+
                     etl = ArxivETL(days_back=7, max_results=50)
                     etl.run()
-                st.success("✅ Paper collection complete! Refresh the page to see results.")
+                st.success(
+                    "✅ Paper collection complete! Refresh the page to see results."
+                )
                 st.rerun()
             return
 
         # Display statistics
         if cluster_stats:
-            st.markdown(f"Found **{cluster_stats.get('total_papers', len(papers))}** papers in **{cluster_stats.get('total_clusters', 0)}** topic clusters")
+            st.markdown(
+                f"Found **{cluster_stats.get('total_papers', len(papers))}** papers in **{cluster_stats.get('total_clusters', 0)}** topic clusters"
+            )
 
         # User ID input for personalization
         with st.sidebar:
@@ -399,14 +448,16 @@ class ArxivPapersComponent:
                     "rated_items": {},
                     "preferred_categories": [],
                     "created_at": "",
-                    "updated_at": ""
+                    "updated_at": "",
                 }
                 self.recommender.save_user_profile(user_id, empty_profile)
                 st.success("Profile reset successfully!")
                 st.rerun()
 
         # Create tabs for different views
-        tab1, tab2, tab3, tab4 = st.tabs(["Recommendations", "All Papers", "By Cluster", "Visualizations"])
+        tab1, tab2, tab3, tab4 = st.tabs(
+            ["Recommendations", "All Papers", "By Cluster", "Visualizations"]
+        )
 
         with tab1:
             # Show personalized recommendations
@@ -418,23 +469,28 @@ class ArxivPapersComponent:
 
         with tab3:
             # Show papers by cluster
-            if cluster_stats and 'clusters' in cluster_stats:
+            if cluster_stats and "clusters" in cluster_stats:
                 # Create a dropdown to select cluster
                 [
-                    {"label": f"{c['label']} ({c['paper_count']} papers)", "value": c['id']}
-                    for c in cluster_stats['clusters']
+                    {
+                        "label": f"{c['label']} ({c['paper_count']} papers)",
+                        "value": c["id"],
+                    }
+                    for c in cluster_stats["clusters"]
                 ]
                 selected_cluster = st.selectbox(
                     "Select a cluster",
-                    options=[c['id'] for c in cluster_stats['clusters']],
+                    options=[c["id"] for c in cluster_stats["clusters"]],
                     format_func=lambda x: next(
-                        (c['label'] for c in cluster_stats['clusters'] if c['id'] == x),
-                        f"Cluster {x}"
-                    )
+                        (c["label"] for c in cluster_stats["clusters"] if c["id"] == x),
+                        f"Cluster {x}",
+                    ),
                 )
 
                 if selected_cluster is not None:
-                    self.render_paper_list(papers, cluster_id=selected_cluster, user_id=user_id)
+                    self.render_paper_list(
+                        papers, cluster_id=selected_cluster, user_id=user_id
+                    )
 
         with tab4:
             # Show visualizations
@@ -445,29 +501,31 @@ class ArxivPapersComponent:
                 # Count papers by category
                 categories = {}
                 for paper in papers:
-                    for category in paper.get('categories', []):
+                    for category in paper.get("categories", []):
                         categories[category] = categories.get(category, 0) + 1
 
                 # Create bar chart for top categories
-                top_categories = sorted(categories.items(), key=lambda x: x[1], reverse=True)[:10]
+                top_categories = sorted(
+                    categories.items(), key=lambda x: x[1], reverse=True
+                )[:10]
                 fig = px.bar(
                     x=[c[0] for c in top_categories],
                     y=[c[1] for c in top_categories],
                     labels={"x": "Category", "y": "Number of Papers"},
-                    title="Top ArXiv Categories"
+                    title="Top ArXiv Categories",
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
                 # Publication timeline (if we have dates)
-                if all('published' in p for p in papers):
+                if all("published" in p for p in papers):
                     # Extract dates and convert to datetime
                     try:
-
                         import pandas as pd
 
                         dates = [
-                            pd.to_datetime(p['published']).date()
-                            for p in papers if 'published' in p
+                            pd.to_datetime(p["published"]).date()
+                            for p in papers
+                            if "published" in p
                         ]
 
                         date_counts = pd.Series(dates).value_counts().sort_index()
@@ -475,7 +533,7 @@ class ArxivPapersComponent:
                             x=date_counts.index,
                             y=date_counts.values,
                             labels={"x": "Date", "y": "Papers Published"},
-                            title="Paper Publication Timeline"
+                            title="Paper Publication Timeline",
                         )
                         st.plotly_chart(fig, use_container_width=True)
                     except Exception as e:

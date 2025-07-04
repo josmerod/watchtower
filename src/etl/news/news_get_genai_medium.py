@@ -4,6 +4,7 @@ This module retrieves articles related to Generative AI, LLMs, and related
 topics from various Medium RSS feeds. The fetched data is then
 processed and saved into JSON and CSV files.
 """
+
 import json
 import os
 import re
@@ -212,9 +213,7 @@ def main():
         )
 
     except Exception as e:
-        logger.error(
-            f"Error in Medium Generative AI ETL process: {e!s}", exc_info=True
-        )
+        logger.error(f"Error in Medium Generative AI ETL process: {e!s}", exc_info=True)
 
 
 if __name__ == "__main__":

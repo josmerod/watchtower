@@ -4,6 +4,7 @@ This module provides functions to extract information from GitHub URLs,
 fetch repository details via the GitHub API, and find GitHub repository
 links within text content.
 """
+
 import re
 from typing import Any
 from urllib.parse import urlparse
@@ -15,6 +16,7 @@ from utils.logging import get_logger
 logger = get_logger(__name__)
 
 GITHUB_API_BASE_URL = "https://api.github.com/repos"
+
 
 def extract_github_owner_repo(url: str) -> tuple[str, str] | None:
     """Extracts the owner and repository name from a GitHub URL.
@@ -28,12 +30,15 @@ def extract_github_owner_repo(url: str) -> tuple[str, str] | None:
     """
     parsed_url = urlparse(url)
     if parsed_url.hostname == "github.com":
-        path_parts = [part for part in parsed_url.path.split('/') if part]
+        path_parts = [part for part in parsed_url.path.split("/") if part]
         if len(path_parts) >= 2:
             return path_parts[0], path_parts[1]
     return None
 
-def get_github_repo_info(repo_url: str, github_token: str | None = None) -> dict[str, Any] | None:
+
+def get_github_repo_info(
+    repo_url: str, github_token: str | None = None
+) -> dict[str, Any] | None:
     """Fetches information about a GitHub repository using its URL.
 
     Args:
@@ -54,9 +59,7 @@ def get_github_repo_info(repo_url: str, github_token: str | None = None) -> dict
     owner, repo = owner_repo
     api_url = f"{GITHUB_API_BASE_URL}/{owner}/{repo}"
 
-    headers = {
-        "Accept": "application/vnd.github.v3+json"
-    }
+    headers = {"Accept": "application/vnd.github.v3+json"}
     if github_token:
         headers["Authorization"] = f"token {github_token}"
 
@@ -73,19 +76,23 @@ def get_github_repo_info(repo_url: str, github_token: str | None = None) -> dict
             if lang_response.status_code == 200:
                 languages_data = lang_response.json()
             else:
-                logger.warning(f"Failed to fetch languages for {owner}/{repo}: {lang_response.status_code}")
+                logger.warning(
+                    f"Failed to fetch languages for {owner}/{repo}: {lang_response.status_code}"
+                )
 
         return {
             "github_html_url": data.get("html_url"),
             "github_description": data.get("description"),
             "github_stars": data.get("stargazers_count"),
             "github_forks": data.get("forks_count"),
-            "github_watchers": data.get("subscribers_count"), # 'subscribers_count' is often referred to as watchers
+            "github_watchers": data.get(
+                "subscribers_count"
+            ),  # 'subscribers_count' is often referred to as watchers
             "github_open_issues": data.get("open_issues_count"),
             "github_last_updated": data.get("updated_at"),
             "github_created_at": data.get("created_at"),
-            "github_language": data.get("language"), # Primary language
-            "github_languages": languages_data, # Detailed language breakdown
+            "github_language": data.get("language"),  # Primary language
+            "github_languages": languages_data,  # Detailed language breakdown
             "github_topics": data.get("topics", []),
             "github_has_issues": data.get("has_issues"),
             "github_has_projects": data.get("has_projects"),
@@ -102,6 +109,7 @@ def get_github_repo_info(repo_url: str, github_token: str | None = None) -> dict
         logger.error(f"Unexpected error fetching GitHub repo {owner}/{repo}: {e}")
 
     return None
+
 
 def find_github_links_in_text(text: str) -> list[str]:
     """Finds all GitHub repository URLs in a given text.
@@ -120,11 +128,14 @@ def find_github_links_in_text(text: str) -> list[str]:
     found_urls = re.findall(regex, text)
 
     # Reconstruct the full URLs and ensure uniqueness
-    unique_urls = sorted({f"https://github.com/{owner}/{repo}" for owner, repo in found_urls})
+    unique_urls = sorted(
+        {f"https://github.com/{owner}/{repo}" for owner, repo in found_urls}
+    )
 
     return unique_urls
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Example Usage
     logger.info("Starting GitHub Utils example")
 
@@ -147,12 +158,12 @@ if __name__ == '__main__':
     test_repo_urls = [
         "https://github.com/psf/requests",
         "https://github.com/fastapi/fastapi",
-        "https://github.com/nonexistent/repo", # Test non-existent repo
-        "http://github.com/polars/polars"
+        "https://github.com/nonexistent/repo",  # Test non-existent repo
+        "http://github.com/polars/polars",
     ]
 
     if extracted_links:
-        test_repo_urls.append(extracted_links[0]) # Add one from extracted for testing
+        test_repo_urls.append(extracted_links[0])  # Add one from extracted for testing
 
     for url in test_repo_urls:
         logger.info(f"Fetching info for: {url}")
@@ -161,7 +172,9 @@ if __name__ == '__main__':
         repo_info = get_github_repo_info(url)
         if repo_info:
             logger.info(f"Repository: {repo_info.get('github_html_url')}")
-            logger.info(f"  Stars: {repo_info.get('github_stars')}, Forks: {repo_info.get('github_forks')}")
+            logger.info(
+                f"  Stars: {repo_info.get('github_stars')}, Forks: {repo_info.get('github_forks')}"
+            )
             logger.info(f"  Description: {repo_info.get('github_description')}")
             logger.info(f"  Last Updated: {repo_info.get('github_last_updated')}")
             logger.info(f"  Primary Language: {repo_info.get('github_language')}")

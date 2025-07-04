@@ -17,7 +17,9 @@ def render(logger: logging.Logger, posts_data: list[dict[str, Any]]) -> None:
 
     try:
         if not posts_data:
-            st.info("No AWS training updates found or an error occurred while loading the data.")
+            st.info(
+                "No AWS training updates found or an error occurred while loading the data."
+            )
             logger.info("No AWS training data to display.")
             return
 
@@ -38,17 +40,21 @@ def render(logger: logging.Logger, posts_data: list[dict[str, Any]]) -> None:
             if published_str and published_str != "No Date Available":
                 try:
                     # Assuming published_str is ISO format (potentially with Z or offset)
-                    dt_obj = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
+                    dt_obj = datetime.fromisoformat(
+                        published_str.replace("Z", "+00:00")
+                    )
                     st.caption(f"Published: {dt_obj.strftime('%B %d, %Y, %H:%M %Z')}")
                 except ValueError:
-                    st.caption(f"Published: {published_str}") # Fallback to raw string
+                    st.caption(f"Published: {published_str}")  # Fallback to raw string
             else:
                 st.caption(f"Published: {published_str}")
 
             # Display categories
             if isinstance(categories, list) and len(categories) > 0:
                 st.caption(f"Categories: {', '.join(categories)}")
-            elif isinstance(categories, str) and categories: # Handle if categories is a single string
+            elif (
+                isinstance(categories, str) and categories
+            ):  # Handle if categories is a single string
                 st.caption(f"Categories: {categories}")
             else:
                 st.caption("Categories: Not available")
@@ -56,7 +62,9 @@ def render(logger: logging.Logger, posts_data: list[dict[str, Any]]) -> None:
             # Display summary (using expander for potentially long content)
             if summary:
                 with st.expander("View Summary/Description", expanded=False):
-                    st.markdown(summary, unsafe_allow_html=True) # Allow HTML if summary contains it
+                    st.markdown(
+                        summary, unsafe_allow_html=True
+                    )  # Allow HTML if summary contains it
 
             st.markdown("---")
 
@@ -64,9 +72,12 @@ def render(logger: logging.Logger, posts_data: list[dict[str, Any]]) -> None:
 
     except Exception as e:
         logger.error(f"An error occurred in the AWS Training tab: {e}", exc_info=True)
-        st.error("An unexpected error occurred while rendering AWS training updates. Please check the logs for more details.")
+        st.error(
+            "An unexpected error occurred while rendering AWS training updates. Please check the logs for more details."
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Mock setup for local testing
     mock_logger_main = logging.getLogger("AWSTabTest")
     mock_logger_main.setLevel(logging.INFO)
@@ -80,7 +91,10 @@ if __name__ == '__main__':
             "link": "https://aws.amazon.com/blogs/training-and-certification/new-aws-certified-cloud-practitioner-exam-version/",
             "published": "2023-09-19T15:56:18Z",
             "summary": "We will be launching a new version of the AWS Certified Cloud Practitioner exam on September 19, 2023. The new exam (CLF-C02) will feature updated content...",
-            "categories": ["AWS Certified Cloud Practitioner", "Certification Announcement"]
+            "categories": [
+                "AWS Certified Cloud Practitioner",
+                "Certification Announcement",
+            ],
         },
         {
             "source": "aws_training_certification",
@@ -88,7 +102,7 @@ if __name__ == '__main__':
             "link": "https://aws.amazon.com/blogs/training-and-certification/unlock-new-skills-with-aws-skill-builder/",
             "published": "2023-09-18T10:00:00+00:00",
             "summary": "AWS Skill Builder offers over 500 free digital courses. Learn about our new features...",
-            "categories": ["AWS Skill Builder", "Digital Training"]
+            "categories": ["AWS Skill Builder", "Digital Training"],
         },
         {
             "source": "aws_training_certification",
@@ -96,16 +110,16 @@ if __name__ == '__main__':
             "link": "https://aws.amazon.com/blogs/training-and-certification/post-no-categories/",
             "published": "2023-09-17T10:00:00+00:00",
             "summary": "This post has no categories field or it is empty.",
-            "categories": []
+            "categories": [],
         },
-         {
+        {
             "source": "aws_training_certification",
             "title": "Post with string category",
             "link": "https://aws.amazon.com/blogs/training-and-certification/post-string-category/",
             "published": "2023-09-16T10:00:00+00:00",
             "summary": "This post has categories as a string.",
-            "categories": "SingleCategory"
-        }
+            "categories": "SingleCategory",
+        },
     ]
 
     st.set_page_config(layout="wide")

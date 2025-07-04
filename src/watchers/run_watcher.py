@@ -4,6 +4,7 @@ This script allows users to list available watchers, run specific watchers,
 or run all available watchers. Watchers can be run once or continuously
 at specified intervals.
 """
+
 import argparse
 
 # Add the project root to the path to ensure imports work correctly
@@ -40,7 +41,12 @@ def get_watcher_instance(watcher_name: str, check_interval: int = 3600):
     return None
 
 
-def run_watcher(watcher_name: str, continuous: bool, max_runs: int | None = None, check_interval: int = 3600):
+def run_watcher(
+    watcher_name: str,
+    continuous: bool,
+    max_runs: int | None = None,
+    check_interval: int = 3600,
+):
     """Run a specific watcher.
 
     Args:
@@ -72,27 +78,31 @@ def main():
     )
 
     parser.add_argument(
-        "-o", "--once",
+        "-o",
+        "--once",
         action="store_true",
         help="Run watcher(s) once and exit",
     )
 
     parser.add_argument(
-        "-n", "--num-runs",
+        "-n",
+        "--num-runs",
         type=int,
         default=None,
         help="Number of times to run the watcher before exiting",
     )
 
     parser.add_argument(
-        "-i", "--interval",
+        "-i",
+        "--interval",
         type=int,
         default=3600,
         help="Check interval in seconds (default: 3600)",
     )
 
     parser.add_argument(
-        "-l", "--list",
+        "-l",
+        "--list",
         action="store_true",
         help="List available watchers and exit",
     )

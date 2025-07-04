@@ -22,7 +22,9 @@ def render(logger, data_service=None):
         data_service: Data service for accessing events data
     """
     st.header("📅 Tech Events & Conference Intelligence")
-    st.markdown("Discover technology conferences, workshops, and events with AI-powered recommendations")
+    st.markdown(
+        "Discover technology conferences, workshops, and events with AI-powered recommendations"
+    )
 
     # Initialize data service if not provided
     if data_service is None:
@@ -32,7 +34,7 @@ def render(logger, data_service=None):
     with st.spinner("🔄 Loading events intelligence..."):
         events_data = data_service.get_tech_events_intelligence()
 
-    if 'error' in events_data:
+    if "error" in events_data:
         st.error("⚠️ Events Intelligence Temporarily Unavailable")
         st.warning(f"Error: {events_data['error']}")
         st.info("Please check your data connections and try refreshing the page.")
@@ -44,14 +46,16 @@ def render(logger, data_service=None):
     st.divider()
 
     # Create main tabs
-    main_tabs = st.tabs([
-        "🎯 Upcoming Events",
-        "⭐ High Quality Events",
-        "💰 Free Events",
-        "📊 Analytics & Insights",
-        "🔍 Event Search",
-        "🎯 Personalized Recommendations"
-    ])
+    main_tabs = st.tabs(
+        [
+            "🎯 Upcoming Events",
+            "⭐ High Quality Events",
+            "💰 Free Events",
+            "📊 Analytics & Insights",
+            "🔍 Event Search",
+            "🎯 Personalized Recommendations",
+        ]
+    )
 
     with main_tabs[0]:  # Upcoming Events
         render_upcoming_events(events_data, logger)
@@ -78,7 +82,7 @@ def display_events_overview(events_data: dict[str, Any]):
     Args:
         events_data: Events intelligence data
     """
-    stats = events_data.get('statistics', {})
+    stats = events_data.get("statistics", {})
 
     # Overview metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -86,55 +90,55 @@ def display_events_overview(events_data: dict[str, Any]):
     with col1:
         st.metric(
             "📅 Total Events",
-            stats.get('total_events', 0),
-            delta=f"+{stats.get('upcoming_count', 0)} upcoming"
+            stats.get("total_events", 0),
+            delta=f"+{stats.get('upcoming_count', 0)} upcoming",
         )
 
     with col2:
         st.metric(
             "⭐ High Quality",
-            stats.get('high_quality_count', 0),
-            delta=f"{stats.get('avg_quality_score', 0):.1f} avg score"
+            stats.get("high_quality_count", 0),
+            delta=f"{stats.get('avg_quality_score', 0):.1f} avg score",
         )
 
     with col3:
         st.metric(
             "💰 Free Events",
-            stats.get('free_events_count', 0),
-            delta=f"{stats.get('avg_roi_score', 0):.1f} avg ROI"
+            stats.get("free_events_count", 0),
+            delta=f"{stats.get('avg_roi_score', 0):.1f} avg ROI",
         )
 
     with col4:
         st.metric(
             "🤝 Networking Score",
             f"{stats.get('avg_networking_score', 0):.1f}",
-            delta=f"{stats.get('avg_relevance_score', 0):.1f} relevance"
+            delta=f"{stats.get('avg_relevance_score', 0):.1f} relevance",
         )
 
     # Quick distributions
-    if 'distributions' in events_data:
-        dist = events_data['distributions']
+    if "distributions" in events_data:
+        dist = events_data["distributions"]
 
         col1, col2 = st.columns(2)
 
         with col1:
             # Event types pie chart
-            if dist.get('event_types'):
+            if dist.get("event_types"):
                 fig_types = px.pie(
-                    values=list(dist['event_types'].values()),
-                    names=list(dist['event_types'].keys()),
-                    title="📋 Event Types Distribution"
+                    values=list(dist["event_types"].values()),
+                    names=list(dist["event_types"].keys()),
+                    title="📋 Event Types Distribution",
                 )
                 fig_types.update_layout(height=300)
                 st.plotly_chart(fig_types, use_container_width=True)
 
         with col2:
             # Format distribution
-            if dist.get('formats'):
+            if dist.get("formats"):
                 fig_formats = px.pie(
-                    values=list(dist['formats'].values()),
-                    names=list(dist['formats'].keys()),
-                    title="🌐 Event Formats Distribution"
+                    values=list(dist["formats"].values()),
+                    names=list(dist["formats"].keys()),
+                    title="🌐 Event Formats Distribution",
                 )
                 fig_formats.update_layout(height=300)
                 st.plotly_chart(fig_formats, use_container_width=True)
@@ -149,7 +153,7 @@ def render_upcoming_events(events_data: dict[str, Any], logger):
     """
     st.subheader("🎯 Upcoming Tech Events")
 
-    upcoming_events = events_data.get('upcoming_events', [])
+    upcoming_events = events_data.get("upcoming_events", [])
 
     if not upcoming_events:
         st.info("📅 No upcoming events found. Check back later for new events!")
@@ -158,28 +162,28 @@ def render_upcoming_events(events_data: dict[str, Any], logger):
     with st.expander("Filtros para Eventos Próximos", expanded=False):
         # Event filters moved into expander
         # Event type filter
-        all_types = list({e.get('event_type', 'unknown') for e in upcoming_events})
+        all_types = list({e.get("event_type", "unknown") for e in upcoming_events})
         selected_types = st.multiselect(
             "Event Types",
             all_types,
             default=all_types,
-            key="upcoming_event_types"  # Existing key preserved
+            key="upcoming_event_types",  # Existing key preserved
         )
 
         # Format filter
-        all_formats = list({e.get('format', 'unknown') for e in upcoming_events})
+        all_formats = list({e.get("format", "unknown") for e in upcoming_events})
         selected_formats = st.multiselect(
             "Event Formats",
             all_formats,
             default=all_formats,
-            key="upcoming_event_formats"  # Existing key preserved
+            key="upcoming_event_formats",  # Existing key preserved
         )
 
         # Cost filter
         cost_filter = st.selectbox(
             "Cost Filter",
             ["All", "Free Only", "Paid Only"],
-            key="upcoming_cost_filter"  # Existing key preserved
+            key="upcoming_cost_filter",  # Existing key preserved
         )
 
     # Apply filters
@@ -204,19 +208,21 @@ def render_high_quality_events(events_data: dict[str, Any], logger):
         logger: Logger instance
     """
     st.subheader("⭐ High Quality Tech Events")
-    st.markdown("Events with quality scores ≥ 75, featuring expert speakers and valuable content")
+    st.markdown(
+        "Events with quality scores ≥ 75, featuring expert speakers and valuable content"
+    )
 
-    high_quality_events = events_data.get('high_quality_events', [])
+    high_quality_events = events_data.get("high_quality_events", [])
 
     if not high_quality_events:
-        st.info("⭐ No high quality events found. Quality scores are calculated based on speaker influence, content relevance, and networking potential.")
+        st.info(
+            "⭐ No high quality events found. Quality scores are calculated based on speaker influence, content relevance, and networking potential."
+        )
         return
 
     # Sort by quality score
     high_quality_events = sorted(
-        high_quality_events,
-        key=lambda x: x.get('quality_score', 0),
-        reverse=True
+        high_quality_events, key=lambda x: x.get("quality_score", 0), reverse=True
     )
 
     # Display top quality events
@@ -232,20 +238,18 @@ def render_free_events(events_data: dict[str, Any], logger):
         logger: Logger instance
     """
     st.subheader("💰 Free Tech Events")
-    st.markdown("High-value events that are free to attend - maximize your learning without cost")
+    st.markdown(
+        "High-value events that are free to attend - maximize your learning without cost"
+    )
 
-    free_events = events_data.get('free_events', [])
+    free_events = events_data.get("free_events", [])
 
     if not free_events:
         st.info("💰 No free events currently available. Check back later!")
         return
 
     # Sort by ROI score
-    free_events = sorted(
-        free_events,
-        key=lambda x: x.get('roi_score', 0),
-        reverse=True
-    )
+    free_events = sorted(free_events, key=lambda x: x.get("roi_score", 0), reverse=True)
 
     # Display free events
     for i, event in enumerate(free_events):
@@ -261,21 +265,23 @@ def render_events_analytics(events_data: dict[str, Any], logger):
     """
     st.subheader("📊 Events Analytics & Insights")
 
-    events = events_data.get('events', [])
-    stats = events_data.get('statistics', {})
-    distributions = events_data.get('distributions', {})
+    events = events_data.get("events", [])
+    stats = events_data.get("statistics", {})
+    distributions = events_data.get("distributions", {})
 
     if not events:
         st.warning("No events data available for analytics.")
         return
 
     # Create analytics tabs
-    analytics_tabs = st.tabs([
-        "📈 Scores Analysis",
-        "🎯 Topics Trends",
-        "📍 Location Analysis",
-        "💰 Cost Analysis"
-    ])
+    analytics_tabs = st.tabs(
+        [
+            "📈 Scores Analysis",
+            "🎯 Topics Trends",
+            "📍 Location Analysis",
+            "💰 Cost Analysis",
+        ]
+    )
 
     with analytics_tabs[0]:  # Scores Analysis
         render_scores_analysis(events, stats)
@@ -300,58 +306,46 @@ def render_scores_analysis(events: list[dict], stats: dict):
     st.markdown("#### 📊 Event Quality Metrics")
 
     # Extract scores for visualization
-    quality_scores = [e.get('quality_score', 0) for e in events]
-    relevance_scores = [e.get('relevance_score', 0) for e in events]
-    networking_scores = [e.get('networking_score', 0) for e in events]
-    roi_scores = [e.get('roi_score', 0) for e in events]
+    quality_scores = [e.get("quality_score", 0) for e in events]
+    relevance_scores = [e.get("relevance_score", 0) for e in events]
+    networking_scores = [e.get("networking_score", 0) for e in events]
+    roi_scores = [e.get("roi_score", 0) for e in events]
 
     # Scores distribution chart
     fig = go.Figure()
 
-    fig.add_trace(go.Histogram(
-        x=quality_scores,
-        name="Quality Score",
-        opacity=0.7,
-        nbinsx=20
-    ))
+    fig.add_trace(
+        go.Histogram(x=quality_scores, name="Quality Score", opacity=0.7, nbinsx=20)
+    )
 
-    fig.add_trace(go.Histogram(
-        x=relevance_scores,
-        name="Relevance Score",
-        opacity=0.7,
-        nbinsx=20
-    ))
+    fig.add_trace(
+        go.Histogram(x=relevance_scores, name="Relevance Score", opacity=0.7, nbinsx=20)
+    )
 
-    fig.add_trace(go.Histogram(
-        x=networking_scores,
-        name="Networking Score",
-        opacity=0.7,
-        nbinsx=20
-    ))
+    fig.add_trace(
+        go.Histogram(
+            x=networking_scores, name="Networking Score", opacity=0.7, nbinsx=20
+        )
+    )
 
-    fig.add_trace(go.Histogram(
-        x=roi_scores,
-        name="ROI Score",
-        opacity=0.7,
-        nbinsx=20
-    ))
+    fig.add_trace(go.Histogram(x=roi_scores, name="ROI Score", opacity=0.7, nbinsx=20))
 
     fig.update_layout(
         title="Event Scores Distribution",
         xaxis_title="Score",
         yaxis_title="Count",
-        barmode='overlay',
-        height=400
+        barmode="overlay",
+        height=400,
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
     # Average scores comparison
     avg_scores = {
-        'Quality': stats.get('avg_quality_score', 0),
-        'Relevance': stats.get('avg_relevance_score', 0),
-        'Networking': stats.get('avg_networking_score', 0),
-        'ROI': stats.get('avg_roi_score', 0)
+        "Quality": stats.get("avg_quality_score", 0),
+        "Relevance": stats.get("avg_relevance_score", 0),
+        "Networking": stats.get("avg_networking_score", 0),
+        "ROI": stats.get("avg_roi_score", 0),
     }
 
     fig_avg = px.bar(
@@ -359,7 +353,7 @@ def render_scores_analysis(events: list[dict], stats: dict):
         y=list(avg_scores.values()),
         title="Average Scores by Category",
         color=list(avg_scores.values()),
-        color_continuous_scale="viridis"
+        color_continuous_scale="viridis",
     )
     fig_avg.update_layout(height=400)
     st.plotly_chart(fig_avg, use_container_width=True)
@@ -374,7 +368,7 @@ def render_topics_analysis(events: list[dict], distributions: dict):
     """
     st.markdown("#### 🎯 Technology Topics Trends")
 
-    top_topics = distributions.get('top_topics', [])
+    top_topics = distributions.get("top_topics", [])
 
     if top_topics:
         # Topics chart
@@ -383,9 +377,9 @@ def render_topics_analysis(events: list[dict], distributions: dict):
         fig = px.bar(
             x=counts,
             y=topics,
-            orientation='h',
+            orientation="h",
             title="Most Popular Technology Topics",
-            labels={'x': 'Event Count', 'y': 'Topics'}
+            labels={"x": "Event Count", "y": "Topics"},
         )
         fig.update_layout(height=500)
         st.plotly_chart(fig, use_container_width=True)
@@ -402,9 +396,14 @@ def render_topics_analysis(events: list[dict], distributions: dict):
 
         with col2:
             st.markdown("**📈 Growth Areas:**")
-            growth_topics = [t for t, c in top_topics if any(
-                keyword in t.lower() for keyword in ['ai', 'ml', 'blockchain', 'cloud']
-            )]
+            growth_topics = [
+                t
+                for t, c in top_topics
+                if any(
+                    keyword in t.lower()
+                    for keyword in ["ai", "ml", "blockchain", "cloud"]
+                )
+            ]
             for topic in growth_topics[:5]:
                 st.markdown(f"• **{topic.title()}**: High growth area")
     else:
@@ -424,24 +423,24 @@ def render_location_analysis(events: list[dict]):
     virtual_count = 0
 
     for event in events:
-        location = event.get('location', 'Unknown')
-        if event.get('is_virtual') or location.lower() in ['online', 'virtual']:
+        location = event.get("location", "Unknown")
+        if event.get("is_virtual") or location.lower() in ["online", "virtual"]:
             virtual_count += 1
         else:
             locations[location] = locations.get(location, 0) + 1
 
     # Add virtual events
     if virtual_count > 0:
-        locations['Virtual/Online'] = virtual_count
+        locations["Virtual/Online"] = virtual_count
 
     if locations:
         # Location distribution chart
         fig = px.bar(
             x=list(locations.values()),
             y=list(locations.keys()),
-            orientation='h',
+            orientation="h",
             title="Events by Location",
-            labels={'x': 'Event Count', 'y': 'Location'}
+            labels={"x": "Event Count", "y": "Location"},
         )
         fig.update_layout(height=400)
         st.plotly_chart(fig, use_container_width=True)
@@ -451,13 +450,19 @@ def render_location_analysis(events: list[dict]):
 
         with col1:
             st.markdown("**🌍 Top Locations:**")
-            sorted_locations = sorted(locations.items(), key=lambda x: x[1], reverse=True)
+            sorted_locations = sorted(
+                locations.items(), key=lambda x: x[1], reverse=True
+            )
             for location, count in sorted_locations[:5]:
                 st.markdown(f"• **{location}**: {count} events")
 
         with col2:
             virtual_pct = (virtual_count / len(events)) * 100 if events else 0
-            st.metric("🌐 Virtual Events", f"{virtual_count}", delta=f"{virtual_pct:.1f}% of total")
+            st.metric(
+                "🌐 Virtual Events",
+                f"{virtual_count}",
+                delta=f"{virtual_pct:.1f}% of total",
+            )
     else:
         st.info("No location data available for analysis.")
 
@@ -471,23 +476,24 @@ def render_cost_analysis(events: list[dict]):
     st.markdown("#### 💰 Event Cost Analysis")
 
     # Extract costs
-    free_events = [e for e in events if e.get('is_free', False)]
-    paid_events = [e for e in events if not e.get('is_free', False)]
-    costs = [e.get('estimated_cost', 0) for e in paid_events if e.get('estimated_cost', 0) > 0]
+    free_events = [e for e in events if e.get("is_free", False)]
+    paid_events = [e for e in events if not e.get("is_free", False)]
+    costs = [
+        e.get("estimated_cost", 0)
+        for e in paid_events
+        if e.get("estimated_cost", 0) > 0
+    ]
 
     col1, col2 = st.columns(2)
 
     with col1:
         # Free vs Paid distribution
-        distribution = {
-            'Free': len(free_events),
-            'Paid': len(paid_events)
-        }
+        distribution = {"Free": len(free_events), "Paid": len(paid_events)}
 
         fig = px.pie(
             values=list(distribution.values()),
             names=list(distribution.keys()),
-            title="Free vs Paid Events Distribution"
+            title="Free vs Paid Events Distribution",
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -498,7 +504,7 @@ def render_cost_analysis(events: list[dict]):
                 x=costs,
                 nbins=15,
                 title="Paid Events Cost Distribution",
-                labels={'x': 'Cost (USD)', 'y': 'Count'}
+                labels={"x": "Cost (USD)", "y": "Count"},
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
@@ -514,7 +520,7 @@ def render_cost_analysis(events: list[dict]):
             st.metric("💵 Average Cost", f"${sum(costs) / len(costs):.0f}")
 
         with col2:
-            st.metric("💰 Median Cost", f"${sorted(costs)[len(costs)//2]:.0f}")
+            st.metric("💰 Median Cost", f"${sorted(costs)[len(costs) // 2]:.0f}")
 
         with col3:
             st.metric("🏷️ Max Cost", f"${max(costs):.0f}")
@@ -530,7 +536,7 @@ def render_event_search(events_data: dict[str, Any], logger):
     st.subheader("🔍 Search & Filter Events")
     st.markdown("Find the perfect tech event for your interests and schedule")
 
-    events = events_data.get('events', [])
+    events = events_data.get("events", [])
 
     if not events:
         st.warning("No events available for search.")
@@ -543,14 +549,20 @@ def render_event_search(events_data: dict[str, Any], logger):
         search_query = st.text_input(
             "🔍 Search events by name, description, or topics",
             placeholder="e.g., Python, AI, React, blockchain...",
-            key="event_search_query"
+            key="event_search_query",
         )
 
     with col2:
         sort_by = st.selectbox(
             "Sort by",
-            ["Quality Score", "Relevance Score", "ROI Score", "Networking Score", "Date"],
-            key="event_search_sort"
+            [
+                "Quality Score",
+                "Relevance Score",
+                "ROI Score",
+                "Networking Score",
+                "Date",
+            ],
+            key="event_search_sort",
         )
 
     # Advanced filters
@@ -559,22 +571,19 @@ def render_event_search(events_data: dict[str, Any], logger):
 
         with filter_col1:
             # Event type filter
-            all_types = list({e.get('event_type', 'unknown') for e in events})
+            all_types = list({e.get("event_type", "unknown") for e in events})
             selected_types = st.multiselect(
-                "Event Types",
-                all_types,
-                default=all_types,
-                key="search_event_types"
+                "Event Types", all_types, default=all_types, key="search_event_types"
             )
 
         with filter_col2:
             # Format filter
-            all_formats = list({e.get('format', 'unknown') for e in events})
+            all_formats = list({e.get("format", "unknown") for e in events})
             selected_formats = st.multiselect(
                 "Event Formats",
                 all_formats,
                 default=all_formats,
-                key="search_event_formats"
+                key="search_event_formats",
             )
 
         with filter_col3:
@@ -585,7 +594,7 @@ def render_event_search(events_data: dict[str, Any], logger):
                 max_value=5000,
                 value=1000,
                 step=50,
-                key="search_max_cost"
+                key="search_max_cost",
             )
 
         # Quality score range
@@ -594,7 +603,7 @@ def render_event_search(events_data: dict[str, Any], logger):
             min_value=0,
             max_value=100,
             value=50,
-            key="search_quality_range"
+            key="search_quality_range",
         )
 
     # Apply search and filters
@@ -604,16 +613,29 @@ def render_event_search(events_data: dict[str, Any], logger):
 
     # Sort events
     if sort_by == "Quality Score":
-        filtered_events = sorted(filtered_events, key=lambda x: x.get('quality_score', 0), reverse=True)
+        filtered_events = sorted(
+            filtered_events, key=lambda x: x.get("quality_score", 0), reverse=True
+        )
     elif sort_by == "Relevance Score":
-        filtered_events = sorted(filtered_events, key=lambda x: x.get('relevance_score', 0), reverse=True)
+        filtered_events = sorted(
+            filtered_events, key=lambda x: x.get("relevance_score", 0), reverse=True
+        )
     elif sort_by == "ROI Score":
-        filtered_events = sorted(filtered_events, key=lambda x: x.get('roi_score', 0), reverse=True)
+        filtered_events = sorted(
+            filtered_events, key=lambda x: x.get("roi_score", 0), reverse=True
+        )
     elif sort_by == "Networking Score":
-        filtered_events = sorted(filtered_events, key=lambda x: x.get('networking_score', 0), reverse=True)
+        filtered_events = sorted(
+            filtered_events, key=lambda x: x.get("networking_score", 0), reverse=True
+        )
     elif sort_by == "Date":
         with contextlib.suppress(builtins.BaseException):
-            filtered_events = sorted(filtered_events, key=lambda x: datetime.fromisoformat(x.get('start_date', '').replace('Z', '+00:00')))
+            filtered_events = sorted(
+                filtered_events,
+                key=lambda x: datetime.fromisoformat(
+                    x.get("start_date", "").replace("Z", "+00:00")
+                ),
+            )
 
     # Display results
     st.markdown(f"**Found {len(filtered_events)} events matching your criteria**")
@@ -625,7 +647,9 @@ def render_event_search(events_data: dict[str, Any], logger):
         st.info("No events match your search criteria. Try adjusting your filters.")
 
 
-def render_personalized_recommendations(events_data: dict[str, Any], data_service, logger):
+def render_personalized_recommendations(
+    events_data: dict[str, Any], data_service, logger
+):
     """Render personalized event recommendations.
 
     Args:
@@ -634,7 +658,9 @@ def render_personalized_recommendations(events_data: dict[str, Any], data_servic
         logger: Logger instance
     """
     st.subheader("🎯 Personalized Event Recommendations")
-    st.markdown("Get AI-powered event recommendations based on your interests and preferences")
+    st.markdown(
+        "Get AI-powered event recommendations based on your interests and preferences"
+    )
 
     # User preferences form
     with st.form("user_preferences"):
@@ -646,20 +672,31 @@ def render_personalized_recommendations(events_data: dict[str, Any], data_servic
             interests = st.multiselect(
                 "Your Technology Interests",
                 [
-                    "Python", "JavaScript", "React", "Vue", "Angular",
-                    "AI/Machine Learning", "Data Science", "Blockchain",
-                    "Cloud Computing", "DevOps", "Mobile Development",
-                    "Web Development", "Cybersecurity", "Database",
-                    "Backend Development", "Frontend Development"
+                    "Python",
+                    "JavaScript",
+                    "React",
+                    "Vue",
+                    "Angular",
+                    "AI/Machine Learning",
+                    "Data Science",
+                    "Blockchain",
+                    "Cloud Computing",
+                    "DevOps",
+                    "Mobile Development",
+                    "Web Development",
+                    "Cybersecurity",
+                    "Database",
+                    "Backend Development",
+                    "Frontend Development",
                 ],
                 default=["Python", "AI/Machine Learning"],
-                help="Select your primary technology interests"
+                help="Select your primary technology interests",
             )
 
             location = st.text_input(
                 "Your Location",
                 placeholder="e.g., San Francisco, CA",
-                help="Your location for calculating travel convenience"
+                help="Your location for calculating travel convenience",
             )
 
         with col2:
@@ -669,14 +706,14 @@ def render_personalized_recommendations(events_data: dict[str, Any], data_servic
                 max_value=5000,
                 value=500,
                 step=50,
-                help="Maximum amount you're willing to spend per event"
+                help="Maximum amount you're willing to spend per event",
             )
 
             preferred_formats = st.multiselect(
                 "Preferred Event Formats",
                 ["in_person", "virtual", "hybrid"],
                 default=["in_person", "virtual"],
-                help="Select your preferred event formats"
+                help="Select your preferred event formats",
             )
 
         generate_recommendations = st.form_submit_button("🎯 Generate Recommendations")
@@ -688,34 +725,50 @@ def render_personalized_recommendations(events_data: dict[str, Any], data_servic
                 "interests": interests,
                 "location": location,
                 "budget": max_budget,
-                "preferred_formats": preferred_formats
+                "preferred_formats": preferred_formats,
             }
 
             # Generate recommendations (using demo data for now)
             recommendations = generate_demo_recommendations(events_data, user_profile)
 
             if recommendations:
-                st.success(f"🎯 Found {len(recommendations)} recommended events for you!")
+                st.success(
+                    f"🎯 Found {len(recommendations)} recommended events for you!"
+                )
 
                 for i, rec in enumerate(recommendations):
-                    event = rec['event']
-                    score = rec['recommendation_score']
-                    reason = rec['recommendation_reason']
+                    event = rec["event"]
+                    score = rec["recommendation_score"]
+                    reason = rec["recommendation_reason"]
 
                     # Display recommendation with score
-                    st.markdown(f"### 🏆 Recommendation #{i+1} (Score: {score:.1f}/100)")
+                    st.markdown(
+                        f"### 🏆 Recommendation #{i + 1} (Score: {score:.1f}/100)"
+                    )
                     st.info(f"**Why this event?** {reason}")
 
-                    display_event_card(event, f"rec_{i}", show_recommendation_score=True, rec_score=score)
+                    display_event_card(
+                        event,
+                        f"rec_{i}",
+                        show_recommendation_score=True,
+                        rec_score=score,
+                    )
 
                     st.divider()
             else:
                 st.warning("No recommendations found. Try adjusting your preferences.")
     elif generate_recommendations:
-        st.warning("Please select at least one technology interest to generate recommendations.")
+        st.warning(
+            "Please select at least one technology interest to generate recommendations."
+        )
 
 
-def filter_events(events: list[dict], selected_types: list[str], selected_formats: list[str], cost_filter: str) -> list[dict]:
+def filter_events(
+    events: list[dict],
+    selected_types: list[str],
+    selected_formats: list[str],
+    cost_filter: str,
+) -> list[dict]:
     """Filter events based on criteria.
 
     Args:
@@ -731,15 +784,17 @@ def filter_events(events: list[dict], selected_types: list[str], selected_format
 
     for event in events:
         # Type filter
-        if event.get('event_type') not in selected_types:
+        if event.get("event_type") not in selected_types:
             continue
 
         # Format filter
-        if event.get('format') not in selected_formats:
+        if event.get("format") not in selected_formats:
             continue
 
         # Cost filter
-        if (cost_filter == "Free Only" and not event.get('is_free', False)) or (cost_filter == "Paid Only" and event.get('is_free', False)):
+        if (cost_filter == "Free Only" and not event.get("is_free", False)) or (
+            cost_filter == "Paid Only" and event.get("is_free", False)
+        ):
             continue
 
         filtered.append(event)
@@ -753,7 +808,7 @@ def search_and_filter_events(
     selected_types: list[str],
     selected_formats: list[str],
     max_cost: float,
-    min_quality: int
+    min_quality: int,
 ) -> list[dict]:
     """Search and filter events based on multiple criteria.
 
@@ -773,31 +828,33 @@ def search_and_filter_events(
     for event in events:
         # Search query filter
         if search_query:
-            searchable_text = " ".join([
-                event.get('name', ''),
-                event.get('description', ''),
-                " ".join(event.get('topics', [])),
-                " ".join(event.get('categories', []))
-            ]).lower()
+            searchable_text = " ".join(
+                [
+                    event.get("name", ""),
+                    event.get("description", ""),
+                    " ".join(event.get("topics", [])),
+                    " ".join(event.get("categories", [])),
+                ]
+            ).lower()
 
             if search_query.lower() not in searchable_text:
                 continue
 
         # Type filter
-        if event.get('event_type') not in selected_types:
+        if event.get("event_type") not in selected_types:
             continue
 
         # Format filter
-        if event.get('format') not in selected_formats:
+        if event.get("format") not in selected_formats:
             continue
 
         # Cost filter
-        event_cost = event.get('estimated_cost', 0)
+        event_cost = event.get("estimated_cost", 0)
         if event_cost > max_cost:
             continue
 
         # Quality filter
-        if event.get('quality_score', 0) < min_quality:
+        if event.get("quality_score", 0) < min_quality:
             continue
 
         filtered.append(event)
@@ -805,7 +862,9 @@ def search_and_filter_events(
     return filtered
 
 
-def generate_demo_recommendations(events_data: dict[str, Any], user_profile: dict[str, Any]) -> list[dict]:
+def generate_demo_recommendations(
+    events_data: dict[str, Any], user_profile: dict[str, Any]
+) -> list[dict]:
     """Generate demo recommendations based on user profile.
 
     Args:
@@ -815,16 +874,18 @@ def generate_demo_recommendations(events_data: dict[str, Any], user_profile: dic
     Returns:
         List of recommended events with scores
     """
-    events = events_data.get('events', [])
+    events = events_data.get("events", [])
     recommendations = []
 
-    user_interests = [interest.lower() for interest in user_profile.get('interests', [])]
-    user_budget = user_profile.get('budget', float('inf'))
+    user_interests = [
+        interest.lower() for interest in user_profile.get("interests", [])
+    ]
+    user_budget = user_profile.get("budget", float("inf"))
 
     for event in events:
         # Calculate interest match
-        event_topics = [topic.lower() for topic in event.get('topics', [])]
-        event_categories = [cat.lower() for cat in event.get('categories', [])]
+        event_topics = [topic.lower() for topic in event.get("topics", [])]
+        event_categories = [cat.lower() for cat in event.get("categories", [])]
 
         interest_match = 0
         for interest in user_interests:
@@ -837,26 +898,28 @@ def generate_demo_recommendations(events_data: dict[str, Any], user_profile: dic
             continue
 
         # Budget filter
-        event_cost = event.get('estimated_cost', 0)
+        event_cost = event.get("estimated_cost", 0)
         if event_cost > user_budget:
             continue
 
         # Calculate recommendation score
         recommendation_score = (
-            min(interest_match * 20, 60) +  # Interest match (max 60 points)
-            event.get('quality_score', 0) * 0.2 +  # Quality score (max 20 points)
-            event.get('roi_score', 0) * 0.2  # ROI score (max 20 points)
+            min(interest_match * 20, 60)  # Interest match (max 60 points)
+            + event.get("quality_score", 0) * 0.2  # Quality score (max 20 points)
+            + event.get("roi_score", 0) * 0.2  # ROI score (max 20 points)
         )
 
         if recommendation_score >= 50:  # Minimum threshold
-            recommendations.append({
-                'event': event,
-                'recommendation_score': recommendation_score,
-                'recommendation_reason': f"This event matches {interest_match} of your interests and has a quality score of {event.get('quality_score', 0):.1f}."
-            })
+            recommendations.append(
+                {
+                    "event": event,
+                    "recommendation_score": recommendation_score,
+                    "recommendation_reason": f"This event matches {interest_match} of your interests and has a quality score of {event.get('quality_score', 0):.1f}.",
+                }
+            )
 
     # Sort by recommendation score
-    recommendations.sort(key=lambda x: x['recommendation_score'], reverse=True)
+    recommendations.sort(key=lambda x: x["recommendation_score"], reverse=True)
 
     return recommendations[:10]  # Top 10 recommendations
 
@@ -867,7 +930,7 @@ def display_event_card(
     show_quality_badge: bool = False,
     show_roi_badge: bool = False,
     show_recommendation_score: bool = False,
-    rec_score: float = 0
+    rec_score: float = 0,
 ):
     """Display an event card with all relevant information.
 
@@ -888,36 +951,40 @@ def display_event_card(
             title_html = f"**{event.get('name', 'Unknown Event')}**"
 
             if show_quality_badge:
-                quality_score = event.get('quality_score', 0)
+                quality_score = event.get("quality_score", 0)
                 if quality_score >= 85:
                     title_html += " 🏆"
                 elif quality_score >= 75:
                     title_html += " ⭐"
 
             if show_roi_badge:
-                roi_score = event.get('roi_score', 0)
+                roi_score = event.get("roi_score", 0)
                 if roi_score >= 80:
                     title_html += " 💎"
 
-            if event.get('is_free'):
+            if event.get("is_free"):
                 title_html += " 🆓"
 
-            if event.get('is_virtual'):
+            if event.get("is_virtual"):
                 title_html += " 🌐"
 
             st.markdown(title_html)
 
             # Event details
-            organizer = event.get('organizer', 'Unknown Organizer')
-            location = event.get('location', 'TBD')
-            event_type = event.get('event_type', 'unknown').title()
+            organizer = event.get("organizer", "Unknown Organizer")
+            location = event.get("location", "TBD")
+            event_type = event.get("event_type", "unknown").title()
 
-            st.markdown(f"🏢 <span class='text-muted'>Organizado por:</span> **{organizer}** • 📍 <span class='text-muted'>Lugar:</span> **{location}** • 📋 <span class='text-muted'>Tipo:</span> **{event_type}**")
+            st.markdown(
+                f"🏢 <span class='text-muted'>Organizado por:</span> **{organizer}** • 📍 <span class='text-muted'>Lugar:</span> **{location}** • 📋 <span class='text-muted'>Tipo:</span> **{event_type}**"
+            )
 
         with col2:
             # Date and cost
             try:
-                start_date = datetime.fromisoformat(event.get('start_date', '').replace('Z', '+00:00'))
+                start_date = datetime.fromisoformat(
+                    event.get("start_date", "").replace("Z", "+00:00")
+                )
                 date_str = start_date.strftime("%b %d, %Y")
 
                 # Calculate days until event
@@ -925,89 +992,118 @@ def display_event_card(
                 if days_until > 0:
                     date_str += f" ({days_until} days)"
                 elif days_until == 0:
-                    date_str += " (Hoy!)" # Changed to Spanish
+                    date_str += " (Hoy!)"  # Changed to Spanish
                 else:
-                    date_str += " (Pasado)" # Changed to Spanish
+                    date_str += " (Pasado)"  # Changed to Spanish
             except:
-                date_str = "Fecha TBD" # Changed to Spanish
+                date_str = "Fecha TBD"  # Changed to Spanish
 
             st.markdown(f"<span class='text-muted'>📅 Fecha:</span> **{date_str}**")
 
             cost_display_str = ""
-            if event.get('is_free'):
+            if event.get("is_free"):
                 cost_display_str = "GRATIS"
             else:
-                cost = event.get('estimated_cost', 0)
+                cost = event.get("estimated_cost", 0)
                 cost_display_str = f"${cost:.0f}"
-            st.markdown(f"<span class='text-muted'>💰 Costo:</span> **{cost_display_str}**")
+            st.markdown(
+                f"<span class='text-muted'>💰 Costo:</span> **{cost_display_str}**"
+            )
 
         # Description
-        description = event.get('description', 'No description available.')
+        description = event.get("description", "No description available.")
         st.markdown(f"{description}")
 
         # Topics and categories
         col1, col2 = st.columns(2)
 
         with col1:
-            topics = event.get('topics', [])
+            topics = event.get("topics", [])
             if topics:
                 topic_tags = " ".join([f"`{topic}`" for topic in topics[:5]])
                 st.markdown(f"🏷️ <span class='text-muted'>Temas:</span> {topic_tags}")
 
         with col2:
-            categories = event.get('categories', [])
+            categories = event.get("categories", [])
             if categories:
                 category_tags = " ".join([f"`{cat}`" for cat in categories])
-                st.markdown(f"📂 <span class='text-muted'>Categorías:</span> {category_tags}")
+                st.markdown(
+                    f"📂 <span class='text-muted'>Categorías:</span> {category_tags}"
+                )
 
         # Scores section
-        if any([event.get('quality_score', 0), event.get('relevance_score', 0), event.get('networking_score', 0), event.get('roi_score', 0)]):
+        if any(
+            [
+                event.get("quality_score", 0),
+                event.get("relevance_score", 0),
+                event.get("networking_score", 0),
+                event.get("roi_score", 0),
+            ]
+        ):
             st.markdown("<span class='text-muted'>📊 Puntuaciones del Evento:</span>")
 
             score_col1, score_col2, score_col3, score_col4 = st.columns(4)
 
             with score_col1:
-                quality = event.get('quality_score', 0)
-                st.metric("Quality", f"{quality:.0f}", help="Overall event quality based on speakers, content, and organization")
+                quality = event.get("quality_score", 0)
+                st.metric(
+                    "Quality",
+                    f"{quality:.0f}",
+                    help="Overall event quality based on speakers, content, and organization",
+                )
 
             with score_col2:
-                relevance = event.get('relevance_score', 0)
-                st.metric("Relevance", f"{relevance:.0f}", help="How relevant the content is to current tech trends")
+                relevance = event.get("relevance_score", 0)
+                st.metric(
+                    "Relevance",
+                    f"{relevance:.0f}",
+                    help="How relevant the content is to current tech trends",
+                )
 
             with score_col3:
-                networking = event.get('networking_score', 0)
-                st.metric("Networking", f"{networking:.0f}", help="Networking opportunities available")
+                networking = event.get("networking_score", 0)
+                st.metric(
+                    "Networking",
+                    f"{networking:.0f}",
+                    help="Networking opportunities available",
+                )
 
             with score_col4:
-                roi = event.get('roi_score', 0)
-                st.metric("ROI", f"{roi:.0f}", help="Return on investment considering cost and value")
+                roi = event.get("roi_score", 0)
+                st.metric(
+                    "ROI",
+                    f"{roi:.0f}",
+                    help="Return on investment considering cost and value",
+                )
 
         # Recommendation score
         if show_recommendation_score:
-            st.markdown(f"🎯 <span class='text-muted'>Puntuación de Recomendación:</span> **{rec_score:.1f}/100**")
+            st.markdown(
+                f"🎯 <span class='text-muted'>Puntuación de Recomendación:</span> **{rec_score:.1f}/100**"
+            )
 
         # Action buttons
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            if event.get('registration_url'):
+            if event.get("registration_url"):
                 st.link_button(
-                    "📝 Register",
-                    event['registration_url'],
-                    use_container_width=True
+                    "📝 Register", event["registration_url"], use_container_width=True
                 )
 
         with col2:
-            if event.get('website_url'):
+            if event.get("website_url"):
                 st.link_button(
-                    "🌐 Event Website",
-                    event['website_url'],
-                    use_container_width=True
+                    "🌐 Event Website", event["website_url"], use_container_width=True
                 )
 
         with col3:
             # Add to calendar (placeholder)
-            if st.button("📅 Add to Calendar", key=f"calendar_{key_suffix}", use_container_width=True):
+            if st.button(
+                "📅 Add to Calendar",
+                key=f"calendar_{key_suffix}",
+                use_container_width=True,
+            ):
                 st.success("Calendar integration coming soon!")
 
         st.divider()

@@ -40,7 +40,9 @@ class DataService:
                 self._log(f"Loading {description} from {file_path}")
                 with open(file_path, encoding="utf-8") as f:
                     data = json.load(f)
-                self._log(f"Successfully loaded {len(data) if isinstance(data, list) else 'unknown'} items from {file_path}")
+                self._log(
+                    f"Successfully loaded {len(data) if isinstance(data, list) else 'unknown'} items from {file_path}"
+                )
                 return data if isinstance(data, list) else []
             else:
                 self._log(f"File not found: {file_path}", "warning")
@@ -66,10 +68,13 @@ class DataService:
             if deals:
                 deals_df = pd.DataFrame(deals)
                 if "published_date" in deals_df.columns:
-                    deals_df["published_date"] = pd.to_datetime(deals_df["published_date"], errors="coerce").dt.date
+                    deals_df["published_date"] = pd.to_datetime(
+                        deals_df["published_date"], errors="coerce"
+                    ).dt.date
                 if "price" in deals_df.columns:
                     deals_df["price"] = pd.to_numeric(
-                        deals_df["price"].replace({None: np.nan, "": np.nan}), errors="coerce"
+                        deals_df["price"].replace({None: np.nan, "": np.nan}),
+                        errors="coerce",
                     )
                 self._log(f"Loaded {len(deals_df)} game deals")
 
@@ -99,7 +104,9 @@ class DataService:
             if bundles_data:
                 bundles_df = pd.DataFrame(bundles_data)
                 if "published_date" in bundles_df.columns:
-                    bundles_df["published_date"] = pd.to_datetime(bundles_df["published_date"], errors="coerce").dt.date
+                    bundles_df["published_date"] = pd.to_datetime(
+                        bundles_df["published_date"], errors="coerce"
+                    ).dt.date
                 self._log(f"Loaded {len(bundles_df)} game bundles")
 
             # Load giveaways
@@ -108,9 +115,13 @@ class DataService:
             if giveaways:
                 giveaways_df = pd.DataFrame(giveaways)
                 if "published_date" in giveaways_df.columns:
-                    giveaways_df["published_date"] = pd.to_datetime(giveaways_df["published_date"], errors="coerce").dt.date
+                    giveaways_df["published_date"] = pd.to_datetime(
+                        giveaways_df["published_date"], errors="coerce"
+                    ).dt.date
                 if "expires_date" in giveaways_df.columns:
-                    giveaways_df["expires_date"] = pd.to_datetime(giveaways_df["expires_date"], errors="coerce").dt.date
+                    giveaways_df["expires_date"] = pd.to_datetime(
+                        giveaways_df["expires_date"], errors="coerce"
+                    ).dt.date
                 self._log(f"Loaded {len(giveaways_df)} game giveaways")
 
         except Exception as e:
@@ -161,14 +172,19 @@ class DataService:
             for filename in hn_files:
                 hn_file = hn_dir / filename
                 if hn_file.exists():
-                    hn_data = self._safe_load_json(hn_file, f"HackerNews stories from {filename}")
+                    hn_data = self._safe_load_json(
+                        hn_file, f"HackerNews stories from {filename}"
+                    )
                     if hn_data:
                         news_data["hackernews"] = pd.DataFrame(hn_data)
                         if "published_date" in news_data["hackernews"].columns:
                             news_data["hackernews"]["published_date"] = pd.to_datetime(
-                                news_data["hackernews"]["published_date"], errors="coerce"
+                                news_data["hackernews"]["published_date"],
+                                errors="coerce",
                             ).dt.date
-                        self._log(f"Loaded {len(news_data['hackernews'])} HackerNews stories")
+                        self._log(
+                            f"Loaded {len(news_data['hackernews'])} HackerNews stories"
+                        )
                     break
 
             # FutureTools - check multiple possible file names
@@ -178,10 +194,14 @@ class DataService:
             for filename in ft_files:
                 ft_file = ft_dir / filename
                 if ft_file.exists():
-                    ft_data = self._safe_load_json(ft_file, f"FutureTools news from {filename}")
+                    ft_data = self._safe_load_json(
+                        ft_file, f"FutureTools news from {filename}"
+                    )
                     if ft_data:
                         news_data["futuretools"] = pd.DataFrame(ft_data)
-                        self._log(f"Loaded {len(news_data['futuretools'])} FutureTools articles")
+                        self._log(
+                            f"Loaded {len(news_data['futuretools'])} FutureTools articles"
+                        )
                     break
 
             # Medium GenAI
@@ -195,11 +215,15 @@ class DataService:
             news_dir = self.data_dir / "news"
             if news_dir.exists():
                 for news_file in news_dir.glob("*.json"):
-                    news_source_data = self._safe_load_json(news_file, f"news from {news_file.name}")
+                    news_source_data = self._safe_load_json(
+                        news_file, f"news from {news_file.name}"
+                    )
                     if news_source_data:
                         source_name = news_file.stem
                         news_data[source_name] = pd.DataFrame(news_source_data)
-                        self._log(f"Loaded {len(news_data[source_name])} articles from {source_name}")
+                        self._log(
+                            f"Loaded {len(news_data[source_name])} articles from {source_name}"
+                        )
 
         except Exception as e:
             self._log(f"Error loading news data: {e!s}", "error")
@@ -224,7 +248,9 @@ class DataService:
                         for filename in video_files:
                             videos_file = channel_dir / filename
                             if videos_file.exists():
-                                channel_data = self._safe_load_json(videos_file, f"videos from {channel_dir.name}")
+                                channel_data = self._safe_load_json(
+                                    videos_file, f"videos from {channel_dir.name}"
+                                )
                                 if channel_data:
                                     df = pd.DataFrame(channel_data)
 
@@ -232,22 +258,36 @@ class DataService:
                                     if not df.empty:
                                         # Normalize date columns
                                         if "published_at" in df.columns:
-                                            df["published_date"] = pd.to_datetime(df["published_at"], errors="coerce")
+                                            df["published_date"] = pd.to_datetime(
+                                                df["published_at"], errors="coerce"
+                                            )
                                         elif "published_date" in df.columns:
-                                            df["published_date"] = pd.to_datetime(df["published_date"], errors="coerce")
+                                            df["published_date"] = pd.to_datetime(
+                                                df["published_date"], errors="coerce"
+                                            )
 
                                         # Ensure required columns exist
-                                        if "channel" in df.columns and "channel_name" not in df.columns:
+                                        if (
+                                            "channel" in df.columns
+                                            and "channel_name" not in df.columns
+                                        ):
                                             df["channel_name"] = df["channel"]
-                                        if "thumbnail_url" in df.columns and "thumbnail" not in df.columns:
+                                        if (
+                                            "thumbnail_url" in df.columns
+                                            and "thumbnail" not in df.columns
+                                        ):
                                             df["thumbnail"] = df["thumbnail_url"]
 
                                         # Pre-sort by date for better performance
                                         if "published_date" in df.columns:
-                                            df = df.sort_values("published_date", ascending=False)
+                                            df = df.sort_values(
+                                                "published_date", ascending=False
+                                            )
 
                                         videos_data[channel_dir.name] = df
-                                        self._log(f"Loaded {len(df)} videos from {channel_dir.name}")
+                                        self._log(
+                                            f"Loaded {len(df)} videos from {channel_dir.name}"
+                                        )
                                 break
 
         except Exception as e:
@@ -268,11 +308,13 @@ class DataService:
                 for channel_dir in youtube_dir.iterdir():
                     if channel_dir.is_dir():
                         # Format display name
-                        display_name = channel_dir.name.replace('_', ' ').replace('-', ' ').title()
+                        display_name = (
+                            channel_dir.name.replace("_", " ").replace("-", " ").title()
+                        )
                         # Remove common prefixes for cleaner names
-                        for prefix in ['aa-', 'z-', 'zz-', 'zzz-']:
+                        for prefix in ["aa-", "z-", "zz-", "zzz-"]:
                             if display_name.lower().startswith(prefix):
-                                display_name = display_name[len(prefix):].strip()
+                                display_name = display_name[len(prefix) :].strip()
                                 break
 
                         categories[channel_dir.name] = display_name
@@ -306,20 +348,26 @@ class DataService:
             # Try other possible locations
             arxiv_alt_locations = [
                 self.data_dir / "arxiv" / "papers.json",
-                self.data_dir / "arxiv" / "papers.csv"
+                self.data_dir / "arxiv" / "papers.csv",
             ]
 
             for alt_file in arxiv_alt_locations:
                 if alt_file.exists():
-                    if alt_file.suffix == '.csv':
+                    if alt_file.suffix == ".csv":
                         arxiv_df = pd.read_csv(alt_file)
-                        self._log(f"Loaded {len(arxiv_df)} ArXiv papers from {alt_file}")
+                        self._log(
+                            f"Loaded {len(arxiv_df)} ArXiv papers from {alt_file}"
+                        )
                         return arxiv_df
                     else:
-                        arxiv_data = self._safe_load_json(alt_file, f"ArXiv papers from {alt_file}")
+                        arxiv_data = self._safe_load_json(
+                            alt_file, f"ArXiv papers from {alt_file}"
+                        )
                         if arxiv_data:
                             arxiv_df = pd.DataFrame(arxiv_data)
-                            self._log(f"Loaded {len(arxiv_df)} ArXiv papers from {alt_file}")
+                            self._log(
+                                f"Loaded {len(arxiv_df)} ArXiv papers from {alt_file}"
+                            )
                             return arxiv_df
 
         except Exception as e:
@@ -358,8 +406,12 @@ class DataService:
                 "deals": len(deals_df),
                 "bundles": len(bundles_df),
                 "giveaways": len(giveaways_df),
-                "latest_deal": deals_df.iloc[0]["title"] if not deals_df.empty and "title" in deals_df.columns else None,
-                "latest_bundle": bundles_df.iloc[0]["title"] if not bundles_df.empty and "title" in bundles_df.columns else None
+                "latest_deal": deals_df.iloc[0]["title"]
+                if not deals_df.empty and "title" in deals_df.columns
+                else None,
+                "latest_bundle": bundles_df.iloc[0]["title"]
+                if not bundles_df.empty and "title" in bundles_df.columns
+                else None,
             }
 
             # Courses summary
@@ -368,7 +420,7 @@ class DataService:
             summary["courses"] = {
                 "total": total_courses,
                 "platforms": list(courses_data.keys()),
-                "by_platform": {k: len(v) for k, v in courses_data.items()}
+                "by_platform": {k: len(v) for k, v in courses_data.items()},
             }
 
             # News summary
@@ -377,7 +429,7 @@ class DataService:
             summary["news"] = {
                 "total": total_news,
                 "sources": list(news_data.keys()),
-                "by_source": {k: len(v) for k, v in news_data.items()}
+                "by_source": {k: len(v) for k, v in news_data.items()},
             }
 
             # Videos summary
@@ -386,7 +438,7 @@ class DataService:
             summary["videos"] = {
                 "total": total_videos,
                 "channels": len(videos_data),
-                "by_channel": {k: len(v) for k, v in videos_data.items()}
+                "by_channel": {k: len(v) for k, v in videos_data.items()},
             }
 
             # ArXiv summary
@@ -394,15 +446,16 @@ class DataService:
             recent_count = 0
             if not arxiv_df.empty and "published_date" in arxiv_df.columns:
                 try:
-                    recent_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
-                    recent_count = len(arxiv_df[arxiv_df["published_date"] >= recent_date])
+                    recent_date = (datetime.now() - timedelta(days=7)).strftime(
+                        "%Y-%m-%d"
+                    )
+                    recent_count = len(
+                        arxiv_df[arxiv_df["published_date"] >= recent_date]
+                    )
                 except:
                     recent_count = 0
 
-            summary["arxiv"] = {
-                "total": len(arxiv_df),
-                "recent": recent_count
-            }
+            summary["arxiv"] = {"total": len(arxiv_df), "recent": recent_count}
 
             # Events summary
             events_df = self.get_events_data()
@@ -414,10 +467,7 @@ class DataService:
                 except:
                     upcoming_count = 0
 
-            summary["events"] = {
-                "total": len(events_df),
-                "upcoming": upcoming_count
-            }
+            summary["events"] = {"total": len(events_df), "upcoming": upcoming_count}
 
             self._log(f"Generated summary: {summary}")
             return summary
@@ -426,10 +476,16 @@ class DataService:
             self._log(f"Error generating data summary: {e!s}", "error")
             # Return a safe default summary
             return {
-                "games": {"deals": 0, "bundles": 0, "giveaways": 0, "latest_deal": None, "latest_bundle": None},
+                "games": {
+                    "deals": 0,
+                    "bundles": 0,
+                    "giveaways": 0,
+                    "latest_deal": None,
+                    "latest_bundle": None,
+                },
                 "courses": {"total": 0, "platforms": [], "by_platform": {}},
                 "news": {"total": 0, "sources": [], "by_source": {}},
                 "videos": {"total": 0, "channels": 0, "by_channel": {}},
                 "arxiv": {"total": 0, "recent": 0},
-                "events": {"total": 0, "upcoming": 0}
+                "events": {"total": 0, "upcoming": 0},
             }

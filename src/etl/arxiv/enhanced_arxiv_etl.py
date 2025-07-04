@@ -262,17 +262,34 @@ class EnhancedArxivETL(BaseETL):
                 # Try to find any existing papers file as fallback
                 try:
                     if os.path.exists(self.watcher.data_dir):
-                        json_files = [f for f in os.listdir(self.watcher.data_dir) if f.endswith('.json')]
+                        json_files = [
+                            f
+                            for f in os.listdir(self.watcher.data_dir)
+                            if f.endswith(".json")
+                        ]
                         if json_files:
                             # Use the most recent JSON file
-                            latest_file = max(json_files, key=lambda x: os.path.getctime(os.path.join(self.watcher.data_dir, x)))
-                            papers_file = os.path.join(self.watcher.data_dir, latest_file)
-                            self.logger.info(f"Using fallback papers file: {papers_file}")
+                            latest_file = max(
+                                json_files,
+                                key=lambda x: os.path.getctime(
+                                    os.path.join(self.watcher.data_dir, x)
+                                ),
+                            )
+                            papers_file = os.path.join(
+                                self.watcher.data_dir, latest_file
+                            )
+                            self.logger.info(
+                                f"Using fallback papers file: {papers_file}"
+                            )
                         else:
-                            self.logger.warning("No JSON files found in enhanced watcher directory")
+                            self.logger.warning(
+                                "No JSON files found in enhanced watcher directory"
+                            )
                             return []
                     else:
-                        self.logger.warning(f"Enhanced watcher data directory not found: {self.watcher.data_dir}")
+                        self.logger.warning(
+                            f"Enhanced watcher data directory not found: {self.watcher.data_dir}"
+                        )
                         return []
                 except Exception as e:
                     self.logger.error(f"Error finding fallback papers file: {e}")
@@ -290,7 +307,9 @@ class EnhancedArxivETL(BaseETL):
                 )
             else:
                 papers = watcher_data
-                self.logger.info(f"Loaded {len(papers)} papers from existing enhanced watcher data")
+                self.logger.info(
+                    f"Loaded {len(papers)} papers from existing enhanced watcher data"
+                )
 
             return papers
 
@@ -746,7 +765,6 @@ class EnhancedArxivETL(BaseETL):
             "grpc",
             "blockchain",
             "ethereum",
-
             "smart contract",
             "react",
             "angular",
@@ -952,9 +970,7 @@ class EnhancedArxivETL(BaseETL):
             )
             return None
 
-    def _get_pwc_info(
-        self, paper_data: dict[str, Any]
-    ) -> PapersWithCodeModel | None:
+    def _get_pwc_info(self, paper_data: dict[str, Any]) -> PapersWithCodeModel | None:
         """Get Papers With Code information."""
         try:
             arxiv_id_url = paper_data.get("id")

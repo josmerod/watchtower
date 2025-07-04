@@ -4,6 +4,7 @@ This script provides command-line functions to list, add, or remove skills
 from the `KNOWN_SKILLS` list within the `ms_skills_watcher.py` file and
 optionally update the watcher's state file.
 """
+
 import argparse
 import json
 import os
@@ -15,6 +16,7 @@ from utils.logging import get_logger
 
 logger = get_logger("MSSkillsUpdater")
 
+
 def get_current_skills() -> list[str]:
     """Get the current list of Microsoft Applied Skills from the state file.
 
@@ -22,7 +24,9 @@ def get_current_skills() -> list[str]:
         List[str]: List of skill names
     """
     project_root = get_project_root()
-    state_file = os.path.join(project_root, "data/watchers/ms_applied_skills/state.json")
+    state_file = os.path.join(
+        project_root, "data/watchers/ms_applied_skills/state.json"
+    )
 
     if not os.path.exists(state_file):
         logger.warning(f"State file not found: {state_file}")
@@ -38,6 +42,7 @@ def get_current_skills() -> list[str]:
     except Exception as e:
         logger.error(f"Error loading skills from state file: {e!s}")
         return []
+
 
 def update_skills_in_watcher(skills: list[str]):
     """Update the KNOWN_SKILLS list in the ms_skills_watcher.py file.
@@ -76,12 +81,15 @@ def update_skills_in_watcher(skills: list[str]):
         new_content = content[:start_index] + skills_content + content[end_index:]
 
         # Write back to the file
-        with open(watcher_file, 'w') as f:
+        with open(watcher_file, "w") as f:
             f.write(new_content)
 
-        logger.info(f"Updated KNOWN_SKILLS list in {watcher_file} with {len(skills)} skills")
+        logger.info(
+            f"Updated KNOWN_SKILLS list in {watcher_file} with {len(skills)} skills"
+        )
     except Exception as e:
         logger.error(f"Error updating watcher file: {e!s}")
+
 
 def update_state_file(skills: list[str], count: int | None = None):
     """Update the state file with the new skills list.
@@ -92,7 +100,9 @@ def update_state_file(skills: list[str], count: int | None = None):
     """
     try:
         project_root = get_project_root()
-        state_file = os.path.join(project_root, "data/watchers/ms_applied_skills/state.json")
+        state_file = os.path.join(
+            project_root, "data/watchers/ms_applied_skills/state.json"
+        )
 
         if not os.path.exists(state_file):
             logger.warning(f"State file not found: {state_file}")
@@ -107,12 +117,13 @@ def update_state_file(skills: list[str], count: int | None = None):
             state["last_value"]["count"] = count if count is not None else len(skills)
 
         # Write back to the file
-        with open(state_file, 'w') as f:
+        with open(state_file, "w") as f:
             json.dump(state, f, indent=2)
 
         logger.info(f"Updated state file with {len(skills)} skills")
     except Exception as e:
         logger.error(f"Error updating state file: {e!s}")
+
 
 def add_skills(new_skills: list[str], update_state: bool = True):
     """Add new skills to the list.
@@ -144,6 +155,7 @@ def add_skills(new_skills: list[str], update_state: bool = True):
     if update_state:
         update_state_file(updated_skills)
 
+
 def remove_skills(skills_to_remove: list[str], update_state: bool = True):
     """Remove skills from the list.
 
@@ -152,7 +164,9 @@ def remove_skills(skills_to_remove: list[str], update_state: bool = True):
         update_state (bool): Whether to update the state file
     """
     current_skills = get_current_skills()
-    updated_skills = [skill for skill in current_skills if skill not in skills_to_remove]
+    updated_skills = [
+        skill for skill in current_skills if skill not in skills_to_remove
+    ]
 
     removed_skills = [skill for skill in skills_to_remove if skill in current_skills]
 
@@ -168,6 +182,7 @@ def remove_skills(skills_to_remove: list[str], update_state: bool = True):
     # Update the state file if requested
     if update_state:
         update_state_file(updated_skills)
+
 
 def main():
     """Main function to parse arguments and update skills."""
@@ -226,6 +241,7 @@ def main():
         skills = get_current_skills()
         update_state_file(skills, args.count)
         logger.info(f"Updated count to {args.count}")
+
 
 if __name__ == "__main__":
     main()

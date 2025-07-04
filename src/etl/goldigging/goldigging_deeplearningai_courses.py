@@ -142,24 +142,35 @@ class DeepLearningAIScraper:
 
                         if not course_elements:
                             # Try more generic selectors
-                            course_elements = soup.find_all("div", attrs={"data-course": True})
+                            course_elements = soup.find_all(
+                                "div", attrs={"data-course": True}
+                            )
 
                         if not course_elements:
                             # Try searching for links to courses
-                            course_links = soup.find_all("a", href=lambda x: x and "/courses/" in x)
+                            course_links = soup.find_all(
+                                "a", href=lambda x: x and "/courses/" in x
+                            )
                             if course_links:
                                 # Extract unique course links
                                 unique_courses = set()
                                 for link in course_links:
                                     href = link.get("href", "")
-                                    if "/courses/" in href and href not in unique_courses:
+                                    if (
+                                        "/courses/" in href
+                                        and href not in unique_courses
+                                    ):
                                         unique_courses.add(href)
-                                        course_data = self.extract_course_from_link(link, soup)
+                                        course_data = self.extract_course_from_link(
+                                            link, soup
+                                        )
                                         if course_data:
                                             all_courses.append(course_data)
 
                                 if unique_courses:
-                                    logger.info(f"Found {len(unique_courses)} course links on page {page_num}")
+                                    logger.info(
+                                        f"Found {len(unique_courses)} course links on page {page_num}"
+                                    )
                                     page_num += 1
                                     continue
 
@@ -179,8 +190,12 @@ class DeepLearningAIScraper:
                             )
 
                             # Check if there's pagination or we've reached the end
-                            pagination = soup.find("nav", class_="pagination") or soup.find("div", class_="pagination")
-                            next_button = soup.find("a", string=lambda x: x and "next" in x.lower())
+                            pagination = soup.find(
+                                "nav", class_="pagination"
+                            ) or soup.find("div", class_="pagination")
+                            next_button = soup.find(
+                                "a", string=lambda x: x and "next" in x.lower()
+                            )
 
                             if not pagination and not next_button:
                                 logger.info("No pagination found, likely reached end")
@@ -230,7 +245,7 @@ class DeepLearningAIScraper:
                 # Remove common prefixes
                 for prefix in ["Course", "Specialization", "Certificate"]:
                     if clean_title.startswith(prefix):
-                        clean_title = clean_title[len(prefix):].strip()
+                        clean_title = clean_title[len(prefix) :].strip()
 
                 # If title contains "DeepLearning.AI" at the end, split there
                 if "DeepLearning.AI" in clean_title:
@@ -265,7 +280,11 @@ class DeepLearningAIScraper:
                     course_data["description"] = desc_elem.get_text(strip=True)
 
             # Extract description from the original title text if it seems to contain description
-            if title_text and len(title_text) > 100 and "description" not in course_data:
+            if (
+                title_text
+                and len(title_text) > 100
+                and "description" not in course_data
+            ):
                 # If the original title is very long, likely contains description
                 parts = title_text.split("DeepLearning.AI")
                 if len(parts) > 1:
@@ -273,13 +292,15 @@ class DeepLearningAIScraper:
                     # Split by course type and title
                     for prefix in ["Course", "Specialization", "Certificate"]:
                         if potential_desc.startswith(prefix):
-                            remaining = potential_desc[len(prefix):].strip()
+                            remaining = potential_desc[len(prefix) :].strip()
                             # Try to find where title ends and description starts
                             sentences = remaining.split(". ")
                             if len(sentences) > 1:
                                 # First sentence is likely the title, rest is description
                                 course_data["title"] = sentences[0].strip()
-                                course_data["description"] = ". ".join(sentences[1:]).strip()
+                                course_data["description"] = ". ".join(
+                                    sentences[1:]
+                                ).strip()
                             break
 
             course_data["scraped_at"] = datetime.now().isoformat()
@@ -297,13 +318,13 @@ class DeepLearningAIScraper:
         try:
             # Extract course title - try multiple selectors
             title_element = (
-                course_element.find("h1") or
-                course_element.find("h2") or
-                course_element.find("h3") or
-                course_element.find("h4") or
-                course_element.find(class_="title") or
-                course_element.find(class_="course-title") or
-                course_element.find("a")
+                course_element.find("h1")
+                or course_element.find("h2")
+                or course_element.find("h3")
+                or course_element.find("h4")
+                or course_element.find(class_="title")
+                or course_element.find(class_="course-title")
+                or course_element.find("a")
             )
 
             if title_element:
@@ -320,35 +341,52 @@ class DeepLearningAIScraper:
 
             # Extract description
             desc_element = (
-                course_element.find("p") or
-                course_element.find(class_="description") or
-                course_element.find(class_="excerpt")
+                course_element.find("p")
+                or course_element.find(class_="description")
+                or course_element.find(class_="excerpt")
             )
             if desc_element:
                 course_data["description"] = desc_element.get_text(strip=True)
 
             # Extract instructor information
             instructor_element = (
-                course_element.find(class_="instructor") or
-                course_element.find(class_="author") or
-                course_element.find("span", string=lambda x: x and ("instructor" in x.lower() or "taught by" in x.lower()))
+                course_element.find(class_="instructor")
+                or course_element.find(class_="author")
+                or course_element.find(
+                    "span",
+                    string=lambda x: x
+                    and ("instructor" in x.lower() or "taught by" in x.lower()),
+                )
             )
             if instructor_element:
                 course_data["instructor"] = instructor_element.get_text(strip=True)
 
             # Extract difficulty level
             level_element = (
-                course_element.find(class_="level") or
-                course_element.find(class_="difficulty") or
-                course_element.find("span", string=lambda x: x and ("beginner" in x.lower() or "intermediate" in x.lower() or "advanced" in x.lower()))
+                course_element.find(class_="level")
+                or course_element.find(class_="difficulty")
+                or course_element.find(
+                    "span",
+                    string=lambda x: x
+                    and (
+                        "beginner" in x.lower()
+                        or "intermediate" in x.lower()
+                        or "advanced" in x.lower()
+                    ),
+                )
             )
             if level_element:
                 course_data["level"] = level_element.get_text(strip=True)
 
             # Extract duration
-            duration_element = (
-                course_element.find(class_="duration") or
-                course_element.find("span", string=lambda x: x and ("hour" in x.lower() or "minute" in x.lower() or "week" in x.lower()))
+            duration_element = course_element.find(
+                class_="duration"
+            ) or course_element.find(
+                "span",
+                string=lambda x: x
+                and (
+                    "hour" in x.lower() or "minute" in x.lower() or "week" in x.lower()
+                ),
             )
             if duration_element:
                 course_data["duration"] = duration_element.get_text(strip=True)
@@ -464,7 +502,9 @@ async def main_async(max_pages: int | None = None) -> None:
         await scraper.run()
         logger.info("DeepLearning.AI course scraping completed successfully")
     except Exception as e:
-        logger.error(f"Error during DeepLearning.AI course scraping: {e!s}", exc_info=True)
+        logger.error(
+            f"Error during DeepLearning.AI course scraping: {e!s}", exc_info=True
+        )
 
 
 def main(max_pages: int | None = None) -> None:

@@ -19,8 +19,11 @@ def get_project_root():
     """Get the project root directory."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # Go up from src/web/fullstreamlit/components to project root
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+    project_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+    )
     return project_root
+
 
 # Define admin data paths using absolute paths
 PROJECT_ROOT = get_project_root()
@@ -72,10 +75,11 @@ def update_theme_config(theme_name: str) -> bool:
     """
     try:
         # Define path to config.toml relative to the application
-        config_path = os.path.abspath(os.path.join(
-            os.path.dirname(__file__),
-            "../../../../.streamlit/config.toml"
-        ))
+        config_path = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__), "../../../../.streamlit/config.toml"
+            )
+        )
 
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
@@ -114,7 +118,9 @@ def render(logger):
     project_root = get_project_root()
 
     # Create tabs for different admin sections
-    tab1, tab2, tab3 = st.tabs(["📈 Estadísticas", "👤 Usuarios ArXiv", "🛠️ Mantenimiento"])
+    tab1, tab2, tab3 = st.tabs(
+        ["📈 Estadísticas", "👤 Usuarios ArXiv", "🛠️ Mantenimiento"]
+    )
 
     # Statistics tab
     with tab1:
@@ -126,18 +132,27 @@ def render(logger):
         # Load some stats
         try:
             # Check how many ETL processes are configured
-            etl_dirs = [d for d in os.listdir(os.path.join(project_root, "src/etl"))
-                        if os.path.isdir(os.path.join(project_root, "src/etl", d))]
+            etl_dirs = [
+                d
+                for d in os.listdir(os.path.join(project_root, "src/etl"))
+                if os.path.isdir(os.path.join(project_root, "src/etl", d))
+            ]
 
             # Check how many watcher processes are configured
             watcher_files = glob.glob(os.path.join(project_root, "src/watchers/*.py"))
-            watcher_files = [f for f in watcher_files if not f.endswith("base_watcher.py") and not f.endswith("__init__.py")]
+            watcher_files = [
+                f
+                for f in watcher_files
+                if not f.endswith("base_watcher.py") and not f.endswith("__init__.py")
+            ]
 
             # Get ArXiv papers stats
             arxiv_papers = []
-            arxiv_papers_file = os.path.join(project_root, "data/arxiv/processed/json/latest_papers.json")
+            arxiv_papers_file = os.path.join(
+                project_root, "data/arxiv/processed/json/latest_papers.json"
+            )
             if os.path.exists(arxiv_papers_file):
-                with open(arxiv_papers_file, encoding='utf-8') as f:
+                with open(arxiv_papers_file, encoding="utf-8") as f:
                     arxiv_papers = json.load(f)
 
             # Get user profiles stats
@@ -170,17 +185,21 @@ def render(logger):
                         categories[category] = categories.get(category, 0) + 1
 
                 # Create bar chart for categories
-                categories_df = pd.DataFrame({
-                    "Category": list(categories.keys()),
-                    "Count": list(categories.values())
-                })
-                categories_df = categories_df.sort_values("Count", ascending=False).head(10)
+                categories_df = pd.DataFrame(
+                    {
+                        "Category": list(categories.keys()),
+                        "Count": list(categories.values()),
+                    }
+                )
+                categories_df = categories_df.sort_values(
+                    "Count", ascending=False
+                ).head(10)
 
                 fig = px.bar(
                     categories_df,
                     x="Category",
                     y="Count",
-                    title="Top 10 ArXiv Categories"
+                    title="Top 10 ArXiv Categories",
                 )
                 st.plotly_chart(fig)
 
@@ -194,16 +213,18 @@ def render(logger):
 
                 # Create pie chart for clusters
                 if clusters:
-                    clusters_df = pd.DataFrame({
-                        "Cluster": list(clusters.keys()),
-                        "Count": list(clusters.values())
-                    })
+                    clusters_df = pd.DataFrame(
+                        {
+                            "Cluster": list(clusters.keys()),
+                            "Count": list(clusters.values()),
+                        }
+                    )
 
                     fig = px.pie(
                         clusters_df,
                         values="Count",
                         names="Cluster",
-                        title="Papers by Cluster"
+                        title="Papers by Cluster",
                     )
                     st.plotly_chart(fig)
 
@@ -223,7 +244,7 @@ def render(logger):
 
             for profile_file in profile_files:
                 try:
-                    with open(profile_file, encoding='utf-8') as f:
+                    with open(profile_file, encoding="utf-8") as f:
                         profile = json.load(f)
                         user_profiles.append(profile)
                 except Exception as e:
@@ -235,14 +256,18 @@ def render(logger):
             # Display user profiles in a table
             profiles_data = []
             for profile in user_profiles:
-                profiles_data.append({
-                    "User ID": profile.get("user_id", "Unknown"),
-                    "Interests": len(profile.get("interests", [])),
-                    "Viewed Items": len(profile.get("viewed_items", [])),
-                    "Rated Items": len(profile.get("rated_items", {})),
-                    "Categories": len(profile.get("preferred_categories", [])),
-                    "Last Updated": profile.get("updated_at", "")[:10] if profile.get("updated_at") else ""
-                })
+                profiles_data.append(
+                    {
+                        "User ID": profile.get("user_id", "Unknown"),
+                        "Interests": len(profile.get("interests", [])),
+                        "Viewed Items": len(profile.get("viewed_items", [])),
+                        "Rated Items": len(profile.get("rated_items", {})),
+                        "Categories": len(profile.get("preferred_categories", [])),
+                        "Last Updated": profile.get("updated_at", "")[:10]
+                        if profile.get("updated_at")
+                        else "",
+                    }
+                )
 
             profiles_df = pd.DataFrame(profiles_data)
             st.dataframe(profiles_df)
@@ -263,22 +288,29 @@ def render(logger):
                         interest_counts[interest] = interest_counts.get(interest, 0) + 1
 
                     # Create bar chart for top interests
-                    interests_df = pd.DataFrame({
-                        "Interest": list(interest_counts.keys()),
-                        "Count": list(interest_counts.values())
-                    })
-                    interests_df = interests_df.sort_values("Count", ascending=False).head(15)
+                    interests_df = pd.DataFrame(
+                        {
+                            "Interest": list(interest_counts.keys()),
+                            "Count": list(interest_counts.values()),
+                        }
+                    )
+                    interests_df = interests_df.sort_values(
+                        "Count", ascending=False
+                    ).head(15)
 
                     fig = px.bar(
                         interests_df,
                         x="Interest",
                         y="Count",
-                        title="Top User Interests"
+                        title="Top User Interests",
                     )
                     st.plotly_chart(fig)
 
             # Show user activity over time
-            if any("viewed_items" in profile and profile["viewed_items"] for profile in user_profiles):
+            if any(
+                "viewed_items" in profile and profile["viewed_items"]
+                for profile in user_profiles
+            ):
                 st.markdown("### User Activity")
 
                 # Show top viewed papers
@@ -289,19 +321,23 @@ def render(logger):
 
                 # Show top 10 viewed papers
                 if paper_views:
-                    top_papers = sorted(paper_views.items(), key=lambda x: x[1], reverse=True)[:10]
+                    top_papers = sorted(
+                        paper_views.items(), key=lambda x: x[1], reverse=True
+                    )[:10]
 
                     # Create dataframe
-                    top_papers_df = pd.DataFrame({
-                        "Paper ID": [p[0] for p in top_papers],
-                        "Views": [p[1] for p in top_papers]
-                    })
+                    top_papers_df = pd.DataFrame(
+                        {
+                            "Paper ID": [p[0] for p in top_papers],
+                            "Views": [p[1] for p in top_papers],
+                        }
+                    )
 
                     fig = px.bar(
                         top_papers_df,
                         x="Paper ID",
                         y="Views",
-                        title="Top Viewed Papers"
+                        title="Top Viewed Papers",
                     )
                     st.plotly_chart(fig)
 
@@ -332,6 +368,7 @@ def render(logger):
             st.info("Starting Humble Bundle ETL process...")
             try:
                 from etl.games.games_get_humblebundles import main as run_humble
+
                 with st.spinner("Running Humble Bundle ETL..."):
                     run_humble()
                 st.success("Humble Bundle ETL process completed!")
@@ -343,6 +380,7 @@ def render(logger):
             st.info("Starting Subreddits ETL process...")
             try:
                 from etl.news.news_get_subreddits import main as run_subreddits
+
                 with st.spinner("Running Subreddits ETL..."):
                     run_subreddits()
                 st.success("Subreddits ETL process completed!")
@@ -354,6 +392,7 @@ def render(logger):
             st.info("Starting Media RSS ETL process...")
             try:
                 from etl.news.news_get_media_rss import main as run_media_rss
+
                 with st.spinner("Running Media RSS ETL..."):
                     run_media_rss()
                 st.success("Media RSS ETL process completed!")

@@ -51,23 +51,30 @@ def get_epic_free_games() -> None:
 
     for elem in elements:
         promotions = elem.get("promotions") or {}
-        offers = (
-            promotions.get("promotionalOffers", [])
-            + promotions.get("upcomingPromotionalOffers", [])
+        offers = promotions.get("promotionalOffers", []) + promotions.get(
+            "upcomingPromotionalOffers", []
         )
         for offer_group in offers:
             for offer in offer_group.get("promotionalOffers", []):
-                start = datetime.fromisoformat(offer.get("startDate").replace("Z", "+00:00"))
-                end = datetime.fromisoformat(offer.get("endDate").replace("Z", "+00:00"))
+                start = datetime.fromisoformat(
+                    offer.get("startDate").replace("Z", "+00:00")
+                )
+                end = datetime.fromisoformat(
+                    offer.get("endDate").replace("Z", "+00:00")
+                )
                 if start <= now <= end:
-                    game_url = f"https://www.epicgames.com/store/p/{elem.get('productSlug')}"
-                    free_games.append({
-                        "title": elem.get("title"),
-                        "id": elem.get("id"),
-                        "url": game_url,
-                        "start_date": start.isoformat(),
-                        "end_date": end.isoformat(),
-                    })
+                    game_url = (
+                        f"https://www.epicgames.com/store/p/{elem.get('productSlug')}"
+                    )
+                    free_games.append(
+                        {
+                            "title": elem.get("title"),
+                            "id": elem.get("id"),
+                            "url": game_url,
+                            "start_date": start.isoformat(),
+                            "end_date": end.isoformat(),
+                        }
+                    )
                     break
 
     df = pd.DataFrame(free_games)

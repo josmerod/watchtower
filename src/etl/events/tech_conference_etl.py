@@ -273,7 +273,6 @@ class TechConferenceETL(BaseETL):
                 "ethical hacking",
                 "penetration testing",
                 "blockchain",
-
                 "web3",
                 "defi",
             ],
@@ -1576,9 +1575,7 @@ class TechConferenceETL(BaseETL):
         else:
             return EventFormat.IN_PERSON
 
-    def _parse_event_date(
-        self, date_str: str | datetime | None
-    ) -> datetime | None:
+    def _parse_event_date(self, date_str: str | datetime | None) -> datetime | None:
         """Parse event date from various formats.
 
         Args:
@@ -1965,10 +1962,7 @@ class TechConferenceETL(BaseETL):
         ):
             categories.append("Data Science")
 
-        if any(
-            keyword in text_content
-            for keyword in ["blockchain", "web3", "defi"]
-        ):
+        if any(keyword in text_content for keyword in ["blockchain", "web3", "defi"]):
             categories.append("Blockchain/Web3")
 
         if any(

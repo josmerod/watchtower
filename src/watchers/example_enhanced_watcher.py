@@ -21,10 +21,10 @@ class HackerNewsWatcher(EnhancedWatcher):
             Number of stories found.
         """
         try:
-            soup = BeautifulSoup(html_content, 'html.parser')
+            soup = BeautifulSoup(html_content, "html.parser")
 
             # Count story items (they have class 'titleline' in modern HN)
-            stories = soup.find_all('span', class_='titleline')
+            stories = soup.find_all("span", class_="titleline")
             story_count = len(stories)
 
             self.logger.debug(f"Found {story_count} stories on Hacker News front page")
@@ -70,10 +70,10 @@ class RedditWatcher(EnhancedWatcher):
             Title of the top post.
         """
         try:
-            soup = BeautifulSoup(html_content, 'html.parser')
+            soup = BeautifulSoup(html_content, "html.parser")
 
             # Look for post titles (Reddit's structure varies, this is a simple approach)
-            title_element = soup.find('h3', class_=re.compile('.*title.*', re.I))
+            title_element = soup.find("h3", class_=re.compile(".*title.*", re.I))
 
             if title_element:
                 title = title_element.get_text(strip=True)
@@ -81,7 +81,7 @@ class RedditWatcher(EnhancedWatcher):
                 return title
             else:
                 # Fallback: look for any h3 tag
-                h3_tags = soup.find_all('h3')
+                h3_tags = soup.find_all("h3")
                 if h3_tags:
                     title = h3_tags[0].get_text(strip=True)
                     self.logger.debug(f"Found title via fallback: {title[:50]}...")
@@ -125,7 +125,7 @@ def create_example_watchers():
         retry_delay=10,
         timeout=30,
         enabled=True,
-        alert_threshold=3  # Alert after 3 consecutive failures
+        alert_threshold=3,  # Alert after 3 consecutive failures
     )
 
     # Reddit Python watcher configuration
@@ -137,7 +137,7 @@ def create_example_watchers():
         retry_delay=5,
         timeout=45,
         enabled=True,
-        alert_threshold=5
+        alert_threshold=5,
     )
 
     # Create watcher instances
@@ -176,4 +176,5 @@ async def run_example_watchers():
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(run_example_watchers())

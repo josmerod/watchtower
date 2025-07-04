@@ -4,13 +4,14 @@ import os
 import shutil
 from pathlib import Path
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from exceptions.base import WatchtowerError
 
 
 class PathError(WatchtowerError):
     """Exception raised for path-related errors."""
+
     pass
 
 
@@ -23,13 +24,15 @@ class DirectoryInfo(BaseModel):
     size_bytes: int | None = Field(None, description="Directory size in bytes")
     file_count: int | None = Field(None, description="Number of files in directory")
 
-    @validator('path', pre=True)
-    def convert_to_path(self, v):
+    @field_validator("path", mode="before")
+    @classmethod
+    def convert_to_path(cls, v):
         """Convert string to Path object."""
         return Path(v)
 
     class Config:
         """Pydantic configuration."""
+
         arbitrary_types_allowed = True
 
 
@@ -42,7 +45,9 @@ class FileSystemManager:
         Args:
             project_root: Project root directory. If None, auto-detects.
         """
-        self.project_root = self._find_project_root() if project_root is None else Path(project_root)
+        self.project_root = (
+            self._find_project_root() if project_root is None else Path(project_root)
+        )
 
     def _find_project_root(self) -> Path:
         """Find the project root directory."""
@@ -72,7 +77,9 @@ class FileSystemManager:
             return path
         return self.project_root / path
 
-    def ensure_directory(self, directory: str | Path, mode: int = 0o755) -> DirectoryInfo:
+    def ensure_directory(
+        self, directory: str | Path, mode: int = 0o755
+    ) -> DirectoryInfo:
         """Ensure directory exists, creating it if necessary.
 
         Args:
@@ -102,7 +109,7 @@ class FileSystemManager:
                 try:
                     info.file_count = len(list(abs_path.iterdir()))
                     info.size_bytes = sum(
-                        f.stat().st_size for f in abs_path.rglob('*') if f.is_file()
+                        f.stat().st_size for f in abs_path.rglob("*") if f.is_file()
                     )
                 except (OSError, PermissionError):
                     # Continue without size/count info if access denied
@@ -114,10 +121,12 @@ class FileSystemManager:
             raise PathError(
                 message=f"Cannot create directory {abs_path}",
                 error_code="DIRECTORY_CREATION_FAILED",
-                context={"directory": str(abs_path), "error": str(e)}
+                context={"directory": str(abs_path), "error": str(e)},
             ) from e
 
-    def ensure_directories(self, directories: list[str | Path], mode: int = 0o755) -> list[DirectoryInfo]:
+    def ensure_directories(
+        self, directories: list[str | Path], mode: int = 0o755
+    ) -> list[DirectoryInfo]:
         """Ensure multiple directories exist.
 
         Args:
@@ -129,7 +138,9 @@ class FileSystemManager:
         """
         return [self.ensure_directory(directory, mode) for directory in directories]
 
-    def clean_directory(self, directory: str | Path, keep_directory: bool = True) -> bool:
+    def clean_directory(
+        self, directory: str | Path, keep_directory: bool = True
+    ) -> bool:
         """Clean directory contents.
 
         Args:
@@ -163,7 +174,7 @@ class FileSystemManager:
             raise PathError(
                 message=f"Cannot clean directory {abs_path}",
                 error_code="DIRECTORY_CLEAN_FAILED",
-                context={"directory": str(abs_path), "error": str(e)}
+                context={"directory": str(abs_path), "error": str(e)},
             ) from e
 
     def copy_file(self, source: str | Path, destination: str | Path) -> bool:
@@ -193,7 +204,11 @@ class FileSystemManager:
             raise PathError(
                 message=f"Cannot copy file {source_path} to {dest_path}",
                 error_code="FILE_COPY_FAILED",
-                context={"source": str(source_path), "destination": str(dest_path), "error": str(e)}
+                context={
+                    "source": str(source_path),
+                    "destination": str(dest_path),
+                    "error": str(e),
+                },
             ) from e
 
     def get_directory_info(self, directory: str | Path) -> DirectoryInfo:
@@ -218,7 +233,7 @@ class FileSystemManager:
             try:
                 info.file_count = len(list(abs_path.iterdir()))
                 info.size_bytes = sum(
-                    f.stat().st_size for f in abs_path.rglob('*') if f.is_file()
+                    f.stat().st_size for f in abs_path.rglob("*") if f.is_file()
                 )
             except (OSError, PermissionError):
                 # Continue without size/count info if access denied

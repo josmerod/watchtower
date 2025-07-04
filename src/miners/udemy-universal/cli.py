@@ -6,7 +6,6 @@ and saves the collected course data to a JSON file.
 """
 # TODO: Standardize the code with the other projects. Current code has been migrated from other project.
 
-
 import json
 import os
 import sys
@@ -31,8 +30,10 @@ def check_dependencies():
     # Check for Playwright
     try:
         import playwright
+
         try:
             from playwright.sync_api import sync_playwright
+
             # Try to see if browsers are installed
             with sync_playwright() as p:
                 try:
@@ -41,7 +42,9 @@ def check_dependencies():
                 except Exception:
                     logger.warning("Playwright is installed but browsers are missing.")
                     logger.warning("Run: playwright install")
-                    logger.warning("Some scrapers (Real Discount, Udemy Free Courses, Udemy Freebies) may fail without Playwright browsers.")
+                    logger.warning(
+                        "Some scrapers (Real Discount, Udemy Free Courses, Udemy Freebies) may fail without Playwright browsers."
+                    )
         except ImportError:
             missing_deps.append("playwright")
     except ImportError:
@@ -100,7 +103,9 @@ def create_scraping_thread(site: str, scraper):
             # Check if the scraper has finished with an error during initialization
             if getattr(scraper, f"{code_name}_done", False):
                 if getattr(scraper, f"{code_name}_length", 0) == -1:
-                    thread_logger.error(f"Scraper for {site} failed during initialization")
+                    thread_logger.error(
+                        f"Scraper for {site} failed during initialization"
+                    )
                     return
                 else:
                     # Scraper completed during initialization - this is normal for some sites
@@ -133,7 +138,9 @@ def create_scraping_thread(site: str, scraper):
         # Create and update progress bar with better error handling
         try:
             progress_bar = tqdm(
-                total=max(1, final_length),  # Ensure total is at least 1 to avoid division by zero
+                total=max(
+                    1, final_length
+                ),  # Ensure total is at least 1 to avoid division by zero
                 desc=site,
                 leave=True,  # leave=True to see finished bars
                 unit="items",
@@ -162,7 +169,9 @@ def create_scraping_thread(site: str, scraper):
             # Add a timeout for the entire scraping process
             elapsed_time = time.time() - start_time
             if elapsed_time > scraping_timeout:
-                thread_logger.error(f"Timeout during scraping process for {site} after {elapsed_time:.1f}s")
+                thread_logger.error(
+                    f"Timeout during scraping process for {site} after {elapsed_time:.1f}s"
+                )
                 setattr(scraper, f"{code_name}_done", True)
                 setattr(
                     scraper, f"{code_name}_length", max(prev_progress, 1)
@@ -207,7 +216,7 @@ def create_scraping_thread(site: str, scraper):
 
         # Close progress bar if it exists
         try:
-            if 'progress_bar' in locals() and progress_bar:
+            if "progress_bar" in locals() and progress_bar:
                 progress_bar.close()
         except:
             pass
@@ -281,7 +290,9 @@ def main_extract():
             else:
                 failed_sites.append(site)
                 if site_error:
-                    logger.error(f"✗ {site}: Failed with error - {site_error.split(chr(10))[0]}")  # First line of error
+                    logger.error(
+                        f"✗ {site}: Failed with error - {site_error.split(chr(10))[0]}"
+                    )  # First line of error
                 else:
                     logger.error(f"✗ {site}: Failed - no courses found")
 
@@ -293,7 +304,9 @@ def main_extract():
             total_courses_found = sum(
                 len(courses) for courses in successful_data.values()
             )
-            logger.info(f"Found {total_courses_found} potential courses from {len(successful_data)} sites.")
+            logger.info(
+                f"Found {total_courses_found} potential courses from {len(successful_data)} sites."
+            )
             try:
                 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
                     json.dump(successful_data, f, indent=4, ensure_ascii=False)
@@ -311,7 +324,9 @@ def main_extract():
             )
             logger.warning("This might be due to:")
             logger.warning("  1. Network connectivity issues")
-            logger.warning("  2. Missing dependencies (run: pip install playwright cloudscraper)")
+            logger.warning(
+                "  2. Missing dependencies (run: pip install playwright cloudscraper)"
+            )
             logger.warning("  3. Missing Playwright browsers (run: playwright install)")
             logger.warning("  4. Sites being temporarily unavailable")
 

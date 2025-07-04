@@ -32,18 +32,27 @@ def main():
 
     # Check if we're in the right directory
     if not Path("pyproject.toml").exists():
-        print("[FAIL] Error: pyproject.toml not found. Please run this script from the project root.")
+        print(
+            "[FAIL] Error: pyproject.toml not found. Please run this script from the project root."
+        )
         sys.exit(1)
 
     # Install package in development mode
     commands = [
         # Install in development mode with all extras
-        ([sys.executable, "-m", "pip", "install", "-e", ".[dev,ml,web,all]"],
-         "Installing Watchtower in development mode"),
-
+        (
+            [sys.executable, "-m", "pip", "install", "-e", ".[dev,ml,web,all]"],
+            "Installing Watchtower in development mode",
+        ),
         # Verify installation
-        ([sys.executable, "-c", "from config.settings import get_settings; print('[PASS] Package installed successfully')"],
-         "Verifying installation"),
+        (
+            [
+                sys.executable,
+                "-c",
+                "from config.settings import get_settings; print('[PASS] Package installed successfully')",
+            ],
+            "Verifying installation",
+        ),
     ]
 
     success_count = 0
@@ -61,7 +70,9 @@ def main():
     print("2. Use normal imports like: from config.settings import get_settings")
     print("3. Run 'python -m pytest' to run tests")
     print("4. Run 'streamlit run src/web/fullstreamlit/app.py' to start the dashboard")
-    print("\nNote: If you add new dependencies, run 'pip install -e .[dev,ml,web,all]' again")
+    print(
+        "\nNote: If you add new dependencies, run 'pip install -e .[dev,ml,web,all]' again"
+    )
 
 
 if __name__ == "__main__":

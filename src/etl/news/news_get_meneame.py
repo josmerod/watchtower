@@ -53,9 +53,7 @@ HEADERS = {
 
 
 def fetch_meneame_posts(
-    session: requests.Session,
-    max_posts: int = 50,
-    max_pages: int = 3
+    session: requests.Session, max_posts: int = 50, max_pages: int = 3
 ) -> list[dict[str, Any]]:
     """Fetch tech posts from Menéame."""
     posts = []
@@ -74,10 +72,12 @@ def fetch_meneame_posts(
             response = session.get(url, headers=HEADERS, timeout=30)
             response.raise_for_status()
 
-            soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(response.content, "html.parser")
 
             # Find story containers
-            story_containers = soup.find_all(['div', 'article'], class_=re.compile(r'story|item|news'))
+            story_containers = soup.find_all(
+                ["div", "article"], class_=re.compile(r"story|item|news")
+            )
 
             logger.info(f"Found {len(story_containers)} stories on page {page}")
 
@@ -105,92 +105,100 @@ def parse_meneame_post(container, base_url: str) -> dict[str, Any] | None:
         post_data = {}
 
         # Title and URL
-        title_elem = container.find('h2') or container.find('h3') or container.find('a', class_=re.compile(r'title'))
+        title_elem = (
+            container.find("h2")
+            or container.find("h3")
+            or container.find("a", class_=re.compile(r"title"))
+        )
         if title_elem:
-            title_link = title_elem.find('a') if title_elem.name != 'a' else title_elem
+            title_link = title_elem.find("a") if title_elem.name != "a" else title_elem
             if title_link:
-                post_data['title'] = title_link.get_text(strip=True)
-                post_data['url'] = urljoin(base_url, title_link.get('href', ''))
+                post_data["title"] = title_link.get_text(strip=True)
+                post_data["url"] = urljoin(base_url, title_link.get("href", ""))
             else:
-                post_data['title'] = title_elem.get_text(strip=True)
-                post_data['url'] = base_url
+                post_data["title"] = title_elem.get_text(strip=True)
+                post_data["url"] = base_url
         else:
             return None
 
         # Description/summary
-        desc_elem = container.find(['p', 'div'], class_=re.compile(r'summary|description|content'))
+        desc_elem = container.find(
+            ["p", "div"], class_=re.compile(r"summary|description|content")
+        )
         if desc_elem:
-            post_data['description'] = desc_elem.get_text(strip=True)[:400]
+            post_data["description"] = desc_elem.get_text(strip=True)[:400]
         else:
-            post_data['description'] = ""
+            post_data["description"] = ""
 
         # Votes (meneos)
-        votes_elem = container.find(['span', 'div'], class_=re.compile(r'votes|meneos|karma'))
+        votes_elem = container.find(
+            ["span", "div"], class_=re.compile(r"votes|meneos|karma")
+        )
         if votes_elem:
             votes_text = votes_elem.get_text(strip=True)
-            votes_match = re.search(r'(\d+)', votes_text)
-            post_data['votes'] = int(votes_match.group(1)) if votes_match else 0
+            votes_match = re.search(r"(\d+)", votes_text)
+            post_data["votes"] = int(votes_match.group(1)) if votes_match else 0
         else:
-            post_data['votes'] = 0
+            post_data["votes"] = 0
 
         # Comments
-        comments_elem = container.find(['a', 'span'], href=re.compile(r'comment')) or \
-                       container.find(text=re.compile(r'\d+\s*comentario', re.I))
+        comments_elem = container.find(
+            ["a", "span"], href=re.compile(r"comment")
+        ) or container.find(text=re.compile(r"\d+\s*comentario", re.I))
         if comments_elem:
-            if hasattr(comments_elem, 'get_text'):
+            if hasattr(comments_elem, "get_text"):
                 comments_text = comments_elem.get_text()
             else:
                 comments_text = str(comments_elem)
 
-            comments_match = re.search(r'(\d+)', comments_text)
-            post_data['comments_count'] = int(comments_match.group(1)) if comments_match else 0
+            comments_match = re.search(r"(\d+)", comments_text)
+            post_data["comments_count"] = (
+                int(comments_match.group(1)) if comments_match else 0
+            )
         else:
-            post_data['comments_count'] = 0
+            post_data["comments_count"] = 0
 
         # Author
-        author_elem = container.find(['a', 'span'], class_=re.compile(r'user|author'))
+        author_elem = container.find(["a", "span"], class_=re.compile(r"user|author"))
         if author_elem:
-            post_data['author'] = author_elem.get_text(strip=True)
+            post_data["author"] = author_elem.get_text(strip=True)
         else:
-            post_data['author'] = "Unknown"
+            post_data["author"] = "Unknown"
 
         # Category/Tags
-        tag_elem = container.find(['span', 'a'], class_=re.compile(r'tag|category'))
+        tag_elem = container.find(["span", "a"], class_=re.compile(r"tag|category"))
         if tag_elem:
-            post_data['category'] = tag_elem.get_text(strip=True)
+            post_data["category"] = tag_elem.get_text(strip=True)
         else:
-            post_data['category'] = "Tecnología"
+            post_data["category"] = "Tecnología"
 
         # Publication date
-        date_elem = container.find(['time', 'span'], attrs={'datetime': True}) or \
-                   container.find(['span', 'div'], class_=re.compile(r'date|time'))
+        date_elem = container.find(
+            ["time", "span"], attrs={"datetime": True}
+        ) or container.find(["span", "div"], class_=re.compile(r"date|time"))
 
         if date_elem:
-            if date_elem.get('datetime'):
-                date_str = date_elem.get('datetime')
+            if date_elem.get("datetime"):
+                date_str = date_elem.get("datetime")
             else:
                 date_str = date_elem.get_text(strip=True)
 
-            post_data['published_date'] = parse_spanish_date(date_str)
+            post_data["published_date"] = parse_spanish_date(date_str)
         else:
-            post_data['published_date'] = datetime.now().isoformat()
+            post_data["published_date"] = datetime.now().isoformat()
 
         # Source domain
-        if post_data.get('url'):
+        if post_data.get("url"):
             try:
-                parsed_url = urlparse(post_data['url'])
-                post_data['source_domain'] = parsed_url.netloc
+                parsed_url = urlparse(post_data["url"])
+                post_data["source_domain"] = parsed_url.netloc
             except:
-                post_data['source_domain'] = "meneame.net"
+                post_data["source_domain"] = "meneame.net"
         else:
-            post_data['source_domain'] = "meneame.net"
+            post_data["source_domain"] = "meneame.net"
 
         # Add metadata
-        post_data.update({
-            "source": "meneame",
-            "platform": "meneame",
-            "language": "es"
-        })
+        post_data.update({"source": "meneame", "platform": "meneame", "language": "es"})
 
         return post_data
 
@@ -206,10 +214,18 @@ def parse_spanish_date(date_str: str) -> str:
 
     # Spanish month names
     spanish_months = {
-        'enero': 'January', 'febrero': 'February', 'marzo': 'March',
-        'abril': 'April', 'mayo': 'May', 'junio': 'June',
-        'julio': 'July', 'agosto': 'August', 'septiembre': 'September',
-        'octubre': 'October', 'noviembre': 'November', 'diciembre': 'December'
+        "enero": "January",
+        "febrero": "February",
+        "marzo": "March",
+        "abril": "April",
+        "mayo": "May",
+        "junio": "June",
+        "julio": "July",
+        "agosto": "August",
+        "septiembre": "September",
+        "octubre": "October",
+        "noviembre": "November",
+        "diciembre": "December",
     }
 
     # Replace Spanish months with English
@@ -225,13 +241,13 @@ def parse_spanish_date(date_str: str) -> str:
         "%Y-%m-%d",
         "%d/%m/%Y",
         "%d de %B de %Y",
-        "%d %B %Y"
+        "%d %B %Y",
     ]
 
     for pattern in patterns:
         try:
-            if 'de' in date_str_en:
-                date_str_en = re.sub(r'\s+de\s+', ' ', date_str_en)
+            if "de" in date_str_en:
+                date_str_en = re.sub(r"\s+de\s+", " ", date_str_en)
 
             parsed_date = datetime.strptime(date_str_en, pattern)
             return parsed_date.isoformat()
@@ -250,15 +266,15 @@ def process_meneame_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     # Tech keywords for better categorization
     tech_keywords = {
-        'ai': ['ia', 'inteligencia artificial', 'machine learning', 'deep learning'],
-        'programming': ['programación', 'código', 'desarrollo', 'software'],
-        'web': ['web', 'internet', 'navegador', 'html', 'css', 'javascript'],
-        'mobile': ['móvil', 'android', 'ios', 'app', 'aplicación'],
-        'security': ['seguridad', 'hack', 'ciberseguridad', 'privacidad'],
-        'hardware': ['hardware', 'procesador', 'gpu', 'memoria'],
-        'social': ['redes sociales', 'facebook', 'twitter', 'instagram'],
-        'gaming': ['videojuegos', 'gaming', 'consola', 'pc gaming'],
-        'startup': ['startup', 'empresa', 'tecnológica', 'innovación']
+        "ai": ["ia", "inteligencia artificial", "machine learning", "deep learning"],
+        "programming": ["programación", "código", "desarrollo", "software"],
+        "web": ["web", "internet", "navegador", "html", "css", "javascript"],
+        "mobile": ["móvil", "android", "ios", "app", "aplicación"],
+        "security": ["seguridad", "hack", "ciberseguridad", "privacidad"],
+        "hardware": ["hardware", "procesador", "gpu", "memoria"],
+        "social": ["redes sociales", "facebook", "twitter", "instagram"],
+        "gaming": ["videojuegos", "gaming", "consola", "pc gaming"],
+        "startup": ["startup", "empresa", "tecnológica", "innovación"],
     }
 
     processed_posts = []
@@ -268,8 +284,8 @@ def process_meneame_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
             processed_post = post.copy()
 
             # Enhanced categorization
-            title_lower = post.get('title', '').lower()
-            desc_lower = post.get('description', '').lower()
+            title_lower = post.get("title", "").lower()
+            desc_lower = post.get("description", "").lower()
             content = f"{title_lower} {desc_lower}"
 
             category_scores = {}
@@ -280,31 +296,31 @@ def process_meneame_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
             if category_scores:
                 best_category = max(category_scores, key=category_scores.get)
-                processed_post['tech_category'] = best_category
+                processed_post["tech_category"] = best_category
             else:
-                processed_post['tech_category'] = 'general'
+                processed_post["tech_category"] = "general"
 
             # Engagement score
-            votes = post.get('votes', 0)
-            comments = post.get('comments_count', 0)
+            votes = post.get("votes", 0)
+            comments = post.get("comments_count", 0)
 
             engagement_score = votes * 1.5 + comments * 2
 
             # Quality bonuses
-            title_len = len(post.get('title', ''))
+            title_len = len(post.get("title", ""))
             if 20 <= title_len <= 100:
                 engagement_score += 2
 
-            if post.get('description') and len(post['description']) > 50:
+            if post.get("description") and len(post["description"]) > 50:
                 engagement_score += 3
 
-            processed_post['engagement_score'] = round(engagement_score, 1)
+            processed_post["engagement_score"] = round(engagement_score, 1)
 
             # Trending detection (high votes relative to comments)
             if votes > 20 and comments > 5:
-                processed_post['trending'] = True
+                processed_post["trending"] = True
             else:
-                processed_post['trending'] = False
+                processed_post["trending"] = False
 
             # Content quality score
             quality_score = 0
@@ -313,11 +329,11 @@ def process_meneame_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 quality_score += 2
             if comments > 3:
                 quality_score += 2
-            if post.get('source_domain') and 'meneame' not in post['source_domain']:
+            if post.get("source_domain") and "meneame" not in post["source_domain"]:
                 quality_score += 1  # External link bonus
 
-            processed_post['quality_score'] = quality_score
-            processed_post['processed_at'] = datetime.now().isoformat()
+            processed_post["quality_score"] = quality_score
+            processed_post["processed_at"] = datetime.now().isoformat()
 
             processed_posts.append(processed_post)
 
@@ -338,7 +354,7 @@ def save_meneame_data(data: list[dict[str, Any]], output_dir: str):
     try:
         # JSON
         json_file = os.path.join(output_dir, "meneame_posts.json")
-        with open(json_file, 'w', encoding='utf-8') as f:
+        with open(json_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False, default=str)
 
         logger.info(f"Saved {len(data)} posts to {json_file}")
@@ -350,7 +366,7 @@ def save_meneame_data(data: list[dict[str, Any]], output_dir: str):
             for item in data:
                 all_keys.update(item.keys())
 
-            with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+            with open(csv_file, "w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=sorted(all_keys))
                 writer.writeheader()
                 writer.writerows(data)
@@ -391,8 +407,10 @@ def main():
         logger.info(f"Menéame ETL completed! Processed {len(processed_data)} posts")
 
         if processed_data:
-            avg_votes = sum(p.get('votes', 0) for p in processed_data) / len(processed_data)
-            total_comments = sum(p.get('comments_count', 0) for p in processed_data)
+            avg_votes = sum(p.get("votes", 0) for p in processed_data) / len(
+                processed_data
+            )
+            total_comments = sum(p.get("comments_count", 0) for p in processed_data)
 
             logger.info(f"Average votes: {avg_votes:.1f}")
             logger.info(f"Total comments: {total_comments}")
@@ -400,15 +418,15 @@ def main():
             # Category breakdown
             categories = {}
             for post in processed_data:
-                cat = post.get('tech_category', 'unknown')
+                cat = post.get("tech_category", "unknown")
                 categories[cat] = categories.get(cat, 0) + 1
 
             logger.info("Tech categories:")
-            for cat, count in sorted(categories.items(), key=lambda x: x[1], reverse=True)[:5]:
+            for cat, count in sorted(
+                categories.items(), key=lambda x: x[1], reverse=True
+            )[:5]:
                 logger.info(f"  {cat}: {count} posts")
 
     except Exception as e:
         logger.error(f"Menéame ETL failed: {e}")
         raise
-
-

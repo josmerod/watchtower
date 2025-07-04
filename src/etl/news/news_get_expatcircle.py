@@ -58,9 +58,7 @@ HEADERS = {
 
 
 def fetch_expatcircle_posts(
-    session: requests.Session,
-    max_posts: int = 50,
-    max_pages: int = 5
+    session: requests.Session, max_posts: int = 50, max_pages: int = 5
 ) -> list[dict[str, Any]]:
     """Fetch posts from ExpatCircle News main page.
 
@@ -91,18 +89,24 @@ def fetch_expatcircle_posts(
             response = session.get(url, headers=HEADERS, timeout=30)
             response.raise_for_status()
 
-            soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(response.content, "html.parser")
 
             # Find post containers (adjust selectors based on actual site structure)
-            post_containers = soup.find_all(['article', 'div'], class_=re.compile(r'post|item|entry|story'))
+            post_containers = soup.find_all(
+                ["article", "div"], class_=re.compile(r"post|item|entry|story")
+            )
 
             if not post_containers:
                 # Fallback: look for common post patterns
-                post_containers = soup.find_all('div', attrs={'data-post': True})
+                post_containers = soup.find_all("div", attrs={"data-post": True})
                 if not post_containers:
-                    post_containers = soup.select('div[class*="post"], article[class*="post"], .post-item, .story-item')
+                    post_containers = soup.select(
+                        'div[class*="post"], article[class*="post"], .post-item, .story-item'
+                    )
 
-            logger.info(f"Found {len(post_containers)} potential post containers on page {page}")
+            logger.info(
+                f"Found {len(post_containers)} potential post containers on page {page}"
+            )
 
             for container in post_containers:
                 if len(posts) >= max_posts:
@@ -137,81 +141,98 @@ def parse_expatcircle_post(container, base_url: str) -> dict[str, Any] | None:
         post_data = {}
 
         # Extract title
-        title_elem = container.find(['h1', 'h2', 'h3', 'h4'], class_=re.compile(r'title|headline'))
+        title_elem = container.find(
+            ["h1", "h2", "h3", "h4"], class_=re.compile(r"title|headline")
+        )
         if not title_elem:
-            title_elem = container.find('a', href=True)
+            title_elem = container.find("a", href=True)
 
         if title_elem:
-            post_data['title'] = title_elem.get_text(strip=True)
+            post_data["title"] = title_elem.get_text(strip=True)
 
             # Extract URL from title link
-            link_elem = title_elem.find('a', href=True) if title_elem.name != 'a' else title_elem
+            link_elem = (
+                title_elem.find("a", href=True)
+                if title_elem.name != "a"
+                else title_elem
+            )
             if link_elem:
-                href = link_elem.get('href', '')
-                post_data['url'] = urljoin(base_url, href)
+                href = link_elem.get("href", "")
+                post_data["url"] = urljoin(base_url, href)
             else:
-                post_data['url'] = base_url
+                post_data["url"] = base_url
         else:
             return None  # Skip posts without titles
 
         # Extract description/excerpt
-        desc_elem = container.find(['p', 'div'], class_=re.compile(r'excerpt|description|summary|content'))
+        desc_elem = container.find(
+            ["p", "div"], class_=re.compile(r"excerpt|description|summary|content")
+        )
         if desc_elem:
-            post_data['description'] = desc_elem.get_text(strip=True)[:500]  # Limit length
+            post_data["description"] = desc_elem.get_text(strip=True)[
+                :500
+            ]  # Limit length
         else:
             # Fallback: get first paragraph
-            p_elem = container.find('p')
+            p_elem = container.find("p")
             if p_elem:
-                post_data['description'] = p_elem.get_text(strip=True)[:500]
+                post_data["description"] = p_elem.get_text(strip=True)[:500]
             else:
-                post_data['description'] = ""
+                post_data["description"] = ""
 
         # Extract publication date
-        date_elem = container.find(['time', 'span', 'div'], attrs={'datetime': True})
+        date_elem = container.find(["time", "span", "div"], attrs={"datetime": True})
         if not date_elem:
-            date_elem = container.find(text=re.compile(r'\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}'))
+            date_elem = container.find(
+                text=re.compile(r"\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}")
+            )
 
         if date_elem:
-            if hasattr(date_elem, 'get'):
-                date_str = date_elem.get('datetime') or date_elem.get_text(strip=True)
+            if hasattr(date_elem, "get"):
+                date_str = date_elem.get("datetime") or date_elem.get_text(strip=True)
             else:
                 date_str = str(date_elem).strip()
 
-            post_data['published_date'] = parse_date_string(date_str)
+            post_data["published_date"] = parse_date_string(date_str)
         else:
-            post_data['published_date'] = datetime.now().isoformat()
+            post_data["published_date"] = datetime.now().isoformat()
 
         # Extract category
-        category_elem = container.find(['span', 'div', 'a'], class_=re.compile(r'category|tag|topic'))
+        category_elem = container.find(
+            ["span", "div", "a"], class_=re.compile(r"category|tag|topic")
+        )
         if category_elem:
-            post_data['category'] = category_elem.get_text(strip=True)
+            post_data["category"] = category_elem.get_text(strip=True)
         else:
-            post_data['category'] = "General"
+            post_data["category"] = "General"
 
         # Extract author
-        author_elem = container.find(['span', 'div', 'a'], class_=re.compile(r'author|by|user'))
+        author_elem = container.find(
+            ["span", "div", "a"], class_=re.compile(r"author|by|user")
+        )
         if author_elem:
-            post_data['author'] = author_elem.get_text(strip=True)
+            post_data["author"] = author_elem.get_text(strip=True)
         else:
-            post_data['author'] = "ExpatCircle"
+            post_data["author"] = "ExpatCircle"
 
         # Extract engagement metrics
-        comments_elem = container.find(text=re.compile(r'\d+\s*(comment|reply)', re.I))
+        comments_elem = container.find(text=re.compile(r"\d+\s*(comment|reply)", re.I))
         if comments_elem:
-            comments_match = re.search(r'(\d+)', str(comments_elem))
-            post_data['comments_count'] = int(comments_match.group(1)) if comments_match else 0
+            comments_match = re.search(r"(\d+)", str(comments_elem))
+            post_data["comments_count"] = (
+                int(comments_match.group(1)) if comments_match else 0
+            )
         else:
-            post_data['comments_count'] = 0
+            post_data["comments_count"] = 0
 
         # Check for trending indicators
-        trending_indicators = container.find(['span', 'div'], class_=re.compile(r'trending|hot|popular'))
-        post_data['trending'] = bool(trending_indicators)
+        trending_indicators = container.find(
+            ["span", "div"], class_=re.compile(r"trending|hot|popular")
+        )
+        post_data["trending"] = bool(trending_indicators)
 
         # Add metadata
-        post_data.update({
-            "source": "expatcircle",
-            "platform": "expatcircle"
-        })
+        post_data.update({"source": "expatcircle", "platform": "expatcircle"})
 
         return post_data
 
@@ -238,16 +259,22 @@ def process_expatcircle_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any
 
     # Define expat-related keywords for categorization
     expat_keywords = {
-        'visa': ['visa', 'immigration', 'permit', 'residency', 'citizenship'],
-        'housing': ['housing', 'apartment', 'rent', 'property', 'accommodation'],
-        'work': ['job', 'employment', 'career', 'salary', 'workplace', 'remote work'],
-        'finance': ['tax', 'banking', 'insurance', 'finances', 'money', 'currency'],
-        'culture': ['culture', 'language', 'local', 'customs', 'traditions'],
-        'lifestyle': ['lifestyle', 'living', 'expat life', 'community', 'social'],
-        'travel': ['travel', 'transport', 'flight', 'vacation', 'tourism'],
-        'health': ['health', 'medical', 'healthcare', 'doctor', 'insurance'],
-        'education': ['school', 'education', 'university', 'children', 'international school'],
-        'business': ['business', 'entrepreneur', 'startup', 'investment', 'company']
+        "visa": ["visa", "immigration", "permit", "residency", "citizenship"],
+        "housing": ["housing", "apartment", "rent", "property", "accommodation"],
+        "work": ["job", "employment", "career", "salary", "workplace", "remote work"],
+        "finance": ["tax", "banking", "insurance", "finances", "money", "currency"],
+        "culture": ["culture", "language", "local", "customs", "traditions"],
+        "lifestyle": ["lifestyle", "living", "expat life", "community", "social"],
+        "travel": ["travel", "transport", "flight", "vacation", "tourism"],
+        "health": ["health", "medical", "healthcare", "doctor", "insurance"],
+        "education": [
+            "school",
+            "education",
+            "university",
+            "children",
+            "international school",
+        ],
+        "business": ["business", "entrepreneur", "startup", "investment", "company"],
     }
 
     for post in posts:
@@ -256,8 +283,8 @@ def process_expatcircle_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any
             processed_post = post.copy()
 
             # Enhance categorization based on content
-            title_lower = post.get('title', '').lower()
-            desc_lower = post.get('description', '').lower()
+            title_lower = post.get("title", "").lower()
+            desc_lower = post.get("description", "").lower()
             content_text = f"{title_lower} {desc_lower}"
 
             # Determine more specific category
@@ -269,26 +296,26 @@ def process_expatcircle_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any
 
             if category_scores:
                 best_category = max(category_scores, key=category_scores.get)
-                processed_post['expat_category'] = best_category
-                processed_post['category_confidence'] = category_scores[best_category]
+                processed_post["expat_category"] = best_category
+                processed_post["category_confidence"] = category_scores[best_category]
             else:
-                processed_post['expat_category'] = 'general'
-                processed_post['category_confidence'] = 0
+                processed_post["expat_category"] = "general"
+                processed_post["category_confidence"] = 0
 
             # Calculate engagement score
             engagement_score = 0
 
             # Base score from comments
-            comments = post.get('comments_count', 0)
+            comments = post.get("comments_count", 0)
             engagement_score += comments * 2
 
             # Trending bonus
-            if post.get('trending', False):
+            if post.get("trending", False):
                 engagement_score += 10
 
             # Title/description quality bonus
-            title_len = len(post.get('title', ''))
-            desc_len = len(post.get('description', ''))
+            title_len = len(post.get("title", ""))
+            desc_len = len(post.get("description", ""))
 
             if title_len > 20:
                 engagement_score += 2
@@ -297,28 +324,40 @@ def process_expatcircle_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any
 
             # Recency bonus (posts from last 24 hours)
             try:
-                pub_date = datetime.fromisoformat(post.get('published_date', '').replace('Z', '+00:00'))
-                if datetime.now().replace(tzinfo=pub_date.tzinfo) - pub_date < timedelta(days=1):
+                pub_date = datetime.fromisoformat(
+                    post.get("published_date", "").replace("Z", "+00:00")
+                )
+                if datetime.now().replace(
+                    tzinfo=pub_date.tzinfo
+                ) - pub_date < timedelta(days=1):
                     engagement_score += 5
             except:
                 pass
 
-            processed_post['engagement_score'] = engagement_score
+            processed_post["engagement_score"] = engagement_score
 
             # Add content type classification
-            if any(word in content_text for word in ['guide', 'how to', 'tips', 'advice']):
-                processed_post['content_type'] = 'guide'
-            elif any(word in content_text for word in ['news', 'update', 'announcement']):
-                processed_post['content_type'] = 'news'
-            elif any(word in content_text for word in ['question', 'help', 'advice', '?']):
-                processed_post['content_type'] = 'question'
-            elif any(word in content_text for word in ['experience', 'story', 'review']):
-                processed_post['content_type'] = 'experience'
+            if any(
+                word in content_text for word in ["guide", "how to", "tips", "advice"]
+            ):
+                processed_post["content_type"] = "guide"
+            elif any(
+                word in content_text for word in ["news", "update", "announcement"]
+            ):
+                processed_post["content_type"] = "news"
+            elif any(
+                word in content_text for word in ["question", "help", "advice", "?"]
+            ):
+                processed_post["content_type"] = "question"
+            elif any(
+                word in content_text for word in ["experience", "story", "review"]
+            ):
+                processed_post["content_type"] = "experience"
             else:
-                processed_post['content_type'] = 'discussion'
+                processed_post["content_type"] = "discussion"
 
             # Add processing timestamp
-            processed_post['processed_at'] = datetime.now().isoformat()
+            processed_post["processed_at"] = datetime.now().isoformat()
 
             # Add quality score
             quality_score = 0
@@ -332,14 +371,14 @@ def process_expatcircle_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any
                 quality_score += 2
 
             # Has URL
-            if post.get('url') and post['url'] != base_url:
+            if post.get("url") and post["url"] != base_url:
                 quality_score += 1
 
             # Has category
-            if post.get('category') and post['category'] != 'General':
+            if post.get("category") and post["category"] != "General":
                 quality_score += 1
 
-            processed_post['quality_score'] = quality_score
+            processed_post["quality_score"] = quality_score
 
             processed_posts.append(processed_post)
 
@@ -375,11 +414,11 @@ def parse_date_string(date_str: str) -> str:
         "%B %d, %Y",
         "%b %d, %Y",
         "%d %B %Y",
-        "%d %b %Y"
+        "%d %b %Y",
     ]
 
     # Clean up the date string
-    date_str = re.sub(r'[^\w\s:/-]', '', date_str.strip())
+    date_str = re.sub(r"[^\w\s:/-]", "", date_str.strip())
 
     for pattern in patterns:
         try:
@@ -389,7 +428,7 @@ def parse_date_string(date_str: str) -> str:
             continue
 
     # If all else fails, try to extract a simple date
-    date_match = re.search(r'(\d{4})-(\d{2})-(\d{2})', date_str)
+    date_match = re.search(r"(\d{4})-(\d{2})-(\d{2})", date_str)
     if date_match:
         try:
             year, month, day = date_match.groups()
@@ -417,7 +456,7 @@ def save_expatcircle_data(data: list[dict[str, Any]], output_dir: str):
     try:
         # Save JSON
         json_file = os.path.join(output_dir, "expatcircle_posts.json")
-        with open(json_file, 'w', encoding='utf-8') as f:
+        with open(json_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False, default=str)
 
         logger.info(f"Saved {len(data)} posts to {json_file}")
@@ -431,7 +470,7 @@ def save_expatcircle_data(data: list[dict[str, Any]], output_dir: str):
             for item in data:
                 all_keys.update(item.keys())
 
-            with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+            with open(csv_file, "w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=sorted(all_keys))
                 writer.writeheader()
                 writer.writerows(data)
@@ -478,11 +517,13 @@ def main():
         if processed_data:
             categories = {}
             for post in processed_data:
-                cat = post.get('expat_category', 'unknown')
+                cat = post.get("expat_category", "unknown")
                 categories[cat] = categories.get(cat, 0) + 1
 
             logger.info("Category breakdown:")
-            for cat, count in sorted(categories.items(), key=lambda x: x[1], reverse=True):
+            for cat, count in sorted(
+                categories.items(), key=lambda x: x[1], reverse=True
+            ):
                 logger.info(f"  {cat}: {count} posts")
 
     except Exception as e:

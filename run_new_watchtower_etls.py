@@ -26,10 +26,17 @@ def run_meme_economics():
 
     try:
         from src.etl.entertainment.meme_economics_etl import run_meme_economics_etl
+
         metrics = run_meme_economics_etl()
 
-        logger.info(f"✅ Meme Economics completed: {metrics.records_loaded} records, {metrics.success_rate:.1f}% success")
-        return {"name": "meme_economics", "status": "success", "records": metrics.records_loaded}
+        logger.info(
+            f"✅ Meme Economics completed: {metrics.records_loaded} records, {metrics.success_rate:.1f}% success"
+        )
+        return {
+            "name": "meme_economics",
+            "status": "success",
+            "records": metrics.records_loaded,
+        }
 
     except Exception as e:
         logger.error(f"❌ Meme Economics failed: {e}")
@@ -42,10 +49,17 @@ def run_enhanced_free_games():
 
     try:
         from src.etl.games.enhanced_free_games_etl import run_enhanced_free_games_etl
+
         metrics = run_enhanced_free_games_etl()
 
-        logger.info(f"✅ Enhanced Free Games completed: {metrics.records_loaded} records, {metrics.success_rate:.1f}% success")
-        return {"name": "enhanced_free_games", "status": "success", "records": metrics.records_loaded}
+        logger.info(
+            f"✅ Enhanced Free Games completed: {metrics.records_loaded} records, {metrics.success_rate:.1f}% success"
+        )
+        return {
+            "name": "enhanced_free_games",
+            "status": "success",
+            "records": metrics.records_loaded,
+        }
 
     except Exception as e:
         logger.error(f"❌ Enhanced Free Games failed: {e}")
@@ -60,10 +74,17 @@ def run_adhd_locations():
         from src.etl.neurodivergent.adhd_friendly_locations_etl import (
             run_adhd_friendly_locations_etl,
         )
+
         metrics = run_adhd_friendly_locations_etl()
 
-        logger.info(f"✅ ADHD Locations completed: {metrics.records_loaded} records, {metrics.success_rate:.1f}% success")
-        return {"name": "adhd_locations", "status": "success", "records": metrics.records_loaded}
+        logger.info(
+            f"✅ ADHD Locations completed: {metrics.records_loaded} records, {metrics.success_rate:.1f}% success"
+        )
+        return {
+            "name": "adhd_locations",
+            "status": "success",
+            "records": metrics.records_loaded,
+        }
 
     except Exception as e:
         logger.error(f"❌ ADHD Locations failed: {e}")
@@ -77,11 +98,7 @@ def run_all_new_etls() -> list[dict[str, Any]]:
     results = []
 
     # Run all ETLs
-    etl_functions = [
-        run_meme_economics,
-        run_enhanced_free_games,
-        run_adhd_locations
-    ]
+    etl_functions = [run_meme_economics, run_enhanced_free_games, run_adhd_locations]
 
     for etl_func in etl_functions:
         try:
@@ -89,20 +106,22 @@ def run_all_new_etls() -> list[dict[str, Any]]:
             results.append(result)
         except Exception as e:
             logger.error(f"ETL {etl_func.__name__} crashed: {e}")
-            results.append({
-                "name": etl_func.__name__.replace("run_", ""),
-                "status": "crashed",
-                "error": str(e)
-            })
+            results.append(
+                {
+                    "name": etl_func.__name__.replace("run_", ""),
+                    "status": "crashed",
+                    "error": str(e),
+                }
+            )
 
     return results
 
 
 def print_summary(results: list[dict[str, Any]]):
     """Print a summary of ETL results."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🎉 NEW WATCHTOWER ETLS SUMMARY")
-    print("="*60)
+    print("=" * 60)
 
     total_records = 0
     successful = 0
@@ -123,7 +142,9 @@ def print_summary(results: list[dict[str, Any]]):
             print(f"{status_emoji} {name}: FAILED - {error}")
 
     print("-" * 60)
-    print(f"📊 Total: {successful + failed} ETLs, {successful} successful, {failed} failed")
+    print(
+        f"📊 Total: {successful + failed} ETLs, {successful} successful, {failed} failed"
+    )
     print(f"📈 Total records processed: {total_records}")
     print(f"⏱️  Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -151,20 +172,18 @@ Examples:
   python run_new_watchtower_etls.py --etl memes        # Run only meme economics
   python run_new_watchtower_etls.py --etl games        # Run only free games
   python run_new_watchtower_etls.py --etl adhd         # Run only ADHD locations
-        """
+        """,
     )
 
     parser.add_argument(
         "--etl",
         choices=["memes", "games", "adhd", "all"],
         default="all",
-        help="Which ETL to run (default: all)"
+        help="Which ETL to run (default: all)",
     )
 
     parser.add_argument(
-        "--quiet",
-        action="store_true",
-        help="Suppress detailed logging output"
+        "--quiet", action="store_true", help="Suppress detailed logging output"
     )
 
     args = parser.parse_args()
@@ -172,6 +191,7 @@ Examples:
     # Configure logging level
     if args.quiet:
         import logging
+
         logging.getLogger().setLevel(logging.WARNING)
 
     # Run selected ETLs

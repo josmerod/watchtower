@@ -35,7 +35,9 @@ def check_python_version():
     print("🐍 Checking Python version...")
     version = sys.version_info
     if version.major < 3 or (version.major == 3 and version.minor < 8):
-        print(f"❌ Python {version.major}.{version.minor} detected. Python 3.8+ required.")
+        print(
+            f"❌ Python {version.major}.{version.minor} detected. Python 3.8+ required."
+        )
         print("   Please upgrade Python and try again.")
         return False
     else:
@@ -52,20 +54,20 @@ def check_dependencies():
 
     # Required dependencies
     required_deps = [
-        'requests',
-        'beautifulsoup4',
-        'tqdm',
+        "requests",
+        "beautifulsoup4",
+        "tqdm",
     ]
 
     # Optional dependencies
     optional_deps = [
-        'playwright',
-        'cloudscraper',
+        "playwright",
+        "cloudscraper",
     ]
 
     for dep in required_deps:
         try:
-            __import__(dep.replace('-', '_'))
+            __import__(dep.replace("-", "_"))
             print(f"✅ {dep}")
         except ImportError:
             print(f"❌ {dep} (required)")
@@ -73,7 +75,7 @@ def check_dependencies():
 
     for dep in optional_deps:
         try:
-            __import__(dep.replace('-', '_'))
+            __import__(dep.replace("-", "_"))
             print(f"✅ {dep} (optional)")
         except ImportError:
             print(f"⚠️  {dep} (optional - some scrapers may not work)")
@@ -97,7 +99,9 @@ def check_playwright_browsers():
             return True
         except Exception as e:
             print(f"❌ Playwright browsers not installed or not working: {e}")
-            print("   This will affect Real Discount, Udemy Freebies, and Udemy Free Courses scrapers")
+            print(
+                "   This will affect Real Discount, Udemy Freebies, and Udemy Free Courses scrapers"
+            )
             return False
     except ImportError:
         print("⚠️  Playwright not installed - browser check skipped")
@@ -113,7 +117,7 @@ def install_dependencies(deps, optional=False):
     print(f"\n📥 Installing {dep_type} dependencies: {', '.join(deps)}")
 
     try:
-        cmd = [sys.executable, '-m', 'pip', 'install', *deps]
+        cmd = [sys.executable, "-m", "pip", "install", *deps]
         subprocess.run(cmd, check=True, capture_output=True, text=True)
         print(f"✅ Successfully installed {dep_type} dependencies")
         return True
@@ -129,7 +133,7 @@ def install_playwright_browsers():
     print("\n🌐 Installing Playwright browsers...")
 
     try:
-        cmd = [sys.executable, '-m', 'playwright', 'install', 'chromium']
+        cmd = [sys.executable, "-m", "playwright", "install", "chromium"]
         subprocess.run(cmd, check=True, capture_output=True, text=True)
         print("✅ Successfully installed Playwright browsers")
         return True
@@ -157,15 +161,17 @@ def setup_dependencies():
 
     # Offer to install optional dependencies
     if optional_missing:
-        response = input(f"\nInstall optional dependencies ({', '.join(optional_missing)})? [Y/n]: ")
-        if response.lower() in ['', 'y', 'yes']:
+        response = input(
+            f"\nInstall optional dependencies ({', '.join(optional_missing)})? [Y/n]: "
+        )
+        if response.lower() in ["", "y", "yes"]:
             install_dependencies(optional_missing, optional=True)
 
     # Check Playwright browsers if Playwright is available
     browser_status = check_playwright_browsers()
     if browser_status is False:
         response = input("\nInstall Playwright browsers? [Y/n]: ")
-        if response.lower() in ['', 'y', 'yes']:
+        if response.lower() in ["", "y", "yes"]:
             install_playwright_browsers()
 
     print("\n✅ Setup complete!")
@@ -180,6 +186,7 @@ def run_scraper():
     try:
         # Import and run the CLI
         from cli import main_extract
+
         main_extract()
     except ImportError as e:
         print(f"❌ Failed to import CLI module: {e}")
@@ -202,12 +209,16 @@ def main():
     parser = argparse.ArgumentParser(
         description="Setup and run the Udemy Course Scraper",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__
+        epilog=__doc__,
     )
-    parser.add_argument('--setup-only', action='store_true',
-                       help='Only check and setup dependencies')
-    parser.add_argument('--run-only', action='store_true',
-                       help='Skip dependency checks and run directly')
+    parser.add_argument(
+        "--setup-only", action="store_true", help="Only check and setup dependencies"
+    )
+    parser.add_argument(
+        "--run-only",
+        action="store_true",
+        help="Skip dependency checks and run directly",
+    )
 
     args = parser.parse_args()
 
@@ -228,7 +239,7 @@ def main():
         if setup_dependencies():
             print("\n" + "=" * 60)
             response = input("Setup complete! Run the scraper now? [Y/n]: ")
-            if response.lower() in ['', 'y', 'yes']:
+            if response.lower() in ["", "y", "yes"]:
                 success = run_scraper()
         else:
             print("\n❌ Setup failed. Please fix the issues above and try again.")

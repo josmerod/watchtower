@@ -66,7 +66,6 @@ class CheckpointError(ETLError):
         # Ensure phase is set correctly if not provided, or override if it is
         kwargs["phase"] = kwargs.get("phase", "checkpointing")
 
-
         super().__init__(message, **kwargs)
 
 

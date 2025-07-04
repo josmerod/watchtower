@@ -9,6 +9,7 @@ from setuptools import find_packages, setup
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text(encoding="utf-8")
 
+
 def read_requirements(filename):
     """Read requirements from a file, filtering out comments and empty lines."""
     requirements = []
@@ -26,6 +27,7 @@ def read_requirements(filename):
     except FileNotFoundError:
         print(f"Warning: {filename} not found")
     return requirements
+
 
 # Read requirements from all files
 requirements = read_requirements("requirements-minimal.txt")

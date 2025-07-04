@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
 class LogLevel(str, Enum):
@@ -34,8 +34,9 @@ class DatabaseConfig(BaseModel):
     pool_size: int = Field(default=5, ge=1, le=50, description="Connection pool size")
     max_overflow: int = Field(default=10, ge=0, le=100, description="Max pool overflow")
 
-    @validator("url")
-    def validate_url(self, v: str) -> str:
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, v: str) -> str:
         """Validate database URL format."""
         if not v.startswith(("sqlite://", "postgresql://", "mysql://", "oracle://")):
             raise ValueError("Invalid database URL scheme")
@@ -112,7 +113,9 @@ class APIConfig(BaseModel):
         default=["GET", "POST", "PUT", "DELETE"], description="CORS allowed methods"
     )
     news_api_key: str | None = Field(default=None, description="API key for NewsAPI")
-    mal_client_id: str | None = Field(default=None, description="MyAnimeList API Client ID")
+    mal_client_id: str | None = Field(
+        default=None, description="MyAnimeList API Client ID"
+    )
 
 
 class StreamlitConfig(BaseModel):
@@ -139,8 +142,9 @@ class SecurityConfig(BaseModel):
         default=30, ge=5, le=1440, description="Access token expiry in minutes"
     )
 
-    @validator("secret_key")
-    def validate_secret_key(self, v: str) -> str:
+    @field_validator("secret_key")
+    @classmethod
+    def validate_secret_key(cls, v: str) -> str:
         """Validate secret key strength."""
         if len(v) < 32:
             raise ValueError("Secret key must be at least 32 characters long")

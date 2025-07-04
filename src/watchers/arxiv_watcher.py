@@ -4,6 +4,7 @@ This module provides the `ArxivWatcher` class, which periodically checks
 ArXiv for new papers in specified AI/ML and computer science categories.
 It extracts paper metadata and saves information about new or updated papers.
 """
+
 import json
 import os
 from datetime import datetime, timedelta
@@ -28,35 +29,32 @@ class ArxivWatcher(BaseWatcher):
     # AI, ML, Programming, Cloud Architecture, and Enterprise Architecture related categories
     AI_ML_CATEGORIES = [
         # Core AI/ML Categories
-        "cs.AI",    # Artificial Intelligence
-        "cs.LG",    # Machine Learning
-        "cs.CL",    # Computation and Language (NLP)
-        "cs.CV",    # Computer Vision
-        "cs.NE",    # Neural and Evolutionary Computing
+        "cs.AI",  # Artificial Intelligence
+        "cs.LG",  # Machine Learning
+        "cs.CL",  # Computation and Language (NLP)
+        "cs.CV",  # Computer Vision
+        "cs.NE",  # Neural and Evolutionary Computing
         "stat.ML",  # Statistics - Machine Learning
-
         # Programming and Software Engineering
-        "cs.PL",    # Programming Languages
-        "cs.SE",    # Software Engineering
-        "cs.LO",    # Logic in Computer Science
-        "cs.FL",    # Formal Languages and Automata Theory
-        "cs.DS",    # Data Structures and Algorithms
-
+        "cs.PL",  # Programming Languages
+        "cs.SE",  # Software Engineering
+        "cs.LO",  # Logic in Computer Science
+        "cs.FL",  # Formal Languages and Automata Theory
+        "cs.DS",  # Data Structures and Algorithms
         # Cloud Architecture and Distributed Systems
-        "cs.DC",    # Distributed, Parallel, and Cluster Computing
-        "cs.NI",    # Networking and Internet Architecture
-        "cs.OS",    # Operating Systems
-        "cs.AR",    # Hardware Architecture
-        "cs.SY",    # Systems and Control
-        "cs.PF",    # Performance
-
+        "cs.DC",  # Distributed, Parallel, and Cluster Computing
+        "cs.NI",  # Networking and Internet Architecture
+        "cs.OS",  # Operating Systems
+        "cs.AR",  # Hardware Architecture
+        "cs.SY",  # Systems and Control
+        "cs.PF",  # Performance
         # Enterprise Architecture and Related Systems
-        "cs.DB",    # Databases
-        "cs.CY",    # Computers and Society
-        "cs.ET",    # Emerging Technologies
-        "cs.CR",    # Cryptography and Security
-        "cs.SI",    # Social and Information Networks
-        "cs.CE",    # Computational Engineering, Finance, and Science
+        "cs.DB",  # Databases
+        "cs.CY",  # Computers and Society
+        "cs.ET",  # Emerging Technologies
+        "cs.CR",  # Cryptography and Security
+        "cs.SI",  # Social and Information Networks
+        "cs.CE",  # Computational Engineering, Finance, and Science
     ]
 
     def __init__(
@@ -64,7 +62,7 @@ class ArxivWatcher(BaseWatcher):
         name: str = "arxiv",
         check_interval: int = 86400,  # Default: check once per day
         max_results: int = 50,
-        days_back: int = 7
+        days_back: int = 7,
     ):
         """Initialize the ArXiv watcher.
 
@@ -78,10 +76,12 @@ class ArxivWatcher(BaseWatcher):
         categories = " OR ".join(self.AI_ML_CATEGORIES)
 
         # Calculate date for papers published since days_back
-        date_since = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+        date_since = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
         # Build the complete search URL
-        search_query = f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
+        search_query = (
+            f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
+        )
         self.api_url = f"{self.ARXIV_API_BASE}?search_query={search_query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
 
         self.max_results = max_results
@@ -108,7 +108,9 @@ class ArxivWatcher(BaseWatcher):
             authors = [author.name for author in entry.authors]
 
             # Extract categories
-            categories = [tag.term for tag in entry.tags] if hasattr(entry, 'tags') else []
+            categories = (
+                [tag.term for tag in entry.tags] if hasattr(entry, "tags") else []
+            )
 
             # Create paper entry
             paper = {
@@ -120,7 +122,14 @@ class ArxivWatcher(BaseWatcher):
                 "published": entry.published,
                 "updated": entry.updated,
                 "link": entry.link,
-                "pdf_url": next((link.href for link in entry.links if link.rel == "alternate" and link.type == "application/pdf"), None)
+                "pdf_url": next(
+                    (
+                        link.href
+                        for link in entry.links
+                        if link.rel == "alternate" and link.type == "application/pdf"
+                    ),
+                    None,
+                ),
             }
 
             papers.append(paper)
@@ -128,7 +137,9 @@ class ArxivWatcher(BaseWatcher):
         self.logger.info(f"Found {len(papers)} papers")
         return papers
 
-    def has_changed(self, old_papers: list[dict[str, Any]], new_papers: list[dict[str, Any]]) -> bool:
+    def has_changed(
+        self, old_papers: list[dict[str, Any]], new_papers: list[dict[str, Any]]
+    ) -> bool:
         """Determine if there are new papers or changes in the papers.
 
         Args:
@@ -164,7 +175,9 @@ class ArxivWatcher(BaseWatcher):
         self.logger.info("No changes detected in ArXiv papers")
         return False
 
-    def trigger_alarm(self, old_papers: list[dict[str, Any]], new_papers: list[dict[str, Any]]):
+    def trigger_alarm(
+        self, old_papers: list[dict[str, Any]], new_papers: list[dict[str, Any]]
+    ):
         """Process new papers when detected.
 
         Args:
@@ -201,20 +214,22 @@ class ArxivWatcher(BaseWatcher):
                 self._save_paper_detail(paper, paper_id)
 
         if updated_ids:
-            self.logger.warning(f"UPDATED PAPERS DETECTED: {len(updated_ids)} papers updated")
+            self.logger.warning(
+                f"UPDATED PAPERS DETECTED: {len(updated_ids)} papers updated"
+            )
 
         # Record the event with details about changes
         event_details = {
             "new_papers": list(new_ids),
             "updated_papers": list(updated_ids),
-            "total_papers": len(new_papers)
+            "total_papers": len(new_papers),
         }
 
         super()._record_event(
             event_type="papers_changed",
             old_value=old_papers,
             new_value=new_papers,
-            details=event_details
+            details=event_details,
         )
 
         # Save all papers for reference
@@ -227,10 +242,12 @@ class ArxivWatcher(BaseWatcher):
             papers (List[Dict[str, Any]]): Papers to save
             filename (str): Filename without extension
         """
-        self.logger.info(f"Attempting to save papers to {filename}.json in {self.data_dir}")
+        self.logger.info(
+            f"Attempting to save papers to {filename}.json in {self.data_dir}"
+        )
         filepath = os.path.join(self.data_dir, f"{filename}.json")
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(papers, f, ensure_ascii=False, indent=2)
             self.logger.info(f"Saved {len(papers)} papers to {filepath}")
         except Exception as e:
@@ -250,7 +267,7 @@ class ArxivWatcher(BaseWatcher):
 
         filepath = os.path.join(papers_dir, f"{paper_id}.json")
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(paper, f, ensure_ascii=False, indent=2)
         except Exception as e:
             self.logger.error(f"Error saving paper detail to {filepath}: {e!s}")
@@ -264,9 +281,13 @@ class ArxivWatcher(BaseWatcher):
             str: XML content from ArXiv API
         """
         # Update the date range to always be relative to current time
-        date_since = (datetime.now() - timedelta(days=self.days_back)).strftime('%Y-%m-%d')
+        date_since = (datetime.now() - timedelta(days=self.days_back)).strftime(
+            "%Y-%m-%d"
+        )
         categories = " OR ".join(self.AI_ML_CATEGORIES)
-        search_query = f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
+        search_query = (
+            f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
+        )
 
         current_url = f"{self.ARXIV_API_BASE}?search_query={search_query}&sortBy=submittedDate&sortOrder=descending&max_results={self.max_results}"
         self.url = current_url

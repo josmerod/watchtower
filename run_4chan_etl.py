@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Script to run the 4chan Generals ETL from the project root.
-"""
+"""Script to run the 4chan Generals ETL from the project root."""
 
 import sys
 from pathlib import Path
@@ -9,6 +8,7 @@ from pathlib import Path
 project_root = Path(__file__).parent
 src_path = project_root / "src"
 sys.path.insert(0, str(src_path))
+
 
 def main():
     """Run the 4chan Generals ETL."""
@@ -28,6 +28,7 @@ def main():
     except Exception as e:
         print(f"Error running ETL: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

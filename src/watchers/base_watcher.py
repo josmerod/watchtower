@@ -4,6 +4,7 @@ This module provides the `BaseWatcher` abstract base class, which defines
 the common interface and core functionality for all watcher implementations.
 Watchers periodically check web pages for changes in specific values or content.
 """
+
 import json
 import os
 import time
@@ -66,18 +67,24 @@ class BaseWatcher(ABC):
         return {
             "last_check": None,
             "last_value": None,
-            "first_seen": datetime.now().isoformat()
+            "first_seen": datetime.now().isoformat(),
         }
 
     def _save_state(self, state: dict[str, Any]):
         """Save the current state to the state file."""
         try:
-            with open(self.state_file, 'w') as f:
+            with open(self.state_file, "w") as f:
                 json.dump(state, f, indent=2)
         except Exception as e:
             self.logger.error(f"Error saving state file: {e!s}")
 
-    def _record_event(self, event_type: str, old_value: Any, new_value: Any, details: dict[str, Any] | None = None):
+    def _record_event(
+        self,
+        event_type: str,
+        old_value: Any,
+        new_value: Any,
+        details: dict[str, Any] | None = None,
+    ):
         """Record a change event.
 
         Args:
@@ -97,13 +104,13 @@ class BaseWatcher(ABC):
             "url": self.url,
             "old_value": old_value,
             "new_value": new_value,
-            "details": details or {}
+            "details": details or {},
         }
 
         # Save event to file
         event_file = os.path.join(self.events_dir, f"{event_id}.json")
         try:
-            with open(event_file, 'w') as f:
+            with open(event_file, "w") as f:
                 json.dump(event, f, indent=2)
             self.logger.info(f"Event recorded: {event_id}")
         except Exception as e:
@@ -163,13 +170,13 @@ class BaseWatcher(ABC):
             old_value: Previous value
             new_value: Current value
         """
-        self.logger.warning(f"CHANGE DETECTED in {self.name}: {old_value} -> {new_value}")
+        self.logger.warning(
+            f"CHANGE DETECTED in {self.name}: {old_value} -> {new_value}"
+        )
 
         # Record the event
         self._record_event(
-            event_type="change_detected",
-            old_value=old_value,
-            new_value=new_value
+            event_type="change_detected", old_value=old_value, new_value=new_value
         )
 
         # TODO: In the future, implement notification mechanisms here
@@ -193,13 +200,15 @@ class BaseWatcher(ABC):
                 new_state = {
                     "last_check": now,
                     "last_value": current_value,
-                    "first_seen": self.previous_state["first_seen"]
+                    "first_seen": self.previous_state["first_seen"],
                 }
                 self._save_state(new_state)
                 # return # MODIFIED FOR TESTING: Allow flow through to has_changed
 
             # Check if value has changed
-            old_value = self.previous_state["last_value"] # This will be None if it was the first check and we didn't return
+            old_value = self.previous_state[
+                "last_value"
+            ]  # This will be None if it was the first check and we didn't return
             if self.has_changed(old_value, current_value):
                 self.trigger_alarm(old_value, current_value)
 
@@ -207,7 +216,7 @@ class BaseWatcher(ABC):
             new_state = {
                 "last_check": now,
                 "last_value": current_value,
-                "first_seen": self.previous_state["first_seen"]
+                "first_seen": self.previous_state["first_seen"],
             }
             self._save_state(new_state)
 

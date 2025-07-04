@@ -4,6 +4,7 @@ This module provides the `NLPContentClassifier` class, which uses
 TF-IDF vectorization, dimensionality reduction (LSA), and K-Means clustering
 to classify text documents, extract keywords, and identify topics.
 """
+
 import os
 import pickle
 from collections import Counter
@@ -44,7 +45,9 @@ class NLPContentClassifier:
 
         # Paths for storing models and data
         self.project_root = get_project_root()
-        self.models_dir = os.path.join(self.project_root, f"data/models/nlp/{self.name}")
+        self.models_dir = os.path.join(
+            self.project_root, f"data/models/nlp/{self.name}"
+        )
         ensure_directories([f"data/models/nlp/{self.name}"])
 
         # Initialize models
@@ -56,12 +59,15 @@ class NLPContentClassifier:
     def _download_nltk_resources(self):
         """Download necessary NLTK resources."""
         resources = [
-            ('punkt', 'tokenizers/punkt'),
-            ('stopwords', 'corpora/stopwords'),
-            ('wordnet', 'corpora/wordnet'),
-            ('averaged_perceptron_tagger', 'taggers/averaged_perceptron_tagger'),
-            ('averaged_perceptron_tagger_eng', 'taggers/averaged_perceptron_tagger_eng'), # Added specifically
-            ('punkt_tab', 'tokenizers/punkt_tab')
+            ("punkt", "tokenizers/punkt"),
+            ("stopwords", "corpora/stopwords"),
+            ("wordnet", "corpora/wordnet"),
+            ("averaged_perceptron_tagger", "taggers/averaged_perceptron_tagger"),
+            (
+                "averaged_perceptron_tagger_eng",
+                "taggers/averaged_perceptron_tagger_eng",
+            ),  # Added specifically
+            ("punkt_tab", "tokenizers/punkt_tab"),
         ]
 
         for resource_name, resource_path in resources:
@@ -86,12 +92,11 @@ class NLPContentClassifier:
         tokens = nltk.word_tokenize(text.lower())
 
         # Remove stopwords, punctuation, and short words
-        stop_words = set(nltk.corpus.stopwords.words('english'))
+        stop_words = set(nltk.corpus.stopwords.words("english"))
         tokens = [
-            word for word in tokens
-            if word.isalnum() and
-            word not in stop_words and
-            len(word) > 2
+            word
+            for word in tokens
+            if word.isalnum() and word not in stop_words and len(word) > 2
         ]
 
         # Get part-of-speech tags
@@ -99,8 +104,9 @@ class NLPContentClassifier:
 
         # Keep only nouns and adjectives as keywords are often these types
         keywords = [
-            word for word, pos in pos_tags
-            if pos.startswith('NN') or pos.startswith('JJ')
+            word
+            for word, pos in pos_tags
+            if pos.startswith("NN") or pos.startswith("JJ")
         ]
 
         # Count occurrences and get top keywords
@@ -118,10 +124,10 @@ class NLPContentClassifier:
 
         # Create TF-IDF vectorizer
         self.vectorizer = TfidfVectorizer(
-            max_df=0.5,          # Ignore terms that appear in more than 50% of docs
-            min_df=2,            # Ignore terms that appear in fewer than 2 docs
-            use_idf=True,        # Use inverse document frequency weighting
-            stop_words='english'
+            max_df=0.5,  # Ignore terms that appear in more than 50% of docs
+            min_df=2,  # Ignore terms that appear in fewer than 2 docs
+            use_idf=True,  # Use inverse document frequency weighting
+            stop_words="english",
         )
 
         # Create dimensionality reduction component (LSA)
@@ -134,16 +140,20 @@ class NLPContentClassifier:
 
         # Create clustering component
         self.clustering = KMeans(
-            n_clusters=min(n_clusters, len(texts)),  # Don't create more clusters than docs
-            random_state=42
+            n_clusters=min(
+                n_clusters, len(texts)
+            ),  # Don't create more clusters than docs
+            random_state=42,
         )
 
         # Create and apply the pipeline
-        lsa_pipeline = Pipeline([
-            ('tfidf', self.vectorizer),
-            ('svd', self.dimension_reducer),
-            ('normalizer', normalizer)
-        ])
+        lsa_pipeline = Pipeline(
+            [
+                ("tfidf", self.vectorizer),
+                ("svd", self.dimension_reducer),
+                ("normalizer", normalizer),
+            ]
+        )
 
         # Transform documents to LSA space
         X_lsa = lsa_pipeline.fit_transform(texts)
@@ -194,7 +204,9 @@ class NLPContentClassifier:
 
                 self.top_keywords_per_cluster[cluster_id] = top_terms
 
-        self.logger.info(f"Extracted top {top_n} keywords for {len(self.top_keywords_per_cluster)} clusters")
+        self.logger.info(
+            f"Extracted top {top_n} keywords for {len(self.top_keywords_per_cluster)} clusters"
+        )
 
     def get_cluster_labels(self) -> dict[int, str]:
         """Generate human-readable labels for each cluster.
@@ -243,9 +255,7 @@ class NLPContentClassifier:
         cluster_id = int(self.clustering.predict(X_normalized)[0])
 
         # Get cluster keywords
-        cluster_keywords = self.top_keywords_per_cluster.get(
-            cluster_id, ["unknown"]
-        )
+        cluster_keywords = self.top_keywords_per_cluster.get(cluster_id, ["unknown"])
 
         # Get cluster label
         cluster_label = " | ".join(cluster_keywords[:3])
@@ -254,7 +264,7 @@ class NLPContentClassifier:
             "cluster_id": cluster_id,
             "cluster_label": cluster_label,
             "cluster_keywords": cluster_keywords,
-            "document_keywords": document_keywords
+            "document_keywords": document_keywords,
         }
 
     def batch_classify(self, texts: list[str]) -> list[dict[str, Any]]:
@@ -289,12 +299,14 @@ class NLPContentClassifier:
             )
             cluster_label = " | ".join(cluster_keywords[:3])
 
-            results.append({
-                "cluster_id": cluster_id,
-                "cluster_label": cluster_label,
-                "cluster_keywords": cluster_keywords,
-                "document_keywords": document_keywords
-            })
+            results.append(
+                {
+                    "cluster_id": cluster_id,
+                    "cluster_label": cluster_label,
+                    "cluster_keywords": cluster_keywords,
+                    "document_keywords": document_keywords,
+                }
+            )
 
         return results
 
@@ -315,11 +327,11 @@ class NLPContentClassifier:
             "vectorizer": self.vectorizer,
             "dimension_reducer": self.dimension_reducer,
             "clustering": self.clustering,
-            "top_keywords_per_cluster": self.top_keywords_per_cluster
+            "top_keywords_per_cluster": self.top_keywords_per_cluster,
         }
 
         try:
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 pickle.dump(model_data, f)
             self.logger.info(f"Model saved to {filepath}")
         except Exception as e:
@@ -335,7 +347,7 @@ class NLPContentClassifier:
             filepath = os.path.join(self.models_dir, "model.pkl")
 
         try:
-            with open(filepath, 'rb') as f:
+            with open(filepath, "rb") as f:
                 model_data = pickle.load(f)
 
             self.vectorizer = model_data["vectorizer"]

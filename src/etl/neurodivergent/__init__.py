@@ -8,4 +8,4 @@ from .adhd_friendly_locations_etl import (
     run_adhd_friendly_locations_etl,
 )
 
-__all__ = ['ADHDFriendlyLocationsETL', 'run_adhd_friendly_locations_etl']
+__all__ = ["ADHDFriendlyLocationsETL", "run_adhd_friendly_locations_etl"]

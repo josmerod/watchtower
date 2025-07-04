@@ -19,7 +19,9 @@ def main():
     logger = get_logger("AllKeyShopRunner")
 
     logger.info("🎮 Starting AllKeyShop ETL process...")
-    logger.info("This will scrape game deals from AllKeyShop with different sorting criteria:")
+    logger.info(
+        "This will scrape game deals from AllKeyShop with different sorting criteria:"
+    )
     logger.info("  - Deal score (best deals first)")
     logger.info("  - Default sorting (newest deals)")
     logger.info("  - Price ascending (cheapest first, quality filtered)")
@@ -56,6 +58,7 @@ def main():
     except Exception as e:
         logger.error(f"❌ AllKeyShop ETL failed: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

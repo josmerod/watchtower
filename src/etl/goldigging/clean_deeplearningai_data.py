@@ -12,7 +12,7 @@ def clean_course_title(title):
     # Remove common prefixes
     for prefix in ["Course", "Specialization", "Certificate"]:
         if clean_title.startswith(prefix):
-            clean_title = clean_title[len(prefix):].strip()
+            clean_title = clean_title[len(prefix) :].strip()
 
     # If title contains "DeepLearning.AI" at the end, split there
     if "DeepLearning.AI" in clean_title:
@@ -28,8 +28,19 @@ def clean_course_title(title):
     # Pattern 1: "TitleDescription that starts with a verb"
     # Pattern 2: "TitleGet an overview", "TitleLearn about", etc.
     description_starters = [
-        "Learn", "Build", "Design", "Get an", "Examine", "Understand", "Master",
-        "Develop", "Explore", "Discover", "Create", "Implement", "Apply"
+        "Learn",
+        "Build",
+        "Design",
+        "Get an",
+        "Examine",
+        "Understand",
+        "Master",
+        "Develop",
+        "Explore",
+        "Discover",
+        "Create",
+        "Implement",
+        "Apply",
     ]
 
     for starter in description_starters:
@@ -49,7 +60,11 @@ def clean_course_title(title):
         # Look for uppercase words that might be start of description
         words = clean_title.split()
         for i, word in enumerate(words):
-            if i > 2 and word[0].isupper() and word.lower() in ["learn", "build", "design", "get", "examine"]:
+            if (
+                i > 2
+                and word[0].isupper()
+                and word.lower() in ["learn", "build", "design", "get", "examine"]
+            ):
                 potential_title = " ".join(words[:i]).strip()
                 potential_desc = " ".join(words[i:]).strip()
                 if 10 <= len(potential_title) <= 80:
@@ -57,10 +72,13 @@ def clean_course_title(title):
 
     return clean_title, None
 
+
 def clean_deeplearningai_courses():
     """Clean the DeepLearning.AI courses data."""
     project_root = get_project_root()
-    courses_file = os.path.join(project_root, "data/deeplearningai/deeplearningai_courses.json")
+    courses_file = os.path.join(
+        project_root, "data/deeplearningai/deeplearningai_courses.json"
+    )
 
     if not os.path.exists(courses_file):
         print("DeepLearning.AI courses file not found.")
@@ -94,6 +112,7 @@ def clean_deeplearningai_courses():
         json.dump(courses, f, ensure_ascii=False, indent=2)
 
     print(f"Cleaned and saved {len(courses)} courses to {courses_file}")
+
 
 if __name__ == "__main__":
     clean_deeplearningai_courses()

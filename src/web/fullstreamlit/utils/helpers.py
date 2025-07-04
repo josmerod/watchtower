@@ -41,7 +41,7 @@ def make_clickable(link, text=None):
 def get_responsive_cols():
     """Function to determine number of columns based on screen width."""
     # Get the current viewport width using JavaScript
-    viewport_width = st.session_state.get('viewport_width', 1200)  # Default to 1200px
+    viewport_width = st.session_state.get("viewport_width", 1200)  # Default to 1200px
 
     if viewport_width >= 1200:
         return 6  # Large screens

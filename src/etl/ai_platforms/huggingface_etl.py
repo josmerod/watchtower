@@ -390,11 +390,24 @@ class HuggingFaceETL(BaseETL):
                 json.dump(data, f, indent=2, default=str)
 
             self.metrics.records_loaded = len(data)
-            self.logger.info(f"Successfully loaded {len(data)} HuggingFace records to {output_file}")
+            self.logger.info(
+                f"Successfully loaded {len(data)} HuggingFace records to {output_file}"
+            )
 
         except OSError as e:
             self.logger.error(f"Failed to save HuggingFace data to {output_file}: {e}")
-            raise LoadError(f"Failed to save HuggingFace data to {output_file}: {e}", destination=str(output_file), destination_type="file") from e
-        except Exception as e: # Catch any other unexpected errors during load
-            self.logger.error(f"An unexpected error occurred during saving HuggingFace data to {output_file}: {e}", exc_info=True)
-            raise LoadError(f"An unexpected error occurred during saving HuggingFace data to {output_file}: {e}", destination=str(output_file), destination_type="file") from e
+            raise LoadError(
+                f"Failed to save HuggingFace data to {output_file}: {e}",
+                destination=str(output_file),
+                destination_type="file",
+            ) from e
+        except Exception as e:  # Catch any other unexpected errors during load
+            self.logger.error(
+                f"An unexpected error occurred during saving HuggingFace data to {output_file}: {e}",
+                exc_info=True,
+            )
+            raise LoadError(
+                f"An unexpected error occurred during saving HuggingFace data to {output_file}: {e}",
+                destination=str(output_file),
+                destination_type="file",
+            ) from e

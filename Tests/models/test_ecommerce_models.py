@@ -10,28 +10,17 @@ try:
 
     from src.models.ecommerce import ShoppyProduct, ShoppyRawData
 except ImportError as e:
-    print(f"Error importing modules: {e}. Ensure PYTHONPATH is set correctly or run from project root.")
+    print(
+        f"Error importing modules: {e}. Ensure PYTHONPATH is set correctly or run from project root."
+    )
     sys.exit(1)
+
 
 def test_shoppy_product_valid_creation():
     print("Testing ShoppyProduct Valid Creation...")
     try:
-        now = datetime.now()
-        product_data = {
-
-
-
-
-
-
-
-
-
-
-
-
-
-        }
+        datetime.now()
+        product_data = {}
         product = ShoppyProduct(**product_data)
         assert product.product_id == "test_prod_001"
         assert product.name == "Test Product"
@@ -45,40 +34,58 @@ def test_shoppy_product_valid_creation():
         print(f"ShoppyProduct Valid Creation: FAILED - {e}")
         return False
 
+
 def test_shoppy_product_invalid_data():
     print("\nTesting ShoppyProduct Invalid Data...")
     try:
         # Missing required fields
         try:
-            ShoppyProduct(product_id="incomplete") # name, price, url, fetched_at, parsed_at are missing
-            print("ShoppyProduct Invalid Data: FAILED - ValidationError not raised for missing fields")
+            ShoppyProduct(
+                product_id="incomplete"
+            )  # name, price, url, fetched_at, parsed_at are missing
+            print(
+                "ShoppyProduct Invalid Data: FAILED - ValidationError not raised for missing fields"
+            )
             return False
         except ValidationError:
-            pass # Expected
+            pass  # Expected
 
         # Invalid URL
         try:
             now = datetime.now()
             ShoppyProduct(
-                product_id="badurl", name="Bad URL Product", price="1.00", url="not-a-url",
-                fetched_at=now, parsed_at=now
+                product_id="badurl",
+                name="Bad URL Product",
+                price="1.00",
+                url="not-a-url",
+                fetched_at=now,
+                parsed_at=now,
             )
-            print("ShoppyProduct Invalid Data: FAILED - ValidationError not raised for invalid URL")
+            print(
+                "ShoppyProduct Invalid Data: FAILED - ValidationError not raised for invalid URL"
+            )
             return False
         except ValidationError:
-            pass # Expected
+            pass  # Expected
 
         # Invalid data type for rating
         try:
             now = datetime.now()
             ShoppyProduct(
-                product_id="badrating", name="Bad Rating", price="1.00", url="http://example.com",
-                fetched_at=now, parsed_at=now, rating="not-a-float"
+                product_id="badrating",
+                name="Bad Rating",
+                price="1.00",
+                url="http://example.com",
+                fetched_at=now,
+                parsed_at=now,
+                rating="not-a-float",
             )
-            print("ShoppyProduct Invalid Data: FAILED - ValidationError not raised for invalid rating type")
+            print(
+                "ShoppyProduct Invalid Data: FAILED - ValidationError not raised for invalid rating type"
+            )
             return False
         except ValidationError:
-            pass # Expected
+            pass  # Expected
 
         print("ShoppyProduct Invalid Data: PASSED")
         return True
@@ -86,15 +93,12 @@ def test_shoppy_product_invalid_data():
         print(f"ShoppyProduct Invalid Data: FAILED - Unexpected error: {e}")
         return False
 
+
 def test_shoppy_raw_data_creation():
     print("\nTesting ShoppyRawData Creation...")
     try:
-        now = datetime.now()
-        raw_data_payload = {
-
-
-
-        }
+        datetime.now()
+        raw_data_payload = {}
         raw_data_obj = ShoppyRawData(**raw_data_payload)
         assert raw_data_obj.product_id == "raw_001"
         assert "HTML content" in raw_data_obj.raw_content
@@ -106,6 +110,7 @@ def test_shoppy_raw_data_creation():
     except Exception as e:
         print(f"ShoppyRawData Creation: FAILED - {e}")
         return False
+
 
 def main():
     print("E-commerce Models Test Suite")
@@ -133,6 +138,7 @@ def main():
         sys.exit(1)
     else:
         print("All E-commerce Models tests passed!")
+
 
 if __name__ == "__main__":
     main()

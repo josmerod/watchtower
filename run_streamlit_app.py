@@ -2,6 +2,7 @@
 """Script para ejecutar la aplicación Streamlit de Watchtower
 Configura los paths correctamente y ejecuta la aplicación.
 """
+
 import os
 import subprocess
 import sys
@@ -16,11 +17,11 @@ def main():
 
     # Agregar src al PYTHONPATH
     env = os.environ.copy()
-    current_pythonpath = env.get('PYTHONPATH', '')
+    current_pythonpath = env.get("PYTHONPATH", "")
     if current_pythonpath:
-        env['PYTHONPATH'] = f"{src_dir}{os.pathsep}{current_pythonpath}"
+        env["PYTHONPATH"] = f"{src_dir}{os.pathsep}{current_pythonpath}"
     else:
-        env['PYTHONPATH'] = str(src_dir)
+        env["PYTHONPATH"] = str(src_dir)
 
     print("🚀 Iniciando Watchtower Streamlit App...")
     print(f"📁 Directorio del proyecto: {script_dir}")
@@ -33,10 +34,20 @@ def main():
 
     # Ejecutar streamlit
     try:
-        result = subprocess.run([
-            sys.executable, "-m", "streamlit", "run", "app.py",
-            "--server.port", "8502"
-        ], cwd=streamlit_dir, env=env, check=True)
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "streamlit",
+                "run",
+                "app.py",
+                "--server.port",
+                "8502",
+            ],
+            cwd=streamlit_dir,
+            env=env,
+            check=True,
+        )
         print("✅ Streamlit ejecutado exitosamente")
     except subprocess.CalledProcessError as e:
         print(f"❌ Error ejecutando Streamlit: {e}")
@@ -46,6 +57,7 @@ def main():
         return 0
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

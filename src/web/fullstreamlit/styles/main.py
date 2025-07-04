@@ -2,6 +2,7 @@
 Contains all the CSS styling used throughout the application.
 """
 
+
 def get_main_style():
     """Returns the main CSS styling for the application."""
     return """

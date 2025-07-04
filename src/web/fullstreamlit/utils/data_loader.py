@@ -3,6 +3,7 @@
 This module provides functions to load course data from various platforms
 like Coursera, typically from JSON files, and returns them as Pandas DataFrames.
 """
+
 import json
 import os
 
@@ -25,7 +26,7 @@ def load_coursera_courses() -> pd.DataFrame:
             print(f"Coursera data file not found at: {coursera_file}")
             return pd.DataFrame()
 
-        with open(coursera_file, encoding='utf-8') as f:
+        with open(coursera_file, encoding="utf-8") as f:
             coursera_data = json.load(f)
 
         df = pd.DataFrame(coursera_data)
@@ -34,6 +35,7 @@ def load_coursera_courses() -> pd.DataFrame:
     except Exception as e:
         print(f"Error loading Coursera data: {e}")
         return pd.DataFrame()
+
 
 def load_courses_data() -> dict[str, pd.DataFrame]:
     """Load courses data from all available platforms.

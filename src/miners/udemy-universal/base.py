@@ -78,6 +78,7 @@ class RaisingThread(threading.Thread):
     If an exception occurs within the `run` method of this thread, it is stored
     and can be re-raised when `join()` is called.
     """
+
     def run(self):
         """Overrides the default Thread.run() to catch exceptions."""
         self._exc = None
@@ -484,7 +485,9 @@ class Scraper:
         button clicks or redirect following.
         """
         site_code = "uf"
-        processed_count = 0  # Initialize processed_count at the beginning to avoid UnboundLocalError
+        processed_count = (
+            0  # Initialize processed_count at the beginning to avoid UnboundLocalError
+        )
         try:
             all_items = []
             head = {
@@ -529,7 +532,9 @@ class Scraper:
                             browser.close()
                     except Exception as browser_error:
                         if self.debug:
-                            print(f"{site_code.upper()}: Playwright browser error: {browser_error}")
+                            print(
+                                f"{site_code.upper()}: Playwright browser error: {browser_error}"
+                            )
                         use_playwright = False  # Fall back to requests
                         content = self.fetch_page_content(url, headers=head)
                 else:
@@ -900,7 +905,9 @@ class Scraper:
         visits intermediate pages to find the final Udemy course link.
         """
         site_code = "rd"
-        processed_count = 0  # Initialize processed_count at the beginning to avoid UnboundLocalError
+        processed_count = (
+            0  # Initialize processed_count at the beginning to avoid UnboundLocalError
+        )
         try:
             # Ensure Playwright is available
             try:
@@ -2364,7 +2371,11 @@ class Scraper:
                         print(
                             f"{site_code.upper()}: Playwright browsers not installed. Run 'playwright install'. Error: {browser_error}"
                         )
-                    setattr(self, f"{site_code}_error", f"Playwright browsers not installed: {browser_error}")
+                    setattr(
+                        self,
+                        f"{site_code}_error",
+                        f"Playwright browsers not installed: {browser_error}",
+                    )
                     setattr(self, f"{site_code}_length", -1)
                     setattr(self, f"{site_code}_done", True)
                     return

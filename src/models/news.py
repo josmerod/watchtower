@@ -210,7 +210,7 @@ class NewsArticleModel(TimestampedModel):
             return v.strip()
         return v
 
-    @field_validator("word_count", mode='before')
+    @field_validator("word_count", mode="before")
     @classmethod
     def calculate_word_count(cls, v: int | None, values: dict) -> int | None:
         """Calculate word count from content if not provided.
@@ -230,7 +230,7 @@ class NewsArticleModel(TimestampedModel):
             return len(content.split())
         return None
 
-    @field_validator("reading_time_minutes", mode='before')
+    @field_validator("reading_time_minutes", mode="before")
     @classmethod
     def calculate_reading_time(cls, v: int | None, values: dict) -> int | None:
         """Calculate reading time based on word count.
