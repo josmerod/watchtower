@@ -1,17 +1,16 @@
 # src/models/ecommerce.py
-from typing import Optional
-from pydantic import BaseModel, HttpUrl
 from datetime import datetime
 
+from pydantic import BaseModel, HttpUrl
+
+
 class ShoppyProduct(BaseModel):
-    """
-    Data model for a product listed on Shoppy.gg or similar platforms.
-    """
+    """Data model for a product listed on Shoppy.gg or similar platforms."""
     product_id: str
     name: str
     price: str  # Keeping as string for now, can be parsed to float/decimal later if needed and currency is consistent
-    seller: Optional[str] = None
-    description: Optional[str] = None
+    seller: str | None = None
+    description: str | None = None
     url: HttpUrl
 
     # Timestamps for tracking when data was fetched and parsed
@@ -19,18 +18,16 @@ class ShoppyProduct(BaseModel):
     parsed_at: datetime
 
     # Optional fields that might be useful
-    category: Optional[str] = None
-    stock_status: Optional[str] = None # e.g., "In Stock", "Out of Stock"
-    rating: Optional[float] = None # e.g., 4.5
-    num_reviews: Optional[int] = None
+    category: str | None = None
+    stock_status: str | None = None # e.g., "In Stock", "Out of Stock"
+    rating: float | None = None # e.g., 4.5
+    num_reviews: int | None = None
 
     # To store any other relevant data not fitting the predefined fields
-    additional_info: Optional[dict] = None
+    additional_info: dict | None = None
 
 class ShoppyRawData(BaseModel):
-    """
-    Model for the raw data fetched before parsing.
-    """
+    """Model for the raw data fetched before parsing."""
     product_id: str
     raw_content: str # Could be HTML, JSON string, etc.
     fetched_at: datetime

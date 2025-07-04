@@ -5,10 +5,10 @@ This script provides a convenient way to deduplicate existing course files.
 It can be used as a standalone tool or as part of an ETL pipeline.
 """
 
-import os
-import sys
 import argparse
 import logging
+import os
+import sys
 from pathlib import Path
 
 # Add project root to Python path
@@ -29,49 +29,49 @@ def parse_args():
         description="Deduplicate courses in JSON files",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    
+
     # Primary arguments
     parser.add_argument(
-        "input_file", 
+        "input_file",
         help="Path to the input JSON file or directory containing JSON files"
     )
-    
+
     parser.add_argument(
-        "--output-file", 
+        "--output-file",
         help="Path to save the deduplicated JSON file (defaults to input file)"
     )
-    
+
     parser.add_argument(
-        "--key-field", 
-        choices=["url", "title"], 
+        "--key-field",
+        choices=["url", "title"],
         default="url",
         help="Field to use for deduplication"
     )
-    
+
     parser.add_argument(
-        "--prefer-older", 
+        "--prefer-older",
         action="store_true",
         help="Keep older entries when duplicates are found (default: keep newer)"
     )
-    
+
     parser.add_argument(
-        "--recursive", 
+        "--recursive",
         action="store_true",
         help="Process directories recursively (only if input is a directory)"
     )
-    
+
     parser.add_argument(
-        "--backup", 
+        "--backup",
         action="store_true",
         help="Create backup of original files before modifying"
     )
-    
+
     parser.add_argument(
-        "--verbose", "-v", 
+        "--verbose", "-v",
         action="store_true",
         help="Enable verbose output"
     )
-    
+
     return parser.parse_args()
 
 
@@ -87,7 +87,7 @@ def process_single_file(input_file, output_file, key_field, prefer_newer, backup
         except Exception as e:
             logger.error(f"Failed to create backup: {e}")
             return False
-    
+
     try:
         output_path, removed_count = deduplicate_courses_file(
             input_file,
@@ -95,12 +95,12 @@ def process_single_file(input_file, output_file, key_field, prefer_newer, backup
             prefer_newer=prefer_newer,
             output_path=output_file
         )
-        
+
         if removed_count > 0:
             logger.info(f"Successfully removed {removed_count} duplicates from {input_file}")
         else:
             logger.info(f"No duplicates found in {input_file}")
-            
+
         return True
     except Exception as e:
         logger.error(f"Error processing {input_file}: {e}")
@@ -111,44 +111,44 @@ def process_directory(directory, key_field, prefer_newer, backup, recursive):
     """Process all JSON files in a directory."""
     success_count = 0
     error_count = 0
-    
+
     # Get all json files
     if recursive:
         json_files = list(Path(directory).glob("**/*.json"))
     else:
         json_files = list(Path(directory).glob("*.json"))
-    
+
     if not json_files:
         logger.warning(f"No JSON files found in {directory}")
         return 0, 0
-    
+
     logger.info(f"Found {len(json_files)} JSON files to process")
-    
+
     for json_file in json_files:
         if process_single_file(str(json_file), str(json_file), key_field, prefer_newer, backup):
             success_count += 1
         else:
             error_count += 1
-    
+
     return success_count, error_count
 
 
 def main():
     """Main entry point."""
     args = parse_args()
-    
+
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    
+
     # Process input
     input_path = args.input_file
-    
+
     if os.path.isdir(input_path):
         # Process directory
         logger.info(f"Processing directory: {input_path}")
         success_count, error_count = process_directory(
-            input_path, 
-            args.key_field, 
+            input_path,
+            args.key_field,
             not args.prefer_older,
             args.backup,
             args.recursive
@@ -166,9 +166,9 @@ def main():
     else:
         logger.error(f"Input path does not exist: {input_path}")
         sys.exit(1)
-    
+
     logger.info("All operations completed")
 
 
 if __name__ == "__main__":
-    main() 
+    main()

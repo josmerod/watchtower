@@ -1,32 +1,32 @@
 # src/etl/courses/aws_training_etl.py
-import os
-import sys
 import json
-from datetime import datetime, timezone
-from typing import List, Dict, Any
+import os
+from datetime import timezone
+from typing import Any
+
 import feedparser
-import pandas as pd # type: ignore
-from dateutil import parser as date_parser # For robust date parsing
+import pandas as pd  # type: ignore
+from dateutil import parser as date_parser  # For robust date parsing
+
+from utils.file_system import ensure_directories, get_project_root
 
 # Ensure project root is on path
 from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("AWSTrainingETL")
 
 # RSS feed for AWS Training and Certification Blog
-RSS_FEEDS: Dict[str, str] = {
+RSS_FEEDS: dict[str, str] = {
     "aws_training_certification": "https://aws.amazon.com/blogs/training-and-certification/feed/"
 }
 
-def fetch_aws_training_feed() -> List[Dict[str, Any]]:
-    """
-    Fetches and parses RSS feed from the AWS Training and Certification blog.
+def fetch_aws_training_feed() -> list[dict[str, Any]]:
+    """Fetches and parses RSS feed from the AWS Training and Certification blog.
 
     Returns:
         List of entries with metadata from the RSS feed.
     """
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     source_name = "aws_training_certification" # Should be the key from RSS_FEEDS
     url = RSS_FEEDS[source_name]
 
@@ -83,9 +83,8 @@ def fetch_aws_training_feed() -> List[Dict[str, Any]]:
     return entries
 
 
-def save_aws_training_entries(entries: List[Dict[str, Any]]) -> None:
-    """
-    Saves AWS Training blog entries to JSON and CSV in the data/courses directory.
+def save_aws_training_entries(entries: list[dict[str, Any]]) -> None:
+    """Saves AWS Training blog entries to JSON and CSV in the data/courses directory.
 
     Args:
         entries: List of AWS Training blog entry dictionaries.
@@ -128,8 +127,7 @@ def save_aws_training_entries(entries: List[Dict[str, Any]]) -> None:
 
 
 def main() -> None:
-    """
-    Main entry point for the AWS Training RSS ETL process.
+    """Main entry point for the AWS Training RSS ETL process.
     """
     logger.info("Starting AWS Training RSS ETL process")
     aws_entries = fetch_aws_training_feed()
@@ -139,4 +137,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-```

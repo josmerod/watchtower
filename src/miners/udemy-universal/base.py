@@ -33,7 +33,7 @@ except ImportError:
     ROOKIEPY_AVAILABLE = False
     print("rookiepy package not available - some functionality may be limited")
 
-from colors import fb, fc, fg, flb, flg, fm, fr, fy
+from colors import fr, fy
 from logger import LoggerAdapter, get_logger
 
 # Version number
@@ -63,7 +63,7 @@ scrapper_max_retries = 5  # retries
 
 
 class LoginException(Exception):
-    """Login Error
+    """Login Error.
 
     Args:
         Exception (str): Exception Reason
@@ -99,14 +99,15 @@ def resource_path(relative_path):
 
 
 class Scraper:
-    """Scrapers: RD,TB, CV, IDC, EN, DU, UF, CJ, UF, CD
-    """
+    """Scrapers: RD,TB, CV, IDC, EN, DU, UF, CJ, UF, CD."""
 
     def __init__(
         self,
-        site_to_scrape: list = list(scraper_dict.keys()),
+        site_to_scrape: list | None = None,
         debug: bool = False,
     ):
+        if site_to_scrape is None:
+            site_to_scrape = list(scraper_dict.keys())
         self.sites = site_to_scrape
         self.debug = debug
         self.logger = get_logger(__name__, debug=debug)
@@ -363,7 +364,7 @@ class Scraper:
             return ""
 
     def _handle_linksynergy(self, parsed_url, link):
-        """Handle LinkSynergy redirector links"""
+        """Handle LinkSynergy redirector links."""
         query_params = parse_qs(parsed_url.query)
         udemy_link = ""
         # Check for common redirect parameters
@@ -377,7 +378,7 @@ class Scraper:
         return ""
 
     def _handle_generic_redirector(self, parsed_url, link):
-        """Handle generic redirectors by following redirects"""
+        """Handle generic redirectors by following redirects."""
         try:
             response = requests.head(
                 link, allow_redirects=True, timeout=scrapper_timeout_period
@@ -914,7 +915,6 @@ class Scraper:
                 setattr(self, f"{site_code}_done", True)
                 return
 
-            all_items_details = []
             base_url = "https://real.discount/udemy-coupon-codes"  # Changed URL to a more direct one
             if self.debug:
                 print(f"Starting {site_code.upper()} scraper (uses Playwright)...")
@@ -2723,16 +2723,6 @@ class Udemy:
 
         # For GUI interface, still use the window output
         if self.interface == "gui":
-            colours_dict = {
-                "yellow": fy,
-                "red": fr,
-                "blue": fb,
-                "light blue": flb,
-                "green": fg,
-                "light green": flg,
-                "cyan": fc,
-                "magenta": fm,
-            }
             self.window["out"].print(content, text_color=color, **kargs)
 
         # Always log to the central logging system regardless of interface
@@ -2747,7 +2737,7 @@ class Udemy:
         return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def load_settings(self):
-        """Load settings from file"""
+        """Load settings from file."""
         try:
             settings_file = (
                 "duce-cli-settings.json" if self.interface == "cli" else "settings.json"
@@ -2805,7 +2795,7 @@ class Udemy:
         }
 
     def fetch_cookies(self):
-        """Fetch browser cookies for login"""
+        """Fetch browser cookies for login."""
         self.logger.info("Fetching cookies from browser")
         try:
             cookies = rookiepy.get_cookies("udemy.com")
@@ -2820,7 +2810,7 @@ class Udemy:
             raise
 
     def get_enrolled_courses(self):
-        """Get list of already enrolled courses"""
+        """Get list of already enrolled courses."""
         self.logger.info("Fetching enrolled courses list")
         page = 1
         next_page = True
@@ -2839,7 +2829,7 @@ class Udemy:
         self.logger.info(f"Found {len(enrolled_courses)} enrolled courses")
 
     def check_for_update(self) -> tuple[str, str]:
-        """Check if there's a newer version available"""
+        """Check if there's a newer version available."""
         self.logger.info("Checking for updates")
         try:
             r = requests.get(
@@ -2869,7 +2859,7 @@ class Udemy:
             return "Login", "DUCE"
 
     def manual_login(self, email: str, password: str):
-        """Manually login using email and password"""
+        """Manually login using email and password."""
         self.logger.info("Attempting manual login with email and password")
         s = requests.session()
         r = s.get(
@@ -2933,7 +2923,7 @@ class Udemy:
                 raise LoginException(login_error)
 
     def get_session_info(self):
-        """Get session info to verify login status"""
+        """Get session info to verify login status."""
         self.logger.info("Verifying login status")
         s = cloudscraper.CloudScraper()
         headers = {
@@ -3235,7 +3225,7 @@ class Udemy:
 
         total_courses = sum(len(courses) for courses in self.scraped_data.values())
         previous_courses_count = 0
-        for site_index, (site, courses) in enumerate(self.scraped_data.items()):
+        for _site_index, (site, courses) in enumerate(self.scraped_data.items()):
             self.print(f"\nSite: {site} [{len(courses)}]", color="cyan")
 
             for index, (title, link) in enumerate(courses):

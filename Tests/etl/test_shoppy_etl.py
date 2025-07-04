@@ -1,17 +1,15 @@
 # Tests/etl/test_shoppy_etl.py
 import sys
-import os
-import json
-from pathlib import Path
-from unittest.mock import patch, mock_open, MagicMock
 from datetime import datetime
+from pathlib import Path
+from unittest.mock import mock_open, patch
 
 # Add project root to Python path
 project_root = Path(__file__).resolve().parent.parent.parent
 # Ensure the module can be imported
 try:
     from src.etl.ecommerce.shoppy_etl import ShoppyScraper, run_shoppy_etl
-    from src.models.ecommerce import ShoppyProduct # Expected to be used by ETL output
+    from src.models.ecommerce import ShoppyProduct  # Expected to be used by ETL output
 except ImportError as e:
     print(f"Error importing modules: {e}. Ensure PYTHONPATH is set correctly or run from project root.")
     sys.exit(1)

@@ -1,13 +1,15 @@
-import logging # Keep logging for the __main__ block, if needed, or for specific logger instances
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+import logging  # Keep logging for the __main__ block, if needed, or for specific logger instances
+from typing import Any
 
 import requests
+
 # BaseModel might not be directly needed if VirtualMuseumModel and SimpleETL handle it
 from pydantic import ValidationError
 
 # Actual imports:
-from etl.base import SimpleETL #, ETLMetrics # ETLMetrics is part of BaseETL/SimpleETL typically
+from etl.base import (
+    SimpleETL,  #, ETLMetrics # ETLMetrics is part of BaseETL/SimpleETL typically
+)
 from models.museums import VirtualMuseumModel
 
 # WIKIDATA_SPARQL_URL can be defined before the class or within if it's specific
@@ -20,7 +22,7 @@ class VirtualMuseumsETL(SimpleETL):
             description="ETL process for fetching virtual museum data from Wikidata."
         )
 
-    def extract(self) -> List[Dict[str, Any]]:
+    def extract(self) -> list[dict[str, Any]]:
         self.logger.info("Starting data extraction for virtual museums from Wikidata.")
 
         sparql_query = """
@@ -65,7 +67,7 @@ class VirtualMuseumsETL(SimpleETL):
         }
         params = {'query': sparql_query}
 
-        extracted_items: List[Dict[str, Any]] = []
+        extracted_items: list[dict[str, Any]] = []
 
         try:
             self.logger.info(f"Querying Wikidata SPARQL endpoint: {WIKIDATA_SPARQL_URL}")
@@ -121,10 +123,10 @@ class VirtualMuseumsETL(SimpleETL):
 
         return extracted_items
 
-    def transform(self, data: List[Dict[str, Any]]) -> List[VirtualMuseumModel]:
+    def transform(self, data: list[dict[str, Any]]) -> list[VirtualMuseumModel]:
         self.logger.info(f"Starting data transformation for {len(data)} raw items.")
 
-        transformed_models: List[VirtualMuseumModel] = []
+        transformed_models: list[VirtualMuseumModel] = []
         failed_count = 0
 
         for item_data in data:
@@ -164,7 +166,7 @@ if __name__ == "__main__":
     etl_process = VirtualMuseumsETL()
     metrics = etl_process.run()
 
-    logging.info(f"Virtual Museums ETL script finished. Metrics:")
+    logging.info("Virtual Museums ETL script finished. Metrics:")
     logging.info(metrics.model_dump_json(indent=2))
 
     # Example of how to check status and handle results

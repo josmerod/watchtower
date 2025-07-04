@@ -74,8 +74,6 @@ class HumbleBundleScraper:
 
     def _extract_bundles_with_bs(self, soup, bundle_type: str, all_bundles: list):
         """Extracts bundle elements from HTML content using BeautifulSoup."""
-        from bs4 import BeautifulSoup
-        
         bundle_elements = []
         selectors = [
             "div.tile, div.mosaic-tile",
@@ -245,7 +243,7 @@ class HumbleBundleScraper:
             List of bundle metadata dictionaries.
         """
         from playwright.async_api import async_playwright
-        
+
         all_bundles = []
         bundle_sources = [
             ("https://www.humblebundle.com/games", "games"),
@@ -257,7 +255,7 @@ class HumbleBundleScraper:
         browser = None
         context = None
         page = None
-        
+
         try:
             async with async_playwright() as p_manager:
                 browser, context = await self._setup_playwright(p_manager)
@@ -629,10 +627,7 @@ class HumbleBundleScraper:
             for key in price_keys:
                 if bundle.get(key):
                     price_val = bundle[key]
-                    if isinstance(price_val, str):
-                        price = price_val
-                    else:
-                        price = f"${price_val}"
+                    price = price_val if isinstance(price_val, str) else f"${price_val}"
                     break
 
             # Extract games/content items

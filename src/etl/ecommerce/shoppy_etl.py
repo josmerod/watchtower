@@ -14,8 +14,7 @@ PROCESSED_DATA_PATH = os.path.join(DATA_DIR, "shoppy_processed_data.json")
 
 
 class ShoppyScraper:
-    """
-    A scraper for fetching product data from Shoppy.gg.
+    """A scraper for fetching product data from Shoppy.gg.
     This is a placeholder and needs actual scraping logic.
     """
 
@@ -26,8 +25,7 @@ class ShoppyScraper:
         logging.info(f"ShoppyScraper initialized for base URL: {self.base_url}")
 
     def fetch_product_data(self, product_id: str):
-        """
-        Placeholder for fetching raw data for a specific product.
+        """Placeholder for fetching raw data for a specific product.
         In reality, this would involve HTTP requests to the product page.
         """
         logging.info(f"Attempting to fetch data for product ID: {product_id} (placeholder)")
@@ -41,9 +39,7 @@ class ShoppyScraper:
         return {"product_id": product_id, "raw_content": raw_html, "fetched_at": datetime.now().isoformat()}
 
     def parse_product_data(self, raw_data: dict):
-        """
-        Placeholder for parsing raw product data (e.g., HTML) into a structured format.
-        """
+        """Placeholder for parsing raw product data (e.g., HTML) into a structured format."""
         logging.info(f"Parsing raw data for product ID: {raw_data.get('product_id')} (placeholder)")
         # Replace this with actual parsing logic (e.g., using BeautifulSoup)
         # Example: soup = BeautifulSoup(raw_data["raw_content"], "html.parser")
@@ -62,9 +58,7 @@ class ShoppyScraper:
         return parsed_product
 
 def run_shoppy_etl(product_ids: list[str]):
-    """
-    Runs the ETL process for Shoppy.gg for a list of product IDs.
-    """
+    """Runs the ETL process for Shoppy.gg for a list of product IDs."""
     logging.info("Starting Shoppy.gg ETL process...")
     os.makedirs(DATA_DIR, exist_ok=True)
 

@@ -2,7 +2,6 @@ import concurrent.futures
 import json
 import logging
 import os
-import sys
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -143,7 +142,7 @@ def get_channel_videos_by_id(
 
 
 def process_youtube_channels(
-    channel_handles: list[str], published_after: str = None
+    channel_handles: list[str], published_after: str | None = None
 ) -> list[dict]:
     """Process multiple YouTube channels concurrently and combine their videos."""
     all_videos = []
@@ -179,7 +178,7 @@ def process_youtube_channels(
     return all_videos
 
 
-def process_topic(topic: str, channels: list[str], published_after: str = None):
+def process_topic(topic: str, channels: list[str], published_after: str | None = None):
     """Process a specific topic and save its results to separate files."""
     logger.info(f"Procesando tema: {topic}")
 
@@ -220,7 +219,7 @@ def process_topic(topic: str, channels: list[str], published_after: str = None):
     )
 
 
-def main(topics: list[str] = None):
+def main(topics: list[str] | None = None):
     """Main function to fetch and process YouTube channel videos by topic."""
     logger.info("Iniciando proceso ETL de canales de YouTube")
 

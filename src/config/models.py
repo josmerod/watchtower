@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl, validator
 
@@ -36,7 +35,7 @@ class DatabaseConfig(BaseModel):
     max_overflow: int = Field(default=10, ge=0, le=100, description="Max pool overflow")
 
     @validator("url")
-    def validate_url(cls, v: str) -> str:
+    def validate_url(self, v: str) -> str:
         """Validate database URL format."""
         if not v.startswith(("sqlite://", "postgresql://", "mysql://", "oracle://")):
             raise ValueError("Invalid database URL scheme")
@@ -112,8 +111,8 @@ class APIConfig(BaseModel):
     cors_methods: list[str] = Field(
         default=["GET", "POST", "PUT", "DELETE"], description="CORS allowed methods"
     )
-    news_api_key: Optional[str] = Field(default=None, description="API key for NewsAPI")
-    mal_client_id: Optional[str] = Field(default=None, description="MyAnimeList API Client ID")
+    news_api_key: str | None = Field(default=None, description="API key for NewsAPI")
+    mal_client_id: str | None = Field(default=None, description="MyAnimeList API Client ID")
 
 
 class StreamlitConfig(BaseModel):
@@ -141,7 +140,7 @@ class SecurityConfig(BaseModel):
     )
 
     @validator("secret_key")
-    def validate_secret_key(cls, v: str) -> str:
+    def validate_secret_key(self, v: str) -> str:
         """Validate secret key strength."""
         if len(v) < 32:
             raise ValueError("Secret key must be at least 32 characters long")

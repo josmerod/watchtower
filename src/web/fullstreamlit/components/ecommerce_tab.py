@@ -1,15 +1,15 @@
 # src/web/fullstreamlit/components/ecommerce_tab.py
-import streamlit as st
-import pandas as pd
 import json
 import os
+
+import pandas as pd
+import streamlit as st
 
 # Define the path to the processed Shoppy.gg data
 DATA_FILE_PATH = "data/shoppy/shoppy_processed_data.json"
 
 def load_shoppy_data():
-    """
-    Loads processed Shoppy.gg data from the JSON file.
+    """Loads processed Shoppy.gg data from the JSON file.
     Returns a pandas DataFrame or None if data cannot be loaded.
     """
     if not os.path.exists(DATA_FILE_PATH):
@@ -18,7 +18,7 @@ def load_shoppy_data():
         return None
 
     try:
-        with open(DATA_FILE_PATH, "r") as f:
+        with open(DATA_FILE_PATH) as f:
             data = json.load(f)
         if not data:
             st.info("No Shoppy.gg data found. The data file is empty.")
@@ -32,9 +32,7 @@ def load_shoppy_data():
         return None
 
 def render(logger):
-    """
-    Renders the Shoppy.gg data tab in the Streamlit application.
-    """
+    """Renders the Shoppy.gg data tab in the Streamlit application."""
     st.header("🛍️ Shoppy.gg Tracker")
 
     df_shoppy = load_shoppy_data()

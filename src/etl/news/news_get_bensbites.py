@@ -1,4 +1,4 @@
-"""Ben's Bites ETL Module
+"""Ben's Bites ETL Module.
 
 This module fetches and processes news articles from Ben's Bites using Playwright.
 It follows the same output structure as other news ETL scripts in the project.
@@ -14,7 +14,6 @@ Output:
 import json
 import os
 import random
-import sys
 import time
 from datetime import datetime, timedelta
 from typing import Any

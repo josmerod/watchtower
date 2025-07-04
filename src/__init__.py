@@ -11,13 +11,13 @@ __author__ = "Watchtower Team"
 __email__ = "team@watchtower.dev"
 
 # Export main classes for easier imports
-from watchers.base_watcher import BaseWatcher
-from utils.logging import get_logger
 from utils.file_system import ensure_directories, get_project_root
+from utils.logging import get_logger
+from watchers.base_watcher import BaseWatcher
 
 __all__ = [
     "BaseWatcher",
-    "get_logger", 
     "ensure_directories",
+    "get_logger",
     "get_project_root",
-] 
+]

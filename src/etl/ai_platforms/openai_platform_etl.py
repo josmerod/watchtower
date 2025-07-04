@@ -13,14 +13,13 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Any
-import os # Required for IOError, OSError
 
 import requests
 from bs4 import BeautifulSoup
 
 from etl.base import BaseETL
-from utils.logging import get_logger
 from exceptions.etl import LoadError
+from utils.logging import get_logger
 
 
 class OpenAIPlatformETL(BaseETL):
@@ -305,7 +304,7 @@ class OpenAIPlatformETL(BaseETL):
     def _assess_announcement_impact(self, post: dict[str, Any]) -> str:
         """Assess the impact level of a blog announcement."""
         title = post.get("title", "").lower()
-        tags = [tag.lower() for tag in post.get("tags", [])]
+        [tag.lower() for tag in post.get("tags", [])]
 
         # High impact indicators
         high_impact_keywords = [
@@ -706,11 +705,11 @@ class OpenAIPlatformETL(BaseETL):
             self.logger.info(f"Successfully updated latest OpenAI data at {latest_file}")
 
             self.metrics.records_loaded = len(data)
-            
+
             # Generate OpenAI-specific summary
             self._generate_openai_summary(data, timestamp)
 
-        except (IOError, OSError) as e:
+        except OSError as e:
             self.logger.error(f"Failed to save OpenAI data to {output_file} or {latest_file}: {e}")
             raise LoadError(f"Failed to save OpenAI data: {e}", destination=str(output_file), destination_type="file") from e
         except Exception as e: # Catch any other unexpected errors during load (e.g., _generate_openai_summary)

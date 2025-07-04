@@ -135,15 +135,15 @@ class DeepLearningAIScraper:
 
                         # Find course cards - try multiple selectors
                         course_elements = soup.find_all("div", class_="course-card")
-                        
+
                         if not course_elements:
                             # Try alternative selectors
                             course_elements = soup.find_all("article", class_="course")
-                        
+
                         if not course_elements:
                             # Try more generic selectors
                             course_elements = soup.find_all("div", attrs={"data-course": True})
-                        
+
                         if not course_elements:
                             # Try searching for links to courses
                             course_links = soup.find_all("a", href=lambda x: x and "/courses/" in x)
@@ -157,7 +157,7 @@ class DeepLearningAIScraper:
                                         course_data = self.extract_course_from_link(link, soup)
                                         if course_data:
                                             all_courses.append(course_data)
-                                
+
                                 if unique_courses:
                                     logger.info(f"Found {len(unique_courses)} course links on page {page_num}")
                                     page_num += 1
@@ -177,15 +177,15 @@ class DeepLearningAIScraper:
                             logger.error(
                                 f"No courses found on page {page_num}, saved debug info"
                             )
-                            
+
                             # Check if there's pagination or we've reached the end
                             pagination = soup.find("nav", class_="pagination") or soup.find("div", class_="pagination")
                             next_button = soup.find("a", string=lambda x: x and "next" in x.lower())
-                            
+
                             if not pagination and not next_button:
                                 logger.info("No pagination found, likely reached end")
                                 break
-                            
+
                             # Try next page anyway in case this was a temporary issue
                             page_num += 1
                             if page_num > 3:  # Don't try too many empty pages
@@ -226,22 +226,22 @@ class DeepLearningAIScraper:
             if title_text:
                 # Clean up the title by removing common prefixes and suffixes
                 clean_title = title_text
-                
+
                 # Remove common prefixes
                 for prefix in ["Course", "Specialization", "Certificate"]:
                     if clean_title.startswith(prefix):
                         clean_title = clean_title[len(prefix):].strip()
-                
+
                 # If title contains "DeepLearning.AI" at the end, split there
                 if "DeepLearning.AI" in clean_title:
                     parts = clean_title.split("DeepLearning.AI")
                     clean_title = parts[0].strip()
-                
+
                 # If title contains "Stanford Online" at the end, split there
                 if "Stanford Online" in clean_title:
                     parts = clean_title.split("Stanford Online")
                     clean_title = parts[0].strip()
-                
+
                 course_data["title"] = clean_title
 
             # Extract URL
@@ -255,7 +255,7 @@ class DeepLearningAIScraper:
             # Set provider
             course_data["provider"] = "DeepLearning.AI"
             course_data["institution"] = "DeepLearning.AI"
-            
+
             # Try to extract additional info from parent elements
             parent = link_element.parent
             if parent:
@@ -263,7 +263,7 @@ class DeepLearningAIScraper:
                 desc_elem = parent.find("p") or parent.find("div", class_="description")
                 if desc_elem:
                     course_data["description"] = desc_elem.get_text(strip=True)
-                    
+
             # Extract description from the original title text if it seems to contain description
             if title_text and len(title_text) > 100 and "description" not in course_data:
                 # If the original title is very long, likely contains description
@@ -305,7 +305,7 @@ class DeepLearningAIScraper:
                 course_element.find(class_="course-title") or
                 course_element.find("a")
             )
-            
+
             if title_element:
                 course_data["title"] = title_element.get_text(strip=True)
 

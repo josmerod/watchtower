@@ -113,7 +113,7 @@ def get_deals():
         deals_df.to_csv(deals_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
         logger.info(f"Deals saved to {deals_csv_path}")
 
-    except (IOError, OSError) as e:
+    except OSError as e:
         logger.error(f"Error saving deals data: {e}", exc_info=True)
     except ImportError:
         logger.error("Pandas library not found. Cannot save deals to CSV/JSON.", exc_info=True)
@@ -187,7 +187,7 @@ def get_bundles():
         bundles_df.to_csv(bundles_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
         logger.info(f"Bundles saved to {bundles_csv_path}")
 
-    except (IOError, OSError) as e:
+    except OSError as e:
         logger.error(f"Error saving bundles data: {e}", exc_info=True)
     except ImportError:
         logger.error("Pandas library not found. Cannot save bundles to CSV/JSON.", exc_info=True)
@@ -266,7 +266,7 @@ def get_giveaways():
         giveaways_df.to_csv(giveaways_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
         logger.info(f"Giveaways saved to {giveaways_csv_path}")
 
-    except (IOError, OSError) as e:
+    except OSError as e:
         logger.error(f"Error saving giveaways data: {e}", exc_info=True)
     except ImportError:
         logger.error("Pandas library not found. Cannot save giveaways to CSV/JSON.", exc_info=True)

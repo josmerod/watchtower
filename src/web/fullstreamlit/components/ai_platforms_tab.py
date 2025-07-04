@@ -8,14 +8,14 @@ Displays comprehensive AI platform intelligence including:
 - Developer adoption metrics
 """
 
-import streamlit as st
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
+
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-import json
-from pathlib import Path
+import streamlit as st
 
 from utils.logging import get_logger
 
@@ -24,22 +24,22 @@ logger = get_logger("StreamlitAIPlatforms")
 
 class AIPlatformDataCollector:
     """Collects AI platform intelligence data for dashboard display."""
-    
+
     def __init__(self):
         """Initialize AI platform data collector."""
         self.project_root = Path.cwd()
         self.ai_data_dir = self.project_root / "data" / "ai_models"
-        
-    def _load_ai_monitoring_data(self) -> List[Dict[str, Any]]:
+
+    def _load_ai_monitoring_data(self) -> list[dict[str, Any]]:
         """Load actual AI monitoring data from files."""
         try:
             # Try to load the latest AI models data
             latest_file = self.ai_data_dir / "ai_models_latest.json"
-            
+
             if latest_file.exists():
-                with open(latest_file, 'r', encoding='utf-8') as f:
+                with open(latest_file, encoding='utf-8') as f:
                     data = json.load(f)
-                
+
                 # Ensure data is always a list
                 if isinstance(data, dict):
                     # If it's a single dictionary, wrap it in a list
@@ -52,23 +52,23 @@ class AIPlatformDataCollector:
                     # If it's any other type, convert to empty list
                     logger.warning(f"AI monitoring data is unexpected type {type(data)}, returning empty list")
                     return []
-                
+
                 logger.info(f"Loaded {len(data)} AI model updates from monitoring system")
                 return data
             else:
                 logger.warning("No AI monitoring data file found, using fallback data")
                 return []
-                
+
         except Exception as e:
             logger.error(f"Error loading AI monitoring data: {e}")
             return []
-    
-    def get_ai_platform_intelligence(self) -> Dict[str, Any]:
+
+    def get_ai_platform_intelligence(self) -> dict[str, Any]:
         """Get comprehensive AI platform intelligence."""
         try:
             # Load real monitoring data
             monitoring_data = self._load_ai_monitoring_data()
-            
+
             intelligence_data = {
                 'overview': self._get_platform_overview(monitoring_data),
                 'model_releases': self._get_model_releases(monitoring_data),
@@ -78,33 +78,33 @@ class AIPlatformDataCollector:
                 'developer_adoption': self._get_developer_adoption(monitoring_data),
                 'status_monitoring': self._get_platform_status()
             }
-            
+
             return intelligence_data
-            
+
         except Exception as e:
             logger.error(f"Failed to collect AI platform intelligence: {e}")
             return self._get_fallback_data()
-    
-    def _get_platform_overview(self, monitoring_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+    def _get_platform_overview(self, monitoring_data: list[dict[str, Any]]) -> dict[str, Any]:
         """Get platform overview metrics from real data."""
         # Ensure monitoring_data is a list
         if not isinstance(monitoring_data, list):
             logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
             monitoring_data = []
-            
+
         # Analyze the monitoring data
         total_updates = len(monitoring_data)
-        
+
         # Count by provider
         provider_counts = {}
         for update in monitoring_data:
             provider = update.get('provider', 'unknown')
             provider_counts[provider] = provider_counts.get(provider, 0) + 1
-        
+
         # Get recent updates (last 7 days)
         recent_updates = []
         cutoff_date = datetime.now() - timedelta(days=7)
-        
+
         for update in monitoring_data:
             try:
                 pub_date = datetime.fromisoformat(update.get('published_at', '').replace('Z', '+00:00'))
@@ -112,7 +112,7 @@ class AIPlatformDataCollector:
                     recent_updates.append(update)
             except:
                 pass
-        
+
         return {
             'total_platforms_monitored': len(provider_counts),
             'active_models_tracked': total_updates,
@@ -128,27 +128,27 @@ class AIPlatformDataCollector:
             ],
             'last_updated': datetime.now().isoformat()
         }
-    
-    def _get_model_releases(self, monitoring_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def _get_model_releases(self, monitoring_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Get recent model releases from real monitoring data."""
         # Ensure monitoring_data is a list
         if not isinstance(monitoring_data, list):
             logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
             monitoring_data = []
-            
+
         model_releases = []
-        
+
         # Filter for model-related updates
         model_keywords = ['gpt', 'claude', 'gemini', 'model', 'release', 'launch', 'update']
-        
+
         for update in monitoring_data:
             title = update.get('title', '').lower()
             content = update.get('summary', '').lower()
-            
+
             # Check if this looks like a model release
             if any(keyword in title or keyword in content for keyword in model_keywords):
                 provider = update.get('provider', 'unknown').title()
-                
+
                 # Extract model info
                 model_release = {
                     'platform': provider,
@@ -164,17 +164,17 @@ class AIPlatformDataCollector:
                     'source_type': update.get('source_type', 'unknown'),
                     'market_impact': self._assess_market_impact(update)
                 }
-                
+
                 model_releases.append(model_release)
-        
+
         # Sort by date (newest first) and return top 20
         model_releases.sort(key=lambda x: x.get('release_date', ''), reverse=True)
         return model_releases[:20]
-    
-    def _infer_model_type(self, update: Dict[str, Any]) -> str:
+
+    def _infer_model_type(self, update: dict[str, Any]) -> str:
         """Infer model type from update content."""
         text = f"{update.get('title', '')} {update.get('summary', '')}".lower()
-        
+
         if any(keyword in text for keyword in ['vision', 'image', 'multimodal']):
             return 'Multimodal Model'
         elif any(keyword in text for keyword in ['code', 'programming', 'codex']):
@@ -185,14 +185,14 @@ class AIPlatformDataCollector:
             return 'Language Model'
         else:
             return 'AI Model'
-    
-    def _calculate_intelligence_score(self, update: Dict[str, Any]) -> float:
+
+    def _calculate_intelligence_score(self, update: dict[str, Any]) -> float:
         """Calculate intelligence score based on update content."""
         score = 0.5  # Base score
-        
+
         text = f"{update.get('title', '')} {update.get('summary', '')}".lower()
         provider = update.get('provider', '').lower()
-        
+
         # Provider bonus
         if provider == 'openai':
             score += 0.3
@@ -200,19 +200,19 @@ class AIPlatformDataCollector:
             score += 0.25
         elif provider == 'google':
             score += 0.2
-        
+
         # Content analysis
         high_impact_keywords = ['turbo', 'ultra', 'pro', 'breakthrough', 'revolutionary']
         if any(keyword in text for keyword in high_impact_keywords):
             score += 0.2
-        
+
         return min(score, 1.0)
-    
-    def _extract_capabilities(self, update: Dict[str, Any]) -> List[str]:
+
+    def _extract_capabilities(self, update: dict[str, Any]) -> list[str]:
         """Extract capabilities from update content."""
         text = f"{update.get('title', '')} {update.get('summary', '')}".lower()
         capabilities = []
-        
+
         capability_map = {
             'text generation': ['text', 'generation', 'writing', 'language'],
             'reasoning': ['reasoning', 'logic', 'problem solving'],
@@ -221,49 +221,49 @@ class AIPlatformDataCollector:
             'conversation': ['chat', 'conversation', 'dialogue'],
             'analysis': ['analysis', 'analytics', 'insights']
         }
-        
+
         for capability, keywords in capability_map.items():
             if any(keyword in text for keyword in keywords):
                 capabilities.append(capability)
-        
+
         return capabilities[:5]  # Limit to top 5
-    
-    def _assess_market_impact(self, update: Dict[str, Any]) -> str:
+
+    def _assess_market_impact(self, update: dict[str, Any]) -> str:
         """Assess market impact of the update."""
         text = f"{update.get('title', '')} {update.get('summary', '')}".lower()
         provider = update.get('provider', '').lower()
-        
+
         # High impact indicators
         high_impact_indicators = ['gpt-4', 'claude-3', 'gemini', 'breakthrough', 'revolutionary']
         if any(indicator in text for indicator in high_impact_indicators):
             return 'high'
-        
+
         # Medium impact for major providers
         if provider in ['openai', 'anthropic', 'google']:
             return 'medium'
-        
+
         return 'low'
-    
-    def _get_platform_updates(self, monitoring_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def _get_platform_updates(self, monitoring_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Get recent platform updates from real monitoring data."""
         # Ensure monitoring_data is a list
         if not isinstance(monitoring_data, list):
             logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
             monitoring_data = []
-            
+
         platform_updates = []
-        
+
         # Filter for platform updates (not model releases)
         update_keywords = ['update', 'announcement', 'feature', 'api', 'pricing', 'policy', 'safety']
-        
+
         for update in monitoring_data:
             title = update.get('title', '').lower()
             content = update.get('summary', '').lower()
-            
+
             # Check if this looks like a platform update
             if any(keyword in title or keyword in content for keyword in update_keywords):
                 provider = update.get('provider', 'unknown').title()
-                
+
                 platform_update = {
                     'platform': provider,
                     'title': update.get('title', 'Unknown Update'),
@@ -279,17 +279,17 @@ class AIPlatformDataCollector:
                         'confidence': 0.7
                     }
                 }
-                
+
                 platform_updates.append(platform_update)
-        
+
         # Sort by date (newest first) and return top 15
         platform_updates.sort(key=lambda x: x.get('announcement_date', ''), reverse=True)
         return platform_updates[:15]
-    
-    def _classify_update_type(self, update: Dict[str, Any]) -> str:
+
+    def _classify_update_type(self, update: dict[str, Any]) -> str:
         """Classify the type of platform update."""
         text = f"{update.get('title', '')} {update.get('summary', '')}".lower()
-        
+
         if any(keyword in text for keyword in ['price', 'pricing', 'cost']):
             return 'pricing'
         elif any(keyword in text for keyword in ['api', 'endpoint', 'integration']):
@@ -302,59 +302,59 @@ class AIPlatformDataCollector:
             return 'research'
         else:
             return 'general'
-    
-    def _assess_update_impact(self, update: Dict[str, Any]) -> str:
+
+    def _assess_update_impact(self, update: dict[str, Any]) -> str:
         """Assess the impact level of a platform update."""
         text = f"{update.get('title', '')} {update.get('summary', '')}".lower()
-        provider = update.get('provider', '').lower()
-        
+        update.get('provider', '').lower()
+
         # High impact indicators
         high_impact_keywords = ['breaking', 'major', 'significant', 'important', 'critical']
         if any(keyword in text for keyword in high_impact_keywords):
             return 'high'
-        
+
         # API or pricing changes usually medium impact
         if any(keyword in text for keyword in ['api', 'pricing', 'policy']):
             return 'medium'
-        
+
         return 'low'
-    
-    def _analyze_sentiment(self, update: Dict[str, Any]) -> str:
+
+    def _analyze_sentiment(self, update: dict[str, Any]) -> str:
         """Analyze sentiment of the update."""
         text = f"{update.get('title', '')} {update.get('summary', '')}".lower()
-        
+
         positive_keywords = ['improve', 'better', 'enhance', 'new', 'launch', 'release']
         negative_keywords = ['issue', 'problem', 'deprecat', 'remov', 'discontinu']
-        
+
         positive_count = sum(1 for keyword in positive_keywords if keyword in text)
         negative_count = sum(1 for keyword in negative_keywords if keyword in text)
-        
+
         if positive_count > negative_count:
             return 'positive'
         elif negative_count > positive_count:
             return 'negative'
         else:
             return 'neutral'
-    
-    def _get_competitive_analysis(self, monitoring_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+    def _get_competitive_analysis(self, monitoring_data: list[dict[str, Any]]) -> dict[str, Any]:
         """Get competitive analysis data from real monitoring data."""
         # Ensure monitoring_data is a list
         if not isinstance(monitoring_data, list):
             logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
             monitoring_data = []
-            
+
         # Analyze provider activity
         provider_activity = {}
         provider_recent_updates = {}
-        
+
         cutoff_date = datetime.now() - timedelta(days=30)
-        
+
         for update in monitoring_data:
             provider = update.get('provider', 'unknown').title()
-            
+
             # Count total activity
             provider_activity[provider] = provider_activity.get(provider, 0) + 1
-            
+
             # Count recent activity
             try:
                 pub_date = datetime.fromisoformat(update.get('published_at', '').replace('Z', '+00:00'))
@@ -362,16 +362,16 @@ class AIPlatformDataCollector:
                     provider_recent_updates[provider] = provider_recent_updates.get(provider, 0) + 1
             except:
                 pass
-        
+
         # Calculate market shares based on activity
         total_activity = sum(provider_activity.values())
         market_leaders = {}
-        
+
         for provider, activity in provider_activity.items():
             if total_activity > 0:
                 market_share = (activity / total_activity) * 100
                 recent_updates = provider_recent_updates.get(provider, 0)
-                
+
                 # Determine competitive position
                 if market_share >= 25:
                     position = 'leader'
@@ -381,10 +381,10 @@ class AIPlatformDataCollector:
                     position = 'challenger'
                 else:
                     position = 'niche_player'
-                
+
                 # Determine strengths and weaknesses based on known provider characteristics
                 strengths, weaknesses = self._get_provider_characteristics(provider)
-                
+
                 market_leaders[provider] = {
                     'market_share': round(market_share, 1),
                     'strengths': strengths,
@@ -393,7 +393,7 @@ class AIPlatformDataCollector:
                     'competitive_position': position,
                     'activity_trend': 'increasing' if recent_updates > activity * 0.3 else 'stable'
                 }
-        
+
         return {
             'market_leaders': market_leaders,
             'market_dynamics': {
@@ -409,7 +409,7 @@ class AIPlatformDataCollector:
                 'Open source models challenging proprietary solutions'
             ]
         }
-    
+
     def _get_provider_characteristics(self, provider: str) -> tuple:
         """Get known characteristics for major providers."""
         characteristics = {
@@ -430,28 +430,28 @@ class AIPlatformDataCollector:
                 ['Limited track record']
             )
         }
-        
+
         return characteristics.get(provider, (['Platform development'], ['Market presence']))
-    
-    def _calculate_market_concentration(self, provider_activity: Dict[str, int]) -> str:
+
+    def _calculate_market_concentration(self, provider_activity: dict[str, int]) -> str:
         """Calculate market concentration level."""
         if not provider_activity:
             return 'undefined'
-        
+
         total = sum(provider_activity.values())
         shares = [count/total for count in provider_activity.values()]
-        
+
         # Calculate Herfindahl-Hirschman Index (HHI)
         hhi = sum(share**2 for share in shares) * 10000
-        
+
         if hhi > 2500:
             return 'highly_concentrated'
         elif hhi > 1500:
             return 'moderately_concentrated'
         else:
             return 'competitive'
-    
-    def _get_market_trends(self, monitoring_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+    def _get_market_trends(self, monitoring_data: list[dict[str, Any]]) -> dict[str, Any]:
         """Get market trends and intelligence."""
         return {
             'growth_metrics': {
@@ -485,8 +485,8 @@ class AIPlatformDataCollector:
                 'asia_emerging': 10
             }
         }
-    
-    def _get_developer_adoption(self, monitoring_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+    def _get_developer_adoption(self, monitoring_data: list[dict[str, Any]]) -> dict[str, Any]:
         """Get developer adoption metrics."""
         return {
             'platform_adoption': {
@@ -515,8 +515,8 @@ class AIPlatformDataCollector:
                 'HuggingFace': 4.1
             }
         }
-    
-    def _get_platform_status(self) -> Dict[str, Any]:
+
+    def _get_platform_status(self) -> dict[str, Any]:
         """Get platform operational status."""
         return {
             'OpenAI': {
@@ -552,8 +552,8 @@ class AIPlatformDataCollector:
                 'incidents_24h': 1
             }
         }
-    
-    def _get_fallback_data(self) -> Dict[str, Any]:
+
+    def _get_fallback_data(self) -> dict[str, Any]:
         """Get fallback data when collection fails."""
         return {
             'overview': {'error': 'Data collection failed'},
@@ -566,39 +566,39 @@ class AIPlatformDataCollector:
         }
 
 
-def display_ai_platform_overview(data: Dict[str, Any]):
+def display_ai_platform_overview(data: dict[str, Any]):
     """Display AI platform overview metrics."""
     st.subheader("🤖 AI Platform Intelligence Overview")
-    
+
     overview = data.get('overview', {})
     if 'error' in overview:
         st.error("Failed to load AI platform data")
         return
-    
+
     # Key metrics
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.metric(
             "Platforms Monitored",
             overview.get('total_platforms_monitored', 0),
             delta="6 active platforms"
         )
-    
+
     with col2:
         st.metric(
             "Models Tracked",
             overview.get('active_models_tracked', 0),
             delta=f"+{overview.get('recent_releases', 0)} recent"
         )
-    
+
     with col3:
         st.metric(
             "High Impact Updates",
             overview.get('high_impact_updates', 0),
             delta="This week"
         )
-    
+
     with col4:
         market_leaders = overview.get('market_leaders', [])
         st.metric(
@@ -606,7 +606,7 @@ def display_ai_platform_overview(data: Dict[str, Any]):
             len(market_leaders),
             delta=f"Leading: {', '.join(market_leaders[:2])}"
         )
-    
+
     # Emerging trends
     st.subheader("📈 Emerging Trends")
     trends = overview.get('emerging_trends', [])
@@ -614,56 +614,56 @@ def display_ai_platform_overview(data: Dict[str, Any]):
         st.write(f"{i+1}. {trend}")
 
 
-def display_model_releases(data: Dict[str, Any]):
+def display_model_releases(data: dict[str, Any]):
     """Display recent model releases."""
     st.subheader("🚀 Recent Model Releases")
-    
+
     model_releases = data.get('model_releases', [])
     if not model_releases:
         st.info("No model releases data available")
         return
-    
+
     # Create DataFrame for better display
     df = pd.DataFrame(model_releases)
-    
+
     # Display top models
     for model in model_releases[:5]:  # Show top 5 models
         with st.expander(f"**{model['platform']}** - {model['model_name']}", expanded=False):
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 st.write("**Model Details:**")
                 st.write(f"• Model ID: `{model['model_id']}`")
                 st.write(f"• Release Date: {model['release_date']}")
                 st.write(f"• Type: {model['model_type']}")
                 st.write(f"• Intelligence Score: {model['intelligence_score']:.2f}")
-                
+
                 if model.get('context_length'):
                     st.write(f"• Context Length: {model['context_length']:,} tokens")
-                
+
                 if model.get('pricing_input'):
                     st.write(f"• Input Pricing: ${model['pricing_input']}/1K tokens")
-                
+
                 if model.get('pricing_output'):
                     st.write(f"• Output Pricing: ${model['pricing_output']}/1K tokens")
-            
+
             with col2:
                 st.write("**Capabilities:**")
                 capabilities = model.get('capabilities', [])
                 for cap in capabilities:
                     st.write(f"• {cap.replace('_', ' ').title()}")
-                
+
                 st.write("**Competitive Advantages:**")
                 advantages = model.get('competitive_advantages', [])
                 for adv in advantages:
                     st.write(f"• {adv}")
-                
+
                 adoption = model.get('adoption_forecast', {})
                 if adoption:
                     st.write("**Adoption Forecast:**")
                     st.write(f"• Rate: {adoption.get('adoption_rate', 'unknown').replace('_', ' ').title()}")
                     st.write(f"• Timeline: {adoption.get('timeline', 'unknown')}")
-    
+
     # Intelligence score chart
     if len(model_releases) > 1:
         st.subheader("📊 Model Intelligence Scores")
@@ -679,15 +679,15 @@ def display_model_releases(data: Dict[str, Any]):
         st.plotly_chart(fig, use_container_width=True)
 
 
-def display_platform_updates(data: Dict[str, Any]):
+def display_platform_updates(data: dict[str, Any]):
     """Display platform updates and announcements."""
     st.subheader("📢 Platform Updates & Announcements")
-    
+
     updates = data.get('platform_updates', [])
     if not updates:
         st.info("No platform updates available")
         return
-    
+
     for update in updates:
         # Determine badge color based on impact level
         impact_level = update.get('impact_level', 'low')
@@ -697,21 +697,21 @@ def display_platform_updates(data: Dict[str, Any]):
             badge_color = '🟡'
         else:
             badge_color = '🟢'
-        
+
         with st.expander(f"{badge_color} **{update['platform']}** - {update['title']}", expanded=False):
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 st.write("**Update Details:**")
                 st.write(f"• Type: {update['update_type'].title()}")
                 st.write(f"• Date: {update['announcement_date']}")
                 st.write(f"• Impact Level: {impact_level.title()}")
                 st.write(f"• Description: {update['description']}")
-                
+
                 if update.get('breaking_changes') is not None:
                     breaking = "Yes" if update['breaking_changes'] else "No"
                     st.write(f"• Breaking Changes: {breaking}")
-            
+
             with col2:
                 # Sentiment analysis
                 sentiment = update.get('sentiment_analysis', {})
@@ -725,7 +725,7 @@ def display_platform_updates(data: Dict[str, Any]):
                     sentiment_text = sentiment.get('sentiment', 'neutral')
                     confidence = sentiment.get('confidence', 0)
                     st.write(f"• {sentiment_emoji.get(sentiment_text, '😐')} {sentiment_text.title()} ({confidence:.1%} confidence)")
-                
+
                 # Stakeholder impact
                 stakeholder_impact = update.get('stakeholder_impact', {})
                 if stakeholder_impact:
@@ -734,24 +734,24 @@ def display_platform_updates(data: Dict[str, Any]):
                         st.write(f"• {stakeholder.title()}: {impact.title()}")
 
 
-def display_competitive_analysis(data: Dict[str, Any]):
+def display_competitive_analysis(data: dict[str, Any]):
     """Display competitive analysis."""
     st.subheader("⚔️ Competitive Analysis")
-    
+
     competitive_data = data.get('competitive_analysis', {})
     if not competitive_data:
         st.info("No competitive analysis data available")
         return
-    
+
     market_leaders = competitive_data.get('market_leaders', {})
-    
+
     # Market share chart
     if market_leaders:
         st.subheader("📊 Market Share Analysis")
-        
+
         platforms = list(market_leaders.keys())
         market_shares = [market_leaders[p].get('market_share', 0) for p in platforms]
-        
+
         fig = px.pie(
             values=market_shares,
             names=platforms,
@@ -759,141 +759,141 @@ def display_competitive_analysis(data: Dict[str, Any]):
             color_discrete_sequence=px.colors.qualitative.Set3
         )
         st.plotly_chart(fig, use_container_width=True)
-        
+
         # Detailed competitive positioning
         st.subheader("🎯 Competitive Positioning")
-        
+
         for platform, info in market_leaders.items():
             with st.expander(f"**{platform}** - {info.get('competitive_position', 'Unknown').title()}", expanded=False):
                 col1, col2 = st.columns(2)
-                
+
                 with col1:
                     st.write("**Strengths:**")
                     for strength in info.get('strengths', []):
                         st.write(f"• {strength}")
-                    
+
                     st.write("**Recent Developments:**")
                     for dev in info.get('recent_updates', []):
                         st.write(f"• {dev}")
-                
+
                 with col2:
                     st.write("**Weaknesses:**")
                     for weakness in info.get('weaknesses', []):
                         st.write(f"• {weakness}")
-                    
+
                     st.write(f"**Market Share:** {info.get('market_share', 0)}%")
-    
+
     # Competitive dynamics
     dynamics = competitive_data.get('market_dynamics', {})
     if dynamics:
         st.subheader("⚡ Market Dynamics")
-        
+
         col1, col2, col3 = st.columns(3)
-        
+
         with col1:
             st.write("**Total Providers:**")
             st.write(f"• {dynamics.get('total_providers', 'Unknown')}")
-        
+
         with col2:
             st.write("**Active Providers:**")
             st.write(f"• {dynamics.get('active_providers', 'Unknown')}")
-        
+
         with col3:
             st.write("**Market Concentration:**")
             st.write(f"• {dynamics.get('market_concentration', 'Unknown').title()}")
 
 
-def display_market_trends(data: Dict[str, Any]):
+def display_market_trends(data: dict[str, Any]):
     """Display market trends and intelligence."""
     st.subheader("📈 Market Trends & Intelligence")
-    
+
     market_data = data.get('market_trends', {})
     if not market_data:
         st.info("No market trends data available")
         return
-    
+
     # Growth metrics
     growth_metrics = market_data.get('growth_metrics', {})
     if growth_metrics:
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
             market_size = growth_metrics.get('market_size_usd', 0)
             st.metric("Market Size", f"${market_size/1e9:.1f}B", delta="USD")
-        
+
         with col2:
             growth_rate = growth_metrics.get('growth_rate', 0)
             st.metric("Growth Rate", f"{growth_rate}%", delta="Annual")
-        
+
         with col3:
             enterprise_adoption = growth_metrics.get('enterprise_adoption', 0)
             st.metric("Enterprise Adoption", f"{enterprise_adoption}%", delta="Current")
-        
+
         with col4:
             dev_usage = growth_metrics.get('developer_tool_usage', 0)
             st.metric("Developer Tool Usage", f"{dev_usage}%", delta="Adoption")
-    
+
     # Key trends
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.subheader("🔥 Key Trends")
         trends = market_data.get('key_trends', [])
         for i, trend in enumerate(trends):
             st.write(f"{i+1}. {trend}")
-    
+
     with col2:
         st.subheader("🚀 Emerging Technologies")
         technologies = market_data.get('emerging_technologies', [])
         for i, tech in enumerate(technologies):
             st.write(f"{i+1}. {tech}")
-    
+
     # Investment activity
     investment = market_data.get('investment_activity', {})
     if investment:
         st.subheader("💰 Investment Activity")
-        
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
             funding = investment.get('total_funding_2024', 0)
             st.metric("Total Funding 2024", f"${funding/1e9:.1f}B")
-            
+
             unicorns = investment.get('unicorn_count', 0)
             st.metric("AI Unicorns", unicorns)
-        
+
         with col2:
             st.write("**Major Funding Rounds:**")
             for round_info in investment.get('major_rounds', []):
                 st.write(f"• {round_info}")
 
 
-def display_developer_adoption(data: Dict[str, Any]):
+def display_developer_adoption(data: dict[str, Any]):
     """Display developer adoption metrics."""
     st.subheader("👩‍💻 Developer Adoption & Usage")
-    
+
     adoption_data = data.get('developer_adoption', {})
     if not adoption_data:
         st.info("No developer adoption data available")
         return
-    
+
     # Platform adoption
     platform_adoption = adoption_data.get('platform_adoption', {})
     if platform_adoption:
         st.subheader("📊 Platform User Growth")
-        
+
         platforms = list(platform_adoption.keys())
         users = [platform_adoption[p]['users'] for p in platforms]
         growth_rates = [platform_adoption[p]['growth_rate'] for p in platforms]
-        
+
         df = pd.DataFrame({
             'Platform': platforms,
             'Users': users,
             'Growth Rate': growth_rates
         })
-        
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
             fig = px.bar(
                 df,
@@ -905,7 +905,7 @@ def display_developer_adoption(data: Dict[str, Any]):
             )
             fig.update_layout(xaxis_tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)
-        
+
         with col2:
             fig = px.bar(
                 df,
@@ -916,17 +916,17 @@ def display_developer_adoption(data: Dict[str, Any]):
             )
             fig.update_layout(xaxis_tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)
-    
+
     # Tool preferences and satisfaction
     col1, col2 = st.columns(2)
-    
+
     with col1:
         tool_prefs = adoption_data.get('tool_preferences', {})
         if tool_prefs:
             st.subheader("🛠️ Tool Preferences")
             for tool, percentage in tool_prefs.items():
                 st.write(f"• {tool}: {percentage}%")
-    
+
     with col2:
         satisfaction = adoption_data.get('satisfaction_scores', {})
         if satisfaction:
@@ -934,15 +934,15 @@ def display_developer_adoption(data: Dict[str, Any]):
             for platform, score in satisfaction.items():
                 stars = "⭐" * int(score)
                 st.write(f"• {platform}: {score}/5 {stars}")
-    
+
     # Use case distribution
     use_cases = adoption_data.get('use_case_distribution', {})
     if use_cases:
         st.subheader("💼 Use Case Distribution")
-        
+
         use_case_names = list(use_cases.keys())
         percentages = list(use_cases.values())
-        
+
         fig = px.horizontal_bar(
             x=percentages,
             y=use_case_names,
@@ -952,29 +952,29 @@ def display_developer_adoption(data: Dict[str, Any]):
         st.plotly_chart(fig, use_container_width=True)
 
 
-def display_platform_status(data: Dict[str, Any]):
+def display_platform_status(data: dict[str, Any]):
     """Display platform operational status."""
     st.subheader("🔧 Platform Status Monitoring")
-    
+
     status_data = data.get('status_monitoring', {})
-    
+
     # Safety check: ensure status_data is a dictionary
     if not isinstance(status_data, dict) or not status_data:
         st.info("No platform status data available")
         return
-    
+
     # Status overview
     col1, col2, col3, col4 = st.columns(4)
-    
+
     platforms = list(status_data.keys())
     for i, platform in enumerate(platforms):
         platform_info = status_data[platform]
-        
+
         with [col1, col2, col3, col4][i % 4]:
             status = platform_info.get('status', 'unknown')
             uptime = platform_info.get('uptime_percentage', 0)
             grade = platform_info.get('performance_grade', 'N/A')
-            
+
             # Status emoji
             status_emoji = {
                 'operational': '🟢',
@@ -982,15 +982,15 @@ def display_platform_status(data: Dict[str, Any]):
                 'outage': '🔴',
                 'maintenance': '🔵'
             }
-            
+
             st.write(f"**{platform}**")
             st.write(f"{status_emoji.get(status, '⚪')} {status.title()}")
             st.write(f"Uptime: {uptime}%")
             st.write(f"Grade: {grade}")
-    
+
     # Detailed status metrics
     st.subheader("📊 Detailed Performance Metrics")
-    
+
     # Create DataFrame for status metrics
     status_df = []
     for platform, info in status_data.items():
@@ -1002,11 +1002,11 @@ def display_platform_status(data: Dict[str, Any]):
             'Performance Grade': info.get('performance_grade', 'N/A'),
             'Incidents (24h)': info.get('incidents_24h', 0)
         })
-    
+
     df = pd.DataFrame(status_df)
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         fig = px.bar(
             df,
@@ -1018,7 +1018,7 @@ def display_platform_status(data: Dict[str, Any]):
         )
         fig.update_layout(xaxis_tickangle=-45)
         st.plotly_chart(fig, use_container_width=True)
-    
+
     with col2:
         fig = px.scatter(
             df,
@@ -1034,10 +1034,9 @@ def display_platform_status(data: Dict[str, Any]):
 
 def render(logger, data_service=None):
     """Render the AI Platforms intelligence dashboard."""
-    
     st.header("🤖 AI Platform Intelligence")
     st.markdown("Comprehensive monitoring of AI platforms, model releases, and market intelligence")
-    
+
     # Use data service if available, otherwise use the collector
     if data_service and hasattr(data_service, 'get_ai_platforms_data'):
         with st.spinner("🔄 Loading AI platform data from service..."):
@@ -1053,7 +1052,7 @@ def render(logger, data_service=None):
         with st.spinner("🔄 Collecting AI platform intelligence..."):
             monitoring_data = collector._load_ai_monitoring_data()
             logger.info(f"Loaded {len(monitoring_data)} AI platform records from collector")
-    
+
     # Create intelligence data structure
     if monitoring_data:
         collector = AIPlatformDataCollector()
@@ -1065,36 +1064,36 @@ def render(logger, data_service=None):
         collector = AIPlatformDataCollector()
         ai_intelligence = collector._get_fallback_data()
         st.warning("⚠️ No AI platform monitoring data available. Displaying demo interface.")
-    
+
     # Display overview
     display_ai_platform_overview(ai_intelligence)
-    
+
     st.divider()
-    
+
     # Create tabs for different sections
     tabs = st.tabs([
         "🚀 Model Releases",
-        "📢 Platform Updates", 
+        "📢 Platform Updates",
         "⚔️ Competitive Analysis",
         "📈 Market Trends",
         "👩‍💻 Developer Adoption",
         "🔧 Platform Status"
     ])
-    
+
     with tabs[0]:
         display_model_releases(ai_intelligence)
-    
+
     with tabs[1]:
         display_platform_updates(ai_intelligence)
-    
+
     with tabs[2]:
         display_competitive_analysis(ai_intelligence)
-    
+
     with tabs[3]:
         display_market_trends(ai_intelligence)
-    
+
     with tabs[4]:
         display_developer_adoption(ai_intelligence)
-    
+
     with tabs[5]:
-        display_platform_status(ai_intelligence) 
+        display_platform_status(ai_intelligence)

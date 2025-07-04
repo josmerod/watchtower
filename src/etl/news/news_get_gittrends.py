@@ -1,4 +1,4 @@
-"""GitHub Trends ETL Module
+"""GitHub Trends ETL Module.
 
 This module fetches and processes trending GitHub repositories, popular topics,
 and developer activity patterns to track open-source trends and innovation.
@@ -14,7 +14,6 @@ Output:
 import csv
 import json
 import os
-import sys
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -60,7 +59,7 @@ def create_session() -> requests.Session:
 
 
 def get_trending_repositories(
-    session: requests.Session, language: str = None, since: str = "daily"
+    session: requests.Session, language: str | None = None, since: str = "daily"
 ) -> list[dict[str, Any]]:
     """Fetch trending repositories from GitHub.
 
@@ -232,7 +231,7 @@ def process_github_data(
     processed_repos = []
 
     # Create topic lookup for enrichment
-    topic_lookup = {topic.get("name"): topic for topic in topics}
+    {topic.get("name"): topic for topic in topics}
 
     for repo in repositories:
         try:
@@ -240,12 +239,12 @@ def process_github_data(
             stars = repo.get("stars_count", 0)
             forks = repo.get("forks_count", 0)
             watchers = repo.get("watchers_count", 0)
-            open_issues = repo.get("open_issues_count", 0)
+            repo.get("open_issues_count", 0)
 
             # Parse dates
             created_at = repo.get("created_at")
             updated_at = repo.get("updated_at")
-            pushed_at = repo.get("pushed_at")
+            repo.get("pushed_at")
 
             if created_at:
                 created_date = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
@@ -300,7 +299,7 @@ def process_github_data(
             # Determine project category
             description = (repo.get("description") or "").lower()
             language = (repo.get("language") or "").lower()
-            topics_list = repo.get("topics", [])
+            repo.get("topics", [])
 
             if any(
                 word in description

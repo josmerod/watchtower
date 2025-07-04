@@ -2,20 +2,17 @@
 
 import json
 import os
-import sys
 from datetime import datetime
 from typing import Any
 
 import pandas as pd
 
-from paperswithcode import PapersWithCodeClient
-
 from utils.file_system import ensure_directories, get_project_root
 from utils.github_utils import find_github_links_in_text, get_github_repo_info
 from utils.logging import get_logger
 from utils.nlp_classifier import NLPContentClassifier
-from utils.pwc_utils import get_pwc_details_for_paper
 from watchers.arxiv_watcher import ArxivWatcher
+
 # from paperswithcode import PapersWithCodeClient # Commented out for testing
 
 
@@ -263,7 +260,7 @@ class ArxivETL:
             transformed_papers.append(transformed_paper)
 
         self.logger.info(
-            f"Transformed {len(transformed_papers)} papers into {len(set(c['cluster_id'] for c in classifications))} clusters, enriched with GitHub and PapersWithCode data."
+            f"Transformed {len(transformed_papers)} papers into {len({c['cluster_id'] for c in classifications})} clusters, enriched with GitHub and PapersWithCode data."
         )
         return transformed_papers
 

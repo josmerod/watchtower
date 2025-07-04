@@ -1,22 +1,21 @@
 import datetime
 import logging
-import os
 import shutil
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
+
+from src.config.models import GoogleDriveConfig
+from src.config.settings import Settings  # Assuming Settings can be imported
 
 # Make sure 'src' is in the Python path for imports
 # This might be handled by a pytest configuration (e.g., conftest.py) or environment setup
 # For simplicity in this subtask, we assume direct import will work or path is already set.
 # import sys
 # sys.path.insert(0, str(Path(__file__).resolve().parents[2])) # Add project root to path
-
 from src.utils.backup_utils import BackupManager
-from src.config.models import GoogleDriveConfig
-from src.config.settings import Settings # Assuming Settings can be imported
 
 # Disable verbose logging from the module under test during unit tests
 logging.getLogger('watchtower.src.utils.backup_utils').setLevel(logging.CRITICAL)
@@ -159,7 +158,7 @@ class TestBackupManager(unittest.TestCase):
         folders_to_backup = ["non_existent_folder", "empty_data"]
         archive_base_name = "test_empty_backup"
 
-        with self.assertLogs(f'watchtower.src.utils.backup_utils', level='WARNING') as log_watcher:
+        with self.assertLogs('watchtower.src.utils.backup_utils', level='WARNING') as log_watcher:
             compressed_path = manager.compress_folders(folders_to_backup, archive_base_name)
 
         self.assertTrue(any("Folder" in msg and "non_existent_folder does not exist" in msg for msg in log_watcher.output))

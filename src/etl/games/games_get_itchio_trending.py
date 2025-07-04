@@ -2,23 +2,23 @@
 
 """Fetch trending games from itch.io API and save to JSON and CSV."""
 
-import sys
 import os
 from datetime import datetime, timezone
-import requests
+
 import pandas as pd
+import requests
+
+from utils.file_system import ensure_directories, get_project_root
 
 # Add the project root to the path for imports
 from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("ItchIo_Trending_ETL")
 ITC_API_URL = "https://itch.io/games?sort=trending&format=json"
 
 
 def get_itchio_trending() -> None:
-    """
-    Fetches trending games from itch.io and saves them as JSON and CSV.
+    """Fetches trending games from itch.io and saves them as JSON and CSV.
 
     Extracted values:
     - id: game unique identifier
@@ -48,7 +48,7 @@ def get_itchio_trending() -> None:
         })
 
     df = pd.DataFrame(trending_list)
-    
+
     # Only sort if DataFrame is not empty and has required columns
     if not df.empty and "title" in df.columns:
         df = df.sort_values(by="title")
@@ -68,4 +68,4 @@ def get_itchio_trending() -> None:
 
 
 if __name__ == "__main__":
-    get_itchio_trending() 
+    get_itchio_trending()

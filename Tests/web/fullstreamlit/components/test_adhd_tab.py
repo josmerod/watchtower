@@ -1,11 +1,11 @@
-import pytest
-from unittest.mock import patch, mock_open
 import json
-import os
-import sys
+from unittest.mock import mock_open, patch
+
+import pytest
 
 # Add project root to allow imports from src
 from web.fullstreamlit.components.adhd_tab import ADHDPapersComponent
+
 # Mock streamlit before it's used by the component, if necessary for other tests.
 # However, for _load_data, we only need to patch st.error.
 
@@ -215,14 +215,14 @@ def test_render_paper_card_handles_missing_optional_fields(mock_st_write, mock_s
 
     called_markdowns = [call[0][0] for call in mock_st_markdown.call_args_list]
     assert not any(f"**DOI:** [{None}]" in called_md for called_md in called_markdowns) # Ensure DOI for None isn't made
-    assert not any(f"**DOI:** [" in called_md and paper_minimal['doi'] is None for called_md in called_markdowns)
+    assert not any("**DOI:** [" in called_md and paper_minimal['doi'] is None for called_md in called_markdowns)
 
 
-    mock_st_write.assert_called_once_with(f"**Abstract:** No abstract available.")
+    mock_st_write.assert_called_once_with("**Abstract:** No abstract available.")
 
     # Test with empty string abstract
     mock_st_write.reset_mock()
     paper_empty_abstract = {**paper_minimal, 'abstract': ''}
-    mock_st_write.assert_called_once_with(f"**Abstract:** No abstract available.")
+    mock_st_write.assert_called_once_with("**Abstract:** No abstract available.")
 
 

@@ -1,5 +1,6 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
+
 
 def render(logger, museum_data: pd.DataFrame):
     st.title("🏛️ Directorio de Museos Virtuales")
@@ -18,7 +19,7 @@ def render(logger, museum_data: pd.DataFrame):
     # Filter by country (if 'country_label' column exists and has data)
     if 'country_label' in museum_data.columns and museum_data['country_label'].nunique() > 0:
         unique_countries = sorted(museum_data['country_label'].dropna().unique().astype(str))
-        selected_country = st.sidebar.selectbox("Filtrar por País", ["Todos"] + unique_countries, index=0, key="museum_country_filter")
+        selected_country = st.sidebar.selectbox("Filtrar por País", ["Todos", *unique_countries], index=0, key="museum_country_filter")
     else:
         selected_country = "Todos"
         if 'country_label' not in museum_data.columns:
@@ -30,7 +31,7 @@ def render(logger, museum_data: pd.DataFrame):
     # Filter by main subject (if 'main_subject_label' column exists and has data)
     if 'main_subject_label' in museum_data.columns and museum_data['main_subject_label'].nunique() > 0:
         unique_subjects = sorted(museum_data['main_subject_label'].dropna().unique().astype(str))
-        selected_subject = st.sidebar.selectbox("Filtrar por Temática Principal", ["Todos"] + unique_subjects, index=0, key="museum_subject_filter")
+        selected_subject = st.sidebar.selectbox("Filtrar por Temática Principal", ["Todos", *unique_subjects], index=0, key="museum_subject_filter")
     else:
         selected_subject = "Todos"
         if 'main_subject_label' not in museum_data.columns:
@@ -74,13 +75,13 @@ def render(logger, museum_data: pd.DataFrame):
 
     # Calculate how many items per column, approximately
     # This is a simple way, could be improved for more balanced columns
-    total_items = len(filtered_data)
+    len(filtered_data)
 
     # Create columns
     cols = st.columns(cols_per_row)
     col_idx = 0
 
-    for index, museum in filtered_data.iterrows():
+    for _index, museum in filtered_data.iterrows():
         current_col = cols[col_idx % cols_per_row]
         with current_col:
             with st.container(border=True): # Added border=True for better visual separation

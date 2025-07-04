@@ -1,4 +1,4 @@
-"""KDnuggets ETL Module
+"""KDnuggets ETL Module.
 
 This module fetches and processes news articles from KDnuggets using RSS feed.
 It follows the same output structure as other news ETL scripts in the project.
@@ -13,7 +13,6 @@ Output:
 
 import json
 import os
-import sys
 import time
 from datetime import datetime
 from typing import Any

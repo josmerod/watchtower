@@ -2,26 +2,25 @@
 
 # Legacy watchers (backward compatibility)
 from watchers.base_watcher import BaseWatcher
-from watchers.ms_skills_watcher import MSAppliedSkillsWatcher
 
 # Enhanced watchers (new architecture)
 from watchers.enhanced_watcher import (
     EnhancedWatcher,
-    WatcherConfig, 
+    WatcherConfig,
+    WatcherEvent,
     WatcherState,
-    WatcherEvent
 )
+from watchers.ms_skills_watcher import MSAppliedSkillsWatcher
 
 __all__ = [
     # Legacy
     "BaseWatcher",
-    "MSAppliedSkillsWatcher",
-    
     # Enhanced
-    "EnhancedWatcher", 
+    "EnhancedWatcher",
+    "MSAppliedSkillsWatcher",
     "WatcherConfig",
-    "WatcherState",
     "WatcherEvent",
+    "WatcherState",
 ]
 
-# Import any specific watchers here as they're added 
+# Import any specific watchers here as they're added

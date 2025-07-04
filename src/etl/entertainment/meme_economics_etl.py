@@ -2,7 +2,7 @@
 
 Tracks the rise and fall of internet memes like a stock market:
 - Meme lifecycle analysis (birth, peak, death)
-- Cross-platform meme migration tracking  
+- Cross-platform meme migration tracking
 - Meme investment recommendations
 - Cultural impact scoring
 - Cringe prediction algorithms
@@ -13,12 +13,10 @@ Because someone needs to bring financial rigor to meme analysis! 📈🐸
 from __future__ import annotations
 
 import json
-import re
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+from datetime import datetime
+from typing import Any
 
 import requests
-from bs4 import BeautifulSoup
 
 from etl.base import BaseETL
 from utils.logging import get_logger
@@ -26,7 +24,7 @@ from utils.logging import get_logger
 
 class MemeEconomicsETL(BaseETL):
     """Meme Economics ETL for tracking internet meme market trends."""
-    
+
     def __init__(self, **kwargs):
         """Initialize Meme Economics ETL."""
         super().__init__(
@@ -35,7 +33,7 @@ class MemeEconomicsETL(BaseETL):
             **kwargs
         )
         self.logger = get_logger("ETL.MemeEconomics")
-        
+
         # Meme data sources
         self.endpoints = {
             'reddit_memes': 'https://www.reddit.com/r/memes/hot.json',
@@ -43,66 +41,66 @@ class MemeEconomicsETL(BaseETL):
             'reddit_memeeconomy': 'https://www.reddit.com/r/MemeEconomy/hot.json',
             'knowyourmeme': 'https://knowyourmeme.com/memes/trending',
         }
-        
+
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Accept': 'application/json, text/html, */*'
         }
-        
+
         # Meme market indicators
         self.viral_threshold = 10000  # upvotes/likes for viral status
         self.cringe_indicators = ['ratio', 'based', 'sus', 'no cap', 'bussin']
         self.evergreen_memes = ['rickroll', 'pepe', 'wojak', 'chad', 'doge']
-    
-    def extract(self) -> List[Dict[str, Any]]:
+
+    def extract(self) -> list[dict[str, Any]]:
         """Extract meme data from various platforms."""
         self.logger.info("Starting meme market data extraction 📈")
         extracted_data = []
-        
+
         try:
             # Extract Reddit meme data
             reddit_data = self._extract_reddit_memes()
             if reddit_data:
                 extracted_data.extend(reddit_data)
                 self.metrics.records_extracted += len(reddit_data)
-            
+
             # Extract trending memes
             trending_data = self._extract_trending_memes()
             if trending_data:
                 extracted_data.extend(trending_data)
                 self.metrics.records_extracted += len(trending_data)
-            
+
             # Generate meme market analysis
             market_data = self._generate_market_analysis()
             if market_data:
                 extracted_data.extend(market_data)
                 self.metrics.records_extracted += len(market_data)
-            
+
             self.logger.info(f"Extracted {len(extracted_data)} meme market records 🚀")
-            
+
         except Exception as e:
             self.logger.error(f"Failed to extract meme data: {e}")
             self.metrics.records_failed += 1
-        
+
         return extracted_data
-    
-    def _extract_reddit_memes(self) -> List[Dict[str, Any]]:
+
+    def _extract_reddit_memes(self) -> list[dict[str, Any]]:
         """Extract meme data from Reddit."""
         meme_data = []
-        
+
         for subreddit, url in self.endpoints.items():
             if 'reddit' in subreddit:
                 try:
                     self.logger.info(f"Extracting from {subreddit}")
                     response = requests.get(url, headers=self.headers, timeout=10)
-                    
+
                     if response.status_code == 200:
                         data = response.json()
                         posts = data.get('data', {}).get('children', [])
-                        
+
                         for post in posts[:25]:  # Top 25 posts
                             post_data = post.get('data', {})
-                            
+
                             meme_record = {
                                 'data_type': 'meme_post',
                                 'platform': 'reddit',
@@ -121,18 +119,18 @@ class MemeEconomicsETL(BaseETL):
                                 'awards': len(post_data.get('all_awardings', [])),
                                 'extracted_at': datetime.utcnow().isoformat()
                             }
-                            
+
                             meme_data.append(meme_record)
-                    
+
                 except Exception as e:
                     self.logger.error(f"Failed to extract from {subreddit}: {e}")
-        
+
         return meme_data
-    
-    def _extract_trending_memes(self) -> List[Dict[str, Any]]:
+
+    def _extract_trending_memes(self) -> list[dict[str, Any]]:
         """Extract trending memes (mock implementation)."""
         trending_data = []
-        
+
         # Mock trending memes data
         mock_trending = [
             {
@@ -166,14 +164,14 @@ class MemeEconomicsETL(BaseETL):
                 'extracted_at': datetime.utcnow().isoformat()
             }
         ]
-        
+
         trending_data.extend(mock_trending)
         return trending_data
-    
-    def _generate_market_analysis(self) -> List[Dict[str, Any]]:
+
+    def _generate_market_analysis(self) -> list[dict[str, Any]]:
         """Generate meme market analysis."""
         market_data = []
-        
+
         # Meme market index
         market_index = {
             'data_type': 'market_analysis',
@@ -191,15 +189,15 @@ class MemeEconomicsETL(BaseETL):
             'prediction_accuracy': 69.42,  # We're very scientific here
             'extracted_at': datetime.utcnow().isoformat()
         }
-        
+
         market_data.append(market_index)
         return market_data
-    
-    def transform(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Transform meme data with economic analysis."""
         self.logger.info(f"Transforming {len(data)} meme economic records 💰")
         transformed_data = []
-        
+
         for record in data:
             try:
                 if record.get('data_type') == 'meme_post':
@@ -216,20 +214,20 @@ class MemeEconomicsETL(BaseETL):
                     }
                 else:
                     transformed_record = record
-                
+
                 transformed_data.append(transformed_record)
                 self.metrics.records_transformed += 1
-                
+
             except Exception as e:
                 self.logger.error(f"Failed to transform meme record: {e}")
                 self.metrics.records_failed += 1
-        
+
         return transformed_data
-    
-    def _calculate_viral_status(self, record: Dict[str, Any]) -> str:
+
+    def _calculate_viral_status(self, record: dict[str, Any]) -> str:
         """Calculate if meme has achieved viral status."""
         score = record.get('score', 0)
-        
+
         if score >= 50000:
             return 'mega_viral'
         elif score >= self.viral_threshold:
@@ -238,29 +236,29 @@ class MemeEconomicsETL(BaseETL):
             return 'trending'
         else:
             return 'normie_tier'
-    
-    def _calculate_engagement_score(self, record: Dict[str, Any]) -> float:
+
+    def _calculate_engagement_score(self, record: dict[str, Any]) -> float:
         """Calculate engagement score based on various metrics."""
         score = record.get('score', 0)
         comments = record.get('num_comments', 0)
         ratio = record.get('upvote_ratio', 0.5)
         awards = record.get('awards', 0)
-        
+
         # Sophisticated meme engagement algorithm
         engagement = (score * 0.4) + (comments * 2) + (ratio * 1000) + (awards * 100)
-        
+
         # Normalize to 0-10 scale
         return min(engagement / 10000, 10.0)
-    
-    def _assess_meme_potential(self, record: Dict[str, Any]) -> str:
+
+    def _assess_meme_potential(self, record: dict[str, Any]) -> str:
         """Assess the meme's potential for growth."""
         engagement = self._calculate_engagement_score(record)
         title = record.get('title', '').lower()
-        
+
         # Look for meme potential indicators
         potential_keywords = ['oc', 'original', 'new format', 'template']
         has_potential = any(keyword in title for keyword in potential_keywords)
-        
+
         if engagement >= 8.0 and has_potential:
             return 'moon_potential'
         elif engagement >= 6.0:
@@ -269,13 +267,13 @@ class MemeEconomicsETL(BaseETL):
             return 'risky_play'
         else:
             return 'penny_stock'
-    
-    def _assess_cringe_risk(self, record: Dict[str, Any]) -> str:
+
+    def _assess_cringe_risk(self, record: dict[str, Any]) -> str:
         """Assess the cringe risk level."""
         title = record.get('title', '').lower()
-        
+
         cringe_count = sum(1 for indicator in self.cringe_indicators if indicator in title)
-        
+
         if cringe_count >= 3:
             return 'maximum_cringe'
         elif cringe_count >= 2:
@@ -284,13 +282,13 @@ class MemeEconomicsETL(BaseETL):
             return 'moderate_cringe'
         else:
             return 'acceptably_dank'
-    
-    def _generate_investment_grade(self, record: Dict[str, Any]) -> str:
+
+    def _generate_investment_grade(self, record: dict[str, Any]) -> str:
         """Generate investment recommendation."""
         engagement = self._calculate_engagement_score(record)
         potential = self._assess_meme_potential(record)
         cringe = self._assess_cringe_risk(record)
-        
+
         if potential == 'moon_potential' and cringe == 'acceptably_dank':
             return 'strong_buy'
         elif engagement >= 7.0 and cringe != 'maximum_cringe':
@@ -301,14 +299,14 @@ class MemeEconomicsETL(BaseETL):
             return 'sell'
         else:
             return 'avoid'
-    
-    def _predict_meme_lifespan(self, record: Dict[str, Any]) -> str:
+
+    def _predict_meme_lifespan(self, record: dict[str, Any]) -> str:
         """Predict how long the meme will stay relevant."""
         title = record.get('title', '').lower()
-        
+
         # Evergreen memes have longer lifespans
         is_evergreen = any(meme in title for meme in self.evergreen_memes)
-        
+
         if is_evergreen:
             return 'immortal'
         elif self._assess_meme_potential(record) == 'moon_potential':
@@ -317,12 +315,12 @@ class MemeEconomicsETL(BaseETL):
             return '3_months'
         else:
             return '2_weeks'
-    
-    def _assess_normie_risk(self, record: Dict[str, Any]) -> float:
+
+    def _assess_normie_risk(self, record: dict[str, Any]) -> float:
         """Assess risk of normie adoption (which kills memes)."""
         subreddit = record.get('subreddit', '')
         score = record.get('score', 0)
-        
+
         # High scores in mainstream subreddits = higher normie risk
         if 'memes' in subreddit and score >= 20000:
             return 0.9
@@ -332,34 +330,34 @@ class MemeEconomicsETL(BaseETL):
             return 0.5
         else:
             return 0.2
-    
-    def load(self, data: List[Dict[str, Any]]) -> None:
+
+    def load(self, data: list[dict[str, Any]]) -> None:
         """Load meme economics data to storage."""
         self.logger.info(f"Loading {len(data)} meme economic records 💾")
-        
+
         # Save as JSON for meme market analysis
         output_file = self.output_dir / f"meme_economics_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
-        
+
         try:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, default=str)
-            
+
             # Also save latest market snapshot
             latest_file = self.output_dir / "latest_meme_market.json"
             with open(latest_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, default=str)
-            
+
             self.logger.info(f"Meme economics data saved to {output_file}")
             self.metrics.records_loaded = len(data)
-            
+
             # Log some fun stats
             meme_posts = [d for d in data if d.get('data_type') == 'meme_post']
             if meme_posts:
                 viral_memes = [m for m in meme_posts if m.get('viral_status') in ['viral', 'mega_viral']]
                 strong_buys = [m for m in meme_posts if m.get('investment_grade') == 'strong_buy']
-                
+
                 self.logger.info(f"Market Summary: {len(viral_memes)} viral memes, {len(strong_buys)} strong buy recommendations 📊")
-            
+
         except Exception as e:
             self.logger.error(f"Failed to save meme economics data: {e}")
             raise
@@ -373,4 +371,4 @@ def run_meme_economics_etl():
 
 
 if __name__ == "__main__":
-    run_meme_economics_etl() 
+    run_meme_economics_etl()

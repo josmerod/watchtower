@@ -12,11 +12,10 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Any
-import os # Required for IOError, OSError
 
 from etl.base import BaseETL
-from utils.logging import get_logger
 from exceptions.etl import LoadError
+from utils.logging import get_logger
 
 
 class AnthropicETL(BaseETL):
@@ -253,7 +252,7 @@ class AnthropicETL(BaseETL):
             self.metrics.records_loaded = len(data)
             self.logger.info(f"Successfully loaded {len(data)} Anthropic records to {output_file}")
 
-        except (IOError, OSError) as e:
+        except OSError as e:
             self.logger.error(f"Failed to save Anthropic data to {output_file}: {e}")
             raise LoadError(f"Failed to save Anthropic data to {output_file}: {e}", destination=str(output_file), destination_type="file") from e
         except Exception as e: # Catch any other unexpected errors during load

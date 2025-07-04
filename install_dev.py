@@ -6,7 +6,6 @@ This script installs the Watchtower package in development mode,
 
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 
@@ -30,23 +29,23 @@ def main():
     """Main installation function."""
     print("[INFO] Watchtower Development Setup")
     print("=" * 50)
-    
+
     # Check if we're in the right directory
     if not Path("pyproject.toml").exists():
         print("[FAIL] Error: pyproject.toml not found. Please run this script from the project root.")
         sys.exit(1)
-    
+
     # Install package in development mode
     commands = [
         # Install in development mode with all extras
-        ([sys.executable, "-m", "pip", "install", "-e", ".[dev,ml,web,all]"], 
+        ([sys.executable, "-m", "pip", "install", "-e", ".[dev,ml,web,all]"],
          "Installing Watchtower in development mode"),
-        
+
         # Verify installation
-        ([sys.executable, "-c", "from config.settings import get_settings; print('[PASS] Package installed successfully')"], 
+        ([sys.executable, "-c", "from config.settings import get_settings; print('[PASS] Package installed successfully')"],
          "Verifying installation"),
     ]
-    
+
     success_count = 0
     for command, description in commands:
         if run_command(command, description):
@@ -55,7 +54,7 @@ def main():
             print(f"\n[FAIL] Setup failed at step: {description}")
             print("Please check the error messages above and try again.")
             sys.exit(1)
-    
+
     print("\n" + "=" * 50)
     print("[PASS] Development setup completed successfully!")
     print("\nNext steps:")
@@ -66,4 +65,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

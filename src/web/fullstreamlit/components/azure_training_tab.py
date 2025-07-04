@@ -1,11 +1,12 @@
-import streamlit as st
-from typing import List, Dict, Any
 import logging
 from datetime import datetime
+from typing import Any
 
-def render(logger: logging.Logger, posts_data: List[Dict[str, Any]]) -> None:
-    """
-    Renders the Azure Training (Microsoft Learn) blog posts tab.
+import streamlit as st
+
+
+def render(logger: logging.Logger, posts_data: list[dict[str, Any]]) -> None:
+    """Renders the Azure Training (Microsoft Learn) blog posts tab.
 
     Args:
         logger: The logger instance.

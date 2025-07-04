@@ -1,4 +1,4 @@
-"""DEV Community ETL Module
+"""DEV Community ETL Module.
 
 This module fetches and processes articles, discussions, and trending content from DEV Community
 using their public API. It tracks popular programming topics and developer insights.
@@ -14,7 +14,6 @@ Output:
 import csv
 import json
 import os
-import sys
 import time
 from datetime import datetime
 from typing import Any
@@ -77,29 +76,6 @@ def get_dev_articles(
     seen_ids = set()
 
     # Track popular programming tags
-    popular_tags = [
-        "webdev",
-        "javascript",
-        "python",
-        "react",
-        "tutorial",
-        "beginners",
-        "programming",
-        "productivity",
-        "career",
-        "opensource",
-        "devops",
-        "ai",
-        "machinelearning",
-        "database",
-        "security",
-        "cloud",
-        "docker",
-        "kubernetes",
-        "typescript",
-        "nodejs",
-        "backend",
-    ]
 
     for page in range(1, max_pages + 1):
         try:
@@ -274,7 +250,7 @@ def process_dev_data(
 
             # Content classification
             title_lower = article.get("title", "").lower()
-            description_lower = article.get("description", "").lower()
+            article.get("description", "").lower()
 
             content_type = "general"
             if any(

@@ -1,22 +1,21 @@
-"""
-Main styling module for the Watchtower Streamlit application.
+"""Main styling module for the Watchtower Streamlit application.
 Contains all the CSS styling used throughout the application.
 """
 
 def get_main_style():
-    """Returns the main CSS styling for the application"""
+    """Returns the main CSS styling for the application."""
     return """
 <style>
     /* Import Google Fonts - Poppins */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-    
+
     /* Main app background and text */
     .stApp {
         background-color: #1E1E2E !important;
         color: #E2E8F0;
         font-family: 'Poppins', sans-serif !important;
     }
-    
+
     /* Headers */
     h1, h2, h3, h4, h5, h6 {
         color: #A37FFF !important;
@@ -24,7 +23,7 @@ def get_main_style():
         font-weight: 600 !important;
         letter-spacing: 0.5px;
     }
-    
+
     /* Body text */
     p, div, span, li {
         font-family: 'Poppins', sans-serif !important;
@@ -38,7 +37,7 @@ def get_main_style():
         color: #A6ADC8;
         font-size: 0.9em;
     }
-    
+
     /* Tabs styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 2px;
@@ -64,14 +63,14 @@ def get_main_style():
         font-weight: 600;
         box-shadow: 0 4px 6px rgba(163, 127, 255, 0.2);
     }
-    
+
     /* Responsive tables */
     .stDataFrame {
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
-    
+
     table {
         background-color: #2D2B55 !important;
         border-collapse: collapse;
@@ -81,7 +80,7 @@ def get_main_style():
         font-family: 'Poppins', sans-serif !important;
         min-width: 600px; /* Ensure minimum width for readability */
     }
-    
+
     /* Responsive cards */
     .video-card {
         background-color: #2D2B55;
@@ -94,12 +93,12 @@ def get_main_style():
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         border-left: 3px solid #A37FFF; /* Added for consistency */
     }
-    
+
     .video-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
     }
-    
+
     /* Video thumbnail container */
     .stImage img {
         width: 100%;
@@ -108,11 +107,11 @@ def get_main_style():
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         transition: transform 0.3s ease;
     }
-    
+
     .stImage img:hover {
         transform: scale(1.03);
     }
-    
+
     /* Video title styling */
     .element-container .stMarkdown h3 {
         margin-top: 0;
@@ -125,7 +124,7 @@ def get_main_style():
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
     }
-    
+
     /* Responsive grid container */
     .grid-container {
         display: grid;
@@ -133,47 +132,47 @@ def get_main_style():
         gap: 1rem;
         width: 100%;
     }
-    
+
     /* Media queries for responsive layout */
     @media screen and (max-width: 768px) {
         .stTabs [data-baseweb="tab"] {
             padding: 8px 12px;
             font-size: 0.9rem;
         }
-        
+
         table {
             font-size: 0.9rem;
         }
-        
+
         th, td {
             padding: 8px;
         }
-        
+
         .video-card {
             padding: 10px;
         }
     }
-    
+
     @media screen and (max-width: 480px) {
         .stTabs [data-baseweb="tab"] {
             padding: 6px 10px;
             font-size: 0.8rem;
         }
-        
+
         table {
             font-size: 0.8rem;
         }
-        
+
         th, td {
             padding: 6px;
         }
     }
-    
+
     /* Sidebar */
     .css-1d391kg, .css-1lcbmhc {
         background-color: #2D2B55 !important;
     }
-    
+
     /* Buttons */
     .stButton button {
         background-color: #A37FFF !important;
@@ -190,7 +189,7 @@ def get_main_style():
         box-shadow: 0 4px 8px rgba(163, 127, 255, 0.3);
         transform: translateY(-2px);
     }
-    
+
     /* Quick action buttons styling */
     .quick-action-button {
         background: linear-gradient(135deg, #A37FFF 0%, #B792FF 100%) !important;
@@ -206,18 +205,18 @@ def get_main_style():
         overflow: hidden !important;
         cursor: pointer !important;
     }
-    
+
     .quick-action-button:hover {
         background: linear-gradient(135deg, #B792FF 0%, #C9A6FF 100%) !important;
         box-shadow: 0 6px 12px rgba(163, 127, 255, 0.4) !important;
         transform: translateY(-3px) !important;
     }
-    
+
     .quick-action-button:active {
         transform: translateY(-1px) !important;
         box-shadow: 0 3px 6px rgba(163, 127, 255, 0.3) !important;
     }
-    
+
     .quick-action-button:disabled {
         background: #4A4A6A !important;
         color: #8B8B8B !important;
@@ -225,7 +224,7 @@ def get_main_style():
         transform: none !important;
         box-shadow: none !important;
     }
-    
+
     /* Quick links styling */
     .quick-link-button {
         background: linear-gradient(135deg, #2D2B55 0%, #3C3970 100%) !important;
@@ -237,24 +236,24 @@ def get_main_style():
         padding: 10px 16px !important;
         transition: all 0.2s ease !important;
     }
-    
+
     .quick-link-button:hover {
         background: linear-gradient(135deg, #A37FFF 0%, #B792FF 100%) !important;
         color: #1E1E2E !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 4px 8px rgba(163, 127, 255, 0.3) !important;
     }
-    
+
     /* System status styling */
     .system-status {
         animation: pulse 2s ease-in-out infinite alternate;
     }
-    
+
     @keyframes pulse {
         from { opacity: 0.8; }
         to { opacity: 1; }
     }
-    
+
     /* Cards and tables */
     .card, div.stDataFrame {
         background-color: #2D2B55 !important;
@@ -263,7 +262,7 @@ def get_main_style():
         margin-bottom: 15px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     }
-    
+
     /* Table styling */
     th {
         background-color: #3C3970 !important;
@@ -286,7 +285,7 @@ def get_main_style():
     tr:hover {
         background-color: #34325A !important;
     }
-    
+
     /* Input fields */
     .stTextInput input, .stDateInput input, .stSelectbox select {
         border-radius: 6px !important;
@@ -295,7 +294,7 @@ def get_main_style():
         color: #E2E8F0 !important;
         font-family: 'Poppins', sans-serif !important;
     }
-    
+
     /* Links */
     a {
         color: #A37FFF !important;
@@ -307,7 +306,7 @@ def get_main_style():
         color: #B792FF !important;
         text-decoration: underline;
     }
-    
+
     /* Custom scrollbar for better UX */
     ::-webkit-scrollbar {
         width: 8px;
@@ -323,25 +322,25 @@ def get_main_style():
     ::-webkit-scrollbar-thumb:hover {
         background: #A37FFF;
     }
-    
+
     /* Warning messages */
     .stAlert {
         background-color: #3C3970 !important;
         color: #E2E8F0 !important;
     }
-    
+
     /* Dropdown elements */
     .stSelectbox > div[data-baseweb="select"] > div {
         background-color: #252343 !important;
         color: #E2E8F0 !important;
     }
-    
+
     /* Date input */
     .stDateInput > div[data-baseweb="input"] > div {
         background-color: #252343 !important;
         color: #E2E8F0 !important;
     }
-    
+
     /* Success messages */
     div[data-testid="stSuccessMessage"] {
         background-color: #2D2B55 !important;
@@ -486,4 +485,4 @@ def get_main_style():
         margin-bottom: 0;
     }
 </style>
-""" 
+"""

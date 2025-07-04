@@ -1,4 +1,4 @@
-"""Tech Jobs ETL Module
+"""Tech Jobs ETL Module.
 
 This module fetches and processes technology job postings, salary trends,
 and skill demand information from various job sites and APIs.
@@ -14,7 +14,6 @@ Output:
 import csv
 import json
 import os
-import sys
 import time
 from datetime import datetime, timedelta
 from typing import Any

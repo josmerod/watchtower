@@ -1,17 +1,15 @@
 import datetime
 import logging
 import os
-import shutil
 import zipfile
 from pathlib import Path
-from typing import List, Tuple
 
 # Ensure PyDrive2 is installed. If not, this will fail at runtime.
 # It should be in requirements.txt
 try:
     from pydrive2.auth import GoogleAuth
     from pydrive2.drive import GoogleDrive
-    from pydrive2.files import GoogleDriveFile # For type hinting
+    from pydrive2.files import GoogleDriveFile  # For type hinting
 except ImportError:
     # This allows the module to be imported and potentially used for other things
     # if pydrive2 is missing, but gdrive functions will fail.
@@ -27,8 +25,8 @@ except ImportError:
 # This might need adjustment based on actual project structure and how settings are accessed.
 # e.g., from src.config import get_settings
 # For now, we'll assume a direct import is possible for the class definition.
+from src.config.models import GoogleDriveConfig  # Assuming GoogleDriveConfig is here
 from src.config.settings import Settings
-from src.config.models import GoogleDriveConfig # Assuming GoogleDriveConfig is here
 
 # Configure basic logging
 # Using a named logger is better practice
@@ -132,12 +130,14 @@ class BackupManager:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         return f"backup_data_logs_{timestamp}"
 
-    def compress_folders(self, folders_to_backup: List[str], archive_name_base: str) -> Path:
+    def compress_folders(self, folders_to_backup: list[str], archive_name_base: str) -> Path:
         """Compresses specified folders into a zip file.
+
         Args:
             folders_to_backup: List of folder paths (absolute or relative to project root).
             archive_name_base: The base name for the archive (e.g., 'backup_data_logs_local_temp').
                                The '.zip' extension will be added.
+
         Returns:
             Path to the created zip file.
         """
@@ -178,9 +178,9 @@ class BackupManager:
             raise
 
     def _upload_single_file(self, local_file_path: Path, file_name_on_drive: str) -> str:
-        """
-        Uploads a single file to Google Drive. If a file with the same name exists, it's deleted first.
+        """Uploads a single file to Google Drive. If a file with the same name exists, it's deleted first.
         This is intended for uploading the 'latest' backup.
+
         Returns:
             The ID of the uploaded file on Google Drive.
         """
@@ -245,8 +245,7 @@ class BackupManager:
             raise
 
     def _prepare_latest_in_drive(self, latest_filename_base: str):
-        """
-        Finds the current "{base}_latest.zip" in Drive.
+        """Finds the current "{base}_latest.zip" in Drive.
         If found, renames it to "{base}_{timestamp}.zip" using its Drive modifiedDate.
         """
         if not self.drive:
@@ -292,8 +291,7 @@ class BackupManager:
             raise
 
     def _enforce_retention_policy(self, latest_filename_base: str, max_historical_copies: int = 5):
-        """
-        Ensures no more than `max_historical_copies` are kept, deleting the oldest.
+        """Ensures no more than `max_historical_copies` are kept, deleting the oldest.
         This considers files matching "{base}_{timestamp}.zip".
         """
         if not self.drive:
@@ -306,7 +304,7 @@ class BackupManager:
             query = f"'{self.backup_folder_id}' in parents and title contains '{latest_filename_base}_' and not title contains '_latest.zip' and trashed=false"
             file_list = self.drive.ListFile({'q': query}).GetList()
 
-            historical_backups: List[Tuple[datetime.datetime, GoogleDriveFile]] = []
+            historical_backups: list[tuple[datetime.datetime, GoogleDriveFile]] = []
 
             for file_item in file_list:
                 title = file_item['title']
@@ -347,7 +345,7 @@ class BackupManager:
             # Don't re-raise here usually, as the primary backup might have succeeded.
             # However, failing retention is also a problem. Decide based on severity.
 
-    def run_backup_process(self, folders_to_backup: List[str]):
+    def run_backup_process(self, folders_to_backup: list[str]):
         """Main method to orchestrate the backup process."""
         if not self.drive: # Check if authentication failed in constructor
             module_logger.error("BackupManager not properly initialized (Google Drive auth failed). Aborting backup.")
@@ -398,7 +396,7 @@ class BackupManager:
                 try:
                     module_logger.info(f"Cleaning up local archive: {compressed_archive_path}")
                     os.remove(compressed_archive_path)
-                    module_logger.info(f"Successfully cleaned up local archive.")
+                    module_logger.info("Successfully cleaned up local archive.")
                 except OSError as e_os:
                     module_logger.error(f"Failed to clean up local archive {compressed_archive_path}: {e_os}", exc_info=True)
         return success
@@ -461,7 +459,7 @@ if __name__ == '__main__':
         module_logger.warning("Please set a valid Google Drive Folder ID to test `BackupManager` directly.")
     else:
         try:
-            module_logger.info(f"Attempting backup test with BackupManager...")
+            module_logger.info("Attempting backup test with BackupManager...")
             module_logger.info(f"Using project root: {mock_settings_instance.project_root}")
             module_logger.info(f"Using data_dir (relative): {mock_settings_instance.data_dir}")
             module_logger.info(f"Using logs_dir (relative): {mock_settings_instance.logs_dir}")

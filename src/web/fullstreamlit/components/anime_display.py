@@ -1,10 +1,12 @@
+
 import streamlit as st
-from typing import List
+
 from models.anime import AnimeItem
 
+
 def render_anime_item(anime: AnimeItem, col_index: int):
-    """
-    Renders a single anime item within a Streamlit container.
+    """Renders a single anime item within a Streamlit container.
+
     Args:
         anime: The AnimeItem Pydantic model instance.
         col_index: An identifier for the column or item, not strictly used for layout here
@@ -58,9 +60,9 @@ def render_anime_item(anime: AnimeItem, col_index: int):
                 st.markdown(f"- **Broadcast**: {broadcast_str.strip()}")
 
 
-def display_anime_section(title: str, anime_list: List[AnimeItem], num_columns: int = 3):
-    """
-    Displays a section of anime items in a grid layout.
+def display_anime_section(title: str, anime_list: list[AnimeItem], num_columns: int = 3):
+    """Displays a section of anime items in a grid layout.
+
     Args:
         title: The title for this section (e.g., "Current Season").
         anime_list: A list of AnimeItem objects to display.

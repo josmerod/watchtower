@@ -1,4 +1,4 @@
-"""Discord Trending Communities ETL Module
+"""Discord Trending Communities ETL Module.
 
 This module fetches and processes trending Discord communities and servers,
 particularly focusing on tech, developer, and gaming communities that are
@@ -16,7 +16,6 @@ import csv
 import json
 import os
 import random
-import sys
 import time
 from datetime import datetime, timedelta
 from typing import Any

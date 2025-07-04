@@ -1,6 +1,6 @@
 # src/web/fullstreamlit/components/home_server_tab.py
 import streamlit as st
-import pandas as pd # Optional, if using dataframes
+
 
 def render(logger, data_service):
     st.header("Home Server Trends & Applications")
@@ -18,8 +18,8 @@ def render(logger, data_service):
         # st.dataframe(df)
         # For more customized display:
 
-        categories = sorted(list(set(item['category'] for item in trends_data)))
-        selected_category = st.selectbox("Filter by Category:", ["All"] + categories)
+        categories = sorted({item['category'] for item in trends_data})
+        selected_category = st.selectbox("Filter by Category:", ["All", *categories])
 
         filtered_data = trends_data
         if selected_category != "All":

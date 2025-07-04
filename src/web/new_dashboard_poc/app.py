@@ -1,11 +1,17 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import html
-
-from dash import dcc, Input, Output # Added Input, Output, dcc for Tabs and callback
-from src.web.new_dashboard_poc.components.shortcuts_tab import render_shortcuts_tab, ALL_SHORTCUTS_DATA, render_shortcuts_tab_layout
+from dash import (  # Added Input, Output, dcc for Tabs and callback
+    Input,
+    Output,
+    html,
+)
 
 from src.web.new_dashboard_poc.components.news_tab import render_news_tab
+from src.web.new_dashboard_poc.components.shortcuts_tab import (
+    ALL_SHORTCUTS_DATA,
+    render_shortcuts_tab,
+    render_shortcuts_tab_layout,
+)
 
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)

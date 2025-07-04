@@ -1,18 +1,17 @@
-"""
-News tab component for the Watchtower Streamlit application.
+"""News tab component for the Watchtower Streamlit application.
 Displays news from different sources.
 """
 
-import streamlit as st
-import pandas as pd
-import os
 import json
-import sys
+import os
+
+import pandas as pd
+import streamlit as st
 
 
 # Get the project root directory
 def get_project_root():
-    """Get the project root directory"""
+    """Get the project root directory."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # Go up from src/web/fullstreamlit/components to project root
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
@@ -45,10 +44,10 @@ def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
     """Clean DataFrame to avoid unhashable type errors."""
     if df.empty:
         return df
-    
+
     # Create a copy to avoid modifying the original
     df_clean = df.copy()
-    
+
     # Convert any dictionary or list columns to strings
     for col in df_clean.columns:
         if df_clean[col].dtype == 'object':
@@ -58,26 +57,26 @@ def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
                 sample_values = df_clean[col].dropna().head(3)
                 if not sample_values.empty:
                     for val in sample_values:
-                        if isinstance(val, (dict, list)):
+                        if isinstance(val, dict | list):
                             # Convert all values that are dict or list to JSON strings
                             df_clean[col] = df_clean[col].apply(
-                                lambda x: json.dumps(x, default=str) if isinstance(x, (dict, list)) else x
+                                lambda x: json.dumps(x, default=str) if isinstance(x, dict | list) else x
                             )
                             break
             except (TypeError, ValueError):
                 # If there's any issue, convert the entire column to string
                 df_clean[col] = df_clean[col].astype(str)
-    
+
     return df_clean
 
 # Local version of load_data
 def load_data(file_path, _logger=None):
-    """Load data from JSON file with error handling"""
+    """Load data from JSON file with error handling."""
     try:
         if os.path.exists(file_path):
             if _logger:
                 _logger.info(f"Loading data from {file_path}")
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 data = json.load(f)
             df = pd.DataFrame(data)
             # Clean the dataframe to avoid unhashable type errors
@@ -92,13 +91,12 @@ def load_data(file_path, _logger=None):
             return pd.DataFrame()
     except Exception as e:
         if _logger:
-            _logger.error(f"Error loading data from {file_path}: {str(e)}")
-        st.error(f"❌ Error al cargar datos desde {os.path.basename(file_path)}: {str(e)}")
+            _logger.error(f"Error loading data from {file_path}: {e!s}")
+        st.error(f"❌ Error al cargar datos desde {os.path.basename(file_path)}: {e!s}")
         return pd.DataFrame()
 
 def render(logger=None):
-    """Render the news tab"""
-
+    """Render the news tab."""
     # Initialize session state for active exportable DataFrame and its source name
     if "active_df_for_export" not in st.session_state:
         st.session_state.active_df_for_export = None
@@ -110,7 +108,7 @@ def render(logger=None):
     # Show data loading status
     with st.expander("📊 Estado de Fuentes de Datos", expanded=False):
         col1, col2 = st.columns(2)
-        
+
         with col1:
             st.markdown("**Fuentes Principales:**")
             sources_status = {
@@ -119,13 +117,13 @@ def render(logger=None):
                 "Medium GenAI": os.path.exists(MEDIUM_NEWS_FILE),
                 "Ben's Bites": os.path.exists(BENSBITES_NEWS_FILE)
             }
-            
+
             for source, exists in sources_status.items():
                 if exists:
                     st.success(f"✅ {source}")
                 else:
                     st.error(f"❌ {source}")
-        
+
         with col2:
             st.markdown("**Fuentes Adicionales:**")
             additional_sources = {
@@ -135,7 +133,7 @@ def render(logger=None):
                 "Meneame Tech": os.path.exists(MENEAME_TECNO_FILE),
                 "Podcasts": os.path.exists(PODCASTS_FILE)
             }
-            
+
             for source, exists in additional_sources.items():
                 if exists:
                     st.success(f"✅ {source}")
@@ -158,7 +156,7 @@ def render(logger=None):
     # Count available data
     available_sources = 0
     total_articles = 0
-    
+
     data_counts = {}
     for name, df in [
         ("FutureTools", futuretools_news_df),
@@ -192,29 +190,29 @@ def render(logger=None):
         and meneame_general_df.empty and meneame_tecnologia_df.empty and podcasts_df.empty and ycombinator_news_df.empty):
         st.warning("📭 No hay noticias disponibles para mostrar.")
         st.info("💡 **Sugerencia:** Ejecuta los procesos ETL para recopilar noticias actualizadas.")
-        
+
         # Show ETL run buttons
         st.markdown("### 🔄 Ejecutar ETL de Noticias")
         col1, col2 = st.columns(2)
-        
+
         with col1:
             if st.button("🚀 Ejecutar ETL Principal", help="Ejecuta FutureTools, HackerNews, Medium"):
                 st.info("Ejecutando ETL principal... esto puede tomar unos minutos.")
-        
+
         with col2:
             if st.button("📡 Ejecutar ETL Completo", help="Ejecuta todos los ETL de noticias"):
                 st.info("Ejecutando ETL completo... esto puede tomar varios minutos.")
-        
+
     else:
         # Create tabs for different news sources including Podcasts
         news_tabs = st.tabs([
-            "🚀 FutureTools & Ben's Bites", 
-            "🗞️ Hacker News", 
-            "🤖 Medium GenAI", 
-            "📊 KDnuggets", 
+            "🚀 FutureTools & Ben's Bites",
+            "🗞️ Hacker News",
+            "🤖 Medium GenAI",
+            "📊 KDnuggets",
             "👨‍💻 Good Devs",
-            "🇪🇸 Meneame General", 
-            "🔧 Meneame Tech", 
+            "🇪🇸 Meneame General",
+            "🔧 Meneame Tech",
             "🎧 Podcasts"
         ])
 
@@ -282,7 +280,7 @@ def render(logger=None):
 
 
 def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
-    """Render FutureTools and Ben's Bites news"""
+    """Render FutureTools and Ben's Bites news."""
     st.subheader("FutureTools & Ben's Bites")
     if futuretools_news_df.empty and bensbites_news_df.empty:
         st.warning("No hay noticias disponibles de FutureTools o Ben's Bites.")
@@ -298,10 +296,10 @@ def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
                 else:
                     # Create a default date column
                     combined_news_df["published_date"] = pd.Timestamp("now")
-            
+
             # Sort by published_date (now guaranteed to exist)
             combined_news_df = combined_news_df.sort_values("published_date", ascending=False)
-            
+
             # Format date for display - ensure it's a string to avoid column type issues
             combined_news_df["published_display"] = combined_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M').astype(str)
 
@@ -313,7 +311,7 @@ def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
                 "published_display": "Fecha de Publicación",
                 "url": "URL_Enlace"
             })
-            
+
             # Ensure required columns exist and select them in order
             required_cols = ["Título", "Fuente", "Fecha de Publicación", "URL_Enlace"]
             cols_to_display = [col for col in required_cols if col in df_for_editor.columns]
@@ -348,7 +346,7 @@ def render_futuretools_bensbites(futuretools_news_df, bensbites_news_df):
 
 
 def render_hackernews(ycombinator_news_df):
-    """Render Hacker News"""
+    """Render Hacker News."""
     st.subheader("Hacker News")
     if ycombinator_news_df.empty:
         st.warning("No hay noticias disponibles de Hacker News.")
@@ -361,10 +359,10 @@ def render_hackernews(ycombinator_news_df):
             else:
                 # Create a default date column
                 ycombinator_news_df["published_date"] = pd.Timestamp("now")
-        
+
         # Sort by published_date (now guaranteed to exist)
         display_news_df = ycombinator_news_df.sort_values("published_date", ascending=False)
-        
+
         # Format date for display - ensure it's a string to avoid column type issues
         display_news_df["published_display"] = display_news_df["published_date"].dt.strftime('%Y-%m-%d %H:%M').astype(str)
 
@@ -384,7 +382,7 @@ def render_hackernews(ycombinator_news_df):
 
         st.session_state.active_df_for_export = df_for_editor
         st.session_state.active_source_name = source_name_for_download
-        
+
         st.data_editor(
             df_for_editor,
             column_config={
@@ -405,13 +403,13 @@ def render_hackernews(ycombinator_news_df):
 
 
 def render_medium(medium_news_df):
-    """Render Medium GenAI news"""
+    """Render Medium GenAI news."""
     st.subheader("Medium GenAI")
     if medium_news_df.empty:
         st.warning("No hay noticias disponibles de Medium sobre IA.")
     else:
         display_news_df = medium_news_df.copy() # Work with a copy
-        
+
         # Ensure we have a consistent date column
         if "published_date" not in display_news_df.columns:
             # Convert published_at to datetime if it exists
@@ -425,14 +423,14 @@ def render_medium(medium_news_df):
         else:
             # Sort by existing published_date
             display_news_df = display_news_df.sort_values("published_date", ascending=False)
-        
+
         # Determine which date column to use for display and prepare it
         date_column_to_format = None
         if "published_date" in display_news_df.columns and pd.api.types.is_datetime64_any_dtype(display_news_df["published_date"]):
             date_column_to_format = "published_date"
         elif "published_at" in display_news_df.columns and pd.api.types.is_datetime64_any_dtype(display_news_df["published_at"]):
             date_column_to_format = "published_at"
-        
+
         if date_column_to_format:
             display_news_df["formatted_date"] = display_news_df[date_column_to_format].dt.strftime('%Y-%m-%d %H:%M')
             date_col_for_editor = "formatted_date"
@@ -490,7 +488,7 @@ def render_medium(medium_news_df):
             # The initial warning for medium_news_df.empty handles the general "no data" case
 
 def render_kdnuggets(kdnuggets_news_df):
-    """Render KDnuggets news"""
+    """Render KDnuggets news."""
     st.subheader("KDnuggets")
     if kdnuggets_news_df.empty:
         st.warning("No hay noticias disponibles de KDnuggets.")
@@ -543,7 +541,7 @@ def render_kdnuggets(kdnuggets_news_df):
 
 
 def render_gooddevs(gooddevs_df):
-    """Render Good Devs blog posts"""
+    """Render Good Devs blog posts."""
     st.subheader("Good Devs")
     if gooddevs_df.empty:
         st.warning("No hay posts disponibles de Good Devs.")
@@ -552,64 +550,61 @@ def render_gooddevs(gooddevs_df):
 
         # Handle date parsing with improved error handling
         date_col_present = False
-        sort_col = None
-        
+
         # Check for published_at column (which is what gooddevs data uses)
         if "published_at" in display_df.columns:
             try:
                 # Parse dates with UTC handling for mixed timezones
                 display_df["published_at_parsed"] = pd.to_datetime(
-                    display_df["published_at"], 
+                    display_df["published_at"],
                     errors="coerce",
                     utc=True
                 )
                 # Remove rows with invalid dates
                 valid_date_mask = display_df["published_at_parsed"].notna()
                 display_df = display_df[valid_date_mask]
-                
+
                 if not display_df.empty:
                     display_df = display_df.sort_values("published_at_parsed", ascending=False)
                     # Create formatted date for display
                     display_df["formatted_date"] = display_df["published_at_parsed"].dt.strftime('%Y-%m-%d %H:%M')
-                    sort_col = "published_at_parsed"
                     date_col_present = True
-                    
+
             except Exception as e:
-                st.warning(f"Error parsing dates: {str(e)}")
+                st.warning(f"Error parsing dates: {e!s}")
                 # Fallback: use data as-is without sorting
                 date_col_present = False
-                
+
         elif "published_date" in display_df.columns:
             try:
                 display_df["published_date"] = pd.to_datetime(display_df["published_date"], errors="coerce")
                 # Remove rows with invalid dates
                 valid_date_mask = display_df["published_date"].notna()
                 display_df = display_df[valid_date_mask]
-                
+
                 if not display_df.empty:
                     display_df = display_df.sort_values("published_date", ascending=False)
                     display_df["formatted_date"] = display_df["published_date"].dt.strftime('%Y-%m-%d %H:%M')
-                    sort_col = "published_date"
                     date_col_present = True
-                    
+
             except Exception as e:
-                st.warning(f"Error parsing published_date: {str(e)}")
+                st.warning(f"Error parsing published_date: {e!s}")
                 date_col_present = False
 
         # Prepare columns for display
         source_name_for_download = "gooddevs"
-        
+
         # Base column mapping
         column_mapping = {
             "title": "Título",
             "source": "Fuente",
             "url": "URL_Enlace"
         }
-        
+
         # Add date column if available
         if date_col_present and "formatted_date" in display_df.columns:
             column_mapping["formatted_date"] = "Fecha de Publicación"
-        
+
         df_for_editor = display_df.rename(columns=column_mapping)
 
         # Define columns to display
@@ -629,10 +624,10 @@ def render_gooddevs(gooddevs_df):
                 help="Enlace directo al post"
             )
         }
-        
+
         if "Fecha de Publicación" in df_for_editor.columns:
             column_config["Fecha de Publicación"] = st.column_config.TextColumn(
-                width="small", 
+                width="small",
                 help="Fecha de publicación original"
             )
 
@@ -669,14 +664,14 @@ def render_gooddevs(gooddevs_df):
         else:
             st.error("❌ No se pudieron procesar los datos de Good Devs.")
             st.info("Los datos pueden tener problemas de formato o fechas inválidas.")
-            
+
             # Clear session state
             if st.session_state.get("active_source_name") == source_name_for_download:
                 st.session_state.active_df_for_export = None
                 st.session_state.active_source_name = None
 
 def render_meneame_general(df):
-    """Render Meneame General posts"""
+    """Render Meneame General posts."""
     st.subheader("Meneame General")
     if df.empty:
         st.warning("No hay posts disponibles de Meneame General.")
@@ -722,7 +717,7 @@ def render_meneame_general(df):
 
 
 def render_meneame_tecnologia(df):
-    """Render Meneame Tecnología posts"""
+    """Render Meneame Tecnología posts."""
     st.subheader("Meneame Tecnología")
     if df.empty:
         st.warning("No hay posts disponibles de Meneame Tecnología.")
@@ -767,7 +762,7 @@ def render_meneame_tecnologia(df):
         )
 
 def render_podcasts(podcasts_df):
-    """Render Podcast Episodes"""
+    """Render Podcast Episodes."""
     st.subheader("Podcasts")
     if podcasts_df.empty:
         st.warning("No hay episodios de podcast disponibles.")

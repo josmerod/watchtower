@@ -12,7 +12,6 @@ import asyncio
 import json
 import os
 import re
-import sys
 from datetime import datetime
 from typing import Any
 from urllib.parse import urljoin
@@ -476,7 +475,7 @@ class AIModelMonitoringETL:
         else:
             return "unknown"
 
-    def _is_model_related(self, text: str, provider: str = None) -> bool:
+    def _is_model_related(self, text: str, provider: str | None = None) -> bool:
         """Check if content is related to AI model updates.
 
         Args:

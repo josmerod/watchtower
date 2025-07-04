@@ -1,25 +1,25 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import Field, HttpUrl
 
 # Assuming TimestampedModel is defined in src.models.base
 from models.base import TimestampedModel
 
+
 class VirtualMuseumModel(TimestampedModel): # Ensure this class correctly inherits from the imported TimestampedModel
     id: uuid.UUID = Field(default_factory=uuid.uuid4)  # Redefined as per instruction, though TimestampedModel might provide it
     name: str
-    description: Optional[str] = None
-    website_url: Optional[HttpUrl] = None
-    virtual_tour_url: Optional[HttpUrl] = None
-    country_label: Optional[str] = None  # Label for the country
-    city_label: Optional[str] = None  # Label for the city
-    main_subject_label: Optional[str] = None  # Label for the main subject
-    image_url: Optional[HttpUrl] = None
-    wikidata_url: Optional[HttpUrl] = None  # Link to the Wikidata item
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    description: str | None = None
+    website_url: HttpUrl | None = None
+    virtual_tour_url: HttpUrl | None = None
+    country_label: str | None = None  # Label for the country
+    city_label: str | None = None  # Label for the city
+    main_subject_label: str | None = None  # Label for the main subject
+    image_url: HttpUrl | None = None
+    wikidata_url: HttpUrl | None = None  # Link to the Wikidata item
+    latitude: float | None = None
+    longitude: float | None = None
     data_source: str = "Wikidata"
     retrieved_at: datetime = Field(default_factory=datetime.utcnow)
 

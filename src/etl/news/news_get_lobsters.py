@@ -1,4 +1,4 @@
-"""Lobsters ETL Module
+"""Lobsters ETL Module.
 
 This module fetches and processes content from Lobsters (lobste.rs), a technology-focused
 community platform that aggregates programming and tech news with quality discussions.
@@ -12,10 +12,8 @@ Output:
 """
 
 import json
-import os
 import random
 import re
-import sys
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -241,7 +239,7 @@ class LobstersAPI:
         return stories
 
 
-def get_lobsters_data(tags_to_track: list[str] = None) -> list[dict[str, Any]]:
+def get_lobsters_data(tags_to_track: list[str] | None = None) -> list[dict[str, Any]]:
     """Fetches content from Lobsters.
 
     Args:

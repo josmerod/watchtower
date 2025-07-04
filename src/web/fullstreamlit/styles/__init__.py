@@ -1,3 +1,1 @@
-"""
-Styling module for Watchtower Streamlit Application.
-""" 
+"""Styling module for Watchtower Streamlit Application."""

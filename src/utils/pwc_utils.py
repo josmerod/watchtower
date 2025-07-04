@@ -5,9 +5,9 @@ repositories, datasets, tasks, and methods, from PapersWithCode (PwC)
 using either an ArXiv ID or paper title. It handles API request retries
 and polite request delays.
 """
-from typing import Optional, Dict, Any, List
+import asyncio  # Added for sleep
 import time
-import asyncio # Added for sleep
+from typing import Any
 
 try:
     from paperswithcode import PapersWithCodeClient
@@ -29,13 +29,12 @@ REQUEST_DELAY_SECONDS = 1 # Be polite between different API calls
 RETRY_DELAY_SECONDS = 5   # Delay before retrying a failed call
 MAX_RETRIES = 3
 
-def _extract_arxiv_id_from_url(arxiv_url: str) -> Optional[str]:
-    """
-    Extracts the ArXiv ID from an ArXiv URL (e.g., http://arxiv.org/abs/1234.5678v1 -> 1234.5678).
-    
+def _extract_arxiv_id_from_url(arxiv_url: str) -> str | None:
+    """Extracts the ArXiv ID from an ArXiv URL (e.g., http://arxiv.org/abs/1234.5678v1 -> 1234.5678).
+
     Args:
         arxiv_url (str): The ArXiv URL.
-        
+
     Returns:
         Optional[str]: The extracted ArXiv ID (without version) or None.
     """
@@ -53,12 +52,11 @@ def _extract_arxiv_id_from_url(arxiv_url: str) -> Optional[str]:
         return None
 
 async def get_pwc_details_for_paper(
-    arxiv_id_url: Optional[str] = None, 
-    title: Optional[str] = None,
-    pwc_client: Optional[PapersWithCodeClient] = None
-) -> Optional[Dict[str, Any]]:
-    """
-    Fetches paper details from PapersWithCode using ArXiv ID or title with retries.
+    arxiv_id_url: str | None = None,
+    title: str | None = None,
+    pwc_client: PapersWithCodeClient | None = None
+) -> dict[str, Any] | None:
+    """Fetches paper details from PapersWithCode using ArXiv ID or title with retries.
 
     Args:
         arxiv_id_url (Optional[str]): The ArXiv ID (e.g., '1706.03762') or full ArXiv URL.
@@ -72,18 +70,17 @@ async def get_pwc_details_for_paper(
     if not HAS_PWC:
         logger.warning("PapersWithCode client not available. Install with: pip install paperswithcode-client")
         return None
-        
+
     client = pwc_client if pwc_client else PapersWithCodeClient()
-    
-    pwc_paper_obj: Optional[Paper] = None
-    pwc_id: Optional[str] = None
-    last_error = None
+
+    pwc_paper_obj: Paper | None = None
+    pwc_id: str | None = None
     # TODO: Add unit tests for input parsing (_extract_arxiv_id_from_url)
     cleaned_arxiv_id = None
     if arxiv_id_url:
         cleaned_arxiv_id = _extract_arxiv_id_from_url(arxiv_id_url) if 'arxiv.org' in arxiv_id_url else arxiv_id_url
 
-    # --- Find PwC Paper ID (with retries) --- 
+    # --- Find PwC Paper ID (with retries) ---
     for attempt in range(MAX_RETRIES):
         try:
             if cleaned_arxiv_id:
@@ -93,7 +90,6 @@ async def get_pwc_details_for_paper(
                     pwc_paper_obj = papers_list.results[0]
                     pwc_id = pwc_paper_obj.id
                     logger.info(f"Found PwC paper {pwc_id} for ArXiv ID {cleaned_arxiv_id}")
-                    last_error = None
                     break # Found paper, exit retry loop
                 else:
                     # Not found is not necessarily an error to retry, but log it.
@@ -109,11 +105,10 @@ async def get_pwc_details_for_paper(
                     pwc_paper_obj = papers_list_title.results[0] # Take the first match
                     pwc_id = pwc_paper_obj.id
                     logger.info(f"Found PwC paper {pwc_id} for title '{title}'")
-                    last_error = None
                     break # Found paper, exit retry loop
                 else:
                     logger.info(f"No PwC paper found for title '{title}' on attempt {attempt + 1}")
-            
+
             # If we found the paper by ID or title, break the loop
             if pwc_paper_obj:
                  break
@@ -124,7 +119,6 @@ async def get_pwc_details_for_paper(
 
         except Exception as e: # Catch generic exceptions which might indicate API issues
             # Consider catching more specific client exceptions if available e.g., RateLimitError, ServerError
-            last_error = e
             logger.warning(f"Error finding PwC paper (Attempt {attempt + 1}/{MAX_RETRIES}): {e}")
             if attempt < MAX_RETRIES - 1:
                 logger.info(f"Retrying after {RETRY_DELAY_SECONDS} seconds...")
@@ -132,17 +126,17 @@ async def get_pwc_details_for_paper(
             else:
                 logger.error(f"Failed to find PwC paper after {MAX_RETRIES} attempts due to error: {e}")
                 return None # Failed after retries
-    
+
     # If paper wasn't found even without errors (e.g., search returned empty)
     if not pwc_paper_obj or not pwc_id:
         logger.info(f"PwC paper not found for arXiv '{cleaned_arxiv_id}' or title '{title}'.")
         return None
 
-    # --- Fetch Details for the found Paper ID (with retries for each part) --- 
+    # --- Fetch Details for the found Paper ID (with retries for each part) ---
     # TODO: Add unit tests for PwC data extraction logic below
-    details: Dict[str, Any] = {
+    details: dict[str, Any] = {
         "pwc_id": pwc_id,
-        "pwc_url": pwc_paper_obj.url_abs, 
+        "pwc_url": pwc_paper_obj.url_abs,
         "pwc_title": pwc_paper_obj.title,
         "pwc_proceeding": pwc_paper_obj.proceeding,
         "pwc_repositories": [],
@@ -154,13 +148,11 @@ async def get_pwc_details_for_paper(
 
     async def fetch_with_retry(api_call, *args, **kwargs):
         """Helper to wrap API calls with retry logic."""
-        last_call_error = None
         for attempt in range(MAX_RETRIES):
             try:
                 result = api_call(*args, **kwargs)
                 return result
             except Exception as e:
-                 last_call_error = e
                  logger.warning(f"Error in API call {api_call.__name__} (Attempt {attempt + 1}): {e}")
                  if attempt < MAX_RETRIES - 1:
                      logger.info(f"Retrying after {RETRY_DELAY_SECONDS} seconds...")
@@ -188,18 +180,18 @@ async def get_pwc_details_for_paper(
             ]
         elif not repositories_list:
              details["error"] = details.get("error", "") + "Failed to fetch repositories; "
-        
+
         # Get datasets
         await asyncio.sleep(REQUEST_DELAY_SECONDS)
         datasets_list = await fetch_with_retry(client.paper_dataset_list, paper_id=pwc_id)
         if datasets_list and datasets_list.results:
             details["pwc_datasets"] = [
                 {
-                    "id": dataset.id, 
-                    "name": dataset.name, 
-                    "url": dataset.url, 
+                    "id": dataset.id,
+                    "name": dataset.name,
+                    "url": dataset.url,
                     "is_featured": dataset.is_featured
-                } 
+                }
                 for dataset in datasets_list.results
             ]
         elif not datasets_list:
@@ -225,7 +217,7 @@ async def get_pwc_details_for_paper(
               details["error"] = details.get("error", "") + "Failed to fetch tasks; "
 
         # Clean up error message if it was just placeholder text
-        if details["error"] and details["error"].strip().endswith(";"): 
+        if details["error"] and details["error"].strip().endswith(";"):
             details["error"] = details["error"].strip()[:-1].strip()
         if not details["error"]: details["error"] = None
 
@@ -238,16 +230,16 @@ async def get_pwc_details_for_paper(
 
 if __name__ == '__main__':
     logger.info("Starting PapersWithCode Utils example")
-    
+
     # Example: Attention Is All You Need
     # Direct ArXiv ID
     # arxiv_id_to_test = "1706.03762" # Transformer paper
     # pwc_data = get_pwc_details_for_paper(arxiv_id_url=arxiv_id_to_test)
-    
+
     # ArXiv URL
     arxiv_url_to_test = "http://arxiv.org/abs/1706.03762v5"
     pwc_data_from_url = get_pwc_details_for_paper(arxiv_id_url=arxiv_url_to_test)
-    
+
     if pwc_data_from_url:
         logger.info(f"PwC Details for {arxiv_url_to_test} (from URL):")
         for key, value in pwc_data_from_url.items():
@@ -270,4 +262,4 @@ if __name__ == '__main__':
     # else:
     #     logger.warning(f"Could not fetch PwC details for title '{title_to_test}'")
 
-    logger.info("PapersWithCode Utils example finished") 
+    logger.info("PapersWithCode Utils example finished")

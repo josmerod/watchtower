@@ -1,11 +1,12 @@
 import json
-import dash
-from dash import html, dcc
-import dash_bootstrap_components as dbc
-from datetime import datetime, timezone
 
 # --- Data Loading ---
 import os
+from datetime import datetime, timezone
+
+import dash
+import dash_bootstrap_components as dbc
+from dash import html
 
 # Get absolute paths from project root
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +27,7 @@ NEWS_SOURCES_CONFIG = {
 def load_news_from_file(file_path):
     """Loads news items from a JSON file."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding='utf-8') as f:
             data = json.load(f)
             # Ensure data is a list of records
             if isinstance(data, dict): # Handle cases where JSON might be a dict with a key containing the list
@@ -141,8 +142,7 @@ def format_article_date(article):
 # Removed create_article_card function as it's no longer needed for table view
 
 def create_news_source_tab_content(source_keys, combined_name=None):
-    """
-    Creates the content for a news tab as a table, potentially combining multiple sources.
+    """Creates the content for a news tab as a table, potentially combining multiple sources.
     Sorts articles by date before limiting.
     """
     all_articles_for_tab = []
@@ -227,7 +227,7 @@ def render_news_tab():
     ]
 
     tabs_children = []
-    for i, tab_def in enumerate(tab_definitions):
+    for _i, tab_def in enumerate(tab_definitions):
         tab_id = f"news-tab-{tab_def['id']}"
         content = create_news_source_tab_content(tab_def["keys"], combined_name=tab_def["label"])
         tabs_children.append(

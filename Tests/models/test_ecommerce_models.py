@@ -1,12 +1,13 @@
 # Tests/models/test_ecommerce_models.py
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Add project root to Python path
 project_root = Path(__file__).resolve().parent.parent.parent
 try:
     from pydantic import ValidationError
+
     from src.models.ecommerce import ShoppyProduct, ShoppyRawData
 except ImportError as e:
     print(f"Error importing modules: {e}. Ensure PYTHONPATH is set correctly or run from project root.")

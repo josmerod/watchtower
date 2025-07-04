@@ -26,7 +26,7 @@ except ImportError as e:
 
 if __name__ == '__main__':
     print("Attempting to start the New Dashboard POC server...")
-    print(f"Serving on http://127.0.0.1:8051 (Press CTRL+C to quit)")
+    print("Serving on http://127.0.0.1:8051 (Press CTRL+C to quit)")
     try:
         # Check if the app object was imported successfully
         if 'app' in locals() and app is not None:

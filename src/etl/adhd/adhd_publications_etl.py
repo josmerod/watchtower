@@ -1,11 +1,14 @@
-import os
-import requests
-import xml.etree.ElementTree as ET
 import json
+import os
+import xml.etree.ElementTree as ET
 from datetime import datetime
+
 import pandas as pd
-from etl.base import BaseETL # BaseETL should handle logger and output_dir
+import requests
+
+from etl.base import BaseETL  # BaseETL should handle logger and output_dir
 from models.adhd import ADHDPublication
+
 # logging is configured by BaseETL, so specific configuration here might not be needed
 # import logging
 
@@ -212,7 +215,7 @@ class ADHDPublicationETL(BaseETL):
             with open(latest_json_file_path, 'w', encoding='utf-8') as f:
                 json.dump(papers_dict_list, f, ensure_ascii=False, indent=4)
             self.logger.info(f"Successfully updated latest_papers.json at {latest_json_file_path}")
-        except IOError as e:
+        except OSError as e:
             self.logger.error(f"Error saving JSON file: {e}")
         except Exception as e:
             self.logger.error(f"An unexpected error occurred during JSON saving: {e}")
@@ -222,7 +225,7 @@ class ADHDPublicationETL(BaseETL):
             df = pd.DataFrame(papers_dict_list)
             if 'authors' in df.columns:
                 # Vectorized author joining
-        df['authors'] = df['authors'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
+                df['authors'] = df['authors'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
 
             csv_file_path = os.path.join(csv_dir, f"papers_{timestamp}.csv")
             df.to_csv(csv_file_path, index=False, encoding='utf-8')
@@ -233,7 +236,7 @@ class ADHDPublicationETL(BaseETL):
             self.logger.info(f"Successfully updated latest_papers.csv at {latest_csv_file_path}")
         except pd.errors.PandasError as e:
             self.logger.error(f"Pandas DataFrame error during CSV saving: {e}")
-        except IOError as e:
+        except OSError as e:
             self.logger.error(f"Error saving CSV file: {e}")
         except Exception as e:
             self.logger.error(f"An unexpected error occurred during CSV saving: {e}")

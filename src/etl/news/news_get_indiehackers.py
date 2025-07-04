@@ -1,4 +1,4 @@
-"""Indie Hackers ETL Module
+"""Indie Hackers ETL Module.
 
 This module fetches and processes content from Indie Hackers community,
 including posts about startups, entrepreneurship, and indie product discussions.
@@ -12,12 +12,10 @@ Output:
 """
 
 import json
-import os
 import random
 import re
-import sys
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import urljoin
 
@@ -298,7 +296,7 @@ class IndieHackersAPI:
             return None
 
 
-def get_indiehackers_data(groups_to_track: list[str] = None) -> list[dict[str, Any]]:
+def get_indiehackers_data(groups_to_track: list[str] | None = None) -> list[dict[str, Any]]:
     """Fetches content from Indie Hackers.
 
     Args:

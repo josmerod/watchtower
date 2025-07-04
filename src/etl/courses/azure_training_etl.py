@@ -1,32 +1,32 @@
 # src/etl/courses/azure_training_etl.py
-import os
-import sys
 import json
-from datetime import datetime, timezone
-from typing import List, Dict, Any
+import os
+from datetime import timezone
+from typing import Any
+
 import feedparser
-import pandas as pd # type: ignore
-from dateutil import parser as date_parser # For robust date parsing
+import pandas as pd  # type: ignore
+from dateutil import parser as date_parser  # For robust date parsing
+
+from utils.file_system import ensure_directories, get_project_root
 
 # Ensure project root is on path
 from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("AzureTrainingETL") # Updated logger name
 
 # RSS feed for Azure Microsoft Learn Blog
-RSS_FEEDS: Dict[str, str] = {
+RSS_FEEDS: dict[str, str] = {
     "azure_microsoft_learn_blog": "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftLearnBlog"
 }
 
-def fetch_azure_training_feed() -> List[Dict[str, Any]]: # Renamed function
-    """
-    Fetches and parses RSS feed from the Azure Microsoft Learn blog.
+def fetch_azure_training_feed() -> list[dict[str, Any]]: # Renamed function
+    """Fetches and parses RSS feed from the Azure Microsoft Learn blog.
 
     Returns:
         List of entries with metadata from the RSS feed.
     """
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     source_name = "azure_microsoft_learn_blog" # Updated source name
     url = RSS_FEEDS[source_name]
 
@@ -80,9 +80,8 @@ def fetch_azure_training_feed() -> List[Dict[str, Any]]: # Renamed function
     return entries
 
 
-def save_azure_training_entries(entries: List[Dict[str, Any]]) -> None: # Renamed function
-    """
-    Saves Azure Training blog entries to JSON and CSV in the data/courses directory.
+def save_azure_training_entries(entries: list[dict[str, Any]]) -> None: # Renamed function
+    """Saves Azure Training blog entries to JSON and CSV in the data/courses directory.
 
     Args:
         entries: List of Azure Training blog entry dictionaries.
@@ -123,8 +122,7 @@ def save_azure_training_entries(entries: List[Dict[str, Any]]) -> None: # Rename
 
 
 def main() -> None:
-    """
-    Main entry point for the Azure Training RSS ETL process.
+    """Main entry point for the Azure Training RSS ETL process.
     """
     logger.info("Starting Azure Training RSS ETL process") # Updated log message
     azure_entries = fetch_azure_training_feed() # Updated function call
@@ -134,4 +132,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-```

@@ -9,9 +9,9 @@ import sys
 # sys.path.append(os.path.dirname(SCRIPT_DIR)) # Add project root to path
 
 try:
-    from src.config.settings import get_settings, Settings
+    from src.config.settings import Settings, get_settings
     from src.utils.backup_utils import BackupManager
-    from src.utils.logging import setup_logging # Assuming a central logging setup
+    from src.utils.logging import setup_logging  # Assuming a central logging setup
 except ImportError as e:
     # Fallback basic logging if custom setup fails or modules not found
     logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')

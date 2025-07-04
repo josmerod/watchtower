@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 
 
 def handle_login(udemy):
-    """Handle the login process with multiple methods
+    """Handle the login process with multiple methods.
 
     Args:
         udemy: The Udemy client instance
@@ -142,7 +142,7 @@ def handle_login(udemy):
 
 
 def display_results(udemy):
-    """Display enrollment results
+    """Display enrollment results.
 
     Args:
         udemy: The Udemy client instance
@@ -173,7 +173,7 @@ def display_results(udemy):
 
 
 def main_enroll():
-    """Main function to handle the enrollment process"""
+    """Main function to handle the enrollment process."""
     logger.info(f"Starting DUCE-CLI Enroller v{VERSION}")
 
     # Load scraped courses

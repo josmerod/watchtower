@@ -1,4 +1,4 @@
-"""Stack Overflow Trends ETL Module
+"""Stack Overflow Trends ETL Module.
 
 This module fetches and processes trending Stack Overflow questions, tags,
 and discussions to track what developers are currently asking about and
@@ -16,7 +16,6 @@ import csv
 import json
 import os
 import random
-import sys
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -656,7 +655,7 @@ def save_data(data: list[dict[str, Any]], output_dir: str) -> dict[str, str]:
         fieldnames = set()
         for item in csv_data:
             fieldnames.update(item.keys())
-        fieldnames = sorted(list(fieldnames))
+        fieldnames = sorted(fieldnames)
 
         for csv_path in [csv_file, latest_csv]:
             with open(csv_path, "w", newline="", encoding="utf-8") as f:

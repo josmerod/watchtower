@@ -1,8 +1,9 @@
-import streamlit as st
-import pandas as pd
-import sys
 import os
+import sys
 from pathlib import Path
+
+import pandas as pd
+import streamlit as st
 
 # Add the src directory to the Python path
 current_dir = Path(__file__).parent
@@ -25,12 +26,10 @@ except ImportError as e:
     def get_logger(name):
         return logging.getLogger(name)
 
-# Use centralized path setup and safe logger  
-from ._path_setup import get_safe_logger
+# Use centralized path setup and safe logger
 
 def render(new_releases_df: pd.DataFrame, logger) -> None:
-    """
-    Renders the new game releases tab.
+    """Renders the new game releases tab.
 
     Args:
         new_releases_df: DataFrame containing new game releases.

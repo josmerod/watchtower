@@ -1,18 +1,17 @@
-"""
-Courses tab component for the Watchtower Streamlit application.
+"""Courses tab component for the Watchtower Streamlit application.
 Displays online course data from various platforms like Coursera and Udemy.
 """
 
-import streamlit as st
-import pandas as pd
 import json
 import os
 
-from typing import Dict, List, Optional, Any, Union
+import pandas as pd
+import streamlit as st
+
 
 # Get the project root directory
 def get_project_root():
-    """Get the project root directory"""
+    """Get the project root directory."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # Go up from src/web/fullstreamlit/components to project root
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
@@ -31,54 +30,50 @@ UDEMY_FILE = os.path.join(UDEMY_DATA_DIR, "udemy_courses.json")
 DEEPLEARNINGAI_FILE = os.path.join(DEEPLEARNINGAI_DATA_DIR, "deeplearningai_courses.json")
 
 def load_coursera_courses_from_multiple_paths():
-    """Try loading Coursera courses from multiple potential paths"""
-    
+    """Try loading Coursera courses from multiple potential paths."""
     # Try the main path first
     if os.path.exists(COURSERA_FILE):
         try:
-            with open(COURSERA_FILE, "r", encoding="utf-8") as f:
+            with open(COURSERA_FILE, encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            st.warning(f"Error reading Coursera data from main path: {str(e)}")
-    
+            st.warning(f"Error reading Coursera data from main path: {e!s}")
+
     # If main path fails, return empty data
     st.warning("No se encontraron cursos de Coursera en las rutas esperadas")
     return []
 
 def load_udemy_courses_from_multiple_paths():
-    """Try loading Udemy courses from multiple potential paths"""
-    
+    """Try loading Udemy courses from multiple potential paths."""
     # Try the main path first
     if os.path.exists(UDEMY_FILE):
         try:
-            with open(UDEMY_FILE, "r", encoding="utf-8") as f:
+            with open(UDEMY_FILE, encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            st.warning(f"Error reading Udemy data from main path: {str(e)}")
-    
+            st.warning(f"Error reading Udemy data from main path: {e!s}")
+
     # If main path fails, return empty data
     st.warning("No se encontraron cursos de Udemy en las rutas esperadas")
     return []
 
 def load_deeplearningai_courses_from_multiple_paths():
-    """Try loading DeepLearning.AI courses from multiple potential paths"""
-    
+    """Try loading DeepLearning.AI courses from multiple potential paths."""
     # Try the main path first
     if os.path.exists(DEEPLEARNINGAI_FILE):
         try:
-            with open(DEEPLEARNINGAI_FILE, "r", encoding="utf-8") as f:
+            with open(DEEPLEARNINGAI_FILE, encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            st.warning(f"Error reading DeepLearning.AI data from main path: {str(e)}")
-    
+            st.warning(f"Error reading DeepLearning.AI data from main path: {e!s}")
+
     # If main path fails, return empty data
     st.warning("No se encontraron cursos de DeepLearning.AI en las rutas esperadas")
     return []
 
-def render(courses_data: Dict[str, pd.DataFrame], logger=None):
-    """
-    Render the courses tab with data from different platforms
-    
+def render(courses_data: dict[str, pd.DataFrame], logger=None):
+    """Render the courses tab with data from different platforms.
+
     Parameters
     ----------
     courses_data : Dict[str, pd.DataFrame]
@@ -87,12 +82,12 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
         Logger instance for logging errors/warnings
     """
     st.header("🎓 Cursos Online")
-    
+
     # Emergency direct loading if data is empty
     if not courses_data or all(df.empty for df in courses_data.values()):
         if logger:
             logger.warning("No data from loader, trying direct load")
-        
+
         # Load available course data from JSON files
         loaded_data = {}
         coursera_json = load_coursera_courses_from_multiple_paths()
@@ -102,13 +97,13 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
                 loaded_data["coursera"] = pd.DataFrame(coursera_json)
             except Exception as e:
                 if logger:
-                    logger.error(f"Error loading Coursera data directly: {str(e)}")
-                st.error(f"Error cargando datos de Coursera: {str(e)}")
+                    logger.error(f"Error loading Coursera data directly: {e!s}")
+                st.error(f"Error cargando datos de Coursera: {e!s}")
         else:
             if logger:
                 logger.error("Could not find coursera_courses.json in any path")
             st.error("No se pudo encontrar el archivo de cursos de Coursera.")
-        
+
         udemy_json = load_udemy_courses_from_multiple_paths()
         if udemy_json:
             try:
@@ -116,13 +111,13 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
                 loaded_data["udemy"] = pd.DataFrame(udemy_json)
             except Exception as e:
                 if logger:
-                    logger.error(f"Error loading Udemy data directly: {str(e)}")
-                st.error(f"Error cargando datos de Udemy: {str(e)}")
+                    logger.error(f"Error loading Udemy data directly: {e!s}")
+                st.error(f"Error cargando datos de Udemy: {e!s}")
         else:
             if logger:
                 logger.error("Could not find udemy_courses.json in any path")
             st.info("No se pudo encontrar el archivo de cursos de Udemy.")
-        
+
         deeplearningai_json = load_deeplearningai_courses_from_multiple_paths()
         if deeplearningai_json:
             try:
@@ -130,13 +125,13 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
                 loaded_data["deeplearningai"] = pd.DataFrame(deeplearningai_json)
             except Exception as e:
                 if logger:
-                    logger.error(f"Error loading DeepLearning.AI data directly: {str(e)}")
-                st.error(f"Error cargando datos de DeepLearning.AI: {str(e)}")
+                    logger.error(f"Error loading DeepLearning.AI data directly: {e!s}")
+                st.error(f"Error cargando datos de DeepLearning.AI: {e!s}")
         else:
             if logger:
                 logger.error("Could not find deeplearningai_courses.json in any path")
             st.info("No se pudo encontrar el archivo de cursos de DeepLearning.AI.")
-        
+
         courses_data = loaded_data
 
     # Check if all dataframes are empty after emergency loading
@@ -159,7 +154,7 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
         return
 
     tabs = st.tabs(tab_titles)
-    tab_map = {title: tab for title, tab in zip(tab_titles, tabs)}
+    tab_map = dict(zip(tab_titles, tabs, strict=False))
 
     # Display content within each tab
     for platform, tab in tab_map.items():
@@ -177,9 +172,8 @@ def render(courses_data: Dict[str, pd.DataFrame], logger=None):
 
 
 def display_coursera_courses(courses_df: pd.DataFrame):
-    """
-    Display Coursera courses
-    
+    """Display Coursera courses.
+
     Parameters
     ----------
     courses_df : pd.DataFrame
@@ -221,15 +215,15 @@ def display_coursera_courses(courses_df: pd.DataFrame):
         with col1:
             if "subject" in filtered_courses_df.columns:
                 subjects = sorted(filtered_courses_df["subject"].dropna().unique().tolist())
-                subjects = ["Todos los temas"] + subjects
+                subjects = ["Todos los temas", *subjects]
                 selected_subject = st.selectbox("Filtrar por tema:", subjects, key="coursera_subject")
                 if selected_subject != "Todos los temas":
                     filtered_courses_df = filtered_courses_df[filtered_courses_df["subject"] == selected_subject]
-        
+
         with col2:
             if "language" in filtered_courses_df.columns:
                 languages = sorted(filtered_courses_df["language"].dropna().unique().tolist())
-                languages = ["Todos los idiomas"] + languages
+                languages = ["Todos los idiomas", *languages]
                 selected_language = st.selectbox("Filtrar por idioma:", languages, key="coursera_language")
                 if selected_language != "Todos los idiomas":
                     filtered_courses_df = filtered_courses_df[filtered_courses_df["language"] == selected_language]
@@ -237,7 +231,7 @@ def display_coursera_courses(courses_df: pd.DataFrame):
         if "is_free" in filtered_courses_df.columns:
             show_only_free = st.checkbox("Mostrar solo cursos gratuitos", key="coursera_free_checkbox")
             if show_only_free:
-                filtered_courses_df = filtered_courses_df[filtered_courses_df["is_free"] == True]
+                filtered_courses_df = filtered_courses_df[filtered_courses_df["is_free"]]
 
     st.write(f"Mostrando {len(filtered_courses_df)} cursos")
 
@@ -275,7 +269,7 @@ def display_coursera_courses(courses_df: pd.DataFrame):
             "Duración", "Fecha de Inicio", "Añadido",
             "Gratis", "Certificado", "URL_Enlace"
         ]
-        
+
         # Filter this list to include only columns that actually exist in df_for_editor
         columns_for_editor_display = [col for col in final_ordered_columns if col in df_for_editor.columns]
         df_for_editor = df_for_editor[columns_for_editor_display]
@@ -321,9 +315,8 @@ def display_coursera_courses(courses_df: pd.DataFrame):
         st.info("No hay cursos que coincidan con los filtros seleccionados.")
 
 def display_udemy_courses(courses_df: pd.DataFrame):
-    """
-    Display Udemy courses
-    
+    """Display Udemy courses.
+
     Parameters
     ----------
     courses_df : pd.DataFrame
@@ -338,7 +331,7 @@ def display_udemy_courses(courses_df: pd.DataFrame):
     # Store original index to maintain order if needed, though less critical here without complex filtering
     # filtered_df = filtered_df.reset_index(drop=True)
 
-        
+
     if "scraped_at" in filtered_df.columns:
         filtered_df["scraped_at"] = pd.to_datetime(filtered_df["scraped_at"], errors='coerce')
         filtered_df["fecha_adición"] = filtered_df["scraped_at"].dt.strftime("%Y-%m-%d")
@@ -346,9 +339,9 @@ def display_udemy_courses(courses_df: pd.DataFrame):
     else:
         # Ensure fecha_adición column exists for schema consistency
         filtered_df["fecha_adición"] = None
-            
+
     st.write(f"Mostrando {len(filtered_df)} cursos de Udemy")
-        
+
     if not filtered_df.empty:
         # Select and prepare display columns
         cols_to_select = ["title"]
@@ -413,9 +406,8 @@ def display_udemy_courses(courses_df: pd.DataFrame):
         st.info("No hay cursos de Udemy para mostrar (después de procesar).")
 
 def display_deeplearningai_courses(courses_df: pd.DataFrame):
-    """
-    Display DeepLearning.AI courses
-    
+    """Display DeepLearning.AI courses.
+
     Parameters
     ----------
     courses_df : pd.DataFrame
@@ -456,15 +448,15 @@ def display_deeplearningai_courses(courses_df: pd.DataFrame):
         with col1:
             if "level" in filtered_courses_df.columns:
                 levels = sorted(filtered_courses_df["level"].dropna().unique().tolist())
-                levels = ["Todos los niveles"] + levels
+                levels = ["Todos los niveles", *levels]
                 selected_level = st.selectbox("Filtrar por nivel:", levels, key="deeplearningai_level")
                 if selected_level != "Todos los niveles":
                     filtered_courses_df = filtered_courses_df[filtered_courses_df["level"] == selected_level]
-        
+
         with col2:
             if "instructor" in filtered_courses_df.columns:
                 instructors = sorted(filtered_courses_df["instructor"].dropna().unique().tolist())
-                instructors = ["Todos los instructores"] + instructors
+                instructors = ["Todos los instructores", *instructors]
                 selected_instructor = st.selectbox("Filtrar por instructor:", instructors, key="deeplearningai_instructor")
                 if selected_instructor != "Todos los instructores":
                     filtered_courses_df = filtered_courses_df[filtered_courses_df["instructor"] == selected_instructor]
@@ -472,7 +464,7 @@ def display_deeplearningai_courses(courses_df: pd.DataFrame):
         if "is_free" in filtered_courses_df.columns:
             show_only_free = st.checkbox("Mostrar solo cursos gratuitos", key="deeplearningai_free_checkbox")
             if show_only_free:
-                filtered_courses_df = filtered_courses_df[filtered_courses_df["is_free"] == True]
+                filtered_courses_df = filtered_courses_df[filtered_courses_df["is_free"]]
 
     st.write(f"Mostrando {len(filtered_courses_df)} cursos")
 
@@ -506,7 +498,7 @@ def display_deeplearningai_courses(courses_df: pd.DataFrame):
             "Título", "Instructor", "Nivel", "Duración", "Añadido",
             "Gratis", "Certificado", "URL_Enlace"
         ]
-        
+
         # Filter this list to include only columns that actually exist in df_for_editor
         columns_for_editor_display = [col for col in final_ordered_columns if col in df_for_editor.columns]
         df_for_editor = df_for_editor[columns_for_editor_display]

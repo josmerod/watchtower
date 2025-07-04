@@ -578,7 +578,7 @@ class AIMonitoringETL(BaseETL):
         """Calculate comparative metrics across platforms."""
         platform_metrics = {}
 
-        for platform_id in self.platforms.keys():
+        for platform_id in self.platforms:
             platform_data = [d for d in data if d.get("platform") == platform_id]
 
             platform_metrics[platform_id] = {

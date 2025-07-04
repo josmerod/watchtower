@@ -5,9 +5,10 @@ fetch repository details via the GitHub API, and find GitHub repository
 links within text content.
 """
 import re
-import requests
-from typing import Optional, Dict, Any, Tuple
+from typing import Any
 from urllib.parse import urlparse
+
+import requests
 
 from utils.logging import get_logger
 
@@ -15,15 +16,14 @@ logger = get_logger(__name__)
 
 GITHUB_API_BASE_URL = "https://api.github.com/repos"
 
-def extract_github_owner_repo(url: str) -> Optional[Tuple[str, str]]:
-    """
-    Extracts the owner and repository name from a GitHub URL.
+def extract_github_owner_repo(url: str) -> tuple[str, str] | None:
+    """Extracts the owner and repository name from a GitHub URL.
 
     Args:
         url (str): The GitHub URL.
 
     Returns:
-        Optional[Tuple[str, str]]: A tuple containing (owner, repo_name) 
+        Optional[Tuple[str, str]]: A tuple containing (owner, repo_name)
                                      or None if the URL is not a valid GitHub repo URL.
     """
     parsed_url = urlparse(url)
@@ -33,9 +33,8 @@ def extract_github_owner_repo(url: str) -> Optional[Tuple[str, str]]:
             return path_parts[0], path_parts[1]
     return None
 
-def get_github_repo_info(repo_url: str, github_token: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """
-    Fetches information about a GitHub repository using its URL.
+def get_github_repo_info(repo_url: str, github_token: str | None = None) -> dict[str, Any] | None:
+    """Fetches information about a GitHub repository using its URL.
 
     Args:
         repo_url (str): The full URL of the GitHub repository.
@@ -51,10 +50,10 @@ def get_github_repo_info(repo_url: str, github_token: Optional[str] = None) -> O
     if not owner_repo:
         logger.warning(f"Invalid GitHub URL format: {repo_url}")
         return None
-    
+
     owner, repo = owner_repo
     api_url = f"{GITHUB_API_BASE_URL}/{owner}/{repo}"
-    
+
     headers = {
         "Accept": "application/vnd.github.v3+json"
     }
@@ -75,7 +74,7 @@ def get_github_repo_info(repo_url: str, github_token: Optional[str] = None) -> O
                 languages_data = lang_response.json()
             else:
                 logger.warning(f"Failed to fetch languages for {owner}/{repo}: {lang_response.status_code}")
-        
+
         return {
             "github_html_url": data.get("html_url"),
             "github_description": data.get("description"),
@@ -101,12 +100,11 @@ def get_github_repo_info(repo_url: str, github_token: Optional[str] = None) -> O
         logger.error(f"Request error fetching GitHub repo {owner}/{repo}: {e}")
     except Exception as e:
         logger.error(f"Unexpected error fetching GitHub repo {owner}/{repo}: {e}")
-        
+
     return None
 
 def find_github_links_in_text(text: str) -> list[str]:
-    """
-    Finds all GitHub repository URLs in a given text.
+    """Finds all GitHub repository URLs in a given text.
 
     Args:
         text (str): The text to search for GitHub links.
@@ -118,12 +116,12 @@ def find_github_links_in_text(text: str) -> list[str]:
     # It looks for github.com followed by two path segments (owner/repo)
     # and ensures it doesn't pick up URLs with further subpaths like /issues or /pulls directly
     regex = r'https?://github\.com/([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)(?![^\s\'"`<>])'
-    
+
     found_urls = re.findall(regex, text)
-    
+
     # Reconstruct the full URLs and ensure uniqueness
-    unique_urls = sorted(list(set([f"https://github.com/{owner}/{repo}" for owner, repo in found_urls])))
-    
+    unique_urls = sorted({f"https://github.com/{owner}/{repo}" for owner, repo in found_urls})
+
     return unique_urls
 
 if __name__ == '__main__':
@@ -152,7 +150,7 @@ if __name__ == '__main__':
         "https://github.com/nonexistent/repo", # Test non-existent repo
         "http://github.com/polars/polars"
     ]
-    
+
     if extracted_links:
         test_repo_urls.append(extracted_links[0]) # Add one from extracted for testing
 
@@ -160,7 +158,7 @@ if __name__ == '__main__':
         logger.info(f"Fetching info for: {url}")
         # Note: For real use, you might want to pass a GITHUB_TOKEN from an environment variable
         # repo_info = get_github_repo_info(url, github_token=os.getenv("GITHUB_TOKEN"))
-        repo_info = get_github_repo_info(url) 
+        repo_info = get_github_repo_info(url)
         if repo_info:
             logger.info(f"Repository: {repo_info.get('github_html_url')}")
             logger.info(f"  Stars: {repo_info.get('github_stars')}, Forks: {repo_info.get('github_forks')}")
@@ -171,5 +169,5 @@ if __name__ == '__main__':
             logger.info(f"  Topics: {repo_info.get('github_topics')}")
         else:
             logger.warning(f"Could not fetch info for {url}")
-    
-    logger.info("GitHub Utils example finished") 
+
+    logger.info("GitHub Utils example finished")

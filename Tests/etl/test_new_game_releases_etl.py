@@ -1,17 +1,19 @@
-import sys
 import os
+import sys
 import unittest
-from unittest.mock import patch, Mock, MagicMock
-import pandas as pd
-import datetime
-import json
-import requests # Import requests for requests.exceptions.RequestException
+from unittest.mock import Mock, patch
+
+import requests  # Import requests for requests.exceptions.RequestException
 
 # Add project root to sys.path to allow imports from src
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 if project_root not in sys.path:
-    from src.etl.games.games_get_new_releases import fetch_games, process_games_data, get_new_releases
-from src.utils.logging import get_logger # For logger interactions if needed
+    from src.etl.games.games_get_new_releases import (
+        fetch_games,
+        get_new_releases,
+        process_games_data,
+    )
+from src.utils.logging import get_logger  # For logger interactions if needed
 
 # Initialize a logger for the test module itself, or mock where script's logger is used
 test_logger = get_logger(__name__)

@@ -1,4 +1,4 @@
-"""Security Vulnerability ETL Module
+"""Security Vulnerability ETL Module.
 
 This module fetches and processes security vulnerabilities from multiple sources
 including CVE databases, GitHub Security Advisories, npm security alerts, and PyPI security alerts.
@@ -14,7 +14,6 @@ Output:
 import csv
 import json
 import os
-import sys
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -348,7 +347,6 @@ def fetch_npm_security_advisories(session: requests.Session) -> list[dict[str, A
 
         # npm security advisories (using audit API approach)
         # This is a simplified version - in production you'd want to use the npm audit API
-        url = "https://registry.npmjs.org/-/npm/v1/security/audits"
 
         # For demo purposes, we'll create some sample data based on known patterns
         # In production, you'd integrate with npm's actual security API
@@ -571,11 +569,7 @@ def check_patch_available(description: str, references: list[str]) -> bool:
     ]
 
     description_lower = description.lower()
-    for indicator in patch_indicators:
-        if indicator in description_lower:
-            return True
-
-    return False
+    return any(indicator in description_lower for indicator in patch_indicators)
 
 
 def process_vulnerabilities(
@@ -762,7 +756,7 @@ def save_data(data: list[dict[str, Any]], output_dir: str) -> dict[str, str]:
             for item in data:
                 flat_item = {}
                 for key, value in item.items():
-                    if isinstance(value, (list, dict)):
+                    if isinstance(value, list | dict):
                         flat_item[key] = json.dumps(value, default=str)
                     else:
                         flat_item[key] = value

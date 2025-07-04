@@ -6,19 +6,18 @@ The component loads the latest JSON produced by `FourChanGeneralsETL` and
 presents the information divided by board in a set of sub-tabs.
 """
 
-from pathlib import Path
 import json
-from typing import List, Dict, Any
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import streamlit as st
 
 from utils.logging import get_logger
 
-
 DATA_FILE = Path("data/4chan_generals/output/latest.json")
 
-def _load_data() -> List[Dict[str, Any]]:
+def _load_data() -> list[dict[str, Any]]:
     if not DATA_FILE.exists():
         return []
     try:
@@ -28,9 +27,8 @@ def _load_data() -> List[Dict[str, Any]]:
         logger.error(f"Failed to load {DATA_FILE}: {exc}")
         return []
 
-def _display_board(board: str, threads: List[Dict[str, Any]]):
+def _display_board(board: str, threads: list[dict[str, Any]]):
     """Render a board section – simple table with clickable links."""
-
     if not threads:
         st.info("No active General threads detected.")
         return
@@ -42,15 +40,15 @@ def _display_board(board: str, threads: List[Dict[str, Any]]):
         display_df = df[
             [
                 "subject",
-                "replies", 
+                "replies",
                 "images",
                 "last_modified",
                 "url",
             ]
         ].copy()
-        
+
         display_df.columns = ["Subject", "Replies", "Images", "Last Modified", "Thread URL"]
-        
+
         # Use Streamlit's native dataframe display with clickable URLs
         st.dataframe(
             display_df,
@@ -70,7 +68,7 @@ def _display_board(board: str, threads: List[Dict[str, Any]]):
                     format="%d"
                 ),
                 "Images": st.column_config.NumberColumn(
-                    "Images", 
+                    "Images",
                     format="%d"
                 ),
                 "Last Modified": st.column_config.NumberColumn(
@@ -84,7 +82,6 @@ def _display_board(board: str, threads: List[Dict[str, Any]]):
 
 def render(logger=None):  # pylint: disable=unused-argument
     """Public render function expected by the main app."""
-
     st.title("📑 4chan – Active *General* Threads")
 
     data = _load_data()
@@ -96,7 +93,7 @@ def render(logger=None):  # pylint: disable=unused-argument
 
     # Group by board
     boards = sorted({item["board"] for item in data})
-    grouped: Dict[str, List[Dict[str, Any]]] = {b: [] for b in boards}
+    grouped: dict[str, list[dict[str, Any]]] = {b: [] for b in boards}
     for item in data:
         grouped[item["board"]].append(item)
 
@@ -104,4 +101,4 @@ def render(logger=None):  # pylint: disable=unused-argument
     for idx, board in enumerate(boards):
         with board_tabs[idx]:
             st.subheader(f"Board: /{board}/ – {len(grouped[board])} General threads")
-            _display_board(board, grouped[board]) 
+            _display_board(board, grouped[board])

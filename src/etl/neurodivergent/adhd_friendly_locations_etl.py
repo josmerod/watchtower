@@ -13,12 +13,8 @@ Creating a neurodivergent-friendly world, one location at a time! 🧠✨
 from __future__ import annotations
 
 import json
-import re
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-
-import requests
-from bs4 import BeautifulSoup
+from datetime import datetime
+from typing import Any
 
 from etl.base import BaseETL
 from utils.logging import get_logger
@@ -26,7 +22,7 @@ from utils.logging import get_logger
 
 class ADHDFriendlyLocationsETL(BaseETL):
     """ADHD-Friendly Locations ETL for neurodivergent-friendly space discovery."""
-    
+
     def __init__(self, **kwargs):
         """Initialize ADHD-Friendly Locations ETL."""
         super().__init__(
@@ -35,7 +31,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
             **kwargs
         )
         self.logger = get_logger("ETL.ADHDFriendlyLocations")
-        
+
         # Location data sources (mock endpoints for now)
         self.endpoints = {
             'foursquare_venues': 'https://api.foursquare.com/v3/places/search',
@@ -44,11 +40,11 @@ class ADHDFriendlyLocationsETL(BaseETL):
             'coworking_spaces': 'https://example.com/api/coworking',
             'libraries': 'https://example.com/api/libraries'
         }
-        
+
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-        
+
         # ADHD-friendly criteria
         self.sensory_criteria = {
             'noise_levels': {
@@ -73,7 +69,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
                 'packed': 4
             }
         }
-        
+
         # Location types and their ADHD-friendliness
         self.location_types = {
             'libraries': {'base_score': 8, 'noise_tolerance': 1, 'fidget_friendly': 7},
@@ -83,43 +79,43 @@ class ADHDFriendlyLocationsETL(BaseETL):
             'museums': {'base_score': 7, 'noise_tolerance': 2, 'fidget_friendly': 4},
             'bookstores': {'base_score': 8, 'noise_tolerance': 1, 'fidget_friendly': 6}
         }
-    
-    def extract(self) -> List[Dict[str, Any]]:
+
+    def extract(self) -> list[dict[str, Any]]:
         """Extract location data for ADHD-friendly analysis."""
         self.logger.info("Starting ADHD-friendly location data extraction 🧠")
         extracted_data = []
-        
+
         try:
             # Extract location data from various sources
             locations_data = self._extract_locations()
             if locations_data:
                 extracted_data.extend(locations_data)
                 self.metrics.records_extracted += len(locations_data)
-            
+
             # Extract crowdsourced ADHD reviews
             reviews_data = self._extract_neurodivergent_reviews()
             if reviews_data:
                 extracted_data.extend(reviews_data)
                 self.metrics.records_extracted += len(reviews_data)
-            
+
             # Generate location intelligence analysis
             intelligence_data = self._generate_location_intelligence()
             if intelligence_data:
                 extracted_data.extend(intelligence_data)
                 self.metrics.records_extracted += len(intelligence_data)
-            
+
             self.logger.info(f"Extracted {len(extracted_data)} ADHD-friendly location records 🌟")
-            
+
         except Exception as e:
             self.logger.error(f"Failed to extract ADHD location data: {e}")
             self.metrics.records_failed += 1
-        
+
         return extracted_data
-    
-    def _extract_locations(self) -> List[Dict[str, Any]]:
+
+    def _extract_locations(self) -> list[dict[str, Any]]:
         """Extract location data (mock implementation)."""
         locations_data = []
-        
+
         # Mock Valencia locations data
         mock_locations = [
             {
@@ -180,14 +176,14 @@ class ADHDFriendlyLocationsETL(BaseETL):
                 'extracted_at': datetime.utcnow().isoformat()
             }
         ]
-        
+
         locations_data.extend(mock_locations)
         return locations_data
-    
-    def _extract_neurodivergent_reviews(self) -> List[Dict[str, Any]]:
+
+    def _extract_neurodivergent_reviews(self) -> list[dict[str, Any]]:
         """Extract crowdsourced neurodivergent-friendly reviews."""
         reviews_data = []
-        
+
         # Mock neurodivergent community reviews
         mock_reviews = [
             {
@@ -227,14 +223,14 @@ class ADHDFriendlyLocationsETL(BaseETL):
                 'extracted_at': datetime.utcnow().isoformat()
             }
         ]
-        
+
         reviews_data.extend(mock_reviews)
         return reviews_data
-    
-    def _generate_location_intelligence(self) -> List[Dict[str, Any]]:
+
+    def _generate_location_intelligence(self) -> list[dict[str, Any]]:
         """Generate location intelligence and recommendations."""
         intelligence_data = []
-        
+
         # Generate daily location recommendations
         daily_intelligence = {
             'data_type': 'location_intelligence',
@@ -275,15 +271,15 @@ class ADHDFriendlyLocationsETL(BaseETL):
             ],
             'extracted_at': datetime.utcnow().isoformat()
         }
-        
+
         intelligence_data.append(daily_intelligence)
         return intelligence_data
-    
-    def transform(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Transform location data with ADHD-friendly analysis."""
         self.logger.info(f"Transforming {len(data)} ADHD location records 🔧")
         transformed_data = []
-        
+
         for record in data:
             try:
                 if record.get('data_type') == 'location':
@@ -309,47 +305,47 @@ class ADHDFriendlyLocationsETL(BaseETL):
                     }
                 else:
                     transformed_record = record
-                
+
                 transformed_data.append(transformed_record)
                 self.metrics.records_transformed += 1
-                
+
             except Exception as e:
                 self.logger.error(f"Failed to transform ADHD location record: {e}")
                 self.metrics.records_failed += 1
-        
+
         return transformed_data
-    
-    def _calculate_adhd_friendliness(self, record: Dict[str, Any]) -> float:
+
+    def _calculate_adhd_friendliness(self, record: dict[str, Any]) -> float:
         """Calculate overall ADHD-friendliness score."""
         score = 5.0  # Base score
-        
+
         location_type = record.get('type', '')
         type_config = self.location_types.get(location_type, {'base_score': 5})
         score = type_config.get('base_score', 5)
-        
+
         # Noise level impact
         noise_level = record.get('noise_level', 'moderate')
         noise_penalties = {'very_noisy': -3, 'noisy': -2, 'moderate': -0.5, 'quiet': 1, 'silent': 2}
         score += noise_penalties.get(noise_level, 0)
-        
+
         # Lighting impact
         lighting = record.get('lighting_type', 'neutral_artificial')
         lighting_bonuses = {'natural_light': 2, 'warm_artificial': 1, 'harsh_fluorescent': -2}
         score += lighting_bonuses.get(lighting, 0)
-        
+
         # Amenities bonus
         amenities = record.get('amenities', [])
         beneficial_amenities = ['wifi', 'quiet_zones', 'natural_light', 'comfortable_seating', 'private_study_rooms']
         amenity_bonus = sum(0.5 for amenity in amenities if amenity in beneficial_amenities)
         score += amenity_bonus
-        
+
         # Fidget friendliness
         fidget_score = record.get('fidget_friendly_score', 5)
         score += (fidget_score - 5) * 0.3
-        
+
         return max(0.0, min(10.0, score))
-    
-    def _assess_sensory_environment(self, record: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _assess_sensory_environment(self, record: dict[str, Any]) -> dict[str, Any]:
         """Assess sensory environment characteristics."""
         return {
             'noise_analysis': {
@@ -369,17 +365,17 @@ class ADHDFriendlyLocationsETL(BaseETL):
             },
             'overall_sensory_load': self._calculate_sensory_load(record)
         }
-    
-    def _calculate_sensory_load(self, record: Dict[str, Any]) -> str:
+
+    def _calculate_sensory_load(self, record: dict[str, Any]) -> str:
         """Calculate overall sensory load."""
         noise_weights = {'silent': 0, 'quiet': 1, 'moderate': 2, 'noisy': 3, 'very_noisy': 4}
         crowd_weights = {'empty': 0, 'few_people': 1, 'moderate_crowd': 2, 'busy': 3, 'packed': 4}
-        
+
         noise_load = noise_weights.get(record.get('noise_level', 'moderate'), 2)
         crowd_load = crowd_weights.get(record.get('crowd_density', 'moderate_crowd'), 2)
-        
+
         total_load = noise_load + crowd_load
-        
+
         if total_load <= 2:
             return 'low'
         elif total_load <= 4:
@@ -388,100 +384,100 @@ class ADHDFriendlyLocationsETL(BaseETL):
             return 'high'
         else:
             return 'overwhelming'
-    
-    def _assess_focus_potential(self, record: Dict[str, Any]) -> Dict[str, str]:
+
+    def _assess_focus_potential(self, record: dict[str, Any]) -> dict[str, str]:
         """Assess focus potential for different types of work."""
         location_type = record.get('type', '')
         sensory_load = self._calculate_sensory_load(record)
-        
+
         focus_matrix = {
             'library': {'deep_work': 'excellent', 'creative_work': 'good', 'collaborative_work': 'poor'},
             'coffee_shop': {'deep_work': 'poor', 'creative_work': 'excellent', 'collaborative_work': 'good'},
             'coworking_space': {'deep_work': 'good', 'creative_work': 'good', 'collaborative_work': 'excellent'},
             'park': {'deep_work': 'good', 'creative_work': 'excellent', 'collaborative_work': 'poor'}
         }
-        
+
         base_ratings = focus_matrix.get(location_type, {'deep_work': 'fair', 'creative_work': 'fair', 'collaborative_work': 'fair'})
-        
+
         # Adjust based on sensory load
         if sensory_load in ['high', 'overwhelming']:
             for key in base_ratings:
                 if base_ratings[key] in ['excellent', 'good']:
                     base_ratings[key] = 'fair'
-        
+
         return base_ratings
-    
-    def _assess_overstimulation_risk(self, record: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _assess_overstimulation_risk(self, record: dict[str, Any]) -> dict[str, Any]:
         """Assess overstimulation risk factors."""
         risk_factors = []
-        
+
         if record.get('noise_level') in ['noisy', 'very_noisy']:
             risk_factors.append('high_noise_levels')
-        
+
         if record.get('crowd_density') in ['busy', 'packed']:
             risk_factors.append('crowded_environment')
-        
+
         if record.get('lighting_type') == 'harsh_fluorescent':
             risk_factors.append('harsh_lighting')
-        
+
         if 'background_music' in record.get('amenities', []):
             risk_factors.append('unpredictable_audio')
-        
+
         risk_level = 'low'
         if len(risk_factors) >= 3:
             risk_level = 'high'
         elif len(risk_factors) >= 2:
             risk_level = 'moderate'
-        
+
         return {
             'risk_level': risk_level,
             'risk_factors': risk_factors,
             'mitigation_strategies': self._suggest_mitigation_strategies(risk_factors),
             'warning_signs': ['difficulty_concentrating', 'restlessness', 'irritability', 'need_to_leave']
         }
-    
-    def _suggest_mitigation_strategies(self, risk_factors: List[str]) -> List[str]:
+
+    def _suggest_mitigation_strategies(self, risk_factors: list[str]) -> list[str]:
         """Suggest strategies to mitigate overstimulation risks."""
         strategies = []
-        
+
         strategy_map = {
             'high_noise_levels': ['noise_cancelling_headphones', 'find_quieter_section', 'visit_during_off_peak'],
             'crowded_environment': ['visit_early_morning', 'find_corner_spot', 'use_private_rooms'],
             'harsh_lighting': ['wear_tinted_glasses', 'find_natural_light_areas', 'use_task_lighting'],
             'unpredictable_audio': ['use_white_noise_app', 'bring_own_music', 'request_quieter_area']
         }
-        
+
         for factor in risk_factors:
             strategies.extend(strategy_map.get(factor, []))
-        
+
         return list(set(strategies))  # Remove duplicates
-    
-    def _recommend_activities(self, record: Dict[str, Any]) -> List[str]:
+
+    def _recommend_activities(self, record: dict[str, Any]) -> list[str]:
         """Recommend suitable activities for this location."""
         location_type = record.get('type', '')
         adhd_score = self._calculate_adhd_friendliness(record)
-        
+
         activity_map = {
             'library': ['reading', 'research', 'writing', 'studying', 'quiet_reflection'],
             'coffee_shop': ['creative_writing', 'brainstorming', 'casual_meetings', 'people_watching'],
             'coworking_space': ['focused_work', 'video_calls', 'networking', 'collaborative_projects'],
             'park': ['walking_meetings', 'outdoor_reading', 'mindfulness', 'creative_thinking']
         }
-        
+
         base_activities = activity_map.get(location_type, ['general_work'])
-        
+
         # Add ADHD-specific activities based on score
         if adhd_score >= 8:
             base_activities.extend(['hyperfocus_sessions', 'deep_work'])
         if adhd_score >= 7:
             base_activities.extend(['sustained_attention_tasks'])
-        
+
         return base_activities
-    
-    def _suggest_optimal_times(self, record: Dict[str, Any]) -> Dict[str, str]:
+
+    def _suggest_optimal_times(self, record: dict[str, Any]) -> dict[str, str]:
         """Suggest optimal visit times for ADHD individuals."""
         location_type = record.get('type', '')
-        
+
         time_suggestions = {
             'library': {
                 'best_focus': 'early_morning (9-11am)',
@@ -504,20 +500,20 @@ class ADHDFriendlyLocationsETL(BaseETL):
                 'alternative': 'early_evening (6-8pm)'
             }
         }
-        
+
         return time_suggestions.get(location_type, {
             'best_focus': 'off_peak_hours',
             'avoid': 'crowded_periods',
             'alternative': 'flexible_timing'
         })
-    
-    def _identify_accommodations(self, record: Dict[str, Any]) -> List[str]:
+
+    def _identify_accommodations(self, record: dict[str, Any]) -> list[str]:
         """Identify available neurodivergent accommodations."""
         accommodations = []
-        
+
         amenities = record.get('amenities', [])
         location_type = record.get('type', '')
-        
+
         # Standard accommodations
         if 'quiet_zones' in amenities:
             accommodations.append('designated_quiet_areas')
@@ -527,14 +523,14 @@ class ADHDFriendlyLocationsETL(BaseETL):
             accommodations.append('reliable_internet')
         if 'comfortable_seating' in amenities:
             accommodations.append('ergonomic_seating_options')
-        
+
         # Accessibility accommodations
         accessibility = record.get('accessibility', {})
         if accessibility.get('wheelchair_accessible'):
             accommodations.append('wheelchair_accessible')
         if accessibility.get('elevator'):
             accommodations.append('elevator_access')
-        
+
         # Type-specific accommodations
         if location_type == 'library':
             accommodations.extend(['study_carrels', 'book_browsing', 'research_assistance'])
@@ -542,13 +538,13 @@ class ADHDFriendlyLocationsETL(BaseETL):
             accommodations.extend(['stimulant_beverages', 'flexible_seating', 'social_interaction_optional'])
         elif location_type == 'park':
             accommodations.extend(['nature_access', 'movement_friendly', 'sensory_regulation'])
-        
+
         return accommodations
-    
-    def _assess_escape_routes(self, record: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _assess_escape_routes(self, record: dict[str, Any]) -> dict[str, Any]:
         """Assess ease of leaving when overwhelmed."""
         location_type = record.get('type', '')
-        
+
         # Base escape route assessment
         escape_assessment = {
             'library': {'ease': 'moderate', 'social_pressure': 'low', 'logistics': 'simple'},
@@ -556,16 +552,16 @@ class ADHDFriendlyLocationsETL(BaseETL):
             'coworking_space': {'ease': 'moderate', 'social_pressure': 'high', 'logistics': 'moderate'},
             'park': {'ease': 'very_easy', 'social_pressure': 'very_low', 'logistics': 'very_simple'}
         }
-        
+
         base_rating = escape_assessment.get(location_type, {'ease': 'moderate', 'social_pressure': 'moderate', 'logistics': 'moderate'})
-        
+
         return {
             **base_rating,
             'exit_strategies': self._suggest_exit_strategies(location_type),
             'recovery_options': ['nearby_quiet_spaces', 'outdoor_areas', 'private_restrooms']
         }
-    
-    def _suggest_exit_strategies(self, location_type: str) -> List[str]:
+
+    def _suggest_exit_strategies(self, location_type: str) -> list[str]:
         """Suggest discrete exit strategies."""
         strategies = {
             'library': ['bathroom_break', 'book_return', 'quiet_exit'],
@@ -573,59 +569,59 @@ class ADHDFriendlyLocationsETL(BaseETL):
             'coworking_space': ['bathroom_break', 'coffee_run', 'meeting_excuse'],
             'park': ['natural_end_of_walk', 'weather_excuse', 'immediate_departure']
         }
-        
+
         return strategies.get(location_type, ['polite_excuse', 'bathroom_break', 'quiet_exit'])
-    
-    def _assess_review_reliability(self, record: Dict[str, Any]) -> float:
+
+    def _assess_review_reliability(self, record: dict[str, Any]) -> float:
         """Assess reliability of neurodivergent review."""
         score = 5.0
-        
+
         # Detailed review increases reliability
         review_text = record.get('review_text', '')
         if len(review_text) > 100:
             score += 2.0
         elif len(review_text) > 50:
             score += 1.0
-        
+
         # Specific sensory details increase reliability
         if any(term in review_text.lower() for term in ['noise', 'light', 'crowd', 'sensory']):
             score += 1.5
-        
+
         # Recent review is more reliable
         # (In real implementation, would check date_reviewed)
         score += 1.0
-        
+
         return min(10.0, score)
-    
-    def _extract_sensitivity_indicators(self, record: Dict[str, Any]) -> List[str]:
+
+    def _extract_sensitivity_indicators(self, record: dict[str, Any]) -> list[str]:
         """Extract sensitivity indicators from review."""
         indicators = []
         review_text = record.get('review_text', '').lower()
-        
+
         sensitivity_keywords = {
             'noise_sensitive': ['noise', 'loud', 'quiet', 'sound'],
             'light_sensitive': ['light', 'bright', 'fluorescent', 'harsh'],
             'crowd_sensitive': ['crowd', 'busy', 'people', 'overwhelming'],
             'texture_sensitive': ['texture', 'fabric', 'surface', 'material']
         }
-        
+
         for sensitivity, keywords in sensitivity_keywords.items():
             if any(keyword in review_text for keyword in keywords):
                 indicators.append(sensitivity)
-        
+
         return indicators
-    
-    def _extract_accommodation_suggestions(self, record: Dict[str, Any]) -> List[str]:
+
+    def _extract_accommodation_suggestions(self, record: dict[str, Any]) -> list[str]:
         """Extract accommodation suggestions from review."""
         suggestions = []
         review_text = record.get('review_text', '').lower()
         pros = record.get('pros', [])
-        
+
         # Extract from pros
         for pro in pros:
             if pro in ['headphones_allowed', 'fidget_friendly', 'flexible_seating']:
                 suggestions.append(pro)
-        
+
         # Extract from review text
         if 'headphone' in review_text:
             suggestions.append('headphones_recommended')
@@ -633,71 +629,71 @@ class ADHDFriendlyLocationsETL(BaseETL):
             suggestions.append('corner_seating_preferred')
         if 'quiet' in review_text:
             suggestions.append('seek_quiet_areas')
-        
+
         return suggestions
-    
-    def load(self, data: List[Dict[str, Any]]) -> None:
+
+    def load(self, data: list[dict[str, Any]]) -> None:
         """Load ADHD-friendly location data to storage."""
         self.logger.info(f"Loading {len(data)} ADHD-friendly location records 💾")
-        
+
         # Save complete data
         output_file = self.output_dir / f"adhd_friendly_locations_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
-        
+
         try:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, default=str)
-            
+
             # Save current recommendations
             latest_file = self.output_dir / "latest_adhd_locations.json"
             with open(latest_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, default=str)
-            
+
             # Create specialized datasets
             self._create_specialized_datasets(data)
-            
+
             self.logger.info(f"ADHD-friendly location data saved to {output_file}")
             self.metrics.records_loaded = len(data)
-            
+
             # Log useful statistics
             locations = [d for d in data if d.get('data_type') == 'location']
             reviews = [d for d in data if d.get('data_type') == 'neurodivergent_review']
             highly_recommended = [l for l in locations if l.get('adhd_friendliness_score', 0) >= 8]
             low_overstimulation = [l for l in locations if l.get('overstimulation_risk', {}).get('risk_level') == 'low']
-            
+
             self.logger.info(f"Summary: {len(locations)} locations analyzed, {len(reviews)} community reviews, {len(highly_recommended)} highly ADHD-friendly, {len(low_overstimulation)} low overstimulation risk 🧠✨")
-            
+
         except Exception as e:
             self.logger.error(f"Failed to save ADHD location data: {e}")
             raise
-    
-    def _create_specialized_datasets(self, data: List[Dict[str, Any]]) -> None:
+
+    def _create_specialized_datasets(self, data: list[dict[str, Any]]) -> None:
         """Create specialized datasets for different needs."""
         locations = [d for d in data if d.get('data_type') == 'location']
-        
+
         # High ADHD-friendliness locations
         highly_adhd_friendly = [
-            l for l in locations 
+            l for l in locations
             if l.get('adhd_friendliness_score', 0) >= 8
         ]
-        
+
         # Low sensory load locations
         low_sensory_load = [
-            l for l in locations 
+            l for l in locations
             if l.get('sensory_assessment', {}).get('overall_sensory_load') == 'low'
         ]
-        
+
         # Hyperfocus-friendly locations
         hyperfocus_friendly = [
-            l for l in locations 
+            l for l in locations
             if 'hyperfocus_sessions' in l.get('recommended_activities', [])
         ]
-        
+
         # Emergency escape-friendly locations
         easy_escape = [
-            l for l in locations 
+            l for l in locations
             if l.get('escape_route_rating', {}).get('ease') in ['easy', 'very_easy']
         ]
-        
+
         # Save specialized datasets
         datasets = {
             'highly_adhd_friendly.json': highly_adhd_friendly,
@@ -705,7 +701,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
             'hyperfocus_friendly.json': hyperfocus_friendly,
             'easy_escape_locations.json': easy_escape
         }
-        
+
         for filename, dataset in datasets.items():
             if dataset:
                 with open(self.output_dir / filename, 'w', encoding='utf-8') as f:
@@ -720,4 +716,4 @@ def run_adhd_friendly_locations_etl():
 
 
 if __name__ == "__main__":
-    run_adhd_friendly_locations_etl() 
+    run_adhd_friendly_locations_etl()

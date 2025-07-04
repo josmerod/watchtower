@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 def check_dependencies():
     """Check if required dependencies are installed and provide installation guidance."""
     missing_deps = []
-    
+
     # Check for Playwright
     try:
         import playwright
@@ -46,19 +46,19 @@ def check_dependencies():
             missing_deps.append("playwright")
     except ImportError:
         missing_deps.append("playwright")
-    
+
     # Check for other optional dependencies
     try:
         import cloudscraper
     except ImportError:
         missing_deps.append("cloudscraper")
-    
+
     if missing_deps:
         logger.warning(f"Optional dependencies missing: {', '.join(missing_deps)}")
         logger.warning("Install with: pip install " + " ".join(missing_deps))
         logger.warning("Then run: playwright install (if playwright was missing)")
         logger.warning("Some scrapers may fail or have reduced functionality.")
-    
+
     return len(missing_deps) == 0
 
 
@@ -72,7 +72,7 @@ def create_scraping_thread(site: str, scraper):
     # Create a logger specific to this site's scraping process
     thread_logger = LoggerAdapter(get_logger(f"scraper.{site}"), {"site": site})
     code_name = scraper_dict[site]
-    
+
     try:
         # Start the scraping thread
         t = threading.Thread(target=getattr(scraper, code_name), daemon=True)
@@ -106,7 +106,7 @@ def create_scraping_thread(site: str, scraper):
                     # Scraper completed during initialization - this is normal for some sites
                     initialization_complete = True
                     break
-            
+
             # Check if length was set (indicates successful initialization)
             current_length = getattr(scraper, f"{code_name}_length", 0)
             if current_length > 0:
@@ -142,7 +142,7 @@ def create_scraping_thread(site: str, scraper):
         except Exception as e:
             thread_logger.warning(f"Could not create progress bar for {site}: {e}")
             progress_bar = None
-        
+
         prev_progress = 0
 
         # Monitor progress with improved timeout handling
@@ -150,7 +150,7 @@ def create_scraping_thread(site: str, scraper):
         while not getattr(scraper, f"{code_name}_done"):
             time.sleep(check_interval)  # Use same check interval for consistency
             current_progress = getattr(scraper, f"{code_name}_progress", 0)
-            
+
             # Update progress bar safely
             if progress_bar and current_progress > prev_progress:
                 try:
@@ -193,18 +193,18 @@ def create_scraping_thread(site: str, scraper):
         # Catch exceptions within the thread to prevent crashing the main process
         error_msg = str(exc)
         error_traceback = traceback.format_exc()
-        
+
         # Store the error for later retrieval
         setattr(scraper, f"{code_name}_error", error_traceback)
-        
+
         thread_logger.error(f"Error in {site} scraper thread: {error_msg}")
         thread_logger.debug(f"Full traceback for {site}: {error_traceback}")
         thread_logger.info(f"Version: {VERSION}")
-        
+
         # Mark as failed
         setattr(scraper, f"{code_name}_length", -1)
         setattr(scraper, f"{code_name}_done", True)
-        
+
         # Close progress bar if it exists
         try:
             if 'progress_bar' in locals() and progress_bar:
@@ -214,9 +214,9 @@ def create_scraping_thread(site: str, scraper):
 
 
 def main_extract():
-    """Main function to handle the course extraction process"""
+    """Main function to handle the course extraction process."""
     logger.info(f"Starting DUCE-CLI Extractor v{VERSION}")
-    
+
     # Check dependencies first
     logger.info("Checking dependencies...")
     check_dependencies()
@@ -270,11 +270,11 @@ def main_extract():
         # Accept sites with partial results (length > 0) instead of just filtering out failures
         successful_data = {}
         failed_sites = []
-        
+
         for site, data in scraped_data.items():
             site_length = getattr(scraper, f"{scraper_dict[site]}_length", 0)
             site_error = getattr(scraper, f"{scraper_dict[site]}_error", "")
-            
+
             if len(data) > 0 and site_length != -1:
                 successful_data[site] = data
                 logger.info(f"✓ {site}: {len(data)} courses extracted")
@@ -298,11 +298,11 @@ def main_extract():
                 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
                     json.dump(successful_data, f, indent=4, ensure_ascii=False)
                 logger.info(f"Successfully saved course list to '{OUTPUT_FILE}'")
-                
+
                 # Provide summary statistics
                 for site, courses in successful_data.items():
                     logger.info(f"  {site}: {len(courses)} courses")
-                    
+
             except OSError as e:
                 logger.error(f"Error saving course list to '{OUTPUT_FILE}': {e}")
         else:

@@ -16,7 +16,7 @@ def test_configuration():
     print("Testing Configuration System...")
     try:
         from config.settings import get_settings
-        
+
         settings = get_settings()
         print(f"Settings loaded: {settings.app_name} v{settings.app_version}")
         print(f"Environment: {settings.environment}")
@@ -31,7 +31,7 @@ def test_logging():
     print("\nTesting Logging System...")
     try:
         from utils.logging import get_logger
-        
+
         logger = get_logger("test_basic")
         logger.info("Test log message from basic features")
         print("Basic logging working")
@@ -45,8 +45,7 @@ def test_exceptions():
     print("\nTesting Exception Handling...")
     try:
         from exceptions.base import WatchtowerError
-        from exceptions.watcher import WatcherTimeoutError
-        
+
         # Test basic exception
         try:
             raise WatchtowerError(
@@ -56,7 +55,7 @@ def test_exceptions():
             )
         except WatchtowerError as e:
             print(f"Basic exception handling: {e.error_code}")
-        
+
         print("Exception handling working")
         return True
     except Exception as e:
@@ -68,7 +67,7 @@ def test_data_models():
     print("\nTesting Data Models...")
     try:
         from models.base import TimestampedModel
-        
+
         model = TimestampedModel()
         print(f"Timestamped model created with ID: {model.id}")
         return True
@@ -81,10 +80,10 @@ def test_file_system():
     print("\nTesting File System Utilities...")
     try:
         from utils.file_system import get_file_system_manager
-        
+
         fs_manager = get_file_system_manager()
         print(f"File system manager initialized: {fs_manager.project_root}")
-        
+
         # Test directory creation
         test_dir = "data/test_basic"
         dir_info = fs_manager.ensure_directory(test_dir)
@@ -98,7 +97,7 @@ def main():
     """Run all tests."""
     print("Basic Features Test Suite")
     print("=" * 40)
-    
+
     tests = [
         test_configuration,
         test_logging,
@@ -106,10 +105,10 @@ def main():
         test_data_models,
         test_file_system,
     ]
-    
+
     passed = 0
     failed = 0
-    
+
     for test_func in tests:
         try:
             if test_func():
@@ -122,13 +121,13 @@ def main():
             failed += 1
             print(f"ERROR: {e}")
         print("-" * 40)
-    
+
     print(f"\nResults: {passed} passed, {failed} failed")
-    
+
     if failed > 0:
         sys.exit(1)
     else:
         print("All basic features tests passed!")
 
 if __name__ == "__main__":
-    main() 
+    main()

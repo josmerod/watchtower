@@ -1,4 +1,4 @@
-"""Product Hunt ETL Module
+"""Product Hunt ETL Module.
 
 This module fetches and processes product launches, trending products, and innovation data
 from Product Hunt using their GraphQL API. It tracks startup innovations and product trends.
@@ -14,7 +14,6 @@ Output:
 import csv
 import json
 import os
-import sys
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -179,8 +178,6 @@ def fetch_product_hunt_data(
     Returns:
         List of product dictionaries
     """
-    graphql_url = "https://www.producthunt.com/frontend/graphql"
-
     # Note: Product Hunt requires authentication for full API access
     # For demonstration, we'll use web scraping as fallback
     logger.info(

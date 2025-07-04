@@ -1,7 +1,8 @@
 import json
+
 import dash
-from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
+from dash import Input, Output, html
 
 # Store loaded data globally in the module for simplicity in this PoC
 # In a larger app, this might be handled by a data manager or passed around.
@@ -63,8 +64,7 @@ def render_shortcuts_tab_layout(shortcuts_data, search_term=""):
 
 
 def render_shortcuts_tab():
-    """
-    Main function to create the shortcuts tab layout.
+    """Main function to create the shortcuts tab layout.
     This is what will be imported by the main app.
     It sets up the static parts of the layout and the container for dynamic content.
     """
@@ -96,7 +96,7 @@ def render_shortcuts_tab():
 def load_shortcuts_from_file(file_path):
     """Loads shortcuts from a JSON file."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         print(f"Warning: Shortcut file not found at {file_path}")
@@ -111,12 +111,12 @@ def load_shortcuts_from_file(file_path):
 def get_all_shortcuts():
     """Loads shortcuts from predefined and custom files."""
     import os
-    
+
     # Get absolute paths from project root
     # Find project root by going up from current file
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
-    
+
     predefined_path = os.path.join(project_root, "data", "shortcuts", "predefined_shortcuts.json")
     custom_path = os.path.join(project_root, "data", "shortcuts", "custom_shortcuts.json")
 
@@ -125,7 +125,7 @@ def get_all_shortcuts():
 
     # Handle different JSON structures
     shortcuts_by_category = {}
-    
+
     # Process predefined shortcuts
     if isinstance(predefined_shortcuts, dict):
         # Check if it's a direct category mapping (current structure)

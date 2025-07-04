@@ -60,7 +60,7 @@ class CheckpointError(ETLError):
             context["checkpoint_path"] = checkpoint_path
         if operation:
             context["checkpoint_operation"] = operation
-        
+
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_CHECKPOINT_ERROR")
         # Ensure phase is set correctly if not provided, or override if it is

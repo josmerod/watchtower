@@ -273,7 +273,7 @@ class TechConferenceETL(BaseETL):
                 "ethical hacking",
                 "penetration testing",
                 "blockchain",
-    
+
                 "web3",
                 "defi",
             ],
@@ -1841,7 +1841,7 @@ class TechConferenceETL(BaseETL):
         text_lower = text.lower()
 
         # Check all tech keywords
-        for priority_level, keywords in self.tech_keywords.items():
+        for _priority_level, keywords in self.tech_keywords.items():
             for keyword in keywords:
                 if keyword.lower() in text_lower:
                     topics.append(keyword)

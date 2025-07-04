@@ -1,7 +1,8 @@
-import streamlit as st
+import logging  # For logger type hint
 from datetime import datetime
-from typing import List, Dict, Any, Optional
-import logging # For logger type hint
+from typing import Any
+
+import streamlit as st
 
 # Assuming data_service_ultra_optimized has UltraOptimizedDataService
 # This is for type hinting and would typically be imported if it's a separate module
@@ -10,9 +11,8 @@ import logging # For logger type hint
 # Define keywords for filtering (case-insensitive)
 KEYWORDS = ['skill', 'skills', 'training', 'certification', 'learn', 'boost', 'course', 'courses', 'badge', 'prepare', 'exam']
 
-def render(logger: logging.Logger, posts_data: List[Dict[str, Any]]) -> None:
-    """
-    Renders the Google Cloud Blog tab, displaying filtered blog posts
+def render(logger: logging.Logger, posts_data: list[dict[str, Any]]) -> None:
+    """Renders the Google Cloud Blog tab, displaying filtered blog posts
     related to training and certifications.
 
     Args:
@@ -27,7 +27,7 @@ def render(logger: logging.Logger, posts_data: List[Dict[str, Any]]) -> None:
             logger.info("No Google Cloud Blog data to display.")
             return
 
-        relevant_posts: List[Dict[str, Any]] = []
+        relevant_posts: list[dict[str, Any]] = []
         for post in posts_data: # Iterate over posts_data directly
             title = post.get("title", "").lower()
 

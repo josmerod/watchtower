@@ -103,7 +103,7 @@ def set_global_log_level(level: int) -> None:
     LOG_LEVEL = level
 
     # Update existing loggers
-    for logger_name, logger in _loggers.items():
+    for _logger_name, logger in _loggers.items():
         logger.setLevel(level)
         for handler in logger.handlers:
             if handler.level < logging.ERROR:  # Don't change error handlers
@@ -112,7 +112,7 @@ def set_global_log_level(level: int) -> None:
 
 class LoggerAdapter(logging.LoggerAdapter):
     """Logger adapter for adding context to log messages.
-    Usage: logger = LoggerAdapter(get_logger(__name__), {'site': 'example'})
+    Usage: logger = LoggerAdapter(get_logger(__name__), {'site': 'example'}).
     """
 
     def process(self, msg, kwargs):

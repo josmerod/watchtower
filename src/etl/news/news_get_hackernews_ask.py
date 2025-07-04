@@ -1,4 +1,4 @@
-"""Hacker News Ask ETL Module
+"""Hacker News Ask ETL Module.
 
 This module fetches and processes "Ask HN" posts from Hacker News,
 which are valuable discussion threads where the community asks questions
@@ -15,7 +15,6 @@ Output:
 import csv
 import json
 import os
-import sys
 import time
 from datetime import datetime
 from typing import Any

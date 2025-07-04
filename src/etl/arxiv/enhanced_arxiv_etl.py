@@ -2,7 +2,6 @@
 
 import json
 import os
-import sys
 from collections import Counter
 from datetime import datetime
 from typing import Any

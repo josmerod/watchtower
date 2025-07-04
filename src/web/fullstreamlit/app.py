@@ -1,12 +1,10 @@
-"""
-Watchtower Streamlit Application - Main file
-"""
-import streamlit as st
-import pandas as pd
-import sys
+"""Watchtower Streamlit Application - Main file."""
 import os
-from datetime import datetime
+import sys
 from pathlib import Path
+
+import pandas as pd
+import streamlit as st
 
 # Add the src directory to the Python path
 current_dir = Path(__file__).parent
@@ -14,7 +12,6 @@ src_dir = current_dir.parent.parent
 sys.path.insert(0, str(src_dir))
 
 # Alternative approach - add absolute path
-import os
 watchtower_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 src_absolute = os.path.join(watchtower_root, 'src')
 if src_absolute not in sys.path:
@@ -30,44 +27,44 @@ except ImportError as e:
     def get_logger(name):
         return logging.getLogger(name)
 
-from web.fullstreamlit.styles.main import get_main_style
+import json
+
+from models.anime import AnimeItem
 
 # Import all components
 from web.fullstreamlit.components import (
-    shortcuts_tab,
-    videos_tab,
-    news_tab,
-    games_tab,
-    allkeyshop_tab,
-    courses_tab,
-    events_tab,
+    adhd_tab,
     admin_tab,
+    ai_platforms_tab,
+    allkeyshop_tab,
     arxiv_papers,
     arxiv_search,
-    dev_communities_tab,
-    security_tab,
-    enhanced_arxiv_papers,
-    monitoring_tab,
-    tech_events_tab,
-    ai_platforms_tab,
-    google_cloud_blog_tab,
     aws_training_tab,
     azure_training_tab,
-    home_server_tab,
-    museums_tab,
-    adhd_tab,
     chan_generals_tab,
-    scavenging_tab,
+    courses_tab,
+    dev_communities_tab,
     ecommerce_tab,
+    enhanced_arxiv_papers,
     enhanced_innovation_tab,
-    expatcircle_tab
+    events_tab,
+    expatcircle_tab,
+    games_tab,
+    google_cloud_blog_tab,
+    home_server_tab,
+    monitoring_tab,
+    museums_tab,
+    news_tab,
+    scavenging_tab,
+    security_tab,
+    shortcuts_tab,
+    tech_events_tab,
+    videos_tab,
 )
 
 # Import for Anime Tab
 from web.fullstreamlit.components.anime_display import display_anime_section
-from models.anime import AnimeItem
-import json
-from typing import List, Dict, Optional
+from web.fullstreamlit.styles.main import get_main_style
 
 # Initialize logger
 logger = get_logger("WatchtowerApp")
@@ -104,31 +101,33 @@ with col1:
 @st.cache_resource(ttl=1800, show_spinner=False)  # Reduced TTL for better data freshness
 def _get_data_service():
     """Create and cache the ultra-optimised data service (30-minute TTL)."""
-    from web.fullstreamlit.utils.data_service_ultra_optimized import create_ultra_optimized_service
+    from web.fullstreamlit.utils.data_service_ultra_optimized import (
+        create_ultra_optimized_service,
+    )
     return create_ultra_optimized_service(logger)
 
 try:
     logger.info("Initializing data service (cached)…")
     data_service = _get_data_service()
-    
+
     if data_service is None:
         logger.error("Data service initialization returned None")
         st.error("⚠️ Data service failed to initialize. Please check the logs.")
         st.stop()
-    
+
     logger.info("Data service initialized successfully")
-    
+
     # Verify critical methods exist
     required_methods = ['get_security_intelligence', 'get_home_server_trends_data', 'get_ai_platforms_data']
     missing_methods = []
     for method in required_methods:
         if not hasattr(data_service, method):
             missing_methods.append(method)
-    
+
     if missing_methods:
         logger.warning(f"Data service missing methods: {missing_methods}")
         # Don't stop the app, just log the warning
-    
+
 except Exception as e:
     logger.error(f"Failed to initialize data service: {e}")
     st.error(f"⚠️ Failed to initialize data service: {e}")
@@ -138,15 +137,15 @@ except Exception as e:
 # Load data with improved error handling and optimized caching
 @st.cache_data(ttl=600, max_entries=1, show_spinner=True)  # Reduced TTL for more frequent updates
 def get_cached_data():
-    """Load and cache data with improved error handling"""
+    """Load and cache data with improved error handling."""
     if not data_service:
         logger.error("Data service not available")
         return _get_default_data_structure()
-    
+
     try:
         logger.info("Loading cached meta data (lightweight)…")
         data = {}
-        
+
         # Only light / small datasets are eagerly loaded; heavy ones will be lazy-loaded per tab
         data_loaders = [
             ('allkeyshop', data_service.get_allkeyshop_data),
@@ -156,7 +155,7 @@ def get_cached_data():
             ('events', data_service.get_events_data),
             ('museums', data_service.get_museum_data),
         ]
-        
+
         # Load data sequentially with individual timeouts
         for data_key, loader_func in data_loaders:
             try:
@@ -165,19 +164,19 @@ def get_cached_data():
                 data[data_key] = result
                 logger.info(f"✅ {data_key} data loaded successfully")
             except Exception as e:
-                logger.error(f"❌ Error loading {data_key}: {str(e)}")
+                logger.error(f"❌ Error loading {data_key}: {e!s}")
                 data[data_key] = _get_default_empty_value(data_key)
-        
+
         logger.info("All data loading completed")
         return data
-        
+
     except Exception as e:
-        logger.error(f"Critical error in get_cached_data: {str(e)}")
+        logger.error(f"Critical error in get_cached_data: {e!s}")
         return _get_default_data_structure()
 
 
 def _get_default_empty_value(data_key: str):
-    """Get appropriate default empty value for a data key"""
+    """Get appropriate default empty value for a data key."""
     if data_key == 'games':
         return (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
     elif data_key in ['courses', 'news', 'videos']:
@@ -189,7 +188,7 @@ def _get_default_empty_value(data_key: str):
 
 
 def _get_default_data_structure():
-    """Get complete default data structure for app crash prevention"""
+    """Get complete default data structure for app crash prevention."""
     return {
         'allkeyshop': [],
         # Heavy datasets default to empty; they will be lazy-loaded per tab
@@ -286,13 +285,13 @@ main_tabs = st.tabs([
 
 # --- Anime Tab Specific Functions ---
 @st.cache_data(ttl=3600) # Cache for 1 hour
-def load_anime_data(json_path: Path) -> List[AnimeItem]:
+def load_anime_data(json_path: Path) -> list[AnimeItem]:
     """Loads anime data from a JSON file and converts to AnimeItem models."""
     if not json_path.exists():
         logger.error(f"Anime data file not found: {json_path}")
         return []
     try:
-        with open(json_path, 'r', encoding='utf-8') as f:
+        with open(json_path, encoding='utf-8') as f:
             data = json.load(f)
         # Assuming the JSON is a list of dicts, each convertible to AnimeItem
         return [AnimeItem(**item) for item in data]
@@ -346,12 +345,12 @@ def display_anime_calendar_tab():
 # --- End Anime Tab Specific Functions ---
 
 def render_tab_safely(tab_name, render_func, *args, **kwargs):
-    """Safely render a tab with error handling"""
+    """Safely render a tab with error handling."""
     try:
         render_func(*args, **kwargs)
     except Exception as e:
-        logger.error(f"Error rendering {tab_name}: {str(e)}")
-        st.error(f"Error cargando {tab_name}: {str(e)}")
+        logger.error(f"Error rendering {tab_name}: {e!s}")
+        st.error(f"Error cargando {tab_name}: {e!s}")
         st.info("Please try refreshing the data or contact support if the issue persists.")
 
 # Render tabs
@@ -377,7 +376,7 @@ with main_tabs[5]: # Azure Training
 with main_tabs[6]: # Juegos
     games_data = load_games_data()
     new_releases_df = load_new_game_releases()
-    
+
     if isinstance(games_data, tuple) and len(games_data) == 4:
         deals_df, bundles_df, giveaways_df, trending_df = games_data
         logger.info(f"Games data loaded: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending={len(trending_df)}")
@@ -388,7 +387,7 @@ with main_tabs[6]: # Juegos
     else:
         deals_df = bundles_df = giveaways_df = trending_df = pd.DataFrame()
         logger.warning(f"Games data format unexpected: {type(games_data)} - creating empty dataframes")
-    
+
     render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, logger)
 
 with main_tabs[7]: # AllKeyShop Deals
@@ -421,13 +420,13 @@ with main_tabs[15]: # E-commerce tab
 
 with main_tabs[16]: # ArXiv
     arxiv_subtabs = st.tabs(["Mejorado", "Papers", "Búsqueda"])
-    
+
     with arxiv_subtabs[0]:
         render_tab_safely("ArXiv Mejorado", enhanced_arxiv_papers.display_enhanced_papers)
-    
+
     with arxiv_subtabs[1]:
         render_tab_safely("Papers ArXiv", arxiv_papers.display)
-    
+
     with arxiv_subtabs[2]:
         render_tab_safely("Búsqueda ArXiv", arxiv_search.display)
 

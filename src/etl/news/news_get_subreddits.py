@@ -1,7 +1,6 @@
 # src/etl/news/news_get_subreddits.py
 import json
 import os
-import sys
 import time
 from datetime import datetime
 from typing import Any
@@ -84,8 +83,7 @@ def save_subreddit_posts(posts: list[dict[str, Any]]) -> None:
 
 
 def main() -> None:
-    """Main entry point for the subreddit scraping ETL process.
-    """
+    """Main entry point for the subreddit scraping ETL process."""
     posts = get_subreddits_posts()
     save_subreddit_posts(posts)
 

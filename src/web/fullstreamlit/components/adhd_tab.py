@@ -1,13 +1,13 @@
-import streamlit as st
-import pandas as pd
-import os
 import json
-from typing import List, Dict, Any
-import sys
+import os
+from typing import Any
+
+import streamlit as st
 
 # Add project root to path for module access if not already handled by app.py
 # This might be needed if running this component standalone or for robust pathing
 from utils.file_system import get_project_root
+
 
 class ADHDPapersComponent:
     def __init__(self):
@@ -17,19 +17,19 @@ class ADHDPapersComponent:
         self.etl_output_dir = os.path.join(self.project_root, "data", "adhd_publications", "output")
         self.data_file_path = os.path.join(self.etl_output_dir, "json", "latest_papers.json")
 
-    def _load_data(self) -> List[Dict[str, Any]]:
+    def _load_data(self) -> list[dict[str, Any]]:
         if not os.path.exists(self.data_file_path):
             st.error(f"Data file not found: {self.data_file_path}. Please ensure the ADHDPublicationETL has been run.")
             return []
         try:
-            with open(self.data_file_path, 'r', encoding='utf-8') as f:
+            with open(self.data_file_path, encoding='utf-8') as f:
                 data = json.load(f)
             return data
         except Exception as e:
             st.error(f"Error loading ADHD data: {e}")
             return []
 
-    def render_paper_card(self, paper: Dict[str, Any], index: int):
+    def render_paper_card(self, paper: dict[str, Any], index: int):
         with st.expander(f"{paper.get('title', 'N/A')}"):
             st.markdown(f"**Authors:** {', '.join(paper.get('authors', ['N/A']))}")
             st.markdown(f"**Date:** {paper.get('publication_date', 'N/A')}")

@@ -14,7 +14,7 @@ information easily.
 import json
 import re
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup  # type: ignore
@@ -28,7 +28,7 @@ class FourChanGeneralsETL(SimpleETL):
 
     CATALOG_URL = "https://a.4cdn.org/{board}/catalog.json"
 
-    def __init__(self, boards: List[str] | None = None, **kwargs: Any):
+    def __init__(self, boards: list[str] | None = None, **kwargs: Any):
         self.boards = boards or ["g", "vg", "t"]
         super().__init__(name="4chan_generals", **kwargs)
         # Replace logger name to something shorter / clearer
@@ -37,7 +37,7 @@ class FourChanGeneralsETL(SimpleETL):
     # ------------------------------------------------------------------
     # Extract
     # ------------------------------------------------------------------
-    def extract(self) -> List[dict[str, Any]]:  # noqa: D401
+    def extract(self) -> list[dict[str, Any]]:
         """Retrieve raw thread data from each board's catalog."""
         self.logger.info("Extracting catalog data from 4chan API …")
         extracted: list[dict[str, Any]] = []
@@ -63,7 +63,7 @@ class FourChanGeneralsETL(SimpleETL):
     # ------------------------------------------------------------------
     # Transform
     # ------------------------------------------------------------------
-    def transform(self, data: List[dict[str, Any]]) -> List[dict[str, Any]]:  # noqa: D401
+    def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Filter *General* threads and clean up fields."""
         if not data:
             self.logger.warning("No data extracted – skipping transform phase.")
@@ -109,7 +109,7 @@ class FourChanGeneralsETL(SimpleETL):
     # ------------------------------------------------------------------
     # Load
     # ------------------------------------------------------------------
-    def load(self, data: List[dict[str, Any]]) -> None:  # noqa: D401
+    def load(self, data: list[dict[str, Any]]) -> None:
         """Persist results to JSON – dated and latest pointers."""
         if not data:
             self.logger.info("No *General* threads detected – nothing to load.")
@@ -124,4 +124,4 @@ class FourChanGeneralsETL(SimpleETL):
             json.dumps(data, ensure_ascii=False, indent=2, default=str),
             encoding="utf-8",
         )
-        self.logger.info(f"Latest snapshot saved to {latest_path}") 
+        self.logger.info(f"Latest snapshot saved to {latest_path}")

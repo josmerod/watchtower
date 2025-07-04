@@ -1,17 +1,16 @@
-import os
 import json
-import logging
-from datetime import datetime, timezone
-from typing import Dict, List, Any
+from datetime import timezone
 from pathlib import Path
+from typing import Any
 
 import feedparser
 import pandas as pd  # type: ignore
 from dateutil import parser as date_parser
 
+from utils.file_system import ensure_directories, get_project_root
+
 # Local utilities
 from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("ScavengingETL")
 
@@ -20,13 +19,13 @@ CONFIG_FILE = Path(__file__).parent / "scavenging.json"
 BASE_OUTPUT_DIR = "data/scavenging"
 
 
-def load_config() -> Dict[str, Any]:
+def load_config() -> dict[str, Any]:
     """Load scavenging configuration JSON."""
     if not CONFIG_FILE.exists():
         logger.error(f"Configuration file not found: {CONFIG_FILE}")
         return {}
     try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        with open(CONFIG_FILE, encoding="utf-8") as f:
             return json.load(f)
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON in {CONFIG_FILE}: {e}")
@@ -48,9 +47,9 @@ def parse_published(date_str: str) -> str:
         return date_str  # Fallback to raw string
 
 
-def fetch_rss_entries(url: str) -> List[Dict[str, Any]]:
+def fetch_rss_entries(url: str) -> list[dict[str, Any]]:
     """Fetch entries from an RSS/Atom feed URL."""
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(url)
         if feed.bozo:
@@ -67,9 +66,9 @@ def fetch_rss_entries(url: str) -> List[Dict[str, Any]]:
     return items
 
 
-def process_category(category: str, sources: Dict[str, Dict[str, str]]) -> None:
+def process_category(category: str, sources: dict[str, dict[str, str]]) -> None:
     """Process all sources for a single category and save results."""
-    all_entries: List[Dict[str, Any]] = []
+    all_entries: list[dict[str, Any]] = []
     for source_name, source_info in sources.items():
         if source_info.get("type") != "rss":
             logger.info(f"Skipping non-RSS source {source_name} of category {category}")
@@ -107,7 +106,7 @@ def process_category(category: str, sources: Dict[str, Dict[str, str]]) -> None:
         logger.warning(f"No entries fetched for category '{category}'")
 
 
-def _write_output(entries: List[Dict[str, Any]], json_path: Path, csv_path: Path) -> None:
+def _write_output(entries: list[dict[str, Any]], json_path: Path, csv_path: Path) -> None:
     """Helper to write JSON and CSV output."""
     try:
         with open(json_path, "w", encoding="utf-8") as f:
@@ -140,4 +139,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main() 
+    main()

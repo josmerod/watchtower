@@ -314,7 +314,7 @@ class TechnologyAdoptionAnalyzer:
 
             return (
                 metrics
-                if any(v > 0 for k, v in metrics.items() if isinstance(v, (int, float)))
+                if any(v > 0 for k, v in metrics.items() if isinstance(v, int | float))
                 else None
             )
 
@@ -985,7 +985,7 @@ class TechnologyAdoptionAnalyzer:
 
         try:
             # Collect data from all framework categories
-            for category, config in self.framework_categories.items():
+            for _category, config in self.framework_categories.items():
                 framework_data = await self._gather_framework_data(
                     config["frameworks"], config["keywords"]
                 )

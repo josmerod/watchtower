@@ -4,11 +4,11 @@ import logging
 import os
 import pathlib
 import time
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 
 import requests
-from pydantic.json import pydantic_encoder
 from dotenv import load_dotenv
+from pydantic.json import pydantic_encoder
 
 from etl.base import BaseETL, ETLError
 from models.anime import AnimeItem
@@ -28,7 +28,7 @@ MODULE_OUTPUT_DIR = pathlib.Path(__file__).resolve().parent.parent.parent.parent
 FIELDS_TO_REQUEST = "id,title,main_picture,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,media_type,status,genres,num_episodes,start_season,broadcast,source,average_episode_duration,rating,studios"
 
 class MalETL(BaseETL):
-    def __init__(self, batch_size: Optional[int] = None, enable_checkpointing: bool = False):
+    def __init__(self, batch_size: int | None = None, enable_checkpointing: bool = False):
         super().__init__(
             name="mal_anime_etl",
             description="ETL process for MyAnimeList anime data.",
@@ -53,10 +53,8 @@ class MalETL(BaseETL):
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
 
-    def _make_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-        """
-        Makes a GET request to the MyAnimeList API.
-        """
+    def _make_request(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        """Makes a GET request to the MyAnimeList API."""
         if not endpoint.startswith("/"):
             endpoint = "/" + endpoint
         url = f"{API_BASE_URL}{endpoint}"
@@ -83,7 +81,7 @@ class MalETL(BaseETL):
             self.metrics.error_count += 1
         return None
 
-    def _get_seasonal_anime_raw(self, year: int, season: str, limit: int = 100) -> Optional[Dict[str, Any]]:
+    def _get_seasonal_anime_raw(self, year: int, season: str, limit: int = 100) -> dict[str, Any] | None:
         """Fetches raw seasonal anime data."""
         endpoint = f"/anime/season/{year}/{season}"
         params = {
@@ -93,7 +91,7 @@ class MalETL(BaseETL):
         }
         return self._make_request(endpoint, params)
 
-    def _get_ranked_anime_raw(self, ranking_type: str, limit: int = 100) -> Optional[Dict[str, Any]]:
+    def _get_ranked_anime_raw(self, ranking_type: str, limit: int = 100) -> dict[str, Any] | None:
         """Fetches raw ranked anime data."""
         endpoint = "/anime/ranking"
         params = {
@@ -103,9 +101,8 @@ class MalETL(BaseETL):
         }
         return self._make_request(endpoint, params)
 
-    def extract(self) -> Dict[str, Optional[Dict[str, Any]]]:
-        """
-        Extracts data from MyAnimeList API.
+    def extract(self) -> dict[str, dict[str, Any] | None]:
+        """Extracts data from MyAnimeList API.
         Returns a dictionary containing raw data for different categories.
         """
         self.logger.info("Starting MAL data extraction.")
@@ -145,12 +142,10 @@ class MalETL(BaseETL):
         self.metrics.records_extracted = sum(len(v.get('data', [])) for v in extracted_data.values() if v)
         return extracted_data
 
-    def transform(self, data: Dict[str, Optional[Dict[str, Any]]]) -> Dict[str, List[AnimeItem]]:
-        """
-        Transforms raw API data into lists of AnimeItem models.
-        """
+    def transform(self, data: dict[str, dict[str, Any] | None]) -> dict[str, list[AnimeItem]]:
+        """Transforms raw API data into lists of AnimeItem models."""
         self.logger.info("Starting MAL data transformation.")
-        transformed_data: Dict[str, List[AnimeItem]] = {
+        transformed_data: dict[str, list[AnimeItem]] = {
             "seasonal": [],
             "popular": [],
             "favorite": [],
@@ -178,10 +173,8 @@ class MalETL(BaseETL):
         self.metrics.records_transformed = sum(len(v) for v in transformed_data.values())
         return transformed_data
 
-    def load(self, data: Dict[str, List[AnimeItem]]) -> None:
-        """
-        Saves the transformed AnimeItem lists to JSON files.
-        """
+    def load(self, data: dict[str, list[AnimeItem]]) -> None:
+        """Saves the transformed AnimeItem lists to JSON files."""
         self.logger.info("Starting MAL data loading.")
         self.output_dir.mkdir(parents=True, exist_ok=True) # Ensure output_dir exists
 
@@ -203,7 +196,7 @@ class MalETL(BaseETL):
                 with open(file_path, "w", encoding="utf-8") as f:
                     json.dump([item.model_dump(by_alias=True) for item in anime_list], f, indent=2, default=pydantic_encoder)
                 loaded_count += len(anime_list)
-            except IOError as e:
+            except OSError as e:
                 logger.error(f"Failed to save data for {key} to {file_path}: {e}")
                 self.metrics.error_count +=1
                 raise Exception(f"Failed to save data for {key}: {e}") from e

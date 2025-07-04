@@ -17,14 +17,13 @@ import subprocess
 import sys
 import textwrap
 from pathlib import Path
-from typing import List
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS_DIR = ROOT / "docs"
 SRC_DIR = ROOT / "src"
 
 
-def run(cmd: List[str], description: str, check: bool = True) -> subprocess.CompletedProcess[bytes]:
+def run(cmd: list[str], description: str, check: bool = True) -> subprocess.CompletedProcess[bytes]:
     """Run a shell command with echo and optional failure short-circuit."""
     print(f"\n🛠️  {description}\n$ {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=ROOT)
@@ -34,12 +33,12 @@ def run(cmd: List[str], description: str, check: bool = True) -> subprocess.Comp
     return result
 
 
-def find_stale_docs(days: int = 120) -> List[Path]:
+def find_stale_docs(days: int = 120) -> list[Path]:
     """Return markdown files in *docs* untouched for a given number of days."""
     import time
 
     cutoff_ts = time.time() - days * 24 * 60 * 60
-    stale: List[Path] = []
+    stale: list[Path] = []
     for md in DOCS_DIR.rglob("*.md"):
         try:
             mtime = md.stat().st_mtime
@@ -103,4 +102,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main() 
+    main()

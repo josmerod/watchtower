@@ -8,15 +8,18 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Generic, TypeVar, List, Type # Added Type, ensured Generic, List, Any, TypeVar
+from typing import (  # Added Type, ensured Generic, List, Any, TypeVar
+    Any,
+    Generic,
+    TypeVar,
+)
 
-from pydantic import BaseModel, ValidationError as PydanticValidationError
+from pydantic import BaseModel
+from pydantic import ValidationError as PydanticValidationError
 
 from config.settings import get_settings
 from exceptions.base import handle_exception
-from exceptions.etl import (
-    ETLError, CheckpointError
-)
+from exceptions.etl import CheckpointError, ETLError
 from utils.logging import get_logger, get_performance_logger
 
 # Type variables for generic ETL
@@ -106,7 +109,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             self.logger.debug(f"Loading checkpoint from {checkpoint_file_path}")
             checkpoint_data = json.loads(checkpoint_file_path.read_text(encoding="utf-8"))
             return ETLCheckpoint(**checkpoint_data)
-        except (IOError, OSError) as e:
+        except OSError as e:
             self.logger.error(f"I/O error loading checkpoint {checkpoint_file_path}: {e}")
             raise CheckpointError(f"I/O error loading checkpoint: {e}", checkpoint_path=str(checkpoint_file_path), operation="load", etl_name=self.name) from e
         except json.JSONDecodeError as e:
@@ -127,7 +130,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             checkpoint_json = checkpoint.model_dump_json(indent=2)
             checkpoint_file_path.write_text(checkpoint_json, encoding="utf-8")
             self.logger.info(f"Checkpoint {checkpoint.checkpoint_id} saved successfully to {checkpoint_file_path}")
-        except (IOError, OSError) as e:
+        except OSError as e:
             self.logger.error(f"I/O error saving checkpoint {checkpoint_file_path}: {e}")
             raise CheckpointError(f"I/O error saving checkpoint: {e}", checkpoint_path=str(checkpoint_file_path), operation="save", etl_name=self.name) from e
         except TypeError as e: # Pydantic model_dump_json can raise TypeError
@@ -154,7 +157,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         if last_exception: raise last_exception
 
     @abstractmethod
-    def extract(self) -> List[InputType]:
+    def extract(self) -> list[InputType]:
         """Extracts data from the source.
 
         This method should be implemented by subclasses to define the data
@@ -166,7 +169,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         pass
 
     @abstractmethod
-    def transform(self, data: List[InputType]) -> List[OutputType]:
+    def transform(self, data: list[InputType]) -> list[OutputType]:
         """Transforms the extracted data.
 
         This method should be implemented by subclasses to define the
@@ -182,7 +185,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         pass
 
     @abstractmethod
-    def load(self, data: List[OutputType]) -> None:
+    def load(self, data: list[OutputType]) -> None:
         """Loads the transformed data into the destination.
 
         This method should be implemented by subclasses to define the
@@ -194,7 +197,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         """
         pass
 
-    def validate_data(self, data: List[Any], model_class: Type[BaseModel]) -> List[BaseModel]: # Use Type
+    def validate_data(self, data: list[Any], model_class: type[BaseModel]) -> list[BaseModel]: # Use Type
         validated = []
         for item in data:
             try:
@@ -203,7 +206,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 self.logger.warning(f"Data validation failed: {e}"); self.metrics.records_failed+=1
         return validated
 
-    def process_in_batches(self, data: List[Any], process_func) -> List[Any]:
+    def process_in_batches(self, data: list[Any], process_func) -> list[Any]:
         results = []
         for i in range(0, len(data), self.batch_size):
             batch = data[i:i+self.batch_size]
@@ -218,7 +221,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         return results
 
     def should_stop_on_error(self, error: Exception) -> bool:
-        return isinstance(error, (KeyboardInterrupt, MemoryError, SystemExit))
+        return isinstance(error, KeyboardInterrupt | MemoryError | SystemExit)
 
     def run(self) -> ETLMetrics:
         """Executes the complete ETL pipeline.
@@ -246,7 +249,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         try:
             self.current_checkpoint = self._load_checkpoint()
             if self.current_checkpoint: self.logger.info(f"Resuming from checkpoint: {self.current_checkpoint.checkpoint_id}")
-            
+
             extracted = self._retry_operation("extract", self.extract)
             self.metrics.records_extracted = len(extracted)
             self.logger.info(f"Extracted {self.metrics.records_extracted} records")
@@ -260,14 +263,14 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
 
             if not transformed:
                 self.logger.info("No data after transformation. Skipping load."); return self.metrics
-            
+
             self._retry_operation("load", lambda: self.load(transformed))
             self.metrics.records_loaded = len(transformed)
             self.logger.info(f"Loaded {self.metrics.records_loaded} records")
 
             if self.enable_checkpointing and self.metrics.is_successful:
                 (self.checkpoint_dir/"latest.json").unlink(missing_ok=True)
-            
+
             if self.metrics.is_successful: self.logger.info(f"ETL process completed successfully. Success rate: {self.metrics.success_rate:.1f}%")
             elif self.metrics.error_count==0: self.logger.info("ETL completed. No records loaded.")
             # else: errors occurred and were handled by _retry_operation, ETLError will be raised
@@ -287,9 +290,9 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
 
 class SimpleETL(BaseETL[dict, dict]):
     def __init__(self, name: str, **kwargs): super().__init__(name, **kwargs)
-    def extract(self) -> List[dict[str, Any]]: return []
-    def transform(self, data: List[dict[str, Any]]) -> List[dict[str, Any]]: return data
-    def load(self, data: List[dict[str, Any]]) -> None:
+    def extract(self) -> list[dict[str, Any]]: return []
+    def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]: return data
+    def load(self, data: list[dict[str, Any]]) -> None:
         out_f = self.output_dir/f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         out_f.write_text(json.dumps(data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
         self.logger.info(f"Data saved to {out_f}")
@@ -299,7 +302,7 @@ class DataFrameETL(BaseETL[InputType, OutputType], Generic[InputType, OutputType
         super().__init__(name, **kwargs)
         try: import pandas as pd; self.pd = pd
         except ImportError: self.logger.error("Pandas required but not installed."); raise
-    
+
     @abstractmethod
     def extract_to_dataframe(self) -> Any: # pd.DataFrame
         """Extracts data and returns it as a Pandas DataFrame.
@@ -311,9 +314,9 @@ class DataFrameETL(BaseETL[InputType, OutputType], Generic[InputType, OutputType
             pandas.DataFrame: The extracted data as a DataFrame.
         """
         pass
-    
+
     @abstractmethod
-    def transform_dataframe(self, df: Any) -> List[OutputType]: # df: pd.DataFrame
+    def transform_dataframe(self, df: Any) -> list[OutputType]: # df: pd.DataFrame
         """Transforms data from a Pandas DataFrame into a list of OutputType objects.
 
         Subclasses should implement this method to perform data processing,
@@ -328,30 +331,30 @@ class DataFrameETL(BaseETL[InputType, OutputType], Generic[InputType, OutputType
         """
         pass
 
-    def extract(self) -> List[InputType]:
+    def extract(self) -> list[InputType]:
         self.logger.debug("DataFrameETL.extract() using extract_to_dataframe().")
         df = self.extract_to_dataframe()
         return df.to_dict(orient='records') if df is not None else []
 
-    def transform(self, data: List[InputType]) -> List[OutputType]:
+    def transform(self, data: list[InputType]) -> list[OutputType]:
         if not data: return []
         df = self.pd.DataFrame(data)
         return self.transform_dataframe(df)
 
-    def load(self, data: List[OutputType]) -> None:
+    def load(self, data: list[OutputType]) -> None:
         if not data: self.logger.info("No data to load."); return
         df_to_save = self.pd.DataFrame([i.model_dump() if isinstance(i,BaseModel) else i for i in data])
         out_f = self.output_dir/f"{self.name}_output.csv"
         df_to_save.to_csv(out_f, index=False)
         self.logger.info(f"DataFrameETL default load saved to {out_f}")
 
-    def save_as_csv(self, data: List[dict[str,Any]], filename:str|None=None) -> Path:
+    def save_as_csv(self, data: list[dict[str,Any]], filename:str|None=None) -> Path:
         if not filename: filename=f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         out_f = self.output_dir/filename
         self.pd.DataFrame(data).to_csv(out_f,index=False,encoding="utf-8")
         self.logger.info(f"Data saved as CSV to {out_f}"); return out_f
 
-    def save_as_parquet(self, data:List[dict[str,Any]], filename:str|None=None) -> Path:
+    def save_as_parquet(self, data:list[dict[str,Any]], filename:str|None=None) -> Path:
         if not filename: filename=f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
         out_f = self.output_dir/filename
         self.pd.DataFrame(data).to_parquet(out_f,index=False)

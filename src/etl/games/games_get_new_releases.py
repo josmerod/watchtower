@@ -1,16 +1,18 @@
-import requests
 import datetime
-import os
-import pandas as pd
 import json
-import logging
+import os
 import sys
+
+import pandas as pd
+import requests
 
 # Add project root to sys.path to allow imports from src
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 if project_root not in sys.path:
-from utils.logging import get_logger # Example
-from utils.file_system import ensure_directories, get_project_root # Example
+    sys.path.insert(0, project_root)
+
+from utils.file_system import ensure_directories, get_project_root  # Example
+from utils.logging import get_logger  # Example
 
 # Constants
 RAWG_API_URL = "https://api.rawg.io/api/games"
@@ -31,8 +33,7 @@ if API_KEY == "YOUR_RAWG_API_KEY":
     logger.warning("RAWG_API_KEY is not set. Please set it as an environment variable or in the script.")
 
 def fetch_games(page_num: int, params: dict) -> dict | None:
-    """
-    Fetches a page of game data from the RAWG API.
+    """Fetches a page of game data from the RAWG API.
 
     Args:
         page_num: The page number to fetch.
@@ -65,8 +66,7 @@ def fetch_games(page_num: int, params: dict) -> dict | None:
         return None
 
 def process_games_data(games_raw_data: list) -> list:
-    """
-    Processes raw game data from the API response.
+    """Processes raw game data from the API response.
 
     Args:
         games_raw_data: A list of game objects from the API.
@@ -104,8 +104,7 @@ def process_games_data(games_raw_data: list) -> list:
     return processed_games
 
 def get_new_releases():
-    """
-    Main function to fetch, process, and save new game releases.
+    """Main function to fetch, process, and save new game releases.
     """
     logger.info("Starting get_new_releases function.")
     all_processed_games = []

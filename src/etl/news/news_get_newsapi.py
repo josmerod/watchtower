@@ -1,20 +1,20 @@
-import os
-import json
-import sys
-import time
 import csv
-from datetime import datetime, timedelta
-from typing import List, Dict, Any # Added typing imports
+import json
+import os
+import time
+from datetime import datetime
+from typing import Any  # Added typing imports
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from config.settings import get_settings
+from models.news import NewsArticleModel
+from utils.file_system import ensure_directories, get_project_root
+
 # Add project root to Python path
 from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
-from models.news import NewsArticleModel, ContentLanguage
-from config.settings import get_settings
 
 logger = get_logger("NewsApiETL")
 
@@ -37,10 +37,8 @@ def create_session():
 
 def get_newsapi_articles(session: requests.Session, api_key: str, query: str = "technology",
                          language: str = "en", page_size: int = 100,
-                         max_articles_to_fetch: int = 200) -> List[Dict[str, Any]]: # Return type updated for raw articles
-    """
-    Fetches articles from NewsAPI.
-    """
+                         max_articles_to_fetch: int = 200) -> list[dict[str, Any]]: # Return type updated for raw articles
+    """Fetches articles from NewsAPI."""
     logger.info(f"Fetching articles from NewsAPI for query: '{query}', language: '{language}'")
     base_url = "https://newsapi.org/v2/everything"
     headers = {"X-Api-Key": api_key}
@@ -101,10 +99,8 @@ def get_newsapi_articles(session: requests.Session, api_key: str, query: str = "
     return all_articles[:max_articles_to_fetch]
 
 
-def transform_articles_to_model(raw_articles: List[Dict[str, Any]], query_source: str, language_code: str = "en") -> List[NewsArticleModel]:
-    """
-    Transforms raw article data from NewsAPI into a list of NewsArticleModel objects.
-    """
+def transform_articles_to_model(raw_articles: list[dict[str, Any]], query_source: str, language_code: str = "en") -> list[NewsArticleModel]:
+    """Transforms raw article data from NewsAPI into a list of NewsArticleModel objects."""
     transformed_articles = []
     if not raw_articles:
         return transformed_articles
@@ -186,7 +182,7 @@ def transform_articles_to_model(raw_articles: List[Dict[str, Any]], query_source
     return transformed_articles
 
 
-def process_articles(articles: List[NewsArticleModel]) -> List[Dict[str, Any]]:
+def process_articles(articles: list[NewsArticleModel]) -> list[dict[str, Any]]:
     logger.info(f"Processing {len(articles)} articles.")
     processed_data = []
     current_time_iso = datetime.utcnow().isoformat()
@@ -203,7 +199,7 @@ def process_articles(articles: List[NewsArticleModel]) -> List[Dict[str, Any]]:
     return processed_data
 
 
-def save_data(data: List[Dict[str, Any]], output_dir: str, source_name: str = "newsapi"):
+def save_data(data: list[dict[str, Any]], output_dir: str, source_name: str = "newsapi"):
     ensure_directories([output_dir])
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -259,7 +255,7 @@ def save_data(data: List[Dict[str, Any]], output_dir: str, source_name: str = "n
         else:
             logger.info("No data provided to save_data function.")
 
-    except IOError as e:
+    except OSError as e:
         logger.error(f"IOError saving data: {e}")
     except Exception as e:
         logger.error(f"Unexpected error saving data: {e}", exc_info=True) # Added exc_info for better debugging

@@ -13,11 +13,10 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Any
-import os # Required for IOError, OSError
 
 from etl.base import BaseETL
-from utils.logging import get_logger
 from exceptions.etl import LoadError
+from utils.logging import get_logger
 
 
 class HuggingFaceETL(BaseETL):
@@ -246,7 +245,7 @@ class HuggingFaceETL(BaseETL):
     def _assess_open_source_impact(self, record: dict[str, Any]) -> dict[str, Any]:
         """Assess open source impact."""
         license_type = record.get("license", "unknown")
-        downloads = record.get("downloads", 0)
+        record.get("downloads", 0)
 
         # Assess based on license and adoption
         if license_type in ["mit", "apache-2.0", "openrail++"]:
@@ -265,7 +264,7 @@ class HuggingFaceETL(BaseETL):
 
     def _assess_commercial_viability(self, record: dict[str, Any]) -> dict[str, Any]:
         """Assess commercial viability."""
-        model_type = record.get("model_type", "")
+        record.get("model_type", "")
         license_type = record.get("license", "")
 
         # Commercial use assessment
@@ -349,7 +348,7 @@ class HuggingFaceETL(BaseETL):
 
     def _analyze_growth_trends(self, record: dict[str, Any]) -> dict[str, Any]:
         """Analyze growth trends."""
-        growth_metrics = record.get("growth_metrics", {})
+        record.get("growth_metrics", {})
 
         return {
             "models_growth_rate": "high",
@@ -393,7 +392,7 @@ class HuggingFaceETL(BaseETL):
             self.metrics.records_loaded = len(data)
             self.logger.info(f"Successfully loaded {len(data)} HuggingFace records to {output_file}")
 
-        except (IOError, OSError) as e:
+        except OSError as e:
             self.logger.error(f"Failed to save HuggingFace data to {output_file}: {e}")
             raise LoadError(f"Failed to save HuggingFace data to {output_file}: {e}", destination=str(output_file), destination_type="file") from e
         except Exception as e: # Catch any other unexpected errors during load
