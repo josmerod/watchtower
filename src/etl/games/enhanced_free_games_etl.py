@@ -210,7 +210,8 @@ class EnhancedFreeGamesETL(BaseETL):
                         expiry_date = datetime.strptime(
                             expiry_match.group(1).strip(), "%Y-%m-%d %H:%M:%S"
                         ).isoformat()
-                    except:
+                    except (ValueError, AttributeError) as e:
+                        self.logger.debug(f"Failed to parse expiry date from {entry.title}: {e}")
                         expiry_date = None
 
                 giveaway_record = {

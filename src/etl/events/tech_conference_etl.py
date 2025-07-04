@@ -1601,8 +1601,8 @@ class TechConferenceETL(BaseETL):
             from dateutil.parser import parse
 
             return parse(date_str)
-        except:
-            self.logger.warning(f"Failed to parse date: {date_str}")
+        except (ValueError, TypeError) as e:
+            self.logger.warning(f"Failed to parse date: {date_str}, error: {e}")
             return None
 
     def _create_venue_model(
