@@ -1,14 +1,15 @@
-# MEGALITH
+# Watchtower
 
 **A comprehensive monitoring and ETL framework for scraping, aggregating, and visualizing data from diverse online sources.**
 
-MEGALITH is designed to automate the collection of information from news sites, game deal aggregators, online course platforms, and other web content. It features robust ETL (Extract, Transform, Load) pipelines, intelligent watchers for monitoring content changes, an orchestrator for managing and scheduling tasks, and a user-friendly Streamlit web dashboard for real-time data visualization and interaction.
+Watchtower is designed to automate the collection of information from news sites, game deal aggregators, online course platforms, and other web content. It features robust ETL (Extract, Transform, Load) pipelines, intelligent watchers for monitoring content changes, an orchestrator for managing and scheduling tasks, and a user-friendly Streamlit web dashboard for real-time data visualization and interaction.
 
 ## Table of Contents
 
-- [MEGALITH](#megalith)
+- [Watchtower](#watchtower)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
+  - [Quick Start](#quick-start)
   - [Features](#features)
   - [Technologies Used](#technologies-used)
   - [Project Structure](#project-structure)
@@ -37,12 +38,13 @@ MEGALITH is designed to automate the collection of information from news sites, 
     - [Issue Reporting](#issue-reporting)
     - [Pull Request Process](#pull-request-process)
   - [Troubleshooting](#troubleshooting)
+  - [Documentation](#documentation)
   - [License](#license)
   - [Contact](#contact)
 
 ## Overview
 
-MEGALITH is an integrated solution for automated data acquisition, processing, and monitoring. Its core capabilities include:
+Watchtower is an integrated solution for automated data acquisition, processing, and monitoring. Its core capabilities include:
 
 -   **Automated Data Collection**: Regularly scrapes data from various websites, including news portals, e-learning platforms, and gaming sites.
 -   **Change Detection**: Monitors specified web pages for any changes in content, providing alerts or updates.
@@ -50,6 +52,37 @@ MEGALITH is an integrated solution for automated data acquisition, processing, a
 -   **Data Visualization**: Presents aggregated data through an interactive web interface built with Streamlit, allowing for easy exploration and analysis.
 
 This project is ideal for users who need to stay updated on specific topics, track website changes, or aggregate data for analysis, reporting, and decision-making.
+
+## 🚀 Quick Start
+
+Get Watchtower running in minutes:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/josmerod/watchtower.git
+cd watchtower
+
+# 2. Set up Python environment (choose one)
+# Using Poetry (recommended)
+poetry install && poetry shell
+
+# OR using venv
+python -m venv .venv && source .venv/bin/activate  # Linux/Mac
+pip install -r requirements.txt
+
+# 3. Install Playwright browsers
+playwright install
+
+# 4. Run a simple ETL pipeline
+python src/etl/news/news_get_ycombinator.py
+
+# 5. Launch the web dashboard
+streamlit run src/web/fullstreamlit/app.py
+```
+
+Then open [http://localhost:8501](http://localhost:8501) to view the dashboard!
+
+For detailed setup instructions, see the [Installation](#installation) section below.
 
 ## Features
 
@@ -94,7 +127,7 @@ This project is ideal for users who need to stay updated on specific topics, tra
 ## Project Structure
 
 ```
-megalith/
+watchtower/
 ├── .streamlit/            # Configuration for Streamlit (if any global settings)
 ├── .venv/                 # Python virtual environment (typically ignored by VCS)
 ├── api/                   # Potential future location for FastAPI or other APIs
@@ -158,8 +191,8 @@ megalith/
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/megalith.git  # Replace with your actual repo URL
-cd megalith
+git clone https://github.com/josmerod/watchtower.git
+cd watchtower
 ```
 
 ### Set up Development Environment
@@ -228,7 +261,7 @@ Convenience scripts might also be available:
 
 ## Configuration
 
-Application configuration is crucial for tailoring MEGALITH to your needs and providing necessary credentials.
+Application configuration is crucial for tailoring Watchtower to your needs and providing necessary credentials.
 
 -   **Environment Variables (`.env` files)**:
     -   The primary method for providing sensitive information (API keys, database URLs, etc.) and environment-specific settings.
@@ -357,13 +390,13 @@ This project includes a `Dockerfile` for building a container image, simplifying
 
 **Build the Docker Image:**
 ```bash
-docker build -t megalith-app .
+docker build -t watchtower-app .
 ```
 *Ensure your `.dockerignore` file is comprehensive to optimize build times and image size.*
 
 **Run the Docker Container:**
 ```bash
-docker run -p 8501:8501 --env-file .env megalith-app
+docker run -p 8501:8501 --env-file .env watchtower-app
 ```
 -   Adjust port mapping (`-p HOST_PORT:CONTAINER_PORT`) as needed.
 -   Use `--env-file .env` to pass environment variables from a local `.env` file. Alternatively, pass variables individually with `-e VAR_NAME=value`.
@@ -407,17 +440,19 @@ This project adheres to a set of development standards to ensure code quality, m
 -   **Performance**: Async/await for I/O, caching, resource monitoring, optimized data structures (Polars).
 -   **API Development (if applicable)**: Pydantic, dependency injection, RESTful design, OpenAPI.
 
-Contributors are expected to familiarize themselves with and follow these standards. (Refer to `CONTRIBUTING.md` or internal documentation for full details if available).
+Contributors are expected to familiarize themselves with and follow these standards. (Refer to [CONTRIBUTING.md](CONTRIBUTING.md) for full details).
 
 ## Contributing
 
-We welcome contributions! Please follow these guidelines to ensure a smooth process.
+We welcome contributions! Please see our detailed [Contributing Guide](CONTRIBUTING.md) for complete guidelines.
+
+### Quick Contributing Steps
 
 1.  **Fork the Repository**: Create your fork on GitHub.
 2.  **Clone Your Fork**:
     ```bash
-    git clone https://github.com/YOUR_USERNAME/megalith.git # Use your fork's URL
-    cd megalith
+    git clone https://github.com/YOUR_USERNAME/watchtower.git # Use your fork's URL
+    cd watchtower
     ```
 3.  **Set up Environment**: Follow the [Installation](#installation) section, preferably using Poetry.
 4.  **Create a Feature Branch**:
@@ -476,7 +511,7 @@ We welcome contributions! Please follow these guidelines to ensure a smooth proc
 -   Maintain communication and address review comments promptly.
 -   Once approved and all checks pass, your PR will be merged. Maintainers may squash or rebase commits.
 
-Thank you for contributing to MEGALITH!
+Thank you for contributing to Watchtower!
 
 ## Troubleshooting
 
@@ -501,8 +536,58 @@ Thank you for contributing to MEGALITH!
 -   **Configuration Errors**:
     -   Ensure `.env` file is present in the root and correctly formatted if used.
     -   Verify API keys and other credentials are correct and have the necessary permissions.
+-   **ETL Pipeline Failures**:
+    -   Check internet connectivity and API rate limits.
+    -   Verify that target websites haven't changed their structure.
+    -   Review logs in the `logs/` directory for specific error messages.
+    -   Ensure data directories have write permissions.
+-   **Import Errors**:
+    -   Verify you're running commands from the project root directory.
+    -   Ensure your virtual environment is activated.
+    -   Check that all dependencies are properly installed.
+-   **Performance Issues**:
+    -   Monitor system resources during ETL runs.
+    -   Consider adjusting batch sizes in configuration.
+    -   Check if antivirus software is interfering with file operations.
+
+### Getting Help
+
+If you encounter issues not covered here:
+
+1. **Check the Logs**: Look in `logs/` directory for detailed error messages
+2. **Search Issues**: Check existing [GitHub Issues](https://github.com/josmerod/watchtower/issues)
+3. **Create an Issue**: If you find a bug, please [report it](https://github.com/josmerod/watchtower/issues/new)
+4. **Documentation**: Review the comprehensive [documentation](docs/README.md)
 
 *Add more common issues and solutions as they are identified.*
+
+## 📚 Documentation
+
+Watchtower provides comprehensive documentation to help you get the most out of the platform:
+
+### 📋 Core Documentation
+- **[Main Documentation Hub](docs/README.md)** - Central documentation overview and navigation
+- **[Setup Guide](docs/setup-guide.md)** - Detailed installation and configuration instructions
+- **[Contributing Guide](CONTRIBUTING.md)** - Guidelines for contributing to the project
+- **[Changelog](CHANGELOG.md)** - Project version history and changes
+
+### 🔧 Developer Resources
+- **[Architecture Overview](docs/development/architecture-overview.md)** - System design and technical architecture
+- **[API Reference](docs/development/api-reference.md)** - Complete API documentation and examples
+- **[Workflow Guide](docs/development/workflow-guide.md)** - Development best practices and coding standards
+
+### 📊 Project Status & Planning
+- **[Current Status](docs/project-status/CURRENT_STATUS_SUMMARY.md)** - Latest project achievements and progress
+- **[Expansion Proposals](docs/expansion-proposals.md)** - Future development roadmap and ideas
+
+### 🎯 Use Cases & Examples
+- **[Use Cases Overview](docs/use-cases/README.md)** - Complete list of implemented ETL systems and features
+- **[Individual Use Cases](docs/use-cases/)** - 35+ detailed use case implementations
+
+### 📈 Specialized Topics
+- **[Google Drive Backup](docs/google_drive_backup.md)** - Automated backup configuration
+- **[AI Model Monitoring](docs/AI_MODEL_MONITORING.md)** - AI and ML monitoring capabilities
+- **[Dashboard Guide](docs/dashboard_guide.md)** - Using the Streamlit web interface
 
 ## License
 
@@ -512,5 +597,5 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 ## Contact
 
 For questions, issues, or collaboration, please refer to:
--   **GitHub Issues**: [Project's GitHub Issues Page](https://github.com/yourusername/megalith/issues) (Replace with actual link)
--   **Project Maintainer**: `<your.email@example.com>` or [GitHub Profile](https://github.com/yourusername) (Update with actual contact information)
+-   **GitHub Issues**: [Project's GitHub Issues Page](https://github.com/josmerod/watchtower/issues)
+-   **Project Repository**: [GitHub Repository](https://github.com/josmerod/watchtower)

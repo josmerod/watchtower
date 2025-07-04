@@ -71,6 +71,23 @@ docs/
 
 ---
 
+## 🚀 Getting Started
+
+### New to Watchtower?
+
+1. **[Main README](../README.md#quick-start)** - Quick start guide to get running in minutes
+2. **[Setup Guide](setup-guide.md)** - Detailed installation and configuration
+3. **[Use Cases Overview](use-cases/README.md)** - See what Watchtower can do
+
+### For Developers
+
+1. **[Architecture Overview](development/architecture-overview.md)** - Understand the system design
+2. **[Development Workflow](development/workflow-guide.md)** - Set up your development environment
+3. **[API Reference](development/api-reference.md)** - Dive into the APIs
+4. **[Contributing Guide](../CONTRIBUTING.md)** - Start contributing to the project
+
+---
+
 ## 📊 Project Insights
 
 **Total Documentation**: 2,163+ lines across 8 comprehensive documents
