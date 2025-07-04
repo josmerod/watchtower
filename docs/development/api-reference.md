@@ -753,4 +753,234 @@ except Exception as e:
 
 ---
 
+## 🛠 Practical Integration Examples
+
+### Building a Custom ETL Pipeline
+
+Here's how to create a complete ETL pipeline using Watchtower components:
+
+```python
+from src.config.settings import get_settings
+from src.etl.base_etl import BaseETL
+from src.utils.logging import get_logger, log_function_call
+from src.models.etl_models import ETLResult
+from typing import List, Dict, Any
+import asyncio
+
+class CustomNewsETL(BaseETL):
+    """Custom ETL for aggregating news from multiple sources."""
+    
+    def __init__(self):
+        super().__init__()
+        self.settings = get_settings()
+        self.logger = get_logger("custom_news_etl")
+        
+    @log_function_call
+    async def extract(self) -> List[Dict[str, Any]]:
+        """Extract data from multiple news sources."""
+        data = []
+        
+        # Example: Extract from multiple sources
+        sources = [
+            "https://hnrss.org/frontpage",
+            "https://feeds.feedburner.com/TechCrunch"
+        ]
+        
+        for source in sources:
+            try:
+                # Your extraction logic here
+                source_data = await self._fetch_source(source)
+                data.extend(source_data)
+            except Exception as e:
+                self.logger.error(f"Failed to extract from {source}: {e}")
+                
+        return data
+    
+    async def transform(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Transform and clean the extracted data."""
+        transformed = []
+        
+        for item in data:
+            # Example transformation
+            cleaned_item = {
+                "title": item.get("title", "").strip(),
+                "url": item.get("link", ""),
+                "published": self._parse_date(item.get("published")),
+                "source": self._extract_domain(item.get("link", "")),
+                "category": self._classify_content(item.get("title", "")),
+            }
+            
+            if self._is_valid_item(cleaned_item):
+                transformed.append(cleaned_item)
+                
+        return transformed
+    
+    async def load(self, data: List[Dict[str, Any]]) -> ETLResult:
+        """Load data to storage."""
+        try:
+            # Save to configured storage
+            output_path = self.settings.data_dir / "news" / "aggregated_news.json"
+            await self._save_json(data, output_path)
+            
+            return ETLResult(
+                success=True,
+                records_processed=len(data),
+                output_path=str(output_path),
+                metadata={"sources_count": 2}
+            )
+        except Exception as e:
+            return ETLResult(
+                success=False,
+                error=str(e),
+                records_processed=0
+            )
+
+# Usage example
+async def run_custom_etl():
+    etl = CustomNewsETL()
+    result = await etl.run()
+    
+    if result.success:
+        print(f"Successfully processed {result.records_processed} records")
+    else:
+        print(f"ETL failed: {result.error}")
+
+# Run the ETL
+if __name__ == "__main__":
+    asyncio.run(run_custom_etl())
+```
+
+### Creating a Custom Watcher
+
+```python
+from src.watchers.base_watcher import BaseWatcher
+from src.utils.logging import get_logger
+from src.config.settings import get_settings
+import aiohttp
+import time
+from datetime import datetime
+from typing import Optional, Dict, Any
+
+class APIStatusWatcher(BaseWatcher):
+    """Watch API endpoint status and response times."""
+    
+    def __init__(self, api_url: str):
+        super().__init__(name=f"api_status_{api_url.split('//')[1].split('/')[0]}")
+        self.api_url = api_url
+        self.logger = get_logger(f"watcher.{self.name}")
+        self.settings = get_settings()
+    
+    async def fetch_current_state(self) -> Optional[Dict[str, Any]]:
+        """Check API status and response time."""
+        try:
+            start_time = time.time()
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    self.api_url, 
+                    timeout=aiohttp.ClientTimeout(total=30)
+                ) as response:
+                    response_time = time.time() - start_time
+                    
+                    return {
+                        "status_code": response.status,
+                        "response_time": response_time,
+                        "is_healthy": response.status == 200 and response_time < 5.0,
+                        "timestamp": datetime.now().isoformat(),
+                        "url": self.api_url
+                    }
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to check API status: {e}")
+            return {
+                "status_code": 0,
+                "response_time": float('inf'),
+                "is_healthy": False,
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+                "url": self.api_url
+            }
+    
+    async def on_change_detected(self, old_state: Dict[str, Any], new_state: Dict[str, Any]):
+        """Handle API status changes."""
+        if old_state.get("is_healthy") and not new_state.get("is_healthy"):
+            # API went down
+            self.logger.warning(f"API {self.api_url} is now unhealthy")
+            await self._send_alert("API_DOWN", new_state)
+            
+        elif not old_state.get("is_healthy") and new_state.get("is_healthy"):
+            # API recovered
+            self.logger.info(f"API {self.api_url} recovered")
+            await self._send_alert("API_RECOVERED", new_state)
+
+# Usage
+watcher = APIStatusWatcher("https://api.example.com/health")
+await watcher.run_once()  # Check once
+# Or run continuously with watcher.start()
+```
+
+### Configuration-Driven ETL Setup
+
+```python
+from src.config.settings import get_settings
+from src.etl.base_etl import BaseETL
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class SourceConfig:
+    name: str
+    url: str
+    enabled: bool = True
+    rate_limit: int = 60  # requests per minute
+
+class ConfigDrivenETL(BaseETL):
+    """ETL that reads configuration from settings."""
+    
+    def __init__(self):
+        super().__init__()
+        self.settings = get_settings()
+        self.sources = self._load_source_configs()
+    
+    def _load_source_configs(self) -> List[SourceConfig]:
+        """Load source configurations from settings."""
+        # Configuration can come from environment variables
+        # DATABASE__SOURCES__NEWS__ENABLED=true
+        # DATABASE__SOURCES__NEWS__URL=https://example.com
+        
+        configs = []
+        news_config = self.settings.database.get("sources", {}).get("news", {})
+        
+        if news_config.get("enabled", False):
+            configs.append(SourceConfig(
+                name="news",
+                url=news_config["url"],
+                rate_limit=news_config.get("rate_limit", 60)
+            ))
+        
+        return configs
+    
+    async def extract(self) -> List[Dict[str, Any]]:
+        """Extract from all configured sources."""
+        all_data = []
+        
+        for source in self.sources:
+            if not source.enabled:
+                continue
+                
+            self.logger.info(f"Extracting from {source.name}")
+            source_data = await self._extract_from_source(source)
+            all_data.extend(source_data)
+            
+        return all_data
+
+# Environment configuration example
+# Set these in your .env file:
+# DATABASE__SOURCES__NEWS__ENABLED=true
+# DATABASE__SOURCES__NEWS__URL=https://hnrss.org/frontpage
+# DATABASE__SOURCES__NEWS__RATE_LIMIT=30
+```
+
+---
+
 For additional examples and use cases, see the [Use Cases](../use-cases/) documentation. 

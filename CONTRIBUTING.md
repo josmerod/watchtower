@@ -16,7 +16,7 @@ Thank you for your interest in contributing to Watchtower! This document provide
 
 ## Code of Conduct
 
-This project adheres to a code of conduct that fosters an open and welcoming environment. By participating, you are expected to uphold this code.
+This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md) that fosters an open and welcoming environment. By participating, you are expected to uphold this code. Please report unacceptable behavior to the project maintainers.
 
 ## Getting Started
 
