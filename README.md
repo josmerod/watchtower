@@ -148,6 +148,37 @@ megalith/
 
 ## Installation
 
+### 🚀 Quick Setup (Recommended)
+
+**For Ubuntu 24.04+ users, get Watchtower running with just one command:**
+
+```bash
+git clone https://github.com/josmerod/watchtower.git
+cd watchtower
+./deploy.sh
+```
+
+That's it! The deployment script will automatically:
+- Install all system dependencies
+- Set up Python virtual environment
+- Install Python packages and Playwright browsers
+- Configure and start ETL pipelines
+- Deploy Streamlit dashboard as a system service
+- Validate the complete installation
+
+**After deployment:**
+- 📊 **Dashboard**: http://localhost:8501
+- 🔧 **Service Management**: `sudo systemctl [start|stop|restart] watchtower-streamlit`
+- 📈 **Run ETL**: `./run_all_etl.sh`
+
+**Requirements**: Ubuntu 20.04+, sudo access, internet connection
+
+---
+
+### 🛠️ Manual Setup (Advanced Users)
+
+If you prefer manual setup or are using a different platform:
+
 ### Prerequisites
 
 -   Python 3.10 or higher
@@ -158,8 +189,8 @@ megalith/
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/megalith.git  # Replace with your actual repo URL
-cd megalith
+git clone https://github.com/josmerod/watchtower.git
+cd watchtower
 ```
 
 ### Set up Development Environment

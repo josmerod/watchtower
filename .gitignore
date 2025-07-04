@@ -37,3 +37,14 @@ src/miners/asf-winonly/logs/
 
 # Temporary files
 *.tmp*
+
+# Deployment test artifacts
+.test_venv/
+.test_env
+test_data/
+test_logs/
+.env.backup.*
+*.backup.*
+
+# System files
+.systemd/

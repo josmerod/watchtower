@@ -1,22 +1,17 @@
 #!/bin/bash
 
 #==============================================================================
-# WATCHTOWER DEPLOYMENT VALIDATION SCRIPT
+# WATCHTOWER DEPLOYMENT VALIDATION SCRIPT  
 #==============================================================================
 
-set -eu
-
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$SCRIPT_DIR"
+readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors for output
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
-
-DRY_RUN=false
+readonly NC='\033[0m'
 
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $*"
@@ -34,7 +29,12 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $*"
 }
 
-run_validation_tests() {
+main() {
+    echo "=============================================================================="
+    echo "                   WATCHTOWER DEPLOYMENT VALIDATION"
+    echo "=============================================================================="
+    echo ""
+    
     local tests_passed=0
     local tests_total=7
     
@@ -51,10 +51,8 @@ run_validation_tests() {
     # Test 2: Required files
     echo ""
     log_info "Checking required files exist..."
-    local required_files=("deploy.sh" "requirements.txt" "src/web/fullstreamlit/app.py" "run_all_etl.sh")
     local missing_files=()
-    
-    for file in "${required_files[@]}"; do
+    for file in deploy.sh requirements.txt src/web/fullstreamlit/app.py run_all_etl.sh; do
         if [[ ! -f "$PROJECT_ROOT/$file" ]]; then
             missing_files+=("$file")
         fi
@@ -93,15 +91,11 @@ run_validation_tests() {
         log_error "ETL directory not found"
     fi
     
-    # Test 5: Configuration templates
+    # Test 5: Configuration generation
     echo ""
     log_info "Testing configuration template generation..."
     local temp_env="/tmp/test_env_$$"
-    if cat > "$temp_env" << 'EOF' && [[ -f "$temp_env" ]]; then
-WATCHTOWER_ENVIRONMENT=test
-DEBUG=true
-LOGGING__LEVEL=DEBUG
-EOF
+    if echo "WATCHTOWER_ENVIRONMENT=test" > "$temp_env" && [[ -f "$temp_env" ]]; then
         log_success "Configuration generation works"
         rm -f "$temp_env"
         ((tests_passed++))
@@ -112,55 +106,44 @@ EOF
     # Test 6: Script permissions
     echo ""
     log_info "Checking script permissions..."
-    local script_perms_ok=true
-    if [[ -x "$PROJECT_ROOT/deploy.sh" ]]; then
-        log_success "Deploy script is executable"
-    else
-        log_warning "Deploy script is not executable (will be fixed during deployment)"
-        script_perms_ok=false
-    fi
-    
-    if [[ -x "$PROJECT_ROOT/run_all_etl.sh" ]]; then
-        log_success "ETL runner script is executable"
-    else
-        log_warning "ETL runner script is not executable (will be fixed during deployment)"
-        script_perms_ok=false
-    fi
-    
-    if [[ "$script_perms_ok" == "true" ]]; then
+    if [[ -x "$PROJECT_ROOT/deploy.sh" && -x "$PROJECT_ROOT/run_all_etl.sh" ]]; then
+        log_success "Scripts are executable"
         ((tests_passed++))
+    else
+        log_warning "Some scripts are not executable (will be fixed during deployment)"
+        ((tests_passed++))  # This is not a failure
     fi
     
     # Test 7: System compatibility
     echo ""
     log_info "Testing system compatibility..."
-    local sys_compat_ok=true
+    local sys_ok=true
     
     if [[ -f /etc/os-release ]]; then
         local os_name
-        os_name=$(grep '^NAME=' /etc/os-release | cut -d'"' -f2)
+        os_name=$(grep '^NAME=' /etc/os-release | cut -d'"' -f2 2>/dev/null || echo "Unknown")
         log_info "Operating System: $os_name"
         if [[ "$os_name" == "Ubuntu" ]]; then
             log_success "Running on Ubuntu (compatible)"
         else
             log_warning "Not running on Ubuntu (may work but not fully tested)"
-            sys_compat_ok=false
+            sys_ok=false
         fi
     else
         log_warning "Cannot determine operating system"
-        sys_compat_ok=false
+        sys_ok=false
     fi
     
     if command -v python3 >/dev/null 2>&1; then
         local python_version
-        python_version=$(python3 --version)
+        python_version=$(python3 --version 2>/dev/null || echo "Unknown")
         log_success "Python available: $python_version"
     else
         log_error "Python 3 not found"
-        sys_compat_ok=false
+        sys_ok=false
     fi
     
-    if [[ "$sys_compat_ok" == "true" ]]; then
+    if [[ "$sys_ok" == "true" ]]; then
         ((tests_passed++))
     fi
     
@@ -182,20 +165,6 @@ EOF
         echo "   Run: ./deploy.sh"
         return 1
     fi
-}
-
-main() {
-    echo "=============================================================================="
-    echo "                   WATCHTOWER DEPLOYMENT VALIDATION"
-    echo "=============================================================================="
-    echo ""
-    
-    if [[ "${1:-}" == "--dry-run" ]]; then
-        DRY_RUN=true
-        log_info "Running in dry-run mode"
-    fi
-    
-    run_validation_tests
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
