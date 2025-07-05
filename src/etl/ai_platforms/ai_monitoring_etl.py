@@ -628,7 +628,7 @@ class AIMonitoringETL(BaseETL):
 
         except Exception as e:
             self.logger.error(f"Failed to load data: {e}")
-            raise LoadError(f"Failed to save AI platform data: {e}")
+            raise ValueError(f"Failed to save AI platform data: {e}")
 
     def _generate_summary_report(
         self, data: list[dict[str, Any]], timestamp: str

@@ -17,7 +17,10 @@ try:
     from utils.logging import get_logger
 
     class SimpleHackerNewsETL:
+        """Simple ETL to fetch HackerNews articles from RSS feed."""
+
         def __init__(self):
+            """Initialize the ETL with settings and logger."""
             self.settings = get_settings()
             self.logger = get_logger("simple_hn_etl")
             self.rss_url = "https://hnrss.org/frontpage"

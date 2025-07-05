@@ -28,10 +28,14 @@ MOCK_AWS_FEED_ENTRIES_RAW = [
 
 
 class TestAWSTrainingETL(unittest.TestCase):
+    """Test cases for AWS Training ETL functionality."""
+
     def setUp(self):
+        """Set up test environment."""
         os.makedirs(self.test_data_dir, exist_ok=True)
 
     def tearDown(self):
+        """Clean up test artifacts."""
         if os.path.exists(self.json_path):
             os.remove(self.json_path)
         if os.path.exists(self.csv_path):

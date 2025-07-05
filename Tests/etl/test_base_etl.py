@@ -10,6 +10,7 @@ import pytest
 from src.config.settings import get_settings
 from src.etl.base import (
     BaseETL,
+    ETLCheckpoint,
     ETLError,
 )
 from src.etl.base import (

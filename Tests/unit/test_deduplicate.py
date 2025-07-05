@@ -54,7 +54,7 @@ def deduplicate_courses(input_file, output_file=None, key_field="url"):
             # Add to unique courses
             unique_courses[key.strip().lower()] = course
 
-        list(unique_courses.values())
+        unique_data = list(unique_courses.values())
 
         # Save deduplicated courses
         with open(output_file, "w", encoding="utf-8") as f:

@@ -234,6 +234,7 @@ class TestNewGameReleasesETL(unittest.TestCase):
         # self.assertEqual(len(df_json), 2) # Expecting 2 valid games (high_score, meets_score)
 
         # Verify that the first call to fetch_games used the correct parameters (dates are dynamic)
+        _, kwargs_page1 = mock_fetch.call_args_list[0]
         assert kwargs_page1["page_num"] == 1
         assert "key" in kwargs_page1["params"]
         assert "dates" in kwargs_page1["params"]
