@@ -7,9 +7,9 @@ from collections import Counter
 from datetime import datetime
 from typing import Any
 
-from etl.base import BaseETL
-from exceptions.etl import ExtractionError, LoadError, TransformationError
-from models.arxiv import (
+from src.etl.base import BaseETL
+from src.exceptions.etl import ExtractionError, LoadError, TransformationError
+from src.models.arxiv import (
     CommercialPotential,
     EnhancedArxivPaperModel,
     GitHubRepositoryModel,
@@ -17,10 +17,10 @@ from models.arxiv import (
     ResearchCategory,
     TechnologyReadinessLevel,
 )
-from utils.github_utils import find_github_links_in_text, get_github_repo_info
-from utils.nlp_classifier import NLPContentClassifier
-from utils.pwc_utils import get_pwc_details_for_paper
-from watchers.enhanced_arxiv_watcher import EnhancedArxivWatcher
+from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
+from src.utils.nlp_classifier import NLPContentClassifier
+from src.utils.pwc_utils import get_pwc_details_for_paper
+from src.watchers.enhanced_arxiv_watcher import EnhancedArxivWatcher
 
 try:
     from paperswithcode import PapersWithCodeClient
@@ -246,7 +246,7 @@ class EnhancedArxivETL(BaseETL):
         self.logger.info("Enhanced ArXiv ETL initialized with advanced features")
 
     def extract(self) -> list[dict[str, Any]]:
-        """Extract enhanced papers from ArXiv.
+        """Extract papers from ArXiv using the enhanced watcher.
 
         Returns:
             List of enhanced paper dictionaries
@@ -254,30 +254,15 @@ class EnhancedArxivETL(BaseETL):
         try:
             self.logger.info("Starting enhanced extraction phase")
 
-            # Load papers from existing watcher output without running the watcher
-            # to avoid blocking the main thread
+            # Run the enhanced watcher to collect papers
+            self.watcher.run(continuous=False, max_runs=1)
+
+            # Load papers from watcher output
             papers_file = os.path.join(self.watcher.data_dir, "latest_papers.json")
 
             if not os.path.exists(papers_file):
                 self.logger.warning("No papers found from enhanced watcher")
-                # Try to find any existing papers file as fallback
-                try:
-                    if os.path.exists(self.watcher.data_dir):
-                        json_files = [f for f in os.listdir(self.watcher.data_dir) if f.endswith('.json')]
-                        if json_files:
-                            # Use the most recent JSON file
-                            latest_file = max(json_files, key=lambda x: os.path.getctime(os.path.join(self.watcher.data_dir, x)))
-                            papers_file = os.path.join(self.watcher.data_dir, latest_file)
-                            self.logger.info(f"Using fallback papers file: {papers_file}")
-                        else:
-                            self.logger.warning("No JSON files found in enhanced watcher directory")
-                            return []
-                    else:
-                        self.logger.warning(f"Enhanced watcher data directory not found: {self.watcher.data_dir}")
-                        return []
-                except Exception as e:
-                    self.logger.error(f"Error finding fallback papers file: {e}")
-                    return []
+                return []
 
             with open(papers_file, encoding="utf-8") as f:
                 watcher_data = json.load(f)
@@ -291,7 +276,7 @@ class EnhancedArxivETL(BaseETL):
                 )
             else:
                 papers = watcher_data
-                self.logger.info(f"Loaded {len(papers)} papers from existing enhanced watcher data")
+                self.logger.info(f"Loaded {len(papers)} papers from watcher")
 
             return papers
 
@@ -747,7 +732,7 @@ class EnhancedArxivETL(BaseETL):
             "grpc",
             "blockchain",
             "ethereum",
-
+            "bitcoin",
             "smart contract",
             "react",
             "angular",

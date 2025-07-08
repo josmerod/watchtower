@@ -24,11 +24,13 @@ MEGALITH is designed to automate the collection of information from news sites, 
   - [Usage](#usage)
     - [Running ETL Pipelines](#running-etl-pipelines)
     - [Running Watchers](#running-watchers)
-    - [Running the Orchestrator](#running-the-orchestrator)
+    - [Running Workflows with Prefect](#running-workflows-with-prefect)
+    - [Decommissioning the Old Orchestration System](#decommissioning-the-old-orchestration-system)
     - [Launching the Web Dashboard](#launching-the-web-dashboard)
   - [Docker](#docker)
-  - [Scheduling and Automation](#scheduling-and-automation)
+  - [Scheduling and Automation (Legacy)](#scheduling-and-automation-legacy)
   - [Automated Backups](#automated-backups)
+  - [Important Notes \& Known Issues (Prefect Implementation)](#important-notes--known-issues-prefect-implementation)
   - [Development Standards](#development-standards)
   - [Contributing](#contributing)
     - [Adherence to Development Standards](#adherence-to-development-standards)
@@ -158,8 +160,8 @@ megalith/
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/megalith.git  # Replace with your actual repo URL
-cd megalith
+git clone https://github.com/yourusername/watchtower.git  # Replace with your actual repo URL
+cd watchtower
 ```
 
 ### Set up Development Environment

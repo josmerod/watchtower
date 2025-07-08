@@ -9,8 +9,10 @@ import sys
 # Add project root to sys.path to allow imports from src
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 if project_root not in sys.path:
-from utils.logging import get_logger # Example
-from utils.file_system import ensure_directories, get_project_root # Example
+    sys.path.insert(0, project_root)
+
+from src.utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Constants
 RAWG_API_URL = "https://api.rawg.io/api/games"
@@ -120,6 +122,30 @@ def get_new_releases():
         'metacritic': f'{MIN_METACRITIC_SCORE},100' # Metacritic score range
     }
 
+    # If no API key is provided, create empty files and return
+    if API_KEY == "YOUR_RAWG_API_KEY":
+        logger.warning("No RAWG API key provided, cannot fetch new releases data")
+        try:
+            project_root_path = get_project_root()
+            output_path = os.path.join(project_root_path, OUTPUT_DIR)
+            ensure_directories([output_path])
+
+            json_output_file = os.path.join(output_path, "new_releases.json")
+            csv_output_file = os.path.join(output_path, "new_releases.csv")
+
+            # Create empty JSON and CSV files
+            with open(json_output_file, 'w') as f:
+                f.write('[]')
+            
+            with open(csv_output_file, 'w') as f:
+                f.write('id|name|released|platforms|genres|metacritic|description_raw|rawg_link\n')  # Header only
+
+            logger.info(f"Empty new releases files created at {json_output_file} and {csv_output_file}")
+        except Exception as e:
+            logger.error(f"Error creating empty new releases files: {e}")
+        return
+    
+    # Proceed with API calls if key is available
     current_page = 1
     max_pages = 10  # Safety limit for pagination
 
@@ -152,17 +178,33 @@ def get_new_releases():
             break
 
     if not all_processed_games:
-        logger.info("No games found or processed. Skipping file saving.")
+        logger.info("No games found or processed. Creating empty files.")
+        try:
+            project_root_path = get_project_root()
+            output_path = os.path.join(project_root_path, OUTPUT_DIR)
+            ensure_directories([output_path])
+
+            json_output_file = os.path.join(output_path, "new_releases.json")
+            csv_output_file = os.path.join(output_path, "new_releases.csv")
+
+            # Create empty JSON and CSV files
+            with open(json_output_file, 'w') as f:
+                f.write('[]')
+            
+            with open(csv_output_file, 'w') as f:
+                f.write('id|name|released|platforms|genres|metacritic|description_raw|rawg_link\n')  # Header only
+
+            logger.info(f"Empty new releases files created at {json_output_file} and {csv_output_file}")
+        except Exception as e:
+            logger.error(f"Error creating empty new releases files: {e}")
         return
 
     # Save data
     try:
         # Ensure output directory exists
-        # Assuming get_project_root() and ensure_directories() are correctly implemented
-        # For now, directly use os.path.join and os.makedirs
         project_root_path = get_project_root()
         output_path = os.path.join(project_root_path, OUTPUT_DIR)
-        ensure_directories([output_path]) # ensure_directories expects a list of paths
+        ensure_directories([output_path])
 
         json_output_file = os.path.join(output_path, "new_releases.json")
         csv_output_file = os.path.join(output_path, "new_releases.csv")

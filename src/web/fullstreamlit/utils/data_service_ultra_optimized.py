@@ -1,118 +1,57 @@
 """
-Ultra-optimized data service for Streamlit dashboard.
-
-High-performance data loading with advanced caching, memory management,
-and parallel processing optimizations.
+Ultra-optimized data service for the Watchtower Streamlit application.
+Eliminates I/O bottlenecks, reduces memory usage, and implements advanced caching strategies.
 """
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 import json
 import os
-import time
-import asyncio
-import hashlib
+import numpy as np
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Tuple, Optional, Any, Union
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
 from functools import lru_cache
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import hashlib
+import pickle
+import gc
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import time
 import threading
+import sys
 
-# Import the logger conditionally
-try:
-    from utils.logging import get_logger
-except ImportError:
-    # Fallback logger if the module is not available
-    import logging
-    def get_logger(name):
-        logging.basicConfig(level=logging.INFO)
-        return logging.getLogger(name)
+# Add the src directory to the Python path for imports
+current_dir = Path(__file__).parent
+src_dir = current_dir.parent.parent.parent  # Go up from utils -> fullstreamlit -> web -> src
+sys.path.insert(0, str(src_dir))
 
-# Import technology analyzer
+# Alternative approach - add absolute path
+watchtower_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+src_absolute = os.path.join(watchtower_root, 'src')
+if src_absolute not in sys.path:
+    sys.path.insert(0, src_absolute)
+
+# Import technology intelligence components
 try:
     from analytics.technology_adoption import TechnologyAdoptionAnalyzer
+    from models.technology import FrameworkBattleModel, TechnologyCategory, TechnologyPredictionModel
 except ImportError:
+    # Fallback if models are not available
     TechnologyAdoptionAnalyzer = None
+    FrameworkBattleModel = None
+    TechnologyCategory = None
+    TechnologyPredictionModel = None
 
-# NEW IMPORT: technology models for serialization
+# Import logging utility with error handling
 try:
-    from models.technology import FrameworkBattleModel, TechnologyPredictionModel
-except ImportError:
-    FrameworkBattleModel = None  # type: ignore
-    TechnologyPredictionModel = None  # type: ignore
-
-# Import configuration
-try:
-    from config.settings import get_settings
-except ImportError:
-    def get_settings():
-        return None
-
-# Data cleaning and hashing functions (moved to top)
-def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Clean DataFrame for Streamlit caching by converting complex objects to strings.
-    This prevents 'unhashable type: dict' errors in Streamlit's caching system.
-    """
-    if df.empty:
-        return df
-    
-    # Create a copy to avoid modifying the original
-    df_clean = df.copy()
-    
-    # Convert problematic columns to strings
-    for col in df_clean.columns:
-        if df_clean[col].dtype == 'object':
-            # Check if any values are dictionaries, lists, or other complex objects
-            sample_value = df_clean[col].iloc[0] if len(df_clean) > 0 else None
-            if isinstance(sample_value, (dict, list, set)):
-                # Convert complex objects to JSON strings
-                def format_value(x):
-                    if pd.isna(x):
-                        return None
-                    try:
-                        if isinstance(x, (dict, list, set)):
-                            return json.dumps(x, default=str)
-                        return str(x)
-                    except:
-                        return str(x)
-                
-                df_clean[col] = df_clean[col].apply(format_value)
-    
-    return df_clean
-
-# Custom hash function for DataFrames that handles complex objects
-def safe_dataframe_hash(df: pd.DataFrame) -> str:
-    """Safely hash a DataFrame by converting complex objects to strings first."""
-    try:
-        if df.empty:
-            return "empty_dataframe"
-        
-        # Clean the DataFrame first
-        df_clean = clean_dataframe_for_caching(df)
-        
-        # Create a simple hash based on shape and column names
-        basic_hash = f"{df_clean.shape}_{hash(tuple(df_clean.columns))}"
-        
-        # Add a sample of the data for uniqueness
-        if len(df_clean) > 0:
-            sample_data = df_clean.head(3).to_string()
-            basic_hash += f"_{hash(sample_data)}"
-        
-        return basic_hash
-    except Exception as e:
-        # Fallback to basic information
-        return f"df_shape_{df.shape}_cols_{len(df.columns)}_error_{hash(str(e))}"
-
-# Create a common hash function dictionary
-SAFE_HASH_FUNCS = {
-    pd.DataFrame: safe_dataframe_hash,
-    dict: lambda d: hash(json.dumps(d, sort_keys=True, default=str)),
-    list: lambda l: hash(json.dumps(l, default=str)),
-    set: lambda s: hash(json.dumps(sorted(list(s)), default=str))
-}
+    from utils.logging import get_logger
+except ImportError as e:
+    print(f"❌ Failed to import get_logger in data_service: {e}")
+    # Fallback - create a simple logger
+    import logging
+    def get_logger(name):
+        return logging.getLogger(name)
 
 class UltraOptimizedDataService:
     """Ultra-optimized data service with advanced caching and memory management"""
@@ -130,14 +69,6 @@ class UltraOptimizedDataService:
         self._cache_duration_minutes = 30  # Cache for 30 minutes
         self._initialize_tech_analyzer()
         
-        # Performance monitoring
-        self._performance_stats = {
-            'load_times': {},
-            'cache_hits': 0,
-            'cache_misses': 0,
-            'errors': 0
-        }
-        
     def _setup_paths(self):
         """Setup and cache all file paths to avoid repeated path operations"""
         current_dir = Path(__file__).parent
@@ -154,10 +85,9 @@ class UltraOptimizedDataService:
             'medium_dir': self.data_dir / "medium_genai",
             'coursera_dir': self.data_dir / "classcentral",
             'udemy_dir': self.data_dir / "udemy",
-            'deeplearningai_dir': self.data_dir / "deeplearningai",
             'arxiv_dir': self.data_dir / "arxiv",
             'events_dir': self.data_dir / "valencia_events",
-
+            'crypto_sentiment_dir': self.data_dir / "crypto_sentiment",
             'tech_jobs_dir': self.data_dir / "tech_jobs",
             'dev_community_dir': self.data_dir / "dev_community",
             'product_hunt_dir': self.data_dir / "product_hunt",
@@ -211,57 +141,43 @@ class UltraOptimizedDataService:
     
     def _ultra_fast_json_load(self, file_path: Path, cache_key: str) -> List[Dict]:
         """Ultra-fast JSON loading with multiple optimization layers"""
-        import time
-        start_time = time.time()
         
         # Check memory cache first
         if cache_key in self.memory_cache:
-            self._performance_stats['cache_hits'] += 1
             return self.memory_cache[cache_key]
         
         try:
             if not file_path.exists():
-                self._track_performance(f"load_{file_path.name}", time.time() - start_time, False)
                 return []
             
-            # Read file in binary mode for speed with timeout protection
-            try:
-                with open(file_path, 'rb') as f:
-                    # Load JSON with optimized settings
-                    data = json.loads(f.read().decode('utf-8'))
-            except Exception as read_error:
-                self._log(f"File read error for {file_path}: {read_error}", "error")
-                self._track_performance(f"load_{file_path.name}", time.time() - start_time, False)
-                return []
+            # Read file in binary mode for speed
+            with open(file_path, 'rb') as f:
+                # Load JSON with optimized settings
+                data = json.loads(f.read().decode('utf-8'))
             
             # Validate and cache
             if isinstance(data, list):
                 # Store in memory cache with size limit
                 if len(self.memory_cache) < 50:  # Limit cache size
                     self.memory_cache[cache_key] = data
-                self._track_performance(f"load_{file_path.name}", time.time() - start_time, True)
                 return data
             elif isinstance(data, dict):
                 # Convert single dict to list for consistency
                 result = [data]
                 if len(self.memory_cache) < 50:
                     self.memory_cache[cache_key] = result
-                self._track_performance(f"load_{file_path.name}", time.time() - start_time, True)
                 return result
             else:
                 self._log(f"Unexpected data type in {file_path}: {type(data)}", "warning")
-                self._track_performance(f"load_{file_path.name}", time.time() - start_time, False)
                 return []
                 
         except Exception as e:
             self._log(f"Error loading {file_path}: {str(e)}", "error")
-            self._track_performance(f"load_{file_path.name}", time.time() - start_time, False)
             return []
     
     @st.cache_data(ttl=3600, max_entries=10, show_spinner=False)
     def get_games_data_ultra(_self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Ultra-optimized games data loading with parallel processing"""
-        _self._log("🔍 DEBUG: get_games_data_ultra called!")
         _self._log("Loading games data (ultra-optimized)")
         
         games_dir = _self.cached_paths['games_dir']
@@ -278,19 +194,13 @@ class UltraOptimizedDataService:
         # Load files in parallel using cached operations
         loaded_data = {}
         for op_name, file_path in file_operations:
-            _self._log(f"🔍 DEBUG: Loading {op_name} from {file_path}")
-            _self._log(f"🔍 DEBUG: File exists: {file_path.exists()}")
             cache_key = _self._get_cache_key(str(file_path), op_name)
-            data = _self._ultra_fast_json_load(file_path, cache_key)
-            _self._log(f"🔍 DEBUG: Loaded {len(data) if data else 0} items for {op_name}")
-            loaded_data[op_name] = data
+            loaded_data[op_name] = _self._ultra_fast_json_load(file_path, cache_key)
         
         # Process deals
         deals_df = pd.DataFrame()
-        _self._log(f"🔍 DEBUG: Processing deals, raw data length: {len(loaded_data.get('deals', []))}")
         if loaded_data['deals']:
             deals_df = pd.DataFrame(loaded_data['deals'])
-            _self._log(f"🔍 DEBUG: Created deals DataFrame with shape: {deals_df.shape}")
             # Optimize data types in one pass
             if not deals_df.empty:
                 # Fix column name mismatches - convert 'published' to 'published_date'
@@ -302,13 +212,10 @@ class UltraOptimizedDataService:
                     'published_date': 'datetime',
                     'price': 'float'
                 })
-                _self._log(f"🔍 DEBUG: Deals DataFrame before cleaning: {deals_df.shape}")
-                # TEMPORARILY DISABLED: deals_df = clean_dataframe_for_caching(deals_df)
-                _self._log(f"🔍 DEBUG: Deals DataFrame after cleaning (SKIPPED): {deals_df.shape}")
+                deals_df = clean_dataframe_for_caching(deals_df)
         
         # Process bundles (combine regular and humble)
         bundles_data = []
-        _self._log(f"🔍 DEBUG: Processing bundles, raw bundles: {len(loaded_data.get('bundles', []))}, humble: {len(loaded_data.get('humble', []))}")
         if loaded_data['bundles']:
             for bundle in loaded_data['bundles']:
                 bundle["store"] = bundle.get("store", "Unknown")
@@ -324,10 +231,8 @@ class UltraOptimizedDataService:
             bundles_data.extend(loaded_data['humble'])
         
         bundles_df = pd.DataFrame()
-        _self._log(f"🔍 DEBUG: Combined bundles_data length: {len(bundles_data)}")
         if bundles_data:
             bundles_df = pd.DataFrame(bundles_data)
-            _self._log(f"🔍 DEBUG: Created bundles DataFrame with shape: {bundles_df.shape}")
             if not bundles_df.empty:
                 # Fix column name mismatches - convert 'published' to 'published_date'
                 if 'published' in bundles_df.columns:
@@ -338,16 +243,12 @@ class UltraOptimizedDataService:
                 bundles_df = _self._optimize_dataframe_dtypes(bundles_df, {
                     'published_date': 'datetime'
                 })
-                _self._log(f"🔍 DEBUG: Bundles DataFrame before cleaning: {bundles_df.shape}")
-                # TEMPORARILY DISABLED: bundles_df = clean_dataframe_for_caching(bundles_df)
-                _self._log(f"🔍 DEBUG: Bundles DataFrame after cleaning (SKIPPED): {bundles_df.shape}")
+                bundles_df = clean_dataframe_for_caching(bundles_df)
         
         # Process giveaways
         giveaways_df = pd.DataFrame()
-        _self._log(f"🔍 DEBUG: Processing giveaways, raw data length: {len(loaded_data.get('giveaways', []))}")
         if loaded_data['giveaways']:
             giveaways_df = pd.DataFrame(loaded_data['giveaways'])
-            _self._log(f"🔍 DEBUG: Created giveaways DataFrame with shape: {giveaways_df.shape}")
             if not giveaways_df.empty:
                 # Fix column name mismatches - convert 'published' to 'published_date' and 'expires' to 'expires_date'
                 if 'published' in giveaways_df.columns:
@@ -369,23 +270,19 @@ class UltraOptimizedDataService:
                     'published_date': 'datetime',
                     'expires_date': 'datetime'
                 })
-                _self._log(f"🔍 DEBUG: Giveaways DataFrame before cleaning: {giveaways_df.shape}")
-                # TEMPORARILY DISABLED: giveaways_df = clean_dataframe_for_caching(giveaways_df)
-                _self._log(f"🔍 DEBUG: Giveaways DataFrame after cleaning (SKIPPED): {giveaways_df.shape}")
+                giveaways_df = clean_dataframe_for_caching(giveaways_df)
         
         # Process Itch.io trending games
         itchio_df = pd.DataFrame()
         if loaded_data.get('itchio'):
             itchio_df = pd.DataFrame(loaded_data['itchio'])
             if not itchio_df.empty:
-                # TEMPORARILY DISABLED: itchio_df = clean_dataframe_for_caching(itchio_df)
-                _self._log(f"🔍 DEBUG: Itch.io DataFrame cleaning (SKIPPED): {itchio_df.shape}")
+                itchio_df = clean_dataframe_for_caching(itchio_df)
         
-        _self._log(f"🔍 DEBUG: Ultra-loaded: {len(deals_df)} deals, {len(bundles_df)} bundles, {len(giveaways_df)} giveaways, {len(itchio_df)} itch.io trending")
-        _self._log(f"🔍 DEBUG: Returning tuple with shapes: {deals_df.shape}, {bundles_df.shape}, {giveaways_df.shape}, {itchio_df.shape}")
+        _self._log(f"Ultra-loaded: {len(deals_df)} deals, {len(bundles_df)} bundles, {len(giveaways_df)} giveaways, {len(itchio_df)} itch.io trending")
         return deals_df, bundles_df, giveaways_df, itchio_df
     
-    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False, hash_funcs=SAFE_HASH_FUNCS)
+    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
     def get_videos_data_ultra(_self) -> Dict[str, pd.DataFrame]:
         """Ultra-optimized video data loading with memory efficiency"""
         _self._log("Loading videos data (ultra-optimized)")
@@ -427,18 +324,24 @@ class UltraOptimizedDataService:
         
         return videos_data
     
-    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False, hash_funcs=SAFE_HASH_FUNCS) 
+    @st.cache_data(ttl=1800, max_entries=10, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())}) 
     def get_news_data_ultra(_self) -> Dict[str, pd.DataFrame]:
         """Ultra-optimized news data loading"""
         _self._log("Loading news data (ultra-optimized)")
         
         news_data = {}
         
-        # Define news sources with multiple file options
+        # Define news sources with their possible file names
         news_sources = [
-            ('hackernews', _self.cached_paths['hackernews_dir'], ["stories.json", "hackernews.json", "hackernews_simple.json"]),
-            ('futuretools', _self.cached_paths['futuretools_dir'], ["news.json", "futuretoolsnews.json"]),
-            ('medium', _self.cached_paths['medium_dir'], ["articles.json"]),
+            ('hackernews', _self.cached_paths.get('hackernews_dir'), ["hackernews.json", "hackernews_simple.json", "stories.json"]),
+            ('futuretools', _self.cached_paths.get('futuretools_dir'), ["futuretoolsnews.json", "news.json"]),
+            ('medium', _self.cached_paths.get('medium_dir'), ["medium_genai.json", "articles.json"]),
+            ('bensbites', _self.data_dir / "bensbites", ["bensbites_news.json"]),
+            ('kdnuggets', _self.data_dir / "kdnuggets", ["kdnuggets.json"]),
+            ('gooddevs', _self.data_dir / "gooddevs", ["gooddevs_latest.json"]),
+            ('meneame_general', _self.data_dir / "meneame", ["meneame_general_latest.json"]),
+            ('meneame_tech', _self.data_dir / "meneame", ["meneame_tecnologia_latest.json"]),
+            ('podcasts', _self.data_dir / "podcasts", ["podcasts_latest.json"])
         ]
         
         for source_name, source_dir, file_names in news_sources:
@@ -464,9 +367,9 @@ class UltraOptimizedDataService:
         
         return news_data
     
-    @st.cache_data(ttl=3600, max_entries=5, show_spinner=False, hash_funcs=SAFE_HASH_FUNCS)
+    @st.cache_data(ttl=3600, max_entries=5, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})
     def get_courses_data_ultra(_self) -> Dict[str, pd.DataFrame]:
-        """Ultra-optimized courses data loading"""
+        """Ultra-optimized courses data loading with proper sorting"""
         _self._log("Loading courses data (ultra-optimized)")
         
         courses_data = {}
@@ -474,8 +377,7 @@ class UltraOptimizedDataService:
         # Define course sources
         course_sources = [
             ('coursera', _self.cached_paths['coursera_dir'] / "coursera_courses.json"),
-            ('udemy', _self.cached_paths['udemy_dir'] / "udemy_courses.json"),
-            ('deeplearningai', _self.cached_paths['deeplearningai_dir'] / "deeplearningai_courses.json")
+            ('udemy', _self.cached_paths['udemy_dir'] / "udemy_courses.json")
         ]
         
         for source_name, file_path in course_sources:
@@ -486,6 +388,17 @@ class UltraOptimizedDataService:
                 if data:
                     df = pd.DataFrame(data)
                     if not df.empty:
+                        # Sort by scraped_at date in descending order (newest first)
+                        if 'scraped_at' in df.columns:
+                            try:
+                                # Convert to datetime for proper sorting
+                                df['scraped_at'] = pd.to_datetime(df['scraped_at'], errors='coerce')
+                                # Sort newest first, put NaT values at the end
+                                df = df.sort_values(by='scraped_at', ascending=False, na_position='last')
+                                _self._log(f"Sorted {source_name} courses by scraped_at (newest first)")
+                            except Exception as e:
+                                _self._log(f"Warning: Could not sort {source_name} courses by date: {e}", "warning")
+                        
                         df = clean_dataframe_for_caching(df)
                         courses_data[source_name] = df
                         _self._log(f"Ultra-loaded {len(df)} {source_name} courses")
@@ -547,7 +460,7 @@ class UltraOptimizedDataService:
         
         return df
     
-    @st.cache_data(ttl=600, show_spinner=False, hash_funcs=SAFE_HASH_FUNCS)  # 10 minute cache for summary
+    @st.cache_data(ttl=600, show_spinner=False, hash_funcs={pd.DataFrame: lambda df: str(df.shape) + str(df.columns.tolist())})  # 10 minute cache for summary
     def get_data_summary_ultra(_self) -> Dict[str, Dict]:
         """Ultra-fast data summary generation using cached data"""
         _self._log("Generating ultra-fast data summary")
@@ -642,12 +555,7 @@ class UltraOptimizedDataService:
     # Compatibility methods for existing code
     def get_games_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Compatibility method that calls get_games_data_ultra including Itch.io trending"""
-        self._log("🔍 DEBUG: get_games_data wrapper called!")
-        result = self.get_games_data_ultra()
-        self._log(f"🔍 DEBUG: get_games_data wrapper got result type: {type(result)}")
-        if isinstance(result, tuple):
-            self._log(f"🔍 DEBUG: get_games_data wrapper tuple lengths: {[len(df) if hasattr(df, '__len__') else 'no len' for df in result]}")
-        return result
+        return self.get_games_data_ultra()
     
     def get_videos_data(self) -> Dict[str, pd.DataFrame]:
         """Compatibility method that calls get_videos_data_ultra"""
@@ -715,7 +623,33 @@ class UltraOptimizedDataService:
         
         return pd.DataFrame()
 
-
+    def get_crypto_sentiment_data(self) -> pd.DataFrame:
+        """Get cryptocurrency sentiment data"""
+        crypto_dir = self.cached_paths.get('crypto_sentiment_dir')
+        if not crypto_dir or not crypto_dir.exists():
+            return pd.DataFrame()
+        
+        crypto_file = crypto_dir / "crypto_sentiment_raw_latest.json"
+        if crypto_file.exists():
+            cache_key = self._get_cache_key(str(crypto_file), "crypto_sentiment")
+            data = self._ultra_fast_json_load(crypto_file, cache_key)
+            return pd.DataFrame(data) if data else pd.DataFrame()
+        
+        return pd.DataFrame()
+    
+    def get_crypto_sentiment_aggregated(self) -> Dict[str, Any]:
+        """Get aggregated cryptocurrency sentiment data"""
+        crypto_dir = self.cached_paths.get('crypto_sentiment_dir')
+        if not crypto_dir or not crypto_dir.exists():
+            return {}
+        
+        crypto_file = crypto_dir / "crypto_sentiment_aggregated_latest.json"
+        if crypto_file.exists():
+            cache_key = self._get_cache_key(str(crypto_file), "crypto_sentiment_agg")
+            data = self._ultra_fast_json_load(crypto_file, cache_key)
+            return data[0] if isinstance(data, list) and data else data if isinstance(data, dict) else {}
+        
+        return {}
     
     def get_tech_jobs_data(self) -> pd.DataFrame:
         """Get tech jobs data"""
@@ -812,35 +746,35 @@ class UltraOptimizedDataService:
             self._log(f"Error converting new game releases data to DataFrame: {e}", "error")
             return pd.DataFrame()
 
-    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False) # Cache for 30 mins
-    def get_google_cloud_blog_data(_self) -> List[Dict[str, Any]]:
+    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False)
+    def get_google_cloud_blog_data(self) -> List[Dict[str, Any]]:
         """
         Reads Google Cloud Blog data from data/news/google_cloud_blog.json.
         Handles FileNotFoundError and json.JSONDecodeError.
         Returns a list of blog post dictionaries.
         """
-        _self._log("Loading Google Cloud Blog data")
+        self._log("Loading Google Cloud Blog data")
 
-        # Construct the path using _self.data_dir for consistency
-        gcb_file_path = _self.data_dir / "news" / "google_cloud_blog.json"
+        # Construct the path using self.data_dir for consistency
+        gcb_file_path = self.data_dir / "news" / "google_cloud_blog.json"
 
         if not gcb_file_path.exists():
-            _self._log(f"Google Cloud Blog data file not found: {gcb_file_path}", "error")
+            self._log(f"Google Cloud Blog data file not found: {gcb_file_path}", "error")
             return []
 
-        cache_key = _self._get_cache_key(str(gcb_file_path), "google_cloud_blog")
+        cache_key = self._get_cache_key(str(gcb_file_path), "google_cloud_blog")
 
         # Check memory cache first (using the class's caching mechanism)
-        if cache_key in _self.memory_cache:
-            _self._log(f"Returning cached Google Cloud Blog data for key: {cache_key}", "debug")
-            return _self.memory_cache[cache_key]
+        if cache_key in self.memory_cache:
+            self._log(f"Returning cached Google Cloud Blog data for key: {cache_key}", "debug")
+            return self.memory_cache[cache_key]
 
         try:
             with open(gcb_file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             if not isinstance(data, list):
-                _self._log(f"Google Cloud Blog data is not a list: {type(data)}", "warning")
+                self._log(f"Google Cloud Blog data is not a list: {type(data)}", "warning")
                 # Attempt to wrap if it's a single dictionary, otherwise return empty
                 if isinstance(data, dict):
                     data = [data]
@@ -848,108 +782,108 @@ class UltraOptimizedDataService:
                     return []
 
             # Store in memory cache
-            if len(_self.memory_cache) < 50: # Adhering to existing cache size limit
-                _self.memory_cache[cache_key] = data
+            if len(self.memory_cache) < 50: # Adhering to existing cache size limit
+                self.memory_cache[cache_key] = data
 
-            _self._log(f"Successfully loaded {len(data)} entries from {gcb_file_path}")
+            self._log(f"Successfully loaded {len(data)} entries from {gcb_file_path}")
             return data
 
         except FileNotFoundError: # This case is technically covered by the gcb_file_path.exists() check
-            _self._log(f"Google Cloud Blog data file not found during read: {gcb_file_path}", "error")
+            self._log(f"Google Cloud Blog data file not found during read: {gcb_file_path}", "error")
             return []
         except json.JSONDecodeError as e:
-            _self._log(f"Error decoding JSON from {gcb_file_path}: {e}", "error")
+            self._log(f"Error decoding JSON from {gcb_file_path}: {e}", "error")
             return []
         except Exception as e:
-            _self._log(f"An unexpected error occurred while reading {gcb_file_path}: {e}", "error")
+            self._log(f"An unexpected error occurred while reading {gcb_file_path}: {e}", "error")
             return []
 
     @st.cache_data(ttl=1800, max_entries=10, show_spinner=False)
-    def get_aws_training_data(_self) -> List[Dict[str, Any]]:
+    def get_aws_training_data(self) -> List[Dict[str, Any]]:
         """
         Reads AWS Training data from data/courses/aws_training_updates.json.
         Handles FileNotFoundError and json.JSONDecodeError.
         Returns a list of AWS training post dictionaries.
         """
-        _self._log("Loading AWS Training data")
-        file_path = _self.data_dir / "courses" / "aws_training_updates.json"
+        self._log("Loading AWS Training data")
+        file_path = self.data_dir / "courses" / "aws_training_updates.json"
         cache_key_op_name = "aws_training_data"
 
         if not file_path.exists():
-            _self._log(f"AWS Training data file not found: {file_path}", "error")
+            self._log(f"AWS Training data file not found: {file_path}", "error")
             return []
 
-        cache_key = _self._get_cache_key(str(file_path), cache_key_op_name)
-        if cache_key in _self.memory_cache:
-            _self._log(f"Returning cached AWS Training data for key: {cache_key}", "debug")
-            return _self.memory_cache[cache_key]
+        cache_key = self._get_cache_key(str(file_path), cache_key_op_name)
+        if cache_key in self.memory_cache:
+            self._log(f"Returning cached AWS Training data for key: {cache_key}", "debug")
+            return self.memory_cache[cache_key]
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             if not isinstance(data, list):
-                _self._log(f"AWS Training data is not a list: {type(data)}", "warning")
+                self._log(f"AWS Training data is not a list: {type(data)}", "warning")
                 if isinstance(data, dict): # Wrap if single dict
                     data = [data]
                 else:
                     return [] # Invalid format
 
-            if len(_self.memory_cache) < 50: # Adhere to L1 cache size
-                _self.memory_cache[cache_key] = data
+            if len(self.memory_cache) < 50: # Adhere to L1 cache size
+                self.memory_cache[cache_key] = data
 
-            _self._log(f"Successfully loaded {len(data)} entries from {file_path}")
+            self._log(f"Successfully loaded {len(data)} entries from {file_path}")
             return data
 
         except json.JSONDecodeError as e:
-            _self._log(f"Error decoding JSON from {file_path}: {e}", "error")
+            self._log(f"Error decoding JSON from {file_path}: {e}", "error")
             return []
         except Exception as e: # Catch any other reading errors
-            _self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
+            self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
             return []
 
     @st.cache_data(ttl=1800, max_entries=10, show_spinner=False)
-    def get_azure_training_data(_self) -> List[Dict[str, Any]]:
+    def get_azure_training_data(self) -> List[Dict[str, Any]]:
         """
         Reads Azure Training data from data/courses/azure_training_updates.json.
         Handles FileNotFoundError and json.JSONDecodeError.
         Returns a list of Azure training post dictionaries.
         """
-        _self._log("Loading Azure Training data")
-        file_path = _self.data_dir / "courses" / "azure_training_updates.json"
+        self._log("Loading Azure Training data")
+        file_path = self.data_dir / "courses" / "azure_training_updates.json"
         cache_key_op_name = "azure_training_data"
 
         if not file_path.exists():
-            _self._log(f"Azure Training data file not found: {file_path}", "error")
+            self._log(f"Azure Training data file not found: {file_path}", "error")
             return []
 
-        cache_key = _self._get_cache_key(str(file_path), cache_key_op_name)
-        if cache_key in _self.memory_cache:
-            _self._log(f"Returning cached Azure Training data for key: {cache_key}", "debug")
-            return _self.memory_cache[cache_key]
+        cache_key = self._get_cache_key(str(file_path), cache_key_op_name)
+        if cache_key in self.memory_cache:
+            self._log(f"Returning cached Azure Training data for key: {cache_key}", "debug")
+            return self.memory_cache[cache_key]
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             if not isinstance(data, list):
-                _self._log(f"Azure Training data is not a list: {type(data)}", "warning")
+                self._log(f"Azure Training data is not a list: {type(data)}", "warning")
                 if isinstance(data, dict): # Wrap if single dict
                     data = [data]
                 else:
                     return [] # Invalid format
 
-            if len(_self.memory_cache) < 50: # Adhere to L1 cache size
-                _self.memory_cache[cache_key] = data
+            if len(self.memory_cache) < 50: # Adhere to L1 cache size
+                self.memory_cache[cache_key] = data
 
-            _self._log(f"Successfully loaded {len(data)} entries from {file_path}")
+            self._log(f"Successfully loaded {len(data)} entries from {file_path}")
             return data
 
         except json.JSONDecodeError as e:
-            _self._log(f"Error decoding JSON from {file_path}: {e}", "error")
+            self._log(f"Error decoding JSON from {file_path}: {e}", "error")
             return []
         except Exception as e: # Catch any other reading errors
-            _self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
+            self._log(f"An unexpected error occurred while reading {file_path}: {e}", "error")
             return []
 
     def get_security_vulnerabilities_data(self) -> pd.DataFrame:
@@ -1175,7 +1109,7 @@ class UltraOptimizedDataService:
                 'organizer': 'Web3 Community',
                 'estimated_cost': 150.0,
                 'is_free': False,
-                'topics': ['blockchain', 'web3', 'DeFi'],
+                'topics': ['blockchain', 'web3', 'cryptocurrency', 'DeFi'],
                 'categories': ['Blockchain/Web3'],
                 'quality_score': 78.0,
                 'relevance_score': 75.0,
@@ -1740,40 +1674,80 @@ class UltraOptimizedDataService:
             _self._log(f"Error loading AllKeyShop data: {e}", "error")
             return []
 
-    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False, hash_funcs=SAFE_HASH_FUNCS)
+    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False)
     def get_museum_data(_self) -> pd.DataFrame:
-        """Load and process virtual museum data."""
-        _self._log("Loading virtual museum data...")
+        """
+        Loads virtual museum data from the latest museum ETL output file.
+        Returns an empty DataFrame if no data is available.
+        """
+        _self._log("Loading museum data")
 
-        museums_output_dir = _self.cached_paths.get('museums_output_dir')
-
-        if not museums_output_dir:
-            _self._log("Museums output directory not configured.", "warning")
+        museum_dir = _self.data_dir / "museums"
+        if not museum_dir.exists():
+            _self._log(f"Museum data directory not found: {museum_dir}", "warning")
             return pd.DataFrame()
 
-        if not museums_output_dir.exists():
-            _self._log(f"Museums output directory not found: {museums_output_dir}", "warning")
-            return pd.DataFrame()
-
+        # Look for the latest museum data file
+        pattern = "museums_*.json"
+        latest_file_path = None
         try:
-            json_files = list(museums_output_dir.glob("virtual_museums_etl_*.json"))
-            if not json_files:
-                _self._log(f"No museum JSON files found in {museums_output_dir}", "warning")
+            museum_files = list(_self.data_dir.glob(pattern))
+            if museum_files:
+                # Sort by modification time, get the latest
+                latest_file_path = max(museum_files, key=lambda f: f.stat().st_mtime)
+            else:
+                _self._log(f"No museum data files found matching pattern {pattern} in {museum_dir}", "warning")
+                return pd.DataFrame()
+        except Exception as e:
+            _self._log(f"Error finding museum data files: {e}", "error")
+            return pd.DataFrame()
+
+        cache_key = _self._get_cache_key(str(latest_file_path), "museum_data")
+
+        # Check memory cache first
+        if cache_key in _self.memory_cache:
+            _self._log(f"Returning cached museum data for key: {cache_key}", "debug")
+            cached_data = _self.memory_cache[cache_key]
+            if isinstance(cached_data, pd.DataFrame):
+                return cached_data
+            # If cached data is raw JSON, convert to DataFrame
+            try:
+                df = pd.DataFrame(cached_data)
+                if not df.empty:
+                    df = clean_dataframe_for_caching(df)
+                return df
+            except Exception as e:
+                _self._log(f"Error converting cached museum data to DataFrame: {e}", "error")
                 return pd.DataFrame()
 
-            # Select the most recent file based on modification time
-            latest_file_path = max(json_files, key=lambda p: p.stat().st_mtime)
-            _self._log(f"Latest museum data file: {latest_file_path}")
+        # Load fresh data
+        try:
+            with open(latest_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
 
-        except Exception as e:
-            _self._log(f"Error finding latest museum file in {museums_output_dir}: {e}", "error")
+            if not isinstance(data, list):
+                _self._log(f"Museum data is not a list: {type(data)}", "warning")
+                if isinstance(data, dict):
+                    data = [data]
+                else:
+                    return pd.DataFrame()
+
+            if not data:
+                _self._log("Museum data list is empty.", "info")
+                return pd.DataFrame()
+
+            # Store raw data in memory cache
+            if len(_self.memory_cache) < 50:
+                _self.memory_cache[cache_key] = data
+
+        except FileNotFoundError:
+            _self._log(f"Museum data file not found: {latest_file_path}", "error")
             return pd.DataFrame()
-
-        cache_key = _self._get_cache_key(str(latest_file_path), "museums_data")
-        data = _self._ultra_fast_json_load(latest_file_path, cache_key)
-
-        if not data:
-            _self._log(f"No data loaded from {latest_file_path} or file is empty.", "warning")
+        except json.JSONDecodeError as e:
+            _self._log(f"Error decoding JSON from {latest_file_path}: {e}", "error")
+            return pd.DataFrame()
+        except Exception as e:
+            _self._log(f"An unexpected error occurred while reading {latest_file_path}: {e}", "error")
             return pd.DataFrame()
 
         try:
@@ -1783,21 +1757,12 @@ class UltraOptimizedDataService:
                 return pd.DataFrame()
 
             # Define type mappings based on VirtualMuseumModel
-            # id (uuid.UUID) becomes string, name (str), description (Optional[str])
-            # website_url (Optional[HttpUrl]) becomes string, virtual_tour_url (Optional[HttpUrl]) becomes string
-            # country_label (Optional[str]), city_label (Optional[str]), main_subject_label (Optional[str])
-            # image_url (Optional[HttpUrl]) becomes string, wikidata_url (Optional[HttpUrl]) becomes string
-            # latitude (Optional[float]), longitude (Optional[float])
-            # data_source (str) = "Wikidata"
-            # retrieved_at (datetime), created_at (datetime), updated_at (datetime)
             type_mapping = {
                 'retrieved_at': 'datetime',
                 'created_at': 'datetime',
                 'updated_at': 'datetime',
                 'latitude': 'float',
                 'longitude': 'float'
-                # Other fields are likely strings or will be handled correctly by default.
-                # Pydantic HttpUrl fields become strings in JSON.
             }
 
             df = _self._optimize_dataframe_dtypes(df, type_mapping)
@@ -1810,137 +1775,45 @@ class UltraOptimizedDataService:
             _self._log(f"Error processing museum data from {latest_file_path} into DataFrame: {e}", "error")
             return pd.DataFrame()
 
-    def get_health_status(self) -> Dict[str, Any]:
-        """Get health status and performance metrics"""
-        try:
-            total_files = sum(1 for meta in self.file_metadata.values() if meta.get('exists', False))
-            cache_size = len(self.memory_cache)
-            
-            avg_load_time = 0
-            if self._performance_stats['load_times']:
-                avg_load_time = sum(self._performance_stats['load_times'].values()) / len(self._performance_stats['load_times'])
-            
-            return {
-                'status': 'healthy',
-                'total_data_files': total_files,
-                'cache_size': cache_size,
-                'cache_hit_rate': self._performance_stats['cache_hits'] / max(1, self._performance_stats['cache_hits'] + self._performance_stats['cache_misses']),
-                'average_load_time_ms': round(avg_load_time * 1000, 2),
-                'total_errors': self._performance_stats['errors'],
-                'memory_usage_mb': sum(len(str(v)) for v in self.memory_cache.values()) / (1024 * 1024)
-            }
-        except Exception as e:
-            self._log(f"Error getting health status: {e}", "error")
-            return {'status': 'unhealthy', 'error': str(e)}
+def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean DataFrame to make it cache-compatible with Streamlit.
+    Removes unhashable dict columns and optimizes data types.
+    """
+    if df is None or df.empty:
+        return df
     
-    def _track_performance(self, operation: str, duration: float, success: bool = True):
-        """Track performance metrics"""
+    cleaned_df = df.copy()
+    
+    # Convert any dict columns to strings for cache compatibility
+    for col in cleaned_df.columns:
+        if cleaned_df[col].dtype == 'object':
+            # Check if column contains dictionaries
+            sample_val = cleaned_df[col].dropna().iloc[0] if not cleaned_df[col].dropna().empty else None
+            if isinstance(sample_val, dict):
+                # Convert dicts to JSON strings
+                cleaned_df[col] = cleaned_df[col].apply(
+                    lambda x: json.dumps(x, ensure_ascii=False) if isinstance(x, dict) else x
+                )
+            elif isinstance(sample_val, list):
+                # Convert lists to JSON strings
+                cleaned_df[col] = cleaned_df[col].apply(
+                    lambda x: json.dumps(x, ensure_ascii=False) if isinstance(x, list) else x
+                )
+    
+    # Optimize memory usage
+    for col in cleaned_df.select_dtypes(include=['object']).columns:
         try:
-            self._performance_stats['load_times'][operation] = duration
-            if success:
-                self._performance_stats['cache_misses'] += 1
-            else:
-                self._performance_stats['errors'] += 1
+            # Try to convert to categorical if it has low cardinality
+            unique_ratio = cleaned_df[col].nunique() / len(cleaned_df)
+            if unique_ratio < 0.5:  # Less than 50% unique values
+                cleaned_df[col] = cleaned_df[col].astype('category')
         except:
-            pass  # Don't let performance tracking break the app
-
-    @st.cache_data(ttl=1800, max_entries=5, show_spinner=False)
-    def get_ai_platforms_data(_self) -> List[Dict[str, Any]]:
-        """Get AI platforms monitoring data."""
-        try:
-            ai_models_dir = _self.data_dir / "ai_models"
-            ai_models_file = ai_models_dir / "ai_models_latest.json"
-            
-            if not ai_models_file.exists():
-                _self._log("AI models data file not found", "warning")
-                return []
-            
-            cache_key = _self._get_cache_key(str(ai_models_file), "ai_platforms")
-            data = _self._ultra_fast_json_load(ai_models_file, cache_key)
-            
-            # Ensure data is always a list
-            if isinstance(data, dict):
-                data = [data]
-            elif isinstance(data, int):
-                _self._log(f"AI platforms data is an integer ({data}), returning empty list", "warning")
-                return []
-            elif not isinstance(data, list):
-                _self._log(f"AI platforms data is unexpected type {type(data)}, converting to empty list", "warning")
-                return []
-            
-            _self._log(f"Successfully loaded {len(data)} AI platform entries")
-            return data
-            
-        except Exception as e:
-            _self._log(f"Error loading AI platforms data: {e}", "error")
-            return []
-
+            pass
+    
+    return cleaned_df
 
 # Factory function for easy instantiation
 def create_ultra_optimized_service(logger=None) -> UltraOptimizedDataService:
     """Create an ultra-optimized data service instance"""
     return UltraOptimizedDataService(logger) 
-
-
-def clean_dataframe_for_caching(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Clean DataFrame for Streamlit caching by converting complex objects to strings.
-    This prevents 'unhashable type: dict' errors in Streamlit's caching system.
-    """
-    if df.empty:
-        return df
-    
-    # Create a copy to avoid modifying the original
-    df_clean = df.copy()
-    
-    # Convert problematic columns to strings
-    for col in df_clean.columns:
-        if df_clean[col].dtype == 'object':
-            # Check if any values are dictionaries, lists, or other complex objects
-            sample_value = df_clean[col].iloc[0] if len(df_clean) > 0 else None
-            if isinstance(sample_value, (dict, list, set)):
-                # Convert complex objects to JSON strings
-                def format_value(x):
-                    if pd.isna(x):
-                        return None
-                    try:
-                        if isinstance(x, (dict, list, set)):
-                            return json.dumps(x, default=str)
-                        return str(x)
-                    except:
-                        return str(x)
-                
-                df_clean[col] = df_clean[col].apply(format_value)
-    
-    return df_clean
-
-# Custom hash function for DataFrames that handles complex objects
-def safe_dataframe_hash(df: pd.DataFrame) -> str:
-    """Safely hash a DataFrame by converting complex objects to strings first."""
-    try:
-        if df.empty:
-            return "empty_dataframe"
-        
-        # Clean the DataFrame first
-        df_clean = clean_dataframe_for_caching(df)
-        
-        # Create a simple hash based on shape and column names
-        basic_hash = f"{df_clean.shape}_{hash(tuple(df_clean.columns))}"
-        
-        # Add a sample of the data for uniqueness
-        if len(df_clean) > 0:
-            sample_data = df_clean.head(3).to_string()
-            basic_hash += f"_{hash(sample_data)}"
-        
-        return basic_hash
-    except Exception as e:
-        # Fallback to basic information
-        return f"df_shape_{df.shape}_cols_{len(df.columns)}_error_{hash(str(e))}"
-
-# Create a common hash function dictionary
-SAFE_HASH_FUNCS = {
-    pd.DataFrame: safe_dataframe_hash,
-    dict: lambda d: hash(json.dumps(d, sort_keys=True, default=str)),
-    list: lambda l: hash(json.dumps(l, default=str)),
-    set: lambda s: hash(json.dumps(sorted(list(s)), default=str))
-}

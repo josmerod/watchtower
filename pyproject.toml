@@ -1,98 +1,179 @@
-[tool.poetry]
+[project]
 name = "watchtower"
 version = "0.1.0"
-description = "A versatile data collection, processing, and application platform."
-authors = ["Your Name <your@email.com>"] # Optional: Add your details
+description = "A comprehensive monitoring and ETL framework for scraping, aggregating, and visualizing data from diverse online sources"
+authors = [
+    { name = "Watchtower Team", email = "team@watchtower.dev" }
+]
 readme = "README.md"
-license = "MIT" # Assuming MIT license identifier
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = ["data-collection", "monitoring", "etl", "web-scraping", "streamlit", "data-intelligence"]
 classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
-packages = [  # Include only actual Python packages from src
-    { include = "config", from = "src" },
-    { include = "models", from = "src" },
-    { include = "exceptions", from = "src" },
-    { include = "watchers", from = "src" },
-    { include = "utils", from = "src" },
-    { include = "miners", from = "src" },
-    { include = "etl", from = "src" },
-    { include = "web", from = "src" },
-    { include = "analytics", from = "src" },
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+    "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 
-# Project URLs can be defined here if desired, matching [project.urls]
-homepage = "https://github.com/yourusername/watchtower"
-repository = "https://github.com/yourusername/watchtower" # Common for Poetry
-documentation = "https://github.com/yourusername/watchtower/blob/main/README.md" # Example
-# "Bug Tracker" can be listed under repository or documentation, or kept as a separate URL if Poetry supports it directly.
-# For now, adding common ones.
+# Core dependencies
+dependencies = [
+    # Core data processing and analysis
+    "prefect>=2.19.0",
+    "pandas>=2.2.3",
+    "numpy>=2.2.5",
+    "polars>=0.20.0",
+    "scikit-learn>=1.6.1",
+    "scipy>=1.15.2",
+    "joblib>=1.5.0",
+    "python-dateutil>=2.9.0.post0",
+    "pytz>=2025.2",
+    
+    # Data validation and configuration
+    "pydantic>=2.11.5",
+    "pydantic-settings>=2.9.1",
+    "typing-extensions>=4.13.2",
+    
+    # Web scraping and API interaction
+    "requests>=2.32.3",
+    "beautifulsoup4>=4.13.3",
+    "playwright>=1.51.0",
+    "feedparser>=6.0.11",
+    "aiohttp>=3.11.18",
+    "yt-dlp>=2024.3.10",
+    "cloudscraper>=1.2.60",
+    
+    # Web framework and UI
+    "streamlit>=1.45.0",
+    "plotly>=5.0.0",
+    "tabulate>=0.8.0",
+    "altair>=5.5.0",
+    
+    # Natural Language Processing
+    "nltk>=3.9.1",
+    "tqdm>=4.67.1",
+    
+    # Configuration and utilities
+    "schedule>=1.0.0",
+    "toml>=0.10.2",
+    "python-dotenv>=1.0.0",
+    
+    # YouTube API utilities
+    "google-api-python-client>=2.0.0",
+    "PyDrive2>=1.11.1",
+    "isodate>=0.6.0",
+    
+    # System monitoring
+    "psutil>=6.0.0",
+    "watchdog>=6.0.0",
+    
+    # Additional dependencies for enhanced functionality
+    "tenacity>=9.1.2",
+    "blinker>=1.9.0",
+    "cachetools>=5.5.2",
+    "certifi>=2025.1.31",
+    "charset-normalizer>=3.4.1",
+    "idna>=3.10",
+    "jsonschema>=4.23.0",
+    "packaging>=24.2",
+    "pillow>=11.2.1",
+    "pyarrow>=20.0.0",
+    "referencing>=0.36.2",
+    "rpds-py>=0.25.1",
+    "urllib3>=2.4.0",
+    "markupsafe>=3.0.2",
+    "jinja2>=3.1.6",
+    "click>=8.0,<8.2",
+    "colorama>=0.4.6",
+    
+    # Git integration
+    "GitPython>=3.1.44",
+    "gitdb>=4.0.12",
+    "smmap>=5.0.2",
+    
+    # Additional UI components
+    "dash>=2.0.0",
+    "dash-bootstrap-components>=1.0.0",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10"
-playwright = ">=1.51.0"
-requests = ">=2.32.3"
-# paperswithcode-client = ">=0.3.1" # Removed due to Pydantic v1 conflict
-beautifulsoup4 = ">=4.13.3"
-feedparser = ">=6.0.11"
-nltk = ">=3.9.1"
-numpy = ">=2.2.5"
-pandas = ">=2.2.3"
-scikit-learn = ">=1.6.1"
-scipy = ">=1.15.2" # Potentially transitive, review if truly unused by core logic.
-joblib = ">=1.5.0" # Potentially transitive, review if truly unused by core logic.
-tqdm = ">=4.67.1"
-python-dateutil = ">=2.9.0.post0"
-pytz = ">=2025.2" # Potentially transitive, review if truly unused by core logic.
-streamlit = ">=1.45.0" # Updated version
-polars = ">=0.20.0"
-pydantic = ">=2.11.5" # Moved from web optional, version updated
-pydantic-settings = ">=2.9.1"
-typing-extensions = ">=4.13.2" # Often a Pydantic peer dependency
-aiohttp = ">=3.11.18"
-yt-dlp = ">=2024.3.10"
-cloudscraper = ">=1.2.60"
-plotly = ">=5.0.0"
-toml = ">=0.10.2" # Note: toml is also used by pyproject.toml itself. Poetry handles this.
-google-api-python-client = ">=2.0.0"
-isodate = ">=0.6.0"
-psutil = ">=6.0.0"
-tenacity = ">=9.1.2"
-blinker = ">=1.9.0"
-cachetools = ">=5.5.2"
-GitPython = ">=3.1.44"
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "ruff>=0.2.0",
+    "pytest>=7.0",
+    "pytest-cov>=4.1.0",
+    "pre-commit>=3.5.0",
+    "mypy>=1.7.0",
+    "black>=24.1.0",
+]
 
-[tool.poetry.group.dev.dependencies]
-ruff = ">=0.2.0"
-pytest = ">=7.0"
-pytest-cov = ">=4.1.0"
-pre-commit = ">=3.5.0"
-mypy = ">=1.7.0"
-black = ">=2.4.0"
+# Machine Learning dependencies
+ml = [
+    "langgraph>=0.0.20",
+    "faiss-cpu>=1.7.4",
+    "chromadb>=0.4.22",
+]
 
-[tool.poetry.group.ml.dependencies]
-langgraph = ">=0.0.20"
-faiss-cpu = ">=1.7.4"
-chromadb = ">=0.4.22"
+# Web API dependencies
+web = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "httpx>=0.27.0",
+]
 
-[tool.poetry.group.web.dependencies]
-fastapi = ">=0.110.0"
-uvicorn = ">=0.27.0"
-# pydantic was moved to core dependencies
-httpx = ">=0.27.0"
+# All optional dependencies combined
+all = [
+    "ruff>=0.2.0",
+    "pytest>=7.0",
+    "pytest-cov>=4.1.0",
+    "pre-commit>=3.5.0",
+    "mypy>=1.7.0",
+    "black>=24.1.0",
+    "langgraph>=0.0.20",
+    "faiss-cpu>=1.7.4",
+    "chromadb>=0.4.22",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "httpx>=0.27.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/watchtower"
+Repository = "https://github.com/yourusername/watchtower"
+Documentation = "https://github.com/yourusername/watchtower/blob/main/README.md"
+"Bug Reports" = "https://github.com/yourusername/watchtower/issues"
+
+[project.scripts]
+watchtower-app = "src.web.fullstreamlit.app:main"
+watchtower-etl = "src.etl.base:run_etl_cli"
+watchtower-watcher = "src.watchers.base_watcher:run_watcher_cli"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+# UV-specific configurations
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.2.0",
+    "pytest>=7.0",
+    "pytest-cov>=4.1.0",
+    "pre-commit>=3.5.0",
+    "mypy>=1.7.0",
+    "black>=24.1.0",
+]
 
 # Preserving existing tool configurations
-[tool.uv]
-# uv specific configurations can go here if needed in the future
-
 [tool.ruff]
 line-length = 88
 target-version = "py310"
@@ -123,37 +204,45 @@ convention = "google"  # Use Google-style docstrings
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-line-ending = "auto"
-docstring-code-format = true
-
-[tool.ruff.isort]
-known-first-party = ["watchtower"] # This might need adjustment if package structure changes with Poetry
-section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
 [tool.mypy]
 python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
-disallow_untyped_decorators = true
 no_implicit_optional = true
-strict_optional = true
 warn_redundant_casts = true
-warn_return_any = true
 warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
+show_error_codes = true
 
-[[tool.mypy.overrides]]
-module = ["nltk.*", "scipy.*", "sklearn.*", "streamlit.*"] # May need to add others if they cause issues
-ignore_missing_imports = true
-
-[tool.pytest.ini_options] # This section is for pytest, not directly used by Poetry but good to keep
-minversion = "7.0"
-addopts = "-ra -q --cov=src --cov-report=term-missing" # --cov=src might need to be --cov=watchtower
-testpaths = [
-    "tests",
+[tool.pytest.ini_options]
+testpaths = ["Tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --strict-config --strict-markers"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
 ]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*" 
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+] 

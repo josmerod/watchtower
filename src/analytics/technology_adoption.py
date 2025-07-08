@@ -15,8 +15,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 
-from exceptions.base import WatchtowerError
-from models.technology import (
+from src.exceptions.base import WatchtowerError
+from src.models.technology import (
     AdoptionLevel,
     FrameworkBattleModel,
     MaturityLevel,
@@ -25,7 +25,7 @@ from models.technology import (
     TechnologyPredictionModel,
     TrendDirection,
 )
-from utils.logging import get_logger
+from src.utils.logging import get_logger
 
 
 class TechnologyAdoptionAnalysisError(WatchtowerError):
@@ -342,9 +342,9 @@ class TechnologyAdoptionAnalyzer:
         framework_lower = framework.lower()
 
         for repo in github_data:
-            repo_name = (repo.get("name") or "").lower()
-            repo_description = (repo.get("description") or "").lower()
-            repo_topics = [topic.lower() for topic in (repo.get("topics") or []) if topic]
+            repo_name = repo.get("name", "").lower()
+            repo_description = repo.get("description", "").lower()
+            repo_topics = [topic.lower() for topic in repo.get("topics", [])]
 
             # Check if repository is related to the framework
             if (
@@ -392,9 +392,9 @@ class TechnologyAdoptionAnalyzer:
         keyword_set = {kw.lower() for kw in keywords}
 
         for article in dev_data:
-            title = (article.get("title") or "").lower()
-            content = (article.get("content") or "").lower()
-            tags = [tag.lower() for tag in (article.get("tag_list") or []) if tag]
+            title = article.get("title", "").lower()
+            content = article.get("content", "").lower()
+            tags = [tag.lower() for tag in article.get("tag_list", [])]
 
             # Check if article mentions the framework
             article_text = f"{title} {content} {' '.join(tags)}"
@@ -419,7 +419,7 @@ class TechnologyAdoptionAnalyzer:
                         sum(
                             article.get("trend_score", 0)
                             for article in dev_data
-                            if framework_lower in (article.get("title") or "").lower()
+                            if framework_lower in article.get("title", "").lower()
                         )
                         / max(mentions, 1),
                         2,

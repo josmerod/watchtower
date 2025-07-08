@@ -11,10 +11,10 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 # Add project root to Python path
-from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
-from models.news import NewsArticleModel, ContentLanguage
-from config.settings import get_settings
+from src.utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
+from src.models.news import NewsArticleModel, ContentLanguage
+from src.config.settings import get_settings
 
 logger = get_logger("NewsApiETL")
 

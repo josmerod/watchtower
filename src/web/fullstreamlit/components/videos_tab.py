@@ -44,7 +44,7 @@ def render_pagination_controls(current_page: int, total_pages: int, prefix: str 
     
     return current_page
 
-@st.cache_data(max_entries=20, show_spinner=False)
+@st.cache_data(max_entries=100, show_spinner=False)
 def ultra_fast_search_filter(df_shape: Tuple[int, int], search_term: str, titles: List[str], channels: List[str]) -> np.ndarray:
     """Ultra-fast search using numpy operations instead of pandas"""
     if not search_term:
@@ -58,7 +58,7 @@ def ultra_fast_search_filter(df_shape: Tuple[int, int], search_term: str, titles
     
     return title_matches | channel_matches
 
-@st.cache_data(max_entries=15, show_spinner=False)
+@st.cache_data(max_entries=50, show_spinner=False)
 def ultra_fast_date_filter(df_shape: Tuple[int, int], days: int, dates: List[datetime]) -> np.ndarray:
     """Ultra-fast date filtering using numpy operations"""
     if days <= 0:
@@ -67,7 +67,7 @@ def ultra_fast_date_filter(df_shape: Tuple[int, int], days: int, dates: List[dat
     cutoff_date = datetime.now() - timedelta(days=days)
     return np.array([date >= cutoff_date if date else False for date in dates], dtype=bool)
 
-@st.cache_data(max_entries=20, show_spinner=False, ttl=300)
+@st.cache_data(max_entries=1000, show_spinner=False, ttl=300)
 def precompute_html_batch(video_records: List[Dict], batch_id: str) -> List[str]:
     """Pre-compute HTML for video batches to avoid repeated generation"""
     html_cards = []

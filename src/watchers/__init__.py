@@ -1,27 +1,28 @@
 """Watchers module for Watchtower."""
 
 # Legacy watchers (backward compatibility)
-from watchers.base_watcher import BaseWatcher
-from watchers.ms_skills_watcher import MSAppliedSkillsWatcher
+from src.watchers.base_watcher import BaseWatcher
+# Temporarily comment out problematic imports for UV testing
+# from src.watchers.ms_skills_watcher import MSAppliedSkillsWatcher
 
-# Enhanced watchers (new architecture)
-from watchers.enhanced_watcher import (
-    EnhancedWatcher,
-    WatcherConfig, 
-    WatcherState,
-    WatcherEvent
-)
+# Enhanced watchers (new architecture) - commented out to avoid model import issues
+# from src.watchers.enhanced_watcher import (
+#     EnhancedWatcher,
+#     WatcherConfig, 
+#     WatcherState,
+#     WatcherEvent
+# )
 
 __all__ = [
     # Legacy
     "BaseWatcher",
-    "MSAppliedSkillsWatcher",
+    # "MSAppliedSkillsWatcher",
     
-    # Enhanced
-    "EnhancedWatcher", 
-    "WatcherConfig",
-    "WatcherState",
-    "WatcherEvent",
+    # Enhanced - commented out
+    # "EnhancedWatcher", 
+    # "WatcherConfig",
+    # "WatcherState",
+    # "WatcherEvent",
 ]
 
 # Import any specific watchers here as they're added 

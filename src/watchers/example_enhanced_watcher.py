@@ -5,7 +5,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
-from watchers.enhanced_watcher import EnhancedWatcher, WatcherConfig
+from src.watchers.enhanced_watcher import EnhancedWatcher, WatcherConfig
 
 
 class HackerNewsWatcher(EnhancedWatcher):

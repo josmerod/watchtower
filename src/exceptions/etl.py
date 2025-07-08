@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from exceptions.base import WatchtowerError
+from src.exceptions.base import WatchtowerError
 
 
 class ETLError(WatchtowerError):

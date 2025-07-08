@@ -10,12 +10,12 @@ import pandas as pd
 
 from paperswithcode import PapersWithCodeClient
 
-from utils.file_system import ensure_directories, get_project_root
-from utils.github_utils import find_github_links_in_text, get_github_repo_info
-from utils.logging import get_logger
-from utils.nlp_classifier import NLPContentClassifier
-from utils.pwc_utils import get_pwc_details_for_paper
-from watchers.arxiv_watcher import ArxivWatcher
+from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
+from src.utils.logging import get_logger
+from src.utils.nlp_classifier import NLPContentClassifier
+from src.utils.pwc_utils import get_pwc_details_for_paper
+from src.watchers.arxiv_watcher import ArxivWatcher
 # from paperswithcode import PapersWithCodeClient # Commented out for testing
 
 
@@ -86,36 +86,27 @@ class ArxivETL:
         """
         self.logger.info("Starting extraction phase")
 
-        # Load papers from existing watcher output without running the watcher
-        # to avoid blocking the main thread
+        # Run the watcher once to collect papers
+        self.watcher.run(continuous=False, max_runs=1)
+
+        # Load papers from watcher output
         papers_file = os.path.join(self.watcher.data_dir, "latest_papers.json")
-        self.logger.info(f"Attempting to load papers from: {papers_file}")
+        self.logger.info(f"Attempting to load papers from: {papers_file}") # Detailed log
 
         if not os.path.exists(papers_file):
-            self.logger.warning(f"File not found: {papers_file}. No papers found from watcher.")
-            # Try to find any existing papers file as fallback
+            self.logger.warning(f"File not found: {papers_file}. No papers found from watcher.") # Detailed log
+            # Listing directory contents for debugging
             try:
-                if os.path.exists(self.watcher.data_dir):
-                    json_files = [f for f in os.listdir(self.watcher.data_dir) if f.endswith('.json')]
-                    if json_files:
-                        # Use the most recent JSON file
-                        latest_file = max(json_files, key=lambda x: os.path.getctime(os.path.join(self.watcher.data_dir, x)))
-                        papers_file = os.path.join(self.watcher.data_dir, latest_file)
-                        self.logger.info(f"Using fallback papers file: {papers_file}")
-                    else:
-                        self.logger.warning("No JSON files found in watcher directory")
-                        return []
-                else:
-                    self.logger.warning(f"Watcher data directory not found: {self.watcher.data_dir}")
-                    return []
-            except Exception as e:
-                self.logger.error(f"Error finding fallback papers file: {e}")
-                return []
+                dir_contents = os.listdir(self.watcher.data_dir)
+                self.logger.info(f"Contents of {self.watcher.data_dir}: {dir_contents}")
+            except Exception as e_ls:
+                self.logger.error(f"Could not list directory {self.watcher.data_dir}: {e_ls}")
+            return []
 
         try:
             with open(papers_file, encoding="utf-8") as f:
                 papers = json.load(f)
-            self.logger.info(f"Loaded {len(papers)} papers from existing data")
+            self.logger.info(f"Loaded {len(papers)} papers from watcher")
             return papers
         except Exception as e:
             self.logger.error(f"Error loading papers: {e!s}")

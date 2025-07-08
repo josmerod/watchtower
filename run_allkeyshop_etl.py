@@ -12,8 +12,8 @@ from pathlib import Path
 src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
-from etl.games.games_get_allkeyshop import get_allkeyshop
-from utils.logging import get_logger
+from src.etl.games.games_get_allkeyshop import get_allkeyshop
+from src.utils.logging import get_logger
 
 def main():
     """Main function to run AllKeyShop ETL."""

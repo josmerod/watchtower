@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from web.fullstreamlit.utils.enhanced_data_service import UltraOptimizedDataService
+from src.web.fullstreamlit.utils.enhanced_data_service import UltraOptimizedDataService
 
 
 def render(logger, data_service=None):

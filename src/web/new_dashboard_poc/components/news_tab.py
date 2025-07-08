@@ -3,24 +3,25 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from datetime import datetime, timezone
-
-# --- Data Loading ---
 import os
 
-# Get absolute paths from project root
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+# Import shared utilities
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_data_path, file_exists, parse_date_universal
+
+# --- Data Loading ---
 
 NEWS_SOURCES_CONFIG = {
-    "futuretools": {"path": os.path.join(project_root, "data", "futuretools", "futuretoolsnews.json"), "name": "FutureTools"},
-    "bensbites": {"path": os.path.join(project_root, "data", "bensbites", "bensbites_news.json"), "name": "Ben's Bites"},
-    "hackernews": {"path": os.path.join(project_root, "data", "hackernews", "hackernews.json"), "name": "Hacker News"},
-    "medium_genai": {"path": os.path.join(project_root, "data", "medium_genai", "medium_genai.json"), "name": "Medium GenAI"},
-    "kdnuggets": {"path": os.path.join(project_root, "data", "kdnuggets", "kdnuggets.json"), "name": "KDnuggets"},
-    "gooddevs": {"path": os.path.join(project_root, "data", "gooddevs", "gooddevs_latest.json"), "name": "Good Devs"},
-    "meneame_general": {"path": os.path.join(project_root, "data", "meneame", "meneame_general_latest.json"), "name": "Meneame General"},
-    "meneame_tecnologia": {"path": os.path.join(project_root, "data", "meneame", "meneame_tecnologia_latest.json"), "name": "Meneame Tech"},
-    "podcasts": {"path": os.path.join(project_root, "data", "podcasts", "podcasts_latest.json"), "name": "Podcasts"},
+    "futuretools": {"path": get_data_path("futuretools", "futuretoolsnews.json"), "name": "FutureTools"},
+    "bensbites": {"path": get_data_path("bensbites", "bensbites_news.json"), "name": "Ben's Bites"},
+    "hackernews": {"path": get_data_path("hackernews", "hackernews.json"), "name": "Hacker News"},
+    "medium_genai": {"path": get_data_path("medium_genai", "medium_genai.json"), "name": "Medium GenAI"},
+    "kdnuggets": {"path": get_data_path("kdnuggets", "kdnuggets.json"), "name": "KDnuggets"},
+    "gooddevs": {"path": get_data_path("gooddevs", "gooddevs_latest.json"), "name": "Good Devs"},
+    "meneame_general": {"path": get_data_path("meneame", "meneame_general_latest.json"), "name": "Meneame General"},
+    "meneame_tecnologia": {"path": get_data_path("meneame", "meneame_tecnologia_latest.json"), "name": "Meneame Tech"},
+    "podcasts": {"path": get_data_path("podcasts", "podcasts_latest.json"), "name": "Podcasts"},
 }
 
 def load_news_from_file(file_path):
@@ -113,13 +114,8 @@ def parse_date(date_str):
         except (ValueError, TypeError):
             pass # Not a valid float or timestamp
 
-    # Use more robust date parser
-    try:
-        from utils.date_parser import parse_date
-        return parse_date(s_date, suppress_warnings=True)
-    except ImportError:
-        print(f"Warning: Could not parse date string: {s_date} with any known format.")
-        return None
+    # Use the shared date parsing function as fallback
+    return parse_date_universal(s_date, "News")
 
 # --- Layout Generation ---
 
@@ -203,7 +199,6 @@ def create_news_source_tab_content(source_keys, combined_name=None):
     # Combine header and body into a dbc.Table
     table = dbc.Table(
         table_header + table_body,
-        striped=True,
         bordered=True,
         hover=True,
         responsive=True, # Makes table scroll horizontally on small screens
@@ -253,4 +248,4 @@ if __name__ == '__main__':
     print(f"Displaying max {MAX_ARTICLES_PER_SOURCE} articles per tab, sorted by date.")
     print("Expected news JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json")
     print("Check console for warnings about missing files or parsing errors, especially date parsing.")
-    app_test.run(debug=True, port=8052)
+    app_test.run_server(debug=True, port=8052)

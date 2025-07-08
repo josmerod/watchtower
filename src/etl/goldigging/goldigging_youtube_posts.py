@@ -11,7 +11,7 @@ import yt_dlp
 
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
-from utils.file_system import ensure_directories, get_project_root
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
 logger = logging.getLogger("goldigging_youtube_posts")

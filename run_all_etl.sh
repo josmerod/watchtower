@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Starting ETL processes at $(date)"
+echo "Starting ETL processes with UV at $(date)"
 
 # Change to the project root directory
 cd "$(dirname "$0")"
@@ -8,22 +8,25 @@ cd "$(dirname "$0")"
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
-# Function to run ETL script with logging
+# Function to run ETL script with logging using UV
 run_etl() {
     local script=$1
     local name=$(basename "$script" .py)
-    echo "Starting $name..."
-    python "$script" > "logs/${name}.log" 2>&1 &
-    local script_pid=$! # PID of the python script
+    echo "Starting $name with UV..."
+    uv run python "$script" > "logs/${name}.log" 2>&1 &
+    local script_pid=$! # PID of the uv run command
     pids+=($script_pid) # Add script_pid to the global pids array
     echo "$name started with PID $script_pid"
     # The function can return 0 to indicate success for the && operator
     return 0
 }
 
-# Run all ETL scripts in parallel and store their PIDs
+# Run all ETL scripts in parallel and store their PIDs using UV
 pids=()
 run_etl "src/etl/games/games_get_deals.py" && pids+=($!)
+run_etl "src/etl/games/games_get_humblebundles.py" && pids+=($!)
+run_etl "src/etl/games/games_get_itchio_trending.py" && pids+=($!)
+run_etl "src/etl/games/games_get_new_releases.py" && pids+=($!)
 run_etl "src/etl/news/news_get_ycombinator.py" && pids+=($!)
 run_etl "src/etl/news/news_get_futuretools.py" && pids+=($!)
 run_etl "src/etl/news/news_get_genai_medium.py" && pids+=($!)
@@ -35,13 +38,9 @@ run_etl "src/etl/news/news_get_podcasts.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_youtube_posts.py" && pids+=($!)
 run_etl "src/watchers/ms_skills_watcher.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_coursera_courses.py" && pids+=($!)
-run_etl "src/etl/goldigging/goldigging_deeplearningai_courses.py" && pids+=($!)
-run_etl "src/etl/games/games_get_humblebundles.py" && pids+=($!)
-run_etl "src/etl/games/games_get_itchio_trending.py" && pids+=($!)
 run_etl "src/etl/news/news_get_subreddits.py" && pids+=($!)
 run_etl "src/etl/news/news_get_media_rss.py" && pids+=($!)
 run_etl "src/etl/anime/mal_etl.py" && pids+=($!)
-run_etl "src/etl/adhd/adhd_publications_etl.py" && pids+=($!)
 run_etl "src/etl/news/news_get_newsapi.py" && pids+=($!)
 
 # NEW MODULES - Developer Communities & Innovation Tracking
@@ -64,7 +63,7 @@ run_etl "src/etl/ecommerce/shoppy_etl.py" && pids+=($!)
 # NEW MINING TOOLS
 run_etl "src/miners/crypto_sentiment_miner.py"
 
-echo "All ETL processes started in parallel"
+echo "All ETL processes started in parallel using UV"
 echo "Process PIDs: ${pids[*]}"
 echo "Check logs directory for individual process logs"
 echo "To monitor processes: ps -p ${pids[*]}"
@@ -84,10 +83,8 @@ echo "All ETL processes completed at $(date)"
 
 echo "All ETL processes completed. Starting backup process..."
 
-# Ensure python executable is available, might need to specify python3
-# Assuming run_backup.py is in the project root and executable
-# Log output of the backup script as well
-if python run_backup.py >> "logs/backup_process.log" 2>&1; then
+# Run backup process using UV
+if uv run python run_backup.py >> "logs/backup_process.log" 2>&1; then
     echo "Backup process completed successfully at $(date)."
 else
     echo "Backup process failed. Check logs/backup_process.log for details."
@@ -105,7 +102,6 @@ echo "- data/games/"
 echo "- data/news/"
 echo "- data/raw/newsapi/"
 echo "- data/goldigging/"
-echo "- data/deeplearningai/"
 echo "- data/watchers/"
 echo "- data/anime/"
 echo "- data/home_server_trends/"

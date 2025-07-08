@@ -12,9 +12,9 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from analytics.technology_adoption import TechnologyAdoptionAnalyzer
-from models.technology import FrameworkBattleModel, TechnologyCategory, TechnologyPredictionModel
-from utils.logging import get_logger
-from web.fullstreamlit.utils.data_service import DataService
+from src.models.technology import FrameworkBattleModel, TechnologyCategory, TechnologyPredictionModel
+from src.utils.logging import get_logger
+from src.web.fullstreamlit.utils.data_service import DataService
 
 
 class UltraOptimizedDataService(DataService):
@@ -758,7 +758,7 @@ class UltraOptimizedDataService(DataService):
                 'organizer': 'Web3 Community',
                 'estimated_cost': 150.0,
                 'is_free': False,
-                'topics': ['blockchain', 'web3', 'DeFi'],
+                'topics': ['blockchain', 'web3', 'cryptocurrency', 'DeFi'],
                 'categories': ['Blockchain/Web3'],
                 'quality_score': 78.0,
                 'relevance_score': 75.0,

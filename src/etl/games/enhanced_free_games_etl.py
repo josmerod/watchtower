@@ -21,8 +21,8 @@ import requests
 from bs4 import BeautifulSoup
 import feedparser
 
-from etl.base import BaseETL
-from utils.logging import get_logger
+from src.etl.base import BaseETL
+from src.utils.logging import get_logger
 
 
 class EnhancedFreeGamesETL(BaseETL):

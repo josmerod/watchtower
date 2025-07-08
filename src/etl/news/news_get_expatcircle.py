@@ -1,502 +1,460 @@
 """ExpatCircle News ETL Module
 
 This module fetches and processes news posts from ExpatCircle News,
-an expat-focused news aggregation and community platform.
+which is a news aggregation site similar to Hacker News focused on expat community content.
 
 Usage:
     python src/etl/news/news_get_expatcircle.py
 
 Output:
-- JSON file: data/expatcircle/posts.json
-- CSV file: data/expatcircle/posts.csv
+    - JSON file: data/expatcircle/posts.json
+    - CSV file: data/expatcircle/posts.csv
 """
 
-import requests
-from bs4 import BeautifulSoup
 import json
 import os
-import csv
-import sys
-from pathlib import Path
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
-import time
 import re
+import sys
+import time
+from datetime import datetime, timezone
+from typing import Any, Dict, List
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from urllib.parse import urljoin, urlparse
+from bs4 import BeautifulSoup
 
-# Add the src directory to the Python path
-current_dir = Path(__file__).parent
-src_dir = current_dir.parent.parent
-sys.path.insert(0, str(src_dir))
+# Add the project root to the path to ensure imports work correctly
+from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
-from utils.logging import get_logger
-from config.settings import get_settings
-
-# Initialize logger and settings
+# Initialize logger for this module
 logger = get_logger("ExpatCircleETL")
-settings = get_settings()
 
-# ExpatCircle News configuration
-EXPATCIRCLE_BASE_URL = "https://news.expatcircle.com"
-EXPATCIRCLE_POSTS_URL = f"{EXPATCIRCLE_BASE_URL}/"
 
-# Request headers to mimic a real browser
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Cache-Control": "max-age=0",
-    "Referer": "https://news.expatcircle.com/",
-}
+def create_session() -> requests.Session:
+    """Create a requests session with retry strategy and proper headers."""
+    session = requests.Session()
+
+    # Configure retry strategy
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["HEAD", "GET", "OPTIONS"],
+    )
+
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+
+    # Set headers to mimic a real browser
+    session.headers.update(
+        {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Referer": "https://news.expatcircle.com/",
+        }
+    )
+
+    return session
 
 
 def fetch_expatcircle_posts(
-    session: requests.Session,
-    max_posts: int = 50,
-    max_pages: int = 5
+    session: requests.Session, max_posts: int = 50
 ) -> List[Dict[str, Any]]:
     """Fetch posts from ExpatCircle News main page.
-    
+
     Args:
-        session: Requests session for connection pooling
+        session: Requests session with retry configuration
         max_posts: Maximum number of posts to fetch
-        max_pages: Maximum number of pages to scrape
-    
+
     Returns:
         List of post dictionaries
     """
+    base_url = "https://news.expatcircle.com"
     posts = []
-    
+
     try:
-        base_url = "https://news.expatcircle.com"
-        
         logger.info("Fetching posts from ExpatCircle News")
+        response = session.get(f"{base_url}/en/", timeout=30)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.content, 'html.parser')
         
-        for page in range(1, max_pages + 1):
-            if len(posts) >= max_posts:
+        # Find all post entries - based on the structure observed
+        post_elements = soup.find_all('tr')  # Posts appear to be in table rows
+        
+        posts_found = 0
+        
+        for element in post_elements:
+            if posts_found >= max_posts:
                 break
                 
-            # Construct page URL
-            if page == 1:
-                url = base_url
-            else:
-                url = f"{base_url}?page={page}"
-            
-            logger.info(f"Scraping page {page}: {url}")
-            
-            response = session.get(url, headers=HEADERS, timeout=30)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # More generic selectors for finding posts
-            post_containers = soup.find_all(['article', 'div'], class_=re.compile(r'post|item|entry|story|article|card', re.I))
-            
-            # Fallback: try finding any divs with links that might be posts
-            if not post_containers:
-                post_containers = soup.find_all('div', class_=True)
-                # Filter to only divs that contain links (likely posts)
-                post_containers = [div for div in post_containers if div.find('a', href=True)]
-            
-            # Another fallback: look for any elements with titles/headings
-            if not post_containers:
-                post_containers = soup.find_all(['h1', 'h2', 'h3', 'h4'], text=True)
-                post_containers = [h.parent for h in post_containers if h.parent]
-            
-            logger.info(f"Found {len(post_containers)} potential post containers on page {page}")
-            
-            if not post_containers:
-                logger.warning(f"No post containers found on page {page}. HTML preview: {str(soup)[:500]}")
-            
-            posts_found = 0
-            
-            for container in post_containers:
-                if len(posts) >= max_posts:
-                    break
-                
-                post_data = parse_expatcircle_post(container, base_url)
+            try:
+                # Extract post data from table row
+                post_data = parse_post_element(element, base_url)
                 if post_data:
                     posts.append(post_data)
-            
-            # Add delay between requests
-            time.sleep(1)
-        
+                    posts_found += 1
+
+            except Exception as e:
+                logger.warning(f"Error parsing post element: {e}")
+                continue
+
         logger.info(f"Found {len(posts)} posts from ExpatCircle News")
         return posts
-        
+
     except Exception as e:
         logger.error(f"Error fetching ExpatCircle posts: {e}")
-        return posts
+        return []
 
 
-def parse_expatcircle_post(container, base_url: str) -> Optional[Dict[str, Any]]:
+def parse_post_element(element, base_url: str) -> Dict[str, Any]:
     """Parse a post element from the ExpatCircle News page.
     
     Args:
-        container: BeautifulSoup element containing post data
-        base_url: Base URL for resolving relative links
-    
+        element: BeautifulSoup element representing a post
+        base_url: Base URL for resolving relative URLs
+        
     Returns:
-        Dictionary with post data or None if parsing fails
+        Post dictionary or None if parsing fails
     """
     try:
-        post_data = {}
-        
-        # Extract title
-        title_elem = container.find(['h1', 'h2', 'h3', 'h4'], class_=re.compile(r'title|headline'))
-        if not title_elem:
-            title_elem = container.find('a', href=True)
-        
-        if title_elem:
-            post_data['title'] = title_elem.get_text(strip=True)
+        # Look for links in the element
+        links = element.find_all('a')
+        if not links:
+            return None
             
-            # Extract URL from title link
-            link_elem = title_elem.find('a', href=True) if title_elem.name != 'a' else title_elem
-            if link_elem:
-                href = link_elem.get('href', '')
-                post_data['url'] = urljoin(EXPATCIRCLE_BASE_URL, href)
-            else:
-                post_data['url'] = EXPATCIRCLE_BASE_URL
-        else:
-            return None  # Skip posts without titles
+        # Find the main article link (usually the first meaningful one)
+        main_link = None
+        title = ""
+        post_url = ""
         
-        # Extract description/excerpt
-        desc_elem = container.find(['p', 'div'], class_=re.compile(r'excerpt|description|summary|content'))
-        if desc_elem:
-            post_data['description'] = desc_elem.get_text(strip=True)[:500]  # Limit length
-        else:
-            # Fallback: get first paragraph
-            p_elem = container.find('p')
-            if p_elem:
-                post_data['description'] = p_elem.get_text(strip=True)[:500]
-            else:
-                post_data['description'] = ""
-        
-        # Extract publication date
-        date_elem = container.find(['time', 'span', 'div'], attrs={'datetime': True})
-        if not date_elem:
-            date_elem = container.find(text=re.compile(r'\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}'))
-        
-        if date_elem:
-            if hasattr(date_elem, 'get'):
-                date_str = date_elem.get('datetime') or date_elem.get_text(strip=True)
-            else:
-                date_str = str(date_elem).strip()
+        for link in links:
+            href = link.get('href', '')
+            text = link.get_text(strip=True)
             
-            post_data['published_date'] = parse_date_string(date_str)
-        else:
-            post_data['published_date'] = datetime.now().isoformat()
+            # Skip empty links or navigation links
+            if not text or not href:
+                continue
+                
+            # Skip certain types of links
+            if any(skip in href.lower() for skip in ['/en/profile/', '/en/site/', 'delete', 'edit']):
+                continue
+                
+            # This looks like a main article link
+            if text and len(text) > 10:  # Reasonable title length
+                main_link = link
+                title = text
+                post_url = urljoin(base_url, href) if not href.startswith('http') else href
+                break
         
-        # Extract category
-        category_elem = container.find(['span', 'div', 'a'], class_=re.compile(r'category|tag|topic'))
-        if category_elem:
-            post_data['category'] = category_elem.get_text(strip=True)
-        else:
-            post_data['category'] = "General"
+        if not main_link or not title:
+            return None
+            
+        # Extract additional metadata from the row
+        points = 0
+        comments_count = 0
+        author = ""
+        site_domain = ""
         
-        # Extract author
-        author_elem = container.find(['span', 'div', 'a'], class_=re.compile(r'author|by|user'))
-        if author_elem:
-            post_data['author'] = author_elem.get_text(strip=True)
-        else:
-            post_data['author'] = "ExpatCircle"
+        # Look for points/votes pattern
+        text_content = element.get_text()
+        points_match = re.search(r'(\d+)\s*point', text_content)
+        if points_match:
+            points = int(points_match.group(1))
         
-        # Extract engagement metrics
-        comments_elem = container.find(text=re.compile(r'\d+\s*(comment|reply)', re.I))
-        if comments_elem:
-            comments_match = re.search(r'(\d+)', str(comments_elem))
-            post_data['comments_count'] = int(comments_match.group(1)) if comments_match else 0
-        else:
-            post_data['comments_count'] = 0
-        
-        # Check for trending indicators
-        trending_indicators = container.find(['span', 'div'], class_=re.compile(r'trending|hot|popular'))
-        post_data['trending'] = bool(trending_indicators)
-        
-        # Add metadata
-        post_data.update({
-            "source": "expatcircle",
+        # Look for "by" pattern for author
+        by_match = re.search(r'by\s+([^\s]+)', text_content)
+        if by_match:
+            author = by_match.group(1)
+            
+        # Look for "discuss" or comments pattern
+        discuss_links = element.find_all('a', href=re.compile(r'/en/post/\d+/'))
+        discuss_url = ""
+        if discuss_links:
+            discuss_url = urljoin(base_url, discuss_links[0].get('href', ''))
+            
+        # Extract site domain if it's an external link
+        if post_url.startswith('http'):
+            parsed_url = urlparse(post_url)
+            site_domain = parsed_url.netloc
+            
+        # Extract timestamp if available
+        time_elements = element.find_all(string=re.compile(r'\d+\s+(day|hour|minute)s?\s+ago'))
+        posted_time = ""
+        if time_elements:
+            posted_time = time_elements[0].strip()
+
+        return {
+            "id": hash(title + post_url) % 1000000,  # Generate a simple ID
+            "title": title,
+            "url": post_url,
+            "author": author,
+            "points": points,
+            "comments_count": comments_count,
+            "discuss_url": discuss_url,
+            "site_domain": site_domain,
+            "posted_time": posted_time,
+            "fetched_at": datetime.now().isoformat(),
             "platform": "expatcircle"
-        })
-        
-        return post_data
-        
+        }
+
     except Exception as e:
-        logger.error(f"Error parsing ExpatCircle post: {e}")
+        logger.warning(f"Error parsing post element: {e}")
         return None
 
 
 def process_expatcircle_posts(posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Process and enrich ExpatCircle posts with additional metrics and categorization.
-    
+
     Args:
-        posts: Raw post data from scraping
-    
+        posts: List of raw post dictionaries
+
     Returns:
-        Processed and enriched post data
+        List of processed and enriched post data
     """
-    if not posts:
-        return []
-    
     logger.info(f"Processing {len(posts)} ExpatCircle posts")
-    
+
     processed_posts = []
-    
-    # Define expat-related keywords for categorization
-    expat_keywords = {
-        'visa': ['visa', 'immigration', 'permit', 'residency', 'citizenship'],
-        'housing': ['housing', 'apartment', 'rent', 'property', 'accommodation'],
-        'work': ['job', 'employment', 'career', 'salary', 'workplace', 'remote work'],
-        'finance': ['tax', 'banking', 'insurance', 'finances', 'money', 'currency'],
-        'culture': ['culture', 'language', 'local', 'customs', 'traditions'],
-        'lifestyle': ['lifestyle', 'living', 'expat life', 'community', 'social'],
-        'travel': ['travel', 'transport', 'flight', 'vacation', 'tourism'],
-        'health': ['health', 'medical', 'healthcare', 'doctor', 'insurance'],
-        'education': ['school', 'education', 'university', 'children', 'international school'],
-        'business': ['business', 'entrepreneur', 'startup', 'investment', 'company']
-    }
-    
+    current_time = datetime.now()
+
     for post in posts:
         try:
-            # Create processed post copy
-            processed_post = post.copy()
-            
-            # Enhance categorization based on content
-            title_lower = post.get('title', '').lower()
-            desc_lower = post.get('description', '').lower()
-            content_text = f"{title_lower} {desc_lower}"
-            
-            # Determine more specific category
-            category_scores = {}
-            for category, keywords in expat_keywords.items():
-                score = sum(1 for keyword in keywords if keyword in content_text)
-                if score > 0:
-                    category_scores[category] = score
-            
-            if category_scores:
-                best_category = max(category_scores, key=category_scores.get)
-                processed_post['expat_category'] = best_category
-                processed_post['category_confidence'] = category_scores[best_category]
-            else:
-                processed_post['expat_category'] = 'general'
-                processed_post['category_confidence'] = 0
-            
             # Calculate engagement score
-            engagement_score = 0
+            points = post.get("points", 0)
+            comments_count = post.get("comments_count", 0)
+            engagement_score = points + (comments_count * 1.5)
+
+            # Categorize the post based on title and domain
+            title = post.get("title", "").lower()
+            domain = post.get("site_domain", "").lower()
             
-            # Base score from comments
-            comments = post.get('comments_count', 0)
-            engagement_score += comments * 2
+            category = categorize_post(title, domain)
             
-            # Trending bonus
-            if post.get('trending', False):
-                engagement_score += 10
+            # Determine content type
+            content_type = "external_link" if post.get("site_domain") else "discussion"
             
-            # Title/description quality bonus
-            title_len = len(post.get('title', ''))
-            desc_len = len(post.get('description', ''))
-            
-            if title_len > 20:
-                engagement_score += 2
-            if desc_len > 100:
-                engagement_score += 3
-            
-            # Recency bonus (posts from last 24 hours)
-            try:
-                pub_date = datetime.fromisoformat(post.get('published_date', '').replace('Z', '+00:00'))
-                if datetime.now().replace(tzinfo=pub_date.tzinfo) - pub_date < timedelta(days=1):
-                    engagement_score += 5
-            except:
-                pass
-            
-            processed_post['engagement_score'] = engagement_score
-            
-            # Add content type classification
-            if any(word in content_text for word in ['guide', 'how to', 'tips', 'advice']):
-                processed_post['content_type'] = 'guide'
-            elif any(word in content_text for word in ['news', 'update', 'announcement']):
-                processed_post['content_type'] = 'news'
-            elif any(word in content_text for word in ['question', 'help', 'advice', '?']):
-                processed_post['content_type'] = 'question'
-            elif any(word in content_text for word in ['experience', 'story', 'review']):
-                processed_post['content_type'] = 'experience'
-            else:
-                processed_post['content_type'] = 'discussion'
-            
-            # Add processing timestamp
-            processed_post['processed_at'] = datetime.now().isoformat()
-            
-            # Add quality score
-            quality_score = 0
-            
-            # Title quality
-            if 10 <= title_len <= 100:
-                quality_score += 2
-            
-            # Description quality
-            if 50 <= desc_len <= 300:
-                quality_score += 2
-            
-            # Has URL
-            if post.get('url') and post['url'] != EXPATCIRCLE_BASE_URL:
-                quality_score += 1
-            
-            # Has category
-            if post.get('category') and post['category'] != 'General':
-                quality_score += 1
-            
-            processed_post['quality_score'] = quality_score
-            
+            # Calculate priority score based on multiple factors
+            priority_score = calculate_priority_score(
+                points, comments_count, category, content_type
+            )
+
+            processed_post = {
+                **post,
+                "engagement_score": engagement_score,
+                "category": category,
+                "content_type": content_type,
+                "priority_score": round(priority_score, 2),
+                "is_trending": engagement_score >= 20,  # Lower threshold than HN
+                "is_discussion": content_type == "discussion",
+                "processed_at": datetime.now().isoformat(),
+            }
+
             processed_posts.append(processed_post)
-            
+
         except Exception as e:
-            logger.error(f"Error processing post {post.get('title', 'Unknown')}: {e}")
-            # Add the original post if processing fails
-            processed_posts.append(post)
-    
+            logger.warning(f"Error processing post {post.get('id', 'unknown')}: {e}")
+            continue
+
+    # Sort by priority score
+    processed_posts.sort(key=lambda x: x.get("priority_score", 0), reverse=True)
+
     logger.info(f"Successfully processed {len(processed_posts)} ExpatCircle posts")
     return processed_posts
 
 
-def parse_date_string(date_str: str) -> str:
-    """Parse various date formats into ISO format.
+def categorize_post(title: str, domain: str) -> str:
+    """Categorize a post based on its title and domain.
     
     Args:
-        date_str: Date string in various formats
-    
+        title: Post title
+        domain: Site domain
+        
     Returns:
-        ISO formatted date string
+        Category string
     """
-    if not date_str:
-        return datetime.now().isoformat()
+    title_lower = title.lower()
     
-    # Common date patterns
-    patterns = [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M:%SZ",
-        "%Y-%m-%d",
-        "%m/%d/%Y",
-        "%d/%m/%Y",
-        "%B %d, %Y",
-        "%b %d, %Y",
-        "%d %B %Y",
-        "%d %b %Y"
-    ]
+    # Expat and living abroad categories
+    if any(keyword in title_lower for keyword in [
+        'expat', 'expatriate', 'abroad', 'immigration', 'visa', 'relocat', 'moving'
+    ]):
+        return 'expat_life'
     
-    # Clean up the date string
-    date_str = re.sub(r'[^\w\s:/-]', '', date_str.strip())
+    # Travel and destinations
+    if any(keyword in title_lower for keyword in [
+        'travel', 'destination', 'country', 'city', 'vacation', 'tourism'
+    ]):
+        return 'travel'
     
-    for pattern in patterns:
-        try:
-            parsed_date = datetime.strptime(date_str, pattern)
-            return parsed_date.isoformat()
-        except ValueError:
-            continue
+    # Work and career
+    if any(keyword in title_lower for keyword in [
+        'job', 'work', 'career', 'employment', 'salary', 'remote work'
+    ]):
+        return 'career'
     
-    # If all else fails, try to extract a simple date
-    date_match = re.search(r'(\d{4})-(\d{2})-(\d{2})', date_str)
-    if date_match:
-        try:
-            year, month, day = date_match.groups()
-            parsed_date = datetime(int(year), int(month), int(day))
-            return parsed_date.isoformat()
-        except ValueError:
-            pass
+    # Finance and economics
+    if any(keyword in title_lower for keyword in [
+        'economy', 'finance', 'money', 'bank', 'tax', 'invest', 'cost of living'
+    ]):
+        return 'finance'
     
-    # Last resort: return current date
-    logger.warning(f"Could not parse date: {date_str}")
-    return datetime.now().isoformat()
+    # Culture and society
+    if any(keyword in title_lower for keyword in [
+        'culture', 'society', 'language', 'local', 'community', 'tradition'
+    ]):
+        return 'culture'
+    
+    # Technology and digital nomad
+    if any(keyword in title_lower for keyword in [
+        'tech', 'digital', 'nomad', 'internet', 'online', 'startup'
+    ]):
+        return 'technology'
+    
+    # Health and lifestyle
+    if any(keyword in title_lower for keyword in [
+        'health', 'lifestyle', 'insurance', 'medical', 'wellbeing'
+    ]):
+        return 'health_lifestyle'
+    
+    # Politics and news
+    if any(keyword in title_lower for keyword in [
+        'politic', 'government', 'policy', 'election', 'news', 'war'
+    ]):
+        return 'politics_news'
+    
+    return 'general'
 
 
-def save_expatcircle_data(data: List[Dict[str, Any]], output_dir: str):
-    """Save ExpatCircle data to JSON and CSV files.
+def calculate_priority_score(
+    points: int, comments_count: int, category: str, content_type: str
+) -> float:
+    """Calculate priority score for a post.
+    
+    Args:
+        points: Number of points/votes
+        comments_count: Number of comments
+        category: Post category
+        content_type: Type of content
+        
+    Returns:
+        Priority score
+    """
+    base_score = points * 2 + comments_count * 3
+    
+    # Category multipliers
+    category_multipliers = {
+        'expat_life': 1.3,
+        'travel': 1.2,
+        'career': 1.2,
+        'technology': 1.1,
+        'finance': 1.1,
+        'general': 1.0,
+        'politics_news': 0.9,
+    }
+    
+    category_multiplier = category_multipliers.get(category, 1.0)
+    
+    # Content type multiplier
+    content_multiplier = 1.1 if content_type == "discussion" else 1.0
+    
+    return base_score * category_multiplier * content_multiplier
+
+
+def save_data(data: List[Dict[str, Any]], output_dir: str) -> Dict[str, str]:
+    """Save processed data to JSON and CSV files.
     
     Args:
         data: Processed post data
         output_dir: Output directory path
+        
+    Returns:
+        Dictionary with file paths
     """
-    if not data:
-        logger.warning("No data to save")
-        return
+    ensure_directories([output_dir])
     
+    file_paths = {}
+    
+    # Save as JSON
+    json_file = os.path.join(output_dir, "expatcircle_posts.json")
+    with open(json_file, "w", encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    file_paths["json"] = json_file
+    logger.info(f"Saved JSON data to {json_file}")
+    
+    # Save as CSV
     try:
-        # Save JSON
-        json_file = os.path.join(output_dir, "expatcircle_posts.json")
-        with open(json_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False, default=str)
-        
-        logger.info(f"Saved {len(data)} posts to {json_file}")
-        
-        # Save CSV
+        import pandas as pd
         csv_file = os.path.join(output_dir, "expatcircle_posts.csv")
         
-        if data:
-            # Get all unique keys for CSV headers
-            all_keys = set()
-            for item in data:
-                all_keys.update(item.keys())
-            
-            with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.DictWriter(f, fieldnames=sorted(all_keys))
-                writer.writeheader()
-                writer.writerows(data)
-            
-            logger.info(f"Saved {len(data)} posts to {csv_file}")
+        # Flatten the data for CSV
+        df_data = []
+        for post in data:
+            flat_post = {k: v for k, v in post.items() if not isinstance(v, (dict, list))}
+            df_data.append(flat_post)
         
+        df = pd.DataFrame(df_data)
+        df.to_csv(csv_file, index=False, encoding='utf-8')
+        file_paths["csv"] = csv_file
+        logger.info(f"Saved CSV data to {csv_file}")
+        
+    except ImportError:
+        logger.warning("pandas not available, skipping CSV export")
     except Exception as e:
-        logger.error(f"Error saving data: {e}")
+        logger.error(f"Error saving CSV: {e}")
+    
+    return file_paths
 
 
 def main():
     """Main function to run the ExpatCircle News ETL process."""
     logger.info("Starting ExpatCircle News ETL process")
-    
+
     try:
-        # Create output directory
-        project_root = Path(__file__).parent.parent.parent.parent
+        # Setup
+        project_root = get_project_root()
         output_dir = os.path.join(project_root, "data", "expatcircle")
-        os.makedirs(output_dir, exist_ok=True)
-        
-        # Create session for connection pooling
-        session = requests.Session()
-        session.headers.update(HEADERS)
-        
+        session = create_session()
+
+        # Fetch data
         logger.info("Fetching ExpatCircle News posts")
         posts = fetch_expatcircle_posts(session, max_posts=50)
-        
+
         if not posts:
-            logger.warning("No posts fetched from ExpatCircle News")
+            logger.warning("No posts fetched. Exiting.")
             return
-        
-        logger.info(f"Fetched {len(posts)} posts")
-        
+
+        # Process data
         logger.info("Processing and enriching ExpatCircle data")
         processed_data = process_expatcircle_posts(posts)
-        
+
         # Save data
-        save_expatcircle_data(processed_data, output_dir)
-        
-        # Print summary
-        logger.info(f"ExpatCircle News ETL completed successfully!")
-        logger.info(f"Total posts processed: {len(processed_data)}")
-        
+        file_paths = save_data(processed_data, output_dir)
+
+        # Summary
+        total_posts = len(processed_data)
+        trending_posts = len([p for p in processed_data if p.get("is_trending", False)])
+        discussion_posts = len([p for p in processed_data if p.get("is_discussion", False)])
+
+        logger.info("ExpatCircle News ETL completed successfully!")
+        logger.info(f"Total posts: {total_posts}")
+        logger.info(f"Trending posts: {trending_posts}")
+        logger.info(f"Discussion posts: {discussion_posts}")
+        logger.info(f"Files saved: {list(file_paths.values())}")
+
+        # Print category distribution
         if processed_data:
-            categories = {}
-            for post in processed_data:
-                cat = post.get('expat_category', 'unknown')
-                categories[cat] = categories.get(cat, 0) + 1
-            
-            logger.info("Category breakdown:")
-            for cat, count in sorted(categories.items(), key=lambda x: x[1], reverse=True):
-                logger.info(f"  {cat}: {count} posts")
-    
+            categories = [p.get("category", "Unknown") for p in processed_data]
+            from collections import Counter
+            top_categories = Counter(categories).most_common(5)
+            logger.info(f"Top categories: {top_categories}")
+
     except Exception as e:
         logger.error(f"ExpatCircle News ETL failed: {e}")
         raise

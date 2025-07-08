@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import os
-import random
 import sys
 from datetime import datetime
 from typing import Any
@@ -10,33 +9,32 @@ from typing import Any
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 # Import utilities
-from utils.course_deduplication import deduplicate_courses
-from utils.file_system import ensure_directories, get_project_root
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
-logger = logging.getLogger("deeplearningai_scraper")
+logger = logging.getLogger("classcentral_scraper")
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 # Constants
-BASE_OUTPUT_DIR = "data/deeplearningai"
+BASE_OUTPUT_DIR = "data/classcentral"
 MAX_PAGES_FIRST_RUN = 50
 MAX_PAGES_SUBSEQUENT_RUN = 10
 DEBUG_DIR = os.path.join(BASE_OUTPUT_DIR, "debug")
 
 
-class DeepLearningAIScraper:
-    """Scraper for retrieving courses from DeepLearning.AI.
+class ClassCentralScraper:
+    """Scraper for retrieving Coursera courses from classcentral.com.
 
-    This class uses Playwright to scrape the DeepLearning.AI courses page
-    and saves the course data in JSON and CSV formats for further analysis.
+    This class uses direct HTTP requests to retrieve courses from classcentral.com
+    and save them in JSON and CSV formats for further analysis.
     """
 
-    BASE_URL = "https://www.deeplearning.ai/courses/"
+    BASE_URL = "https://www.classcentral.com/provider/coursera"
 
     def __init__(self, max_pages: int | None = None) -> None:
-        """Initialize the DeepLearningAIScraper.
+        """Initialize the ClassCentralScraper.
 
         Args:
             max_pages: Maximum number of pages to scrape. If None, determined automatically
@@ -52,7 +50,7 @@ class DeepLearningAIScraper:
         os.makedirs(self.debug_dir, exist_ok=True)
 
         # Define output files
-        self.courses_file = os.path.join(self.output_dir, "deeplearningai_courses.json")
+        self.courses_file = os.path.join(self.output_dir, "coursera_courses.json")
         self.last_run_file = os.path.join(self.output_dir, "last_run_info.json")
 
         # Configuration
@@ -75,43 +73,38 @@ class DeepLearningAIScraper:
                 self.max_pages = MAX_PAGES_SUBSEQUENT_RUN
 
     async def scrape_courses(self) -> list[dict[str, Any]]:
-        """Scrape courses from DeepLearning.AI."""
+        """Scrape courses from classcentral.com.
+
+        Returns:
+            List of dictionaries containing course information.
+        """
         from bs4 import BeautifulSoup
         from playwright.async_api import async_playwright
 
-        all_courses: list[dict[str, Any]] = []
+        all_courses = []
         page_num = 1
 
         try:
             async with async_playwright() as p:
-                browser = await p.chromium.launch(
-                    headless=False,
-                    args=["--disable-blink-features=AutomationControlled"],
-                )
+                browser = await p.chromium.launch(headless=True)
                 context = await browser.new_context(
                     viewport={"width": 1920, "height": 1080},
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-                )
-                # Stealth: mask automation to bypass detection
-                await context.add_init_script(
-                    "() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }"
                 )
                 page = await context.new_page()
 
                 # Visit the main site first to establish cookies
                 logger.info("Visiting main site to establish cookies")
-                await page.goto("https://www.deeplearning.ai/", timeout=60000)
+                await page.goto("https://www.classcentral.com/", timeout=60000)
                 await page.wait_for_timeout(3000)
 
                 while page_num <= self.max_pages:
-                    url = f"{self.BASE_URL}?courses_date_desc[page]={page_num}"
+                    url = f"{self.BASE_URL}?sort=created-up&page={page_num}"
                     logger.info(f"Fetching page {page_num}: {url}")
 
                     try:
                         await page.goto(url, timeout=60000)
-                        await page.wait_for_timeout(
-                            random.randint(3000, 6000)
-                        )  # Wait with random delay to avoid detection
+                        await page.wait_for_timeout(5000)  # Wait for page to load
 
                         # Save debug info for the first page
                         if page_num == 1:
@@ -129,42 +122,23 @@ class DeepLearningAIScraper:
                                 f"Saved debug info to {debug_file} and {debug_screenshot}"
                             )
 
-                        # Extract page content
+                        # Extract course elements
                         content = await page.content()
                         soup = BeautifulSoup(content, "html.parser")
 
-                        # Find course cards - try multiple selectors
-                        course_elements = soup.find_all("div", class_="course-card")
-                        
-                        if not course_elements:
-                            # Try alternative selectors
-                            course_elements = soup.find_all("article", class_="course")
-                        
-                        if not course_elements:
-                            # Try more generic selectors
-                            course_elements = soup.find_all("div", attrs={"data-course": True})
-                        
-                        if not course_elements:
-                            # Try searching for links to courses
-                            course_links = soup.find_all("a", href=lambda x: x and "/courses/" in x)
-                            if course_links:
-                                # Extract unique course links
-                                unique_courses = set()
-                                for link in course_links:
-                                    href = link.get("href", "")
-                                    if "/courses/" in href and href not in unique_courses:
-                                        unique_courses.add(href)
-                                        course_data = self.extract_course_from_link(link, soup)
-                                        if course_data:
-                                            all_courses.append(course_data)
-                                
-                                if unique_courses:
-                                    logger.info(f"Found {len(unique_courses)} course links on page {page_num}")
-                                    page_num += 1
-                                    continue
+                        # Find all course listings - they're in a list structure
+                        course_elements = soup.find_all(
+                            "li", class_="course-list-course"
+                        )
 
                         if not course_elements:
-                            # Save debug info for failed page
+                            # Try alternative selector
+                            course_elements = soup.select(
+                                "div.catalog-grid__results li"
+                            )
+
+                        if not course_elements:
+                            # Save debug info
                             debug_file = os.path.join(
                                 self.debug_dir, f"page_{page_num}_failed.html"
                             )
@@ -177,19 +151,14 @@ class DeepLearningAIScraper:
                             logger.error(
                                 f"No courses found on page {page_num}, saved debug info"
                             )
-                            
-                            # Check if there's pagination or we've reached the end
-                            pagination = soup.find("nav", class_="pagination") or soup.find("div", class_="pagination")
-                            next_button = soup.find("a", string=lambda x: x and "next" in x.lower())
-                            
-                            if not pagination and not next_button:
-                                logger.info("No pagination found, likely reached end")
+
+                            # Check if we've reached the end (no next page link)
+                            next_link = soup.find("link", attrs={"rel": "next"})
+                            if not next_link:
+                                logger.info("No next page link found, stopping")
                                 break
-                            
-                            # Try next page anyway in case this was a temporary issue
+
                             page_num += 1
-                            if page_num > 3:  # Don't try too many empty pages
-                                break
                             continue
 
                         logger.info(
@@ -202,6 +171,13 @@ class DeepLearningAIScraper:
                             if course_data:
                                 all_courses.append(course_data)
 
+                        # Check for next page
+                        next_link = soup.find("link", attrs={"rel": "next"})
+                        if not next_link:
+                            logger.info("No next page link found, stopping")
+                            break
+
+                        # Next page exists, move to next page
                         page_num += 1
 
                     except Exception as e:
@@ -216,150 +192,98 @@ class DeepLearningAIScraper:
         logger.info(f"Scraped {len(all_courses)} courses in total")
         return all_courses
 
-    def extract_course_from_link(self, link_element, soup) -> dict[str, Any]:
-        """Extract course information from a course link."""
-        course_data: dict[str, Any] = {}
-
-        try:
-            # Extract course title
-            title_text = link_element.get_text(strip=True)
-            if title_text:
-                # Clean up the title by removing common prefixes and suffixes
-                clean_title = title_text
-                
-                # Remove common prefixes
-                for prefix in ["Course", "Specialization", "Certificate"]:
-                    if clean_title.startswith(prefix):
-                        clean_title = clean_title[len(prefix):].strip()
-                
-                # If title contains "DeepLearning.AI" at the end, split there
-                if "DeepLearning.AI" in clean_title:
-                    parts = clean_title.split("DeepLearning.AI")
-                    clean_title = parts[0].strip()
-                
-                # If title contains "Stanford Online" at the end, split there
-                if "Stanford Online" in clean_title:
-                    parts = clean_title.split("Stanford Online")
-                    clean_title = parts[0].strip()
-                
-                course_data["title"] = clean_title
-
-            # Extract URL
-            href = link_element.get("href", "")
-            if href:
-                if href.startswith("/"):
-                    course_data["url"] = f"https://www.deeplearning.ai{href}"
-                else:
-                    course_data["url"] = href
-
-            # Set provider
-            course_data["provider"] = "DeepLearning.AI"
-            course_data["institution"] = "DeepLearning.AI"
-            
-            # Try to extract additional info from parent elements
-            parent = link_element.parent
-            if parent:
-                # Look for course description
-                desc_elem = parent.find("p") or parent.find("div", class_="description")
-                if desc_elem:
-                    course_data["description"] = desc_elem.get_text(strip=True)
-                    
-            # Extract description from the original title text if it seems to contain description
-            if title_text and len(title_text) > 100 and "description" not in course_data:
-                # If the original title is very long, likely contains description
-                parts = title_text.split("DeepLearning.AI")
-                if len(parts) > 1:
-                    potential_desc = parts[0].strip()
-                    # Split by course type and title
-                    for prefix in ["Course", "Specialization", "Certificate"]:
-                        if potential_desc.startswith(prefix):
-                            remaining = potential_desc[len(prefix):].strip()
-                            # Try to find where title ends and description starts
-                            sentences = remaining.split(". ")
-                            if len(sentences) > 1:
-                                # First sentence is likely the title, rest is description
-                                course_data["title"] = sentences[0].strip()
-                                course_data["description"] = ". ".join(sentences[1:]).strip()
-                            break
-
-            course_data["scraped_at"] = datetime.now().isoformat()
-
-        except Exception as e:
-            logger.error(f"Error extracting course from link: {e}")
-            return None
-
-        return course_data
-
     def extract_course_info(self, course_element, soup) -> dict[str, Any]:
-        """Extract course information from a DeepLearning.AI course element."""
-        course_data: dict[str, Any] = {}
+        """Extract course information from a course element.
+
+        Args:
+            course_element: BeautifulSoup element containing course information.
+            soup: The complete BeautifulSoup object for context
+
+        Returns:
+            Dictionary with extracted course information.
+        """
+        course_data = {}
 
         try:
-            # Extract course title - try multiple selectors
-            title_element = (
-                course_element.find("h1") or
-                course_element.find("h2") or
-                course_element.find("h3") or
-                course_element.find("h4") or
-                course_element.find(class_="title") or
-                course_element.find(class_="course-title") or
-                course_element.find("a")
-            )
-            
-            if title_element:
-                course_data["title"] = title_element.get_text(strip=True)
+            # Extract course title and URL
+            course_name_element = course_element.find("h2", class_="text-1")
+            if course_name_element:
+                course_data["title"] = course_name_element.text.strip()
 
-            # Extract course URL
-            link_element = course_element.find("a", href=True)
-            if link_element:
-                href = link_element.get("href", "")
-                if href.startswith("/"):
-                    course_data["url"] = f"https://www.deeplearning.ai{href}"
-                else:
-                    course_data["url"] = href
+                # Get course URL from the nearest a tag
+                a_tag = course_name_element.find_parent("a")
+                if a_tag:
+                    relative_url = a_tag.get("href", "")
+                    course_data["url"] = f"https://www.classcentral.com{relative_url}"
+
+            # Extract institution
+            institution_element = course_element.find(
+                "a", href=lambda x: x and "/institution/" in x
+            )
+            if institution_element:
+                course_data["institution"] = institution_element.text.strip()
 
             # Extract description
-            desc_element = (
-                course_element.find("p") or
-                course_element.find(class_="description") or
-                course_element.find(class_="excerpt")
-            )
-            if desc_element:
-                course_data["description"] = desc_element.get_text(strip=True)
+            desc_element = course_element.find("p", class_="text-2")
+            if desc_element and desc_element.a:
+                course_data["description"] = desc_element.a.text.strip()
 
-            # Extract instructor information
-            instructor_element = (
-                course_element.find(class_="instructor") or
-                course_element.find(class_="author") or
-                course_element.find("span", string=lambda x: x and ("instructor" in x.lower() or "taught by" in x.lower()))
-            )
-            if instructor_element:
-                course_data["instructor"] = instructor_element.get_text(strip=True)
+            # Extract details from the list items
+            details_list = course_element.find("ul")
+            if details_list:
+                list_items = details_list.find_all("li")
 
-            # Extract difficulty level
-            level_element = (
-                course_element.find(class_="level") or
-                course_element.find(class_="difficulty") or
-                course_element.find("span", string=lambda x: x and ("beginner" in x.lower() or "intermediate" in x.lower() or "advanced" in x.lower()))
-            )
-            if level_element:
-                course_data["level"] = level_element.get_text(strip=True)
+                for item in list_items:
+                    icon = item.find("i")
+                    if not icon:
+                        continue
 
-            # Extract duration
-            duration_element = (
-                course_element.find(class_="duration") or
-                course_element.find("span", string=lambda x: x and ("hour" in x.lower() or "minute" in x.lower() or "week" in x.lower()))
-            )
-            if duration_element:
-                course_data["duration"] = duration_element.get_text(strip=True)
+                    icon_class = icon.get("class", [])
+                    text_content = item.get_text(strip=True)
 
-            # Set provider and default values
-            course_data["provider"] = "DeepLearning.AI"
-            course_data["institution"] = "DeepLearning.AI"
-            course_data["is_free"] = True  # Most DeepLearning.AI courses are free
-            course_data["language"] = "English"
-            course_data["certificate_offered"] = True
+                    # Provider
+                    if "icon-provider-charcoal" in icon_class:
+                        course_data["provider"] = "Coursera"
 
+                    # Duration
+                    elif "icon-clock-charcoal" in icon_class:
+                        course_data["duration"] = text_content
+
+                    # Start date
+                    elif "icon-calendar-charcoal" in icon_class:
+                        course_data["start_date"] = text_content
+
+                    # Cost/Pricing
+                    elif (
+                        "icon-tag-red" in icon_class
+                        or "icon-tag-charcoal" in icon_class
+                    ):
+                        course_data["cost"] = text_content
+                        course_data["is_free"] = "Free" in text_content
+
+            # Extract rating if available
+            rating_element = course_element.find("span", class_="cmpt-rating-medium")
+            if rating_element:
+                filled_stars = rating_element.find_all(
+                    "i", class_=lambda c: c and "icon-star-" in c and "empty" not in c
+                )
+                course_data["rating"] = len(filled_stars) if filled_stars else 0
+
+            # Extract subject/category if available
+            track_props = course_element.find(attrs={"data-track-props": True})
+            if track_props:
+                try:
+                    props = json.loads(track_props["data-track-props"])
+                    if "course_subject" in props:
+                        course_data["subject"] = props["course_subject"]
+                    if "course_language" in props:
+                        course_data["language"] = props["course_language"]
+                    if "course_certificate" in props:
+                        course_data["certificate_offered"] = props["course_certificate"]
+                except (json.JSONDecodeError, KeyError) as e:
+                    logger.warning(f"Error extracting track props: {e}")
+
+            # Add metadata
             course_data["scraped_at"] = datetime.now().isoformat()
 
         except Exception as e:
@@ -380,46 +304,20 @@ class DeepLearningAIScraper:
 
         try:
             # Ensure we have at least some data before saving
-            if len(courses) < 1:
+            if len(courses) < 3:
                 logger.warning(
-                    f"Found only {len(courses)} courses, which might be low. Check scraping."
+                    f"Found only {len(courses)} courses, which is suspiciously low. Check scraping."
                 )
-
-            # If the file already exists, we don't delete it, we update the contents
-            all_courses = courses
-            if os.path.exists(self.courses_file):
-                try:
-                    with open(self.courses_file, encoding="utf-8") as f:
-                        existing_courses = json.load(f)
-                        all_courses = existing_courses + courses
-                        logger.info(
-                            f"Combined {len(courses)} new courses with {len(existing_courses)} existing courses"
-                        )
-                except json.JSONDecodeError:
-                    logger.warning(
-                        "Error reading existing courses file. Starting fresh."
-                    )
-
-            # Deduplicate courses before saving
-            deduplicated_courses, removed_count = deduplicate_courses(
-                all_courses, key_field="url", prefer_newer=True
-            )
-            if removed_count > 0:
-                logger.info(f"Removed {removed_count} duplicate courses")
 
             # Save courses as JSON
             with open(self.courses_file, "w", encoding="utf-8") as f:
-                json.dump(deduplicated_courses, f, ensure_ascii=False, indent=2)
-            logger.info(
-                f"Saved {len(deduplicated_courses)} unique courses to {self.courses_file}"
-            )
+                json.dump(courses, f, ensure_ascii=False, indent=2)
+            logger.info(f"Saved {len(courses)} courses to {self.courses_file}")
 
             # Update last run information
             last_run_info = {
                 "timestamp": datetime.now().isoformat(),
-                "courses_count": len(deduplicated_courses),
-                "new_courses_added": len(courses),
-                "duplicates_removed": removed_count,
+                "courses_count": len(courses),
             }
 
             with open(self.last_run_file, "w", encoding="utf-8") as f:
@@ -429,9 +327,9 @@ class DeepLearningAIScraper:
             try:
                 import pandas as pd
 
-                csv_file = os.path.join(self.output_dir, "deeplearningai_courses.csv")
+                csv_file = os.path.join(self.output_dir, "coursera_courses.csv")
                 # Convert to DataFrame
-                df = pd.DataFrame(deduplicated_courses)
+                df = pd.DataFrame(courses)
                 # Drop description to avoid CSV formatting issues
                 if "description" in df.columns:
                     df = df.drop(columns=["description"])
@@ -445,10 +343,10 @@ class DeepLearningAIScraper:
 
     async def run(self) -> None:
         """Run the scraper asynchronously."""
-        logger.info("Starting DeepLearning.AI course scraper")
+        logger.info("Starting Class Central Coursera course scraper")
         courses = await self.scrape_courses()
         self.save_courses(courses)
-        logger.info("DeepLearning.AI course scraping completed")
+        logger.info("Class Central Coursera course scraping completed")
 
 
 async def main_async(max_pages: int | None = None) -> None:
@@ -457,14 +355,17 @@ async def main_async(max_pages: int | None = None) -> None:
     Args:
         max_pages: Optional override for the number of pages to scrape.
     """
-    logger.info("Starting DeepLearning.AI course scraping process")
+    logger.info("Starting Class Central Coursera course scraping process")
 
     try:
-        scraper = DeepLearningAIScraper(max_pages=max_pages)
+        scraper = ClassCentralScraper(max_pages=max_pages)
         await scraper.run()
-        logger.info("DeepLearning.AI course scraping completed successfully")
+        logger.info("Class Central Coursera course scraping completed successfully")
     except Exception as e:
-        logger.error(f"Error during DeepLearning.AI course scraping: {e!s}", exc_info=True)
+        logger.error(
+            f"Error during Class Central Coursera course scraping: {e!s}",
+            exc_info=True,
+        )
 
 
 def main(max_pages: int | None = None) -> None:
@@ -494,12 +395,12 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Scrape courses from DeepLearning.AI website"
+        description="Scrape Coursera courses from classcentral.com"
     )
     parser.add_argument(
-        "--max-pages", type=int, help="Maximum number of pages to scrape", default=10
+        "--max-pages", type=int, help="Maximum number of pages to scrape"
     )
     args = parser.parse_args()
 
     main(max_pages=args.max_pages)
-    logger.info("DeepLearning.AI scraper script completed")
+    logger.info("Script completed")

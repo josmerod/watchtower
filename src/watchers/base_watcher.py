@@ -13,8 +13,8 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 import sys
-from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
 
 
 class BaseWatcher(ABC):
@@ -126,7 +126,7 @@ class BaseWatcher(ABC):
         """
         try:
             self.logger.info(f"Fetching {self.url}")
-            response = requests.get(self.url, timeout=15)
+            response = requests.get(self.url, timeout=30)
             response.raise_for_status()
             return response.text
         except Exception as e:

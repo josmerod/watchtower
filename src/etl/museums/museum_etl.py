@@ -7,8 +7,8 @@ import requests
 from pydantic import ValidationError
 
 # Actual imports:
-from etl.base import SimpleETL #, ETLMetrics # ETLMetrics is part of BaseETL/SimpleETL typically
-from models.museums import VirtualMuseumModel
+from src.etl.base import SimpleETL #, ETLMetrics # ETLMetrics is part of BaseETL/SimpleETL typically
+from src.models.museums import VirtualMuseumModel
 
 # WIKIDATA_SPARQL_URL can be defined before the class or within if it's specific
 WIKIDATA_SPARQL_URL = "https://query.wikidata.org/sparql"
@@ -69,7 +69,7 @@ class VirtualMuseumsETL(SimpleETL):
 
         try:
             self.logger.info(f"Querying Wikidata SPARQL endpoint: {WIKIDATA_SPARQL_URL}")
-            response = requests.get(WIKIDATA_SPARQL_URL, headers=headers, params=params, timeout=15)
+            response = requests.get(WIKIDATA_SPARQL_URL, headers=headers, params=params, timeout=30)
             response.raise_for_status()  # Raises HTTPError for bad responses (4XX or 5XX)
 
             data = response.json()

@@ -10,8 +10,8 @@ import pandas as pd  # type: ignore
 from dateutil import parser as date_parser
 
 # Local utilities
-from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("ScavengingETL")
 

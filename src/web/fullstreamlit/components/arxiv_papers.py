@@ -13,8 +13,8 @@ import streamlit as st
 import plotly.express as px
 
 # Add project root to path
-from utils.file_system import get_project_root
-from utils.recommender import PersonalRecommender
+from src.utils.file_system import get_project_root
+from src.utils.recommender import PersonalRecommender
 
 
 class ArxivPapersComponent:
@@ -363,7 +363,7 @@ class ArxivPapersComponent:
                     etl = ArxivETL(days_back=7, max_results=50)
                     etl.run()
                 st.success("✅ Paper collection complete! Refresh the page to see results.")
-                st.rerun()
+                st.experimental_rerun()
             return
         
         # Display statistics
@@ -413,7 +413,7 @@ class ArxivPapersComponent:
                 }
                 self.recommender.save_user_profile(user_id, empty_profile)
                 st.success("Profile reset successfully!")
-                st.rerun()
+                st.experimental_rerun()
         
         # Create tabs for different views
         tab1, tab2, tab3, tab4 = st.tabs(["Recommendations", "All Papers", "By Cluster", "Visualizations"])

@@ -103,4 +103,4 @@ if __name__ == "__main__":
 
     # Clean up dummy file
     # os.remove(DATA_FILE_PATH)
-
+    # print(f"Cleaned up {DATA_FILE_PATH}")

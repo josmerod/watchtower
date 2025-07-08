@@ -15,7 +15,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 # Add project root to path
-from utils.file_system import get_project_root
+from src.utils.file_system import get_project_root
 
 
 class ArxivSearchComponent:
