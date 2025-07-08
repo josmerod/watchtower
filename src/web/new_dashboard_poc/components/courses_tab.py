@@ -197,7 +197,7 @@ def create_coursera_table(df_subset):
             html.Td("Yes" if row.get('certificate_offered') else "No")
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, striped=True, bordered=True, hover=True, responsive=True, size="sm")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, size="sm")
 
 def render_coursera_courses_sub_tab(df):
     if not COURSES_DATA_LOADED['coursera']: # Check if loading was even attempted and successful
@@ -351,7 +351,7 @@ def register_courses_callbacks(app):
                 html.Td(format_coursera_display_date(row.get('scraped_at'))) # Reusing date formatter
             ]))
         table_body = [html.Tbody(table_body_rows)]
-        table = dbc.Table(table_header + table_body, striped=True, bordered=True, hover=True, responsive=True, size="sm")
+        table = dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, size="sm")
 
         actual_page = min(current_page, max_pages) if max_pages > 0 else 1
         return table, max_pages if max_pages > 0 else 1, actual_page

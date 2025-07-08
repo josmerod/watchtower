@@ -199,7 +199,6 @@ def create_news_source_tab_content(source_keys, combined_name=None):
     # Combine header and body into a dbc.Table
     table = dbc.Table(
         table_header + table_body,
-        striped=True,
         bordered=True,
         hover=True,
         responsive=True, # Makes table scroll horizontally on small screens

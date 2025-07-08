@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Watchtower base -->
+  <rect x="12" y="20" width="8" height="10" fill="#2C3E50" stroke="#34495E" stroke-width="1"/>
+  
+  <!-- Watchtower middle -->
+  <rect x="10" y="15" width="12" height="6" fill="#34495E" stroke="#2C3E50" stroke-width="1"/>
+  
+  <!-- Watchtower top -->
+  <rect x="8" y="10" width="16" height="6" fill="#3498DB" stroke="#2980B9" stroke-width="1"/>
+  
+  <!-- Radar dish -->
+  <circle cx="16" cy="8" r="4" fill="#E74C3C" stroke="#C0392B" stroke-width="1"/>
+  <circle cx="16" cy="8" r="2" fill="#F39C12" stroke="#E67E22" stroke-width="1"/>
+  
+  <!-- Signal waves -->
+  <path d="M 6 8 Q 11 3 16 8 Q 21 3 26 8" stroke="#3498DB" stroke-width="1.5" fill="none" opacity="0.7"/>
+  <path d="M 4 8 Q 10 2 16 8 Q 22 2 28 8" stroke="#2980B9" stroke-width="1" fill="none" opacity="0.5"/>
+</svg> 

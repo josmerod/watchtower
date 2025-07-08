@@ -510,7 +510,7 @@ def render_giveaways_sub_tab(df):
             html.Td(format_display_date(row.get('expiry_date')))
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, striped=True, bordered=True, hover=True, responsive=True, className="mt-3")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, className="mt-3")
 
 def render_bundles_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get('bundles', False) or df.empty:
@@ -535,7 +535,7 @@ def render_bundles_sub_tab(df):
             html.Td(format_display_date(row.get('expiry_date')))
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, striped=True, bordered=True, hover=True, responsive=True, className="mt-3")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, className="mt-3")
 
 def render_deals_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get('deals', False) or df.empty:
@@ -563,7 +563,7 @@ def render_deals_sub_tab(df):
             html.Td(format_display_date(row.get('published_date')))
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, striped=True, bordered=True, hover=True, responsive=True, className="mt-3")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, className="mt-3")
 
 def render_trending_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get('trending', False) or df.empty:
@@ -586,7 +586,7 @@ def render_trending_sub_tab(df):
             html.Td(price_display)
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, striped=True, bordered=True, hover=True, responsive=True, className="mt-3")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, className="mt-3")
 
 def render_new_releases_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get('new_releases', False) or df.empty:
