@@ -7,14 +7,45 @@ from src.web.new_dashboard_poc.components.shortcuts_tab import render_shortcuts_
 
 from src.web.new_dashboard_poc.components.news_tab import render_news_tab
 
+from src.web.new_dashboard_poc.components.videos_tab import render_videos_tab, register_video_callbacks
+
+from src.web.new_dashboard_poc.components.games_tab import render_games_tab
+
+from src.web.new_dashboard_poc.components.courses_tab import render_courses_tab, register_courses_callbacks
+
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
+
+# Set app title for browser tab and configure metadata
+app.title = "Watchtower Dashboard"
+
+# Add meta tags for better branding
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>Watchtower Dashboard</title>
+        <meta name="description" content="Watchtower - Real-time Intelligence & Monitoring Platform">
+        <link rel="icon" type="image/svg+xml" href="/assets/watchtower_icon.svg">
+        {%css%}
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
 
 # Main layout with Tabs
 app.layout = dbc.Container(
     [
         dbc.Row(
-            dbc.Col(html.H1("New Dashboard POC", className="text-center my-4"))
+            dbc.Col(html.H1("Watchtower Dashboard", className="text-center my-4"))
         ),
         dbc.Row(
             dbc.Col(
@@ -26,10 +57,16 @@ app.layout = dbc.Container(
                             render_shortcuts_tab()
                         ]),
                         dbc.Tab(label="News", tab_id="tab-news", children=[
-                            render_news_tab() # Content from news_tab.py
+                            render_news_tab()
                         ]),
-                        dbc.Tab(label="Other Tab (Placeholder)", tab_id="tab-other", children=[
-                            html.P("This is content for another future tab.")
+                        dbc.Tab(label="Videos", tab_id="tab-videos", children=[
+                            render_videos_tab()
+                        ]),
+                        dbc.Tab(label="Games", tab_id="tab-games", children=[
+                            render_games_tab()
+                        ]),
+                        dbc.Tab(label="Courses", tab_id="tab-courses", children=[
+                            render_courses_tab()
                         ]),
                     ],
                 )
@@ -50,25 +87,30 @@ def update_main_app_shortcuts(search_value):
     # ALL_SHORTCUTS_DATA is imported from shortcuts_tab.py
     return render_shortcuts_tab_layout(ALL_SHORTCUTS_DATA, search_value)
 
+# Register callbacks from other modules
+register_video_callbacks(app)
+register_courses_callbacks(app)
+
 if __name__ == "__main__":
-    # Note: The `get_all_shortcuts` function in `shortcuts_tab.py` uses relative paths
-    # like '../../../data/shortcuts/predefined_shortcuts.json'.
-    # This assumes that `app.py` (or wherever the main app is run from) is located
-    # such that these relative paths correctly point to the data files.
-    # If app.py is in src/web/new_dashboard_poc/, then ../../../data/ is correct.
-    # Project Root
-    # |- data/
-    #    |- shortcuts/
-    #       |- predefined_shortcuts.json
-    # |- src/
-    #    |- web/
-    #       |- new_dashboard_poc/
-    #          |- app.py  <-- Running this
-    #          |- components/
-    #             |- shortcuts_tab.py (contains the relative path logic)
-    print("Verifying ALL_SHORTCUTS_DATA in app.py context:")
+    # Note on data loading:
+    # - Shortcuts data (ALL_SHORTCUTS_DATA) is loaded when shortcuts_tab.py is imported.
+    # - News data (ALL_NEWS_DATA) is loaded when news_tab.py is imported.
+    # - Videos data (ALL_VIDEOS_DATA) is loaded when videos_tab.py is imported.
+    # These imports happen when app.py itself is imported (e.g., by run_new_dashboard_poc.py).
+    # The relative paths within each component (e.g., '../../../data/...') are resolved
+    # based on the Current Working Directory (CWD) when the Python interpreter loads those modules.
+    # If run_new_dashboard_poc.py is at project root, CWD is project root, so paths should be correct.
+
+    print("Verifying data loaded for Watchtower Dashboard:")
+    # Simple check, more detailed checks are in individual tab's __main__ blocks
     if ALL_SHORTCUTS_DATA:
-        print(f"  Successfully loaded {sum(len(items) for items in ALL_SHORTCUTS_DATA.values())} shortcuts in {len(ALL_SHORTCUTS_DATA)} categories.")
+        print("  Shortcuts data loaded successfully.")
     else:
-        print("  Warning: No shortcut data loaded in app.py context. Check paths in shortcuts_tab.py relative to project root.")
-    app.run(debug=True)
+        print("  Warning: Shortcuts data might be missing.")
+
+    # Accessing ALL_NEWS_DATA and ALL_VIDEOS_DATA directly here would require importing them into app.py
+    # For now, we assume their respective tabs handle their data loading messages.
+    # If this script (app.py) is run directly, ensure CWD allows components to find their data.
+    # Typically, one would run `run_new_dashboard_poc.py` from the project root.
+
+    app.run_server(debug=False, port=8050) # Default Dash port for direct app run

@@ -8,9 +8,9 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 import sys
-from models.arxiv import TechnologyReadinessLevel, CommercialPotential
-from etl.arxiv.enhanced_arxiv_etl import EnhancedArxivETL
-from utils.logging import get_logger
+from src.models.arxiv import TechnologyReadinessLevel, CommercialPotential
+from src.etl.arxiv.enhanced_arxiv_etl import EnhancedArxivETL
+from src.utils.logging import get_logger
 
 
 def display_enhanced_papers():

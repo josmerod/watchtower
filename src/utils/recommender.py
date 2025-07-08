@@ -12,8 +12,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 import sys
-from utils.logging import get_logger
-from utils.file_system import get_project_root
+from src.utils.logging import get_logger
+from src.utils.file_system import get_project_root
 
 
 class PersonalRecommender:

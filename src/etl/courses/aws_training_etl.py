@@ -9,8 +9,8 @@ import pandas as pd # type: ignore
 from dateutil import parser as date_parser # For robust date parsing
 
 # Ensure project root is on path
-from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("AWSTrainingETL")
 

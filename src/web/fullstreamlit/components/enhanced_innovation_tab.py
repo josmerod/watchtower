@@ -34,7 +34,7 @@ import urllib.parse
 # Use centralized path setup and safe logger
 from ._path_setup import get_safe_logger
 
-from web.fullstreamlit.utils.enhanced_data_service import UltraOptimizedDataService
+from src.web.fullstreamlit.utils.enhanced_data_service import UltraOptimizedDataService
 
 
 def create_technology_radar_chart(radar_data: Dict[str, Any]) -> go.Figure:
@@ -551,15 +551,11 @@ def render(logger, data_service=None):
     # Load technology radar data
     with st.spinner("🔄 Loading Technology Intelligence..."):
         try:
-            # Run async function safely in synchronous Streamlit context
-            try:
-                # Preferred: use asyncio.run if no loop is running
-                radar_data = asyncio.run(load_technology_radar_data(data_service))
-            except RuntimeError:
-                # Fallback when a running loop exists (e.g., in Jupyter/Streamlit)
-                radar_data = asyncio.get_event_loop().run_until_complete(
-                    load_technology_radar_data(data_service)
-                )
+            # Run async function in sync context
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            radar_data = loop.run_until_complete(load_technology_radar_data(data_service))
+            loop.close()
         except Exception as e:
             logger.error(f"Failed to load technology radar: {e}")
             radar_data = {'error': str(e)}

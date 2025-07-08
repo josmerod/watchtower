@@ -1,45 +1,55 @@
-"""Exception handling for Watchtower."""
-
-from exceptions.base import (
+"""Exceptions module for Watchtower."""
+from src.exceptions.base import (
+    WatchtowerError,
     ConfigurationError,
     ValidationError,
-    WatchtowerError,
-    WatchtowerWarning,
+    AuthenticationError,
+    AuthorizationError,
 )
-from exceptions.etl import (
+from src.exceptions.etl import (
+    ETLError,
+    CheckpointError,
+    ExtractionError,
+    TransformationError,
+    LoadError,
     DataSourceError,
     DataValidationError,
-    ETLError,
-    ExtractionError,
-    LoadError,
-    TransformationError,
+    ETLTimeoutError,
+    ETLConfigurationError,
 )
-from exceptions.scraping import (
+from src.exceptions.scraping import (
+    ScrapingError,
+    RequestError,
     ParsingError,
     RateLimitError,
-    RequestError,
-    ScrapingError,
     TimeoutError,
 )
-from exceptions.watcher import (
-    WatcherConfigurationError,
+from src.exceptions.watcher import (
     WatcherError,
+    WatcherConfigurationError,
     WatcherRuntimeError,
+    WatcherTimeoutError,
+    WatcherValidationError,
+    WatcherConnectionError,
 )
 
 __all__ = [
     # Base exceptions
     "WatchtowerError",
-    "WatchtowerWarning",
     "ConfigurationError",
     "ValidationError",
+    "AuthenticationError",
+    "AuthorizationError",
     # ETL exceptions
     "ETLError",
+    "CheckpointError",
     "ExtractionError",
     "TransformationError",
     "LoadError",
     "DataSourceError",
     "DataValidationError",
+    "ETLTimeoutError",
+    "ETLConfigurationError",
     # Scraping exceptions
     "ScrapingError",
     "RequestError",
@@ -50,4 +60,7 @@ __all__ = [
     "WatcherError",
     "WatcherConfigurationError",
     "WatcherRuntimeError",
+    "WatcherTimeoutError",
+    "WatcherValidationError",
+    "WatcherConnectionError",
 ]

@@ -18,9 +18,9 @@ import os # Required for IOError, OSError
 import requests
 from bs4 import BeautifulSoup
 
-from etl.base import BaseETL
-from utils.logging import get_logger
-from exceptions.etl import LoadError
+from src.etl.base import BaseETL
+from src.utils.logging import get_logger
+from src.exceptions.etl import LoadError
 
 
 class OpenAIPlatformETL(BaseETL):

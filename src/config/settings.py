@@ -9,7 +9,7 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-from config.models import (
+from src.config.models import (
     APIConfig,
     DatabaseConfig,
     Environment,

@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Set
 from datetime import datetime, timezone, timedelta
 
 import sys
-from watchers.base_watcher import BaseWatcher
+from src.watchers.base_watcher import BaseWatcher
 
 
 class EnhancedArxivWatcher(BaseWatcher):
@@ -369,7 +369,7 @@ class EnhancedArxivWatcher(BaseWatcher):
             'DevOps': ['devops', 'ci/cd', 'continuous integration', 'docker', 'kubernetes'],
             'Data Engineering': ['data pipeline', 'etl', 'data warehouse', 'big data'],
             'Cloud Computing': ['cloud', 'aws', 'azure', 'serverless'],
-            'Blockchain': ['blockchain', 'smart contract'],
+            'Blockchain': ['blockchain', 'cryptocurrency', 'smart contract'],
             'IoT': ['iot', 'internet of things', 'edge computing'],
             'Enterprise': ['enterprise', 'solution architecture', 'digital transformation']
         }

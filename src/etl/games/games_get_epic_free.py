@@ -9,8 +9,8 @@ import requests
 import pandas as pd
 
 # Add the project root to the path for imports
-from utils.logging import get_logger
-from utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("Epic_Free_Games_ETL")
 EPIC_API_URL = (
@@ -32,7 +32,7 @@ def get_epic_free_games() -> None:
     """
     logger.info("Fetching Epic Games free promotions")
     try:
-        response = requests.get(EPIC_API_URL, timeout=15)
+        response = requests.get(EPIC_API_URL, timeout=30)
         response.raise_for_status()
         data = response.json()
         logger.debug("Fetched data from Epic Games API")

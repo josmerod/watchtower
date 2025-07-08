@@ -9,9 +9,9 @@ from typing import Any
 
 from feedparser import parse as parse_feed
 
-from etl.base import BaseETL
-from exceptions.etl import ExtractionError, TransformationError
-from models.events import (
+from src.etl.base import BaseETL
+from src.exceptions.etl import ExtractionError, TransformationError
+from src.models.events import (
     EventFormat,
     EventStatus,
     EventType,
@@ -273,7 +273,7 @@ class TechConferenceETL(BaseETL):
                 "ethical hacking",
                 "penetration testing",
                 "blockchain",
-    
+                "cryptocurrency",
                 "web3",
                 "defi",
             ],
@@ -811,7 +811,7 @@ class TechConferenceETL(BaseETL):
                 "event_type": "meetup",
             },
             {
-                "name": "Valencia Blockchain Meetup - DeFi & Smart Contracts",
+                "name": "Valencia Bitcoin Meetup - Blockchain & DeFi",
                 "description": "Encuentro sobre tecnología blockchain y finanzas descentralizadas.",
                 "start_date": (datetime.utcnow() + timedelta(days=56)).isoformat(),
                 "venue": {
@@ -820,11 +820,11 @@ class TechConferenceETL(BaseETL):
                     "city": "Valencia",
                     "country": "Spain",
                 },
-                "organizer": "Valencia Blockchain Community",
-                "url": "https://www.meetup.com/valencia-blockchain-meetup/",
+                "organizer": "Valencia Bitcoin Community",
+                "url": "https://www.meetup.com/valencia-bitcoin-meetup/",
                 "cost": 0.0,
                 "is_virtual": False,
-                "topics": ["blockchain", "defi", "smart contracts"],
+                "topics": ["bitcoin", "blockchain", "cryptocurrency", "defi"],
                 "event_type": "meetup",
             },
             {
@@ -1967,7 +1967,7 @@ class TechConferenceETL(BaseETL):
 
         if any(
             keyword in text_content
-            for keyword in ["blockchain", "web3", "defi"]
+            for keyword in ["blockchain", "cryptocurrency", "web3", "defi"]
         ):
             categories.append("Blockchain/Web3")
 

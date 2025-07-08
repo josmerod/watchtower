@@ -4,8 +4,8 @@ import xml.etree.ElementTree as ET
 import json
 from datetime import datetime
 import pandas as pd
-from etl.base import BaseETL # BaseETL should handle logger and output_dir
-from models.adhd import ADHDPublication
+from src.etl.base import BaseETL # BaseETL should handle logger and output_dir
+from src.models.adhd import ADHDPublication
 # logging is configured by BaseETL, so specific configuration here might not be needed
 # import logging
 
@@ -221,8 +221,7 @@ class ADHDPublicationETL(BaseETL):
         try:
             df = pd.DataFrame(papers_dict_list)
             if 'authors' in df.columns:
-                # Vectorized author joining
-        df['authors'] = df['authors'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
+                df['authors'] = df['authors'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
 
             csv_file_path = os.path.join(csv_dir, f"papers_{timestamp}.csv")
             df.to_csv(csv_file_path, index=False, encoding='utf-8')

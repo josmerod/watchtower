@@ -9,8 +9,8 @@ import requests
 from bs4 import BeautifulSoup
 
 # Add the project root to the path to ensure imports work correctly
-from utils.file_system import ensure_directories, get_project_root
-from utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("ValenciaEventsETL")
@@ -54,7 +54,7 @@ def get_valencia_events(
     for attempt in range(max_retries):
         try:
             # Send GET request to the webpage with increased timeout
-            response = requests.get(url, timeout=15)
+            response = requests.get(url, timeout=30)
             response.raise_for_status()  # Raise exception for HTTP errors
 
             # Parse HTML content

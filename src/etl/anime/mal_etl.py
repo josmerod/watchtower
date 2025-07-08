@@ -10,8 +10,8 @@ import requests
 from pydantic.json import pydantic_encoder
 from dotenv import load_dotenv
 
-from etl.base import BaseETL, ETLError
-from models.anime import AnimeItem
+from src.etl.base import BaseETL, ETLError
+from src.models.anime import AnimeItem
 
 # Load environment variables from .env file
 load_dotenv()
@@ -69,7 +69,7 @@ class MalETL(BaseETL):
         logger.info(f"Making request to {url} with params: {params}")
 
         try:
-            response = requests.get(url, headers=headers, params=params, timeout=15)
+            response = requests.get(url, headers=headers, params=params, timeout=30)
             response.raise_for_status()  # Raises HTTPError for bad responses (4XX or 5XX)
             return response.json()
         except requests.exceptions.HTTPError as e:

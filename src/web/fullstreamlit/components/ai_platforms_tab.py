@@ -17,7 +17,7 @@ from typing import Dict, List, Any, Optional
 import json
 from pathlib import Path
 
-from utils.logging import get_logger
+from src.utils.logging import get_logger
 
 logger = get_logger("StreamlitAIPlatforms")
 
@@ -30,7 +30,7 @@ class AIPlatformDataCollector:
         self.project_root = Path.cwd()
         self.ai_data_dir = self.project_root / "data" / "ai_models"
         
-    def _load_ai_monitoring_data(self) -> List[Dict[str, Any]]:
+    def _load_ai_monitoring_data(self) -> Dict[str, Any]:
         """Load actual AI monitoring data from files."""
         try:
             # Try to load the latest AI models data
@@ -39,20 +39,6 @@ class AIPlatformDataCollector:
             if latest_file.exists():
                 with open(latest_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                
-                # Ensure data is always a list
-                if isinstance(data, dict):
-                    # If it's a single dictionary, wrap it in a list
-                    data = [data]
-                elif isinstance(data, int):
-                    # If it's an integer (possibly count), return empty list
-                    logger.warning(f"AI monitoring data is an integer ({data}), returning empty list")
-                    return []
-                elif not isinstance(data, list):
-                    # If it's any other type, convert to empty list
-                    logger.warning(f"AI monitoring data is unexpected type {type(data)}, returning empty list")
-                    return []
-                
                 logger.info(f"Loaded {len(data)} AI model updates from monitoring system")
                 return data
             else:
@@ -87,11 +73,6 @@ class AIPlatformDataCollector:
     
     def _get_platform_overview(self, monitoring_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Get platform overview metrics from real data."""
-        # Ensure monitoring_data is a list
-        if not isinstance(monitoring_data, list):
-            logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
-            monitoring_data = []
-            
         # Analyze the monitoring data
         total_updates = len(monitoring_data)
         
@@ -131,11 +112,6 @@ class AIPlatformDataCollector:
     
     def _get_model_releases(self, monitoring_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Get recent model releases from real monitoring data."""
-        # Ensure monitoring_data is a list
-        if not isinstance(monitoring_data, list):
-            logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
-            monitoring_data = []
-            
         model_releases = []
         
         # Filter for model-related updates
@@ -246,11 +222,6 @@ class AIPlatformDataCollector:
     
     def _get_platform_updates(self, monitoring_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Get recent platform updates from real monitoring data."""
-        # Ensure monitoring_data is a list
-        if not isinstance(monitoring_data, list):
-            logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
-            monitoring_data = []
-            
         platform_updates = []
         
         # Filter for platform updates (not model releases)
@@ -338,11 +309,6 @@ class AIPlatformDataCollector:
     
     def _get_competitive_analysis(self, monitoring_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Get competitive analysis data from real monitoring data."""
-        # Ensure monitoring_data is a list
-        if not isinstance(monitoring_data, list):
-            logger.warning(f"Expected list but got {type(monitoring_data)}, using empty list")
-            monitoring_data = []
-            
         # Analyze provider activity
         provider_activity = {}
         provider_recent_updates = {}
@@ -567,116 +533,195 @@ class AIPlatformDataCollector:
 
 
 def display_ai_platform_overview(data: Dict[str, Any]):
-    """Display AI platform overview metrics."""
-    st.subheader("🤖 AI Platform Intelligence Overview")
+    """Display platform overview with comprehensive error handling."""
     
-    overview = data.get('overview', {})
-    if 'error' in overview:
-        st.error("Failed to load AI platform data")
+    # Safe data extraction with validation
+    overview_data = data.get('overview', {})
+    if not isinstance(overview_data, dict):
+        st.warning("⚠️ Platform overview data is not available or invalid")
         return
     
-    # Key metrics
+    # Safe metric extraction with defaults
+    total_platforms = overview_data.get('total_platforms_monitored', 0)
+    active_models = overview_data.get('active_models_tracked', 0)
+    recent_releases = overview_data.get('recent_releases', 0)
+    high_impact = overview_data.get('high_impact_updates', 0)
+    
+    # Ensure values are integers
+    try:
+        total_platforms = int(total_platforms) if total_platforms is not None else 0
+        active_models = int(active_models) if active_models is not None else 0
+        recent_releases = int(recent_releases) if recent_releases is not None else 0
+        high_impact = int(high_impact) if high_impact is not None else 0
+    except (ValueError, TypeError):
+        st.warning("⚠️ Platform metrics contain invalid data")
+        total_platforms = active_models = recent_releases = high_impact = 0
+    
+    st.subheader("🎯 Platform Overview")
+    
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.metric(
-            "Platforms Monitored",
-            overview.get('total_platforms_monitored', 0),
-            delta="6 active platforms"
+            label="🏢 Platforms Monitored",
+            value=total_platforms,
+            delta=None
         )
     
     with col2:
         st.metric(
-            "Models Tracked",
-            overview.get('active_models_tracked', 0),
-            delta=f"+{overview.get('recent_releases', 0)} recent"
+            label="🤖 Active Models",
+            value=active_models,
+            delta=None
         )
     
     with col3:
         st.metric(
-            "High Impact Updates",
-            overview.get('high_impact_updates', 0),
-            delta="This week"
+            label="🚀 Recent Releases",
+            value=recent_releases,
+            delta=None
         )
     
     with col4:
-        market_leaders = overview.get('market_leaders', [])
         st.metric(
-            "Market Leaders",
-            len(market_leaders),
-            delta=f"Leading: {', '.join(market_leaders[:2])}"
+            label="⚡ High Impact Updates",
+            value=high_impact,
+            delta=None
         )
     
-    # Emerging trends
-    st.subheader("📈 Emerging Trends")
-    trends = overview.get('emerging_trends', [])
-    for i, trend in enumerate(trends):
-        st.write(f"{i+1}. {trend}")
+    # Market leaders section with safe data handling
+    market_leaders = overview_data.get('market_leaders', [])
+    if isinstance(market_leaders, list) and market_leaders:
+        st.subheader("👑 Market Leaders")
+        
+        # Create columns for market leaders
+        cols = st.columns(min(len(market_leaders), 5))  # Max 5 columns
+        
+        for i, leader in enumerate(market_leaders[:5]):  # Limit to 5 leaders
+            with cols[i]:
+                st.write(f"**{leader}**")
+                
+                # Try to get provider distribution
+                provider_dist = overview_data.get('provider_distribution', {})
+                if isinstance(provider_dist, dict) and leader in provider_dist:
+                    count = provider_dist[leader]
+                    st.write(f"Updates: {count}")
+    
+    # Emerging trends with safe handling
+    trends = overview_data.get('emerging_trends', [])
+    if isinstance(trends, list) and trends:
+        st.subheader("📈 Emerging Trends")
+        
+        for trend in trends[:6]:  # Limit to 6 trends
+            if isinstance(trend, str):
+                st.write(f"• {trend}")
 
 
 def display_model_releases(data: Dict[str, Any]):
-    """Display recent model releases."""
-    st.subheader("🚀 Recent Model Releases")
+    """Display model releases with safe data handling."""
     
     model_releases = data.get('model_releases', [])
-    if not model_releases:
-        st.info("No model releases data available")
+    
+    # Validate model releases data
+    if not isinstance(model_releases, list):
+        st.warning("⚠️ Model releases data is not available or invalid")
         return
     
-    # Create DataFrame for better display
-    df = pd.DataFrame(model_releases)
+    if not model_releases:
+        st.info("No recent model releases found")
+        return
     
-    # Display top models
-    for model in model_releases[:5]:  # Show top 5 models
-        with st.expander(f"**{model['platform']}** - {model['model_name']}", expanded=False):
+    st.subheader("🚀 Recent Model Releases")
+    
+    # Limit number of releases to display for performance
+    max_releases = 10
+    releases_to_show = model_releases[:max_releases]
+    
+    # Create tabs for different view types
+    view_tabs = st.tabs(["📋 List View", "📊 Analytics"])
+    
+    with view_tabs[0]:
+        # Display releases in a structured format
+        for i, release in enumerate(releases_to_show):
+            if not isinstance(release, dict):
+                continue
+                
+            with st.expander(f"**{release.get('model_name', 'Unknown Model')}** - {release.get('platform', 'Unknown Platform')}"):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write(f"**Release Date:** {release.get('release_date', 'Unknown')}")
+                    st.write(f"**Model Type:** {release.get('model_type', 'Unknown')}")
+                    st.write(f"**Platform:** {release.get('platform', 'Unknown')}")
+                
+                with col2:
+                    intelligence_score = release.get('intelligence_score', 0)
+                    try:
+                        score_val = float(intelligence_score)
+                        st.progress(score_val, text=f"Intelligence Score: {score_val:.2f}")
+                    except (ValueError, TypeError):
+                        st.write(f"**Intelligence Score:** N/A")
+                    
+                    market_impact = release.get('market_impact', 'Unknown')
+                    st.write(f"**Market Impact:** {market_impact}")
+                
+                # Capabilities with safe handling
+                capabilities = release.get('capabilities', [])
+                if isinstance(capabilities, list) and capabilities:
+                    st.write("**Capabilities:**")
+                    for cap in capabilities[:5]:  # Limit to 5 capabilities
+                        if isinstance(cap, str):
+                            st.write(f"• {cap}")
+                
+                # Summary
+                summary = release.get('summary', '')
+                if isinstance(summary, str) and summary:
+                    st.write(f"**Summary:** {summary[:200]}{'...' if len(summary) > 200 else ''}")
+                
+                # Link
+                url = release.get('url', '')
+                if isinstance(url, str) and url:
+                    st.markdown(f"[🔗 Learn More]({url})")
+    
+    with view_tabs[1]:
+        # Analytics view
+        if len(releases_to_show) > 0:
+            # Platform distribution
+            platform_counts = {}
+            model_type_counts = {}
+            
+            for release in releases_to_show:
+                if not isinstance(release, dict):
+                    continue
+                    
+                platform = release.get('platform', 'Unknown')
+                model_type = release.get('model_type', 'Unknown')
+                
+                platform_counts[platform] = platform_counts.get(platform, 0) + 1
+                model_type_counts[model_type] = model_type_counts.get(model_type, 0) + 1
+            
             col1, col2 = st.columns(2)
             
             with col1:
-                st.write("**Model Details:**")
-                st.write(f"• Model ID: `{model['model_id']}`")
-                st.write(f"• Release Date: {model['release_date']}")
-                st.write(f"• Type: {model['model_type']}")
-                st.write(f"• Intelligence Score: {model['intelligence_score']:.2f}")
-                
-                if model.get('context_length'):
-                    st.write(f"• Context Length: {model['context_length']:,} tokens")
-                
-                if model.get('pricing_input'):
-                    st.write(f"• Input Pricing: ${model['pricing_input']}/1K tokens")
-                
-                if model.get('pricing_output'):
-                    st.write(f"• Output Pricing: ${model['pricing_output']}/1K tokens")
+                if platform_counts:
+                    st.subheader("🏢 Releases by Platform")
+                    fig = px.pie(
+                        values=list(platform_counts.values()),
+                        names=list(platform_counts.keys()),
+                        title="Platform Distribution"
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
             
             with col2:
-                st.write("**Capabilities:**")
-                capabilities = model.get('capabilities', [])
-                for cap in capabilities:
-                    st.write(f"• {cap.replace('_', ' ').title()}")
-                
-                st.write("**Competitive Advantages:**")
-                advantages = model.get('competitive_advantages', [])
-                for adv in advantages:
-                    st.write(f"• {adv}")
-                
-                adoption = model.get('adoption_forecast', {})
-                if adoption:
-                    st.write("**Adoption Forecast:**")
-                    st.write(f"• Rate: {adoption.get('adoption_rate', 'unknown').replace('_', ' ').title()}")
-                    st.write(f"• Timeline: {adoption.get('timeline', 'unknown')}")
-    
-    # Intelligence score chart
-    if len(model_releases) > 1:
-        st.subheader("📊 Model Intelligence Scores")
-        fig = px.bar(
-            df,
-            x='model_name',
-            y='intelligence_score',
-            color='platform',
-            title="Model Intelligence Scores by Platform",
-            hover_data=['model_type', 'release_date']
-        )
-        fig.update_layout(xaxis_tickangle=-45)
-        st.plotly_chart(fig, use_container_width=True)
+                if model_type_counts:
+                    st.subheader("🔧 Releases by Type")
+                    fig = px.bar(
+                        x=list(model_type_counts.keys()),
+                        y=list(model_type_counts.values()),
+                        title="Model Type Distribution"
+                    )
+                    fig.update_layout(xaxis_tickangle=-45)
+                    st.plotly_chart(fig, use_container_width=True)
 
 
 def display_platform_updates(data: Dict[str, Any]):
@@ -1033,68 +1078,98 @@ def display_platform_status(data: Dict[str, Any]):
 
 
 def render(logger, data_service=None):
-    """Render the AI Platforms intelligence dashboard."""
+    """Render the AI Platforms intelligence dashboard with comprehensive error handling."""
     
     st.header("🤖 AI Platform Intelligence")
     st.markdown("Comprehensive monitoring of AI platforms, model releases, and market intelligence")
     
-    # Use data service if available, otherwise use the collector
-    if data_service and hasattr(data_service, 'get_ai_platforms_data'):
-        with st.spinner("🔄 Loading AI platform data from service..."):
-            try:
-                monitoring_data = data_service.get_ai_platforms_data()
-                logger.info(f"Loaded {len(monitoring_data)} AI platform records from data service")
-            except Exception as e:
-                logger.error(f"Failed to load AI platform data from service: {e}")
-                monitoring_data = []
-    else:
-        # Fallback to direct data collection
+    try:
+        # Initialize data collector
         collector = AIPlatformDataCollector()
+        
+        # Data collection with progress indicator and error handling
         with st.spinner("🔄 Collecting AI platform intelligence..."):
-            monitoring_data = collector._load_ai_monitoring_data()
-            logger.info(f"Loaded {len(monitoring_data)} AI platform records from collector")
-    
-    # Create intelligence data structure
-    if monitoring_data:
-        collector = AIPlatformDataCollector()
-        ai_intelligence = collector.get_ai_platform_intelligence()
-        # Update with loaded data
-        ai_intelligence['monitoring_data'] = monitoring_data
-    else:
-        # Use fallback data if no monitoring data available
-        collector = AIPlatformDataCollector()
-        ai_intelligence = collector._get_fallback_data()
-        st.warning("⚠️ No AI platform monitoring data available. Displaying demo interface.")
-    
-    # Display overview
-    display_ai_platform_overview(ai_intelligence)
-    
-    st.divider()
-    
-    # Create tabs for different sections
-    tabs = st.tabs([
-        "🚀 Model Releases",
-        "📢 Platform Updates", 
-        "⚔️ Competitive Analysis",
-        "📈 Market Trends",
-        "👩‍💻 Developer Adoption",
-        "🔧 Platform Status"
-    ])
-    
-    with tabs[0]:
-        display_model_releases(ai_intelligence)
-    
-    with tabs[1]:
-        display_platform_updates(ai_intelligence)
-    
-    with tabs[2]:
-        display_competitive_analysis(ai_intelligence)
-    
-    with tabs[3]:
-        display_market_trends(ai_intelligence)
-    
-    with tabs[4]:
-        display_developer_adoption(ai_intelligence)
-    
-    with tabs[5]:
-        display_platform_status(ai_intelligence) 
+            try:
+                ai_intelligence = collector.get_ai_platform_intelligence()
+            except Exception as e:
+                logger.error(f"Error collecting AI platform intelligence: {e}")
+                st.error("❌ Failed to load AI platform data")
+                st.info("Please check the data sources and try again later.")
+                return
+        
+        # Validate collected data
+        if not isinstance(ai_intelligence, dict):
+            logger.error(f"AI intelligence data is not a dictionary: {type(ai_intelligence)}")
+            st.error("❌ Invalid AI platform data format")
+            return
+        
+        # Display overview with error handling
+        try:
+            display_ai_platform_overview(ai_intelligence)
+        except Exception as e:
+            logger.error(f"Error displaying AI platform overview: {e}")
+            st.error("❌ Error displaying platform overview")
+        
+        st.divider()
+        
+        # Create tabs for different sections
+        try:
+            tabs = st.tabs([
+                "🚀 Model Releases",
+                "📢 Platform Updates", 
+                "⚔️ Competitive Analysis",
+                "📈 Market Trends",
+                "👩‍💻 Developer Adoption",
+                "🔧 Platform Status"
+            ])
+            
+            with tabs[0]:
+                try:
+                    display_model_releases(ai_intelligence)
+                except Exception as e:
+                    logger.error(f"Error displaying model releases: {e}")
+                    st.error("❌ Error loading model releases")
+            
+            with tabs[1]:
+                try:
+                    display_platform_updates(ai_intelligence)
+                except Exception as e:
+                    logger.error(f"Error displaying platform updates: {e}")
+                    st.error("❌ Error loading platform updates")
+            
+            with tabs[2]:
+                try:
+                    display_competitive_analysis(ai_intelligence)
+                except Exception as e:
+                    logger.error(f"Error displaying competitive analysis: {e}")
+                    st.error("❌ Error loading competitive analysis")
+            
+            with tabs[3]:
+                try:
+                    display_market_trends(ai_intelligence)
+                except Exception as e:
+                    logger.error(f"Error displaying market trends: {e}")
+                    st.error("❌ Error loading market trends")
+            
+            with tabs[4]:
+                try:
+                    display_developer_adoption(ai_intelligence)
+                except Exception as e:
+                    logger.error(f"Error displaying developer adoption: {e}")
+                    st.error("❌ Error loading developer adoption")
+            
+            with tabs[5]:
+                try:
+                    display_platform_status(ai_intelligence)
+                except Exception as e:
+                    logger.error(f"Error displaying platform status: {e}")
+                    st.error("❌ Error loading platform status")
+        
+        except Exception as e:
+            logger.error(f"Error creating or displaying tabs: {e}")
+            st.error("❌ Error creating dashboard tabs")
+            
+    except Exception as e:
+        logger.error(f"Critical error in AI platforms tab: {e}")
+        st.error("❌ Critical error loading AI platforms dashboard")
+        st.info("Please refresh the page or contact support if the issue persists.") 

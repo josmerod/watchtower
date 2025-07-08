@@ -15,8 +15,8 @@ import requests
 from bs4 import BeautifulSoup
 
 # Import from the installed package
-from utils.file_system import ensure_directories, get_project_root
-from utils.logging import get_logger
+from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 # Initialize logger for this module
 logger = get_logger("FuturetoolsETL")
@@ -42,7 +42,7 @@ def get_futuretools_data(
     for attempt in range(max_retries):
         try:
             # Send GET request to the webpage with increased timeout
-            response = requests.get(url, timeout=15)
+            response = requests.get(url, timeout=30)
             response.raise_for_status()  # Raise exception for HTTP errors
 
             # Parse HTML content

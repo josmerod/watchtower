@@ -19,8 +19,8 @@ from typing import Any, List
 import requests
 from bs4 import BeautifulSoup  # type: ignore
 
-from etl.base import SimpleETL
-from utils.logging import get_logger
+from src.etl.base import SimpleETL
+from src.utils.logging import get_logger
 
 
 class FourChanGeneralsETL(SimpleETL):
