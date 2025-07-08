@@ -61,17 +61,13 @@ def main():
         (tests_dir / "etl" / "test_shoppy_etl.py", "Shoppy ETL Tests"),
         (tests_dir / "etl" / "test_museum_etl.py", "Museum ETL Tests"),
         (tests_dir / "etl" / "test_mal_etl.py", "MyAnimeList ETL Tests"),
-        (tests_dir / "etl" / "test_aws_training_etl.py", "AWS Training ETL Tests"),
-        (tests_dir / "etl" / "test_azure_training_etl.py", "Azure Training ETL Tests"),
-        (tests_dir / "etl" / "test_google_cloud_blog_etl.py", "Google Cloud Blog ETL Tests"),
+
         (tests_dir / "etl" / "test_news_get_newsapi.py", "News API ETL Tests"),
         (tests_dir / "etl" / "test_new_game_releases_etl.py", "Game Releases ETL Tests"),
-        (tests_dir / "etl" / "test_home_server_trends_etl.py", "Home Server Trends ETL Tests"),
+
         
         # Web component tests
-        (tests_dir / "unit" / "test_aws_training_tab.py", "AWS Training Tab Tests"),
-        (tests_dir / "unit" / "test_azure_training_tab.py", "Azure Training Tab Tests"),
-        (tests_dir / "unit" / "test_google_cloud_blog_tab.py", "Google Cloud Blog Tab Tests"),
+
         (tests_dir / "unit" / "test_museums_tab.py", "Museums Tab Tests"),
         (tests_dir / "web" / "fullstreamlit" / "components" / "test_adhd_tab.py", "ADHD Tab Tests"),
         
