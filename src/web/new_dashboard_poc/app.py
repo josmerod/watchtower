@@ -13,6 +13,14 @@ from src.web.new_dashboard_poc.components.games_tab import render_games_tab
 
 from src.web.new_dashboard_poc.components.courses_tab import render_courses_tab, register_courses_callbacks
 
+from src.web.new_dashboard_poc.components.anime_tab import render_anime_tab, register_anime_callbacks
+
+from src.web.new_dashboard_poc.components.fourchan_tab import render_fourchan_tab, register_fourchan_callbacks
+
+from src.web.new_dashboard_poc.components.scavenging_tab import render_scavenging_tab, register_scavenging_callbacks
+
+from src.web.new_dashboard_poc.components.valencia_events_tab import render_valencia_events_tab, register_valencia_events_callbacks
+
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
@@ -68,6 +76,18 @@ app.layout = dbc.Container(
                         dbc.Tab(label="Courses", tab_id="tab-courses", children=[
                             render_courses_tab()
                         ]),
+                        dbc.Tab(label="Anime", tab_id="tab-anime", children=[
+                            render_anime_tab()
+                        ]),
+                        dbc.Tab(label="4chan Generals", tab_id="tab-4chan", children=[
+                            render_fourchan_tab()
+                        ]),
+                        dbc.Tab(label="Scavenging", tab_id="tab-scavenging", children=[
+                            render_scavenging_tab()
+                        ]),
+                        dbc.Tab(label="Valencia Events", tab_id="tab-valencia", children=[
+                            render_valencia_events_tab()
+                        ]),
                     ],
                 )
             )
@@ -90,6 +110,10 @@ def update_main_app_shortcuts(search_value):
 # Register callbacks from other modules
 register_video_callbacks(app)
 register_courses_callbacks(app)
+register_anime_callbacks(app)
+register_fourchan_callbacks(app)
+register_scavenging_callbacks(app)
+register_valencia_events_callbacks(app)
 
 if __name__ == "__main__":
     # Note on data loading:
