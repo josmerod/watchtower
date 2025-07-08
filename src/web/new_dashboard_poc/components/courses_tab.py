@@ -263,44 +263,52 @@ def register_courses_callbacks(app):
         Input("coursera-subject-dropdown", "value"),
         Input("coursera-language-dropdown", "value"),
         Input("coursera-free-checkbox", "value"), # This is a list if checked, e.g. [True] or empty []
-        Input("coursera-pagination", "active_page")
+        Input("coursera-pagination", "active_page"),
+        prevent_initial_call=False
     )
     def update_coursera_table(search_term, subject, language, free_only_checked, current_page):
-        if not COURSES_DATA_LOADED['coursera']:
-            return dbc.Alert("Coursera data not loaded.", color="warning"), 1, 1
+        try:
+            if not COURSES_DATA_LOADED['coursera']:
+                return dbc.Alert("Loading Coursera data...", color="info"), 1, 1
 
-        df_filtered = ALL_COURSES_DATA['coursera'].copy()
+            df_filtered = ALL_COURSES_DATA['coursera'].copy()
+            if df_filtered.empty:
+                return dbc.Alert("No Coursera data available.", color="warning"), 1, 1
 
-        if search_term:
-            search_lower = search_term.lower()
-            # Assuming description might be NaN, fill with empty string for search
-            df_filtered = df_filtered[
-                df_filtered['title'].str.lower().contains(search_lower, na=False) |
-                df_filtered['description'].fillna('').str.lower().contains(search_lower, na=False)
-            ]
-        if subject:
-            df_filtered = df_filtered[df_filtered['subject'] == subject]
-        if language:
-            df_filtered = df_filtered[df_filtered['language'] == language]
-        if free_only_checked: # Checkbox value is a list, [True] if checked, else None or empty list
-             # is_free column should be boolean True/False after loading.
-             # If it can be None/NaN, handle that: df_filtered['is_free'].fillna(False) == True
-            df_filtered = df_filtered[df_filtered['is_free'] == True]
+            if search_term:
+                search_lower = search_term.lower()
+                # Assuming description might be NaN, fill with empty string for search
+                df_filtered = df_filtered[
+                    df_filtered['title'].str.lower().contains(search_lower, na=False) |
+                    df_filtered['description'].fillna('').str.lower().contains(search_lower, na=False)
+                ]
+            if subject:
+                df_filtered = df_filtered[df_filtered['subject'] == subject]
+            if language:
+                df_filtered = df_filtered[df_filtered['language'] == language]
+            if free_only_checked: # Checkbox value is a list, [True] if checked, else None or empty list
+                 # is_free column should be boolean True/False after loading.
+                 # If it can be None/NaN, handle that: df_filtered['is_free'].fillna(False) == True
+                df_filtered = df_filtered[df_filtered['is_free'] == True]
 
-        if df_filtered.empty:
-            return dbc.Alert("No Coursera courses match your filters.", color="info"), 1, 1
+            if df_filtered.empty:
+                return dbc.Alert("No Coursera courses match your filters.", color="info"), 1, 1
 
-        current_page = current_page if current_page else 1
-        total_items = len(df_filtered)
-        max_pages = (total_items + PAGE_SIZE - 1) // PAGE_SIZE
+            current_page = current_page if current_page else 1
+            total_items = len(df_filtered)
+            max_pages = (total_items + PAGE_SIZE - 1) // PAGE_SIZE
 
-        start_idx = (current_page - 1) * PAGE_SIZE
-        end_idx = start_idx + PAGE_SIZE
-        df_paginated = df_filtered.iloc[start_idx:end_idx]
+            start_idx = (current_page - 1) * PAGE_SIZE
+            end_idx = start_idx + PAGE_SIZE
+            df_paginated = df_filtered.iloc[start_idx:end_idx]
 
-        table = create_coursera_table(df_paginated)
-        actual_page = min(current_page, max_pages) if max_pages > 0 else 1
-        return table, max_pages if max_pages > 0 else 1, actual_page
+            table = create_coursera_table(df_paginated)
+            actual_page = min(current_page, max_pages) if max_pages > 0 else 1
+            return table, max_pages if max_pages > 0 else 1, actual_page
+            
+        except Exception as e:
+            print(f"Error in coursera table update: {e}")
+            return dbc.Alert(f"Error loading Coursera data: {str(e)}", color="danger"), 1, 1
 
     @app.callback(
         Output("coursera-pagination", "active_page", allow_duplicate=True),
@@ -319,42 +327,50 @@ def register_courses_callbacks(app):
         Output("udemy-pagination", "max_value"),
         Output("udemy-pagination", "active_page"),
         Input("udemy-search-input", "value"),
-        Input("udemy-pagination", "active_page")
+        Input("udemy-pagination", "active_page"),
+        prevent_initial_call=False
     )
     def update_udemy_table(search_term, current_page):
-        if not COURSES_DATA_LOADED['udemy']:
-            return dbc.Alert("Udemy data not loaded.", color="warning"), 1, 1
+        try:
+            if not COURSES_DATA_LOADED['udemy']:
+                return dbc.Alert("Loading Udemy data...", color="info"), 1, 1
 
-        df_filtered = ALL_COURSES_DATA['udemy'].copy()
+            df_filtered = ALL_COURSES_DATA['udemy'].copy()
+            if df_filtered.empty:
+                return dbc.Alert("No Udemy data available.", color="warning"), 1, 1
 
-        if search_term:
-            search_lower = search_term.lower()
-            df_filtered = df_filtered[df_filtered['title'].str.lower().contains(search_lower, na=False)]
+            if search_term:
+                search_lower = search_term.lower()
+                df_filtered = df_filtered[df_filtered['title'].str.lower().contains(search_lower, na=False)]
 
-        if df_filtered.empty:
-            return dbc.Alert("No Udemy courses match your filters.", color="info"), 1, 1
+            if df_filtered.empty:
+                return dbc.Alert("No Udemy courses match your filters.", color="info"), 1, 1
 
-        current_page = current_page if current_page else 1
-        total_items = len(df_filtered)
-        max_pages = (total_items + PAGE_SIZE - 1) // PAGE_SIZE
+            current_page = current_page if current_page else 1
+            total_items = len(df_filtered)
+            max_pages = (total_items + PAGE_SIZE - 1) // PAGE_SIZE
 
-        start_idx = (current_page - 1) * PAGE_SIZE
-        end_idx = start_idx + PAGE_SIZE
-        df_paginated = df_filtered.iloc[start_idx:end_idx]
+            start_idx = (current_page - 1) * PAGE_SIZE
+            end_idx = start_idx + PAGE_SIZE
+            df_paginated = df_filtered.iloc[start_idx:end_idx]
 
-        # Need a create_udemy_table helper
-        table_header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Added Date")]))]
-        table_body_rows = []
-        for _, row in df_paginated.iterrows():
-            table_body_rows.append(html.Tr([
-                html.Td(html.A(row.get('title', 'N/A'), href=row.get('url'), target="_blank")),
-                html.Td(format_coursera_display_date(row.get('scraped_at'))) # Reusing date formatter
-            ]))
-        table_body = [html.Tbody(table_body_rows)]
-        table = dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, size="sm")
+            # Need a create_udemy_table helper
+            table_header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Added Date")]))]
+            table_body_rows = []
+            for _, row in df_paginated.iterrows():
+                table_body_rows.append(html.Tr([
+                    html.Td(html.A(row.get('title', 'N/A'), href=row.get('url'), target="_blank")),
+                    html.Td(format_coursera_display_date(row.get('scraped_at'))) # Reusing date formatter
+                ]))
+            table_body = [html.Tbody(table_body_rows)]
+            table = dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, size="sm")
 
-        actual_page = min(current_page, max_pages) if max_pages > 0 else 1
-        return table, max_pages if max_pages > 0 else 1, actual_page
+            actual_page = min(current_page, max_pages) if max_pages > 0 else 1
+            return table, max_pages if max_pages > 0 else 1, actual_page
+            
+        except Exception as e:
+            print(f"Error in udemy table update: {e}")
+            return dbc.Alert(f"Error loading Udemy data: {str(e)}", color="danger"), 1, 1
 
     @app.callback(
         Output("udemy-pagination", "active_page", allow_duplicate=True),

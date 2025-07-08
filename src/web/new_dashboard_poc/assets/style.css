@@ -1,7 +1,28 @@
-/* Custom CSS for New Dashboard POC - Watchtower Dark Theme */
+/* 
+ * Watchtower Dashboard - Enhanced Dark Theme CSS
+ * Modern, responsive design with smooth animations and improved UX
+ */
 
-/* Import Google Fonts - Poppins */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+/* Import Google Fonts - Poppins with extended weights */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/* CSS Custom Properties for easy theming */
+:root {
+    --primary-bg: #1E1E2E;
+    --secondary-bg: #2D2B55;
+    --tertiary-bg: #3C3970;
+    --accent-color: #A37FFF;
+    --accent-hover: #B792FF;
+    --text-primary: #CDD6F4;
+    --text-secondary: #BAC2DE;
+    --text-muted: #CCC6F2;
+    --border-color: #3C3970;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --accent-shadow: rgba(163, 127, 255, 0.2);
+    --border-radius: 8px;
+    --transition-speed: 0.3s;
+    --font-family: 'Poppins', sans-serif;
+}
 
 body {
     background-color: #1E1E2E !important; /* Dark background matching main app */
