@@ -34,7 +34,8 @@ def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
         if not threads:
             return dbc.Alert(
                 "No active General threads detected for this board.",
-                color="info"
+                color="info",
+                className="alert-info"
             )
         
         # Prepare data for dash_table
@@ -48,7 +49,7 @@ def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
         display_df['url'] = display_df['url'].apply(lambda x: f"[View Thread]({x})")
         display_df.columns = ['Subject', 'Replies', 'Images', 'Last Modified', 'Thread URL']
         
-        # Create table
+        # Create table with dark theme styling
         table = dash_table.DataTable(
             id=f'4chan-table-{board}',
             data=display_df.to_dict('records'),
@@ -61,22 +62,36 @@ def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
             ],
             style_cell={
                 'textAlign': 'left',
-                'padding': '10px',
+                'padding': '12px 16px',
                 'fontSize': '14px',
-                'fontFamily': 'Arial, sans-serif'
+                'fontFamily': 'Poppins, sans-serif',
+                'backgroundColor': '#2D2B55',
+                'color': '#CDD6F4',
+                'border': '1px solid #3C3970'
             },
             style_header={
-                'backgroundColor': 'rgb(230, 230, 230)',
-                'fontWeight': 'bold'
+                'backgroundColor': '#3C3970',
+                'color': '#E2E8F0',
+                'fontWeight': '600',
+                'borderBottom': '2px solid #A37FFF',
+                'textTransform': 'uppercase',
+                'fontSize': '0.85em',
+                'letterSpacing': '0.5px'
             },
             style_data={
-                'backgroundColor': 'rgb(248, 249, 250)',
-                'border': '1px solid #dee2e6'
+                'backgroundColor': '#2D2B55',
+                'color': '#CDD6F4',
+                'border': '1px solid #3C3970'
             },
             style_data_conditional=[
                 {
                     'if': {'row_index': 'odd'},
-                    'backgroundColor': 'rgb(255, 255, 255)'
+                    'backgroundColor': '#252343'
+                },
+                {
+                    'if': {'state': 'selected'},
+                    'backgroundColor': '#A37FFF',
+                    'color': '#1E1E2E'
                 }
             ],
             sort_action="native",
@@ -92,7 +107,7 @@ def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
             ],
             css=[{
                 'selector': '.dash-table-tooltip',
-                'rule': 'background-color: grey; font-family: monospace; color: white'
+                'rule': 'background-color: #2D2B55; font-family: Poppins, sans-serif; color: #CDD6F4; border: 1px solid #3C3970'
             }]
         )
         
@@ -105,7 +120,8 @@ def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
         logger.error(f"Error creating board table for {board}: {e}")
         return dbc.Alert(
             f"Error loading data for board /{board}/: {str(e)}",
-            color="danger"
+            color="danger",
+            className="alert-danger"
         )
 
 def render_fourchan_tab() -> html.Div:
@@ -122,7 +138,8 @@ def render_fourchan_tab() -> html.Div:
                         html.Hr(),
                         html.P(f"Expected data location: {DATA_FILE}", className="mb-0")
                     ],
-                    color="warning"
+                    color="warning",
+                    className="alert-warning"
                 )
             ], className="p-4")
         
@@ -185,7 +202,8 @@ def render_fourchan_tab() -> html.Div:
         return html.Div([
             dbc.Alert(
                 f"Error loading 4chan generals tab: {str(e)}",
-                color="danger"
+                color="danger",
+                className="alert-danger"
             )
         ], className="p-4")
 

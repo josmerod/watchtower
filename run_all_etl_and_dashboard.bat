@@ -1,11 +1,8 @@
 @echo off
 echo ========================================================
-echo  🏯 Watchtower Dashboard - Legacy Launcher
-echo  📡 Real-time Intelligence & Monitoring Platform
+echo  🏯 Watchtower Complete System Launcher
+echo  📡 ETL Processes + Dashboard
 echo ========================================================
-echo.
-echo [DEPRECATED] This script is deprecated.
-echo [RECOMMENDED] Use run_watchtower_dashboard.bat instead
 echo.
 
 REM Change to the project root directory
@@ -21,14 +18,27 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [INFO] UV is available. Starting Watchtower Dashboard...
+echo [INFO] Starting ETL processes first...
 echo.
-echo Running: uv run python run_watchtower_dashboard.py
+
+REM Create required directories
+if not exist data mkdir data
+if not exist logs mkdir logs
+
+echo [INFO] Running ETL processes...
+call run_all_etl.bat
+
+echo.
+echo [INFO] Waiting 5 seconds for ETL processes to initialize...
+timeout /t 5 /nobreak >nul
+
+echo.
+echo [INFO] Starting Watchtower Dashboard...
 echo Dashboard will be available at: http://localhost:7777
 echo ========================================================
 echo.
 
-REM Run the Watchtower Dashboard using UV
+REM Run the Watchtower Dashboard
 uv run python run_watchtower_dashboard.py
 
 if !errorlevel! neq 0 (
@@ -36,8 +46,8 @@ if !errorlevel! neq 0 (
     echo [ERROR] Watchtower Dashboard failed to start. Please check the output above.
 ) else (
     echo.
-    echo [SUCCESS] Watchtower Dashboard closed successfully.
+    echo [SUCCESS] Watchtower system closed successfully.
 )
 
 echo.
-pause
+pause 

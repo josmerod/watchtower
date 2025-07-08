@@ -197,7 +197,7 @@ def create_coursera_table(df_subset):
             html.Td("Yes" if row.get('certificate_offered') else "No")
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, size="sm")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive")
 
 def render_coursera_courses_sub_tab(df):
     if not COURSES_DATA_LOADED['coursera']: # Check if loading was even attempted and successful
@@ -218,7 +218,17 @@ def render_coursera_courses_sub_tab(df):
             dbc.Col(dbc.Checkbox(id="coursera-free-checkbox", label="Only Free Courses"), md=2, className="mb-2 align-self-center"),
         ], className="mt-3 mb-3"),
         html.Div(id="coursera-table-container"),
-        dbc.Pagination(id="coursera-pagination", max_value=1, active_page=1, className="mt-3 justify-content-center")
+        # Custom pagination with better UX
+        html.Div(id="coursera-pagination-wrapper", className="d-flex justify-content-between align-items-center mt-3", children=[
+            html.Div(id="coursera-pagination-info", className="text-muted"),
+            html.Div(className="d-flex align-items-center gap-2", children=[
+                dbc.Button("« Previous", id="coursera-prev-btn", size="sm", outline=True, color="primary", disabled=True),
+                dbc.Input(id="coursera-page-input", type="number", value=1, min=1, max=1, style={"width": "80px", "textAlign": "center"}, size="sm"),
+                html.Span("of", className="mx-2 text-muted"),
+                html.Span(id="coursera-total-pages", className="text-muted"),
+                dbc.Button("Next »", id="coursera-next-btn", size="sm", outline=True, color="primary", disabled=True)
+            ])
+        ])
     ], className="mt-3")
 
 def render_udemy_courses_sub_tab(df):
@@ -232,7 +242,17 @@ def render_udemy_courses_sub_tab(df):
             dbc.Col(dbc.Input(id="udemy-search-input", placeholder="Search by title..."), md=12, className="mb-2"),
         ], className="mt-3 mb-3"),
         html.Div(id="udemy-table-container"),
-        dbc.Pagination(id="udemy-pagination", max_value=1, active_page=1, className="mt-3 justify-content-center")
+        # Custom pagination with better UX
+        html.Div(id="udemy-pagination-wrapper", className="d-flex justify-content-between align-items-center mt-3", children=[
+            html.Div(id="udemy-pagination-info", className="text-muted"),
+            html.Div(className="d-flex align-items-center gap-2", children=[
+                dbc.Button("« Previous", id="udemy-prev-btn", size="sm", outline=True, color="primary", disabled=True),
+                dbc.Input(id="udemy-page-input", type="number", value=1, min=1, max=1, style={"width": "80px", "textAlign": "center"}, size="sm"),
+                html.Span("of", className="mx-2 text-muted"),
+                html.Span(id="udemy-total-pages", className="text-muted"),
+                dbc.Button("Next »", id="udemy-next-btn", size="sm", outline=True, color="primary", disabled=True)
+            ])
+        ])
     ], className="mt-3")
 
 # --- Main Layout ---
@@ -257,23 +277,29 @@ def render_courses_tab():
 def register_courses_callbacks(app):
     @app.callback(
         Output("coursera-table-container", "children"),
-        Output("coursera-pagination", "max_value"),
-        Output("coursera-pagination", "active_page"),
+        Output("coursera-pagination-info", "children"),
+        Output("coursera-total-pages", "children"),
+        Output("coursera-page-input", "max"),
+        Output("coursera-page-input", "value"),
+        Output("coursera-prev-btn", "disabled"),
+        Output("coursera-next-btn", "disabled"),
         Input("coursera-search-input", "value"),
         Input("coursera-subject-dropdown", "value"),
         Input("coursera-language-dropdown", "value"),
         Input("coursera-free-checkbox", "value"), # This is a list if checked, e.g. [True] or empty []
-        Input("coursera-pagination", "active_page"),
+        Input("coursera-page-input", "value"),
+        Input("coursera-prev-btn", "n_clicks"),
+        Input("coursera-next-btn", "n_clicks"),
         prevent_initial_call=False
     )
-    def update_coursera_table(search_term, subject, language, free_only_checked, current_page):
+    def update_coursera_table(search_term, subject, language, free_only_checked, current_page, prev_clicks, next_clicks):
         try:
             if not COURSES_DATA_LOADED['coursera']:
-                return dbc.Alert("Loading Coursera data...", color="info"), 1, 1
+                return dbc.Alert("Loading Coursera data...", color="info"), "", "1", 1, 1, True, True
 
             df_filtered = ALL_COURSES_DATA['coursera'].copy()
             if df_filtered.empty:
-                return dbc.Alert("No Coursera data available.", color="warning"), 1, 1
+                return dbc.Alert("No Coursera data available.", color="warning"), "", "1", 1, 1, True, True
 
             if search_term:
                 search_lower = search_term.lower()
@@ -292,26 +318,44 @@ def register_courses_callbacks(app):
                 df_filtered = df_filtered[df_filtered['is_free'] == True]
 
             if df_filtered.empty:
-                return dbc.Alert("No Coursera courses match your filters.", color="info"), 1, 1
+                return dbc.Alert("No Coursera courses match your filters.", color="info"), "", "1", 1, 1, True, True
 
-            current_page = current_page if current_page else 1
             total_items = len(df_filtered)
-            max_pages = (total_items + PAGE_SIZE - 1) // PAGE_SIZE
+            max_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
+            
+            # Handle pagination button clicks
+            ctx = dash.callback_context
+            if ctx.triggered:
+                prop_id = ctx.triggered[0]['prop_id']
+                if 'prev-btn' in prop_id:
+                    current_page = max(1, (current_page or 1) - 1)
+                elif 'next-btn' in prop_id:
+                    current_page = min(max_pages, (current_page or 1) + 1)
+            
+            current_page = max(1, min(current_page or 1, max_pages))
 
             start_idx = (current_page - 1) * PAGE_SIZE
             end_idx = start_idx + PAGE_SIZE
             df_paginated = df_filtered.iloc[start_idx:end_idx]
 
             table = create_coursera_table(df_paginated)
-            actual_page = min(current_page, max_pages) if max_pages > 0 else 1
-            return table, max_pages if max_pages > 0 else 1, actual_page
+            
+            # Create pagination info
+            pagination_info = f"Showing {start_idx + 1}-{min(end_idx, total_items)} of {total_items} courses"
+            
+            # Button states
+            prev_disabled = current_page <= 1
+            next_disabled = current_page >= max_pages
+            
+            return table, pagination_info, str(max_pages), max_pages, current_page, prev_disabled, next_disabled
             
         except Exception as e:
             print(f"Error in coursera table update: {e}")
-            return dbc.Alert(f"Error loading Coursera data: {str(e)}", color="danger"), 1, 1
+            return dbc.Alert(f"Error loading Coursera data: {str(e)}", color="danger"), "", "1", 1, 1, True, True
 
+    # Reset to page 1 when filters change
     @app.callback(
-        Output("coursera-pagination", "active_page", allow_duplicate=True),
+        Output("coursera-page-input", "value", allow_duplicate=True),
         Input("coursera-search-input", "value"),
         Input("coursera-subject-dropdown", "value"),
         Input("coursera-language-dropdown", "value"),
@@ -324,31 +368,47 @@ def register_courses_callbacks(app):
     # Udemy Callbacks (similar structure)
     @app.callback(
         Output("udemy-table-container", "children"),
-        Output("udemy-pagination", "max_value"),
-        Output("udemy-pagination", "active_page"),
+        Output("udemy-pagination-info", "children"),
+        Output("udemy-total-pages", "children"),
+        Output("udemy-page-input", "max"),
+        Output("udemy-page-input", "value"),
+        Output("udemy-prev-btn", "disabled"),
+        Output("udemy-next-btn", "disabled"),
         Input("udemy-search-input", "value"),
-        Input("udemy-pagination", "active_page"),
+        Input("udemy-page-input", "value"),
+        Input("udemy-prev-btn", "n_clicks"),
+        Input("udemy-next-btn", "n_clicks"),
         prevent_initial_call=False
     )
-    def update_udemy_table(search_term, current_page):
+    def update_udemy_table(search_term, current_page, prev_clicks, next_clicks):
         try:
             if not COURSES_DATA_LOADED['udemy']:
-                return dbc.Alert("Loading Udemy data...", color="info"), 1, 1
+                return dbc.Alert("Loading Udemy data...", color="info"), "", "1", 1, 1, True, True
 
             df_filtered = ALL_COURSES_DATA['udemy'].copy()
             if df_filtered.empty:
-                return dbc.Alert("No Udemy data available.", color="warning"), 1, 1
+                return dbc.Alert("No Udemy data available.", color="warning"), "", "1", 1, 1, True, True
 
             if search_term:
                 search_lower = search_term.lower()
                 df_filtered = df_filtered[df_filtered['title'].str.lower().contains(search_lower, na=False)]
 
             if df_filtered.empty:
-                return dbc.Alert("No Udemy courses match your filters.", color="info"), 1, 1
+                return dbc.Alert("No Udemy courses match your filters.", color="info"), "", "1", 1, 1, True, True
 
-            current_page = current_page if current_page else 1
             total_items = len(df_filtered)
-            max_pages = (total_items + PAGE_SIZE - 1) // PAGE_SIZE
+            max_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
+            
+            # Handle pagination button clicks
+            ctx = dash.callback_context
+            if ctx.triggered:
+                prop_id = ctx.triggered[0]['prop_id']
+                if 'prev-btn' in prop_id:
+                    current_page = max(1, (current_page or 1) - 1)
+                elif 'next-btn' in prop_id:
+                    current_page = min(max_pages, (current_page or 1) + 1)
+            
+            current_page = max(1, min(current_page or 1, max_pages))
 
             start_idx = (current_page - 1) * PAGE_SIZE
             end_idx = start_idx + PAGE_SIZE
@@ -363,17 +423,23 @@ def register_courses_callbacks(app):
                     html.Td(format_coursera_display_date(row.get('scraped_at'))) # Reusing date formatter
                 ]))
             table_body = [html.Tbody(table_body_rows)]
-            table = dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, size="sm")
+            table = dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive")
 
-            actual_page = min(current_page, max_pages) if max_pages > 0 else 1
-            return table, max_pages if max_pages > 0 else 1, actual_page
+            # Create pagination info
+            pagination_info = f"Showing {start_idx + 1}-{min(end_idx, total_items)} of {total_items} courses"
+            
+            # Button states
+            prev_disabled = current_page <= 1
+            next_disabled = current_page >= max_pages
+
+            return table, pagination_info, str(max_pages), max_pages, current_page, prev_disabled, next_disabled
             
         except Exception as e:
             print(f"Error in udemy table update: {e}")
-            return dbc.Alert(f"Error loading Udemy data: {str(e)}", color="danger"), 1, 1
+            return dbc.Alert(f"Error loading Udemy data: {str(e)}", color="danger"), "", "1", 1, 1, True, True
 
     @app.callback(
-        Output("udemy-pagination", "active_page", allow_duplicate=True),
+        Output("udemy-page-input", "value", allow_duplicate=True),
         Input("udemy-search-input", "value"),
         prevent_initial_call=True
     )

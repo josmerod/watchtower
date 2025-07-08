@@ -202,7 +202,10 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         bordered=True,
         hover=True,
         responsive=True, # Makes table scroll horizontally on small screens
-        className="mb-0" # Remove default bottom margin if wrapped in Div with padding
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive mb-0" # Remove default bottom margin if wrapped in Div with padding
     )
 
     # Return the table wrapped in a Div for consistent styling (e.g. maxHeight, overflow)

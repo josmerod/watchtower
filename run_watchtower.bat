@@ -1,5 +1,11 @@
 @echo off
-echo Starting Watchtower Dashboard with UV...
+echo ========================================================
+echo  🏯 Watchtower Legacy Streamlit Dashboard
+echo  📡 Old Streamlit Implementation (Port 8501)
+echo ========================================================
+echo.
+echo [DEPRECATED] This launches the old Streamlit dashboard.
+echo [RECOMMENDED] Use run_watchtower_dashboard.bat for the new Dash dashboard.
 echo.
 
 REM Check if UV is available
@@ -11,8 +17,11 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+echo [INFO] Starting Legacy Streamlit Dashboard...
+echo Dashboard will be available at: http://localhost:8501
+echo ========================================================
+echo.
+
 REM Start Streamlit app using UV
-echo Starting Streamlit on http://localhost:8501
-echo Running: uv run streamlit run src/web/fullstreamlit/app.py
 uv run streamlit run src/web/fullstreamlit/app.py --server.port=8501
 pause 

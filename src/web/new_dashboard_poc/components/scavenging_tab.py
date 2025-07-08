@@ -48,7 +48,8 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
         if df.empty:
             return dbc.Alert(
                 f"No entries available for {category}.",
-                color="warning"
+                color="warning",
+                className="alert-warning"
             )
         
         # Sort newest first
@@ -74,7 +75,7 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
         # Rename columns
         df_display = df_display.rename(columns=rename_map)
         
-        # Create table
+        # Create table with dark theme styling
         table = dash_table.DataTable(
             id=f'scavenging-table-{category}',
             data=df_display.to_dict('records'),
@@ -88,28 +89,41 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
             ],
             style_cell={
                 'textAlign': 'left',
-                'padding': '12px',
+                'padding': '12px 16px',
                 'fontSize': '14px',
-                'fontFamily': 'Arial, sans-serif',
+                'fontFamily': 'Poppins, sans-serif',
                 'maxWidth': '200px',
                 'overflow': 'hidden',
                 'textOverflow': 'ellipsis',
+                'backgroundColor': '#2D2B55',
+                'color': '#CDD6F4',
+                'border': '1px solid #3C3970'
             },
             style_header={
-                'backgroundColor': 'rgb(230, 230, 230)',
-                'fontWeight': 'bold',
-                'border': '1px solid #dee2e6'
+                'backgroundColor': '#3C3970',
+                'color': '#E2E8F0',
+                'fontWeight': '600',
+                'borderBottom': '2px solid #A37FFF',
+                'textTransform': 'uppercase',
+                'fontSize': '0.85em',
+                'letterSpacing': '0.5px'
             },
             style_data={
-                'backgroundColor': 'rgb(248, 249, 250)',
-                'border': '1px solid #dee2e6',
+                'backgroundColor': '#2D2B55',
+                'color': '#CDD6F4',
+                'border': '1px solid #3C3970',
                 'whiteSpace': 'normal',
                 'height': 'auto',
             },
             style_data_conditional=[
                 {
                     'if': {'row_index': 'odd'},
-                    'backgroundColor': 'rgb(255, 255, 255)'
+                    'backgroundColor': '#252343'
+                },
+                {
+                    'if': {'state': 'selected'},
+                    'backgroundColor': '#A37FFF',
+                    'color': '#1E1E2E'
                 }
             ],
             style_cell_conditional=[
@@ -175,7 +189,8 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
         logger.error(f"Error creating category table for {category}: {e}")
         return dbc.Alert(
             f"Error loading data for category {category}: {str(e)}",
-            color="danger"
+            color="danger",
+            className="alert-danger"
         )
 
 def render_scavenging_tab() -> html.Div:
@@ -192,7 +207,8 @@ def render_scavenging_tab() -> html.Div:
                         html.Hr(),
                         html.P(f"Expected data location: {DATA_DIR}/*_rss_entries.json", className="mb-0")
                     ],
-                    color="info"
+                    color="info",
+                    className="alert-info"
                 )
             ], className="p-4")
         
@@ -244,7 +260,8 @@ def render_scavenging_tab() -> html.Div:
         return html.Div([
             dbc.Alert(
                 f"Error loading scavenging tab: {str(e)}",
-                color="danger"
+                color="danger",
+                className="alert-danger"
             )
         ], className="p-4")
 

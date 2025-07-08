@@ -26,13 +26,10 @@ classifiers = [
 # Core dependencies
 dependencies = [
     # Core data processing and analysis
-    "prefect>=2.19.0",
     "pandas>=2.2.3",
     "numpy>=2.2.5",
     "polars>=0.20.0",
     "scikit-learn>=1.6.1",
-    "scipy>=1.15.2",
-    "joblib>=1.5.0",
     "python-dateutil>=2.9.0.post0",
     "pytz>=2025.2",
     
@@ -61,13 +58,10 @@ dependencies = [
     "tqdm>=4.67.1",
     
     # Configuration and utilities
-    "schedule>=1.0.0",
-    "toml>=0.10.2",
     "python-dotenv>=1.0.0",
     
-    # YouTube API utilities
+    # YouTube API utilities (optional - used in specific ETLs)
     "google-api-python-client>=2.0.0",
-    "PyDrive2>=1.11.1",
     "isodate>=0.6.0",
     
     # System monitoring
@@ -114,14 +108,14 @@ dev = [
     "black>=24.1.0",
 ]
 
-# Machine Learning dependencies
+# Machine Learning dependencies (currently unused)
 ml = [
     "langgraph>=0.0.20",
     "faiss-cpu>=1.7.4",
     "chromadb>=0.4.22",
 ]
 
-# Web API dependencies
+# Web API dependencies (currently unused)
 web = [
     "fastapi>=0.110.0",
     "uvicorn>=0.27.0",
@@ -151,7 +145,8 @@ Documentation = "https://github.com/yourusername/watchtower/blob/main/README.md"
 "Bug Reports" = "https://github.com/yourusername/watchtower/issues"
 
 [project.scripts]
-watchtower-app = "src.web.fullstreamlit.app:main"
+watchtower-dashboard = "run_watchtower_dashboard:main"
+watchtower-legacy = "src.web.fullstreamlit.app:main"
 watchtower-etl = "src.etl.base:run_etl_cli"
 watchtower-watcher = "src.watchers.base_watcher:run_watcher_cli"
 
