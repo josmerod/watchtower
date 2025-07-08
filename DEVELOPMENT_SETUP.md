@@ -19,17 +19,27 @@ This guide explains how to set up the Watchtower project for development with th
 
 2. **Install the project in development mode:**
    ```bash
-   python install_dev.py
+   python install_dev.py  # Auto-installs UV and sets up everything
    ```
 
 3. **Verify installation:**
    ```bash
+   # With UV (recommended)
+   uv run python -c "from src.config.settings import get_settings; print('✅ Setup successful!')"
+   
+   # Or traditional method
    python -c "from src.config.settings import get_settings; print('✅ Setup successful!')"
    ```
 
-4. **Start the Streamlit dashboard:**
+4. **Start the main dashboard:**
    ```bash
-   streamlit run src/web/fullstreamlit/app.py
+   # Main Watchtower Dashboard (recommended)
+   uv run python run_watchtower_dashboard.py
+   # Available at: http://localhost:7777
+   
+   # Legacy Streamlit Dashboard (if needed)
+   uv run streamlit run src/web/fullstreamlit/app.py
+   # Available at: http://localhost:8501
    ```
 
 ## 🏗️ Project Architecture
@@ -157,34 +167,44 @@ python install_dev.py
 
 ### Running ETL Pipelines
 ```bash
-# Run specific ETL
-python -m src.etl.arxiv.arxiv_etl
+# Run specific ETL with UV (recommended)
+uv run python -m src.etl.arxiv.arxiv_etl
 
-# Run all ETLs
+# Run all ETLs with UV
+uv run python run_all_etl.py
+
+# Or traditional method
+python -m src.etl.arxiv.arxiv_etl
 python run_all_etl.py
 ```
 
 ### Starting Services
 ```bash
-# Streamlit dashboard
-streamlit run src/web/fullstreamlit/app.py
+# Main Watchtower Dashboard (recommended)
+uv run python run_watchtower_dashboard.py
+
+# Legacy Streamlit dashboard
+uv run streamlit run src/web/fullstreamlit/app.py
 
 # API server (if implemented)
-python -m src.api.main
+uv run python -m src.api.main
 ```
 
 ## 🧪 Testing
 
 ### Running Tests
 ```bash
-# Run all tests
-pytest
+# Run all tests with UV (recommended)
+uv run pytest
 
 # Run with coverage
-pytest --cov=src --cov-report=html
+uv run pytest --cov=src --cov-report=html
 
 # Run specific test module
-pytest tests/unit/test_config.py
+uv run pytest tests/unit/test_config.py
+
+# Or traditional method
+pytest
 ```
 
 ### Test Structure
