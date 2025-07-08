@@ -15,7 +15,7 @@ start /B uv run python src/etl/games/games_get_deals.py
 start /B uv run python src/etl/games/games_get_humblebundles.py
 start /B uv run python src/etl/games/games_get_itchio_trending.py
 start /B uv run python src/etl/games/games_get_new_releases.py
-start /B uv run python src/etl/games/games_get_allkeyshop.py
+
 
 start /B uv run python src/etl/news/news_get_ycombinator.py
 start /B uv run python src/etl/news/news_get_futuretools.py
