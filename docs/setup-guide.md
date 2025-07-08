@@ -97,7 +97,7 @@ brew install python@3.10 git
 
 ## Installation Methods
 
-### Method 1: Standard Installation (Recommended)
+### Method 1: UV Installation (Recommended - 10-100x faster)
 
 **Step 1: Clone Repository**
 ```bash
@@ -105,8 +105,45 @@ git clone <repository-url>
 cd watchtower
 ```
 
-**Step 2: Create Virtual Environment**
+**Step 2: Install UV**
 ```bash
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Step 3: Install Dependencies**
+```bash
+# Install all dependencies (creates virtual environment automatically)
+uv sync --all-extras
+
+# Install browser binaries
+uv run playwright install
+```
+
+**Step 4: Run the project**
+```bash
+# All commands use 'uv run' - no manual activation needed
+uv run python run_watchtower_dashboard.py
+```
+
+### Method 2: Development Setup Script (Easiest)
+
+**Automatic Setup with UV:**
+```bash
+# This script auto-installs UV and sets up everything
+python install_dev.py
+```
+
+### Method 3: Legacy Installation (Not Recommended)
+
+**Traditional Virtual Environment:**
+```bash
+git clone <repository-url>
+cd watchtower
+
 # Create virtual environment
 python -m venv .venv
 
@@ -114,47 +151,9 @@ python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 .venv\Scripts\activate.bat  # Windows CMD
 .venv\Scripts\Activate.ps1  # Windows PowerShell
-```
-
-**Step 3: Install Dependencies**
-```bash
-# Core dependencies
-pip install -r requirements.txt
-
-# Web dashboard dependencies
-pip install -r requirements-web.txt
-
-# ML/Analytics dependencies (optional)
-pip install -r requirements-ml.txt
-
-# Development dependencies (optional)
-pip install -r requirements-dev.txt
-```
-
-**Step 4: Install Browser Binaries**
-```bash
-playwright install
-```
-
-### Method 2: Poetry Installation (Advanced)
-
-If you prefer Poetry for dependency management:
-
-```bash
-# Install Poetry
-curl -sSL https://install.python-poetry.org | python3 -
-
-# Clone and setup
-git clone <repository-url>
-cd watchtower
 
 # Install dependencies
-poetry install
-
-# Activate environment
-poetry shell
-
-# Install browsers
+pip install -r requirements.txt
 playwright install
 ```
 
@@ -215,7 +214,11 @@ SCRAPING__TIMEOUT=30
 SCRAPING__MAX_RETRIES=3
 SCRAPING__CONCURRENT_LIMIT=10
 
-# Streamlit configuration
+# Dashboard configuration
+DASHBOARD__HOST=localhost
+DASHBOARD__PORT=7777
+
+# Legacy Streamlit configuration
 STREAMLIT__HOST=localhost
 STREAMLIT__PORT=8501
 ```
@@ -244,8 +247,11 @@ setup_venv.bat
 # Run all ETL processes
 run_all_etl.bat
 
-# Start Streamlit dashboard
-start_streamlit.bat
+# Start main dashboard
+run_watchtower_dashboard.bat
+
+# Start legacy Streamlit dashboard
+run_watchtower.bat
 
 # Setup as Windows service
 setup_streamlit_service.ps1
@@ -270,8 +276,11 @@ chmod +x *.sh
 # Run all ETL processes
 ./run_all_etl.sh
 
-# Start Streamlit dashboard
-./start_streamlit.sh
+# Start main dashboard
+./run_watchtower_dashboard.sh
+
+# Start legacy Streamlit dashboard
+./run_streamlit.sh
 
 # Setup as systemd service
 sudo ./setup_streamlit_service.sh
@@ -545,11 +554,12 @@ python -c "import src.etl.base; print('ETL import OK')"
 
 After successful setup:
 
-1. **Explore Dashboard**: Visit http://localhost:8501
-2. **Run ETL Processes**: Use `run_all_etl` scripts
-3. **Configure Watchers**: Set up monitoring for your desired websites
-4. **Read Documentation**: Check out the [API Reference](development/api-reference.md)
-5. **Review Use Cases**: Explore [Use Cases](use-cases/) for practical examples
+1. **Explore Main Dashboard**: Visit http://localhost:7777 (recommended)
+2. **Explore Legacy Dashboard**: Visit http://localhost:8501 (if needed)
+3. **Run ETL Processes**: Use `run_all_etl` scripts or `uv run python src/etl/...`
+4. **Configure Watchers**: Set up monitoring for your desired websites
+5. **Read Documentation**: Check out the [API Reference](development/api-reference.md)
+6. **Review Use Cases**: Explore [Use Cases](use-cases/) for practical examples
 
 For additional help, see:
 - [Dashboard Guide](dashboard_guide.md)

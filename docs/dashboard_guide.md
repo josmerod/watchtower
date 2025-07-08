@@ -32,15 +32,25 @@ For general project information, setup, and overall contribution guidelines, ple
 
 ## Accessing the Dashboard
 
-To run the Streamlit dashboard locally:
+To run the Watchtower dashboard locally:
 
-1.  Ensure you have followed the project [Installation instructions](../README.md#installation) in the main `README.md` and your virtual environment (e.g., Poetry shell) is activated.
+1.  Ensure you have followed the project [Installation instructions](../README.md#installation) in the main `README.md` and have UV installed (recommended).
 2.  Navigate to the project root directory in your terminal.
 3.  Run the appropriate script:
-    *   On Windows: `.\run_streamlit.bat` or `.\start_streamlit.bat`
-    *   On macOS/Linux: `bash run_streamlit.sh` or `bash start_streamlit.sh`
 
-This will typically start the Streamlit server and open the dashboard in your default web browser. The default URL is usually `http://localhost:8501`.
+### Main Dashboard (Recommended)
+-   **Windows**: `.\run_watchtower_dashboard.bat`
+-   **macOS/Linux**: `bash run_watchtower_dashboard.sh`
+-   **Direct UV command**: `uv run python run_watchtower_dashboard.py`
+
+This will start the main Watchtower Dashboard and open it in your default web browser. The default URL is `http://localhost:7777`.
+
+### Legacy Dashboard (If Needed)
+-   **Windows**: `.\run_watchtower.bat`
+-   **macOS/Linux**: `bash run_streamlit.sh`
+-   **Direct UV command**: `uv run streamlit run src/web/fullstreamlit/app.py`
+
+This will start the legacy Streamlit dashboard at `http://localhost:8501`.
 
 ## Dashboard Overview & Navigation
 

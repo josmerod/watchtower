@@ -1,6 +1,10 @@
-# Watchtower Streamlit Dashboard
+# Watchtower Legacy Streamlit Dashboard
 
-This is the interactive web dashboard for the Watchtower project, built with Streamlit. It provides real-time visualization of data from various modules, including game deals, news, courses, and custom watchers.
+This is the **legacy** interactive web dashboard for the Watchtower project, built with Streamlit. 
+
+**⚠️ IMPORTANT**: This is now the **legacy dashboard**. The main Watchtower dashboard is now a Dash-based application located at `src/web/new_dashboard_poc/` and accessible at `http://localhost:7777`.
+
+This legacy dashboard provides real-time visualization of data from various modules, including game deals, news, courses, and custom watchers.
 
 ## Features
 
@@ -20,7 +24,8 @@ This is the interactive web dashboard for the Watchtower project, built with Str
 ## Requirements
 
 - Python 3.10+
-- Dependencies as listed in the root `requirements.txt`
+- UV (recommended) or traditional Python environment
+- Dependencies as listed in the root `pyproject.toml`
 
 ## Setup & Installation
 
@@ -30,26 +35,39 @@ This is the interactive web dashboard for the Watchtower project, built with Str
    ```
 2. Ensure dependencies are installed:
    ```bash
+   # With UV (recommended)
+   uv sync --all-extras
+   
+   # Or traditional method
    pip install -r requirements.txt
    ```
 3. Install Playwright 
    ```bash
-   install_playwright.bat  # Windows
-   bash install_playwright.sh  # Unix
+   # With UV (recommended)
+   uv run playwright install
+   
+   # Or traditional method
+   playwright install
    ```
 
-## Running the Dashboard
+## Running the Legacy Dashboard
 
 ### Local Development
 
 ```bash
+# With UV (recommended)
+uv run streamlit run src/web/fullstreamlit/app.py
+
+# Or using convenience scripts
 # Unix
 bash run_streamlit.sh
 # Windows
-.\run_streamlit.bat
+.\run_watchtower.bat
 ```
 
-Navigate to http://localhost:8501 to view the dashboard.
+Navigate to http://localhost:8501 to view the legacy dashboard.
+
+**Note**: For the main dashboard, use `run_watchtower_dashboard.py` which runs at http://localhost:7777.
 
 ### Configuration
 

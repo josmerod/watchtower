@@ -154,7 +154,7 @@ megalith/
 
 -   Python 3.10 or higher
 -   Git
--   [Poetry](https://python-poetry.org/docs/#installation) (Recommended for dependency management)
+-   [UV](https://github.com/astral-sh/uv) (Recommended - extremely fast Python package manager)
 -   [Playwright](https://playwright.dev/python/) browser binaries
 
 ### Clone the Repository
@@ -166,67 +166,67 @@ cd watchtower
 
 ### Set up Development Environment
 
-Choose one of the following methods to set up your environment:
+#### Using UV (Recommended - 10-100x faster)
 
-#### Using Poetry (Recommended)
+UV is the modern Python package manager that makes dependency management extremely fast and reliable.
 
-Poetry simplifies dependency management and packaging.
-
-1.  **Install Poetry** if you haven't already (see [Poetry installation guide](https://python-poetry.org/docs/#installation)).
-2.  **Configure Poetry to create virtual environments in the project's directory (optional but recommended):**
+1.  **Install UV** (if not already installed):
     ```bash
-    poetry config virtualenvs.in-project true
+    # Windows
+    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+    
+    # macOS/Linux
+    curl -LsSf https://astral.sh/uv/install.sh | sh
     ```
-3.  **Install dependencies and create the virtual environment:**
-    ```bash
-    poetry install
-    ```
-4.  **Activate the virtual environment:**
-    ```bash
-    poetry shell
-    ```
-    Alternatively, run commands prefixed with `poetry run` (e.g., `poetry run python src/script.py`).
 
-#### Using venv (Alternative)
+2.  **Install dependencies and set up the project:**
+    ```bash
+    # Install all dependencies (automatically creates virtual environment)
+    uv sync --all-extras
+    
+    # Install Playwright browsers
+    uv run playwright install
+    ```
 
-If you prefer to use `venv` directly:
+3.  **Run the project:**
+    ```bash
+    # All commands use 'uv run' - no manual activation needed
+    uv run python src/script.py
+    uv run streamlit run src/web/fullstreamlit/app.py
+    ```
+
+#### Alternative: Development Setup Script
+
+For automatic setup including UV installation:
+```bash
+# This script auto-installs UV if needed and sets up everything
+python install_dev.py
+```
+
+#### Legacy: Using venv (Not Recommended)
+
+If you must use traditional methods:
 ```bash
 python -m venv .venv
+
+# Activate environment
+source .venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate.bat  # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+playwright install
 ```
-Activate the environment:
--   On Windows:
-    ```powershell
-    .\.venv\Scripts\Activate.ps1
-    ```
-    Or (cmd.exe):
-    ```batch
-    .venv\Scripts\activate.bat
-    ```
--   On macOS and Linux:
-    ```bash
-    source .venv/bin/activate
-    ```
-
-### Install Dependencies
-
--   **If using Poetry**, dependencies are installed with `poetry install` (see above).
--   **If using `venv`**:
-    Ensure `pip` is up to date, then install the required packages from `requirements.txt`.
-    Note: `requirements.txt` is ideally generated from `pyproject.toml` using Poetry (`poetry export -f requirements.txt --output requirements.txt --without-hashes`).
-    ```bash
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-    ```
 
 ### Install Playwright Browsers
 
-Ensure your virtual environment (Poetry shell or activated venv) is active. Then, install the necessary Playwright browser binaries:
 ```bash
+# With UV (recommended)
+uv run playwright install
+
+# Or with traditional methods
 playwright install
 ```
-Convenience scripts might also be available:
--   Windows: Run `install_playwright.bat` (ensure it runs `playwright install` internally)
--   macOS/Linux: Run `bash install_playwright.sh` (ensure it runs `playwright install` internally)
 
 ## Configuration
 
@@ -253,10 +253,14 @@ Individual ETL scripts are typically located in `src/etl/`.
 
 To run an individual ETL script (example for Hacker News):
 ```bash
+# With UV (recommended)
+uv run python src/etl/news/news_get_ycombinator.py
+
+# Or traditional method
 python src/etl/news/news_get_ycombinator.py
 ```
 
-To run all major ETL pipelines (behavior depends on the script's implementation - sequential or parallel):
+To run all major ETL pipelines:
 -   Windows: `.\run_all_etl.bat`
 -   macOS/Linux: `bash run_all_etl.sh`
 
@@ -266,16 +270,28 @@ The main script for managing watchers is `src/watchers/run_watcher.py`.
 
 To run all registered watchers continuously:
 ```bash
+# With UV (recommended)
+uv run python src/watchers/run_watcher.py
+
+# Or traditional method
 python src/watchers/run_watcher.py
 ```
 
 To run a specific watcher once (e.g., `ms_applied_skills`):
 ```bash
+# With UV (recommended)
+uv run python src/watchers/run_watcher.py ms_applied_skills --once
+
+# Or traditional method
 python src/watchers/run_watcher.py ms_applied_skills --once
 ```
 
 To list available watchers:
 ```bash
+# With UV (recommended)
+uv run python src/watchers/run_watcher.py --list
+
+# Or traditional method
 python src/watchers/run_watcher.py --list
 ```
 
@@ -346,12 +362,27 @@ If you were using the previous `meta_orchestrator.py` with system-level schedule
 
 ### Launching the Web Dashboard
 
-To start the Streamlit web dashboard:
--   Windows: `.\run_streamlit.bat` (or `.\start_streamlit.bat`)
--   macOS/Linux: `bash run_streamlit.sh` (or `bash start_streamlit.sh`)
+#### Main Watchtower Dashboard (Recommended)
 
-This will usually execute a command like `streamlit run src/web/fullstreamlit/app.py`.
-Open your web browser and navigate to `http://localhost:8501` (or the port indicated in the console output).
+To start the main Watchtower Dashboard (Dash-based):
+-   Windows: `.\run_watchtower_dashboard.bat` or `uv run python run_watchtower_dashboard.py`
+-   macOS/Linux: `bash run_watchtower_dashboard.sh` or `uv run python run_watchtower_dashboard.py`
+
+This will start the main dashboard at `http://localhost:7777`. This is the **primary dashboard** with all the latest features.
+
+#### Legacy Streamlit Dashboard (Optional)
+
+For the legacy Streamlit dashboard (if needed):
+-   Windows: `.\run_watchtower.bat` 
+-   macOS/Linux: `bash run_streamlit.sh`
+
+This will start the legacy dashboard at `http://localhost:8501`.
+
+#### Complete System Launch
+
+To run both ETL processes and the dashboard:
+-   Windows: `.\run_all_etl_and_dashboard.bat`
+-   macOS/Linux: `bash run_all_etl_and_dashboard.sh`
 
 ## Docker
 
@@ -365,7 +396,11 @@ docker build -t megalith-app .
 
 **Run the Docker Container:**
 ```bash
-docker run -p 8501:8501 --env-file .env megalith-app
+# Main Watchtower Dashboard
+docker run -p 7777:7777 --env-file .env watchtower-app
+
+# Legacy Streamlit Dashboard (if needed)
+docker run -p 8501:8501 --env-file .env watchtower-app
 ```
 -   Adjust port mapping (`-p HOST_PORT:CONTAINER_PORT`) as needed.
 -   Use `--env-file .env` to pass environment variables from a local `.env` file. Alternatively, pass variables individually with `-e VAR_NAME=value`.
@@ -493,9 +528,11 @@ Thank you for contributing to MEGALITH!
 -   **Dependency Conflicts (`pip`/`venv`)**:
     -   Ensure your virtual environment is clean and activated.
     -   Try recreating the virtual environment and reinstalling dependencies.
--   **Streamlit App Not Loading**:
-    -   Check the console output for errors when running `streamlit run ...` or `poetry run streamlit run ...`.
-    -   Ensure the correct port (usually 8501) is not blocked by a firewall or used by another application.
+-   **Dashboard Not Loading**:
+    -   **Main Dashboard**: Check console output when running `run_watchtower_dashboard.py`. Default port is 7777.
+    -   **Legacy Dashboard**: Check console output when running Streamlit. Default port is 8501.
+    -   Ensure the correct port is not blocked by a firewall or used by another application.
+    -   Try UV command: `uv run python run_watchtower_dashboard.py`
 -   **Script Execution Failures**:
     -   Verify paths: Ensure scripts are run from the project root or that paths within scripts are correctly relative or absolute.
     -   Permissions: Check file and directory permissions, especially for `data/` and `logs/`.
