@@ -7,7 +7,7 @@ Transform the POC dashboard into the main Watchtower application with full clean
 - [x] **Phase 1**: Remove unwanted tabs and cleanup (Steps 1-3)
 - [x] **Phase 2**: Add new tabs based on streamlit (Steps 4-6) 
 - [x] **Interim**: Fix dashboard confusion and courses tab issues 
-- [ ] **Phase 3**: Environment cleanup and enhancement (Steps 7-9)
+- [x] **Phase 3**: Environment cleanup and enhancement (Steps 7-9) - IN PROGRESS
 - [ ] **Phase 4**: Deployment and final integration (Steps 10-12)
 
 ## Detailed Steps
@@ -113,21 +113,44 @@ Transform the POC dashboard into the main Watchtower application with full clean
 - [x] Enhanced pagination behavior
 - [x] Consistent styling with Bootstrap components
 
+#### Interim Step 4: Fix Table Styling and Dark Theme ✅
+**Issue:** Library compatibility problems with `dark=True` parameter
+**Resolution:**
+- [x] Updated `dash-bootstrap-components` to version 1.6.0
+- [x] Changed all table components from `dark=True` to `color="dark"`
+- [x] Applied consistent dark theme to all tables (News, Courses, Games sub-tabs)
+- [x] Verified compatibility and styling across all tabs
+- [x] Dashboard running successfully with proper dark theme
+
 ### Phase 3: Environment and Enhancement (Steps 7-9)
 
-#### Step 7: Cleanup Environment and Orchestrators ❌
-- [ ] Review `run_all_etl.bat` and `run_streamlit_beta.bat`
-- [ ] Create new orchestration scripts for dashboard
-- [ ] Update dependency management
-- [ ] Clean up unused dependencies
+#### Step 7: Cleanup Environment and Orchestrators ✅ COMPLETE
+- [x] Review `run_all_etl.bat` and `run_streamlit_beta.bat`
+- [x] Create new orchestration scripts for dashboard
+  - [x] `run_watchtower_dashboard.bat/.sh` - Main dashboard launcher
+  - [x] `run_all_etl_and_dashboard.bat/.sh` - Complete system launcher  
+  - [x] Updated `run_streamlit_beta.bat` with deprecation notice
+  - [x] Updated `run_watchtower.bat` with legacy notice
+- [x] Update dependency management
+  - [x] Updated project scripts to point to new dashboard launcher
+  - [x] Added comments to identify unused dependency groups
+- [x] Clean up unused dependencies
+  - [x] Removed `prefect`, `scipy`, `joblib` (not used in current implementation)
+  - [x] Removed `schedule`, `toml` (replaced by other solutions)
+  - [x] Removed `PyDrive2` (optional backup feature)
+  - [x] Marked ML and Web API dependencies as currently unused
 
-#### Step 8: Enhance CSS and Visualization ❌
-- [ ] Improve `src/web/new_dashboard_poc/assets/style.css`
-- [ ] Enhance table visualization in Dash
-- [ ] Implement better responsive design
-- [ ] Add consistent styling across tabs
+#### Step 8: Enhance CSS and Visualization ✅ COMPLETE
+- [x] Improve `src/web/new_dashboard_poc/assets/style.css`
+- [x] Enhance table visualization in Dash 
+- [x] Implement better responsive design
+- [x] Add consistent styling across tabs
+- [x] **CRITICAL FIX**: Eliminate white backgrounds completely with nuclear dark theme CSS
+- [x] Update all alert components with proper dark theme classes
+- [x] Fix DataTable styling in 4chan and Scavenging tabs
+- [x] Add comprehensive catch-all rules for dark theme enforcement
 
-#### Step 9: Documentation Cleanup ❌
+#### Step 9: Documentation Cleanup 🚧 IN PROGRESS
 - [ ] Clean up obsolete documentation
 - [ ] Update README files
 - [ ] Document new dashboard structure

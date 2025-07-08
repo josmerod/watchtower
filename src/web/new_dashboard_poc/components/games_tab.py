@@ -491,7 +491,7 @@ def format_display_date(dt_obj):
 
 def render_giveaways_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get('giveaways', False) or df.empty : # Check load status too
-        return dbc.Alert("No giveaways data currently available or failed to load.", color="info", className="mt-3")
+        return dbc.Alert("No giveaways data currently available or failed to load.", color="info", className="mt-3 alert-info")
 
     table_header = [
         html.Thead(html.Tr([
@@ -510,11 +510,11 @@ def render_giveaways_sub_tab(df):
             html.Td(format_display_date(row.get('expiry_date')))
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, className="mt-3")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive mt-3")
 
 def render_bundles_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get('bundles', False) or df.empty:
-        return dbc.Alert("No game bundles data currently available or failed to load.", color="info", className="mt-3")
+        return dbc.Alert("No game bundles data currently available or failed to load.", color="info", className="mt-3 alert-info")
 
     table_header = [
         html.Thead(html.Tr([
@@ -535,11 +535,11 @@ def render_bundles_sub_tab(df):
             html.Td(format_display_date(row.get('expiry_date')))
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, className="mt-3")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive mt-3")
 
 def render_deals_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get('deals', False) or df.empty:
-        return dbc.Alert("No game deals data currently available or failed to load.", color="info", className="mt-3")
+        return dbc.Alert("No game deals data currently available or failed to load.", color="info", className="mt-3 alert-info")
 
     table_header = [
         html.Thead(html.Tr([
@@ -563,11 +563,11 @@ def render_deals_sub_tab(df):
             html.Td(format_display_date(row.get('published_date')))
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, className="mt-3")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive mt-3")
 
 def render_trending_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get('trending', False) or df.empty:
-        return dbc.Alert("No trending Itch.io data currently available or failed to load.", color="info", className="mt-3")
+        return dbc.Alert("No trending Itch.io data currently available or failed to load.", color="info", className="mt-3 alert-info")
 
     table_header = [
         html.Thead(html.Tr([
@@ -586,11 +586,11 @@ def render_trending_sub_tab(df):
             html.Td(price_display)
         ]))
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, className="mt-3")
+    return dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive mt-3")
 
 def render_new_releases_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get('new_releases', False) or df.empty:
-        return dbc.Alert("No new releases data currently available or failed to load.", color="info", className="mt-3")
+        return dbc.Alert("No new releases data currently available or failed to load.", color="info", className="mt-3 alert-info")
 
     accordion_items = []
     for index, row in df.head(30).iterrows(): # Limit for accordion display
@@ -640,12 +640,12 @@ def render_games_tab():
         if all_files_missing:
             return html.Div([
                 html.H3("Juegos", className="mb-3"),
-                dbc.Alert("Todos los archivos de datos de juegos están ausentes. Por favor, ejecute los ETLs correspondientes.", color="danger")
+                dbc.Alert("Todos los archivos de datos de juegos están ausentes. Por favor, ejecute los ETLs correspondientes.", color="danger", className="alert-danger")
             ])
         else:
             return html.Div([
                 html.H3("Juegos", className="mb-3"),
-                dbc.Alert("No se pudieron cargar los datos de los juegos o no hay datos disponibles. Verifique la consola para más detalles.", color="warning")
+                dbc.Alert("No se pudieron cargar los datos de los juegos o no hay datos disponibles. Verifique la consola para más detalles.", color="warning", className="alert-warning")
             ])
 
 

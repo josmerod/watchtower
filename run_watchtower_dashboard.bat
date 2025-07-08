@@ -1,11 +1,8 @@
 @echo off
 echo ========================================================
-echo  🏯 Watchtower Dashboard - Legacy Launcher
+echo  🏯 Watchtower Dashboard - Main Launcher
 echo  📡 Real-time Intelligence & Monitoring Platform
 echo ========================================================
-echo.
-echo [DEPRECATED] This script is deprecated.
-echo [RECOMMENDED] Use run_watchtower_dashboard.bat instead
 echo.
 
 REM Change to the project root directory
@@ -40,4 +37,4 @@ if !errorlevel! neq 0 (
 )
 
 echo.
-pause
+pause 
