@@ -51,14 +51,15 @@ class DataService:
             return []
     
     @st.cache_data(ttl=3600)
-    def get_games_data(_self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """Load all games data (deals, bundles, giveaways)"""
+    def get_games_data(_self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Load all games data (deals, bundles, giveaways, allkeyshop)"""
         _self._log("Loading games data")
         
         games_dir = _self.data_dir / "games"
         deals_df = pd.DataFrame()
         bundles_df = pd.DataFrame()
         giveaways_df = pd.DataFrame()
+        allkeyshop_df = pd.DataFrame()
         
         try:
             # Load deals
@@ -113,11 +114,24 @@ class DataService:
                 if "expires_date" in giveaways_df.columns:
                     giveaways_df["expires_date"] = pd.to_datetime(giveaways_df["expires_date"], errors="coerce").dt.date
                 _self._log(f"Loaded {len(giveaways_df)} game giveaways")
+            
+            # Load AllKeyShop data
+            allkeyshop_file = games_dir / "allkeyshop.json"
+            allkeyshop_data = _self._safe_load_json(allkeyshop_file, "AllKeyShop games")
+            if allkeyshop_data:
+                allkeyshop_df = pd.DataFrame(allkeyshop_data)
+                if "fetched_at" in allkeyshop_df.columns:
+                    allkeyshop_df["fetched_at"] = pd.to_datetime(allkeyshop_df["fetched_at"], errors="coerce").dt.date
+                # Convert price columns to numeric
+                for price_col in ["current_price", "original_price"]:
+                    if price_col in allkeyshop_df.columns:
+                        allkeyshop_df[price_col] = pd.to_numeric(allkeyshop_df[price_col], errors="coerce")
+                _self._log(f"Loaded {len(allkeyshop_df)} AllKeyShop games")
                     
         except Exception as e:
             _self._log(f"Error loading games data: {str(e)}", "error")
         
-        return deals_df, bundles_df, giveaways_df
+        return deals_df, bundles_df, giveaways_df, allkeyshop_df
     
     @st.cache_data(ttl=3600)
     def get_courses_data(_self) -> Dict[str, pd.DataFrame]:
@@ -354,11 +368,12 @@ class DataService:
         
         try:
             # Games summary
-            deals_df, bundles_df, giveaways_df = self.get_games_data()
+            deals_df, bundles_df, giveaways_df, allkeyshop_df = self.get_games_data()
             summary["games"] = {
                 "deals": len(deals_df),
                 "bundles": len(bundles_df),
                 "giveaways": len(giveaways_df),
+                "allkeyshop": len(allkeyshop_df),
                 "latest_deal": deals_df.iloc[0]["title"] if not deals_df.empty and "title" in deals_df.columns else None,
                 "latest_bundle": bundles_df.iloc[0]["title"] if not bundles_df.empty and "title" in bundles_df.columns else None
             }

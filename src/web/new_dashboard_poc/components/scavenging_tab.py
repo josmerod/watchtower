@@ -34,8 +34,15 @@ def discover_categories() -> Dict[str, Path]:
         if not DATA_DIR.exists():
             return {}
         
+        # Get RSS entries files
         files = DATA_DIR.glob("*_rss_entries.json")
         categories = {f.stem.replace("_rss_entries", ""): f for f in files}
+        
+        # Add Gumroad data if it exists
+        gumroad_file = DATA_DIR / "gumroad_free_products.json"
+        if gumroad_file.exists():
+            categories["gumroad_free"] = gumroad_file
+        
         logger.info(f"Discovered {len(categories)} scavenging categories: {list(categories.keys())}")
         return categories
     except Exception as e:
@@ -63,6 +70,9 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
             "published": "Publicado",
             "summary": "Resumen",
             "source": "Fuente",
+            "price": "Precio",
+            "seller": "Vendedor",
+            "category": "Categoría",
         }
         
         existing_columns = [c for c in rename_map if c in df.columns]
@@ -138,6 +148,18 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
                 {
                     'if': {'column_id': 'Resumen'},
                     'minWidth': '300px', 'width': '300px', 'maxWidth': '400px',
+                },
+                {
+                    'if': {'column_id': 'Precio'},
+                    'minWidth': '80px', 'width': '80px', 'maxWidth': '80px',
+                },
+                {
+                    'if': {'column_id': 'Vendedor'},
+                    'minWidth': '120px', 'width': '120px', 'maxWidth': '150px',
+                },
+                {
+                    'if': {'column_id': 'Categoría'},
+                    'minWidth': '100px', 'width': '100px', 'maxWidth': '120px',
                 },
             ],
             sort_action="native",

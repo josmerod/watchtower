@@ -22,8 +22,9 @@ feedparser>=6.0.11
 aiohttp>=3.11.18
 yt-dlp>=2024.3.10
 cloudscraper>=1.2.60
-moviepy>=1.0.3
+moviepy>=2.0.0
 pytesseract>=0.3.10
+opencv-python>=4.8.0
 
 # Web framework and UI
 streamlit>=1.45.0

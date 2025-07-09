@@ -454,17 +454,19 @@ def render_active_tab(tab_index):
                 new_releases_df = load_new_game_releases()
             
             if isinstance(games_data, tuple) and len(games_data) == 4:
-                deals_df, bundles_df, giveaways_df, trending_df = games_data
-                logger.info(f"Games data loaded: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, trending={len(trending_df)}")
+                deals_df, bundles_df, giveaways_df, allkeyshop_df = games_data
+                logger.info(f"Games data loaded: deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}, allkeyshop={len(allkeyshop_df)}")
             elif isinstance(games_data, tuple) and len(games_data) == 3:
                 deals_df, bundles_df, giveaways_df = games_data
-                trending_df = pd.DataFrame()
+                allkeyshop_df = pd.DataFrame()
                 logger.info(f"Games data loaded (3-tuple): deals={len(deals_df)}, bundles={len(bundles_df)}, giveaways={len(giveaways_df)}")
             else:
-                deals_df = bundles_df = giveaways_df = trending_df = pd.DataFrame()
+                deals_df = bundles_df = giveaways_df = allkeyshop_df = pd.DataFrame()
                 logger.warning(f"Games data format unexpected: {type(games_data)} - creating empty dataframes")
             
-            render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, logger)
+            # Create empty trending_df for backward compatibility
+            trending_df = pd.DataFrame()
+            render_tab_safely("Juegos", games_tab.render, deals_df, bundles_df, giveaways_df, trending_df, new_releases_df, allkeyshop_df, logger)
         
         elif tab_index == 7:  # AllKeyShop Deals
             render_tab_safely("AllKeyShop Deals", allkeyshop_tab.render, allkeyshop_data, logger)
