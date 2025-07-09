@@ -35,6 +35,46 @@ class ShoppyRawData(BaseModel):
     raw_content: str # Could be HTML, JSON string, etc.
     fetched_at: datetime
 
+class GumroadProduct(BaseModel):
+    """
+    Data model for a free product listed on Gumroad.
+    """
+    product_id: str
+    name: str
+    price: str  # Should be "Free" or "$0.00" for free products
+    seller: Optional[str] = None
+    description: Optional[str] = None
+    url: HttpUrl
+    
+    # Timestamps for tracking when data was fetched and parsed
+    fetched_at: datetime
+    parsed_at: datetime
+    
+    # Gumroad-specific fields
+    category: Optional[str] = None
+    tags: Optional[list[str]] = None
+    rating: Optional[float] = None
+    num_ratings: Optional[int] = None
+    thumbnail_url: Optional[str] = None
+    
+    # Additional metadata
+    is_free: bool = True  # Should always be True for our scraper
+    file_size: Optional[str] = None
+    file_type: Optional[str] = None
+    
+    # To store any other relevant data not fitting the predefined fields
+    additional_info: Optional[dict] = None
+
+class GumroadRawData(BaseModel):
+    """
+    Model for the raw data fetched from Gumroad before parsing.
+    """
+    product_id: str
+    raw_content: str # HTML content from the product page
+    fetched_at: datetime
+    page_number: int  # Which page this product was found on
+    position: int  # Position on the page (for tracking)
+
 if __name__ == "__main__":
     # Example Usage:
     product_example = ShoppyProduct(

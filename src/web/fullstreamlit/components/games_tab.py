@@ -9,7 +9,7 @@ from pathlib import Path
 import json
 import logging
 
-def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df=None, logger=None):
+def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df=None, allkeyshop_df=None, logger=None):
     """Render the games tab"""
     if logger is None:
         logger = logging.getLogger(__name__)
@@ -29,6 +29,8 @@ def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df=None
         data_available = True
     if new_releases_df is not None and not new_releases_df.empty:
         data_available = True
+    if allkeyshop_df is not None and not allkeyshop_df.empty:
+        data_available = True
 
     # Debug information in sidebar
     if st.sidebar.checkbox("🐛 Show Debug Info"):
@@ -38,6 +40,7 @@ def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df=None
         st.write(f"- **Giveaways**: {len(giveaways_df) if giveaways_df is not None and hasattr(giveaways_df, '__len__') else 'None/Empty'} records")
         st.write(f"- **Trending**: {len(trending_df) if trending_df is not None and hasattr(trending_df, '__len__') else 'None/Empty'} records")
         st.write(f"- **New Releases**: {len(new_releases_df) if new_releases_df is not None and hasattr(new_releases_df, '__len__') else 'None/Empty'} records")
+        st.write(f"- **AllKeyShop**: {len(allkeyshop_df) if allkeyshop_df is not None and hasattr(allkeyshop_df, '__len__') else 'None/Empty'} records")
 
     if not data_available:
         st.warning("No hay datos de juegos disponibles para mostrar.")
@@ -60,6 +63,8 @@ def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df=None
         tab_titles.append("Tendencias Itch.io")
     if new_releases_df is not None and not new_releases_df.empty:
         tab_titles.append("Nuevos Lanzamientos")
+    if allkeyshop_df is not None and not allkeyshop_df.empty:
+        tab_titles.append("AllKeyShop")
 
     if not tab_titles:
         st.warning("No hay datos de juegos válidos para mostrar en las pestañas.")
@@ -88,6 +93,10 @@ def render(deals_df, bundles_df, giveaways_df, trending_df, new_releases_df=None
     if "Nuevos Lanzamientos" in tab_map:
         with tab_map["Nuevos Lanzamientos"]:
             display_new_releases(new_releases_df, logger)
+
+    if "AllKeyShop" in tab_map:
+        with tab_map["AllKeyShop"]:
+            display_allkeyshop(allkeyshop_df, logger)
 
 
 def display_deals(deals_df, logger):
@@ -504,3 +513,163 @@ def display_new_releases(new_releases_df, logger):
     except Exception as e:
         logger.error(f"Error displaying new releases: {e}")
         st.error(f"Error mostrando nuevos lanzamientos: {e}")
+
+
+def display_allkeyshop(allkeyshop_df, logger):
+    """Display AllKeyShop games data"""
+    if allkeyshop_df is None or allkeyshop_df.empty:
+        st.info("No hay datos de AllKeyShop disponibles en este momento.")
+        return
+
+    try:
+        st.subheader("AllKeyShop - Ofertas y Nuevos Lanzamientos")
+        
+        # Display summary statistics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            total_games = len(allkeyshop_df)
+            st.metric("Total Juegos", total_games)
+        
+        with col2:
+            new_releases = len(allkeyshop_df[allkeyshop_df['game_type'] == 'new_release'])
+            st.metric("Nuevos Lanzamientos", new_releases)
+        
+        with col3:
+            offers = len(allkeyshop_df[allkeyshop_df['game_type'] == 'offer'])
+            st.metric("Ofertas", offers)
+        
+        with col4:
+            avg_price = allkeyshop_df['current_price'].mean()
+            st.metric("Precio Promedio", f"€{avg_price:.2f}" if pd.notna(avg_price) else "N/A")
+        
+        # Create sub-tabs for different views
+        subtabs = st.tabs(["🏆 Mejores Ofertas", "🆕 Nuevos Lanzamientos", "💰 Todas las Ofertas", "🔍 Buscar"])
+        
+        with subtabs[0]:
+            # Best deals (highest discount percentage)
+            best_deals = allkeyshop_df[
+                (allkeyshop_df['discount_percentage'].notna()) & 
+                (allkeyshop_df['discount_percentage'] > 0)
+            ].sort_values('discount_percentage', ascending=False).head(20)
+            
+            if not best_deals.empty:
+                st.write(f"**{len(best_deals)} mejores ofertas con descuentos**")
+                for idx, game in best_deals.iterrows():
+                    display_allkeyshop_game_card(game)
+            else:
+                st.info("No hay ofertas con descuentos disponibles.")
+        
+        with subtabs[1]:
+            # New releases
+            new_releases_games = allkeyshop_df[allkeyshop_df['game_type'] == 'new_release'].head(20)
+            
+            if not new_releases_games.empty:
+                st.write(f"**{len(new_releases_games)} nuevos lanzamientos**")
+                for idx, game in new_releases_games.iterrows():
+                    display_allkeyshop_game_card(game)
+            else:
+                st.info("No hay nuevos lanzamientos disponibles.")
+        
+        with subtabs[2]:
+            # All offers
+            offers_games = allkeyshop_df[allkeyshop_df['game_type'] == 'offer'].head(30)
+            
+            if not offers_games.empty:
+                st.write(f"**{len(offers_games)} ofertas disponibles**")
+                for idx, game in offers_games.iterrows():
+                    display_allkeyshop_game_card(game)
+            else:
+                st.info("No hay ofertas disponibles.")
+        
+        with subtabs[3]:
+            # Search functionality
+            search_term = st.text_input("🔍 Buscar juegos:", placeholder="Escribe el nombre del juego...")
+            
+            if search_term:
+                filtered_df = allkeyshop_df[
+                    allkeyshop_df['title'].str.contains(search_term, case=False, na=False)
+                ]
+                
+                if not filtered_df.empty:
+                    st.write(f"**{len(filtered_df)} juegos encontrados**")
+                    for idx, game in filtered_df.head(20).iterrows():
+                        display_allkeyshop_game_card(game)
+                else:
+                    st.info("No se encontraron juegos con ese criterio de búsqueda.")
+            else:
+                st.info("Escribe un término de búsqueda para filtrar los juegos.")
+        
+        # Download buttons
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                label="📥 Descargar CSV",
+                data=allkeyshop_df.to_csv(index=False).encode('utf-8'),
+                file_name="allkeyshop_games.csv",
+                mime='text/csv'
+            )
+        with col2:
+            st.download_button(
+                label="📥 Descargar JSON",
+                data=allkeyshop_df.to_json(orient='records', indent=2).encode('utf-8'),
+                file_name="allkeyshop_games.json",
+                mime='application/json'
+            )
+
+    except Exception as e:
+        logger.error(f"Error displaying AllKeyShop data: {e}")
+        st.error(f"Error mostrando datos de AllKeyShop: {e}")
+
+
+def display_allkeyshop_game_card(game):
+    """Display a single AllKeyShop game card"""
+    with st.container():
+        st.markdown("---")
+        
+        col1, col2, col3 = st.columns([3, 1, 1])
+        
+        with col1:
+            # Game title with link
+            title = game.get('title', 'Sin título')
+            url = game.get('url')
+            if url:
+                st.markdown(f"**[{title}]({url})**")
+            else:
+                st.markdown(f"**{title}**")
+            
+            # Game type and store
+            game_type = game.get('game_type', 'unknown')
+            store = game.get('store_name', 'Unknown Store')
+            
+            type_emoji = "🆕" if game_type == 'new_release' else "💰"
+            st.caption(f"{type_emoji} {game_type.replace('_', ' ').title()} | 🏪 {store}")
+            
+            # DLC indicator
+            if game.get('is_dlc'):
+                st.caption("📦 DLC")
+        
+        with col2:
+            # Price information
+            current_price = game.get('current_price', 0)
+            original_price = game.get('original_price')
+            
+            if current_price == 0:
+                st.success("🆓 GRATIS")
+            else:
+                st.write(f"**€{current_price:.2f}**")
+                
+                if original_price and original_price > current_price:
+                    st.caption(f"~~€{original_price:.2f}~~")
+        
+        with col3:
+            # Discount and deal score
+            discount = game.get('discount_percentage')
+            deal_score = game.get('deal_score')
+            
+            if discount:
+                st.success(f"💰 {discount:.0f}% OFF")
+            
+            if deal_score:
+                st.metric("Deal Score", f"{deal_score}/100")
