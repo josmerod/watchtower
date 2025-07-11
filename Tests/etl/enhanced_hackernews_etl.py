@@ -34,7 +34,8 @@ class HackerNewsETL(SimpleETL):
         self.settings = get_settings()
     
     def extract(self) -> List[Dict[str, Any]]:
-
+        """Extract articles from Hacker News RSS feeds.
+        
         Returns:
             List of raw article dictionaries.
             
@@ -79,7 +80,8 @@ class HackerNewsETL(SimpleETL):
         return articles
     
     def _parse_rss_entry(self, entry) -> Dict[str, Any]:
-
+        """Parse RSS entry into article dictionary.
+        
         Args:
             entry: RSS feed entry object.
             

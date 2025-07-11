@@ -21,6 +21,8 @@ from src.web.new_dashboard_poc.components.scavenging_tab import render_scavengin
 
 from src.web.new_dashboard_poc.components.valencia_events_tab import render_valencia_events_tab, register_valencia_events_callbacks
 
+from src.web.new_dashboard_poc.components.youtube_ocr_tab import render_youtube_ocr_tab, register_youtube_ocr_callbacks
+
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
@@ -88,6 +90,9 @@ app.layout = dbc.Container(
                         dbc.Tab(label="Valencia Events", tab_id="tab-valencia", children=[
                             render_valencia_events_tab()
                         ]),
+                        dbc.Tab(label="YouTube OCR", tab_id="tab-youtube-ocr", children=[
+                            render_youtube_ocr_tab()
+                        ]),
                     ],
                 )
             )
@@ -114,6 +119,7 @@ register_anime_callbacks(app)
 register_fourchan_callbacks(app)
 register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
+register_youtube_ocr_callbacks(app)
 
 if __name__ == "__main__":
     # Note on data loading:

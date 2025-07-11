@@ -23,8 +23,11 @@ echo "Dashboard will be available at: http://localhost:7777"
 echo "========================================================"
 echo ""
 
-# Run the Watchtower Dashboard using UV
-uv run python run_watchtower_dashboard.py
+# Run the Watchtower Dashboard using UV (fallback to python3 if UV fails)
+if ! uv run python run_watchtower_dashboard.py 2>/dev/null; then
+    echo "[WARN] UV failed, falling back to python3..."
+    python3 run_watchtower_dashboard.py
+fi
 
 if [ $? -ne 0 ]; then
     echo ""

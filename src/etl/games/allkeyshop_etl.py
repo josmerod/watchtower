@@ -44,7 +44,7 @@ def parse_price(price_text: str) -> float:
     
     # Remove currency symbols and clean up
     price_text = re.sub(r'[€$£¥₹]', '', price_text)
-    price_text = re.sub(r'[^\d.,]', '', price_text)
+    price_text = re.sub(r'[^\\d.,]', '', price_text)
     
     # Handle different decimal separators
     if ',' in price_text and '.' in price_text:
@@ -86,11 +86,8 @@ def scrape_new_releases(page) -> List[Dict[str, Any]]:
     try:
         page.goto(NEW_RELEASES_URL, wait_until="domcontentloaded", timeout=60000)
         
-        # Wait a moment for dynamic content to load
-        page.wait_for_timeout(3000)
-        
-        # Take a screenshot for debugging
-        logger.info("Taking screenshot for debugging...")
+        # Wait for page to fully load
+        page.wait_for_timeout(5000)
         
         # Log the page title for debugging
         try:
@@ -99,86 +96,116 @@ def scrape_new_releases(page) -> List[Dict[str, Any]]:
         except:
             pass
         
-        # Try to find the page content by waiting for common elements
+        # Wait for the main content area to load
         try:
             page.wait_for_selector('body', timeout=10000)
             
-            # Look for various possible selectors on AllKeyShop
-            possible_selectors = [
-                '.col-md-3',  # Common grid column class
-                '.col-sm-6',  # Common grid column class
-                '.col-lg-4',  # Common grid column class
-                '.game-card',
-                '.product-card',
-                '.deal-card',
-                'article',
-                '.product',
-                '.game',
-                '.item',
-                '.card',
-                '.box',
-                '.row',
-                'div[class*="game"]',
-                'div[class*="product"]',
-                'div[class*="item"]',
-                'div[class*="col-"]',  # Bootstrap columns
-                'li',
-                'a[href*="game"]',
-                'a[href*="product"]'
-            ]
+            # First, let's check if we need to handle any popups or overlays
+            try:
+                # Close any cookie banners or popups
+                popup_selectors = [
+                    '.cookie-banner button',
+                    '.cookie-consent button',
+                    '.modal-close',
+                    '.popup-close',
+                    '[aria-label="Close"]'
+                ]
+                
+                for popup_selector in popup_selectors:
+                    try:
+                        popup_element = page.query_selector(popup_selector)
+                        if popup_element:
+                            popup_element.click()
+                            page.wait_for_timeout(1000)
+                    except:
+                        continue
+            except:
+                pass
             
+            # Look for the actual game listing container
+            # AllKeyShop typically uses a results container
             games = []
             
-            for selector in possible_selectors:
+            # More specific selectors for AllKeyShop game listings
+            game_container_selectors = [
+                '#results',
+                '.results',
+                '.game-list',
+                '.products-list',
+                '.search-results',
+                '.listing-results',
+                'main .container',
+                '.content-wrapper',
+                '.main-content'
+            ]
+            
+            game_item_selectors = [
+                '.game-item',
+                '.product-item', 
+                '.listing-item',
+                '.search-item',
+                '.result-item',
+                '.game-card',
+                '.product-card',
+                '.item-container',
+                'article[class*="game"]',
+                'article[class*="product"]',
+                'div[class*="game-"]',
+                'div[class*="product-"]',
+                '.col-md-4',
+                '.col-lg-3',
+                '.col-sm-6'
+            ]
+            
+            # Try to find the main container first
+            main_container = None
+            for container_selector in game_container_selectors:
                 try:
-                    elements = page.query_selector_all(selector)
-                    if elements and len(elements) > 3:  # Only consider if we find multiple elements
-                        logger.info(f"Found {len(elements)} potential elements with selector: {selector}")
-                        
-                        # If we found .row elements, look for game items within those rows
-                        if selector == '.row':
-                            for row_idx, row_element in enumerate(elements):
+                    container = page.query_selector(container_selector)
+                    if container:
+                        main_container = container
+                        logger.info(f"Found main container with selector: {container_selector}")
+                        break
+                except:
+                    continue
+            
+            # If no specific container found, use the body
+            if not main_container:
+                main_container = page.query_selector('body')
+            
+            # Now look for game items within the container
+            if main_container:
+                for item_selector in game_item_selectors:
+                    try:
+                        elements = main_container.query_selector_all(item_selector)
+                        if elements and len(elements) > 2:  # Need at least 3 elements
+                            logger.info(f"Found {len(elements)} potential game elements with selector: {item_selector}")
+                            
+                            # Filter out navigation and other non-game elements
+                            valid_games = []
+                            
+                            for idx, element in enumerate(elements[:30]):  # Limit to first 30
                                 try:
-                                    # Look for game items within each row
-                                    game_items = row_element.query_selector_all('div, article, .item, .game, .product')
-                                    logger.debug(f"Found {len(game_items)} items in row {row_idx + 1}")
-                                    
-                                    for item_idx, item in enumerate(game_items):
-                                        try:
-                                            game_data = extract_game_data_flexible(item, "new_release", page)
-                                            if game_data and game_data.get('title'):
-                                                games.append(game_data)
-                                                logger.debug(f"Extracted new release from row {row_idx + 1}, item {item_idx + 1}: {game_data.get('title', 'Unknown')}")
-                                        except Exception as e:
-                                            logger.debug(f"Error extracting from row {row_idx + 1}, item {item_idx + 1}: {e}")
-                                            continue
-                                except Exception as e:
-                                    logger.debug(f"Error processing row {row_idx + 1}: {e}")
-                                    continue
-                        else:
-                            # Try to extract game data from these elements
-                            for idx, element in enumerate(elements[:50]):  # Increased limit to 50
-                                try:
-                                    game_data = extract_game_data_flexible(element, "new_release", page)
-                                    if game_data and game_data.get('title'):
-                                        games.append(game_data)
-                                        logger.debug(f"Extracted new release {idx + 1}: {game_data.get('title', 'Unknown')}")
+                                    game_data = extract_game_data_improved(element, "new_release")
+                                    if game_data and is_valid_game_data(game_data):
+                                        valid_games.append(game_data)
+                                        logger.debug(f"Extracted valid game {idx + 1}: {game_data.get('title', 'Unknown')}")
                                 except Exception as e:
                                     logger.debug(f"Error extracting from element {idx + 1}: {e}")
                                     continue
-                        
-                        if games:
-                            logger.info(f"Successfully scraped {len(games)} new releases using selector: {selector}")
-                            return games
                             
-                except Exception as e:
-                    logger.debug(f"Selector {selector} failed: {e}")
-                    continue
+                            if valid_games:
+                                logger.info(f"Successfully scraped {len(valid_games)} new releases using selector: {item_selector}")
+                                return valid_games
+                                
+                    except Exception as e:
+                        logger.debug(f"Selector {item_selector} failed: {e}")
+                        continue
             
-            # If no games found with structured selectors, try to extract from page content
+            # If no games found with structured selectors, try alternative approach
             if not games:
-                logger.warning("No games found with structured selectors, trying content-based extraction")
-                games = extract_games_from_content(page, "new_release")
+                logger.warning("No games found with structured selectors, trying alternative extraction")
+                games = extract_games_alternative(page, "new_release")
             
             logger.info(f"Successfully scraped {len(games)} new releases")
             return games
@@ -199,11 +226,8 @@ def scrape_offers(page) -> List[Dict[str, Any]]:
     try:
         page.goto(OFFERS_URL, wait_until="domcontentloaded", timeout=60000)
         
-        # Wait a moment for dynamic content to load
-        page.wait_for_timeout(3000)
-        
-        # Take a screenshot for debugging
-        logger.info("Taking screenshot for debugging...")
+        # Wait for page to fully load
+        page.wait_for_timeout(5000)
         
         # Log the page title for debugging
         try:
@@ -212,86 +236,114 @@ def scrape_offers(page) -> List[Dict[str, Any]]:
         except:
             pass
         
-        # Try to find the page content by waiting for common elements
+        # Wait for the main content area to load
         try:
             page.wait_for_selector('body', timeout=10000)
             
-            # Look for various possible selectors on AllKeyShop
-            possible_selectors = [
-                '.col-md-3',  # Common grid column class
-                '.col-sm-6',  # Common grid column class
-                '.col-lg-4',  # Common grid column class
-                '.game-card',
-                '.product-card',
-                '.deal-card',
-                'article',
-                '.product',
-                '.game',
-                '.item',
-                '.card',
-                '.box',
-                '.row',
-                'div[class*="game"]',
-                'div[class*="product"]',
-                'div[class*="item"]',
-                'div[class*="col-"]',  # Bootstrap columns
-                'li',
-                'a[href*="game"]',
-                'a[href*="product"]'
-            ]
+            # Handle any popups or overlays
+            try:
+                popup_selectors = [
+                    '.cookie-banner button',
+                    '.cookie-consent button',
+                    '.modal-close',
+                    '.popup-close',
+                    '[aria-label="Close"]'
+                ]
+                
+                for popup_selector in popup_selectors:
+                    try:
+                        popup_element = page.query_selector(popup_selector)
+                        if popup_element:
+                            popup_element.click()
+                            page.wait_for_timeout(1000)
+                    except:
+                        continue
+            except:
+                pass
             
+            # Look for the actual game listing container
             games = []
             
-            for selector in possible_selectors:
+            # More specific selectors for AllKeyShop game listings
+            game_container_selectors = [
+                '#results',
+                '.results',
+                '.game-list',
+                '.products-list',
+                '.search-results',
+                '.listing-results',
+                'main .container',
+                '.content-wrapper',
+                '.main-content'
+            ]
+            
+            game_item_selectors = [
+                '.game-item',
+                '.product-item', 
+                '.listing-item',
+                '.search-item',
+                '.result-item',
+                '.game-card',
+                '.product-card',
+                '.item-container',
+                'article[class*="game"]',
+                'article[class*="product"]',
+                'div[class*="game-"]',
+                'div[class*="product-"]',
+                '.col-md-4',
+                '.col-lg-3',
+                '.col-sm-6'
+            ]
+            
+            # Try to find the main container first
+            main_container = None
+            for container_selector in game_container_selectors:
                 try:
-                    elements = page.query_selector_all(selector)
-                    if elements and len(elements) > 3:  # Only consider if we find multiple elements
-                        logger.info(f"Found {len(elements)} potential elements with selector: {selector}")
-                        
-                        # If we found .row elements, look for game items within those rows
-                        if selector == '.row':
-                            for row_idx, row_element in enumerate(elements):
+                    container = page.query_selector(container_selector)
+                    if container:
+                        main_container = container
+                        logger.info(f"Found main container with selector: {container_selector}")
+                        break
+                except:
+                    continue
+            
+            # If no specific container found, use the body
+            if not main_container:
+                main_container = page.query_selector('body')
+            
+            # Now look for game items within the container
+            if main_container:
+                for item_selector in game_item_selectors:
+                    try:
+                        elements = main_container.query_selector_all(item_selector)
+                        if elements and len(elements) > 2:  # Need at least 3 elements
+                            logger.info(f"Found {len(elements)} potential game elements with selector: {item_selector}")
+                            
+                            # Filter out navigation and other non-game elements
+                            valid_games = []
+                            
+                            for idx, element in enumerate(elements[:30]):  # Limit to first 30
                                 try:
-                                    # Look for game items within each row
-                                    game_items = row_element.query_selector_all('div, article, .item, .game, .product')
-                                    logger.debug(f"Found {len(game_items)} items in row {row_idx + 1}")
-                                    
-                                    for item_idx, item in enumerate(game_items):
-                                        try:
-                                            game_data = extract_game_data_flexible(item, "offer", page)
-                                            if game_data and game_data.get('title'):
-                                                games.append(game_data)
-                                                logger.debug(f"Extracted offer from row {row_idx + 1}, item {item_idx + 1}: {game_data.get('title', 'Unknown')}")
-                                        except Exception as e:
-                                            logger.debug(f"Error extracting from row {row_idx + 1}, item {item_idx + 1}: {e}")
-                                            continue
-                                except Exception as e:
-                                    logger.debug(f"Error processing row {row_idx + 1}: {e}")
-                                    continue
-                        else:
-                            # Try to extract game data from these elements
-                            for idx, element in enumerate(elements[:50]):  # Increased limit to 50
-                                try:
-                                    game_data = extract_game_data_flexible(element, "offer", page)
-                                    if game_data and game_data.get('title'):
-                                        games.append(game_data)
-                                        logger.debug(f"Extracted offer {idx + 1}: {game_data.get('title', 'Unknown')}")
+                                    game_data = extract_game_data_improved(element, "offer")
+                                    if game_data and is_valid_game_data(game_data):
+                                        valid_games.append(game_data)
+                                        logger.debug(f"Extracted valid offer {idx + 1}: {game_data.get('title', 'Unknown')}")
                                 except Exception as e:
                                     logger.debug(f"Error extracting from element {idx + 1}: {e}")
                                     continue
-                        
-                        if games:
-                            logger.info(f"Successfully scraped {len(games)} offers using selector: {selector}")
-                            return games
                             
-                except Exception as e:
-                    logger.debug(f"Selector {selector} failed: {e}")
-                    continue
+                            if valid_games:
+                                logger.info(f"Successfully scraped {len(valid_games)} offers using selector: {item_selector}")
+                                return valid_games
+                                
+                    except Exception as e:
+                        logger.debug(f"Selector {item_selector} failed: {e}")
+                        continue
             
-            # If no games found with structured selectors, try to extract from page content
+            # If no games found with structured selectors, try alternative approach
             if not games:
-                logger.warning("No games found with structured selectors, trying content-based extraction")
-                games = extract_games_from_content(page, "offer")
+                logger.warning("No games found with structured selectors, trying alternative extraction")
+                games = extract_games_alternative(page, "offer")
             
             logger.info(f"Successfully scraped {len(games)} offers")
             return games
@@ -463,15 +515,40 @@ def extract_game_data(game_element, game_type: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def extract_game_data_flexible(element, game_type: str, page) -> Optional[Dict[str, Any]]:
-    """Extract game data from an element with flexible approach."""
+def extract_game_data_improved(element, game_type: str) -> Optional[Dict[str, Any]]:
+    """Extract game data from an element with improved approach."""
     try:
         # Get all text content from the element
         text_content = element.inner_text().strip()
         
-        # Skip if element is too small or doesn't contain game-like content
-        if len(text_content) < 10:
+        # Skip if element is too small or contains only whitespace
+        if len(text_content) < 5:
             return None
+        
+        # Skip navigation and promotional elements
+        skip_patterns = [
+            'newsletter',
+            'subscribe',
+            'categories',
+            'partnership',
+            'about us',
+            'need help',
+            'buyer protection',
+            'market best prices',
+            'feeling lucky',
+            'reward program',
+            'reviews',
+            'spin the wheel',
+            'link your steam',
+            'gift cards',
+            'discord',
+            'twitch',
+            'kick'
+        ]
+        
+        for pattern in skip_patterns:
+            if pattern in text_content.lower():
+                return None
         
         # Try to extract title - look for text that could be a game title
         title = None
@@ -480,7 +557,9 @@ def extract_game_data_flexible(element, game_type: str, page) -> Optional[Dict[s
         title_selectors = [
             'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
             '.title', '.name', '.game-title', '.product-name',
-            'a', 'span', 'div'
+            '.game-name', '.product-title',
+            'a[href*="game"]', 'a[href*="product"]',
+            'strong', 'b'
         ]
         
         for selector in title_selectors:
@@ -488,22 +567,20 @@ def extract_game_data_flexible(element, game_type: str, page) -> Optional[Dict[s
                 title_element = element.query_selector(selector)
                 if title_element:
                     potential_title = title_element.inner_text().strip()
-                    if potential_title and len(potential_title) > 3 and len(potential_title) < 100:
+                    if is_valid_game_title(potential_title):
                         title = potential_title
                         break
             except:
                 continue
         
-        # If no title found in nested elements, use the element's text
+        # If no title found in nested elements, try to extract from text
         if not title:
             lines = text_content.split('\n')
             for line in lines:
                 line = line.strip()
-                if line and len(line) > 3 and len(line) < 100:
-                    # Skip lines that look like prices or dates
-                    if not re.match(r'^\d+[.,]\d+|^\d+%|^\d{2}/\d{2}', line):
-                        title = line
-                        break
+                if is_valid_game_title(line):
+                    title = line
+                    break
         
         if not title:
             return None
@@ -511,7 +588,7 @@ def extract_game_data_flexible(element, game_type: str, page) -> Optional[Dict[s
         # Extract URL
         url = None
         try:
-            link_element = element.query_selector('a')
+            link_element = element.query_selector('a[href*="game"], a[href*="product"]')
             if link_element:
                 url = link_element.get_attribute('href')
                 if url and not url.startswith('http'):
@@ -519,40 +596,75 @@ def extract_game_data_flexible(element, game_type: str, page) -> Optional[Dict[s
         except:
             pass
         
-        # Extract price information from text
+        # Extract price information
         current_price = 0.0
         original_price = None
         discount_percentage = None
         
-        # Look for price patterns in the text
-        price_patterns = [
-            r'€\s*(\d+[.,]\d+)',
-            r'(\d+[.,]\d+)\s*€',
-            r'\$\s*(\d+[.,]\d+)',
-            r'(\d+[.,]\d+)\s*\$',
+        # Look for price elements first
+        price_selectors = [
+            '.price', '.current-price', '.best-price', '.price-current',
+            '.price-value', '.amount', '.cost', '.euro', '.dollar'
         ]
         
-        for pattern in price_patterns:
-            matches = re.findall(pattern, text_content)
-            if matches:
-                try:
-                    current_price = parse_price(matches[0])
-                    break
-                except:
-                    continue
+        for selector in price_selectors:
+            try:
+                price_element = element.query_selector(selector)
+                if price_element:
+                    price_text = price_element.inner_text().strip()
+                    parsed_price = parse_price(price_text)
+                    if parsed_price > 0:
+                        current_price = parsed_price
+                        break
+            except:
+                continue
+        
+        # If no price found in specific elements, look for price patterns in text
+        if current_price == 0.0:
+            price_patterns = [
+                r'€\s*(\d+[.,]\d+)',
+                r'(\d+[.,]\d+)\s*€',
+                r'\$\s*(\d+[.,]\d+)',
+                r'(\d+[.,]\d+)\s*\$',
+            ]
+            
+            for pattern in price_patterns:
+                matches = re.findall(pattern, text_content)
+                if matches:
+                    try:
+                        current_price = parse_price(matches[0])
+                        break
+                    except:
+                        continue
         
         # Look for discount patterns
         discount_match = re.search(r'(\d+)%', text_content)
         if discount_match:
             discount_percentage = float(discount_match.group(1))
         
-        # Extract store name - look for common store indicators
+        # Extract store name
         store_name = None
-        store_indicators = ['Steam', 'Epic', 'GOG', 'Humble', 'Green Man Gaming', 'Fanatical', 'GamersGate']
-        for indicator in store_indicators:
-            if indicator.lower() in text_content.lower():
-                store_name = indicator
-                break
+        store_selectors = [
+            '.store-name', '.shop-name', '.retailer', '.store',
+            '.merchant', '.vendor', '.platform'
+        ]
+        
+        for selector in store_selectors:
+            try:
+                store_element = element.query_selector(selector)
+                if store_element:
+                    store_name = store_element.inner_text().strip()
+                    break
+            except:
+                continue
+        
+        # If no store found in specific elements, look for common store indicators
+        if not store_name:
+            store_indicators = ['Steam', 'Epic', 'GOG', 'Humble', 'Green Man Gaming', 'Fanatical', 'GamersGate', 'Origin', 'Uplay', 'Battle.net']
+            for indicator in store_indicators:
+                if indicator.lower() in text_content.lower():
+                    store_name = indicator
+                    break
         
         return {
             "title": title,
@@ -569,8 +681,137 @@ def extract_game_data_flexible(element, game_type: str, page) -> Optional[Dict[s
         }
         
     except Exception as e:
-        logger.debug(f"Error in flexible extraction: {e}")
+        logger.debug(f"Error in improved extraction: {e}")
         return None
+
+
+def is_valid_game_title(title: str) -> bool:
+    """Check if a title looks like a valid game title."""
+    if not title or len(title) < 3 or len(title) > 150:
+        return False
+    
+    # Skip common non-game elements
+    invalid_patterns = [
+        r'^\d+$',  # Just numbers
+        r'^\d+[.,]\d+$',  # Just prices
+        r'^\d+%$',  # Just percentages
+        r'^\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)',  # Dates
+        r'^historical low',
+        r'^subscribe',
+        r'^newsletter',
+        r'^categories',
+        r'^partnership',
+        r'^about us',
+        r'^need help',
+        r'^buyer protection',
+        r'^market best prices',
+        r'^official and',
+        r'^feeling lucky',
+        r'reward program',
+        r'^\d+\s+reviews',
+        r'^reviews$',
+        r'^spin the wheel',
+        r'^link your steam',
+        r'^gift cards',
+        r'^discord',
+        r'^twitch',
+        r'^kick',
+        r'^xbox$',  # Just platform names
+        r'^playstation$',
+        r'^nintendo$',
+        r'^steam$',
+        r'^epic$',
+        r'^free$',
+        r'^n/a$',
+        r'^\.\.\.$',
+        r'^more$',
+        r'^next$',
+        r'^previous$',
+        r'^page \d+',
+        r'^\d+ \d+ \d+',
+        r'^or win points',
+        r'^join our',
+        r'^how does it work',
+        r'^\d+\s*€',  # Prices starting with numbers
+        r'^€\s*\d+',  # Prices starting with currency
+        r'^\$\s*\d+',  # Dollar prices
+    ]
+    
+    for pattern in invalid_patterns:
+        if re.match(pattern, title.lower()):
+            return False
+    
+    # Must contain at least one letter
+    if not re.search(r'[a-zA-Z]', title):
+        return False
+    
+    # Additional checks for common promotional text
+    promotional_keywords = [
+        'newsletter', 'subscribe', 'reward', 'program', 'lucky', 'wheel',
+        'gift card', 'discord', 'twitch', 'partnership', 'protection',
+        'best prices', 'official', 'keysellers', 'reviews'
+    ]
+    
+    title_lower = title.lower()
+    for keyword in promotional_keywords:
+        if keyword in title_lower and len(title_lower) < 50:  # Short promotional text
+            return False
+    
+    return True
+
+
+def is_valid_game_data(game_data: Dict[str, Any]) -> bool:
+    """Check if game data looks valid."""
+    if not game_data or not game_data.get('title'):
+        return False
+    
+    title = game_data['title']
+    
+    # Use the title validation function
+    if not is_valid_game_title(title):
+        return False
+    
+    # Additional validation for game data
+    # Skip if title is too generic or common
+    generic_titles = [
+        'free', 'sale', 'deal', 'offer', 'discount', 'price', 'store',
+        'game', 'product', 'item', 'card', 'box', 'container'
+    ]
+    
+    if title.lower() in generic_titles:
+        return False
+    
+    return True
+
+
+def extract_games_alternative(page, game_type: str) -> List[Dict[str, Any]]:
+    """Alternative extraction method for games."""
+    try:
+        # Try to find games by looking for specific patterns in the page
+        games = []
+        
+        # Get page content
+        content = page.content()
+        
+        # Look for game-related links
+        game_links = page.query_selector_all('a[href*="game"], a[href*="product"]')
+        
+        for link in game_links[:20]:  # Limit to first 20 links
+            try:
+                # Get the parent container
+                parent = link.locator('xpath=ancestor::div[1]')
+                if parent:
+                    game_data = extract_game_data_improved(parent, game_type)
+                    if game_data and is_valid_game_data(game_data):
+                        games.append(game_data)
+            except:
+                continue
+        
+        return games
+        
+    except Exception as e:
+        logger.error(f"Error in alternative extraction: {e}")
+        return []
 
 
 def extract_games_from_content(page, game_type: str) -> List[Dict[str, Any]]:

@@ -5,7 +5,25 @@
       "Bash(grep:*)",
       "Bash(uv run:*)",
       "Bash(python:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "WebFetch(domain:www.allkeyshop.com)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(bash:*)",
+      "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
+      "Bash(uv:*)",
+      "Bash(source:*)",
+      "Bash(rm:*)",
+      "Bash(playwright install:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(export:*)",
+      "Bash(echo:*)",
+      "Bash(diff:*)",
+      "Bash(git clean:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

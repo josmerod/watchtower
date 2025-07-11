@@ -75,6 +75,52 @@ class GumroadRawData(BaseModel):
     page_number: int  # Which page this product was found on
     position: int  # Position on the page (for tracking)
 
+class TravelDeal(BaseModel):
+    """
+    Data model for a travel deal from Viajeros Piratas or similar travel deal sites.
+    """
+    deal_id: str
+    title: str
+    description: Optional[str] = None
+    price: float = 0.0  # Numeric price for sorting/filtering
+    currency: str = "EUR"
+    raw_price: str = ""  # Original price text as scraped
+    category: str = "other"  # hotel, flight, vacation, attraction, other
+    url: Optional[str] = None
+    
+    # Timestamps
+    published_at: datetime
+    fetched_at: datetime
+    parsed_at: datetime
+    
+    # Scraping metadata
+    page_number: int
+    position: int
+    source: str = "viajeros_piratas"
+    
+    # Optional fields for travel-specific data
+    destination: Optional[str] = None
+    duration: Optional[str] = None  # e.g., "3 nights", "1 week"
+    deal_type: Optional[str] = None  # e.g., "all_inclusive", "flight_only"
+    
+    # Additional metadata
+    additional_info: Optional[dict] = None
+
+class TravelDealRawData(BaseModel):
+    """
+    Model for raw travel deal data before parsing.
+    """
+    deal_id: str
+    raw_content: str  # HTML content of the deal
+    text_content: str  # Plain text content
+    title: str
+    price_text: str
+    time_text: str
+    link: str
+    page_number: int
+    position: int
+    fetched_at: datetime
+
 if __name__ == "__main__":
     # Example Usage:
     product_example = ShoppyProduct(

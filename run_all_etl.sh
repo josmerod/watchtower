@@ -52,6 +52,7 @@ run_etl "src/etl/news/news_get_podcasts.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_youtube_posts.py" && pids+=($!)
 run_etl "src/watchers/ms_skills_watcher.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_coursera_courses.py" && pids+=($!)
+run_etl "src/etl/goldigging/goldigging_scavenging_etl.py" && pids+=($!)
 run_etl "src/etl/news/news_get_subreddits.py" && pids+=($!)
 run_etl "src/etl/news/news_get_media_rss.py" && pids+=($!)
 run_etl "src/etl/anime/mal_etl.py" && pids+=($!)
@@ -79,6 +80,9 @@ run_etl "src/miners/crypto_sentiment_miner.py"
 
 # GUMROAD SCRAPER
 run_etl "src/etl/goldigging/gumroad_scraper_etl.py"
+
+# VIAJEROS PIRATAS SCRAPER
+run_etl "src/etl/goldigging/viajeros_piratas_etl.py"
 
 echo "All ETL processes started in parallel using UV"
 echo "Process PIDs: ${pids[*]}"

@@ -4,6 +4,9 @@ echo Starting ETL processes with UV at %date% %time%
 REM Change to the project root directory
 cd /d %~dp0
 
+REM Add UV to PATH for this session
+set PATH=%PATH%;C:\Users\josem\AppData\Roaming\Python\Python313\Scripts
+
 REM Create data directory if it doesn't exist
 if not exist data mkdir data
 
@@ -16,15 +19,15 @@ if %errorlevel% == 0 (
     set PYTHON_CMD=uv run python
     echo Using UV for Python execution
 ) else (
-    where python >nul 2>&1
+    where py >nul 2>&1
     if %errorlevel% == 0 (
-        set PYTHON_CMD=python
-        echo UV not found, using python
+        set PYTHON_CMD=py
+        echo UV not found, using py launcher
     ) else (
-        where python3 >nul 2>&1
+        where python >nul 2>&1
         if %errorlevel% == 0 (
-            set PYTHON_CMD=python3
-            echo UV not found, using python3
+            set PYTHON_CMD=python
+            echo Using python
         ) else (
             echo ERROR: No Python interpreter found!
             pause
@@ -64,6 +67,7 @@ start /B %PYTHON_CMD% src/etl/news/news_get_home_server_trends.py
 
 start /B %PYTHON_CMD% src/etl/goldigging/goldigging_youtube_posts.py
 start /B %PYTHON_CMD% src/etl/goldigging/goldigging_coursera_courses.py
+start /B %PYTHON_CMD% src/etl/goldigging/goldigging_scavenging_etl.py
 
 start /B %PYTHON_CMD% src/etl/anime/mal_etl.py
 
@@ -74,6 +78,8 @@ start /B %PYTHON_CMD% src/etl/fourchan/fourchan_generals_etl.py
 start /B %PYTHON_CMD% src/etl/ecommerce/shoppy_etl.py
 
 start /B %PYTHON_CMD% src/etl/goldigging/gumroad_scraper_etl.py
+
+start /B %PYTHON_CMD% src/etl/goldigging/viajeros_piratas_etl.py
 
 start /B %PYTHON_CMD% src/watchers/ms_skills_watcher.py
 
@@ -90,8 +96,8 @@ echo - data/anime/
 echo - data/crypto_sentiment/
 echo - data/fourchan/
 echo - data/ecommerce/
- echo - data/scavenging/
- echo - data/watchers/
+echo - data/scavenging/
+echo - data/watchers/
 echo.
 echo Script completed at %date% %time%
 echo Note: Individual ETL processes may still be running in background
