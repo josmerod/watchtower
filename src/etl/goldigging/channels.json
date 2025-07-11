@@ -10,17 +10,14 @@
       "t3dotgg",
       "ishaqhamin",
       "james-willett",
-      "AICodeKing",
       "Sentdex",
       "TwoMinutePapers",
       "YannicKilcher",
       "CodeEmporium",
       "mreflow",
-      "DaveShap",
       "Deeplearningai",
       "Augmented_AI",
       "CodeOpinion",
-      "markrichards5014",
       "CodingTech",
       "EmilyBache-tech-coach",
       "CodeAesthetic",
@@ -44,6 +41,20 @@
       "CodelyTV",
       "SebastianLague",
       "TechWorldwithNana"
+    ]
+  },
+  "aa-solutions-architecture": {
+    "description": "Solutions Architecture",
+    "channels": [
+      "GoCloudArchitects",
+      "markrichards5014"      
+    ]
+  },
+  "aa-gen-ai": {
+    "description": "Generative AI",
+    "channels": [
+      "DaveShap",
+      "AICodeKing"
     ]
   },
   "aa-economics": {
@@ -105,7 +116,10 @@
       "thehiddentreasury",
       "thehonestguys",
       "YellowBrickCinema",
-      "PowerfulMeditation"
+      "PowerfulMeditation",
+      "thebootlegboy2",
+      "DJMAITHAI",
+      "4AMBreak
     ]
   },
   "zz-cooking": {
@@ -124,11 +138,11 @@
       "FoodWishes",
       "AdamRagusea",
       "LifebyMikeG",
-      
       "NotAnotherCookingShow",
       "internetshaquille",
       "YouSuckAtCooking",
-      "GugaFoods"
+      "GugaFoods",
+      "SousVideEverything"
     ]
   },
   "zz-food_reviews": {
@@ -148,6 +162,7 @@
     "description": "Sound to work",
     "channels": [
       "mugiwave",
+      "trvebodyrituals6457",
       "OriondeMirage",
       "toiryusei",
       "Ikarus636",
@@ -172,11 +187,12 @@
       "themuunlofi",
       "EternalDepth",
       "StudyMD",
-      "MusicLabChill"
+      "MusicLabChill",
+      "thebootlegboy2"
     ]
   },
   "zzz-alotof": {
-    "description": "TED",
+    "description": "Pesaos",
     "channels": [
       "TED",
       "TEDx Talks",
@@ -287,12 +303,8 @@
     "description": "Chill",
     "channels": [
       "bobross_thejoyofpainting",
-      "ASMRMagic",
-      "GentleWhispering",
-      "ASMRTheChew",
-      "AsmrMaria",
-      "Peaceful Cuisine",
-      "CalmChannelASMR"
+      "thebootlegboy2",
+      "DJMAITHAI"
     ]
   }
 } 

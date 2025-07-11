@@ -43,6 +43,11 @@ def discover_categories() -> Dict[str, Path]:
         if gumroad_file.exists():
             categories["gumroad_free"] = gumroad_file
         
+        # Add Viajeros Piratas data if it exists
+        viajeros_file = DATA_DIR / "viajeros_piratas_deals.json"
+        if viajeros_file.exists():
+            categories["viajeros_piratas"] = viajeros_file
+        
         logger.info(f"Discovered {len(categories)} scavenging categories: {list(categories.keys())}")
         return categories
     except Exception as e:
@@ -73,6 +78,8 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
             "price": "Precio",
             "seller": "Vendedor",
             "category": "Categoría",
+            "deal_type": "Tipo de Oferta",
+            "currency": "Moneda",
         }
         
         existing_columns = [c for c in rename_map if c in df.columns]
@@ -160,6 +167,14 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
                 {
                     'if': {'column_id': 'Categoría'},
                     'minWidth': '100px', 'width': '100px', 'maxWidth': '120px',
+                },
+                {
+                    'if': {'column_id': 'Tipo de Oferta'},
+                    'minWidth': '100px', 'width': '100px', 'maxWidth': '120px',
+                },
+                {
+                    'if': {'column_id': 'Moneda'},
+                    'minWidth': '60px', 'width': '60px', 'maxWidth': '60px',
                 },
             ],
             sort_action="native",
