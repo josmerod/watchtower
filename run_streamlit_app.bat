@@ -1,10 +1,10 @@
 @echo off
 echo.
 echo ==========================================
-echo  Watchtower Streamlit Dashboard with UV
+echo  Watchtower Dashboard with UV
 echo ==========================================
 echo.
-echo Starting Streamlit dashboard using UV...
+echo Starting dashboard using UV...
 echo.
 
 REM Change to the project root directory
@@ -30,16 +30,34 @@ if not exist pyproject.toml (
 REM Create logs directory if it doesn't exist
 if not exist logs mkdir logs
 
-echo Running: uv run streamlit run src/web/fullstreamlit/app.py
+REM Clean up incompatible virtual environment if it exists
+if exist .venv (
+    echo Removing incompatible virtual environment...
+    rmdir /s /q .venv
+)
+
+REM Create Windows-compatible virtual environment
+echo Setting up Windows virtual environment...
+uv sync --all-extras
+if %errorlevel% neq 0 (
+    echo Failed to create virtual environment. Please check UV installation.
+    pause
+    exit /b 1
+)
+
+echo Running: uv run python run_watchtower_dashboard.py
 echo.
-echo Dashboard will be available at: http://localhost:5555
+echo Dashboard will be available at: http://localhost:7777
 echo Press Ctrl+C to stop the server
 echo.
 echo ==========================================
 echo.
 
-REM Run the Streamlit app using UV
-uv run streamlit run src/web/fullstreamlit/app.py --server.port=5555 --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false
+REM Set UV environment for Windows/WSL compatibility  
+set UV_LINK_MODE=copy
+
+REM Run the dashboard using UV
+uv run python run_watchtower_dashboard.py
 
 echo.
 echo ==========================================

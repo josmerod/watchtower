@@ -14,7 +14,7 @@ def main():
     
     try:
         # Clean import using the src package structure
-        from src.web.new_dashboard_poc.app import app
+        from src.web.dashboard.app import app
         
         print("✅ Successfully loaded Watchtower Dashboard")
         print("🚀 Starting server on http://0.0.0.0:7777")

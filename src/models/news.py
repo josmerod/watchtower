@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any
 from urllib.parse import urlparse
 
-from pydantic import Field, HttpUrl, field_validator
+from pydantic import Field, HttpUrl, field_validator, BaseModel
 
 from src.models.base import TimestampedModel
 
@@ -295,3 +295,11 @@ class NewsArticleModel(TimestampedModel):
                 }
             ]
         }
+
+
+class ProductHuntModel(BaseModel):
+    title: str
+    link: str
+    published: str
+    summary: str
+    author: str

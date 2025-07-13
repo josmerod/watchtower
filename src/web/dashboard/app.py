@@ -3,25 +3,25 @@ import dash_bootstrap_components as dbc
 from dash import html
 
 from dash import dcc, Input, Output # Added Input, Output, dcc for Tabs and callback
-from src.web.new_dashboard_poc.components.shortcuts_tab import render_shortcuts_tab, ALL_SHORTCUTS_DATA, render_shortcuts_tab_layout
+from src.web.dashboard.components.shortcuts_tab import render_shortcuts_tab, ALL_SHORTCUTS_DATA, render_shortcuts_tab_layout
 
-from src.web.new_dashboard_poc.components.news_tab import render_news_tab
+from src.web.dashboard.components.news_tab import render_news_tab
 
-from src.web.new_dashboard_poc.components.videos_tab import render_videos_tab, register_video_callbacks
+from src.web.dashboard.components.videos_tab import render_videos_tab, register_video_callbacks
 
-from src.web.new_dashboard_poc.components.games_tab import render_games_tab
+from src.web.dashboard.components.games_tab import render_games_tab
 
-from src.web.new_dashboard_poc.components.courses_tab import render_courses_tab, register_courses_callbacks
+from src.web.dashboard.components.courses_tab import render_courses_tab, register_courses_callbacks
 
-from src.web.new_dashboard_poc.components.anime_tab import render_anime_tab, register_anime_callbacks
+from src.web.dashboard.components.anime_tab import render_anime_tab, register_anime_callbacks
 
-from src.web.new_dashboard_poc.components.fourchan_tab import render_fourchan_tab, register_fourchan_callbacks
+from src.web.dashboard.components.fourchan_tab import render_fourchan_tab, register_fourchan_callbacks
 
-from src.web.new_dashboard_poc.components.scavenging_tab import render_scavenging_tab, register_scavenging_callbacks
+from src.web.dashboard.components.scavenging_tab import render_scavenging_tab, register_scavenging_callbacks
 
-from src.web.new_dashboard_poc.components.valencia_events_tab import render_valencia_events_tab, register_valencia_events_callbacks
+from src.web.dashboard.components.valencia_events_tab import render_valencia_events_tab, register_valencia_events_callbacks
 
-from src.web.new_dashboard_poc.components.youtube_ocr_tab import render_youtube_ocr_tab, register_youtube_ocr_callbacks
+from src.web.dashboard.components.youtube_ocr_tab import render_youtube_ocr_tab, register_youtube_ocr_callbacks
 
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
@@ -126,10 +126,10 @@ if __name__ == "__main__":
     # - Shortcuts data (ALL_SHORTCUTS_DATA) is loaded when shortcuts_tab.py is imported.
     # - News data (ALL_NEWS_DATA) is loaded when news_tab.py is imported.
     # - Videos data (ALL_VIDEOS_DATA) is loaded when videos_tab.py is imported.
-    # These imports happen when app.py itself is imported (e.g., by run_new_dashboard_poc.py).
+    # These imports happen when app.py itself is imported (e.g., by run_watchtower_dashboard.py).
     # The relative paths within each component (e.g., '../../../data/...') are resolved
     # based on the Current Working Directory (CWD) when the Python interpreter loads those modules.
-    # If run_new_dashboard_poc.py is at project root, CWD is project root, so paths should be correct.
+    # If run_watchtower_dashboard.py is at project root, CWD is project root, so paths should be correct.
 
     print("Verifying data loaded for Watchtower Dashboard:")
     # Simple check, more detailed checks are in individual tab's __main__ blocks
@@ -141,6 +141,6 @@ if __name__ == "__main__":
     # Accessing ALL_NEWS_DATA and ALL_VIDEOS_DATA directly here would require importing them into app.py
     # For now, we assume their respective tabs handle their data loading messages.
     # If this script (app.py) is run directly, ensure CWD allows components to find their data.
-    # Typically, one would run `run_new_dashboard_poc.py` from the project root.
+    # Typically, one would run `run_watchtower_dashboard.py` from the project root.
 
     app.run_server(debug=False, port=8050) # Default Dash port for direct app run
