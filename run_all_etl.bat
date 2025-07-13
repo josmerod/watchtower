@@ -64,6 +64,7 @@ start /B %PYTHON_CMD% src/etl/news/news_get_stackoverflow_trends.py
 start /B %PYTHON_CMD% src/etl/news/news_get_subreddits.py
 start /B %PYTHON_CMD% src/etl/news/news_get_media_rss.py
 start /B %PYTHON_CMD% src/etl/news/news_get_home_server_trends.py
+start /B %PYTHON_CMD% src/etl/news/news_get_reddit_ai.py
 
 start /B %PYTHON_CMD% src/etl/goldigging/goldigging_youtube_posts.py
 start /B %PYTHON_CMD% src/etl/goldigging/goldigging_coursera_courses.py

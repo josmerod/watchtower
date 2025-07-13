@@ -103,7 +103,7 @@ def test_components_integration():
     
     try:
         # Test price parsing function
-        from src.web.new_dashboard_poc.components.games_tab import parse_price
+        from src.web.dashboard.components.games_tab import parse_price
         
         test_cases = [
             ("$19.99", 19.99),
@@ -126,7 +126,7 @@ def test_components_integration():
         
         # Test data loading (without full execution)
         print("\nTesting component import...")
-        from src.web.new_dashboard_poc.components.games_tab import load_deals_data, load_bundles_data
+        from src.web.dashboard.components.games_tab import load_deals_data, load_bundles_data
         print("✅ Games tab components can be imported")
         
         return True

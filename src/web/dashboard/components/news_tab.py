@@ -22,6 +22,8 @@ NEWS_SOURCES_CONFIG = {
     "meneame_general": {"path": get_data_path("meneame", "meneame_general_latest.json"), "name": "Meneame General"},
     "meneame_tecnologia": {"path": get_data_path("meneame", "meneame_tecnologia_latest.json"), "name": "Meneame Tech"},
     "podcasts": {"path": get_data_path("podcasts", "podcasts_latest.json"), "name": "Podcasts"},
+    "reddit_ml": {"path": get_data_path("reddit_ml", "reddit_ml_latest.json"), "name": "Reddit ML"},
+    "product_hunt": {"path": get_data_path("product_hunt", "product_hunt_latest.json"), "name": "Product Hunt"},
 }
 
 def load_news_from_file(file_path):
@@ -222,6 +224,8 @@ def render_news_tab():
         {"label": "Meneame General", "keys": "meneame_general", "id": "men_gen"},
         {"label": "Meneame Tech", "keys": "meneame_tecnologia", "id": "men_tec"},
         {"label": "Podcasts", "keys": "podcasts", "id": "pod"},
+        {"label": "Reddit ML", "keys": "reddit_ml", "id": "reddit_ml"},
+        {"label": "Product Hunt", "keys": "product_hunt", "id": "ph"},
     ]
 
     tabs_children = []

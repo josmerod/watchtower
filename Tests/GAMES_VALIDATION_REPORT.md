@@ -164,7 +164,7 @@ uv run python src/etl/games/games_get_deals.py
 uv run python src/etl/games/games_get_itchio_trending.py
 
 # Start dashboard
-uv run python src/web/new_dashboard_poc/app.py
+uv run python src/web/dashboard/app.py
 ```
 
 ---

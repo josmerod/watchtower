@@ -1,5 +1,5 @@
 """
-Shared utilities for the New Dashboard POC.
+Shared utilities for the Dashboard.
 """
 
 import os
@@ -11,12 +11,12 @@ def get_project_root():
     """
     Get the project root directory from any component file's location.
     
-    Assumes the calling file is in src/web/new_dashboard_poc/components/
+    Assumes the calling file is in src/web/dashboard/components/
     and needs to go up 4 levels to reach the project root.
     """
     # Get the directory of this utils.py file
     current_file = os.path.abspath(__file__)
-    # From src/web/new_dashboard_poc/utils.py, go up 3 levels to reach project root
+    # From src/web/dashboard/utils.py, go up 3 levels to reach project root
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file))))
     return project_root
 

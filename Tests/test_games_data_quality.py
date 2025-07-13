@@ -57,7 +57,7 @@ class TestGamesDataQuality(unittest.TestCase):
     def test_price_parsing_functionality(self):
         """Test price parsing utility function"""
         try:
-            from src.web.new_dashboard_poc.components.games_tab import parse_price
+            from src.web.dashboard.components.games_tab import parse_price
             
             # Test cases
             test_cases = [
@@ -108,7 +108,7 @@ class TestGamesDataQuality(unittest.TestCase):
     def test_games_tab_component_exists(self):
         """Test that games tab component exists and can be imported"""
         try:
-            from src.web.new_dashboard_poc.components.games_tab import parse_price, parse_game_date
+            from src.web.dashboard.components.games_tab import parse_price, parse_game_date
             # Basic functionality test
             self.assertEqual(parse_price("$10"), 10.0)
             self.assertEqual(parse_price("Free"), 0.0)

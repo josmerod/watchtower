@@ -110,16 +110,16 @@ class TestGamesTabComponent(unittest.TestCase):
     def test_games_data_loading(self):
         """Test that games data loads correctly"""
         # Import the games tab component
-        from src.web.new_dashboard_poc.components.games_tab import load_deals_data, load_bundles_data, load_trending_data, load_giveaways_data, load_new_releases_data
+        from src.web.dashboard.components.games_tab import load_deals_data, load_bundles_data, load_trending_data, load_giveaways_data, load_new_releases_data
         
         # Mock the data path to use our test directory
-        with patch('src.web.new_dashboard_poc.components.games_tab.DATA_BASE_PATH', f'{self.data_dir}/'):
-            with patch('src.web.new_dashboard_poc.components.games_tab.os.path.dirname') as mock_dirname:
+        with patch('src.web.dashboard.components.games_tab.DATA_BASE_PATH', f'{self.data_dir}/'):
+            with patch('src.web.dashboard.components.games_tab.os.path.dirname') as mock_dirname:
                 mock_dirname.return_value = self.test_dir
                 
                 # Test deals loading
                 load_deals_data()
-                from src.web.new_dashboard_poc.components.games_tab import ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
+                from src.web.dashboard.components.games_tab import ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
                 
                 # Verify deals data was loaded
                 self.assertTrue(DATA_LOADED_SUCCESSFULLY.get('deals', False))
@@ -128,12 +128,12 @@ class TestGamesTabComponent(unittest.TestCase):
 
     def test_empty_data_handling(self):
         """Test handling of empty data files"""
-        from src.web.new_dashboard_poc.components.games_tab import load_giveaways_data, load_new_releases_data
-        from src.web.new_dashboard_poc.components.games_tab import ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
+        from src.web.dashboard.components.games_tab import load_giveaways_data, load_new_releases_data
+        from src.web.dashboard.components.games_tab import ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
         
         # Mock the data path to use our test directory
-        with patch('src.web.new_dashboard_poc.components.games_tab.DATA_BASE_PATH', f'{self.data_dir}/'):
-            with patch('src.web.new_dashboard_poc.components.games_tab.os.path.dirname') as mock_dirname:
+        with patch('src.web.dashboard.components.games_tab.DATA_BASE_PATH', f'{self.data_dir}/'):
+            with patch('src.web.dashboard.components.games_tab.os.path.dirname') as mock_dirname:
                 mock_dirname.return_value = self.test_dir
                 
                 # Test giveaways loading (empty file)
@@ -146,12 +146,12 @@ class TestGamesTabComponent(unittest.TestCase):
 
     def test_missing_files_handling(self):
         """Test handling of missing data files"""
-        from src.web.new_dashboard_poc.components.games_tab import load_deals_data
-        from src.web.new_dashboard_poc.components.games_tab import ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
+        from src.web.dashboard.components.games_tab import load_deals_data
+        from src.web.dashboard.components.games_tab import ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
         
         # Mock a non-existent data path
-        with patch('src.web.new_dashboard_poc.components.games_tab.DATA_BASE_PATH', '/nonexistent/path/'):
-            with patch('src.web.new_dashboard_poc.components.games_tab.os.path.dirname') as mock_dirname:
+        with patch('src.web.dashboard.components.games_tab.DATA_BASE_PATH', '/nonexistent/path/'):
+            with patch('src.web.dashboard.components.games_tab.os.path.dirname') as mock_dirname:
                 mock_dirname.return_value = '/nonexistent'
                 
                 # Test deals loading with missing file
@@ -217,7 +217,7 @@ class TestGamesTabComponent(unittest.TestCase):
 
     def test_price_parsing_function(self):
         """Test price parsing functionality"""
-        from src.web.new_dashboard_poc.components.games_tab import parse_price
+        from src.web.dashboard.components.games_tab import parse_price
         
         # Test various price formats
         test_cases = [
@@ -239,7 +239,7 @@ class TestGamesTabComponent(unittest.TestCase):
 
     def test_date_parsing_function(self):
         """Test date parsing functionality"""
-        from src.web.new_dashboard_poc.components.games_tab import parse_game_date
+        from src.web.dashboard.components.games_tab import parse_game_date
         
         # Test various date formats
         test_cases = [

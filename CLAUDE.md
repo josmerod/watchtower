@@ -56,9 +56,7 @@ uv run python src/watchers/run_watcher.py ms_applied_skills --once
 uv run python run_watchtower_dashboard.py
 # Available at http://localhost:7777
 
-# Legacy Streamlit dashboard
-uv run streamlit run src/web/fullstreamlit/app.py
-# Available at http://localhost:8501
+# Legacy dashboard removed - use main dashboard above
 
 # Run both ETL and dashboard
 ./run_all_etl_and_dashboard.sh    # Linux/Mac
@@ -103,11 +101,11 @@ MEGALITH follows a sophisticated ETL + Watcher + Dashboard architecture:
    - Component-specific configs (DatabaseConfig, ETLConfig, etc.)
    - Double underscore delimiter for nested env vars (e.g., `DATABASE__URL`)
 
-4. **Modular Streamlit Dashboard** (`src/web/fullstreamlit/`):
-   - Tab-based component architecture
-   - Ultra-optimized data service with TTL caching
-   - Performance-focused design with lazy loading
-   - Error boundaries for graceful degradation
+4. **Dash Dashboard** (`src/web/dashboard/`):
+   - Tab-based component architecture with Bootstrap styling
+   - Real-time data loading from JSON files
+   - Performance-focused design with efficient rendering
+   - Modular component structure with callbacks
 
 ### Data Processing Flow
 ```
@@ -148,11 +146,11 @@ Located in `src/models/`, follows Pydantic BaseModel pattern:
 - State files automatically managed in `data/watchers/{name}/state.json`
 - Events logged to `data/watchers/{name}/events/`
 
-### Streamlit Components
-- Create tab functions in `src/web/fullstreamlit/components/`
-- Use `data_service.py` for optimized data loading with caching
-- Implement error handling with `render_tab_safely` pattern
-- Follow performance optimization patterns from existing components
+### Dashboard Components
+- Create tab functions in `src/web/dashboard/components/`
+- Use `utils.py` for shared utilities and data path resolution
+- Implement Dash callbacks for interactivity
+- Follow modular component structure from existing tabs
 
 ### Configuration Management
 - Use nested Pydantic Settings models in `src/config/models.py`
@@ -173,11 +171,11 @@ Located in `src/models/`, follows Pydantic BaseModel pattern:
 - **Template Method**: BaseETL.run() orchestrates ETL phases
 - **Factory Pattern**: get_settings() with @lru_cache singleton
 - **State Pattern**: Watcher state management with JSON persistence
-- **Component Pattern**: Streamlit modular tab architecture
+- **Component Pattern**: Dash modular tab architecture
 - **Observer Pattern**: Event logging in watchers and ETL processes
 
 ### Performance Optimization
-- **Caching**: Streamlit @st.cache_data with TTL configuration
+- **Caching**: Component-level data caching and efficient rendering
 - **Batch Processing**: Configurable batch_size in ETL operations
 - **JSON Storage**: Fast read operations with pandas/polars
 - **Memory Management**: Ultra-optimized data services
@@ -222,7 +220,7 @@ Located in `src/models/`, follows Pydantic BaseModel pattern:
 - **Python**: 3.10+ (required for modern type hints)
 - **Package Manager**: UV (recommended) or pip + venv
 - **Data Processing**: pandas (primary), polars (performance), numpy
-- **Web Framework**: Streamlit (dashboard), Dash (new dashboard)
+- **Web Framework**: Dash (dashboard)
 - **Scraping**: requests, BeautifulSoup4, Playwright
 - **Configuration**: Pydantic Settings with nested models
 
