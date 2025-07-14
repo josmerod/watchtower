@@ -21,7 +21,7 @@ import cloudscraper
 import requests
 
 # import rookiepy
-from bs4 import BeautifulSoup as bs
+from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
 # Make rookiepy optional
@@ -62,8 +62,8 @@ scrapper_timeout_period = 30  # seconds - increased from 10 to 20
 scrapper_max_retries = 5  # retries
 
 
-class LoginException(Exception):
-    """Login Error
+class LoginError(Exception):
+    """Login Error.
 
     Args:
         Exception (str): Exception Reason
@@ -78,6 +78,7 @@ class RaisingThread(threading.Thread):
     If an exception occurs within the `run` method of this thread, it is stored
     and can be re-raised when `join()` is called.
     """
+
     def run(self):
         """Overrides the default Thread.run() to catch exceptions."""
         self._exc = None
@@ -86,27 +87,36 @@ class RaisingThread(threading.Thread):
         except Exception as e:
             self._exc = e
 
-    def join(self, timeout=None):
+    def join(self, timeout=None) -> None:
+        """Join the thread and raise any exceptions that occurred."""
         super().join(timeout=timeout)
         if self._exc:
             raise self._exc
 
 
-def resource_path(relative_path):
+def resource_path(relative_path: str) -> str:
+    """Get the absolute path to a resource file."""
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
 
 class Scraper:
-    """Scrapers: RD,TB, CV, IDC, EN, DU, UF, CJ, UF, CD
-    """
+    """Scrapers: RD,TB, CV, IDC, EN, DU, UF, CJ, UF, CD"""
 
     def __init__(
         self,
-        site_to_scrape: list = list(scraper_dict.keys()),
+        site_to_scrape: list | None = None,
         debug: bool = False,
     ):
+        """Initialize the scraper.
+
+        Args:
+            site_to_scrape: List of sites to scrape. Defaults to all available sites.
+            debug: Enable debug logging.
+        """
+        if site_to_scrape is None:
+            site_to_scrape = list(scraper_dict.keys())
         self.sites = site_to_scrape
         self.debug = debug
         self.logger = get_logger(__name__, debug=debug)
@@ -121,6 +131,7 @@ class Scraper:
             setattr(self, f"{code_name}_error", "")
 
     def get_scraped_courses(self, target: object) -> list:
+        """Get scraped courses from all configured sites."""
         threads = []
         scraped_data = {}
         for site in self.sites:
@@ -157,7 +168,8 @@ class Scraper:
 
         return scraped_data
 
-    def append_to_list(self, target: list, title: str, link: str):
+    def append_to_list(self, target: list, title: str, link: str) -> None:
+        """Append course data to target list."""
         target.append((title, link))
 
     def fetch_page_content(self, url, headers=None, timeout=scrapper_timeout_period):
@@ -269,12 +281,14 @@ class Scraper:
                     return ""
         return ""
 
-    def parse_html(self, content: str):
+    def parse_html(self, content: str) -> BeautifulSoup:
+        """Parse HTML content using BeautifulSoup."""
         if not content:
-            return bs("", "html5lib")
-        return bs(content, "html5lib")
+            return BeautifulSoup("", "html5lib")
+        return BeautifulSoup(content, "html5lib")
 
-    def handle_exception(self, site_code: str):
+    def handle_exception(self, site_code: str) -> None:
+        """Handle and log exceptions for a specific site."""
         error_trace = traceback.format_exc()
         setattr(self, f"{site_code}_error", error_trace)
         setattr(self, f"{site_code}_length", -1)
@@ -287,6 +301,7 @@ class Scraper:
             site_logger.debug(error_trace)
 
     def cleanup_link(self, link: str) -> str:
+        """Clean up and validate course links."""
         if not link:
             return ""
 
@@ -483,7 +498,9 @@ class Scraper:
         button clicks or redirect following.
         """
         site_code = "uf"
-        processed_count = 0  # Initialize processed_count at the beginning to avoid UnboundLocalError
+        processed_count = (
+            0  # Initialize processed_count at the beginning to avoid UnboundLocalError
+        )
         try:
             all_items = []
             head = {
@@ -528,7 +545,9 @@ class Scraper:
                             browser.close()
                     except Exception as browser_error:
                         if self.debug:
-                            print(f"{site_code.upper()}: Playwright browser error: {browser_error}")
+                            print(
+                                f"{site_code.upper()}: Playwright browser error: {browser_error}"
+                            )
                         use_playwright = False  # Fall back to requests
                         content = self.fetch_page_content(url, headers=head)
                 else:
@@ -899,7 +918,9 @@ class Scraper:
         visits intermediate pages to find the final Udemy course link.
         """
         site_code = "rd"
-        processed_count = 0  # Initialize processed_count at the beginning to avoid UnboundLocalError
+        processed_count = (
+            0  # Initialize processed_count at the beginning to avoid UnboundLocalError
+        )
         try:
             # Ensure Playwright is available
             try:
@@ -2364,7 +2385,11 @@ class Scraper:
                         print(
                             f"{site_code.upper()}: Playwright browsers not installed. Run 'playwright install'. Error: {browser_error}"
                         )
-                    setattr(self, f"{site_code}_error", f"Playwright browsers not installed: {browser_error}")
+                    setattr(
+                        self,
+                        f"{site_code}_error",
+                        f"Playwright browsers not installed: {browser_error}",
+                    )
                     setattr(self, f"{site_code}_length", -1)
                     setattr(self, f"{site_code}_done", True)
                     return
@@ -2811,16 +2836,23 @@ class Udemy:
             # Try enhanced cookie manager first
             try:
                 from cookie_manager import get_cookies
+
                 cookies = get_cookies()
-                if cookies and all(key in cookies for key in ["client_id", "access_token", "csrftoken"]):
+                if cookies and all(
+                    key in cookies for key in ["client_id", "access_token", "csrftoken"]
+                ):
                     self.make_cookies(
-                        cookies["client_id"], cookies["access_token"], cookies["csrftoken"]
+                        cookies["client_id"],
+                        cookies["access_token"],
+                        cookies["csrftoken"],
                     )
-                    self.logger.info("Successfully fetched cookies using enhanced cookie manager")
+                    self.logger.info(
+                        "Successfully fetched cookies using enhanced cookie manager"
+                    )
                     return cookies
             except ImportError:
                 self.logger.warning("Enhanced cookie manager not available")
-            
+
             # Fallback to original rookiepy method
             if ROOKIEPY_AVAILABLE:
                 cookies = rookiepy.get_cookies("udemy.com")
@@ -2832,7 +2864,7 @@ class Udemy:
                 return cookies
             else:
                 raise Exception("No cookie extraction method available")
-                
+
         except Exception as e:
             self.logger.error(f"Error fetching cookies: {e!s}")
             raise
@@ -2862,6 +2894,7 @@ class Udemy:
         try:
             # Use enhanced update checker
             from update_checker import check_for_updates
+
             return check_for_updates(VERSION, force=False)
         except ImportError:
             self.logger.warning("Enhanced update checker not available, using fallback")
@@ -2906,11 +2939,11 @@ class Udemy:
         )
         try:
             csrf_token = r.cookies["csrftoken"]
-        except:
+        except KeyError as e:
             if self.debug:
-                self.logger.error("Failed to get CSRF token from login page")
+                self.logger.error(f"Failed to get CSRF token from login page: {e}")
                 self.logger.debug(r.text)
-            raise LoginException("Could not get CSRF token")
+            raise LoginError("Could not get CSRF token")
 
         data = {
             "csrfmiddlewaretoken": csrf_token,
@@ -2952,13 +2985,13 @@ class Udemy:
             login_error = r.json()["error"]["data"]["formErrors"][0]
             if login_error[0] == "Y":
                 self.logger.error("Too many login attempts")
-                raise LoginException("Too many logins per hour try later")
+                raise LoginError("Too many logins per hour try later")
             elif login_error[0] == "T":
                 self.logger.error("Email or password incorrect")
-                raise LoginException("Email or password incorrect")
+                raise LoginError("Email or password incorrect")
             else:
                 self.logger.error(f"Login error: {login_error}")
-                raise LoginException(login_error)
+                raise LoginError(login_error)
 
     def get_session_info(self):
         """Get session info to verify login status"""
@@ -2990,7 +3023,7 @@ class Udemy:
 
         if not r["header"]["isLoggedIn"]:
             self.logger.error("Login verification failed")
-            raise LoginException("Login Failed")
+            raise LoginError("Login Failed")
 
         self.display_name: str = r["header"]["user"]["display_name"]
         # Update logger with username
@@ -3113,7 +3146,7 @@ class Udemy:
             course["retry"] = True
             return course
         course["url"] = r.url
-        soup = bs(r.content, "html5lib")
+        soup = BeautifulSoup(r.content, "html5lib")
 
         course_id = soup.find("body").get("data-clp-course-id", "invalid")
 
@@ -3429,7 +3462,8 @@ class Udemy:
         )
         try:
             r = r.json()
-        except:
+        except (ValueError, KeyError) as e:
+            self.print(f"JSON decode error: {e}", color="red")
             self.print(r.text, color="red")
             self.print("Unknown Error: Report this to the developer", color="red")
             return {"status": "failed", "message": "Unknown Error"}
@@ -3461,7 +3495,8 @@ class Udemy:
             self.print(msg, color="red")
             try:
                 wait_time = int(re.search(r"\d+", checkout_response["detail"]).group(0))
-            except:
+            except (AttributeError, ValueError) as e:
+                self.logger.error(f"Failed to parse wait time: {e}")
                 self.print(
                     "Unknown Error: Report this link to the developer", color="red"
                 )
@@ -3661,7 +3696,7 @@ class Udemy:
                         scrape_url, timeout=30
                     )  # Longer timeout for page load
                     response.raise_for_status()
-                    soup = bs(response.content, "html5lib")
+                    soup = BeautifulSoup(response.content, "html5lib")
 
                     # Extract data-module-args for structured data if available
                     body_tag = soup.find("body")

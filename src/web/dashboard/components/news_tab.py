@@ -22,8 +22,15 @@ NEWS_SOURCES_CONFIG = {
     "meneame_general": {"path": get_data_path("meneame", "meneame_general_latest.json"), "name": "Meneame General"},
     "meneame_tecnologia": {"path": get_data_path("meneame", "meneame_tecnologia_latest.json"), "name": "Meneame Tech"},
     "podcasts": {"path": get_data_path("podcasts", "podcasts_latest.json"), "name": "Podcasts"},
-    "reddit_ml": {"path": get_data_path("reddit_ml", "reddit_ml_latest.json"), "name": "Reddit ML"},
     "product_hunt": {"path": get_data_path("product_hunt", "product_hunt_latest.json"), "name": "Product Hunt"},
+    # Course sources
+    "pluralsight_courses": {"path": get_data_path("pluralsight_courses", "pluralsight_courses.json"), "name": "Pluralsight Courses"},
+    # Unified Reddit sources by category
+    "reddit_unified": {"path": get_data_path("reddit_unified", "reddit_unified_latest.json"), "name": "Reddit All"},
+    "reddit_ai_ml": {"path": get_data_path("reddit_unified", "reddit_ai_ml_latest.json"), "name": "Reddit AI/ML"},
+    "reddit_programming": {"path": get_data_path("reddit_unified", "reddit_programming_latest.json"), "name": "Reddit Programming"},
+    "reddit_tech": {"path": get_data_path("reddit_unified", "reddit_tech_latest.json"), "name": "Reddit Tech"},
+    "reddit_devops": {"path": get_data_path("reddit_unified", "reddit_devops_latest.json"), "name": "Reddit DevOps"},
 }
 
 def load_news_from_file(file_path):
@@ -224,7 +231,12 @@ def render_news_tab():
         {"label": "Meneame General", "keys": "meneame_general", "id": "men_gen"},
         {"label": "Meneame Tech", "keys": "meneame_tecnologia", "id": "men_tec"},
         {"label": "Podcasts", "keys": "podcasts", "id": "pod"},
-        {"label": "Reddit ML", "keys": "reddit_ml", "id": "reddit_ml"},
+        {"label": "Pluralsight Courses", "keys": "pluralsight_courses", "id": "pluralsight"},
+        {"label": "Reddit AI/ML", "keys": "reddit_ai_ml", "id": "reddit_ai_ml"},
+        {"label": "Reddit Programming", "keys": "reddit_programming", "id": "reddit_prog"},
+        {"label": "Reddit Tech", "keys": "reddit_tech", "id": "reddit_tech"},
+        {"label": "Reddit DevOps", "keys": "reddit_devops", "id": "reddit_devops"},
+        {"label": "Reddit All", "keys": "reddit_unified", "id": "reddit_all"},
         {"label": "Product Hunt", "keys": "product_hunt", "id": "ph"},
     ]
 

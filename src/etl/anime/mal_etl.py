@@ -113,6 +113,13 @@ class MalETL(BaseETL):
             "seasonal": None,
             "popular": None,
             "favorite": None,
+            "top_rated_all": None,
+            "top_airing": None,
+            "top_upcoming": None,
+            "top_tv_series": None,
+            "top_movies": None,
+            "top_ova": None,
+            "top_special": None,
         }
 
         # Determine current year and season
@@ -142,6 +149,42 @@ class MalETL(BaseETL):
         logger.info("Fetching top favorite anime.")
         extracted_data["favorite"] = self._get_ranked_anime_raw("favorite", limit=20)
 
+        time.sleep(1)
+
+        # Fetch comprehensive rankings for community recommendations
+        logger.info("Fetching top rated anime (all time).")
+        extracted_data["top_rated_all"] = self._get_ranked_anime_raw("all", limit=100)
+
+        time.sleep(1)
+
+        logger.info("Fetching top airing anime.")
+        extracted_data["top_airing"] = self._get_ranked_anime_raw("airing", limit=50)
+
+        time.sleep(1)
+
+        logger.info("Fetching top upcoming anime.")
+        extracted_data["top_upcoming"] = self._get_ranked_anime_raw("upcoming", limit=50)
+
+        time.sleep(1)
+
+        logger.info("Fetching top TV series.")
+        extracted_data["top_tv_series"] = self._get_ranked_anime_raw("tv", limit=100)
+
+        time.sleep(1)
+
+        logger.info("Fetching top movies.")
+        extracted_data["top_movies"] = self._get_ranked_anime_raw("movie", limit=50)
+
+        time.sleep(1)
+
+        logger.info("Fetching top OVA.")
+        extracted_data["top_ova"] = self._get_ranked_anime_raw("ova", limit=30)
+
+        time.sleep(1)
+
+        logger.info("Fetching top special episodes.")
+        extracted_data["top_special"] = self._get_ranked_anime_raw("special", limit=30)
+
         self.metrics.records_extracted = sum(len(v.get('data', [])) for v in extracted_data.values() if v)
         return extracted_data
 
@@ -154,6 +197,13 @@ class MalETL(BaseETL):
             "seasonal": [],
             "popular": [],
             "favorite": [],
+            "top_rated_all": [],
+            "top_airing": [],
+            "top_upcoming": [],
+            "top_tv_series": [],
+            "top_movies": [],
+            "top_ova": [],
+            "top_special": [],
         }
 
         for key, raw_response in data.items():
@@ -189,6 +239,13 @@ class MalETL(BaseETL):
             "seasonal": "current_season_anime.json",
             "popular": "top_popular_anime.json",
             "favorite": "top_favorite_anime.json",
+            "top_rated_all": "top_rated_all_time.json",
+            "top_airing": "top_airing_anime.json",
+            "top_upcoming": "top_upcoming_anime.json",
+            "top_tv_series": "top_tv_series.json",
+            "top_movies": "top_movies.json",
+            "top_ova": "top_ova.json",
+            "top_special": "top_special.json",
         }
 
         loaded_count = 0

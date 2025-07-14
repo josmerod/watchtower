@@ -13,14 +13,18 @@ information easily.
 
 import json
 import re
+import warnings
 from pathlib import Path
 from typing import Any, List
 
 import requests
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning  # type: ignore
 
 from src.etl.base import SimpleETL
 from src.utils.logging import get_logger
+
+# Filter out BeautifulSoup warnings for URL-like content
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 
 class FourChanGeneralsETL(SimpleETL):
@@ -29,7 +33,23 @@ class FourChanGeneralsETL(SimpleETL):
     CATALOG_URL = "https://a.4cdn.org/{board}/catalog.json"
 
     def __init__(self, boards: List[str] | None = None, **kwargs: Any):
-        self.boards = boards or ["g", "vg", "t"]
+        self.boards = boards or [
+            "g",      # Technology
+            "vg",     # Video Games Generals
+            "t",      # Torrents/Technology
+            "pol",    # Politically Incorrect
+            "biz",    # Business & Finance
+            "sci",    # Science & Math
+            "tv",     # Television & Film
+            "fit",    # Fitness
+            "mu",     # Music
+            "v",      # Video Games
+            "k",      # Weapons
+            "o",      # Auto
+            "diy",    # Do It Yourself
+            "his",    # History & Humanities
+            "int",    # International
+        ]
         super().__init__(name="4chan_generals", **kwargs)
         # Replace logger name to something shorter / clearer
         self.logger = get_logger("ETL.4chan_generals")
