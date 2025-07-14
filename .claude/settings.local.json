@@ -27,7 +27,18 @@
       "Bash(git commit:*)",
       "Bash(git config:*)",
       "Bash(git push:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "WebFetch(domain:animeschedule.net)",
+      "Bash(timeout:*)",
+      "Bash(copy:*)",
+      "WebFetch(domain:myanimelist.net)",
+      "Bash(sed:*)",
+      "Bash(taskkill:*)",
+      "Bash(Stop-Process -Id 37456 -Force)",
+      "Bash(Stop-Process -Id 2876 -Force)",
+      "Bash(Stop-Process -Id 48712 -Force)",
+      "Bash(powershell:*)",
+      "Bash(cmd /c:*)"
     ],
     "deny": []
   }

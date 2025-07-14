@@ -23,6 +23,8 @@ from src.web.dashboard.components.valencia_events_tab import render_valencia_eve
 
 from src.web.dashboard.components.youtube_ocr_tab import render_youtube_ocr_tab, register_youtube_ocr_callbacks
 
+from src.web.dashboard.components.giveaways_tab import create_giveaways_tab
+
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
@@ -92,6 +94,9 @@ app.layout = dbc.Container(
                         ]),
                         dbc.Tab(label="YouTube OCR", tab_id="tab-youtube-ocr", children=[
                             render_youtube_ocr_tab()
+                        ]),
+                        dbc.Tab(label="🎁 Giveaways", tab_id="tab-giveaways", children=[
+                            create_giveaways_tab()
                         ]),
                     ],
                 )

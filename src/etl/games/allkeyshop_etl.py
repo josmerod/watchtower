@@ -32,9 +32,9 @@ from src.utils.logging import get_logger
 # Initialize logger for this module
 logger = get_logger("AllKeyShopETL")
 
-# AllKeyShop URLs
-NEW_RELEASES_URL = "https://www.allkeyshop.com/blog/games/new-releases/?operating_systems=pc"
-OFFERS_URL = "https://www.allkeyshop.com/blog/games/under-10-eur/?operating_systems=pc"
+# AllKeyShop URLs - Updated to use the actual game listing pages 
+NEW_RELEASES_URL = "https://www.allkeyshop.com/blog/catalogue/category-action/?condition=new&sort_by=price&way=asc"
+OFFERS_URL = "https://www.allkeyshop.com/blog/catalogue/category-action/?sort_by=price&way=asc&price_from=0&price_to=10"
 
 
 def parse_price(price_text: str) -> float:
@@ -89,6 +89,193 @@ def scrape_new_releases(page) -> List[Dict[str, Any]]:
         # Wait for page to fully load
         page.wait_for_timeout(5000)
         
+        # Try to wait for specific AllKeyShop content to load
+        try:
+            # Wait for potential game containers or lists
+            page.wait_for_selector('div, .container, main, article', timeout=10000)
+            logger.info("Basic content loaded")
+            
+            # Additional wait for JavaScript to execute
+            page.wait_for_timeout(5000)
+            
+        except Exception as e:
+            logger.info(f"Timeout waiting for content: {e}")
+        
+        # Debug: Log page content summary and look for actual game content
+        try:
+            all_links = page.query_selector_all('a')
+            logger.info(f"Total links found on page: {len(all_links)}")
+            
+            # Look for specific AllKeyShop game patterns
+            game_patterns = [
+                'a[href*="/blog/buy-"]',
+                'a[href*="cd-key"]', 
+                'a[href*="compare-prices"]',
+                '.game-item a',
+                '.product-item a',
+                '.search-result a'
+            ]
+            
+            for pattern in game_patterns:
+                matches = page.query_selector_all(pattern)
+                logger.info(f"Pattern '{pattern}': {len(matches)} matches")
+                
+                # Log first few matches for debugging
+                for i, match in enumerate(matches[:3]):
+                    try:
+                        href = match.get_attribute('href')
+                        text = match.inner_text().strip()[:50]
+                        logger.info(f"  {pattern} match {i+1}: {text} -> {href}")
+                    except:
+                        pass
+            
+            # Sample some link hrefs for debugging
+            sample_links = all_links[:10]
+            for i, link in enumerate(sample_links):
+                try:
+                    href = link.get_attribute('href')
+                    text = link.inner_text().strip()[:50]
+                    logger.debug(f"Sample link {i+1}: {text} -> {href}")
+                except:
+                    pass
+                    
+            # Check for JavaScript-driven content
+            scripts = page.query_selector_all('script')
+            logger.info(f"Found {len(scripts)} script tags - this is likely a dynamic site")
+            
+        except Exception as e:
+            logger.debug(f"Debug logging failed: {e}")
+        
+        # Try to scroll down to trigger lazy loading and look for "show more" buttons
+        try:
+            # Scroll down gradually to trigger any lazy loading
+            for i in range(3):
+                page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {(i+1)/3})")
+                page.wait_for_timeout(2000)
+            
+            # Look for and click "show more" or "load more" buttons
+            show_more_selectors = [
+                'button:has-text("Show more")',
+                'button:has-text("Load more")',
+                'button:has-text("See more")',
+                'a:has-text("Show more")',
+                'a:has-text("Load more")',
+                'a:has-text("See more")',
+                '.show-more',
+                '.load-more',
+                '.see-more',
+                '[data-action="load-more"]',
+                '[data-action="show-more"]',
+                'button[class*="more"]',
+                'a[class*="more"]'
+            ]
+            
+            clicked_buttons = 0
+            max_clicks = 5  # Limit to prevent infinite loops
+            
+            for _ in range(max_clicks):
+                button_clicked = False
+                for selector in show_more_selectors:
+                    try:
+                        button = page.query_selector(selector)
+                        if button and button.is_visible():
+                            logger.info(f"Found and clicking show more button: {selector}")
+                            button.click()
+                            page.wait_for_timeout(3000)  # Wait for content to load
+                            clicked_buttons += 1
+                            button_clicked = True
+                            break
+                    except Exception as e:
+                        logger.debug(f"Error clicking button {selector}: {e}")
+                        continue
+                
+                if not button_clicked:
+                    break
+                    
+                # Scroll to bottom again after clicking
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                page.wait_for_timeout(2000)
+            
+            logger.info(f"Clicked {clicked_buttons} show more buttons")
+            
+            # Look for pagination - "Next" buttons or page numbers
+            pagination_selectors = [
+                'a:has-text("Next")',
+                'button:has-text("Next")',
+                'a:has-text(">")',
+                'button:has-text(">")',
+                '.pagination a[href]:last-child',
+                '.next-page',
+                '[data-page]',
+                'a[aria-label="Next page"]',
+                'button[aria-label="Next page"]'
+            ]
+            
+            clicked_pagination = 0
+            max_pages = 3  # Limit pagination clicks
+            
+            for page_num in range(max_pages):
+                pagination_clicked = False
+                for selector in pagination_selectors:
+                    try:
+                        next_button = page.query_selector(selector)
+                        if next_button and next_button.is_visible():
+                            logger.info(f"Found and clicking pagination button: {selector}")
+                            next_button.click()
+                            page.wait_for_timeout(4000)  # Wait for page to load
+                            clicked_pagination += 1
+                            pagination_clicked = True
+                            
+                            # After clicking pagination, scroll and check for more "show more" buttons
+                            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                            page.wait_for_timeout(2000)
+                            
+                            # Try clicking show more buttons again on new page
+                            for show_selector in show_more_selectors:
+                                try:
+                                    show_button = page.query_selector(show_selector)
+                                    if show_button and show_button.is_visible():
+                                        logger.info(f"Found show more on new page: {show_selector}")
+                                        show_button.click()
+                                        page.wait_for_timeout(3000)
+                                        break
+                                except:
+                                    continue
+                            break
+                    except Exception as e:
+                        logger.debug(f"Error clicking pagination {selector}: {e}")
+                        continue
+                
+                if not pagination_clicked:
+                    break
+            
+            logger.info(f"Clicked {clicked_pagination} pagination buttons")
+            
+            # Check for infinite scroll pattern
+            initial_height = page.evaluate("document.body.scrollHeight")
+            scroll_attempts = 0
+            max_scroll_attempts = 5
+            
+            while scroll_attempts < max_scroll_attempts:
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                page.wait_for_timeout(3000)
+                
+                new_height = page.evaluate("document.body.scrollHeight")
+                if new_height > initial_height:
+                    logger.info(f"Infinite scroll detected, new content loaded (height: {initial_height} -> {new_height})")
+                    initial_height = new_height
+                    scroll_attempts += 1
+                else:
+                    break
+            
+            logger.info(f"Completed {scroll_attempts} infinite scroll cycles")
+            
+            # Final scroll to top
+            page.evaluate("window.scrollTo(0, 0)")
+            page.wait_for_timeout(2000)
+        except Exception as e:
+            logger.debug(f"Error during scrolling/button clicking: {e}")
+        
         # Log the page title for debugging
         try:
             page_title = page.title()
@@ -96,21 +283,13 @@ def scrape_new_releases(page) -> List[Dict[str, Any]]:
         except:
             pass
         
-        # Wait for the main content area to load
+        # Wait for the main content area to load  
         try:
             page.wait_for_selector('body', timeout=10000)
             
-            # First, let's check if we need to handle any popups or overlays
+            # Close any cookie banners or popups
             try:
-                # Close any cookie banners or popups
-                popup_selectors = [
-                    '.cookie-banner button',
-                    '.cookie-consent button',
-                    '.modal-close',
-                    '.popup-close',
-                    '[aria-label="Close"]'
-                ]
-                
+                popup_selectors = ['.cookie-banner button', '.cookie-consent button', '.modal-close']
                 for popup_selector in popup_selectors:
                     try:
                         popup_element = page.query_selector(popup_selector)
@@ -122,90 +301,76 @@ def scrape_new_releases(page) -> List[Dict[str, Any]]:
             except:
                 pass
             
-            # Look for the actual game listing container
-            # AllKeyShop typically uses a results container
+            # Look for the actual game table/list structure from the screenshot
             games = []
             
-            # More specific selectors for AllKeyShop game listings
-            game_container_selectors = [
-                '#results',
-                '.results',
-                '.game-list',
-                '.products-list',
-                '.search-results',
-                '.listing-results',
-                'main .container',
-                '.content-wrapper',
-                '.main-content'
+            # Try to find the game table or list that shows TITLE, STORE, PRICE, TYPE, FETCHED columns
+            table_selectors = [
+                'table',
+                '.table',
+                '.game-table',
+                '.product-table',
+                '.listing-table',
+                '.data-table',
+                'table[class*="game"]',
+                'table[class*="product"]'
             ]
             
-            game_item_selectors = [
-                '.game-item',
-                '.product-item', 
-                '.listing-item',
-                '.search-item',
-                '.result-item',
-                '.game-card',
-                '.product-card',
-                '.item-container',
-                'article[class*="game"]',
-                'article[class*="product"]',
-                'div[class*="game-"]',
-                'div[class*="product-"]',
-                '.col-md-4',
-                '.col-lg-3',
-                '.col-sm-6'
-            ]
-            
-            # Try to find the main container first
-            main_container = None
-            for container_selector in game_container_selectors:
+            # Look for table rows that contain game data
+            for table_selector in table_selectors:
                 try:
-                    container = page.query_selector(container_selector)
-                    if container:
-                        main_container = container
-                        logger.info(f"Found main container with selector: {container_selector}")
-                        break
-                except:
+                    table = page.query_selector(table_selector)
+                    if table:
+                        rows = table.query_selector_all('tr')
+                        logger.info(f"Found table with {len(rows)} rows using selector: {table_selector}")
+                        
+                        for row in rows[1:]:  # Skip header row
+                            try:
+                                cells = row.query_selector_all('td')
+                                if len(cells) >= 2:  # Need at least title and one other column
+                                    title_cell = cells[0]
+                                    title_link = title_cell.query_selector('a')
+                                    
+                                    if title_link:
+                                        title = title_link.inner_text().strip()
+                                        url = title_link.get_attribute('href')
+                                        
+                                        if title and url and is_valid_game_title(title):
+                                            game_data = {
+                                                'title': title,
+                                                'url': url if url.startswith('http') else f"https://www.allkeyshop.com{url}",
+                                                'current_price': 0.0,
+                                                'original_price': None,
+                                                'discount_percentage': None,
+                                                'store_name': None,
+                                                'deal_score': None,
+                                                'game_type': "new_release",
+                                                'is_dlc': False,
+                                                'fetched_at': datetime.now(timezone.utc).isoformat(),
+                                                'source': 'AllKeyShop'
+                                            }
+                                            
+                                            # Try to extract price from other columns
+                                            if len(cells) >= 3:
+                                                price_text = cells[2].inner_text().strip()
+                                                game_data['current_price'] = parse_price(price_text)
+                                            
+                                            games.append(game_data)
+                                            logger.debug(f"Extracted game from table: {title}")
+                            except:
+                                continue
+                        
+                        if games:
+                            logger.info(f"Successfully extracted {len(games)} games from table")
+                            return games
+                            
+                except Exception as e:
+                    logger.debug(f"Table selector {table_selector} failed: {e}")
                     continue
             
-            # If no specific container found, use the body
-            if not main_container:
-                main_container = page.query_selector('body')
-            
-            # Now look for game items within the container
-            if main_container:
-                for item_selector in game_item_selectors:
-                    try:
-                        elements = main_container.query_selector_all(item_selector)
-                        if elements and len(elements) > 2:  # Need at least 3 elements
-                            logger.info(f"Found {len(elements)} potential game elements with selector: {item_selector}")
-                            
-                            # Filter out navigation and other non-game elements
-                            valid_games = []
-                            
-                            for idx, element in enumerate(elements[:30]):  # Limit to first 30
-                                try:
-                                    game_data = extract_game_data_improved(element, "new_release")
-                                    if game_data and is_valid_game_data(game_data):
-                                        valid_games.append(game_data)
-                                        logger.debug(f"Extracted valid game {idx + 1}: {game_data.get('title', 'Unknown')}")
-                                except Exception as e:
-                                    logger.debug(f"Error extracting from element {idx + 1}: {e}")
-                                    continue
-                            
-                            if valid_games:
-                                logger.info(f"Successfully scraped {len(valid_games)} new releases using selector: {item_selector}")
-                                return valid_games
-                                
-                    except Exception as e:
-                        logger.debug(f"Selector {item_selector} failed: {e}")
-                        continue
-            
-            # If no games found with structured selectors, try alternative approach
-            if not games:
-                logger.warning("No games found with structured selectors, trying alternative extraction")
-                games = extract_games_alternative(page, "new_release")
+            # If no table found, try the alternative extraction method
+            logger.warning("No game table found, trying alternative extraction")
+            games = extract_games_alternative(page, "new_release")
             
             logger.info(f"Successfully scraped {len(games)} new releases")
             return games
@@ -226,8 +391,195 @@ def scrape_offers(page) -> List[Dict[str, Any]]:
     try:
         page.goto(OFFERS_URL, wait_until="domcontentloaded", timeout=60000)
         
-        # Wait for page to fully load
-        page.wait_for_timeout(5000)
+        # Wait for page to fully load and check for dynamic content
+        page.wait_for_timeout(10000)
+        
+        # Try to wait for specific AllKeyShop content to load
+        try:
+            # Wait for potential game containers or lists
+            page.wait_for_selector('div, .container, main, article', timeout=10000)
+            logger.info("Basic content loaded")
+            
+            # Additional wait for JavaScript to execute
+            page.wait_for_timeout(5000)
+            
+        except Exception as e:
+            logger.info(f"Timeout waiting for content: {e}")
+        
+        # Debug: Log page content summary and look for actual game content
+        try:
+            all_links = page.query_selector_all('a')
+            logger.info(f"Total links found on page: {len(all_links)}")
+            
+            # Look for specific AllKeyShop game patterns
+            game_patterns = [
+                'a[href*="/blog/buy-"]',
+                'a[href*="cd-key"]', 
+                'a[href*="compare-prices"]',
+                '.game-item a',
+                '.product-item a',
+                '.search-result a'
+            ]
+            
+            for pattern in game_patterns:
+                matches = page.query_selector_all(pattern)
+                logger.info(f"Pattern '{pattern}': {len(matches)} matches")
+                
+                # Log first few matches for debugging
+                for i, match in enumerate(matches[:3]):
+                    try:
+                        href = match.get_attribute('href')
+                        text = match.inner_text().strip()[:50]
+                        logger.info(f"  {pattern} match {i+1}: {text} -> {href}")
+                    except:
+                        pass
+            
+            # Sample some link hrefs for debugging
+            sample_links = all_links[:10]
+            for i, link in enumerate(sample_links):
+                try:
+                    href = link.get_attribute('href')
+                    text = link.inner_text().strip()[:50]
+                    logger.debug(f"Sample link {i+1}: {text} -> {href}")
+                except:
+                    pass
+                    
+            # Check for JavaScript-driven content
+            scripts = page.query_selector_all('script')
+            logger.info(f"Found {len(scripts)} script tags - this is likely a dynamic site")
+            
+        except Exception as e:
+            logger.debug(f"Debug logging failed: {e}")
+        
+        # Try to scroll down to trigger lazy loading and look for "show more" buttons
+        try:
+            # Scroll down gradually to trigger any lazy loading
+            for i in range(3):
+                page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {(i+1)/3})")
+                page.wait_for_timeout(2000)
+            
+            # Look for and click "show more" or "load more" buttons
+            show_more_selectors = [
+                'button:has-text("Show more")',
+                'button:has-text("Load more")',
+                'button:has-text("See more")',
+                'a:has-text("Show more")',
+                'a:has-text("Load more")',
+                'a:has-text("See more")',
+                '.show-more',
+                '.load-more',
+                '.see-more',
+                '[data-action="load-more"]',
+                '[data-action="show-more"]',
+                'button[class*="more"]',
+                'a[class*="more"]'
+            ]
+            
+            clicked_buttons = 0
+            max_clicks = 5  # Limit to prevent infinite loops
+            
+            for _ in range(max_clicks):
+                button_clicked = False
+                for selector in show_more_selectors:
+                    try:
+                        button = page.query_selector(selector)
+                        if button and button.is_visible():
+                            logger.info(f"Found and clicking show more button: {selector}")
+                            button.click()
+                            page.wait_for_timeout(3000)  # Wait for content to load
+                            clicked_buttons += 1
+                            button_clicked = True
+                            break
+                    except Exception as e:
+                        logger.debug(f"Error clicking button {selector}: {e}")
+                        continue
+                
+                if not button_clicked:
+                    break
+                    
+                # Scroll to bottom again after clicking
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                page.wait_for_timeout(2000)
+            
+            logger.info(f"Clicked {clicked_buttons} show more buttons")
+            
+            # Look for pagination - "Next" buttons or page numbers
+            pagination_selectors = [
+                'a:has-text("Next")',
+                'button:has-text("Next")',
+                'a:has-text(">")',
+                'button:has-text(">")',
+                '.pagination a[href]:last-child',
+                '.next-page',
+                '[data-page]',
+                'a[aria-label="Next page"]',
+                'button[aria-label="Next page"]'
+            ]
+            
+            clicked_pagination = 0
+            max_pages = 3  # Limit pagination clicks
+            
+            for page_num in range(max_pages):
+                pagination_clicked = False
+                for selector in pagination_selectors:
+                    try:
+                        next_button = page.query_selector(selector)
+                        if next_button and next_button.is_visible():
+                            logger.info(f"Found and clicking pagination button: {selector}")
+                            next_button.click()
+                            page.wait_for_timeout(4000)  # Wait for page to load
+                            clicked_pagination += 1
+                            pagination_clicked = True
+                            
+                            # After clicking pagination, scroll and check for more "show more" buttons
+                            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                            page.wait_for_timeout(2000)
+                            
+                            # Try clicking show more buttons again on new page
+                            for show_selector in show_more_selectors:
+                                try:
+                                    show_button = page.query_selector(show_selector)
+                                    if show_button and show_button.is_visible():
+                                        logger.info(f"Found show more on new page: {show_selector}")
+                                        show_button.click()
+                                        page.wait_for_timeout(3000)
+                                        break
+                                except:
+                                    continue
+                            break
+                    except Exception as e:
+                        logger.debug(f"Error clicking pagination {selector}: {e}")
+                        continue
+                
+                if not pagination_clicked:
+                    break
+            
+            logger.info(f"Clicked {clicked_pagination} pagination buttons")
+            
+            # Check for infinite scroll pattern
+            initial_height = page.evaluate("document.body.scrollHeight")
+            scroll_attempts = 0
+            max_scroll_attempts = 5
+            
+            while scroll_attempts < max_scroll_attempts:
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                page.wait_for_timeout(3000)
+                
+                new_height = page.evaluate("document.body.scrollHeight")
+                if new_height > initial_height:
+                    logger.info(f"Infinite scroll detected, new content loaded (height: {initial_height} -> {new_height})")
+                    initial_height = new_height
+                    scroll_attempts += 1
+                else:
+                    break
+            
+            logger.info(f"Completed {scroll_attempts} infinite scroll cycles")
+            
+            # Final scroll to top
+            page.evaluate("window.scrollTo(0, 0)")
+            page.wait_for_timeout(2000)
+        except Exception as e:
+            logger.debug(f"Error during scrolling/button clicking: {e}")
         
         # Log the page title for debugging
         try:
@@ -240,16 +592,9 @@ def scrape_offers(page) -> List[Dict[str, Any]]:
         try:
             page.wait_for_selector('body', timeout=10000)
             
-            # Handle any popups or overlays
+            # Close any cookie banners or popups
             try:
-                popup_selectors = [
-                    '.cookie-banner button',
-                    '.cookie-consent button',
-                    '.modal-close',
-                    '.popup-close',
-                    '[aria-label="Close"]'
-                ]
-                
+                popup_selectors = ['.cookie-banner button', '.cookie-consent button', '.modal-close']
                 for popup_selector in popup_selectors:
                     try:
                         popup_element = page.query_selector(popup_selector)
@@ -261,89 +606,76 @@ def scrape_offers(page) -> List[Dict[str, Any]]:
             except:
                 pass
             
-            # Look for the actual game listing container
+            # Look for the actual game table/list structure from the screenshot
             games = []
             
-            # More specific selectors for AllKeyShop game listings
-            game_container_selectors = [
-                '#results',
-                '.results',
-                '.game-list',
-                '.products-list',
-                '.search-results',
-                '.listing-results',
-                'main .container',
-                '.content-wrapper',
-                '.main-content'
+            # Try to find the game table or list that shows TITLE, STORE, PRICE, TYPE, FETCHED columns
+            table_selectors = [
+                'table',
+                '.table',
+                '.game-table',
+                '.product-table',
+                '.listing-table',
+                '.data-table',
+                'table[class*="game"]',
+                'table[class*="product"]'
             ]
             
-            game_item_selectors = [
-                '.game-item',
-                '.product-item', 
-                '.listing-item',
-                '.search-item',
-                '.result-item',
-                '.game-card',
-                '.product-card',
-                '.item-container',
-                'article[class*="game"]',
-                'article[class*="product"]',
-                'div[class*="game-"]',
-                'div[class*="product-"]',
-                '.col-md-4',
-                '.col-lg-3',
-                '.col-sm-6'
-            ]
-            
-            # Try to find the main container first
-            main_container = None
-            for container_selector in game_container_selectors:
+            # Look for table rows that contain game data
+            for table_selector in table_selectors:
                 try:
-                    container = page.query_selector(container_selector)
-                    if container:
-                        main_container = container
-                        logger.info(f"Found main container with selector: {container_selector}")
-                        break
-                except:
+                    table = page.query_selector(table_selector)
+                    if table:
+                        rows = table.query_selector_all('tr')
+                        logger.info(f"Found table with {len(rows)} rows using selector: {table_selector}")
+                        
+                        for row in rows[1:]:  # Skip header row
+                            try:
+                                cells = row.query_selector_all('td')
+                                if len(cells) >= 2:  # Need at least title and one other column
+                                    title_cell = cells[0]
+                                    title_link = title_cell.query_selector('a')
+                                    
+                                    if title_link:
+                                        title = title_link.inner_text().strip()
+                                        url = title_link.get_attribute('href')
+                                        
+                                        if title and url and is_valid_game_title(title):
+                                            game_data = {
+                                                'title': title,
+                                                'url': url if url.startswith('http') else f"https://www.allkeyshop.com{url}",
+                                                'current_price': 0.0,
+                                                'original_price': None,
+                                                'discount_percentage': None,
+                                                'store_name': None,
+                                                'deal_score': None,
+                                                'game_type': "offer",
+                                                'is_dlc': False,
+                                                'fetched_at': datetime.now(timezone.utc).isoformat(),
+                                                'source': 'AllKeyShop'
+                                            }
+                                            
+                                            # Try to extract price from other columns
+                                            if len(cells) >= 3:
+                                                price_text = cells[2].inner_text().strip()
+                                                game_data['current_price'] = parse_price(price_text)
+                                            
+                                            games.append(game_data)
+                                            logger.debug(f"Extracted offer from table: {title}")
+                            except:
+                                continue
+                        
+                        if games:
+                            logger.info(f"Successfully extracted {len(games)} offers from table")
+                            return games
+                            
+                except Exception as e:
+                    logger.debug(f"Table selector {table_selector} failed: {e}")
                     continue
             
-            # If no specific container found, use the body
-            if not main_container:
-                main_container = page.query_selector('body')
-            
-            # Now look for game items within the container
-            if main_container:
-                for item_selector in game_item_selectors:
-                    try:
-                        elements = main_container.query_selector_all(item_selector)
-                        if elements and len(elements) > 2:  # Need at least 3 elements
-                            logger.info(f"Found {len(elements)} potential game elements with selector: {item_selector}")
-                            
-                            # Filter out navigation and other non-game elements
-                            valid_games = []
-                            
-                            for idx, element in enumerate(elements[:30]):  # Limit to first 30
-                                try:
-                                    game_data = extract_game_data_improved(element, "offer")
-                                    if game_data and is_valid_game_data(game_data):
-                                        valid_games.append(game_data)
-                                        logger.debug(f"Extracted valid offer {idx + 1}: {game_data.get('title', 'Unknown')}")
-                                except Exception as e:
-                                    logger.debug(f"Error extracting from element {idx + 1}: {e}")
-                                    continue
-                            
-                            if valid_games:
-                                logger.info(f"Successfully scraped {len(valid_games)} offers using selector: {item_selector}")
-                                return valid_games
-                                
-                    except Exception as e:
-                        logger.debug(f"Selector {item_selector} failed: {e}")
-                        continue
-            
-            # If no games found with structured selectors, try alternative approach
-            if not games:
-                logger.warning("No games found with structured selectors, trying alternative extraction")
-                games = extract_games_alternative(page, "offer")
+            # If no table found, try the alternative extraction method
+            logger.warning("No game table found, trying alternative extraction")
+            games = extract_games_alternative(page, "offer")
             
             logger.info(f"Successfully scraped {len(games)} offers")
             return games
@@ -522,10 +854,10 @@ def extract_game_data_improved(element, game_type: str) -> Optional[Dict[str, An
         text_content = element.inner_text().strip()
         
         # Skip if element is too small or contains only whitespace
-        if len(text_content) < 5:
+        if len(text_content) < 10:
             return None
         
-        # Skip navigation and promotional elements
+        # Skip navigation and promotional elements - expanded
         skip_patterns = [
             'newsletter',
             'subscribe',
@@ -543,12 +875,38 @@ def extract_game_data_improved(element, game_type: str) -> Optional[Dict[str, An
             'gift cards',
             'discord',
             'twitch',
-            'kick'
+            'kick',
+            'allkeyshop',
+            'best deals',
+            'coupons',
+            'twitchkick',
+            'join our',
+            'win points',
+            'turn the wheel',
+            'get the best deals',
+            'free game and coupons',
+            'official and keysellers',
+            'best new game releases',
+            'average price',
+            'free games',
+            'dlc/expansions'
         ]
         
+        text_lower = text_content.lower()
         for pattern in skip_patterns:
-            if pattern in text_content.lower():
+            if pattern in text_lower:
                 return None
+        
+        # Skip if element contains too many promotional keywords
+        promotional_word_count = 0
+        promotional_words = ['subscribe', 'newsletter', 'reward', 'program', 'lucky', 'wheel', 'gift', 'discord', 'twitch', 'partnership', 'protection', 'best', 'deals', 'coupons', 'official', 'keysellers', 'reviews', 'allkeyshop', 'join', 'win', 'points', 'turn', 'free', 'average', 'price']
+        
+        for word in promotional_words:
+            if word in text_lower:
+                promotional_word_count += 1
+        
+        if promotional_word_count > 2:  # Too many promotional words
+            return None
         
         # Try to extract title - look for text that could be a game title
         title = None
@@ -690,7 +1048,7 @@ def is_valid_game_title(title: str) -> bool:
     if not title or len(title) < 3 or len(title) > 150:
         return False
     
-    # Skip common non-game elements
+    # Skip common non-game elements - expanded list
     invalid_patterns = [
         r'^\d+$',  # Just numbers
         r'^\d+[.,]\d+$',  # Just prices
@@ -735,6 +1093,46 @@ def is_valid_game_title(title: str) -> bool:
         r'^\d+\s*€',  # Prices starting with numbers
         r'^€\s*\d+',  # Prices starting with currency
         r'^\$\s*\d+',  # Dollar prices
+        # New patterns based on screenshot and improved filtering
+        r'^best new game releases$',
+        r'^allkeyshop',
+        r'^twitchkick$',
+        r'^\d+ reviews$',
+        r'^join our reward program$',
+        r'feeling lucky.*win.*gift cards',
+        r'or win points to turn the wheel',
+        r'get the best deals',
+        r'free game and coupons',
+        r'^official and keysellers',
+        r'^new releases$',
+        r'^offers$',
+        r'^average price$',
+        r'^free games$',
+        r'^dlc/expansions$',
+        # Currency and navigation
+        r'^eur €$',
+        r'^usd \$$',
+        r'^gbp £$',
+        r'^cards$',
+        r'^vouchers$',
+        r'^coins$',
+        # Subscription services (not actual games)
+        r'^playstation plus',
+        r'^xbox game pass',
+        r'^nintendo online',
+        r'^all subscription cards$',
+        # Remove gift cards from exclusions - they're valid gaming products
+        # r'^nintendo eshop cards$',  # These are legitimate gaming products
+        # r'^apex coins$',
+        # r'^fc \d+ points$',
+        # r'^fortnite v-bucks$',
+        # r'^robux$',
+        # r'multibucks$',
+        # Generic categories
+        r'^games like & franchises$',
+        r'^e-sports.*tournaments$',
+        r'etour de france',
+        r'european slamfest',
     ]
     
     for pattern in invalid_patterns:
@@ -745,16 +1143,38 @@ def is_valid_game_title(title: str) -> bool:
     if not re.search(r'[a-zA-Z]', title):
         return False
     
-    # Additional checks for common promotional text
+    # Enhanced promotional keyword filtering - exclude actual gaming products
     promotional_keywords = [
         'newsletter', 'subscribe', 'reward', 'program', 'lucky', 'wheel',
-        'gift card', 'discord', 'twitch', 'partnership', 'protection',
-        'best prices', 'official', 'keysellers', 'reviews'
+        'discord', 'twitch', 'partnership', 'protection',
+        'best prices', 'official', 'keysellers', 'reviews', 'allkeyshop',
+        'best deals', 'coupons', 'new releases', 'offers', 'average price',
+        'categories', 'about us', 'need help',
+        'buyer protection', 'market best', 'win points', 'turn the wheel',
+        'join our', 'feeling lucky', 'twitchkick', 
+        'etour de france', 'european slamfest', 'tournaments', 'vouchers'
+        # Removed gaming products: 'gift card', 'eshop cards', 'game pass', 'v-bucks', 'robux', etc.
     ]
     
     title_lower = title.lower()
     for keyword in promotional_keywords:
-        if keyword in title_lower and len(title_lower) < 50:  # Short promotional text
+        if keyword in title_lower:
+            # Be more strict with promotional content
+            if len(title_lower) < 100 or title_lower.count(' ') > 8:
+                return False
+    
+    # Reject titles that are too generic or clearly not games
+    generic_patterns = [
+        r'^(game|games|product|item|store|shop|deal|offer|sale)s?$',
+        r'^(pc|xbox|playstation|nintendo|steam|epic|gog)$',
+        r'^(new|best|top|free|cheap)$',
+        r'^\d+.*reviews?$',
+        r'^reviews?\s*\d*$',
+        r'partnership|protection|program|newsletter|subscribe'
+    ]
+    
+    for pattern in generic_patterns:
+        if re.match(pattern, title_lower):
             return False
     
     return True
@@ -787,26 +1207,134 @@ def is_valid_game_data(game_data: Dict[str, Any]) -> bool:
 def extract_games_alternative(page, game_type: str) -> List[Dict[str, Any]]:
     """Alternative extraction method for games."""
     try:
-        # Try to find games by looking for specific patterns in the page
+        logger.info("Trying alternative extraction method...")
         games = []
         
-        # Get page content
-        content = page.content()
+        # Look for links that go to actual game pages - focus on actual game/product links
+        game_url_patterns = [
+            'a[href*="/blog/buy-"]',  # AllKeyShop's main product links
+            'a[href*="cd-key"]',
+            'a[href*="compare-prices"]',
+            'a[href*="/blog/game/"]',
+            'a[href*="/game/"]', 
+            'a[href*="/product/"]',
+            'a[href*="buy-cd-key"]',
+            'a[href*="compare-and-buy"]'
+        ]
         
-        # Look for game-related links
-        game_links = page.query_selector_all('a[href*="game"], a[href*="product"]')
+        # Also try to find ANY links that might contain game titles
+        all_page_links = page.query_selector_all('a')
+        logger.info(f"Total links on page: {len(all_page_links)}")
         
-        for link in game_links[:20]:  # Limit to first 20 links
+        # Filter links that might be games based on text content
+        potential_game_links = []
+        for link in all_page_links:
             try:
-                # Get the parent container
-                parent = link.locator('xpath=ancestor::div[1]')
-                if parent:
-                    game_data = extract_game_data_improved(parent, game_type)
-                    if game_data and is_valid_game_data(game_data):
-                        games.append(game_data)
+                text = link.inner_text().strip()
+                href = link.get_attribute('href')
+                
+                # Skip if no text or href
+                if not text or not href:
+                    continue
+                    
+                # Skip obvious navigation/promotional links
+                if any(skip in text.lower() for skip in ['newsletter', 'subscribe', 'about', 'help', 'contact', 'privacy', 'terms', 'categories', 'partnership', 'protection', 'rewards', 'gift card', 'discord', 'twitch']):
+                    continue
+                    
+                # Look for links that might be games (have reasonable length title)
+                if 5 <= len(text) <= 100 and is_valid_game_title(text):
+                    potential_game_links.append(link)
+                    
             except:
                 continue
         
+        logger.info(f"Found {len(potential_game_links)} potential game links based on text analysis")
+        
+        all_links = potential_game_links  # Start with text-based filtered links
+        
+        # Add pattern-based links
+        for pattern in game_url_patterns:
+            links = page.query_selector_all(pattern)
+            all_links.extend(links)
+            logger.info(f"Found {len(links)} links with pattern: {pattern}")
+        
+        # Remove duplicates
+        unique_links = []
+        seen_urls = set()
+        for link in all_links:
+            try:
+                url = link.get_attribute('href')
+                if url and url not in seen_urls:
+                    unique_links.append(link)
+                    seen_urls.add(url)
+            except:
+                continue
+        
+        logger.info(f"Processing {len(unique_links)} unique potential game links")
+        
+        for link in unique_links[:50]:  # Increased limit to capture more deals
+            try:
+                # Get link text as potential title
+                title = link.inner_text().strip()
+                url = link.get_attribute('href')
+                
+                if not url:
+                    continue
+                    
+                if not url.startswith('http'):
+                    url = f"https://www.allkeyshop.com{url}"
+                
+                # Validate title
+                if not title or not is_valid_game_title(title):
+                    continue
+                
+                # Additional URL-based filtering
+                if url:
+                    # Skip URLs that are clearly not games
+                    skip_url_patterns = [
+                        'category-giftcards', 'category-subscriptions', 'category-gamecards',
+                        'compare-prices', 'buying-guide', 'vouchers', 'blog/en-us',
+                        'blog/en-gb', '#', 'allkeyshop.com/blog/$', 'blog/category'
+                    ]
+                    if any(pattern in url for pattern in skip_url_patterns):
+                        continue
+                
+                # Look for price information in nearby elements
+                current_price = 0.0
+                try:
+                    # Check parent containers for price
+                    parent = link.locator('xpath=ancestor::div[contains(@class, "price") or contains(@class, "game") or contains(@class, "product")][1]')
+                    if parent:
+                        price_text = parent.inner_text()
+                        price_match = re.search(r'€\s*(\d+[.,]\d+)', price_text)
+                        if price_match:
+                            current_price = parse_price(price_match.group(1))
+                except:
+                    pass
+                
+                game_data = {
+                    "title": title,
+                    "url": url,
+                    "current_price": current_price,
+                    "original_price": None,
+                    "discount_percentage": None,
+                    "store_name": None,
+                    "deal_score": None,
+                    "game_type": game_type,
+                    "is_dlc": "DLC" in title.upper() or "EXPANSION" in title.upper(),
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    "source": "AllKeyShop"
+                }
+                
+                if is_valid_game_data(game_data):
+                    games.append(game_data)
+                    logger.debug(f"Added game: {title}")
+                    
+            except Exception as e:
+                logger.debug(f"Error processing link: {e}")
+                continue
+        
+        logger.info(f"Alternative extraction found {len(games)} valid games")
         return games
         
     except Exception as e:
@@ -872,9 +1400,9 @@ def get_allkeyshop_data(max_retries: int = 3) -> List[Dict[str, Any]]:
     for attempt in range(max_retries):
         try:
             with sync_playwright() as p:
-                # Launch browser with stealth settings - try visible first for debugging
+                # Launch browser with stealth settings
                 browser = p.chromium.launch(
-                    headless=False,  # Make visible for debugging
+                    headless=True,  # Headless for production
                     args=[
                         '--no-sandbox',
                         '--disable-blink-features=AutomationControlled',

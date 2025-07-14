@@ -28,12 +28,33 @@ def load_4chan_data() -> List[Dict[str, Any]]:
         logger.error(f"Error loading 4chan data: {e}")
         return []
 
+def get_board_description(board: str) -> str:
+    """Get a description for a board"""
+    board_descriptions = {
+        "g": "Technology - Programming, hardware, software, and tech discussions",
+        "vg": "Video Games Generals - Ongoing game discussions and threads",
+        "t": "Torrents - File sharing and technology discussions",
+        "pol": "Politically Incorrect - Political discussions and current events",
+        "biz": "Business & Finance - Economics, investing, and career advice",
+        "sci": "Science & Math - Scientific discussions and research",
+        "tv": "Television & Film - TV shows, movies, and entertainment",
+        "fit": "Fitness - Health, exercise, and wellness discussions",
+        "mu": "Music - All genres, artists, and music production",
+        "v": "Video Games - General gaming discussions",
+        "k": "Weapons - Firearms, military equipment, and tactics",
+        "o": "Auto - Cars, motorcycles, and automotive discussions",
+        "diy": "Do It Yourself - Home improvement and crafting projects",
+        "his": "History & Humanities - Historical discussions and academia",
+        "int": "International - Cultural exchange and world discussions",
+    }
+    return board_descriptions.get(board, f"Board /{board}/")
+
 def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
     """Create a table for a specific board's threads"""
     try:
         if not threads:
             return dbc.Alert(
-                "No active General threads detected for this board.",
+                f"No active General threads detected for /{board}/ ({get_board_description(board).split(' - ')[1] if ' - ' in get_board_description(board) else 'this board'}).",
                 color="info",
                 className="alert-info"
             )
@@ -111,8 +132,11 @@ def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
             }]
         )
         
+        board_desc = get_board_description(board)
         return html.Div([
-            html.H5(f"Board: /{board}/ – {len(threads)} General threads", className="mb-3"),
+            html.H5(f"/{board}/ – {len(threads)} General threads", className="mb-2"),
+            html.P(board_desc.split(' - ')[1] if ' - ' in board_desc else board_desc, 
+                   className="text-muted mb-3", style={"fontSize": "0.9em"}),
             table
         ])
         
@@ -144,10 +168,13 @@ def render_fourchan_tab() -> html.Div:
             ], className="p-4")
         
         # Group threads by board
-        boards = sorted({item["board"] for item in data})
+        boards = {item["board"] for item in data}
         grouped = {b: [] for b in boards}
         for item in data:
             grouped[item["board"]].append(item)
+        
+        # Sort boards by activity (number of threads), then alphabetically
+        boards = sorted(boards, key=lambda b: (-len(grouped[b]), b))
         
         # Create tabs for each board
         board_tabs = []
@@ -156,10 +183,11 @@ def render_fourchan_tab() -> html.Div:
         for idx, board in enumerate(boards):
             tab_id = f"4chan-board-{board}"
             
-            # Create tab
+            # Create tab with thread count
+            thread_count = len(grouped[board])
             board_tabs.append(
                 dbc.Tab(
-                    label=f"/{board}/",
+                    label=f"/{board}/ ({thread_count})",
                     tab_id=tab_id,
                     active_tab_style={"textTransform": "none"}
                 )
@@ -183,7 +211,10 @@ def render_fourchan_tab() -> html.Div:
             dbc.Row([
                 dbc.Col([
                     html.H2("📑 4chan – Active *General* Threads", className="mb-3"),
-                    html.P(f"Displaying {len(data)} active general threads across {len(boards)} boards", className="text-muted")
+                    html.P([
+                        f"Displaying {len(data)} active general threads across {len(boards)} boards. ",
+                        "Boards are sorted by activity level (most active first)."
+                    ], className="text-muted")
                 ])
             ], className="mb-4"),
             

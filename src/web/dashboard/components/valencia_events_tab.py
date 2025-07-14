@@ -346,28 +346,55 @@ def register_valencia_events_callbacks(app):
     """Register callbacks for Valencia events tab"""
     
     @app.callback(
-        [Output("cards-container", "style"),
-         Output("table-container", "style"),
-         Output("cards-view-btn", "outline"),
-         Output("table-view-btn", "outline")],
-        [Input("cards-view-btn", "n_clicks"),
-         Input("table-view-btn", "n_clicks")]
+        [Output("events-cards-container", "style"),
+         Output("events-table-container", "style"),
+         Output("events-cards-view-btn", "outline"),
+         Output("events-table-view-btn", "outline")],
+        [Input("events-cards-view-btn", "n_clicks"),
+         Input("events-table-view-btn", "n_clicks")]
     )
-    def toggle_view(cards_clicks, table_clicks):
-        """Toggle between cards and table view"""
+    def toggle_events_view(cards_clicks, table_clicks):
+        """Toggle between cards and table view for events"""
         if table_clicks and (not cards_clicks or table_clicks > cards_clicks):
             # Show table view
             return (
-                {'display': 'none'},     # cards-container
-                {'display': 'block'},    # table-container
-                True,                    # cards-view-btn outline
-                False                    # table-view-btn outline
+                {'display': 'none'},     # events-cards-container
+                {'display': 'block'},    # events-table-container
+                True,                    # events-cards-view-btn outline
+                False                    # events-table-view-btn outline
             )
         else:
             # Show cards view (default)
             return (
-                {'display': 'block'},    # cards-container
-                {'display': 'none'},     # table-container
-                False,                   # cards-view-btn outline
-                True                     # table-view-btn outline
+                {'display': 'block'},    # events-cards-container
+                {'display': 'none'},     # events-table-container
+                False,                   # events-cards-view-btn outline
+                True                     # events-table-view-btn outline
+            )
+    
+    @app.callback(
+        [Output("cinema-cards-container", "style"),
+         Output("cinema-table-container", "style"),
+         Output("cinema-cards-view-btn", "outline"),
+         Output("cinema-table-view-btn", "outline")],
+        [Input("cinema-cards-view-btn", "n_clicks"),
+         Input("cinema-table-view-btn", "n_clicks")]
+    )
+    def toggle_cinema_view(cards_clicks, table_clicks):
+        """Toggle between cards and table view for cinema"""
+        if table_clicks and (not cards_clicks or table_clicks > cards_clicks):
+            # Show table view
+            return (
+                {'display': 'none'},     # cinema-cards-container
+                {'display': 'block'},    # cinema-table-container
+                True,                    # cinema-cards-view-btn outline
+                False                    # cinema-table-view-btn outline
+            )
+        else:
+            # Show cards view (default)
+            return (
+                {'display': 'block'},    # cinema-cards-container
+                {'display': 'none'},     # cinema-table-container
+                False,                   # cinema-cards-view-btn outline
+                True                     # cinema-table-view-btn outline
             ) 

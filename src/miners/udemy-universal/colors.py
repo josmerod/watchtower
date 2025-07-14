@@ -6,7 +6,6 @@ for coloring terminal output.
 """
 # TODO: Standardize the code with the other projects. Current code has been migrated from other project.
 
-
 from colorama import Back, Fore, Style, init
 
 init(autoreset=True)

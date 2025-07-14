@@ -1,191 +1,279 @@
 """Anime Tab Component for Watchtower Dashboard"""
 import json
 import dash_bootstrap_components as dbc
-from dash import html, dcc
+from dash import html, dcc, Input, Output, State, callback
 from pathlib import Path
 from typing import List, Dict, Any
 import logging
+from datetime import datetime, timedelta
+import calendar
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-def load_anime_data() -> List[Dict[str, Any]]:
-    """Load anime data from JSON files"""
+def load_anime_data() -> Dict[str, List[Dict[str, Any]]]:
+    """Load anime data from JSON files categorized by type"""
     try:
         data_dir = Path("data/anime")
-        anime_data = []
+        anime_categories = {
+            'seasonal': [],
+            'popular': [],
+            'favorite': [],
+            'rated': [],
+            'top_rated_all': [],
+            'top_airing': [],
+            'top_upcoming': [],
+            'top_tv_series': [],
+            'top_movies': [],
+            'top_ova': [],
+            'top_special': []
+        }
         
         # Look for anime JSON files in the data directory
         if data_dir.exists():
-            for json_file in data_dir.glob("*.json"):
-                try:
-                    with open(json_file, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        if isinstance(data, list):
-                            anime_data.extend(data)
-                        elif isinstance(data, dict):
-                            anime_data.append(data)
-                except Exception as e:
-                    logger.error(f"Error loading {json_file}: {e}")
+            file_mapping = {
+                'current_season_anime.json': 'seasonal',
+                'top_popular_anime.json': 'popular', 
+                'top_favorite_anime.json': 'favorite',
+                'top_rated_anime.json': 'rated',
+                'top_rated_all_time.json': 'top_rated_all',
+                'top_airing_anime.json': 'top_airing',
+                'top_upcoming_anime.json': 'top_upcoming',
+                'top_tv_series.json': 'top_tv_series',
+                'top_movies.json': 'top_movies',
+                'top_ova.json': 'top_ova',
+                'top_special.json': 'top_special'
+            }
+            
+            for filename, category in file_mapping.items():
+                json_file = data_dir / filename
+                if json_file.exists():
+                    try:
+                        with open(json_file, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            if isinstance(data, list):
+                                anime_categories[category] = data
+                            elif isinstance(data, dict):
+                                anime_categories[category] = [data]
+                    except Exception as e:
+                        logger.error(f"Error loading {json_file}: {e}")
         
-        logger.info(f"Loaded {len(anime_data)} anime items")
-        return anime_data
+        total_items = sum(len(v) for v in anime_categories.values())
+        logger.info(f"Loaded {total_items} anime items across {len(anime_categories)} categories")
+        return anime_categories
     except Exception as e:
         logger.error(f"Error loading anime data: {e}")
-        return []
+        return {
+            'seasonal': [], 'popular': [], 'favorite': [], 'rated': [],
+            'top_rated_all': [], 'top_airing': [], 'top_upcoming': [],
+            'top_tv_series': [], 'top_movies': [], 'top_ova': [], 'top_special': []
+        }
 
-def create_anime_card(anime: Dict[str, Any]) -> dbc.Card:
-    """Create a card component for a single anime item"""
+def create_community_rankings_section(anime_data: Dict[str, List[Dict[str, Any]]]) -> html.Div:
+    """Create comprehensive community rankings section with extensive anime lists"""
     try:
-        title = anime.get('title', 'Unknown Title')
-        mean_score = anime.get('mean', 0)
-        rank = anime.get('rank', 'N/A')
-        popularity = anime.get('popularity', 'N/A')
-        synopsis = anime.get('synopsis', 'No synopsis available.')
+        ranking_sections = []
         
-        # Get image
-        main_picture = anime.get('main_picture', {})
-        image_url = main_picture.get('large', main_picture.get('medium', ''))
+        # Define ranking categories with enhanced descriptions
+        ranking_info = {
+            'top_rated_all': {
+                'title': '🏆 All-Time Greatest Anime', 
+                'description': 'The highest-rated anime of all time according to MyAnimeList community (Top 100)',
+                'badge_color': 'warning',
+                'icon': '👑'
+            },
+            'top_tv_series': {
+                'title': '📺 Top TV Series', 
+                'description': 'Best TV anime series ranked by community ratings (Top 100)',
+                'badge_color': 'primary',
+                'icon': '🎬'
+            },
+            'top_movies': {
+                'title': '🎭 Top Anime Movies', 
+                'description': 'Highest-rated anime movies that define cinematic excellence (Top 50)',
+                'badge_color': 'danger',
+                'icon': '🎯'
+            },
+            'top_airing': {
+                'title': '📡 Top Currently Airing', 
+                'description': 'Best anime currently broadcasting, updated live (Top 50)',
+                'badge_color': 'success',
+                'icon': '⚡'
+            },
+            'top_upcoming': {
+                'title': '🔮 Most Anticipated Upcoming', 
+                'description': 'Highly anticipated anime releasing soon (Top 50)',
+                'badge_color': 'info',
+                'icon': '🚀'
+            },
+            'top_ova': {
+                'title': '💎 Top OVA Series', 
+                'description': 'Original Video Animations with exceptional quality (Top 30)',
+                'badge_color': 'secondary',
+                'icon': '💿'
+            },
+            'top_special': {
+                'title': '⭐ Top Special Episodes', 
+                'description': 'Special episodes, side stories, and unique content (Top 30)',
+                'badge_color': 'dark',
+                'icon': '🌟'
+            }
+        }
         
-        # Get additional details
-        num_episodes = anime.get('num_episodes', 'N/A')
-        media_type = anime.get('media_type', 'N/A')
-        status = anime.get('status', 'N/A')
-        source = anime.get('source', 'N/A')
-        rating = anime.get('rating', 'N/A')
-        
-        # Get genres
-        genres = anime.get('genres', [])
-        genres_text = ', '.join([g['name'] for g in genres if isinstance(g, dict) and 'name' in g])
-        
-        # Get studios
-        studios = anime.get('studios', [])
-        studios_text = ', '.join([s['name'] for s in studios if isinstance(s, dict) and 'name' in s])
-        
-        # Get season info
-        start_season = anime.get('start_season', {})
-        season_text = f"{start_season.get('season', '').capitalize()} {start_season.get('year', '')}" if start_season else 'N/A'
-        
-        # Get broadcast info
-        broadcast = anime.get('broadcast', {})
-        broadcast_text = f"{broadcast.get('day_of_the_week', '').capitalize()} at {broadcast.get('start_time', '')} JST" if broadcast else 'N/A'
-        
-        card_header = dbc.CardHeader(
-            html.H4(title, className="mb-0", style={'fontSize': '1.1rem'})
-        )
-        
-        card_body_content = [
-            # Image
-            html.Div(
-                html.Img(
-                    src=image_url,
-                    style={'width': '100%', 'maxWidth': '200px', 'height': 'auto'},
-                    className="mb-3"
-                ) if image_url else html.Div(
-                    "No Image Available", 
-                    className="text-muted text-center p-3 border mb-3",
-                    style={'minHeight': '200px', 'display': 'flex', 'alignItems': 'center', 'justifyContent': 'center'}
-                ),
-                className="text-center"
-            ),
+        for category, anime_list in anime_data.items():
+            if category not in ranking_info or not anime_list:
+                continue
+                
+            info = ranking_info[category]
             
-            # Metrics
+            # Create ranking cards with enhanced layout
+            ranking_cards = []
+            for idx, anime in enumerate(anime_list[:50]):  # Show more for rankings
+                if not anime:
+                    continue
+                    
+                rank_display = anime.get('rank', idx + 1)
+                score = anime.get('mean')
+                title = anime.get('title', 'Unknown Title')
+                
+                # Create compact ranking card
+                card_content = [
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Badge(
+                                f"#{rank_display}", 
+                                color=info['badge_color'], 
+                                className="me-2"
+                            ),
+                            html.Strong(title, style={'fontSize': '0.95rem'})
+                        ], width=8),
+                        dbc.Col([
+                            html.Div([
+                                html.Small("⭐", className="me-1"),
+                                html.Strong(
+                                    f"{score:.2f}" if score is not None else "N/A",
+                                    style={'fontSize': '0.9rem'}
+                                )
+                            ], className="text-end")
+                        ], width=4)
+                    ], className="align-items-center")
+                ]
+                
+                # Add genre info if available
+                genres = anime.get('genres', [])
+                if genres:
+                    genre_names = [g.get('name', '') for g in genres[:3] if g]
+                    if genre_names:
+                        card_content.append(
+                            html.Div([
+                                html.Small(
+                                    ' • '.join(genre_names),
+                                    className="text-muted",
+                                    style={'fontSize': '0.75rem'}
+                                )
+                            ], className="mt-1")
+                        )
+                
+                card = dbc.Card(
+                    dbc.CardBody(card_content, className="py-2 px-3"),
+                    className="mb-2 border-0 shadow-sm",
+                    style={'backgroundColor': '#f8f9fa'}
+                )
+                ranking_cards.append(card)
+            
+            # Create section for this ranking category
+            section_content = html.Div([
+                html.H4([
+                    html.Span(info['icon'], className="me-2"),
+                    info['title']
+                ], className="mb-2"),
+                html.P(info['description'], className="text-muted mb-3"),
+                html.Div(ranking_cards),
+                html.Hr(className="my-5")
+            ])
+            
+            ranking_sections.append(section_content)
+        
+        if not ranking_sections:
+            return html.Div([
+                dbc.Alert([
+                    html.H4("Community Rankings Not Available", className="alert-heading"),
+                    html.P("Comprehensive anime rankings data is not yet available."),
+                    html.Hr(),
+                    html.P("Run the enhanced ETL to fetch community rankings:", className="mb-2"),
+                    html.Code("uv run python src/etl/anime/mal_etl.py", className="d-block p-2 bg-light")
+                ], color="info")
+            ])
+        
+        return html.Div([
             dbc.Row([
                 dbc.Col([
-                    html.Small("Score", className="text-muted"),
-                    html.H6(f"{mean_score:.2f}" if mean_score else "N/A", className="mb-0")
-                ], width=4),
-                dbc.Col([
-                    html.Small("Rank", className="text-muted"),
-                    html.H6(f"#{rank}" if rank != 'N/A' else "N/A", className="mb-0")
-                ], width=4),
-                dbc.Col([
-                    html.Small("Popularity", className="text-muted"),
-                    html.H6(f"#{popularity}" if popularity != 'N/A' else "N/A", className="mb-0")
-                ], width=4),
-            ], className="mb-3"),
-            
-            # Collapsible details
-            dbc.Accordion([
-                dbc.AccordionItem([
-                    html.P(synopsis, className="mb-3"),
-                    html.Hr(),
-                    html.Ul([
-                        html.Li(f"Episodes: {num_episodes}"),
-                        html.Li(f"Media Type: {media_type.capitalize() if media_type != 'N/A' else 'N/A'}"),
-                        html.Li(f"Status: {status.replace('_', ' ').title() if status != 'N/A' else 'N/A'}"),
-                        html.Li(f"Source: {source.capitalize() if source != 'N/A' else 'N/A'}"),
-                        html.Li(f"Rating: {rating.upper().replace('_', '-') if rating != 'N/A' else 'N/A'}"),
-                        html.Li(f"Genres: {genres_text if genres_text else 'N/A'}"),
-                        html.Li(f"Studios: {studios_text if studios_text else 'N/A'}"),
-                        html.Li(f"Season: {season_text.strip() if season_text.strip() != 'N/A' else 'N/A'}"),
-                        html.Li(f"Broadcast: {broadcast_text.strip() if broadcast_text.strip() != 'N/A' else 'N/A'}"),
-                    ], className="mb-0")
-                ], title="Details & Synopsis")
-            ], start_collapsed=True)
-        ]
-        
-        return dbc.Card([
-            card_header,
-            dbc.CardBody(card_body_content)
-        ], className="mb-3 h-100")
+                    html.Div([
+                        html.H3("🏅 Community Rankings", className="mb-3"),
+                        html.P(
+                            "Comprehensive anime rankings based on MyAnimeList community ratings, "
+                            "updated regularly to reflect the latest community preferences.",
+                            className="text-muted mb-4"
+                        )
+                    ])
+                ])
+            ], className="mb-4"),
+            html.Div(ranking_sections)
+        ])
         
     except Exception as e:
-        logger.error(f"Error creating anime card: {e}")
-        return dbc.Card(
-            dbc.CardBody([
-                html.H4("Error Loading Anime", className="card-title"),
-                html.P(f"Error: {str(e)}", className="card-text")
-            ]),
-            className="mb-3"
-        )
+        logger.error(f"Error creating community rankings: {e}")
+        return html.Div([
+            dbc.Alert("Error loading community rankings", color="danger")
+        ])
 
 def render_anime_tab() -> html.Div:
-    """Render the anime tab with anime data"""
+    """Render the anime tab with enhanced community rankings"""
     try:
         anime_data = load_anime_data()
         
-        if not anime_data:
+        # Check if we have any data
+        total_anime = sum(len(v) for v in anime_data.values())
+        if total_anime == 0:
             return html.Div([
                 dbc.Alert(
                     [
                         html.H4("No Anime Data Available", className="alert-heading"),
                         html.P("No anime data found. Please run the anime ETL to populate data."),
                         html.Hr(),
-                        html.P("Expected data location: data/anime/*.json", className="mb-0")
+                        html.P("Expected data location: data/anime/*.json", className="mb-0"),
+                        html.P("Run: uv run python src/etl/anime/mal_etl.py", className="mb-0 mt-2 font-monospace")
                     ],
                     color="info"
                 )
             ], className="p-4")
         
-        # Create cards for anime items
-        anime_cards = []
-        for anime in anime_data[:20]:  # Limit to first 20 for performance
-            anime_cards.append(create_anime_card(anime))
-        
-        # Create grid layout
-        card_columns = []
-        for i in range(0, len(anime_cards), 3):  # 3 cards per row
-            row_cards = anime_cards[i:i+3]
-            card_columns.append(
-                dbc.Row([
-                    dbc.Col(card, width=4) for card in row_cards
-                ], className="mb-4")
+        # Create tabs for different views
+        tab_content = dbc.Tabs([
+            dbc.Tab(
+                label="🏅 Community Rankings",
+                tab_id="rankings-tab",
+                children=[
+                    html.Div([
+                        create_community_rankings_section(anime_data)
+                    ], className="p-4")
+                ]
             )
+        ], id="anime-tabs", active_tab="rankings-tab")
         
         return html.Div([
             # Header
             dbc.Row([
                 dbc.Col([
-                    html.H2("🎌 Anime Collection", className="mb-3"),
-                    html.P(f"Displaying {len(anime_cards)} anime items", className="text-muted")
+                    html.H2("🎌 Anime Dashboard", className="mb-3"),
+                    html.P(f"Total anime loaded: {total_anime} across {len([k for k, v in anime_data.items() if v])} categories", className="text-muted")
                 ])
-            ], className="mb-4"),
+            ], className="mb-4 p-4 pb-0"),
             
-            # Anime cards
-            html.Div(card_columns)
+            # Tabs
+            tab_content
             
-        ], className="p-4")
+        ])
         
     except Exception as e:
         logger.error(f"Error rendering anime tab: {e}")
@@ -196,7 +284,9 @@ def render_anime_tab() -> html.Div:
             )
         ], className="p-4")
 
-# Register any callbacks if needed (none for this tab currently)
+# Register any callbacks if needed
 def register_anime_callbacks(app):
-    """Register callbacks for anime tab (none needed currently)"""
-    pass 
+    """Register callbacks for anime tab"""
+    # Currently no interactive callbacks needed
+    # Future: could add filtering, search, favorites functionality
+    pass

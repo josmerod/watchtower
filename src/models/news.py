@@ -303,3 +303,5 @@ class ProductHuntModel(BaseModel):
     published: str
     summary: str
     author: str
+    votes: int = 0
+    source: str = "Product Hunt"

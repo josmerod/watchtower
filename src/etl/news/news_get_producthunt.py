@@ -22,6 +22,7 @@ from typing import Any
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from bs4 import BeautifulSoup
 
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
@@ -275,10 +276,74 @@ def scrape_daily_products(
     try:
         response = session.get(base_url, timeout=30)
         response.raise_for_status()
-
-        # For now, return mock data as Product Hunt requires complex parsing
-        # In production, you'd use BeautifulSoup or Playwright for proper scraping
-        return generate_mock_products("featured", 20)
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        products = []
+        
+        # Look for product containers
+        product_items = soup.find_all('div', {'data-test': 'homepage-section-item'}) or \
+                       soup.find_all('div', class_=lambda x: x and 'styles_item' in x) or \
+                       soup.find_all('li', {'data-test': 'post-item'})
+        
+        for item in product_items[:20]:  # Limit to 20 products
+            try:
+                # Extract product name
+                name_elem = item.find('h3') or item.find('h2') or item.find('a', class_=lambda x: x and 'name' in x.lower() if x else False)
+                name = name_elem.get_text(strip=True) if name_elem else "No Title"
+                
+                # Extract link
+                link_elem = item.find('a', href=True)
+                link = link_elem['href'] if link_elem else ""
+                if link and not link.startswith('http'):
+                    link = base_url + link
+                
+                # Extract tagline/description
+                desc_elem = item.find('p') or item.find('div', class_=lambda x: x and 'tagline' in x.lower() if x else False)
+                tagline = desc_elem.get_text(strip=True) if desc_elem else ""
+                
+                # Extract vote count
+                vote_elem = item.find('span', class_=lambda x: x and 'vote' in x.lower() if x else False) or \
+                           item.find('div', class_=lambda x: x and 'vote' in x.lower() if x else False)
+                votes = 0
+                if vote_elem:
+                    vote_text = vote_elem.get_text(strip=True)
+                    try:
+                        votes = int(''.join(filter(str.isdigit, vote_text)))
+                    except ValueError:
+                        votes = 0
+                
+                if name and name != "No Title":
+                    product = {
+                        'id': f'ph_product_{len(products)}',
+                        'name': name,
+                        'tagline': tagline,
+                        'description': tagline,
+                        'url': link,
+                        'website': link,
+                        'slug': name.lower().replace(' ', '-'),
+                        'votes_count': votes,
+                        'comments_count': 0,
+                        'reviews_count': 0,
+                        'reviews_rating': 0.0,
+                        'featured_at': datetime.now(timezone.utc).isoformat(),
+                        'created_at': datetime.now(timezone.utc).isoformat(),
+                        'updated_at': datetime.now(timezone.utc).isoformat(),
+                        'thumbnail_url': '',
+                        'gallery_images': [],
+                        'topics': ['featured'],
+                        'makers': [],
+                        'hunters': [],
+                        'product_links': [{'type': 'website', 'url': link}] if link else [],
+                        'category': 'featured',
+                        'mock_data': False
+                    }
+                    products.append(product)
+            except Exception as e:
+                logger.warning(f"Error parsing product item: {e}")
+                continue
+        
+        logger.info(f"Scraped {len(products)} products from daily page")
+        return products
 
     except Exception as e:
         logger.error(f"Error scraping daily products: {e}")
@@ -302,152 +367,81 @@ def scrape_topic_products(
         topic_url = f"{base_url}/topics/{topic}"
         response = session.get(topic_url, timeout=30)
         response.raise_for_status()
-
-        # Return mock data - in production you'd implement proper parsing
-        return generate_mock_products(topic, 15)
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        products = []
+        
+        # Look for product containers in topic pages
+        product_items = soup.find_all('div', {'data-test': 'post-item'}) or \
+                       soup.find_all('div', class_=lambda x: x and 'styles_item' in x) or \
+                       soup.find_all('li', {'data-test': 'post-item'})
+        
+        for item in product_items[:15]:  # Limit to 15 products per topic
+            try:
+                # Extract product name
+                name_elem = item.find('h3') or item.find('h2') or item.find('a', class_=lambda x: x and 'name' in x.lower() if x else False)
+                name = name_elem.get_text(strip=True) if name_elem else "No Title"
+                
+                # Extract link
+                link_elem = item.find('a', href=True)
+                link = link_elem['href'] if link_elem else ""
+                if link and not link.startswith('http'):
+                    link = base_url + link
+                
+                # Extract tagline/description
+                desc_elem = item.find('p') or item.find('div', class_=lambda x: x and 'tagline' in x.lower() if x else False)
+                tagline = desc_elem.get_text(strip=True) if desc_elem else ""
+                
+                # Extract vote count
+                vote_elem = item.find('span', class_=lambda x: x and 'vote' in x.lower() if x else False) or \
+                           item.find('div', class_=lambda x: x and 'vote' in x.lower() if x else False)
+                votes = 0
+                if vote_elem:
+                    vote_text = vote_elem.get_text(strip=True)
+                    try:
+                        votes = int(''.join(filter(str.isdigit, vote_text)))
+                    except ValueError:
+                        votes = 0
+                
+                if name and name != "No Title":
+                    product = {
+                        'id': f'ph_topic_{topic}_{len(products)}',
+                        'name': name,
+                        'tagline': tagline,
+                        'description': tagline,
+                        'url': link,
+                        'website': link,
+                        'slug': name.lower().replace(' ', '-'),
+                        'votes_count': votes,
+                        'comments_count': 0,
+                        'reviews_count': 0,
+                        'reviews_rating': 0.0,
+                        'featured_at': datetime.now(timezone.utc).isoformat(),
+                        'created_at': datetime.now(timezone.utc).isoformat(),
+                        'updated_at': datetime.now(timezone.utc).isoformat(),
+                        'thumbnail_url': '',
+                        'gallery_images': [],
+                        'topics': [topic],
+                        'makers': [],
+                        'hunters': [],
+                        'product_links': [{'type': 'website', 'url': link}] if link else [],
+                        'category': topic,
+                        'mock_data': False
+                    }
+                    products.append(product)
+            except Exception as e:
+                logger.warning(f"Error parsing product item: {e}")
+                continue
+        
+        logger.info(f"Scraped {len(products)} products from topic {topic}")
+        return products
 
     except Exception as e:
         logger.error(f"Error scraping topic {topic}: {e}")
         return []
 
 
-def generate_mock_products(category: str, count: int) -> list[dict[str, Any]]:
-    """Generate mock Product Hunt data for demonstration.
-    In production, replace with actual scraping logic.
-
-    Args:
-        category: Product category
-        count: Number of products to generate
-
-    Returns:
-        List of mock product dictionaries
-    """
-    import random
-    from datetime import datetime, timezone
-
-    products = []
-
-    # Sample product data
-    product_names = [
-        "AI Code Assistant Pro",
-        "DataViz Dashboard",
-        "Smart Analytics Tool",
-        "Cloud Deployment Manager",
-        "API Gateway Plus",
-        "ML Model Builder",
-        "Security Scanner Pro",
-        "Database Optimizer",
-        "Workflow Automator",
-        "Design System Kit",
-        "Performance Monitor",
-        "Bug Tracker Elite",
-        "Social Media Scheduler",
-        "Email Campaign Builder",
-        "CRM Connector",
-        "Payment Gateway SDK",
-        "Authentication Service",
-        "File Storage API",
-        "Video Conferencing Tool",
-        "Project Management Hub",
-    ]
-
-    taglines = [
-        "Build better software faster",
-        "Analytics made simple",
-        "Deploy with confidence",
-        "Secure your applications",
-        "Automate your workflow",
-        "Design beautiful interfaces",
-        "Monitor performance in real-time",
-        "Track and fix bugs efficiently",
-        "Schedule social media posts",
-        "Build email campaigns that convert",
-        "Connect your customers",
-        "Accept payments globally",
-        "Secure user authentication",
-        "Store files in the cloud",
-        "Video calls for teams",
-        "Manage projects effectively",
-    ]
-
-    topics_list = [
-        ["ai", "developer-tools"],
-        ["analytics", "saas"],
-        ["productivity", "automation"],
-        ["security", "developer-tools"],
-        ["design", "productivity"],
-        ["monitoring", "devops"],
-        ["social-media", "marketing"],
-        ["email", "marketing"],
-        ["crm", "saas"],
-        ["fintech", "developer-tools"],
-        ["authentication", "security"],
-        ["storage", "cloud"],
-        ["communication", "productivity"],
-        ["project-management", "saas"],
-    ]
-
-    for i in range(count):
-        # Generate random data
-        votes = random.randint(50, 1500)
-        comments = random.randint(5, 200)
-        created_days_ago = random.randint(0, 30)
-
-        created_at = datetime.now(timezone.utc) - timedelta(days=created_days_ago)
-
-        product = {
-            "id": f"mock_product_{category}_{i}",
-            "name": random.choice(product_names),
-            "tagline": random.choice(taglines),
-            "description": f"A comprehensive solution for {category} that helps teams be more productive and efficient.",
-            "url": f"https://producthunt.com/products/mock-product-{i}",
-            "website": f"https://example-product-{i}.com",
-            "slug": f"mock-product-{category}-{i}",
-            "votes_count": votes,
-            "comments_count": comments,
-            "reviews_count": random.randint(10, 100),
-            "reviews_rating": round(random.uniform(3.5, 5.0), 1),
-            "featured_at": created_at.isoformat(),
-            "created_at": created_at.isoformat(),
-            "updated_at": created_at.isoformat(),
-            "thumbnail_url": f"https://example.com/thumbnails/product-{i}.jpg",
-            "gallery_images": [
-                f"https://example.com/gallery/product-{i}-1.jpg",
-                f"https://example.com/gallery/product-{i}-2.jpg",
-            ],
-            "topics": random.choice(topics_list),
-            "makers": [
-                {
-                    "id": f"maker_{i}",
-                    "name": f"Maker {i}",
-                    "username": f"maker{i}",
-                    "headline": "Building the future of tech",
-                    "twitter_username": f"maker{i}",
-                    "followers_count": random.randint(100, 10000),
-                    "posts_count": random.randint(1, 20),
-                }
-            ],
-            "hunters": [
-                {
-                    "id": f"hunter_{i}",
-                    "name": f"Hunter {i}",
-                    "username": f"hunter{i}",
-                    "headline": "Product hunter and tech enthusiast",
-                    "followers_count": random.randint(500, 50000),
-                    "posts_count": random.randint(10, 200),
-                }
-            ],
-            "product_links": [
-                {"type": "website", "url": f"https://example-product-{i}.com"},
-                {"type": "github", "url": f"https://github.com/example/product-{i}"},
-            ],
-            "category": category,
-            "mock_data": True,
-        }
-
-        products.append(product)
-
-    return products
+# Mock data generation function removed - now using real scraping
 
 
 def process_product_hunt_data(products: list[dict[str, Any]]) -> list[dict[str, Any]]:

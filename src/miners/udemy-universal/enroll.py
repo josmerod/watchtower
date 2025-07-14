@@ -245,7 +245,9 @@ def main_enroll():
                 "email": "",
                 "password": "",
                 "use_browser_cookies": False,
-                "sites": dict.fromkeys(scraper_dict.keys(), True),  # Default all sites enabled in settings context
+                "sites": dict.fromkeys(
+                    scraper_dict.keys(), True
+                ),  # Default all sites enabled in settings context
                 "categories": {},
                 "languages": {"en": True},  # Example defaults
                 "min_rating": 0,

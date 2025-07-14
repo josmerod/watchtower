@@ -36,27 +36,64 @@ class ProductHuntETL(BaseETL):
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
             page.goto(self.URL)
-            products = page.query_selector_all('li[data-test="post-item"]')[:20]
-            if not products:
-                products = page.query_selector_all('div[class*="post"]')[:20]
+            page.wait_for_timeout(3000)  # Wait for JS to load
+            
+            # Find products using the correct selector
+            products = page.query_selector_all('[data-test*="post"]')[:20]
+            
             for prod in products:
-                title_elem = prod.query_selector('h3')
-                title = title_elem.inner_text().strip() if title_elem else 'No title'
-                link_elem = prod.query_selector('a')
-                href = link_elem.get_attribute('href') if link_elem else None
-                link = f'https://www.producthunt.com{href}' if href else ''
-                published = datetime.now().isoformat()  # Placeholder
-                summary_elem = prod.query_selector('p')
-                summary = summary_elem.inner_text().strip() if summary_elem else ''
-                author_elem = prod.query_selector('div[class*="user"] span')
-                author = author_elem.inner_text().strip() if author_elem else 'Anonymous'
-                launches.append({
-                    'title': title,
-                    'link': link,
-                    'published': published,
-                    'summary': summary,
-                    'author': author
-                })
+                try:
+                    # Extract title using the correct selector
+                    title_elem = prod.query_selector('[data-test*="name"]')
+                    title = title_elem.inner_text().strip() if title_elem else None
+                    
+                    # Skip if no title found
+                    if not title:
+                        continue
+                    
+                    # Extract link
+                    link_elem = prod.query_selector('a[href]')
+                    href = link_elem.get_attribute('href') if link_elem else None
+                    link = f'https://www.producthunt.com{href}' if href else ''
+                    
+                    # Extract description/tagline (usually the next text after title)
+                    full_text = prod.inner_text()
+                    lines = [line.strip() for line in full_text.split('\n') if line.strip()]
+                    
+                    # Find title line and get the next line as summary
+                    summary = ''
+                    title_clean = title.split('. ', 1)[-1] if '. ' in title else title
+                    for i, line in enumerate(lines):
+                        if title_clean in line and i + 1 < len(lines):
+                            summary = lines[i + 1]
+                            break
+                    
+                    # Extract vote count (look for numbers)
+                    vote_text = full_text
+                    votes = 0
+                    import re
+                    vote_matches = re.findall(r'\b(\d+)\b', vote_text)
+                    if vote_matches:
+                        # Usually the last number is votes
+                        try:
+                            votes = int(vote_matches[-1]) 
+                        except:
+                            votes = 0
+                    
+                    launches.append({
+                        'title': title_clean,
+                        'link': link,
+                        'published': datetime.now().isoformat(),
+                        'summary': summary,
+                        'author': 'Product Hunt',
+                        'votes': votes,
+                        'source': 'Product Hunt'
+                    })
+                    
+                except Exception as e:
+                    logger.warning(f"Error parsing product: {e}")
+                    continue
+                    
             browser.close()
         return launches
 
@@ -67,16 +104,16 @@ class ProductHuntETL(BaseETL):
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         json_file = self.output_dir / f'product_hunt_{timestamp}.json'
         with open(json_file, 'w', encoding='utf-8') as f:
-            json.dump([m.dict() for m in data], f, indent=2)
+            json.dump([m.model_dump() for m in data], f, indent=2)
         
         latest_json = self.output_dir / 'product_hunt_latest.json'
-        if os.path.exists(latest_json):
-            os.remove(latest_json)
-        os.symlink(json_file, latest_json)
+        # Use copy instead of symlink on Windows
+        import shutil
+        shutil.copy2(json_file, latest_json)
         
         # CSV (optional)
         import pandas as pd
-        df = pd.DataFrame([m.dict() for m in data])
+        df = pd.DataFrame([m.model_dump() for m in data])
         csv_file = self.output_dir / f'product_hunt_{timestamp}.csv'
         df.to_csv(csv_file, index=False)
 
