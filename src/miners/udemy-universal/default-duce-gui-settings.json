@@ -1,0 +1,146 @@
+{
+  "email": "",
+  "password": "",
+  "use_browser_cookies": true,
+  "browser_type": "chrome",
+  "sites": {
+    "Udemy Freebies": true,
+    "Tutorial Bar": true,
+    "Real Discount": true,
+    "Course Vania": true,
+    "IDownloadCoupons": true,
+    "E-next": true,
+    "Discudemy": true,
+    "Course Joiner": true,
+    "Cursos Dev": true,
+    "Udemy Free Courses": true
+  },
+  "categories": {
+    "development": true,
+    "business": true,
+    "design": true,
+    "marketing": true,
+    "it-software": true,
+    "photography": true,
+    "music": true,
+    "health-fitness": true,
+    "teaching": true,
+    "lifestyle": true,
+    "personal-development": true,
+    "finance": true,
+    "office-productivity": true
+  },
+  "languages": {
+    "en": true,
+    "es": false,
+    "fr": false,
+    "de": false,
+    "pt": false,
+    "it": false,
+    "ja": false,
+    "ko": false,
+    "zh": false,
+    "ru": false,
+    "ar": false,
+    "hi": false,
+    "tr": false,
+    "pl": false,
+    "nl": false
+  },
+  "filters": {
+    "min_rating": 4.0,
+    "min_reviews": 10,
+    "max_pages": 5,
+    "course_update_threshold_months": 24,
+    "exclude_expired_coupons": true,
+    "skip_already_enrolled": true,
+    "discounted_only": false,
+    "free_only": false
+  },
+  "exclusions": {
+    "title_exclude": [
+      "test",
+      "demo",
+      "sample",
+      "basics",
+      "introduction",
+      "beginner"
+    ],
+    "instructor_exclude": [
+      "test-instructor",
+      "demo-user"
+    ],
+    "keyword_exclude": [
+      "outdated",
+      "deprecated",
+      "old version"
+    ]
+  },
+  "output": {
+    "save_txt": true,
+    "save_json": true,
+    "courses_directory": "Courses",
+    "logs_directory": "logs",
+    "show_progress": true,
+    "show_statistics": true,
+    "verbose": false,
+    "quiet": false
+  },
+  "automation": {
+    "max_retries": 3,
+    "retry_delay": 2,
+    "request_timeout": 30,
+    "batch_size": 10,
+    "concurrent_scrapers": 5,
+    "rate_limit_delay": 1.0,
+    "auto_enroll": true,
+    "skip_confirmation": false
+  },
+  "advanced": {
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "use_proxy": false,
+    "proxy_url": "",
+    "debug_mode": false,
+    "log_level": "INFO",
+    "save_debug_pages": false,
+    "headless_browser": true,
+    "browser_timeout": 60,
+    "check_for_updates": true,
+    "auto_update": false
+  },
+  "notifications": {
+    "desktop_notifications": true,
+    "email_notifications": false,
+    "email_smtp_server": "",
+    "email_from": "",
+    "email_to": "",
+    "email_password": "",
+    "webhook_url": "",
+    "send_summary": true,
+    "send_errors": true
+  },
+  "gui": {
+    "theme": "dark",
+    "window_size": {
+      "width": 1200,
+      "height": 800
+    },
+    "auto_minimize": false,
+    "minimize_to_tray": true,
+    "close_to_tray": false,
+    "show_splash_screen": true,
+    "remember_window_position": true,
+    "show_tooltips": true,
+    "animation_speed": "normal",
+    "sound_notifications": true,
+    "auto_start_scraping": false,
+    "confirm_actions": true,
+    "show_course_thumbnails": true,
+    "table_row_height": 25,
+    "font_size": 12,
+    "font_family": "Segoe UI"
+  },
+  "version": "2.5.1",
+  "last_updated": "2024-01-01T00:00:00Z",
+  "settings_schema_version": "1.0"
+} 

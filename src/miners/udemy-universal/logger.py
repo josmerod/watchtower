@@ -12,6 +12,8 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+import json
+from typing import Dict, Any, Optional
 
 # Constants
 LOG_DIR = "logs"
@@ -146,3 +148,152 @@ def get_tqdm_handler():
     handler = TqdmLoggingHandler()
     handler.setFormatter(logging.Formatter(LOG_FORMAT, DATE_FORMAT))
     return handler
+
+
+class StructuredFormatter(logging.Formatter):
+    """Structured JSON formatter for detailed logging."""
+    
+    def __init__(self, include_extra: bool = True):
+        super().__init__()
+        self.include_extra = include_extra
+    
+    def format(self, record: logging.LogRecord) -> str:
+        """Format log record as structured JSON."""
+        log_entry = {
+            "timestamp": datetime.fromtimestamp(record.created).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno
+        }
+        
+        # Add exception information if present
+        if record.exc_info:
+            log_entry["exception"] = {
+                "type": record.exc_info[0].__name__,
+                "message": str(record.exc_info[1]),
+                "traceback": self.formatException(record.exc_info)
+            }
+        
+        # Add extra fields if available
+        if self.include_extra and hasattr(record, '__dict__'):
+            extra_fields = {}
+            for key, value in record.__dict__.items():
+                if key not in ['name', 'msg', 'args', 'levelname', 'levelno', 'pathname', 
+                              'filename', 'module', 'exc_info', 'exc_text', 'stack_info',
+                              'lineno', 'funcName', 'created', 'msecs', 'relativeCreated',
+                              'thread', 'threadName', 'processName', 'process', 'getMessage',
+                              'message']:
+                    extra_fields[key] = value
+            
+            if extra_fields:
+                log_entry["extra"] = extra_fields
+        
+        return json.dumps(log_entry, default=str, ensure_ascii=False)
+
+
+class MetricsLogger:
+    """Logger for tracking metrics and performance data."""
+    
+    def __init__(self, logger_name: str = "metrics"):
+        self.logger = get_logger(logger_name)
+        self.metrics: Dict[str, Any] = {}
+        self.start_times: Dict[str, float] = {}
+    
+    def start_timer(self, name: str):
+        """Start a timer for measuring duration."""
+        import time
+        self.start_times[name] = time.time()
+    
+    def end_timer(self, name: str) -> float:
+        """End a timer and return duration."""
+        import time
+        if name in self.start_times:
+            duration = time.time() - self.start_times[name]
+            self.metrics[f"{name}_duration"] = duration
+            del self.start_times[name]
+            self.logger.info(f"Timer '{name}' completed in {duration:.2f}s")
+            return duration
+        return 0.0
+    
+    def increment_counter(self, name: str, value: int = 1):
+        """Increment a counter metric."""
+        if name not in self.metrics:
+            self.metrics[name] = 0
+        self.metrics[name] += value
+        self.logger.debug(f"Counter '{name}' incremented to {self.metrics[name]}")
+    
+    def set_gauge(self, name: str, value: float):
+        """Set a gauge metric."""
+        self.metrics[name] = value
+        self.logger.debug(f"Gauge '{name}' set to {value}")
+    
+    def log_metric(self, name: str, value: Any, tags: Optional[Dict[str, str]] = None):
+        """Log a custom metric."""
+        metric_data = {
+            "metric": name,
+            "value": value,
+            "timestamp": datetime.now().isoformat()
+        }
+        if tags:
+            metric_data["tags"] = tags
+        
+        self.logger.info(f"Metric: {json.dumps(metric_data)}")
+    
+    def get_metrics(self) -> Dict[str, Any]:
+        """Get all current metrics."""
+        return self.metrics.copy()
+    
+    def reset_metrics(self):
+        """Reset all metrics."""
+        self.metrics.clear()
+        self.start_times.clear()
+        self.logger.info("Metrics reset")
+
+
+def setup_structured_logging(logger_name: str, log_file: str = None) -> logging.Logger:
+    """Setup structured JSON logging for a specific logger.
+    
+    Args:
+        logger_name: Name of the logger
+        log_file: Optional log file path
+        
+    Returns:
+        Configured logger with structured formatting
+    """
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.INFO)
+    
+    # Remove existing handlers
+    logger.handlers.clear()
+    
+    # Console handler with structured formatting
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(StructuredFormatter())
+    logger.addHandler(console_handler)
+    
+    # File handler if specified
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(StructuredFormatter())
+        logger.addHandler(file_handler)
+    
+    return logger
+
+
+def create_metrics_logger(name: str = "metrics") -> MetricsLogger:
+    """Create a metrics logger instance.
+    
+    Args:
+        name: Logger name
+        
+    Returns:
+        MetricsLogger instance
+    """
+    return MetricsLogger(name)
+
+
+# Global metrics logger instance
+metrics_logger = create_metrics_logger()

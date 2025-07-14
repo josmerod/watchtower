@@ -1,0 +1,22 @@
+[
+  {
+    "session_id": "extract_1752436579",
+    "timestamp": "2025-07-13T21:56:19.384006",
+    "duration": 480.0339467525482,
+    "enrolled": 0,
+    "already_enrolled": 0,
+    "expired": 0,
+    "excluded": 0,
+    "failed": 0,
+    "total_processed": 0,
+    "amount_saved": 0.0,
+    "sites_scraped": [
+      "Udemy Freebies",
+      "Course Vania",
+      "IDownloadCoupons",
+      "E-next"
+    ],
+    "categories_processed": {},
+    "languages_processed": {}
+  }
+]

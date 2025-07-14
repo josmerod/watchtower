@@ -84,6 +84,9 @@ start /B %PYTHON_CMD% src/etl/goldigging/viajeros_piratas_etl.py
 
 start /B %PYTHON_CMD% src/watchers/ms_skills_watcher.py
 
+REM Enhanced Udemy Universal Miner with new unified CLI
+start /B %PYTHON_CMD% src/miners/udemy-universal/unified_cli.py run --metrics
+
 
 echo All ETL processes started in parallel using %PYTHON_CMD%
 echo Check logs directory for individual process logs
