@@ -1,40 +1,35 @@
 {
   "categories": {
-    "Business": true,
-    "Design": true,
-    "Development": true,
-    "Finance & Accounting": true,
-    "Health & Fitness": true,
-    "IT & Software": true,
-    "Lifestyle": true,
-    "Marketing": true,
-    "Music": true,
-    "Office Productivity": true,
-    "Personal Development": true,
-    "Photography & Video": true,
-    "Teaching & Academics": true
+    "business": true,
+    "design": true,
+    "development": true,
+    "finance": true,
+    "health-fitness": true,
+    "it-software": true,
+    "lifestyle": true,
+    "marketing": true,
+    "music": true,
+    "office-productivity": true,
+    "personal-development": true,
+    "photography": true,
+    "teaching": true
   },
   "languages": {
-    "Arabic": false,
-    "Chinese": false,
-    "Dutch": false,
-    "English": true,
-    "French": false,
-    "German": false,
-    "Hindi": false,
-    "Indonesian": false,
-    "Italian": true,
-    "Japanese": true,
-    "Korean": false,
-    "Nepali": false,
-    "Polish": false,
-    "Portuguese": true,
-    "Romanian": false,
-    "Russian": false,
-    "Spanish": true,
-    "Thai": false,
-    "Turkish": false,
-    "Urdu": false
+    "ar": false,
+    "zh": false,
+    "nl": false,
+    "en": true,
+    "fr": false,
+    "de": false,
+    "hi": false,
+    "it": true,
+    "ja": true,
+    "ko": false,
+    "pl": false,
+    "pt": true,
+    "ru": false,
+    "es": true,
+    "tr": false
   },
   "sites": {
     "Real Discount": true,
@@ -48,19 +43,21 @@
     "Cursos Dev": true,
     "Udemy Free Courses": true
   },
-  "min_rating": 0.0,
-  "instructor_exclude": [
-    "instructor-1",
-    "instructor-2",
-    "more-bad-instructor"
-  ],
-  "title_exclude": [
-    "noT_cAse SenSItiVe"
-  ],
+  "filters": {
+    "min_rating": 0.0,
+    "instructor_exclude": [
+      "instructor-1",
+      "instructor-2",
+      "more-bad-instructor"
+    ],
+    "title_exclude": [
+      "noT_cAse SenSItiVe"
+    ],
+    "discounted_only": false,
+    "course_update_threshold_months": 120
+  },
   "email": "josemanuelmejiasrodriguez@gmail.com",
   "password": "Josele1305!",
-  "save_txt": true,
-  "discounted_only": false,
-  "use_browser_cookies": false,
-  "course_update_threshold_months": 240
+  "browser_type": "chrome",
+  "use_browser_cookies": false
 }

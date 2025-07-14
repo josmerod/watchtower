@@ -2808,13 +2808,31 @@ class Udemy:
         """Fetch browser cookies for login"""
         self.logger.info("Fetching cookies from browser")
         try:
-            cookies = rookiepy.get_cookies("udemy.com")
-            if not cookies:
-                raise Exception("No cookies found for udemy.com")
-            self.make_cookies(
-                cookies["client_id"], cookies["access_token"], cookies["csrftoken"]
-            )
-            return cookies
+            # Try enhanced cookie manager first
+            try:
+                from cookie_manager import get_cookies
+                cookies = get_cookies()
+                if cookies and all(key in cookies for key in ["client_id", "access_token", "csrftoken"]):
+                    self.make_cookies(
+                        cookies["client_id"], cookies["access_token"], cookies["csrftoken"]
+                    )
+                    self.logger.info("Successfully fetched cookies using enhanced cookie manager")
+                    return cookies
+            except ImportError:
+                self.logger.warning("Enhanced cookie manager not available")
+            
+            # Fallback to original rookiepy method
+            if ROOKIEPY_AVAILABLE:
+                cookies = rookiepy.get_cookies("udemy.com")
+                if not cookies:
+                    raise Exception("No cookies found for udemy.com")
+                self.make_cookies(
+                    cookies["client_id"], cookies["access_token"], cookies["csrftoken"]
+                )
+                return cookies
+            else:
+                raise Exception("No cookie extraction method available")
+                
         except Exception as e:
             self.logger.error(f"Error fetching cookies: {e!s}")
             raise
@@ -2842,30 +2860,40 @@ class Udemy:
         """Check if there's a newer version available"""
         self.logger.info("Checking for updates")
         try:
-            r = requests.get(
-                "https://techtanic.github.io/duce/update",
-                headers={"User-Agent": "DUCE"},
-                timeout=5,
-            )
-            latest_version = r.json()["version"]
-            # Parse current and latest version as semver
-            current_major, current_minor = map(int, VERSION.split(".")[0:2])
-            latest_major, latest_minor = map(int, latest_version.split(".")[0:2])
+            # Use enhanced update checker
+            from update_checker import check_for_updates
+            return check_for_updates(VERSION, force=False)
+        except ImportError:
+            self.logger.warning("Enhanced update checker not available, using fallback")
+            # Fallback to original implementation
+            try:
+                r = requests.get(
+                    "https://techtanic.github.io/duce/update",
+                    headers={"User-Agent": "DUCE"},
+                    timeout=5,
+                )
+                latest_version = r.json()["version"]
+                # Parse current and latest version as semver
+                current_major, current_minor = map(int, VERSION.split(".")[0:2])
+                latest_major, latest_minor = map(int, latest_version.split(".")[0:2])
 
-            if latest_major > current_major or (
-                latest_major == current_major and latest_minor > current_minor
-            ):
-                login_title = f"Update v{latest_version}"
-                main_title = f"Update v{latest_version}"
-                self.logger.warning(f"Update available: v{latest_version}")
-            else:
-                login_title = "Login"
-                main_title = "DUCE"
-                self.logger.info("You are using the latest version")
+                if latest_major > current_major or (
+                    latest_major == current_major and latest_minor > current_minor
+                ):
+                    login_title = f"Update v{latest_version}"
+                    main_title = f"Update v{latest_version}"
+                    self.logger.warning(f"Update available: v{latest_version}")
+                else:
+                    login_title = "Login"
+                    main_title = "DUCE"
+                    self.logger.info("You are using the latest version")
 
-            return login_title, main_title
+                return login_title, main_title
+            except Exception as e:
+                self.logger.warning(f"Error checking for updates: {e!s}")
+                return "Login", "DUCE"
         except Exception as e:
-            self.logger.warning(f"Error checking for updates: {e!s}")
+            self.logger.warning(f"Error with enhanced update checker: {e!s}")
             return "Login", "DUCE"
 
     def manual_login(self, email: str, password: str):
