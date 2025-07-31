@@ -54,16 +54,16 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
 
     def get_valencia_events(self, date: str) -> list[dict[str, Any]]:
-    """Fetches events from the Valencia tourism website for a specific month.
+        """Fetches events from the Valencia tourism website for a specific month.
 
-    Args:
-        date: Month in YYYY-MM format
-        max_retries: Maximum number of retry attempts on connection failure
-        retry_delay: Delay in seconds between retry attempts
+        Args:
+            date: Month in YYYY-MM format
+            max_retries: Maximum number of retry attempts on connection failure
+            retry_delay: Delay in seconds between retry attempts
 
-    Returns:
-        List of event dictionaries
-    """
+        Returns:
+            List of event dictionaries
+        """
         url = f"https://www.visitvalencia.com/agenda-valencia?date={date}"
         self.logger.info(f"Fetching events from {url}")
         

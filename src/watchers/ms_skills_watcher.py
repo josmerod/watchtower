@@ -923,70 +923,38 @@ if __name__ == "__main__":
     import sys
     import os
     from pathlib import Path
-    
-    # Add the project root to the path to ensure imports work correctly
-    parser = argparse.ArgumentParser(description="MS Skills Watcher")
-    parser.add_argument("--once", action="store_true", help="Run once and exit")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
-    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    
-    args = parser.parse_args()
-    
+
     # Set up logging level
     import logging
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
-    elif args.verbose:
-        logging.basicConfig(level=logging.INFO)
-    else:
-        logging.basicConfig(level=logging.WARNING)
-    
+    logging.basicConfig(level=logging.INFO)
+
     # Create and run the watcher
     watcher = MSAppliedSkillsWatcher()
-    
-    if args.once:
-        print("🔍 Running MS Skills Watcher once...")
-        try:
-            # Run the extraction once
-            result = watcher.extract_value()
-            
-            print(f"\n✅ Extraction completed!")
-            print(f"📊 Found {result.get('skills_count', 0)} Applied Skills")
-            
-            if result.get('skills'):
-                print(f"\n📝 Sample skills found:")
-                for i, skill in enumerate(result['skills'][:5]):  # Show first 5
-                    name = skill.get('name', 'Unknown')
-                    url = skill.get('url', 'No URL')
-                    print(f"  {i+1}. {name}")
-                    print(f"     URL: {url}")
-                
-                if len(result['skills']) > 5:
-                    print(f"     ... and {len(result['skills']) - 5} more skills")
-            
-            if result.get('error'):
-                print(f"⚠️  Error occurred: {result['error']}")
-            
-            # Check if debug files were created
-            debug_dir = Path("data/watchers/ms_applied_skills/events/debug")
-            if debug_dir.exists():
-                debug_files = list(debug_dir.glob("*.html"))
-                if debug_files:
-                    latest_debug = max(debug_files, key=lambda p: p.stat().st_mtime)
-                    print(f"🔧 Debug HTML saved to: {latest_debug}")
-            
-        except Exception as e:
-            print(f"❌ Error running watcher: {e}")
-            import traceback
-            traceback.print_exc()
-    else:
-        print("🔄 Running MS Skills Watcher in continuous mode...")
-        print("Press Ctrl+C to stop")
-        try:
-            asyncio.run(watcher.run())
-        except KeyboardInterrupt:
-            print("\n⏹️  Watcher stopped by user")
-        except Exception as e:
-            print(f"❌ Error in continuous mode: {e}")
-            import traceback
-            traceback.print_exc() 
+
+    print("🔍 Running MS Skills Watcher once...")
+    try:
+        # Run the extraction once
+        result = watcher.extract_value()
+
+        # Publish the result as JSON to stdout
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
+        # Optionally, print a summary to stderr
+        print(f"\n✅ Extraction completed!", file=sys.stderr)
+        print(f"📊 Found {result.get('skills_count', 0)} Applied Skills", file=sys.stderr)
+
+        if result.get('error'):
+            print(f"⚠️  Error occurred: {result['error']}", file=sys.stderr)
+
+        # Check if debug files were created
+        debug_dir = Path("data/watchers/ms_applied_skills/events/debug")
+        if debug_dir.exists():
+            debug_files = list(debug_dir.glob("*.html"))
+            if debug_files:
+                latest_debug = max(debug_files, key=lambda p: p.stat().st_mtime)
+                print(f"🔧 Debug HTML saved to: {latest_debug}", file=sys.stderr)
+
+    except Exception as e:
+        print(f"❌ Error running watcher: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()

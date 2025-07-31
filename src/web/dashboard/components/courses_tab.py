@@ -166,7 +166,8 @@ def load_all_courses_data():
     load_udemy_data()
     print("Attempted to load all courses data.")
 
-load_all_courses_data()
+# Load data dynamically instead of at import time
+# load_all_courses_data()
 
 # --- Layout Rendering Functions ---
 def format_coursera_display_date(dt_obj):
@@ -257,6 +258,9 @@ def render_udemy_courses_sub_tab(df):
 
 # --- Main Layout ---
 def render_courses_tab():
+    # Load fresh data each time
+    load_all_courses_data()
+    
     # Initial check if any data was loaded to provide a general message
     # More specific messages are handled by individual sub-tab render functions
     if not COURSES_DATA_LOADED['coursera'] and not COURSES_DATA_LOADED['udemy']:

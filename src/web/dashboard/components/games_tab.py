@@ -546,8 +546,8 @@ def load_all_games_data():
     load_allkeyshop_data()
     print("Attempted to load all games data.")
 
-# Load data on module import
-load_all_games_data()
+# Load data dynamically instead of at import time
+# load_all_games_data()
 
 # --- Layout Rendering Functions ---
 def format_display_date(dt_obj):
@@ -863,8 +863,8 @@ def render_allkeyshop_deals_sub_tab(df):
     return html.Div([summary_cards, deals_table])
 
 def render_games_tab():
-    # Call load_all_games_data() here if not loading on import,
-    # or ensure it's loaded before app starts. For now, assume it's loaded on import.
+    # Load fresh data each time
+    load_all_games_data()
 
     # Check if any data was loaded at all to provide a general message
     if not any(DATA_LOADED_SUCCESSFULLY.values()):

@@ -119,12 +119,14 @@ def load_videos_data():
         print(f"Video data loaded successfully for channels: {list(ALL_VIDEOS_DATA.keys())}")
 
 
-# Load data when module is imported.
-# Consider moving this to a function called by app.py or an explicit "load" button if startup time is an issue.
-load_videos_data()
+# Load data dynamically instead of at import time
+# load_videos_data()
 
 # --- Layout Rendering ---
 def render_videos_tab():
+    # Load fresh data each time
+    load_videos_data()
+    
     if not VIDEO_DATA_LOADED:
         # This state might occur if load_videos_data() hasn't finished or failed critically (though it sets VIDEO_DATA_LOADED=True on exit)
         return html.Div([

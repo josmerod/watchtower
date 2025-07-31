@@ -23,6 +23,11 @@ NEWS_SOURCES_CONFIG = {
     "meneame_tecnologia": {"path": get_data_path("meneame", "meneame_tecnologia_latest.json"), "name": "Meneame Tech"},
     "podcasts": {"path": get_data_path("podcasts", "podcasts_latest.json"), "name": "Podcasts"},
     "product_hunt": {"path": get_data_path("product_hunt", "product_hunt_latest.json"), "name": "Product Hunt"},
+    # Developer Communities
+    "indiehackers": {"path": get_data_path("indie_hackers", "posts.json"), "name": "Indie Hackers"},
+    "gittrends": {"path": get_data_path("github_trends", "github_trends_latest.json"), "name": "Git Trends"},
+    "hackernews_ask": {"path": get_data_path("hackernews_ask", "hackernews_ask_latest.json"), "name": "HN Ask"},
+    "stackoverflow_trends": {"path": get_data_path("stackoverflow_trends", "stackoverflow_trends_latest.json"), "name": "Stack Overflow"},
     # Course sources
     "pluralsight_courses": {"path": get_data_path("pluralsight_courses", "pluralsight_courses.json"), "name": "Pluralsight Courses"},
     # Unified Reddit sources by category
@@ -31,6 +36,17 @@ NEWS_SOURCES_CONFIG = {
     "reddit_programming": {"path": get_data_path("reddit_unified", "reddit_programming_latest.json"), "name": "Reddit Programming"},
     "reddit_tech": {"path": get_data_path("reddit_unified", "reddit_tech_latest.json"), "name": "Reddit Tech"},
     "reddit_devops": {"path": get_data_path("reddit_unified", "reddit_devops_latest.json"), "name": "Reddit DevOps"},
+    # Kagi RSS sources by category
+    "kagi_world": {"path": get_data_path("kagi_world", "kagi_world.json"), "name": "Kagi World"},
+    "kagi_usa": {"path": get_data_path("kagi_usa", "kagi_usa.json"), "name": "Kagi USA"},
+    "kagi_business": {"path": get_data_path("kagi_business", "kagi_business.json"), "name": "Kagi Business"},
+    "kagi_science": {"path": get_data_path("kagi_science", "kagi_science.json"), "name": "Kagi Science"},
+    "kagi_gaming": {"path": get_data_path("kagi_gaming", "kagi_gaming.json"), "name": "Kagi Gaming"},
+    "kagi_ai": {"path": get_data_path("kagi_ai", "kagi_ai.json"), "name": "Kagi AI"},
+    "kagi_europe": {"path": get_data_path("kagi_europe", "kagi_europe.json"), "name": "Kagi Europe"},
+    "kagi_spain": {"path": get_data_path("kagi_spain", "kagi_spain.json"), "name": "Kagi Spain"},
+    # Dev.to articles
+    "devto": {"path": get_data_path("devto", "devto.json"), "name": "Dev.to"},
 }
 
 def load_news_from_file(file_path):
@@ -65,10 +81,13 @@ def load_news_from_file(file_path):
         print(f"Error loading news from {file_path}: {e}")
         return []
 
-ALL_NEWS_DATA = {
-    source_key: load_news_from_file(config["path"])
-    for source_key, config in NEWS_SOURCES_CONFIG.items()
-}
+# Load news data dynamically instead of at import time
+def get_all_news_data():
+    """Load fresh news data from all configured sources."""
+    return {
+        source_key: load_news_from_file(config["path"])
+        for source_key, config in NEWS_SOURCES_CONFIG.items()
+    }
 
 # --- Helper function to parse dates ---
 def parse_date(date_str):
@@ -157,8 +176,11 @@ def create_news_source_tab_content(source_keys, combined_name=None):
     else: # List of source keys (for combined tabs)
         source_display_name = combined_name or "Combined News"
 
+    # Load fresh data each time
+    all_news_data = get_all_news_data()
+    
     for key in source_keys:
-        articles_from_source = ALL_NEWS_DATA.get(key, [])
+        articles_from_source = all_news_data.get(key, [])
         # Add source name to each article for display in the table
         for article in articles_from_source:
             # Use 'source_display' to ensure we have a consistent field for the table
@@ -238,6 +260,21 @@ def render_news_tab():
         {"label": "Reddit DevOps", "keys": "reddit_devops", "id": "reddit_devops"},
         {"label": "Reddit All", "keys": "reddit_unified", "id": "reddit_all"},
         {"label": "Product Hunt", "keys": "product_hunt", "id": "ph"},
+        {"label": "Indie Hackers", "keys": "indiehackers", "id": "ih"},
+        {"label": "Git Trends", "keys": "gittrends", "id": "gt"},
+        {"label": "HN Ask", "keys": "hackernews_ask", "id": "hn_ask"},
+        {"label": "Stack Overflow", "keys": "stackoverflow_trends", "id": "so"},
+        # Kagi RSS feeds as individual tabs
+        {"label": "Kagi World", "keys": "kagi_world", "id": "kagi_world"},
+        {"label": "Kagi USA", "keys": "kagi_usa", "id": "kagi_usa"},
+        {"label": "Kagi Business", "keys": "kagi_business", "id": "kagi_business"},
+        {"label": "Kagi Science", "keys": "kagi_science", "id": "kagi_science"},
+        {"label": "Kagi Gaming", "keys": "kagi_gaming", "id": "kagi_gaming"},
+        {"label": "Kagi AI", "keys": "kagi_ai", "id": "kagi_ai"},
+        {"label": "Kagi Europe", "keys": "kagi_europe", "id": "kagi_europe"},
+        {"label": "Kagi Spain", "keys": "kagi_spain", "id": "kagi_spain"},
+        # Developer community tab
+        {"label": "Dev.to", "keys": "devto", "id": "devto"},
     ]
 
     tabs_children = []
@@ -267,4 +304,4 @@ if __name__ == '__main__':
     print(f"Displaying max {MAX_ARTICLES_PER_SOURCE} articles per tab, sorted by date.")
     print("Expected news JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json")
     print("Check console for warnings about missing files or parsing errors, especially date parsing.")
-    app_test.run_server(debug=True, port=8052)
+    app_test.run(debug=True, port=8052)

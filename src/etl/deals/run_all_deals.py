@@ -18,6 +18,13 @@ from src.utils.logging import get_logger
 from src.etl.deals.bundle_deals_etl import BundleDealsETL
 from src.etl.deals.music_deals_etl import MusicDealsETL
 from src.etl.deals.bargain_hunter_etl import BargainHunterETL
+from src.etl.deals.educational_deals_etl import EducationalDealsETL
+from src.etl.deals.book_deals_etl import BookDealsETL
+from src.etl.deals.software_deals_etl import SoftwareDealsETL
+from src.etl.deals.travel_deals_etl import TravelDealsETL
+from src.etl.deals.crypto_finance_deals_etl import CryptoFinanceDealsETL
+from src.etl.deals.fashion_retail_deals_etl import FashionRetailDealsETL
+from src.etl.deals.health_fitness_deals_etl import HealthFitnessDealsETL
 
 # Initialize logger
 logger = get_logger("AllDealsETL")
@@ -30,7 +37,14 @@ def run_all_deals_etl():
     etl_modules = [
         ("Bundle Deals", BundleDealsETL),
         ("Music Deals", MusicDealsETL),
-        ("Bargain Hunter", BargainHunterETL)
+        ("Bargain Hunter", BargainHunterETL),
+        ("Educational Deals", EducationalDealsETL),
+        ("Book Deals", BookDealsETL),
+        ("Software Deals", SoftwareDealsETL),
+        ("Travel Deals", TravelDealsETL),
+        ("Crypto & Finance", CryptoFinanceDealsETL),
+        ("Fashion & Retail", FashionRetailDealsETL),
+        ("Health & Fitness", HealthFitnessDealsETL)
     ]
     
     results = {}
@@ -83,6 +97,13 @@ def run_all_deals_etl():
         logger.info("  - Bundle deals: data/deals/bundle_deals.json")
         logger.info("  - Music deals: data/deals/music_deals.json") 
         logger.info("  - Bargain deals: data/deals/bargain_deals.json")
+        logger.info("  - Educational deals: data/deals/educational_deals.json")
+        logger.info("  - Book deals: data/deals/book_deals.json")
+        logger.info("  - Software deals: data/deals/software_deals.json")
+        logger.info("  - Travel deals: data/deals/travel_deals.json")
+        logger.info("  - Crypto & Finance deals: data/deals/crypto_finance_deals.json")
+        logger.info("  - Fashion & Retail deals: data/deals/fashion_retail_deals.json")
+        logger.info("  - Health & Fitness deals: data/deals/health_fitness_deals.json")
         return True
     else:
         logger.warning("⚠️ Some ETL processes failed. Check logs for details.")

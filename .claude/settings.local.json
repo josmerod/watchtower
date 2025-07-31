@@ -38,7 +38,13 @@
       "Bash(Stop-Process -Id 2876 -Force)",
       "Bash(Stop-Process -Id 48712 -Force)",
       "Bash(powershell:*)",
-      "Bash(cmd /c:*)"
+      "Bash(cmd /c:*)",
+      "Bash(chmod:*)",
+      "Bash(dir \"C:\\Users\\josem\\watchtower\\data\\youtube\" /s /od)",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:developers.forem.com)",
+      "Bash(mkdir:*)",
+      "WebFetch(domain:www.indiehackers.com)"
     ],
     "deny": []
   }
