@@ -42,10 +42,10 @@ if sys.platform.startswith('win'):
     for path in tesseract_paths:
         if os.path.exists(path):
             pytesseract.pytesseract.tesseract_cmd = path
-            print(f"✅ Configured Tesseract path: {path}")
+            print(f"[OK] Configured Tesseract path: {path}")
             break
     else:
-        print("⚠️  Warning: Tesseract not found in common Windows locations")
+        print("[WARNING] Tesseract not found in common Windows locations")
         print("   Please install Tesseract or set the path manually")
 
 # Now import src modules after path is set up
@@ -676,10 +676,10 @@ def verify_tesseract_installation():
         
         # Try to run OCR on the test image
         pytesseract.image_to_string(test_image)
-        logger.info("✅ Tesseract OCR is properly configured and working")
+        logger.info("[OK] Tesseract OCR is properly configured and working")
         return True
     except Exception as e:
-        logger.error(f"❌ Tesseract configuration error: {e}")
+        logger.error(f"[ERROR] Tesseract configuration error: {e}")
         logger.error("Please ensure Tesseract is installed and accessible")
         return False
 
@@ -724,11 +724,11 @@ def get_short_video_urls(channel_url: str, limit: int, lookback_days: int, check
     
     # Add reasonable limits to prevent hanging
     if limit > 1000:
-        logger.warning(f"⚠️ Large limit requested ({limit}). Capping at 1000 videos to prevent hanging.")
+        logger.warning(f"[WARNING] Large limit requested ({limit}). Capping at 1000 videos to prevent hanging.")
         limit = 1000
     
     if lookback_days > 365:
-        logger.warning(f"⚠️ Large lookback period requested ({lookback_days} days). Capping at 365 days to prevent hanging.")
+        logger.warning(f"[WARNING] Large lookback period requested ({lookback_days} days). Capping at 365 days to prevent hanging.")
         lookback_days = 365
     
     # Add delay before making request to be respectful
@@ -741,7 +741,7 @@ def get_short_video_urls(channel_url: str, limit: int, lookback_days: int, check
         nonlocal last_progress_time
         current_time = time.time()
         if current_time - last_progress_time > 10:  # Log every 10 seconds
-            logger.info(f"🔄 yt-dlp is working... (status: {d.get('status', 'unknown')})")
+            logger.info(f"[PROGRESS] yt-dlp is working... (status: {d.get('status', 'unknown')})")
             last_progress_time = current_time
     
     ydl_opts = {
@@ -763,25 +763,25 @@ def get_short_video_urls(channel_url: str, limit: int, lookback_days: int, check
     processed_ids = set(checkpoint.get("processed_videos", []))
     failed_ids = set(checkpoint.get("failed_videos", []))
     
-    logger.info(f"📊 Checkpoint status: {len(processed_ids)} already processed, {len(failed_ids)} failed videos")
-    logger.info(f"🔍 Searching for videos from the last {lookback_days} days (limit: {limit})...")
-    logger.info(f"⚠️ Large requests may take several minutes. Initial fetch limited to {min(limit * 2, 500)} videos to prevent hanging...")
+    logger.info(f"[INFO] Checkpoint status: {len(processed_ids)} already processed, {len(failed_ids)} failed videos")
+    logger.info(f"[INFO] Searching for videos from the last {lookback_days} days (limit: {limit})...")
+    logger.info(f"[WARNING] Large requests may take several minutes. Initial fetch limited to {min(limit * 2, 500)} videos to prevent hanging...")
     
     try:
-        logger.info("🌐 Connecting to YouTube to fetch video metadata...")
+        logger.info("[INFO] Connecting to YouTube to fetch video metadata...")
         start_time = time.time()
         
         # Use yt-dlp's built-in timeout mechanisms with progress monitoring
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            logger.info("🔄 Starting metadata extraction... This may take a few minutes for large channels.")
+            logger.info("[PROGRESS] Starting metadata extraction... This may take a few minutes for large channels.")
             result = ydl.extract_info(channel_url, download=False)
         
         fetch_time = time.time() - start_time
-        logger.info(f"✅ Metadata fetched successfully in {fetch_time:.1f} seconds")
+        logger.info(f"[OK] Metadata fetched successfully in {fetch_time:.1f} seconds")
         
         if result and "entries" in result:
             total_entries = len(result["entries"])
-            logger.info(f"📺 Found {total_entries} total videos from channel, filtering for shorts...")
+            logger.info(f"[INFO] Found {total_entries} total videos from channel, filtering for shorts...")
             
             if total_entries == 0:
                 logger.warning("No videos found in the channel or time range")
@@ -802,7 +802,7 @@ def get_short_video_urls(channel_url: str, limit: int, lookback_days: int, check
                     # Log progress every 50 videos for large batches
                     progress_interval = 50 if total_entries > 200 else 10
                     if processed_count % progress_interval == 0:
-                        logger.info(f"📊 Processing video {processed_count}/{total_entries} - Found {len(videos_info)} valid shorts so far...")
+                        logger.info(f"[PROGRESS] Processing video {processed_count}/{total_entries} - Found {len(videos_info)} valid shorts so far...")
                     
                     # Skip if already processed or failed
                     if video_id in processed_ids:
@@ -821,14 +821,14 @@ def get_short_video_urls(channel_url: str, limit: int, lookback_days: int, check
                             "id": video_id,
                             "upload_date": upload_date
                         })
-                        logger.debug(f"✅ Added video {len(videos_info)}/{limit}: {title[:50]}...")
+                        logger.debug(f"[OK] Added video {len(videos_info)}/{limit}: {title[:50]}...")
                     else:
                         logger.warning(f"Could not get video ID for an entry in {channel_url}")
                 elif len(videos_info) >= limit:
-                    logger.info(f"🎯 Reached limit of {limit} videos, stopping search...")
+                    logger.info(f"[INFO] Reached limit of {limit} videos, stopping search...")
                     break
             
-            logger.info(f"📈 Filter summary: {len(videos_info)} new videos, {skipped_processed} already processed, {skipped_failed} previously failed")
+            logger.info(f"[INFO] Filter summary: {len(videos_info)} new videos, {skipped_processed} already processed, {skipped_failed} previously failed")
             
         else:
             logger.warning(f"No entries found for channel {channel_url}. Result: {result}")
@@ -836,11 +836,11 @@ def get_short_video_urls(channel_url: str, limit: int, lookback_days: int, check
     except Exception as e:
         logger.error(f"Error fetching video URLs from {channel_url}: {e}")
         if "timed out" in str(e).lower():
-            logger.info("💡 This might be due to a very large request. Try reducing --limit or --days parameters")
-            logger.info("💡 Recommended: --limit 50 --days 30 for testing")
+            logger.info("[HINT] This might be due to a very large request. Try reducing --limit or --days parameters")
+            logger.info("[HINT] Recommended: --limit 50 --days 30 for testing")
         raise  # Re-raise to trigger retry mechanism
 
-    logger.info(f"✅ Successfully found {len(videos_info)} new shorts to process from the last {lookback_days} days (after filtering already processed).")
+    logger.info(f"[OK] Successfully found {len(videos_info)} new shorts to process from the last {lookback_days} days (after filtering already processed).")
     return videos_info
 
 
@@ -894,7 +894,7 @@ def extract_text_from_video_frames(video_path: str, frame_interval_seconds: int 
             try:
                 # Log progress for longer videos
                 if len(frame_times) > 10 and (i + 1) % 5 == 0:
-                    logger.info(f"🔍 OCR progress: {i+1}/{len(frame_times)} frames ({((i+1)/len(frame_times)*100):.1f}%)")
+                    logger.info(f"[PROGRESS] OCR progress: {i+1}/{len(frame_times)} frames ({((i+1)/len(frame_times)*100):.1f}%)")
                 
                 # Get frame at specified time
                 frame = video_clip.get_frame(frame_time)
@@ -926,7 +926,7 @@ def extract_text_from_video_frames(video_path: str, frame_interval_seconds: int 
                 # Collect URLs from this frame
                 if ocr_result['urls']:
                     all_urls.extend(ocr_result['urls'])
-                    logger.info(f"🔗 Found {len(ocr_result['urls'])} URLs in frame {i+1} at {frame_time:.1f}s")
+                    logger.info(f"[INFO] Found {len(ocr_result['urls'])} URLs in frame {i+1} at {frame_time:.1f}s")
                 
                 previous_frame = frame
                 processed_frames += 1
@@ -938,7 +938,7 @@ def extract_text_from_video_frames(video_path: str, frame_interval_seconds: int 
                 logger.error(f"Error processing frame at {frame_time}s: {e}")
                 continue
 
-        logger.info(f"✅ OCR complete: processed {processed_frames} frames, skipped {skipped_frames} similar frames")
+        logger.info(f"[OK] OCR complete: processed {processed_frames} frames, skipped {skipped_frames} similar frames")
 
     except Exception as e:
         logger.error(f"Error opening or processing video file {video_path} with MoviePy: {e}")
@@ -1033,7 +1033,7 @@ def download_video(video_id: str, output_path: str) -> Optional[str]:
     }
 
     try:
-        logger.info(f"📥 Downloading video {video_id} (worst quality for faster processing)...")
+        logger.info(f"[INFO] Downloading video {video_id} (worst quality for faster processing)...")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
 
@@ -1042,7 +1042,7 @@ def download_video(video_id: str, output_path: str) -> Optional[str]:
             downloaded_file_path = os.path.join(video_specific_dir, f"{video_id}.{ext}")
             if os.path.exists(downloaded_file_path):
                 file_size = os.path.getsize(downloaded_file_path) / 1024 / 1024  # Size in MB
-                logger.info(f"✅ Successfully downloaded video: {video_id}.{ext} ({file_size:.1f} MB)")
+                logger.info(f"[OK] Successfully downloaded video: {video_id}.{ext} ({file_size:.1f} MB)")
                 return downloaded_file_path
         
         logger.error(f"Download reported success, but file not found for {video_id}")
@@ -1069,18 +1069,18 @@ def process_single_video(video_meta: Dict[str, str], checkpoint: Dict[str, Any])
     }
     
     try:
-        logger.info(f"🎬 Processing video {video_id}: {video_meta['title']}")
+        logger.info(f"[INFO] Processing video {video_id}: {video_meta['title']}")
         
         # Download video
         video_path = download_video(video_id, TEMP_VIDEO_DIR)
         
         if video_path:
             # Add delay before OCR processing
-            logger.info(f"⏳ Waiting {DEFAULT_PROCESSING_DELAY}s before OCR processing...")
+            logger.info(f"[WAIT] Waiting {DEFAULT_PROCESSING_DELAY}s before OCR processing...")
             time.sleep(DEFAULT_PROCESSING_DELAY)
             
             # Extract text and URLs from video with enhanced OCR
-            logger.info(f"🔍 Starting OCR analysis of video frames...")
+            logger.info(f"[INFO] Starting OCR analysis of video frames...")
             ocr_result = extract_text_from_video_frames(video_path, frame_interval_seconds=2)
             
             result["ocr_description"] = ocr_result["text"] if ocr_result["text"] else "No high-quality text found in video"
@@ -1100,16 +1100,16 @@ def process_single_video(video_meta: Dict[str, str], checkpoint: Dict[str, Any])
             
             # Log success with URL count
             if all_detected_urls:
-                logger.info(f"✅ Successfully processed {video_id} - Found {len(all_detected_urls)} URLs")
+                logger.info(f"[OK] Successfully processed {video_id} - Found {len(all_detected_urls)} URLs")
             else:
-                logger.info(f"✅ Successfully processed {video_id} - No URLs detected")
+                logger.info(f"[OK] Successfully processed {video_id} - No URLs detected")
             
             # Clean up immediately after processing
             try:
                 video_folder_path = os.path.dirname(video_path)
                 if os.path.commonpath([TEMP_VIDEO_DIR, video_folder_path]) == TEMP_VIDEO_DIR:
                     shutil.rmtree(video_folder_path)
-                    logger.debug(f"🧹 Cleaned up temporary video folder: {video_folder_path}")
+                    logger.debug(f"[CLEANUP] Cleaned up temporary video folder: {video_folder_path}")
             except Exception as e:
                 logger.error(f"Error cleaning up video folder {video_folder_path}: {e}")
             
@@ -1117,12 +1117,12 @@ def process_single_video(video_meta: Dict[str, str], checkpoint: Dict[str, Any])
             checkpoint["processed_videos"].append(video_id)
             
         else:
-            logger.warning(f"❌ Skipping OCR for {video_id} as download failed")
+            logger.warning(f"[ERROR] Skipping OCR for {video_id} as download failed")
             result["ocr_description"] = "Download failed"
             checkpoint["failed_videos"].append(video_id)
             
     except Exception as e:
-        logger.error(f"❌ Error processing video {video_id}: {e}")
+        logger.error(f"[ERROR] Error processing video {video_id}: {e}")
         result["ocr_description"] = f"Processing error: {str(e)}"
         checkpoint["failed_videos"].append(video_id)
     
@@ -1163,7 +1163,7 @@ def main(args):
         logger.info("No new short videos found matching the criteria. Exiting.")
         return
 
-    logger.info(f"🚀 Starting to process {len(short_videos_meta)} videos...")
+    logger.info(f"[START] Starting to process {len(short_videos_meta)} videos...")
     all_results = []
     successful_processing = 0
     failed_processing = 0
@@ -1176,8 +1176,8 @@ def main(args):
     for i, video_meta in enumerate(short_videos_meta, 1):
         video_start_time = time.time()
         
-        logger.info(f"📊 Processing video {i}/{len(short_videos_meta)} ({(i/len(short_videos_meta)*100):.1f}% complete)")
-        logger.info(f"🎯 Current video: {video_meta['title']}")
+        logger.info(f"[PROGRESS] Processing video {i}/{len(short_videos_meta)} ({(i/len(short_videos_meta)*100):.1f}% complete)")
+        logger.info(f"[CURRENT] Current video: {video_meta['title']}")
         
         result = process_single_video(video_meta, checkpoint)
         all_results.append(result)
@@ -1196,10 +1196,10 @@ def main(args):
             avg_time_per_video = (time.time() - processing_start_time) / i
             remaining_videos = len(short_videos_meta) - i
             estimated_time_remaining = remaining_videos * avg_time_per_video
-            logger.info(f"⏱️ Video processed in {video_duration:.1f}s. Estimated time remaining: {estimated_time_remaining/60:.1f} minutes")
+            logger.info(f"[TIMING] Video processed in {video_duration:.1f}s. Estimated time remaining: {estimated_time_remaining/60:.1f} minutes")
         
         # Log progress summary
-        logger.info(f"📈 Progress: {successful_processing} successful, {failed_processing} failed, {urls_found} URLs found so far")
+        logger.info(f"[PROGRESS] Progress: {successful_processing} successful, {failed_processing} failed, {urls_found} URLs found so far")
         
         # Save checkpoint after each video
         checkpoint["last_processed_date"] = datetime.now().isoformat()
@@ -1207,13 +1207,13 @@ def main(args):
         
         # Add delay between videos for passive processing
         if i < len(short_videos_meta):  # Don't delay after the last video
-            logger.info(f"⏳ Waiting {args.request_delay}s before next video...")
+            logger.info(f"[WAIT] Waiting {args.request_delay}s before next video...")
             time.sleep(args.request_delay)
     
     # Final summary with total time
     total_time = time.time() - processing_start_time
-    logger.info(f"🎉 Processing complete! Final stats: {successful_processing} successful, {failed_processing} failed, {urls_found} total URLs found")
-    logger.info(f"🕐 Total processing time: {total_time/60:.1f} minutes ({total_time/len(short_videos_meta):.1f}s per video)")
+    logger.info(f"[COMPLETE] Processing complete! Final stats: {successful_processing} successful, {failed_processing} failed, {urls_found} total URLs found")
+    logger.info(f"[TIMING] Total processing time: {total_time/60:.1f} minutes ({total_time/len(short_videos_meta):.1f}s per video)")
 
     # Save final results
     output_file_path = os.path.join(OUTPUT_DIR, "youtube_shorts_ocr_results.json")
@@ -1285,10 +1285,10 @@ def main(args):
     
     # Show extracted URLs
     if total_urls > 0:
-        logger.info("🔗 EXTRACTED URLS:")
+        logger.info("[RESULTS] EXTRACTED URLS:")
         for i, result in enumerate(all_results, 1):
             if result.get("extracted_urls"):
-                print(f"\n📹 Video {i}: {result['title']}")
+                print(f"\n[VIDEO] Video {i}: {result['title']}")
                 for url in result["extracted_urls"]:
                     # Handle both ExtractedURL objects and dictionaries
                     if hasattr(url, 'cleaned_url'):  # It's an ExtractedURL object
@@ -1304,7 +1304,7 @@ def main(args):
                         region = url.get('region', 'unknown')
                         context_text = url.get('context_text', '')
                     
-                    print(f"   🌐 {cleaned_url}")
+                    print(f"   [URL] {cleaned_url}")
                     print(f"      Confidence: {confidence:.1f}% | Time: {timestamp:.1f}s | Region: {region}")
                     if context_text:
                         print(f"      Context: {context_text[:100]}...")

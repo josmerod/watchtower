@@ -56,7 +56,9 @@ uv run python src/watchers/run_watcher.py ms_applied_skills --once
 uv run python run_watchtower_dashboard.py
 # Available at http://localhost:7777
 
-# Legacy dashboard removed - use main dashboard above
+# Legacy Streamlit dashboard (if needed for compatibility)
+uv run streamlit run src/web/fullstreamlit/app.py
+# Available at http://localhost:8501
 
 # Run both ETL and dashboard
 ./run_all_etl_and_dashboard.sh    # Linux/Mac
@@ -119,15 +121,21 @@ External APIs/RSS → ETL Pipelines → JSON Storage → Dashboard Components
 
 ### Domain-Specific ETL Modules
 - **ArXiv ETL** (`src/etl/arxiv/`): RSS parsing, NLP classification, research trend analysis
-- **News ETL** (`src/etl/news/`): Multi-source aggregation (HackerNews, Reddit, etc.)
+- **News ETL** (`src/etl/news/`): Multi-source aggregation (HackerNews, Reddit, Medium, etc.)
 - **Games ETL** (`src/etl/games/`): Deal aggregation, free games, new releases
-- **Course ETL** (`src/etl/goldigging/`): Udemy, Coursera, educational content mining
+- **Course ETL** (`src/etl/goldigging/`): Udemy, Coursera, educational content mining  
 - **AI Platforms ETL** (`src/etl/ai_platforms/`): OpenAI, Anthropic, HuggingFace monitoring
+- **Entertainment ETL** (`src/etl/entertainment/`): Cinema listings, meme economics
+- **Deal Aggregation** (`src/etl/deals/`): Comprehensive deal tracking across multiple categories
+- **Anime ETL** (`src/etl/anime/`): MyAnimeList data aggregation
+- **ADHD Research** (`src/etl/adhd/`): PubMed research paper collection and analysis
+- **4chan ETL** (`src/etl/fourchan/`): General thread monitoring and analysis
 
 ### Data Models Architecture
 Located in `src/models/`, follows Pydantic BaseModel pattern:
 - **Base Models** (`base.py`): TimestampedModel, StatusModel with common fields
-- **Domain Models**: ArxivPaperModel, TechnologyModel, GameDealModel, etc.
+- **Domain Models**: ArxivPaperModel, TechnologyModel, GameDealModel, AnimeModel, CourseModel, etc.
+- **Specialized Models**: ADHDModel, MuseumModel, SecurityModel, EcommerceModel
 - **Enum Classifications**: TrendDirection, AdoptionLevel, SecuritySeverity
 - **Validation Methods**: Built-in data validation and serialization
 
@@ -147,18 +155,22 @@ Located in `src/models/`, follows Pydantic BaseModel pattern:
 - Events logged to `data/watchers/{name}/events/`
 
 ### Dashboard Components
-- Create tab functions in `src/web/dashboard/components/`
-- Use `utils.py` for shared utilities and data path resolution
-- Implement Dash callbacks for interactivity
-- Follow modular component structure from existing tabs
+- **Main Dashboard**: Dash-based dashboard in `src/web/dashboard/`
+- **Component Structure**: Tab functions in `src/web/dashboard/components/`
+- **Styling**: CSS and assets in `src/web/dashboard/assets/`
+- **Utilities**: Use `utils.py` for shared utilities and data path resolution
+- **Legacy Support**: Streamlit components in `src/web/fullstreamlit/` for compatibility
+- **Interactive Features**: Implement Dash callbacks for real-time updates
 
 ### Configuration Management
-- Use nested Pydantic Settings models in `src/config/models.py`
-- Environment variables with double underscore delimiter
-- Component-specific configurations (ETLConfig, WatcherConfig, etc.)
-- Auto-discovery of project root directory
+- **Settings System**: Pydantic Settings in `src/config/settings.py`
+- **Models**: Configuration models in `src/config/models.py`
+- **Environment Variables**: Use double underscore delimiter (e.g., `DATABASE__URL`)
+- **Component Configs**: ETLConfig, WatcherConfig, DatabaseConfig, etc.
+- **Auto-Discovery**: Automatic project root directory detection
+- **Validation**: Built-in validation with Pydantic models
 
-## Development Standards from .cursorrules
+## Development Standards
 
 ### Code Quality Requirements
 - **Type Hints**: All functions must use Python 3.10+ type annotations
@@ -233,8 +245,61 @@ Located in `src/models/`, follows Pydantic BaseModel pattern:
 ### External APIs
 - **ArXiv**: RSS feeds and paper metadata
 - **GitHub**: Repository trends and API monitoring
-- **News Sources**: RSS feeds from multiple tech sites
-- **Course Platforms**: Udemy, Coursera APIs
-- **Game Platforms**: Steam, Epic Games, deal aggregators
+- **News Sources**: RSS feeds from multiple tech sites (HackerNews, Reddit, Medium)
+- **Course Platforms**: Udemy, Coursera, DeepLearning.AI APIs
+- **Game Platforms**: Steam, Epic Games, AllKeyShop, Humble Bundle
+- **AI Platforms**: OpenAI, Anthropic, HuggingFace APIs
+- **Entertainment**: MyAnimeList, Cinema listings
+- **Research**: PubMed for ADHD research papers
+
+## Specialized Components
+
+### Miners (`src/miners/`)
+- **Udemy Universal** (`udemy-universal/`): Advanced course discovery and enrollment
+- **Steam ASF** (`asf-winonly/`): ArchiSteamFarm integration for game automation
+- **Crypto Sentiment**: Cryptocurrency sentiment analysis tools
+
+### Analytics (`src/analytics/`)
+- **Technology Adoption**: Trend analysis and adoption tracking
+- **Performance Analytics**: System and ETL performance monitoring
+
+### Utilities (`src/utils/`)
+- **NLP Classifier**: Natural language processing for content classification
+- **File System**: Project-wide file management utilities
+- **Logging**: Structured logging with performance metrics
+- **Backup Utils**: Automated backup and recovery systems
+- **GitHub Utils**: Git integration and repository management
 
 This architecture enables rapid development of new ETL processes and monitoring capabilities while maintaining high code quality and performance standards.
+
+## Important Project Context
+
+### Project Name and Identity
+The project is called **Watchtower** (also referenced as MEGALITH in some documentation). It's a comprehensive data intelligence and monitoring platform.
+
+### Key Architecture Decisions
+- **UV Package Manager**: Preferred over pip/venv for 10-100x faster dependency management
+- **Dual Dashboard System**: Main Dash dashboard (port 7777) + Legacy Streamlit (port 8501)
+- **File-based Storage**: JSON files in `data/` directory for performance and simplicity
+- **Pydantic Everything**: Models, configuration, and validation all use Pydantic
+- **Template Method Pattern**: BaseETL and BaseWatcher provide consistent interfaces
+
+### Development Workflow
+1. **Setup**: Always use `uv sync --all-extras` for fastest setup
+2. **Running Code**: Prefix all Python commands with `uv run`
+3. **Testing**: Use `uv run pytest` with coverage reporting
+4. **Linting**: `uv run ruff check .` and `uv run ruff format .`
+5. **Type Checking**: `uv run mypy src/` (configured in pyproject.toml)
+
+### Data Flow Patterns
+- **ETL Output**: `data/{etl_name}/output/` for processed data
+- **Checkpoints**: `data/{etl_name}/checkpoints/` for resumable state
+- **Watcher Events**: `data/watchers/{name}/events/` for change tracking
+- **Logs**: Centralized in `logs/` with component-specific files
+
+### Security and Best Practices
+- **Environment Variables**: Use `.env` files for sensitive data
+- **Exception Handling**: Custom hierarchy in `src/exceptions/`
+- **Logging**: Structured with performance metrics
+- **Type Safety**: Full type annotations with Python 3.10+ syntax
+- **Documentation**: Google-style docstrings required

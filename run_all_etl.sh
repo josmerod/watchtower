@@ -59,21 +59,22 @@ run_etl "src/etl/anime/mal_etl.py" && pids+=($!)
 run_etl "src/etl/news/news_get_newsapi.py" && pids+=($!)
 
 # NEW MODULES - Developer Communities & Innovation Tracking
-run_etl "src/etl/news/news_get_devto.py"
 run_etl "src/etl/news/news_get_producthunt.py"
 run_etl "src/etl/news/news_get_indiehackers.py"
-run_etl "src/etl/news/news_get_lobsters.py"
 run_etl "src/etl/news/news_get_gittrends.py"
-run_etl "src/etl/news/news_get_techjobs.py"
+run_etl "src/etl/github/github_trending_rss_etl.py"
 
 # LATEST NEW MODULES - Community & Developer Intelligence
 run_etl "src/etl/news/news_get_hackernews_ask.py"
-run_etl "src/etl/news/news_get_discord_trending.py"
 run_etl "src/etl/news/news_get_stackoverflow_trends.py"
 run_etl "src/etl/news/news_get_home_server_trends.py"
 
-# NEW ECOMMERCE TRACKERS
-run_etl "src/etl/ecommerce/shoppy_etl.py"
+# KAGI RSS FEEDS
+run_etl "src/etl/news/news_get_kagi.py"
+
+# DEV.TO RSS FEEDS
+run_etl "src/etl/news/news_get_devto.py"
+
 
 # NEW MINING TOOLS
 run_etl "src/miners/crypto_sentiment_miner.py"
@@ -83,6 +84,7 @@ run_etl "src/etl/goldigging/gumroad_scraper_etl.py"
 
 # VIAJEROS PIRATAS SCRAPER
 run_etl "src/etl/goldigging/viajeros_piratas_etl.py"
+
 
 echo "All ETL processes started in parallel using UV"
 echo "Process PIDs: ${pids[*]}"
@@ -147,3 +149,4 @@ echo "- data/anime/"
 echo "- data/home_server_trends/"
 echo "- data/shoppy/"
 echo "- data/scavenging/"
+echo "- data/devto/"

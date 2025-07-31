@@ -80,7 +80,7 @@ def render_shortcuts_tab():
             value="" # Initial value
         ),
         # Container for dynamically filtered shortcuts
-        html.Div(id="shortcuts-cards-container", children=render_shortcuts_tab_layout(ALL_SHORTCUTS_DATA))
+        html.Div(id="shortcuts-cards-container", children=render_shortcuts_tab_layout(get_shortcuts_data()))
     ])
 
 # Callback to update shortcuts based on search
@@ -173,8 +173,10 @@ def get_all_shortcuts():
 
     return shortcuts_by_category
 
-# Store loaded data globally in the module.
-ALL_SHORTCUTS_DATA = get_all_shortcuts()
+# Load data dynamically instead of at import time
+def get_shortcuts_data():
+    """Get fresh shortcuts data."""
+    return get_all_shortcuts()
 
 # Test data loading (can be removed or commented out later)
 # if __name__ == '__main__':

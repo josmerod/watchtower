@@ -3,7 +3,7 @@ import dash_bootstrap_components as dbc
 from dash import html
 
 from dash import dcc, Input, Output # Added Input, Output, dcc for Tabs and callback
-from src.web.dashboard.components.shortcuts_tab import render_shortcuts_tab, ALL_SHORTCUTS_DATA, render_shortcuts_tab_layout
+from src.web.dashboard.components.shortcuts_tab import render_shortcuts_tab, get_shortcuts_data, render_shortcuts_tab_layout
 
 from src.web.dashboard.components.news_tab import render_news_tab
 
@@ -24,6 +24,14 @@ from src.web.dashboard.components.valencia_events_tab import render_valencia_eve
 from src.web.dashboard.components.youtube_ocr_tab import render_youtube_ocr_tab, register_youtube_ocr_callbacks
 
 from src.web.dashboard.components.giveaways_tab import create_giveaways_tab
+
+from src.web.dashboard.components.crypto_tab import crypto_tab
+
+from src.web.dashboard.components.travel_tab import travel_tab
+
+from src.web.dashboard.components.watchers_tab import watchers_tab
+
+from src.web.dashboard.components.github_trending_tab import render_github_trending_tab
 
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
@@ -71,6 +79,9 @@ app.layout = dbc.Container(
                         dbc.Tab(label="News", tab_id="tab-news", children=[
                             render_news_tab()
                         ]),
+                        dbc.Tab(label="GitHub Trending", tab_id="tab-github-trending", children=[
+                            render_github_trending_tab()
+                        ]),
                         dbc.Tab(label="Videos", tab_id="tab-videos", children=[
                             render_videos_tab()
                         ]),
@@ -98,10 +109,19 @@ app.layout = dbc.Container(
                         dbc.Tab(label="🎁 Giveaways", tab_id="tab-giveaways", children=[
                             create_giveaways_tab()
                         ]),
+                        dbc.Tab(label="🪙 Crypto", tab_id="tab-crypto"),
+                        dbc.Tab(label="✈️ Travel", tab_id="tab-travel"),
+                        dbc.Tab(label="👁️ Watchers", tab_id="tab-watchers"),
                     ],
                 )
             )
         ),
+        # Dynamic tab content container
+        dbc.Row(
+            dbc.Col(
+                html.Div(id="tab-content", className="mt-3")
+            )
+        )
     ],
     fluid=True,
 )
@@ -114,8 +134,24 @@ app.layout = dbc.Container(
 )
 def update_main_app_shortcuts(search_value):
     # Reuse the layout rendering function from shortcuts_tab.py
-    # ALL_SHORTCUTS_DATA is imported from shortcuts_tab.py
-    return render_shortcuts_tab_layout(ALL_SHORTCUTS_DATA, search_value)
+    # Get fresh shortcuts data
+    return render_shortcuts_tab_layout(get_shortcuts_data(), search_value)
+
+# Callback for dynamic tab content loading
+@app.callback(
+    Output("tab-content", "children"),
+    [Input("dashboard-tabs", "active_tab")]
+)
+def render_dynamic_tab_content(active_tab):
+    """Render content for tabs that need fresh data on each load."""
+    if active_tab == "tab-crypto":
+        return crypto_tab()
+    elif active_tab == "tab-travel":
+        return travel_tab()
+    elif active_tab == "tab-watchers":
+        return watchers_tab()
+    else:
+        return html.Div()  # Empty div for tabs with static content
 
 # Register callbacks from other modules
 register_video_callbacks(app)
@@ -138,7 +174,7 @@ if __name__ == "__main__":
 
     print("Verifying data loaded for Watchtower Dashboard:")
     # Simple check, more detailed checks are in individual tab's __main__ blocks
-    if ALL_SHORTCUTS_DATA:
+    if get_shortcuts_data():
         print("  Shortcuts data loaded successfully.")
     else:
         print("  Warning: Shortcuts data might be missing.")
