@@ -177,7 +177,6 @@ def render_fourchan_tab() -> html.Div:
         boards = sorted(boards, key=lambda b: (-len(grouped[b]), b))
         
         # Create tabs for each board
-        board_tabs = []
         board_content = []
         
         for idx, board in enumerate(boards):
@@ -185,18 +184,11 @@ def render_fourchan_tab() -> html.Div:
             
             # Create tab with thread count
             thread_count = len(grouped[board])
-            board_tabs.append(
-                dbc.Tab(
-                    label=f"/{board}/ ({thread_count})",
-                    tab_id=tab_id,
-                    active_tab_style={"textTransform": "none"}
-                )
-            )
             
             # Create content for this board
             board_content.append(
                 dcc.Tab(
-                    id=tab_id,
+                    label=f"/{board}/ ({thread_count})",
                     value=tab_id,
                     children=[
                         html.Div([
@@ -207,6 +199,7 @@ def render_fourchan_tab() -> html.Div:
             )
         
         return html.Div([
+            
             # Header
             dbc.Row([
                 dbc.Col([
@@ -223,7 +216,12 @@ def render_fourchan_tab() -> html.Div:
                 id="4chan-boards-tabs",
                 value=f"4chan-board-{boards[0]}" if boards else "",
                 children=board_content,
-                style={'marginBottom': '20px'}
+                style={'marginBottom': '20px'},
+                colors={
+                    "border": "#374151",
+                    "primary": "#9CA3AF",
+                    "background": "#1F2937"
+                }
             )
             
         ], className="p-4")

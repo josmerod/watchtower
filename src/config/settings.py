@@ -20,6 +20,7 @@ from src.config.models import (
     NotificationConfig,
     ScrapingConfig,
     SecurityConfig,
+    SpanishPublicAidConfig,
     StreamlitConfig,
     WatcherConfig,
 )
@@ -56,6 +57,7 @@ class Settings(BaseSettings):
     watchers: WatcherConfig = Field(default_factory=WatcherConfig)
     etl: ETLConfig = Field(default_factory=ETLConfig)
     google_drive: GoogleDriveConfig = Field(default_factory=GoogleDriveConfig)
+    spanish_public_aid: SpanishPublicAidConfig = Field(default_factory=SpanishPublicAidConfig)
 
     class Config:
         """Pydantic configuration."""

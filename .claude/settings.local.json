@@ -44,7 +44,17 @@
       "WebFetch(domain:dev.to)",
       "WebFetch(domain:developers.forem.com)",
       "Bash(mkdir:*)",
-      "WebFetch(domain:www.indiehackers.com)"
+      "WebFetch(domain:www.indiehackers.com)",
+      "Bash(if exist \"src\\etl\\spanish_public_aid\\spanish_public_aid_etl.py\" echo \"Spanish Public Aid ETL file exists and will be included\")",
+      "WebFetch(domain:www.pap.hacienda.gob.es)",
+      "WebFetch(domain:www.valencia.es)",
+      "WebFetch(domain:labora.gva.es)",
+      "WebFetch(domain:www.gva.es)",
+      "Bash(if grep -q \"spanish_public_aid_etl.py\" run_all_etl.sh)",
+      "Bash(then echo \"✅ Found in Linux script\")",
+      "Bash(fi)",
+      "Bash(if grep -q \"spanish_public_aid_etl.py\" run_all_etl.bat)",
+      "Bash(then echo \"✅ Found in Windows script\")"
     ],
     "deny": []
   }

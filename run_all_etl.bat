@@ -57,14 +57,20 @@ if exist "src\etl\github\github_trending_rss_etl.py" start /B %PYTHON_CMD% src/e
 if exist "src\etl\news\news_get_hackernews_ask.py" start /B %PYTHON_CMD% src/etl/news/news_get_hackernews_ask.py
 if exist "src\etl\news\news_get_stackoverflow_trends.py" start /B %PYTHON_CMD% src/etl/news/news_get_stackoverflow_trends.py
 if exist "src\etl\news\news_get_media_rss.py" start /B %PYTHON_CMD% src/etl/news/news_get_media_rss.py
+if exist "src\etl\news\news_get_meneame.py" start /B %PYTHON_CMD% src/etl/news/news_get_meneame.py
 if exist "src\etl\news\news_get_kagi.py" start /B %PYTHON_CMD% src/etl/news/news_get_kagi.py
 if exist "src\etl\news\news_get_devto.py" start /B %PYTHON_CMD% src/etl/news/news_get_devto.py
+
+REM Reddit ETL
+if exist "src\etl\news\reddit_unified_etl.py" start /B %PYTHON_CMD% src/etl/news/reddit_unified_etl.py
+if exist "src\etl\giveaways\reddit_giveaways_etl.py" start /B %PYTHON_CMD% src/etl/giveaways/reddit_giveaways_etl.py
 
 REM Deals ETL
 if exist "src\etl\deals\run_all_deals.py" start /B %PYTHON_CMD% src/etl/deals/run_all_deals.py
 
 REM Goldigging ETL
 if exist "src\etl\goldigging\goldigging_coursera_courses.py" start /B %PYTHON_CMD% src/etl/goldigging/goldigging_coursera_courses.py
+if exist "src\etl\goldigging\goldigging_pluralsight_courses.py" start /B %PYTHON_CMD% src/etl/goldigging/goldigging_pluralsight_courses.py
 if exist "src\etl\goldigging\goldigging_youtube_posts.py" start /B %PYTHON_CMD% src/etl/goldigging/goldigging_youtube_posts.py
 if exist "src\etl\goldigging\goldigging_scavenging_etl.py" start /B %PYTHON_CMD% src/etl/goldigging/goldigging_scavenging_etl.py
 if exist "src\etl\goldigging\goldigging_deeplearningai_courses.py" start /B %PYTHON_CMD% src/etl/goldigging/goldigging_deeplearningai_courses.py
@@ -82,6 +88,9 @@ if exist "src\watchers\ms_skills_watcher.py" start /B %PYTHON_CMD% src/watchers/
 REM Youtube ETL
 if exist "src\etl\youtube_shorts_ocr_etl.py" start /B %PYTHON_CMD% src/etl/youtube_shorts_ocr_etl.py
 
+REM Spanish Public Aid ETL
+if exist "src\etl\spanish_public_aid\spanish_public_aid_etl.py" start /B %PYTHON_CMD% src/etl/spanish_public_aid/spanish_public_aid_etl.py
+
 
 echo All available ETL processes started in parallel using %PYTHON_CMD%
 echo Check logs directory for individual process logs
@@ -90,11 +99,15 @@ echo ETL processes are running in background...
 echo Data will be saved to respective directories:
 echo - data/games/
 echo - data/news/
+echo - data/meneame/
 echo - data/deals/
 echo - data/goldigging/
 echo - data/anime/
 echo - data/watchers/
 echo - data/youtube_shorts_ocr/
+echo - data/spanish_public_aid/
+echo - data/reddit_unified/
+echo - data/giveaways/
 echo.
 echo Script completed at %date% %time%
 echo Note: Individual ETL processes may still be running in background
