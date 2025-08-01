@@ -1,88 +1,28 @@
 {
   "Development Tools": [
     {
-      "name": "Cursor",
-      "url": "https://www.cursor.com/",
+      "name": "Cursor Dashboard",
+      "url": "https://www.cursor.com/dashboard",
       "icon": "💻",
       "description": "AI-powered code editor with Claude integration"
     },
     {
-      "name": "Claude Code",
-      "url": "https://claude.ai/code",
+      "name": "Claude",
+      "url": "https://claude.ai/",
       "icon": "🤖",
       "description": "Claude's official CLI for coding assistance"
     },
     {
-      "name": "GitHub",
-      "url": "https://github.com/",
-      "icon": "🐙",
-      "description": "Code repository hosting and collaboration"
-    },
-    {
-      "name": "VS Code",
-      "url": "https://code.visualstudio.com/",
-      "icon": "📝",
-      "description": "Popular extensible code editor"
-    },
-    {
-      "name": "JetBrains Toolbox",
-      "url": "https://www.jetbrains.com/toolbox-app/",
-      "icon": "🧰",
-      "description": "Professional IDE suite (IntelliJ, PyCharm, etc.)"
-    },
-    {
-      "name": "Vim/Neovim",
-      "url": "https://neovim.io/",
-      "icon": "⚡",
-      "description": "Highly configurable text editor"
-    },
-    {
-      "name": "Sublime Text",
-      "url": "https://www.sublimetext.com/",
-      "icon": "📄",
-      "description": "Sophisticated text editor for code"
-    },
-    {
-      "name": "Atom",
-      "url": "https://github.com/atom/atom",
-      "icon": "🔬",
-      "description": "Hackable text editor (archived but still useful)"
-    },
-    {
-      "name": "Replit",
-      "url": "https://replit.com/",
-      "icon": "⚡",
-      "description": "Online IDE and code collaboration"
-    },
-    {
-      "name": "CodePen",
-      "url": "https://codepen.io/",
-      "icon": "🖥️",
-      "description": "Frontend code playground"
-    },
-    {
-      "name": "JSFiddle",
-      "url": "https://jsfiddle.net/",
-      "icon": "🎻",
-      "description": "Web development playground"
+      "name": "GitHub Trending",
+      "url": "https://github.com/trending",
+      "icon": "🌟",
+      "description": "Trending repositories on GitHub"
     },
     {
       "name": "CodeSandbox",
       "url": "https://codesandbox.io/",
       "icon": "📦",
       "description": "Online code editor for rapid development"
-    },
-    {
-      "name": "GitPod",
-      "url": "https://gitpod.io/",
-      "icon": "☁️",
-      "description": "Cloud development environments"
-    },
-    {
-      "name": "GitHub Codespaces",
-      "url": "https://github.com/features/codespaces",
-      "icon": "🌌",
-      "description": "Cloud-hosted development environments"
     }
   ],
   "Package Managers & Registries": [

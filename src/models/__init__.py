@@ -23,4 +23,9 @@
 
 __all__ = [
     # Temporarily empty to avoid import issues
+    # When models are re-enabled, add:
+    # "SpanishPublicAidModel",
+    # "AidScope", "AidType", "AidCategory", "AidStatus", "BeneficiaryType", "PaymentType",
+    # "GeographicScopeModel", "AmountModel", "RequirementModel", "DocumentModel", "ContactInfoModel",
+    # "AidStatisticsModel", "AidSearchFilter",
 ]
