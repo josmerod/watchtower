@@ -52,9 +52,12 @@ run_etl "src/etl/news/news_get_podcasts.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_youtube_posts.py" && pids+=($!)
 run_etl "src/watchers/ms_skills_watcher.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_coursera_courses.py" && pids+=($!)
+run_etl "src/etl/goldigging/goldigging_pluralsight_courses.py" && pids+=($!)
 run_etl "src/etl/goldigging/goldigging_scavenging_etl.py" && pids+=($!)
-run_etl "src/etl/news/news_get_subreddits.py" && pids+=($!)
+run_etl "src/etl/news/reddit_unified_etl.py" && pids+=($!)
+run_etl "src/etl/giveaways/reddit_giveaways_etl.py" && pids+=($!)
 run_etl "src/etl/news/news_get_media_rss.py" && pids+=($!)
+run_etl "src/etl/news/news_get_meneame.py" && pids+=($!)
 run_etl "src/etl/anime/mal_etl.py" && pids+=($!)
 run_etl "src/etl/news/news_get_newsapi.py" && pids+=($!)
 
@@ -84,6 +87,9 @@ run_etl "src/etl/goldigging/gumroad_scraper_etl.py"
 
 # VIAJEROS PIRATAS SCRAPER
 run_etl "src/etl/goldigging/viajeros_piratas_etl.py"
+
+# SPANISH PUBLIC AID SCRAPER
+run_etl "src/etl/spanish_public_aid/spanish_public_aid_etl.py"
 
 
 echo "All ETL processes started in parallel using UV"
@@ -150,3 +156,7 @@ echo "- data/home_server_trends/"
 echo "- data/shoppy/"
 echo "- data/scavenging/"
 echo "- data/devto/"
+echo "- data/meneame/"
+echo "- data/spanish_public_aid/"
+echo "- data/reddit_unified/"
+echo "- data/giveaways/"

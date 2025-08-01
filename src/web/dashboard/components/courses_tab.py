@@ -15,14 +15,17 @@ from dash.exceptions import PreventUpdate
 # --- Constants ---
 COURSERA_DATA_PATH = get_data_path("classcentral", "coursera_courses.json")
 UDEMY_DATA_PATH = get_data_path("udemy", "udemy_courses.json")
+PLURALSIGHT_DATA_PATH = get_data_path("pluralsight_courses", "pluralsight_courses.json")
 
 ALL_COURSES_DATA = {
     'coursera': pd.DataFrame(),
-    'udemy': pd.DataFrame()
+    'udemy': pd.DataFrame(),
+    'pluralsight': pd.DataFrame()
 }
 COURSES_DATA_LOADED = {
     'coursera': False,
-    'udemy': False
+    'udemy': False,
+    'pluralsight': False
 }
 # Page size for tables
 PAGE_SIZE = 15
@@ -161,9 +164,49 @@ def load_udemy_data():
     COURSES_DATA_LOADED['udemy'] = True
     print(f"Info (Udemy): Loaded {len(df)} courses.")
 
+def load_pluralsight_data():
+    global ALL_COURSES_DATA, COURSES_DATA_LOADED
+    file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), PLURALSIGHT_DATA_PATH))
+
+    if not file_exists(file_path):
+        print(f"Warning (Pluralsight): File not found at {file_path}")
+        ALL_COURSES_DATA['pluralsight'] = pd.DataFrame()
+        COURSES_DATA_LOADED['pluralsight'] = True
+        return
+
+    try:
+        df = pd.read_json(file_path)
+    except Exception as e:
+        print(f"Error (Pluralsight): Failed to load or parse {file_path}. Error: {e}")
+        ALL_COURSES_DATA['pluralsight'] = pd.DataFrame()
+        COURSES_DATA_LOADED['pluralsight'] = True
+        return
+
+    if df.empty:
+        print(f"Info (Pluralsight): {file_path} was empty.")
+        ALL_COURSES_DATA['pluralsight'] = pd.DataFrame()
+        COURSES_DATA_LOADED['pluralsight'] = True
+        return
+
+    # Standardize columns for Pluralsight
+    expected_cols = ['title', 'url', 'instructor', 'duration', 'level', 'scraped_at']
+    for col in expected_cols:
+        if col not in df.columns:
+            df[col] = None
+
+    df['scraped_at_parsed'] = df['scraped_at'].apply(lambda x: parse_course_date(x))
+
+    if 'scraped_at_parsed' in df.columns:
+        df = df.sort_values(by='scraped_at_parsed', ascending=False, na_position='last')
+
+    ALL_COURSES_DATA['pluralsight'] = df
+    COURSES_DATA_LOADED['pluralsight'] = True
+    print(f"Info (Pluralsight): Loaded {len(df)} courses.")
+
 def load_all_courses_data():
     load_coursera_data()
     load_udemy_data()
+    load_pluralsight_data()
     print("Attempted to load all courses data.")
 
 # Load data dynamically instead of at import time
@@ -263,7 +306,7 @@ def render_courses_tab():
     
     # Initial check if any data was loaded to provide a general message
     # More specific messages are handled by individual sub-tab render functions
-    if not COURSES_DATA_LOADED['coursera'] and not COURSES_DATA_LOADED['udemy']:
+    if not COURSES_DATA_LOADED['coursera'] and not COURSES_DATA_LOADED['udemy'] and not COURSES_DATA_LOADED['pluralsight']:
          return dbc.Alert("All course data failed to load. Please check data sources and ETLs.", color="danger", className="mt-3")
 
     # If one source loaded but not the other, the specific tab will show its own message.
@@ -274,6 +317,7 @@ def render_courses_tab():
         dbc.Tabs(id="courses-main-tabs", active_tab="tab-coursera", children=[ # Default to Coursera
             dbc.Tab(label="Coursera", tab_id="tab-coursera", children=render_coursera_courses_sub_tab(ALL_COURSES_DATA['coursera'])),
             dbc.Tab(label="Udemy", tab_id="tab-udemy", children=render_udemy_courses_sub_tab(ALL_COURSES_DATA['udemy'])),
+            dbc.Tab(label="Pluralsight", tab_id="tab-pluralsight", children=render_pluralsight_courses_sub_tab(ALL_COURSES_DATA['pluralsight'])),
         ])
     ])
 
@@ -450,6 +494,120 @@ def register_courses_callbacks(app):
     def reset_udemy_pagination(_):
         return 1
 
+    # Pluralsight Callbacks (similar structure to Udemy)
+    @app.callback(
+        Output("pluralsight-table-container", "children"),
+        Output("pluralsight-pagination-info", "children"),
+        Output("pluralsight-total-pages", "children"),
+        Output("pluralsight-page-input", "max"),
+        Output("pluralsight-page-input", "value"),
+        Output("pluralsight-prev-btn", "disabled"),
+        Output("pluralsight-next-btn", "disabled"),
+        Input("pluralsight-search-input", "value"),
+        Input("pluralsight-instructor-input", "value"),
+        Input("pluralsight-page-input", "value"),
+        Input("pluralsight-prev-btn", "n_clicks"),
+        Input("pluralsight-next-btn", "n_clicks"),
+        prevent_initial_call=False
+    )
+    def update_pluralsight_table(search_term, instructor_filter, current_page, prev_clicks, next_clicks):
+        try:
+            if not COURSES_DATA_LOADED['pluralsight']:
+                return dbc.Alert("Loading Pluralsight data...", color="info"), "", "1", 1, 1, True, True
+
+            df_filtered = ALL_COURSES_DATA['pluralsight'].copy()
+            if df_filtered.empty:
+                return dbc.Alert("No Pluralsight data available.", color="warning"), "", "1", 1, 1, True, True
+
+            if search_term:
+                search_lower = search_term.lower()
+                df_filtered = df_filtered[df_filtered['title'].str.lower().contains(search_lower, na=False)]
+            
+            if instructor_filter:
+                instructor_lower = instructor_filter.lower()
+                df_filtered = df_filtered[df_filtered['instructor'].str.lower().contains(instructor_lower, na=False)]
+
+            if df_filtered.empty:
+                return dbc.Alert("No Pluralsight courses match your filters.", color="info"), "", "1", 1, 1, True, True
+
+            total_items = len(df_filtered)
+            max_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
+            
+            # Handle pagination button clicks
+            ctx = dash.callback_context
+            if ctx.triggered:
+                prop_id = ctx.triggered[0]['prop_id']
+                if 'prev-btn' in prop_id:
+                    current_page = max(1, (current_page or 1) - 1)
+                elif 'next-btn' in prop_id:
+                    current_page = min(max_pages, (current_page or 1) + 1)
+            
+            current_page = max(1, min(current_page or 1, max_pages))
+
+            start_idx = (current_page - 1) * PAGE_SIZE
+            end_idx = start_idx + PAGE_SIZE
+            df_paginated = df_filtered.iloc[start_idx:end_idx]
+
+            # Create Pluralsight table
+            table_header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Instructor"), html.Th("Level"), html.Th("Added Date")]))]
+            table_body_rows = []
+            for _, row in df_paginated.iterrows():
+                table_body_rows.append(html.Tr([
+                    html.Td(html.A(row.get('title', 'N/A'), href=row.get('url'), target="_blank")),
+                    html.Td(str(row.get('instructor', 'N/A')) if row.get('instructor') != 'false' else 'N/A'),
+                    html.Td(row.get('level', 'N/A')),
+                    html.Td(format_coursera_display_date(row.get('scraped_at_parsed'))) # Reusing date formatter
+                ]))
+            table_body = [html.Tbody(table_body_rows)]
+            table = dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive")
+
+            # Create pagination info
+            pagination_info = f"Showing {start_idx + 1}-{min(end_idx, total_items)} of {total_items} courses"
+            
+            # Button states
+            prev_disabled = current_page <= 1
+            next_disabled = current_page >= max_pages
+
+            return table, pagination_info, str(max_pages), max_pages, current_page, prev_disabled, next_disabled
+            
+        except Exception as e:
+            print(f"Error in pluralsight table update: {e}")
+            return dbc.Alert(f"Error loading Pluralsight data: {str(e)}", color="danger"), "", "1", 1, 1, True, True
+
+    @app.callback(
+        Output("pluralsight-page-input", "value", allow_duplicate=True),
+        Input("pluralsight-search-input", "value"),
+        Input("pluralsight-instructor-input", "value"),
+        prevent_initial_call=True
+    )
+    def reset_pluralsight_pagination(_, __):
+        return 1
+
+def render_pluralsight_courses_sub_tab(df):
+    if not COURSES_DATA_LOADED['pluralsight']:
+        return dbc.Alert("Pluralsight courses data failed to load. Check logs.", color="danger", className="mt-3")
+    if df.empty:
+        return dbc.Alert("No Pluralsight courses data currently available (file might be empty).", color="info", className="mt-3")
+    
+    return html.Div([
+         dbc.Row([
+            dbc.Col(dbc.Input(id="pluralsight-search-input", placeholder="Search by title..."), md=8, className="mb-2"),
+            dbc.Col(dbc.Input(id="pluralsight-instructor-input", placeholder="Filter by instructor..."), md=4, className="mb-2"),
+        ], className="mt-3 mb-3"),
+        html.Div(id="pluralsight-table-container"),
+        # Custom pagination with better UX
+        html.Div(id="pluralsight-pagination-wrapper", className="d-flex justify-content-between align-items-center mt-3", children=[
+            html.Div(id="pluralsight-pagination-info", className="text-muted"),
+            html.Div(className="d-flex align-items-center gap-2", children=[
+                dbc.Button("« Previous", id="pluralsight-prev-btn", size="sm", outline=True, color="primary", disabled=True),
+                dbc.Input(id="pluralsight-page-input", type="number", value=1, min=1, max=1, style={"width": "80px", "textAlign": "center"}, size="sm"),
+                html.Span("of", className="mx-2 text-muted"),
+                html.Span(id="pluralsight-total-pages", className="text-muted"),
+                dbc.Button("Next »", id="pluralsight-next-btn", size="sm", outline=True, color="primary", disabled=True)
+            ])
+        ])
+    ], className="mt-3")
+
 
 if __name__ == '__main__':
     app_test = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -457,4 +615,5 @@ if __name__ == '__main__':
     register_courses_callbacks(app_test) # Register callbacks
     print(f"Coursera data loaded: {COURSES_DATA_LOADED['coursera']}, Count: {len(ALL_COURSES_DATA['coursera'])}")
     print(f"Udemy data loaded: {COURSES_DATA_LOADED['udemy']}, Count: {len(ALL_COURSES_DATA['udemy'])}")
+    print(f"Pluralsight data loaded: {COURSES_DATA_LOADED['pluralsight']}, Count: {len(ALL_COURSES_DATA['pluralsight'])}")
     app_test.run_server(debug=True, port=8059)

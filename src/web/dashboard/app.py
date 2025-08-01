@@ -33,6 +33,8 @@ from src.web.dashboard.components.watchers_tab import watchers_tab
 
 from src.web.dashboard.components.github_trending_tab import render_github_trending_tab
 
+from src.web.dashboard.components.spanish_public_aid_tab import render_spanish_public_aid_tab, register_spanish_aid_callbacks
+
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
@@ -109,6 +111,9 @@ app.layout = dbc.Container(
                         dbc.Tab(label="🎁 Giveaways", tab_id="tab-giveaways", children=[
                             create_giveaways_tab()
                         ]),
+                        dbc.Tab(label="🏛️ Ayudas Públicas", tab_id="tab-spanish-aid", children=[
+                            render_spanish_public_aid_tab()
+                        ]),
                         dbc.Tab(label="🪙 Crypto", tab_id="tab-crypto"),
                         dbc.Tab(label="✈️ Travel", tab_id="tab-travel"),
                         dbc.Tab(label="👁️ Watchers", tab_id="tab-watchers"),
@@ -161,6 +166,7 @@ register_fourchan_callbacks(app)
 register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
 register_youtube_ocr_callbacks(app)
+register_spanish_aid_callbacks(app)
 
 if __name__ == "__main__":
     # Note on data loading:
