@@ -1,526 +1,36 @@
 {
   "Development Tools": [
     {
-      "name": "Cursor",
-      "url": "https://www.cursor.com/",
+      "name": "Cursor Dashboard",
+      "url": "https://www.cursor.com/dashboard",
       "icon": "💻",
       "description": "AI-powered code editor with Claude integration"
     },
     {
-      "name": "Claude Code",
-      "url": "https://claude.ai/code",
+      "name": "Claude",
+      "url": "https://claude.ai/",
       "icon": "🤖",
       "description": "Claude's official CLI for coding assistance"
     },
     {
-      "name": "GitHub",
-      "url": "https://github.com/",
-      "icon": "🐙",
-      "description": "Code repository hosting and collaboration"
-    },
-    {
-      "name": "VS Code",
-      "url": "https://code.visualstudio.com/",
-      "icon": "📝",
-      "description": "Popular extensible code editor"
-    },
-    {
-      "name": "JetBrains Toolbox",
-      "url": "https://www.jetbrains.com/toolbox-app/",
-      "icon": "🧰",
-      "description": "Professional IDE suite (IntelliJ, PyCharm, etc.)"
-    },
-    {
-      "name": "Vim/Neovim",
-      "url": "https://neovim.io/",
-      "icon": "⚡",
-      "description": "Highly configurable text editor"
-    },
-    {
-      "name": "Sublime Text",
-      "url": "https://www.sublimetext.com/",
-      "icon": "📄",
-      "description": "Sophisticated text editor for code"
-    },
-    {
-      "name": "Atom",
-      "url": "https://github.com/atom/atom",
-      "icon": "🔬",
-      "description": "Hackable text editor (archived but still useful)"
-    },
-    {
-      "name": "Replit",
-      "url": "https://replit.com/",
-      "icon": "⚡",
-      "description": "Online IDE and code collaboration"
-    },
-    {
-      "name": "CodePen",
-      "url": "https://codepen.io/",
-      "icon": "🖥️",
-      "description": "Frontend code playground"
-    },
-    {
-      "name": "JSFiddle",
-      "url": "https://jsfiddle.net/",
-      "icon": "🎻",
-      "description": "Web development playground"
+      "name": "GitHub Trending",
+      "url": "https://github.com/trending",
+      "icon": "🌟",
+      "description": "Trending repositories on GitHub"
     },
     {
       "name": "CodeSandbox",
       "url": "https://codesandbox.io/",
       "icon": "📦",
       "description": "Online code editor for rapid development"
-    },
-    {
-      "name": "GitPod",
-      "url": "https://gitpod.io/",
-      "icon": "☁️",
-      "description": "Cloud development environments"
-    },
-    {
-      "name": "GitHub Codespaces",
-      "url": "https://github.com/features/codespaces",
-      "icon": "🌌",
-      "description": "Cloud-hosted development environments"
-    }
-  ],
-  "Package Managers & Registries": [
-    {
-      "name": "npm",
-      "url": "https://www.npmjs.com/",
-      "icon": "📦",
-      "description": "Node.js package manager"
-    },
-    {
-      "name": "PyPI",
-      "url": "https://pypi.org/",
-      "icon": "🐍",
-      "description": "Python package index"
-    },
-    {
-      "name": "Cargo",
-      "url": "https://crates.io/",
-      "icon": "🦀",
-      "description": "Rust package registry"
-    },
-    {
-      "name": "RubyGems",
-      "url": "https://rubygems.org/",
-      "icon": "💎",
-      "description": "Ruby package manager"
-    },
-    {
-      "name": "Composer",
-      "url": "https://packagist.org/",
-      "icon": "🎼",
-      "description": "PHP package repository"
-    },
-    {
-      "name": "NuGet",
-      "url": "https://www.nuget.org/",
-      "icon": "📘",
-      "description": ".NET package manager"
-    },
-    {
-      "name": "Maven Central",
-      "url": "https://mvnrepository.com/",
-      "icon": "☕",
-      "description": "Java package repository"
-    },
-    {
-      "name": "Go Packages",
-      "url": "https://pkg.go.dev/",
-      "icon": "🐹",
-      "description": "Go module documentation and discovery"
-    }
-  ],
-  "Version Control & Collaboration": [
-    {
-      "name": "Git Documentation",
-      "url": "https://git-scm.com/book/en/v2",
-      "icon": "📊",
-      "description": "Official Git documentation"
-    },
-    {
-      "name": "GitHub Desktop",
-      "url": "https://desktop.github.com/",
-      "icon": "🖥️",
-      "description": "Git GUI client by GitHub"
-    },
-    {
-      "name": "GitLab",
-      "url": "https://gitlab.com/",
-      "icon": "🦊",
-      "description": "Complete DevOps platform"
-    },
-    {
-      "name": "Bitbucket",
-      "url": "https://bitbucket.org/",
-      "icon": "🪣",
-      "description": "Git repository hosting by Atlassian"
-    },
-    {
-      "name": "Sourcetree",
-      "url": "https://www.sourcetreeapp.com/",
-      "icon": "🌳",
-      "description": "Free Git GUI for Windows and Mac"
-    },
-    {
-      "name": "GitKraken",
-      "url": "https://www.gitkraken.com/",
-      "icon": "🐙",
-      "description": "Cross-platform Git GUI client"
-    },
-    {
-      "name": "Conventional Commits",
-      "url": "https://www.conventionalcommits.org/",
-      "icon": "📝",
-      "description": "Commit message convention"
-    }
-  ],
-  "Learning Resources": [
-    {
-      "name": "Udemy",
-      "url": "https://www.udemy.com/",
-      "icon": "🎓",
-      "description": "Online courses marketplace"
-    },
-    {
-      "name": "Coursera",
-      "url": "https://www.coursera.org/",
-      "icon": "🎓",
-      "description": "University-level online courses"
-    },
-    {
-      "name": "Pluralsight",
-      "url": "https://www.pluralsight.com/",
-      "icon": "🎯",
-      "description": "Technology skills platform"
-    },
-    {
-      "name": "LinkedIn Learning",
-      "url": "https://www.linkedin.com/learning/",
-      "icon": "💼",
-      "description": "Professional development courses"
-    },
-    {
-      "name": "Boot.dev",
-      "url": "https://boot.dev/",
-      "icon": "💻",
-      "description": "Interactive programming courses"
-    },
-    {
-      "name": "freeCodeCamp",
-      "url": "https://www.freecodecamp.org/",
-      "icon": "🔥",
-      "description": "Free coding bootcamp"
-    },
-    {
-      "name": "The Odin Project",
-      "url": "https://www.theodinproject.com/",
-      "icon": "⚔️",
-      "description": "Free full-stack curriculum"
-    },
-    {
-      "name": "Khan Academy",
-      "url": "https://www.khanacademy.org/",
-      "icon": "📚",
-      "description": "Free educational content"
-    },
-    {
-      "name": "MIT OpenCourseWare",
-      "url": "https://ocw.mit.edu/",
-      "icon": "🏛️",
-      "description": "Free MIT course materials"
-    },
-    {
-      "name": "Stanford Online",
-      "url": "https://online.stanford.edu/",
-      "icon": "🌲",
-      "description": "Stanford University online courses"
-    },
-    {
-      "name": "Codecademy",
-      "url": "https://www.codecademy.com/",
-      "icon": "📖",
-      "description": "Interactive coding lessons"
-    },
-    {
-      "name": "edX",
-      "url": "https://www.edx.org/",
-      "icon": "🎯",
-      "description": "University courses online"
-    },
-    {
-      "name": "LeetCode",
-      "url": "https://leetcode.com/",
-      "icon": "🧩",
-      "description": "Coding interview preparation"
-    },
-    {
-      "name": "HackerRank",
-      "url": "https://www.hackerrank.com/",
-      "icon": "💪",
-      "description": "Programming challenges and competitions"
-    },
-    {
-      "name": "Codewars",
-      "url": "https://www.codewars.com/",
-      "icon": "⚔️",
-      "description": "Coding challenges for skill improvement"
-    },
-    {
-      "name": "Project Euler",
-      "url": "https://projecteuler.net/",
-      "icon": "🔢",
-      "description": "Mathematical programming challenges"
-    },
-    {
-      "name": "Advent of Code",
-      "url": "https://adventofcode.com/",
-      "icon": "🎄",
-      "description": "Annual programming puzzle event"
-    }
-  ],
-  "AI & Machine Learning": [
-    {
-      "name": "Claude",
-      "url": "https://claude.ai/",
-      "icon": "🤖",
-      "description": "Anthropic's AI assistant"
-    },
-    {
-      "name": "ChatGPT",
-      "url": "https://chat.openai.com/",
-      "icon": "💬",
-      "description": "OpenAI's conversational AI"
-    },
-    {
-      "name": "Perplexity",
-      "url": "https://www.perplexity.ai/",
-      "icon": "🔍",
-      "description": "AI-powered search and research"
-    },
-    {
-      "name": "Gemini",
-      "url": "https://gemini.google.com/",
-      "icon": "✨",
-      "description": "Google's AI assistant"
-    },
-    {
-      "name": "Microsoft Copilot",
-      "url": "https://copilot.microsoft.com/",
-      "icon": "🤝",
-      "description": "Microsoft's AI companion"
-    },
-    {
-      "name": "GitHub Copilot",
-      "url": "https://github.com/features/copilot",
-      "icon": "🧑‍💻",
-      "description": "AI pair programmer"
-    },
-    {
-      "name": "Codeium",
-      "url": "https://codeium.com/",
-      "icon": "🚀",
-      "description": "Free AI code completion"
-    },
-    {
-      "name": "Tabnine",
-      "url": "https://www.tabnine.com/",
-      "icon": "⚡",
-      "description": "AI assistant for software developers"
-    },
-    {
-      "name": "Hugging Face",
-      "url": "https://huggingface.co/",
-      "icon": "🤗",
-      "description": "ML models and datasets hub"
-    },
-    {
-      "name": "Papers with Code",
-      "url": "https://paperswithcode.com/",
-      "icon": "📄",
-      "description": "ML research papers with code"
-    },
-    {
-      "name": "Google Colab",
-      "url": "https://colab.research.google.com/",
-      "icon": "📊",
-      "description": "Free Jupyter notebook environment"
-    },
-    {
-      "name": "Jupyter Notebooks",
-      "url": "https://jupyter.org/",
-      "icon": "📓",
-      "description": "Interactive computing notebooks"
-    },
-    {
-      "name": "Kaggle",
-      "url": "https://www.kaggle.com/",
-      "icon": "🏆",
-      "description": "Data science competitions and datasets"
-    },
-    {
-      "name": "DeepLearning.AI",
-      "url": "https://www.deeplearning.ai/",
-      "icon": "🧠",
-      "description": "AI education by Andrew Ng"
-    },
-    {
-      "name": "Fast.ai",
-      "url": "https://www.fast.ai/",
-      "icon": "🏃‍♂️",
-      "description": "Practical deep learning for coders"
-    },
-    {
-      "name": "Replicate",
-      "url": "https://replicate.com/",
-      "icon": "🔄",
-      "description": "Run open-source models with an API"
-    }
-  ],
-  "Documentation & References": [
-    {
-      "name": "MDN Web Docs",
-      "url": "https://developer.mozilla.org/",
-      "icon": "🌐",
-      "description": "Web development documentation"
-    },
-    {
-      "name": "Python Documentation",
-      "url": "https://docs.python.org/3/",
-      "icon": "🐍",
-      "description": "Official Python docs"
-    },
-    {
-      "name": "JavaScript.info",
-      "url": "https://javascript.info/",
-      "icon": "💛",
-      "description": "Modern JavaScript tutorial"
-    },
-    {
-      "name": "Rust Book",
-      "url": "https://doc.rust-lang.org/book/",
-      "icon": "🦀",
-      "description": "The Rust Programming Language book"
-    },
-    {
-      "name": "Go Documentation",
-      "url": "https://golang.org/doc/",
-      "icon": "🐹",
-      "description": "Official Go documentation"
-    },
-    {
-      "name": "React Documentation",
-      "url": "https://react.dev/",
-      "icon": "⚛️",
-      "description": "React library documentation"
-    },
-    {
-      "name": "Vue.js Guide",
-      "url": "https://vuejs.org/guide/",
-      "icon": "💚",
-      "description": "Vue.js framework documentation"
-    },
-    {
-      "name": "Angular Documentation",
-      "url": "https://angular.io/docs",
-      "icon": "🅰️",
-      "description": "Angular framework documentation"
-    },
-    {
-      "name": "Django Documentation",
-      "url": "https://docs.djangoproject.com/",
-      "icon": "🎸",
-      "description": "Django web framework docs"
-    },
-    {
-      "name": "Flask Documentation",
-      "url": "https://flask.palletsprojects.com/",
-      "icon": "🍶",
-      "description": "Flask micro web framework"
-    },
-    {
-      "name": "FastAPI Documentation",
-      "url": "https://fastapi.tiangolo.com/",
-      "icon": "⚡",
-      "description": "Modern Python web framework"
-    },
-    {
-      "name": "Spring Documentation",
-      "url": "https://spring.io/projects/spring-framework",
-      "icon": "🌱",
-      "description": "Java Spring framework"
-    },
-    {
-      "name": "Ruby on Rails Guides",
-      "url": "https://guides.rubyonrails.org/",
-      "icon": "💎",
-      "description": "Ruby on Rails framework guides"
-    },
-    {
-      "name": "Laravel Documentation",
-      "url": "https://laravel.com/docs",
-      "icon": "🎭",
-      "description": "PHP Laravel framework"
-    },
-    {
-      "name": "DevDocs",
-      "url": "https://devdocs.io/",
-      "icon": "📚",
-      "description": "Multiple API documentations in one place"
     }
   ],
   "Design & UI/UX": [
-    {
-      "name": "Uxcel",
-      "url": "https://uxcel.com/",
-      "icon": "👩‍💻",
-      "description": "UX design courses and skills"
-    },
-    {
-      "name": "Figma",
-      "url": "https://www.figma.com/",
-      "icon": "🎨",
-      "description": "Collaborative design tool"
-    },
-    {
-      "name": "Sketch",
-      "url": "https://www.sketch.com/",
-      "icon": "💎",
-      "description": "Digital design toolkit"
-    },
-    {
-      "name": "Adobe XD",
-      "url": "https://www.adobe.com/products/xd.html",
-      "icon": "🎯",
-      "description": "UI/UX design and prototyping"
-    },
-    {
-      "name": "Framer",
-      "url": "https://www.framer.com/",
-      "icon": "🖼️",
-      "description": "Interactive design and prototyping"
-    },
-    {
-      "name": "InVision",
-      "url": "https://www.invisionapp.com/",
-      "icon": "👁️",
-      "description": "Digital product design platform"
-    },
     {
       "name": "Dribbble",
       "url": "https://dribbble.com/",
       "icon": "🏀",
       "description": "Design inspiration community"
-    },
-    {
-      "name": "Behance",
-      "url": "https://www.behance.net/",
-      "icon": "🎭",
-      "description": "Creative portfolio showcase"
     },
     {
       "name": "Awwwards",
@@ -529,19 +39,7 @@
       "description": "Web design inspiration and awards"
     },
     {
-      "name": "UI Movement",
-      "url": "https://uimovement.com/",
-      "icon": "📱",
-      "description": "UI design inspiration"
-    },
-    {
-      "name": "Adobe Creative Cloud",
-      "url": "https://www.adobe.com/creativecloud.html",
-      "icon": "🎯",
-      "description": "Design and creative tools suite"
-    },
-    {
-      "name": "Canva",
+      "name": "Canva (eval)",
       "url": "https://www.canva.com/",
       "icon": "🌈",
       "description": "Easy graphic design tool"
@@ -572,12 +70,6 @@
     }
   ],
   "Development Communities": [
-    {
-      "name": "Stack Overflow",
-      "url": "https://stackoverflow.com/",
-      "icon": "❓",
-      "description": "Programming Q&A community"
-    },
     {
       "name": "Dev.to",
       "url": "https://dev.to/",
@@ -626,13 +118,7 @@
       "icon": "📝",
       "description": "Developer blogging community"
     },
-    {
-      "name": "IndieHackers",
-      "url": "https://www.indiehackers.com/",
-      "icon": "🚀",
-      "description": "Community for indie entrepreneurs"
-    },
-    {
+     {
       "name": "Product Hunt",
       "url": "https://www.producthunt.com/",
       "icon": "🚀",
@@ -645,153 +131,7 @@
       "description": "Local tech meetups and events"
     }
   ],
-  "Cloud & DevOps": [
-    {
-      "name": "AWS Console",
-      "url": "https://aws.amazon.com/console/",
-      "icon": "☁️",
-      "description": "Amazon Web Services"
-    },
-    {
-      "name": "Google Cloud",
-      "url": "https://cloud.google.com/",
-      "icon": "🌩️",
-      "description": "Google Cloud Platform"
-    },
-    {
-      "name": "Azure Portal",
-      "url": "https://portal.azure.com/",
-      "icon": "🔵",
-      "description": "Microsoft Azure cloud services"
-    },
-    {
-      "name": "DigitalOcean",
-      "url": "https://www.digitalocean.com/",
-      "icon": "🌊",
-      "description": "Simple cloud infrastructure"
-    },
-    {
-      "name": "Linode",
-      "url": "https://www.linode.com/",
-      "icon": "🟢",
-      "description": "High performance cloud computing"
-    },
-    {
-      "name": "Vultr",
-      "url": "https://www.vultr.com/",
-      "icon": "🚀",
-      "description": "Global cloud server provider"
-    },
-    {
-      "name": "Docker Hub",
-      "url": "https://hub.docker.com/",
-      "icon": "🐳",
-      "description": "Container image registry"
-    },
-    {
-      "name": "Kubernetes",
-      "url": "https://kubernetes.io/",
-      "icon": "⚙️",
-      "description": "Container orchestration platform"
-    },
-    {
-      "name": "Terraform",
-      "url": "https://www.terraform.io/",
-      "icon": "🏗️",
-      "description": "Infrastructure as code"
-    },
-    {
-      "name": "Ansible",
-      "url": "https://www.ansible.com/",
-      "icon": "🔧",
-      "description": "IT automation and configuration"
-    },
-    {
-      "name": "Jenkins",
-      "url": "https://www.jenkins.io/",
-      "icon": "👨‍🔧",
-      "description": "Open source automation server"
-    },
-    {
-      "name": "GitHub Actions",
-      "url": "https://github.com/features/actions",
-      "icon": "⚡",
-      "description": "CI/CD and automation"
-    },
-    {
-      "name": "GitLab CI/CD",
-      "url": "https://docs.gitlab.com/ee/ci/",
-      "icon": "🦊",
-      "description": "Built-in CI/CD pipeline"
-    },
-    {
-      "name": "CircleCI",
-      "url": "https://circleci.com/",
-      "icon": "⭕",
-      "description": "Continuous integration platform"
-    },
-    {
-      "name": "Heroku",
-      "url": "https://www.heroku.com/",
-      "icon": "💜",
-      "description": "Cloud application platform"
-    },
-    {
-      "name": "Railway",
-      "url": "https://railway.app/",
-      "icon": "🚂",
-      "description": "Simple app deployment"
-    },
-    {
-      "name": "Fly.io",
-      "url": "https://fly.io/",
-      "icon": "🪰",
-      "description": "Deploy apps close to users"
-    },
-    {
-      "name": "Netlify",
-      "url": "https://www.netlify.com/",
-      "icon": "🌊",
-      "description": "Web application deployment"
-    },
-    {
-      "name": "Vercel",
-      "url": "https://vercel.com/",
-      "icon": "▲",
-      "description": "Frontend deployment platform"
-    },
-    {
-      "name": "Cloudflare",
-      "url": "https://www.cloudflare.com/",
-      "icon": "☁️",
-      "description": "Web performance and security"
-    }
-  ],
   "Claude Plugins & Extensions": [
-    {
-      "name": "Claude Code Documentation",
-      "url": "https://docs.anthropic.com/en/docs/claude-code",
-      "icon": "📖",
-      "description": "Official Claude Code documentation"
-    },
-    {
-      "name": "Anthropic Console",
-      "url": "https://console.anthropic.com/",
-      "icon": "🎛️",
-      "description": "Anthropic API console and settings"
-    },
-    {
-      "name": "Claude for VS Code",
-      "url": "https://marketplace.visualstudio.com/items?itemName=anthropic.claude-dev",
-      "icon": "🧩",
-      "description": "Claude extension for VS Code"
-    },
-    {
-      "name": "Claude API Reference",
-      "url": "https://docs.anthropic.com/claude/reference/",
-      "icon": "📚",
-      "description": "Claude API documentation"
-    },
     {
       "name": "Claude Prompt Library",
       "url": "https://docs.anthropic.com/claude/prompt-library",
@@ -809,24 +149,6 @@
       "url": "https://github.com/anthropics/anthropic-cookbook",
       "icon": "📗",
       "description": "Code examples and guides"
-    },
-    {
-      "name": "Claude Safety Best Practices",
-      "url": "https://docs.anthropic.com/claude/docs/responsible-ai",
-      "icon": "🛡️",
-      "description": "Responsible AI usage guidelines"
-    },
-    {
-      "name": "Claude Models Overview",
-      "url": "https://docs.anthropic.com/claude/docs/models-overview",
-      "icon": "🧠",
-      "description": "Available Claude model capabilities"
-    },
-    {
-      "name": "Claude MCP (Model Context Protocol)",
-      "url": "https://modelcontextprotocol.io/",
-      "icon": "🔗",
-      "description": "Connect Claude to external tools and data"
     }
   ],
   "Architecture & Design Patterns": [
@@ -879,254 +201,41 @@
       "description": "Methodology for building SaaS apps"
     }
   ],
-  "Productivity & Organization": [
-    {
-      "name": "Notion",
-      "url": "https://www.notion.so/",
-      "icon": "📝",
-      "description": "All-in-one workspace for notes and projects"
-    },
-    {
-      "name": "Obsidian",
-      "url": "https://obsidian.md/",
-      "icon": "🔗",
-      "description": "Knowledge management with linked notes"
-    },
-    {
-      "name": "Logseq",
-      "url": "https://logseq.com/",
-      "icon": "📊",
-      "description": "Local-first knowledge graph"
-    },
-    {
-      "name": "Roam Research",
-      "url": "https://roamresearch.com/",
-      "icon": "🧠",
-      "description": "Networked thought and research"
-    },
-    {
-      "name": "Trello",
-      "url": "https://trello.com/",
-      "icon": "📋",
-      "description": "Project management with boards"
-    },
-    {
-      "name": "Asana",
-      "url": "https://asana.com/",
-      "icon": "☑️",
-      "description": "Team project management"
-    },
-    {
-      "name": "Linear",
-      "url": "https://linear.app/",
-      "icon": "📈",
-      "description": "Issue tracking for software teams"
-    },
-    {
-      "name": "Jira",
-      "url": "https://www.atlassian.com/software/jira",
-      "icon": "🎯",
-      "description": "Agile project management"
-    },
-    {
-      "name": "Monday.com",
-      "url": "https://monday.com/",
-      "icon": "📅",
-      "description": "Work operating system"
-    },
-    {
-      "name": "ClickUp",
-      "url": "https://clickup.com/",
-      "icon": "⚡",
-      "description": "All-in-one productivity platform"
-    },
-    {
-      "name": "Todoist",
-      "url": "https://todoist.com/",
-      "icon": "✅",
-      "description": "Task management application"
-    },
-    {
-      "name": "Things 3",
-      "url": "https://culturedcode.com/things/",
-      "icon": "📱",
-      "description": "Personal task manager (Apple)"
-    },
-    {
-      "name": "Forest",
-      "url": "https://www.forestapp.cc/",
-      "icon": "🌳",
-      "description": "Focus timer and productivity app"
-    },
-    {
-      "name": "RescueTime",
-      "url": "https://www.rescuetime.com/",
-      "icon": "⏰",
-      "description": "Time tracking and productivity insights"
-    }
-  ],
   "Monitoring & Analytics": [
+
     {
-      "name": "Google Analytics",
-      "url": "https://analytics.google.com/",
-      "icon": "📊",
-      "description": "Web analytics platform"
-    },
-    {
-      "name": "Datadog",
+      "name": "Datadog (eval)",
       "url": "https://www.datadoghq.com/",
       "icon": "🐕",
       "description": "Monitoring and analytics platform"
     },
     {
-      "name": "New Relic",
+      "name": "New Relic (eval)",
       "url": "https://newrelic.com/",
       "icon": "📈",
       "description": "Application performance monitoring"
     },
+    
     {
-      "name": "Sentry",
-      "url": "https://sentry.io/",
-      "icon": "🛡️",
-      "description": "Error tracking and performance monitoring"
-    },
-    {
-      "name": "Grafana",
+      "name": "Grafana (eval)",
       "url": "https://grafana.com/",
       "icon": "📊",
-      "description": "Observability and data visualization"
+      "description": "Observability and data visualization platform"
     },
     {
-      "name": "Prometheus",
-      "url": "https://prometheus.io/",
-      "icon": "🔥",
-      "description": "Systems monitoring and alerting"
-    },
-    {
-      "name": "Uptime Robot",
+      "name": "Uptime Robot (eval)",
       "url": "https://uptimerobot.com/",
       "icon": "🤖",
       "description": "Website uptime monitoring"
-    },
-    {
-      "name": "StatusPage",
-      "url": "https://www.statuspage.io/",
-      "icon": "📋",
-      "description": "Status page for service updates"
     }
   ],
-  "Security & Privacy": [
+ 
+  "Training": [
     {
-      "name": "OWASP",
-      "url": "https://owasp.org/",
-      "icon": "🔒",
-      "description": "Web application security project"
-    },
-    {
-      "name": "Have I Been Pwned",
-      "url": "https://haveibeenpwned.com/",
-      "icon": "🔍",
-      "description": "Check if your data has been breached"
-    },
-    {
-      "name": "Bitwarden",
-      "url": "https://bitwarden.com/",
-      "icon": "🔐",
-      "description": "Open source password manager"
-    },
-    {
-      "name": "1Password",
-      "url": "https://1password.com/",
-      "icon": "🗝️",
-      "description": "Password manager and security"
-    },
-    {
-      "name": "Authy",
-      "url": "https://authy.com/",
-      "icon": "🔢",
-      "description": "Two-factor authentication app"
-    },
-    {
-      "name": "ProtonMail",
-      "url": "https://protonmail.com/",
-      "icon": "📧",
-      "description": "Encrypted email service"
-    },
-    {
-      "name": "Signal",
-      "url": "https://signal.org/",
-      "icon": "📱",
-      "description": "Encrypted messaging app"
-    },
-    {
-      "name": "Tor Browser",
-      "url": "https://www.torproject.org/",
-      "icon": "🔄",
-      "description": "Anonymous web browsing"
-    }
-  ],
-  "Testing & Quality Assurance": [
-    {
-      "name": "Jest",
-      "url": "https://jestjs.io/",
-      "icon": "🃏",
-      "description": "JavaScript testing framework"
-    },
-    {
-      "name": "Playwright",
-      "url": "https://playwright.dev/",
-      "icon": "🎭",
-      "description": "End-to-end testing for web apps"
-    },
-    {
-      "name": "Cypress",
-      "url": "https://www.cypress.io/",
-      "icon": "🌲",
-      "description": "Frontend testing tool"
-    },
-    {
-      "name": "Selenium",
-      "url": "https://www.selenium.dev/",
-      "icon": "🧪",
-      "description": "Web application testing"
-    },
-    {
-      "name": "Postman",
-      "url": "https://www.postman.com/",
-      "icon": "📮",
-      "description": "API development and testing"
-    },
-    {
-      "name": "Insomnia",
-      "url": "https://insomnia.rest/",
-      "icon": "😴",
-      "description": "REST API client"
-    },
-    {
-      "name": "SonarQube",
-      "url": "https://www.sonarqube.org/",
-      "icon": "📊",
-      "description": "Code quality and security analysis"
-    },
-    {
-      "name": "ESLint",
-      "url": "https://eslint.org/",
-      "icon": "🔍",
-      "description": "JavaScript linting tool"
-    },
-    {
-      "name": "Prettier",
-      "url": "https://prettier.io/",
-      "icon": "💄",
-      "description": "Code formatting tool"
-    }
-  ],
-  "Personal Development": [
-    {
-      "name": "Desata tu potencial",
+      "name": "Desata tu potencial (course)",
       "url": "https://fundacionobjetivofelicidad.org/campus/",
       "icon": "🎓",
-      "description": "Personal development course"
+      "description": "Personal development course by Fundación Objetivo Felicidad"
     },
     {
       "name": "MasterClass",
@@ -1135,87 +244,53 @@
       "description": "Learn from industry experts"
     },
     {
+      "name": "Coursera",
+      "url": "https://www.coursera.org/courseraplus",
+      "icon": "🎓",
+      "description": "Unlimited access to courses"
+    },
+    {
       "name": "TED Talks",
       "url": "https://www.ted.com/talks",
       "icon": "🎤",
       "description": "Ideas worth spreading"
     },
     {
-      "name": "Coursera Plus",
-      "url": "https://www.coursera.org/courseraplus",
-      "icon": "🎓",
-      "description": "Unlimited access to courses"
+      "name": "Udemy (Capgemini)",
+      "url": "https://capgemini.udemy.com/",
+      "icon": "🧑‍💻",
+      "description": "Capgemini training platform tenant"
+    },
+
+    {
+      "name": "Pluralsight",
+      "url": "https://www.pluralsight.com/",
+      "icon": "💻",
+      "description": "Tech and creative skills development"
+    },
+
+
+    {
+      "name": "Skillshare",
+      "url": "https://www.skillshare.com/",
+      "icon": "🖌️",
+      "description": "Creative and practical skills classes"
     },
     {
-      "name": "Mindfulness.com",
-      "url": "https://www.mindfulness.com/",
-      "icon": "🧘",
-      "description": "Meditation and mindfulness"
+      "name": "Fast.ai",
+      "url": "https://www.fast.ai/",
+      "icon": "🏃‍♂️",
+      "description": "Practical deep learning for coders"
     },
     {
-      "name": "Headspace",
-      "url": "https://www.headspace.com/",
+      "name": "DeepLearning.AI",
+      "url": "https://www.deeplearning.ai/",
       "icon": "🧠",
-      "description": "Meditation and mental health"
-    },
-    {
-      "name": "Duolingo",
-      "url": "https://www.duolingo.com/",
-      "icon": "🦉",
-      "description": "Language learning platform"
-    },
-    {
-      "name": "Anki",
-      "url": "https://apps.ankiweb.net/",
-      "icon": "🃏",
-      "description": "Spaced repetition flashcards"
+      "description": "AI education by Andrew Ng"
     }
-  ],
-  "Finance & Crypto": [
-    {
-      "name": "CoinGecko",
-      "url": "https://www.coingecko.com/",
-      "icon": "🦎",
-      "description": "Cryptocurrency prices and market data"
-    },
-    {
-      "name": "DeFiPulse",
-      "url": "https://defipulse.com/",
-      "icon": "📊",
-      "description": "DeFi analytics and rankings"
-    },
-    {
-      "name": "Etherscan",
-      "url": "https://etherscan.io/",
-      "icon": "🔍",
-      "description": "Ethereum blockchain explorer"
-    },
-    {
-      "name": "Dune Analytics",
-      "url": "https://dune.com/",
-      "icon": "📈",
-      "description": "Blockchain analytics platform"
-    },
-    {
-      "name": "YNAB",
-      "url": "https://www.youneedabudget.com/",
-      "icon": "💰",
-      "description": "Personal budgeting software"
-    },
-    {
-      "name": "Mint",
-      "url": "https://mint.intuit.com/",
-      "icon": "🌿",
-      "description": "Personal finance management"
-    }
+
   ],
   "Gaming & Entertainment": [
-    {
-      "name": "Steam",
-      "url": "https://store.steampowered.com/",
-      "icon": "🎮",
-      "description": "PC gaming platform"
-    },
     {
       "name": "Epic Games Store",
       "url": "https://www.epicgames.com/store/",
@@ -1227,24 +302,6 @@
       "url": "https://itch.io/",
       "icon": "🎲",
       "description": "Indie game platform"
-    },
-    {
-      "name": "Twitch",
-      "url": "https://www.twitch.tv/",
-      "icon": "💜",
-      "description": "Live streaming platform"
-    },
-    {
-      "name": "YouTube",
-      "url": "https://www.youtube.com/",
-      "icon": "📺",
-      "description": "Video sharing and learning"
-    },
-    {
-      "name": "Spotify",
-      "url": "https://www.spotify.com/",
-      "icon": "🎵",
-      "description": "Music streaming service"
     }
   ],
   "Database & Backend": [
@@ -1273,203 +330,27 @@
       "description": "In-memory data structure store"
     },
     {
-      "name": "Supabase",
+      "name": "Supabase (eval)",
       "url": "https://supabase.com/",
       "icon": "⚡",
       "description": "Open source Firebase alternative"
     },
     {
-      "name": "Firebase",
-      "url": "https://firebase.google.com/",
-      "icon": "🔥",
-      "description": "Google's app development platform"
-    },
-    {
-      "name": "PlanetScale",
-      "url": "https://planetscale.com/",
-      "icon": "🪐",
-      "description": "MySQL-compatible serverless database"
-    },
-    {
-      "name": "Hasura",
-      "url": "https://hasura.io/",
-      "icon": "⚡",
-      "description": "Instant GraphQL APIs"
-    },
-    {
-      "name": "Prisma",
-      "url": "https://www.prisma.io/",
-      "icon": "🔷",
-      "description": "Next-generation ORM"
-    },
-    {
-      "name": "SQLite",
-      "url": "https://www.sqlite.org/",
-      "icon": "📦",
-      "description": "Lightweight embedded database"
-    },
-    {
-      "name": "ElasticSearch",
-      "url": "https://www.elastic.co/",
+      "name": "ElasticSearch (eval)",
+      "url": "https://www.elastic.co/training",
       "icon": "🔍",
-      "description": "Search and analytics engine"
-    },
-    {
-      "name": "GraphQL",
-      "url": "https://graphql.org/",
-      "icon": "🎯",
-      "description": "Query language for APIs"
-    }
-  ],
-  "Mobile Development": [
-    {
-      "name": "React Native",
-      "url": "https://reactnative.dev/",
-      "icon": "📱",
-      "description": "Cross-platform mobile development"
-    },
-    {
-      "name": "Flutter",
-      "url": "https://flutter.dev/",
-      "icon": "🦋",
-      "description": "Google's UI toolkit for mobile"
-    },
-    {
-      "name": "Expo",
-      "url": "https://expo.dev/",
-      "icon": "🚀",
-      "description": "React Native development platform"
-    },
-    {
-      "name": "Android Studio",
-      "url": "https://developer.android.com/studio",
-      "icon": "🤖",
-      "description": "Official Android IDE"
-    },
-    {
-      "name": "Xcode",
-      "url": "https://developer.apple.com/xcode/",
-      "icon": "🍎",
-      "description": "Apple's IDE for iOS development"
-    },
-    {
-      "name": "Ionic",
-      "url": "https://ionicframework.com/",
-      "icon": "⚡",
-      "description": "Cross-platform app framework"
-    },
-    {
-      "name": "Xamarin",
-      "url": "https://dotnet.microsoft.com/apps/xamarin",
-      "icon": "🔷",
-      "description": "Microsoft's cross-platform framework"
-    },
-    {
-      "name": "Cordova",
-      "url": "https://cordova.apache.org/",
-      "icon": "📱",
-      "description": "Hybrid mobile app platform"
-    },
-    {
-      "name": "TestFlight",
-      "url": "https://testflight.apple.com/",
-      "icon": "✈️",
-      "description": "iOS app beta testing"
-    },
-    {
-      "name": "Firebase App Distribution",
-      "url": "https://firebase.google.com/products/app-distribution",
-      "icon": "📲",
-      "description": "App testing and distribution"
+      "description": "ElasticSearch training platform"
     }
   ],
   "Data Science & Analytics": [
     {
-      "name": "Jupyter Lab",
-      "url": "https://jupyterlab.readthedocs.io/",
-      "icon": "🔬",
-      "description": "Next-generation Jupyter interface"
-    },
-    {
-      "name": "Anaconda",
-      "url": "https://www.anaconda.com/",
-      "icon": "🐍",
-      "description": "Python data science distribution"
-    },
-    {
-      "name": "R Studio",
-      "url": "https://www.rstudio.com/",
+      "name": "Pandas Documentation",
+      "url": "https://pandas.pydata.org/docs/",
       "icon": "📊",
-      "description": "IDE for R programming"
-    },
-    {
-      "name": "Observable",
-      "url": "https://observablehq.com/",
-      "icon": "👁️",
-      "description": "Interactive data visualization"
-    },
-    {
-      "name": "Tableau",
-      "url": "https://www.tableau.com/",
-      "icon": "📈",
-      "description": "Business intelligence and analytics"
-    },
-    {
-      "name": "Power BI",
-      "url": "https://powerbi.microsoft.com/",
-      "icon": "📊",
-      "description": "Microsoft's business analytics"
-    },
-    {
-      "name": "Apache Spark",
-      "url": "https://spark.apache.org/",
-      "icon": "⚡",
-      "description": "Unified analytics engine"
-    },
-    {
-      "name": "TensorFlow",
-      "url": "https://www.tensorflow.org/",
-      "icon": "🧠",
-      "description": "Machine learning platform"
-    },
-    {
-      "name": "PyTorch",
-      "url": "https://pytorch.org/",
-      "icon": "🔥",
-      "description": "Machine learning framework"
-    },
-    {
-      "name": "Scikit-learn",
-      "url": "https://scikit-learn.org/",
-      "icon": "🤖",
-      "description": "Machine learning library for Python"
-    },
-    {
-      "name": "D3.js",
-      "url": "https://d3js.org/",
-      "icon": "📊",
-      "description": "Data visualization library"
-    },
-    {
-      "name": "Plotly",
-      "url": "https://plotly.com/",
-      "icon": "📈",
-      "description": "Interactive graphing library"
+      "description": "Comprehensive documentation for the pandas library, covering data manipulation, analysis, and advanced features."
     }
   ],
   "Developer Utilities": [
-    {
-      "name": "HTTPie",
-      "url": "https://httpie.io/",
-      "icon": "🌐",
-      "description": "Command-line HTTP client"
-    },
-    {
-      "name": "ngrok",
-      "url": "https://ngrok.com/",
-      "icon": "🔗",
-      "description": "Secure tunnels to localhost"
-    },
     {
       "name": "JSON Formatter",
       "url": "https://jsonformatter.curiousconcept.com/",
@@ -1493,12 +374,6 @@
       "url": "https://bit.ly/",
       "icon": "🔗",
       "description": "Shorten long URLs"
-    },
-    {
-      "name": "Unix Timestamp",
-      "url": "https://www.unixtimestamp.com/",
-      "icon": "⏰",
-      "description": "Unix timestamp converter"
     },
     {
       "name": "Password Generator",
@@ -1525,134 +400,29 @@
       "description": "Generate unique identifiers"
     },
     {
-      "name": "Carbon",
+      "name": "Carbon (source code to image)",
       "url": "https://carbon.now.sh/",
       "icon": "📸",
-      "description": "Beautiful code screenshots"
+      "description": "Create and customize beautiful images of your source code for sharing or presentations"
     }
   ],
   "DevOps & Infrastructure": [
     {
-      "name": "Pulumi",
+      "name": "Pulumi (eval)",
       "url": "https://www.pulumi.com/",
       "icon": "🏗️",
       "description": "Modern infrastructure as code"
-    },
-    {
-      "name": "HashiCorp Vault",
-      "url": "https://www.vaultproject.io/",
-      "icon": "🔐",
-      "description": "Secrets management"
-    },
-    {
-      "name": "Consul",
+    },{
+      "name": "Consul (eval)",
       "url": "https://www.consul.io/",
       "icon": "🌐",
       "description": "Service mesh and discovery"
     },
     {
-      "name": "Nomad",
-      "url": "https://www.nomadproject.io/",
-      "icon": "🎯",
-      "description": "Workload orchestration"
-    },
-    {
-      "name": "Vagrant",
-      "url": "https://www.vagrantup.com/",
-      "icon": "📦",
-      "description": "Development environment automation"
-    },
-    {
-      "name": "Helm",
-      "url": "https://helm.sh/",
-      "icon": "⚓",
-      "description": "Kubernetes package manager"
-    },
-    {
-      "name": "Istio",
-      "url": "https://istio.io/",
-      "icon": "🕸️",
-      "description": "Service mesh platform"
-    },
-    {
-      "name": "ArgoCD",
-      "url": "https://argo-cd.readthedocs.io/",
-      "icon": "🔄",
-      "description": "GitOps continuous delivery"
-    },
-    {
-      "name": "Jaeger",
-      "url": "https://www.jaegertracing.io/",
-      "icon": "🔍",
-      "description": "Distributed tracing platform"
-    },
-    {
-      "name": "Linkerd",
-      "url": "https://linkerd.io/",
-      "icon": "🔗",
-      "description": "Service mesh for Kubernetes"
-    }
-  ],
-  "Web3 & Blockchain": [
-    {
-      "name": "MetaMask",
-      "url": "https://metamask.io/",
-      "icon": "🦊",
-      "description": "Crypto wallet and gateway to blockchain"
-    },
-    {
-      "name": "Ethers.js",
-      "url": "https://docs.ethers.io/",
-      "icon": "💎",
-      "description": "Ethereum JavaScript library"
-    },
-    {
-      "name": "Web3.js",
-      "url": "https://web3js.readthedocs.io/",
-      "icon": "🌐",
-      "description": "Ethereum JavaScript API"
-    },
-    {
-      "name": "Hardhat",
-      "url": "https://hardhat.org/",
-      "icon": "⛑️",
-      "description": "Ethereum development environment"
-    },
-    {
-      "name": "Truffle",
-      "url": "https://trufflesuite.com/",
-      "icon": "🍫",
-      "description": "Blockchain development framework"
-    },
-    {
-      "name": "OpenZeppelin",
-      "url": "https://openzeppelin.com/",
-      "icon": "🛡️",
-      "description": "Secure smart contract library"
-    },
-    {
-      "name": "Remix IDE",
-      "url": "https://remix.ethereum.org/",
-      "icon": "⚡",
-      "description": "Solidity IDE and compiler"
-    },
-    {
-      "name": "IPFS",
-      "url": "https://ipfs.io/",
-      "icon": "🌐",
-      "description": "Distributed file storage"
-    },
-    {
-      "name": "The Graph",
-      "url": "https://thegraph.com/",
-      "icon": "📊",
-      "description": "Indexing protocol for blockchains"
-    },
-    {
-      "name": "Moralis",
-      "url": "https://moralis.io/",
-      "icon": "🚀",
-      "description": "Web3 development platform"
+      "name": "n8n",
+      "url": "https://n8n.io/",
+      "icon": "🤖",
+      "description": "Powerful open-source workflow automation platform for connecting apps and automating tasks"
     }
   ],
   "API Development": [
@@ -1663,73 +433,19 @@
       "description": "API documentation and design"
     },
     {
-      "name": "Stoplight",
-      "url": "https://stoplight.io/",
-      "icon": "🚦",
-      "description": "API design and documentation"
-    },
-    {
-      "name": "Insomnia Designer",
-      "url": "https://insomnia.rest/products/designer",
-      "icon": "🎨",
-      "description": "API design and testing"
-    },
-    {
-      "name": "Paw",
-      "url": "https://paw.cloud/",
-      "icon": "🐾",
-      "description": "Advanced API tool for Mac"
-    },
-    {
-      "name": "Bruno",
-      "url": "https://www.usebruno.com/",
-      "icon": "🐻",
-      "description": "Open source API client"
-    },
-    {
-      "name": "REST Client",
-      "url": "https://marketplace.visualstudio.com/items?itemName=humao.rest-client",
-      "icon": "🔌",
-      "description": "VS Code REST client extension"
-    },
-    {
-      "name": "APIdog",
+      "name": "APIdog (eval)",
       "url": "https://apidog.com/",
       "icon": "🐕",
-      "description": "All-in-one API development platform"
+      "description": "Comprehensive API development, testing, and collaboration suite"
     },
     {
-      "name": "Hoppscotch",
+      "name": "Hoppscotch (eval)",
       "url": "https://hoppscotch.io/",
       "icon": "🚀",
-      "description": "Open source API development"
+      "description": "Open source platform for building, testing, and sharing APIs"
     }
   ],
   "Code Quality & Analysis": [
-    {
-      "name": "CodeClimate",
-      "url": "https://codeclimate.com/",
-      "icon": "🌡️",
-      "description": "Automated code review"
-    },
-    {
-      "name": "Codacy",
-      "url": "https://www.codacy.com/",
-      "icon": "📊",
-      "description": "Automated code quality"
-    },
-    {
-      "name": "DeepCode",
-      "url": "https://www.deepcode.ai/",
-      "icon": "🧠",
-      "description": "AI-powered code review"
-    },
-    {
-      "name": "SemGrep",
-      "url": "https://semgrep.dev/",
-      "icon": "🔍",
-      "description": "Static analysis tool"
-    },
     {
       "name": "Black",
       "url": "https://black.readthedocs.io/",
@@ -1741,57 +457,10 @@
       "url": "https://docs.astral.sh/ruff/",
       "icon": "⚡",
       "description": "Fast Python linter"
-    },
-    {
-      "name": "Clippy",
-      "url": "https://doc.rust-lang.org/clippy/",
-      "icon": "📎",
-      "description": "Rust linting tool"
-    },
-    {
-      "name": "Gofmt",
-      "url": "https://golang.org/cmd/gofmt/",
-      "icon": "🐹",
-      "description": "Go code formatter"
     }
   ],
   "Communication & Collaboration": [
-    {
-      "name": "Slack",
-      "url": "https://slack.com/",
-      "icon": "💬",
-      "description": "Team communication platform"
-    },
-    {
-      "name": "Microsoft Teams",
-      "url": "https://www.microsoft.com/microsoft-teams/",
-      "icon": "👥",
-      "description": "Collaboration and communication"
-    },
-    {
-      "name": "Zoom",
-      "url": "https://zoom.us/",
-      "icon": "📹",
-      "description": "Video conferencing platform"
-    },
-    {
-      "name": "Loom",
-      "url": "https://www.loom.com/",
-      "icon": "🎥",
-      "description": "Screen recording and sharing"
-    },
-    {
-      "name": "Calendly",
-      "url": "https://calendly.com/",
-      "icon": "📅",
-      "description": "Meeting scheduling tool"
-    },
-    {
-      "name": "Miro",
-      "url": "https://miro.com/",
-      "icon": "🎨",
-      "description": "Online collaborative whiteboard"
-    },
+    
     {
       "name": "Excalidraw",
       "url": "https://excalidraw.com/",
@@ -1799,10 +468,62 @@
       "description": "Virtual collaborative whiteboard"
     },
     {
-      "name": "Confluence",
-      "url": "https://www.atlassian.com/software/confluence",
-      "icon": "📖",
-      "description": "Team workspace and documentation"
+      "name": "Draw.io",
+      "url": "https://www.draw.io/",
+      "icon": "🎨",
+      "description": "Online diagramming tool"
     }
-  ]
+  ],
+  
+  "Learning Resources (extra)": [
+    {
+      "name": "Boot.dev",
+      "url": "https://boot.dev/",
+      "icon": "💻",
+      "description": "Interactive programming courses"
+    },
+    {
+      "name": "freeCodeCamp",
+      "url": "https://www.freecodecamp.org/",
+      "icon": "🔥",
+      "description": "Free coding bootcamp"
+    },
+    {
+      "name": "The Odin Project",
+      "url": "https://www.theodinproject.com/",
+      "icon": "⚔️",
+      "description": "Free full-stack curriculum"
+    },
+
+    {
+      "name": "LeetCode",
+      "url": "https://leetcode.com/",
+      "icon": "🧩",
+      "description": "Coding interview preparation"
+    },
+    {
+      "name": "HackerRank",
+      "url": "https://www.hackerrank.com/",
+      "icon": "💪",
+      "description": "Programming challenges and competitions"
+    },
+    {
+      "name": "Codewars",
+      "url": "https://www.codewars.com/",
+      "icon": "⚔️",
+      "description": "Coding challenges for skill improvement"
+    },
+    {
+      "name": "Project Euler",
+      "url": "https://projecteuler.net/",
+      "icon": "🔢",
+      "description": "Mathematical programming challenges"
+    },
+    {
+      "name": "Advent of Code",
+      "url": "https://adventofcode.com/",
+      "icon": "🎄",
+      "description": "Annual programming puzzle event"
+    }
+  ],
 }

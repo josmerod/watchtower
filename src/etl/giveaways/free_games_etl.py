@@ -33,7 +33,7 @@ class FreeGamesETL(BaseETL):
     """ETL for free games from multiple platforms."""
     
     def __init__(self):
-        super().__init__("free_games")
+        super().__init__("giveaways/free_games")
         self.sources = {
             "epic_games": {
                 "name": "Epic Games Store",
@@ -316,12 +316,15 @@ class FreeGamesETL(BaseETL):
         """Load transformed free games data to files."""
         try:
             # Ensure output directory exists
-            output_dir = get_project_root() / "data" / "giveaways"
-            ensure_directories([output_dir])
+            import os
+            from pathlib import Path
+            
+            output_dir = Path(get_project_root()) / "data" / "giveaways"
+            output_dir.mkdir(parents=True, exist_ok=True)
             
             # Save as JSON
             json_path = output_dir / "free_games.json"
-            with open(str(json_path), 'w', encoding='utf-8') as f:
+            with open(json_path, 'w', encoding='utf-8') as f:
                 json.dump(transformed_data, f, indent=2, ensure_ascii=False)
             
             # Save as CSV
@@ -329,9 +332,10 @@ class FreeGamesETL(BaseETL):
                 csv_path = output_dir / "free_games.csv"
                 import pandas as pd
                 df = pd.DataFrame(transformed_data)
-                df.to_csv(str(csv_path), index=False, encoding='utf-8')
+                df.to_csv(csv_path, index=False, encoding='utf-8')
             
             logger.info(f"Successfully saved {len(transformed_data)} free games to {output_dir}")
+            self._last_load_count = len(transformed_data)
             return True
             
         except Exception as e:

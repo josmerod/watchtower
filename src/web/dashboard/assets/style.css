@@ -403,6 +403,50 @@ a:hover, .btn-link:hover {
 
 .video-card .card-img-top {
     border-radius: 8px 8px 0 0 !important;
+    background-color: #3C3970 !important;
+    min-height: 180px !important;
+    object-fit: cover !important;
+    width: 100% !important;
+    position: relative !important;
+}
+
+/* Handle broken images */
+.video-card .card-img-top::before {
+    content: "📹" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    font-size: 3rem !important;
+    color: #A37FFF !important;
+    background-color: #3C3970 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.video-card .card-img-top[src]:not([src=""]) {
+    background-image: none !important;
+}
+
+.video-card .card-img-top[src=""]:before,
+.video-card .card-img-top:not([src]):before {
+    content: "📹 Video Thumbnail" !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: #3C3970 !important;
+    color: #A37FFF !important;
+    font-size: 1rem !important;
+    height: 180px !important;
+    width: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    border-radius: 8px 8px 0 0 !important;
 }
 
 .video-card .card-title a {
@@ -851,6 +895,265 @@ a:hover, .btn-link:hover {
 [class*="bg-light"] {
     background-color: #2D2B55 !important;
     color: #CDD6F4 !important;
+}
+
+/* Enhanced Chart and Visualization Styling */
+.js-plotly-plot .plotly .main-svg {
+    background-color: rgba(30, 30, 46, 0.95) !important;
+}
+
+.js-plotly-plot .plotly .bg {
+    fill: rgba(30, 30, 46, 0.95) !important;
+}
+
+/* Enhanced Card Styling with Subtle Animations */
+.card {
+    transition: all 0.3s ease !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(163, 127, 255, 0.2) !important;
+}
+
+.card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(163, 127, 255, 0.15) !important;
+    border-color: rgba(163, 127, 255, 0.4) !important;
+}
+
+/* Enhanced Tab Navigation */
+.nav-tabs {
+    background: linear-gradient(135deg, #2D2B55 0%, #3C3970 100%) !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 8px 8px 0 8px !important;
+    border-bottom: 3px solid #A37FFF !important;
+}
+
+.nav-tabs .nav-item .nav-link {
+    border-radius: 10px 10px 0 0 !important;
+    margin-right: 4px !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.nav-tabs .nav-item .nav-link::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(163, 127, 255, 0.1), transparent) !important;
+    transition: left 0.5s ease !important;
+}
+
+.nav-tabs .nav-item .nav-link:hover::before {
+    left: 100% !important;
+}
+
+/* Enhanced Statistics Cards */
+.card-body h4 {
+    background: linear-gradient(135deg, #A37FFF, #B792FF) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    font-weight: 700 !important;
+    text-shadow: 0 2px 4px rgba(163, 127, 255, 0.3) !important;
+}
+
+/* Enhanced Table Styling with Better Spacing */
+.table {
+    border-spacing: 0 8px !important;
+    border-collapse: separate !important;
+}
+
+.table tbody tr {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+.table tbody tr:hover {
+    transform: scale(1.01) !important;
+    box-shadow: 0 4px 12px rgba(163, 127, 255, 0.2) !important;
+}
+
+/* Enhanced Data Visualization Area */
+.dash-table-container {
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(163, 127, 255, 0.2) !important;
+}
+
+/* Loading State Improvements */
+.dash-loading {
+    background: linear-gradient(135deg, #2D2B55, #3C3970) !important;
+    border-radius: 12px !important;
+    border: 2px solid #A37FFF !important;
+    animation: pulse 2s infinite !important;
+}
+
+@keyframes pulse {
+    0% { border-color: #A37FFF; }
+    50% { border-color: #B792FF; }
+    100% { border-color: #A37FFF; }
+}
+
+/* Enhanced Icon Styling */
+.fas, .fab, .far {
+    text-shadow: 0 2px 4px rgba(163, 127, 255, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+.fas:hover, .fab:hover, .far:hover {
+    transform: scale(1.1) !important;
+    text-shadow: 0 4px 8px rgba(163, 127, 255, 0.5) !important;
+}
+
+/* Enhanced Badge Styling */
+.badge {
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Improved Scrollbar with Theme Colors */
+::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: #2D2B55 !important;
+    border-radius: 6px !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #A37FFF, #B792FF) !important;
+    border-radius: 6px !important;
+    border: 2px solid #2D2B55 !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #B792FF, #C9A7FF) !important;
+}
+
+/* Enhanced Search and Filter Controls */
+.form-control:focus, .form-select:focus {
+    border-color: #A37FFF !important;
+    box-shadow: 0 0 0 0.25rem rgba(163, 127, 255, 0.25) !important;
+    background-color: #2D2B55 !important;
+}
+
+/* Enhanced Alert Styling */
+.alert {
+    backdrop-filter: blur(10px) !important;
+    border-width: 2px !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.alert::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent) !important;
+    animation: shimmer 3s infinite !important;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Enhanced Main Header */
+h1, .h1 {
+    background: linear-gradient(135deg, #A37FFF, #B792FF, #C9A7FF) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    text-align: center !important;
+    text-shadow: 0 4px 8px rgba(163, 127, 255, 0.3) !important;
+    position: relative !important;
+}
+
+h1::after, .h1::after {
+    content: '' !important;
+    position: absolute !important;
+    bottom: -10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 100px !important;
+    height: 3px !important;
+    background: linear-gradient(90deg, transparent, #A37FFF, transparent) !important;
+    border-radius: 2px !important;
+}
+
+/* Enhanced Data Display Areas */
+#ai-platforms-data-display,
+#arxiv-data-display,
+#deals-data-display,
+#entertainment-data-display,
+#research-data-display,
+#ecommerce-data-display {
+    margin-top: 2rem !important;
+    padding: 1.5rem !important;
+    background: linear-gradient(135deg, rgba(45, 43, 85, 0.8), rgba(60, 57, 112, 0.4)) !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(163, 127, 255, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+/* Enhanced Container Spacing */
+.container-fluid {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+/* Enhanced Row Spacing */
+.row {
+    margin-bottom: 1.5rem !important;
+}
+
+/* Mobile Responsiveness Improvements */
+@media screen and (max-width: 768px) {
+    .container-fluid {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    .card {
+        margin-bottom: 1rem !important;
+    }
+    
+    h1, .h1 {
+        font-size: 1.8rem !important;
+    }
+    
+    .nav-tabs {
+        padding: 4px 4px 0 4px !important;
+    }
+    
+    .nav-tabs .nav-item .nav-link {
+        padding: 6px 10px !important;
+        font-size: 0.85rem !important;
+        margin-right: 2px !important;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    h1, .h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    .card-body h4 {
+        font-size: 1.2rem !important;
+    }
+    
+    .nav-tabs .nav-item .nav-link {
+        padding: 4px 8px !important;
+        font-size: 0.75rem !important;
+    }
 }
 
 /* NUCLEAR OPTION: Force dark theme on everything */

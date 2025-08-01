@@ -206,8 +206,12 @@ def filter_giveaways_data(data: List[Dict], category_filter: str, platform_filte
     
     # Category filter
     if category_filter != "all":
-        if category_filter == "education":
-            filtered = [item for item in filtered if item.get('category') in ['books', 'courses', 'programming', 'academic']]
+        if category_filter == "games":
+            filtered = [item for item in filtered if item.get('category') == 'games' or item.get('giveaway_type') == 'free_game']
+        elif category_filter == "education":
+            filtered = [item for item in filtered if item.get('category') in ['courses', 'machine_learning', 'programming', 'academic']]
+        elif category_filter == "software":
+            filtered = [item for item in filtered if item.get('category') == 'software']
         else:
             filtered = [item for item in filtered if item.get('category') == category_filter]
     
@@ -220,7 +224,7 @@ def filter_giveaways_data(data: List[Dict], category_filter: str, platform_filte
         if availability_filter == "active":
             filtered = [item for item in filtered if item.get('is_active', True)]
         elif availability_filter == "ending_soon":
-            filtered = [item for item in filtered if item.get('availability') in ['ends_soon', 'ends_today']]
+            filtered = [item for item in filtered if item.get('availability') in ['limited_time', 'ends_soon', 'ends_today']]
         elif availability_filter == "upcoming":
             filtered = [item for item in filtered if item.get('availability') == 'upcoming']
     
@@ -417,12 +421,13 @@ def create_giveaway_card(item: Dict[str, Any]) -> html.Div:
     url = item.get('url', '#')
     platform = item.get('platform', 'Unknown')
     category = item.get('category', 'other')
+    image_url = item.get('image_url', '')
     
     # Determine card styling based on category
     category_colors = {
         'games': 'border-primary',
-        'books': 'border-success', 
-        'courses': 'border-info',
+        'courses': 'border-success', 
+        'machine_learning': 'border-info',
         'software': 'border-warning',
         'general': 'border-secondary'
     }
@@ -436,34 +441,58 @@ def create_giveaway_card(item: Dict[str, Any]) -> html.Div:
     # Price information
     price_info = get_price_info(item)
     
+    # Expiration info
+    expiration_info = ""
+    if item.get('promotion_end'):
+        try:
+            from datetime import datetime
+            end_date = datetime.fromisoformat(item['promotion_end'].replace('Z', '+00:00'))
+            expiration_info = f"⏰ Ends {end_date.strftime('%b %d, %Y')}"
+        except:
+            pass
+    
+    # Image element
+    card_image = None
+    if image_url:
+        card_image = html.Img(
+            src=image_url, 
+            className="card-img-top",
+            style={"height": "150px", "objectFit": "cover"},
+            alt=title
+        )
+    
     return html.Div([
         html.Div([
+            card_image,
             html.Div([
+                html.H6(title[:80] + "..." if len(title) > 80 else title, className="card-title"),
+                html.P(description[:150] + "..." if len(description) > 150 else description, 
+                       className="card-text text-muted small"),
                 html.Div([
-                    html.H6(title[:100] + "..." if len(title) > 100 else title, className="card-title"),
-                    html.P(description[:200] + "..." if len(description) > 200 else description, 
-                           className="card-text text-muted small"),
-                    html.Div([
-                        html.Span(f"📍 {platform}", className="badge bg-light text-dark me-2"),
-                        html.Span(f"🏷️ {category}", className="badge bg-light text-dark me-2"),
-                        availability_badge,
-                        price_info
-                    ], className="mb-2"),
-                    html.A("View Giveaway", href=url, target="_blank", 
-                           className="btn btn-outline-primary btn-sm")
-                ], className="card-body")
-            ], className=f"card h-100 {card_class}")
-        ], className="col-md-6 col-lg-4 mb-3")
-    ])
+                    html.Span(f"📍 {platform}", className="badge bg-light text-dark me-1 mb-1"),
+                    html.Span(f"🏷️ {category}", className="badge bg-light text-dark me-1 mb-1"),
+                    availability_badge,
+                ], className="mb-2"),
+                html.Div([
+                    price_info,
+                    html.Span(expiration_info, className="badge bg-warning text-dark ms-1") if expiration_info else None
+                ], className="mb-2"),
+                html.A("View Giveaway", href=url, target="_blank", 
+                       className="btn btn-outline-primary btn-sm")
+            ], className="card-body")
+        ], className=f"card h-100 {card_class}")
+    ], className="col-md-6 col-lg-4 mb-3")
 
 def get_availability_badge(availability: str) -> html.Span:
     """Get availability status badge."""
     badges = {
         'active': html.Span("🟢 Active", className="badge bg-success"),
+        'limited_time': html.Span("⏰ Limited Time", className="badge bg-warning"),
         'ends_today': html.Span("🔴 Ends Today", className="badge bg-danger"),
         'ends_soon': html.Span("🟡 Ends Soon", className="badge bg-warning"),
         'upcoming': html.Span("🔵 Upcoming", className="badge bg-info"),
-        'expired': html.Span("⚫ Expired", className="badge bg-secondary")
+        'expired': html.Span("⚫ Expired", className="badge bg-secondary"),
+        'permanent': html.Span("💎 Permanent", className="badge bg-primary")
     }
     
     return badges.get(availability, html.Span("🟢 Available", className="badge bg-success"))
@@ -472,14 +501,17 @@ def get_price_info(item: Dict[str, Any]) -> html.Span:
     """Get price information display."""
     original_price = item.get('original_price', 0)
     current_price = item.get('current_price', 0)
-    savings = item.get('savings', 0)
+    discount_percentage = item.get('discount_percentage', 0)
     
-    if savings > 0:
-        return html.Span(f"💰 Save ${savings:.0f}", className="badge bg-success")
-    elif original_price > 0 and current_price == 0:
-        return html.Span(f"💰 Free (was ${original_price:.0f})", className="badge bg-success")
+    if original_price > 0 and current_price == 0:
+        return html.Span(f"💰 Free (was ${original_price:.2f})", className="badge bg-success")
+    elif discount_percentage > 0 and original_price > 0:
+        savings = original_price - current_price
+        return html.Span(f"💰 Save ${savings:.2f} ({discount_percentage}% off)", className="badge bg-success")
     elif current_price == 0:
         return html.Span("🆓 Free", className="badge bg-success")
+    elif original_price > 0:
+        return html.Span(f"💵 ${original_price:.2f}", className="badge bg-light text-dark")
     else:
         return html.Span("")
 
