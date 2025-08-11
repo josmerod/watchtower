@@ -25,6 +25,394 @@
       "description": "Online code editor for rapid development"
     }
   ],
+  "Package Managers & Registries": [
+    {
+      "name": "npm",
+      "url": "https://www.npmjs.com/",
+      "icon": "📦",
+      "description": "Node.js package manager"
+    },
+    {
+      "name": "PyPI",
+      "url": "https://pypi.org/",
+      "icon": "🐍",
+      "description": "Python package index"
+    },
+    {
+      "name": "Cargo",
+      "url": "https://crates.io/",
+      "icon": "🦀",
+      "description": "Rust package registry"
+    },
+    {
+      "name": "RubyGems",
+      "url": "https://rubygems.org/",
+      "icon": "💎",
+      "description": "Ruby package manager"
+    },
+    {
+      "name": "Composer",
+      "url": "https://packagist.org/",
+      "icon": "🎼",
+      "description": "PHP package repository"
+    },
+    {
+      "name": "NuGet",
+      "url": "https://www.nuget.org/",
+      "icon": "📘",
+      "description": ".NET package manager"
+    },
+    {
+      "name": "Maven Central",
+      "url": "https://mvnrepository.com/",
+      "icon": "☕",
+      "description": "Java package repository"
+    },
+    {
+      "name": "Go Packages",
+      "url": "https://pkg.go.dev/",
+      "icon": "🐹",
+      "description": "Go module documentation and discovery"
+    }
+  ],
+  "Version Control & Collaboration": [
+    {
+      "name": "Git Documentation",
+      "url": "https://git-scm.com/book/en/v2",
+      "icon": "📊",
+      "description": "Official Git documentation"
+    },
+    {
+      "name": "GitHub Desktop",
+      "url": "https://desktop.github.com/",
+      "icon": "🖥️",
+      "description": "Git GUI client by GitHub"
+    },
+    {
+      "name": "GitLab",
+      "url": "https://gitlab.com/",
+      "icon": "🦊",
+      "description": "Complete DevOps platform"
+    },
+    {
+      "name": "Bitbucket",
+      "url": "https://bitbucket.org/",
+      "icon": "🪣",
+      "description": "Git repository hosting by Atlassian"
+    },
+    {
+      "name": "Sourcetree",
+      "url": "https://www.sourcetreeapp.com/",
+      "icon": "🌳",
+      "description": "Free Git GUI for Windows and Mac"
+    },
+    {
+      "name": "GitKraken",
+      "url": "https://www.gitkraken.com/",
+      "icon": "🐙",
+      "description": "Cross-platform Git GUI client"
+    },
+    {
+      "name": "Conventional Commits",
+      "url": "https://www.conventionalcommits.org/",
+      "icon": "📝",
+      "description": "Commit message convention"
+    }
+  ],
+  "Learning Resources": [
+    {
+      "name": "Udemy",
+      "url": "https://www.udemy.com/",
+      "icon": "🎓",
+      "description": "Online courses marketplace"
+    },
+    {
+      "name": "Coursera",
+      "url": "https://www.coursera.org/",
+      "icon": "🎓",
+      "description": "University-level online courses"
+    },
+    {
+      "name": "Pluralsight",
+      "url": "https://www.pluralsight.com/",
+      "icon": "🎯",
+      "description": "Technology skills platform"
+    },
+    {
+      "name": "LinkedIn Learning",
+      "url": "https://www.linkedin.com/learning/",
+      "icon": "💼",
+      "description": "Professional development courses"
+    },
+    {
+      "name": "Boot.dev",
+      "url": "https://boot.dev/",
+      "icon": "💻",
+      "description": "Interactive programming courses"
+    },
+    {
+      "name": "freeCodeCamp",
+      "url": "https://www.freecodecamp.org/",
+      "icon": "🔥",
+      "description": "Free coding bootcamp"
+    },
+    {
+      "name": "The Odin Project",
+      "url": "https://www.theodinproject.com/",
+      "icon": "⚔️",
+      "description": "Free full-stack curriculum"
+    },
+    {
+      "name": "Khan Academy",
+      "url": "https://www.khanacademy.org/",
+      "icon": "📚",
+      "description": "Free educational content"
+    },
+    {
+      "name": "MIT OpenCourseWare",
+      "url": "https://ocw.mit.edu/",
+      "icon": "🏛️",
+      "description": "Free MIT course materials"
+    },
+    {
+      "name": "Stanford Online",
+      "url": "https://online.stanford.edu/",
+      "icon": "🌲",
+      "description": "Stanford University online courses"
+    },
+    {
+      "name": "Codecademy",
+      "url": "https://www.codecademy.com/",
+      "icon": "📖",
+      "description": "Interactive coding lessons"
+    },
+    {
+      "name": "edX",
+      "url": "https://www.edx.org/",
+      "icon": "🎯",
+      "description": "University courses online"
+    },
+    {
+      "name": "LeetCode",
+      "url": "https://leetcode.com/",
+      "icon": "🧩",
+      "description": "Coding interview preparation"
+    },
+    {
+      "name": "HackerRank",
+      "url": "https://www.hackerrank.com/",
+      "icon": "💪",
+      "description": "Programming challenges and competitions"
+    },
+    {
+      "name": "Codewars",
+      "url": "https://www.codewars.com/",
+      "icon": "⚔️",
+      "description": "Coding challenges for skill improvement"
+    },
+    {
+      "name": "Project Euler",
+      "url": "https://projecteuler.net/",
+      "icon": "🔢",
+      "description": "Mathematical programming challenges"
+    },
+    {
+      "name": "Advent of Code",
+      "url": "https://adventofcode.com/",
+      "icon": "🎄",
+      "description": "Annual programming puzzle event"
+    }
+  ],
+  "AI & Machine Learning": [
+    {
+      "name": "Claude",
+      "url": "https://claude.ai/",
+      "icon": "🤖",
+      "description": "Anthropic's AI assistant"
+    },
+    {
+      "name": "ChatGPT",
+      "url": "https://chat.openai.com/",
+      "icon": "💬",
+      "description": "OpenAI's conversational AI"
+    },
+    {
+      "name": "Perplexity",
+      "url": "https://www.perplexity.ai/",
+      "icon": "🔍",
+      "description": "AI-powered search and research"
+    },
+    {
+      "name": "Gemini",
+      "url": "https://gemini.google.com/",
+      "icon": "✨",
+      "description": "Google's AI assistant"
+    },
+    {
+      "name": "Microsoft Copilot",
+      "url": "https://copilot.microsoft.com/",
+      "icon": "🤝",
+      "description": "Microsoft's AI companion"
+    },
+    {
+      "name": "GitHub Copilot",
+      "url": "https://github.com/features/copilot",
+      "icon": "🧑‍💻",
+      "description": "AI pair programmer"
+    },
+    {
+      "name": "Codeium",
+      "url": "https://codeium.com/",
+      "icon": "🚀",
+      "description": "Free AI code completion"
+    },
+    {
+      "name": "Tabnine",
+      "url": "https://www.tabnine.com/",
+      "icon": "⚡",
+      "description": "AI assistant for software developers"
+    },
+    {
+      "name": "Hugging Face",
+      "url": "https://huggingface.co/",
+      "icon": "🤗",
+      "description": "ML models and datasets hub"
+    },
+    {
+      "name": "Papers with Code",
+      "url": "https://paperswithcode.com/",
+      "icon": "📄",
+      "description": "ML research papers with code"
+    },
+    {
+      "name": "Google Colab",
+      "url": "https://colab.research.google.com/",
+      "icon": "📊",
+      "description": "Free Jupyter notebook environment"
+    },
+    {
+      "name": "Jupyter Notebooks",
+      "url": "https://jupyter.org/",
+      "icon": "📓",
+      "description": "Interactive computing notebooks"
+    },
+    {
+      "name": "Kaggle",
+      "url": "https://www.kaggle.com/",
+      "icon": "🏆",
+      "description": "Data science competitions and datasets"
+    },
+    {
+      "name": "DeepLearning.AI",
+      "url": "https://www.deeplearning.ai/",
+      "icon": "🧠",
+      "description": "AI education by Andrew Ng"
+    },
+    {
+      "name": "Fast.ai",
+      "url": "https://www.fast.ai/",
+      "icon": "🏃‍♂️",
+      "description": "Practical deep learning for coders"
+    },
+    {
+      "name": "Replicate",
+      "url": "https://replicate.com/",
+      "icon": "🔄",
+      "description": "Run open-source models with an API"
+    }
+  ],
+  "Documentation & References": [
+    {
+      "name": "MDN Web Docs",
+      "url": "https://developer.mozilla.org/",
+      "icon": "🌐",
+      "description": "Web development documentation"
+    },
+    {
+      "name": "Python Documentation",
+      "url": "https://docs.python.org/3/",
+      "icon": "🐍",
+      "description": "Official Python docs"
+    },
+    {
+      "name": "JavaScript.info",
+      "url": "https://javascript.info/",
+      "icon": "💛",
+      "description": "Modern JavaScript tutorial"
+    },
+    {
+      "name": "Rust Book",
+      "url": "https://doc.rust-lang.org/book/",
+      "icon": "🦀",
+      "description": "The Rust Programming Language book"
+    },
+    {
+      "name": "Go Documentation",
+      "url": "https://golang.org/doc/",
+      "icon": "🐹",
+      "description": "Official Go documentation"
+    },
+    {
+      "name": "React Documentation",
+      "url": "https://react.dev/",
+      "icon": "⚛️",
+      "description": "React library documentation"
+    },
+    {
+      "name": "Vue.js Guide",
+      "url": "https://vuejs.org/guide/",
+      "icon": "💚",
+      "description": "Vue.js framework documentation"
+    },
+    {
+      "name": "Angular Documentation",
+      "url": "https://angular.io/docs",
+      "icon": "🅰️",
+      "description": "Angular framework documentation"
+    },
+    {
+      "name": "Django Documentation",
+      "url": "https://docs.djangoproject.com/",
+      "icon": "🎸",
+      "description": "Django web framework docs"
+    },
+    {
+      "name": "Flask Documentation",
+      "url": "https://flask.palletsprojects.com/",
+      "icon": "🍶",
+      "description": "Flask micro web framework"
+    },
+    {
+      "name": "FastAPI Documentation",
+      "url": "https://fastapi.tiangolo.com/",
+      "icon": "⚡",
+      "description": "Modern Python web framework"
+    },
+    {
+      "name": "Spring Documentation",
+      "url": "https://spring.io/projects/spring-framework",
+      "icon": "🌱",
+      "description": "Java Spring framework"
+    },
+    {
+      "name": "Ruby on Rails Guides",
+      "url": "https://guides.rubyonrails.org/",
+      "icon": "💎",
+      "description": "Ruby on Rails framework guides"
+    },
+    {
+      "name": "Laravel Documentation",
+      "url": "https://laravel.com/docs",
+      "icon": "🎭",
+      "description": "PHP Laravel framework"
+    },
+    {
+      "name": "DevDocs",
+      "url": "https://devdocs.io/",
+      "icon": "📚",
+      "description": "Multiple API documentations in one place"
+    }
+  ],
   "Design & UI/UX": [
     {
       "name": "Dribbble",
@@ -525,5 +913,5 @@
       "icon": "🎄",
       "description": "Annual programming puzzle event"
     }
-  ],
+  ]
 }
