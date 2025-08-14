@@ -1,6 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel
 
+
 class ADHDPublication(BaseModel):
     title: str
     authors: List[str]

@@ -8,7 +8,11 @@ from typing import Any
 
 import pandas as pd
 
-from paperswithcode import PapersWithCodeClient
+# Optional import; not required for basic latest files generation
+try:
+    from paperswithcode import PapersWithCodeClient  # type: ignore
+except Exception:  # noqa: BLE001
+    PapersWithCodeClient = None  # type: ignore
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
@@ -16,6 +20,7 @@ from src.utils.logging import get_logger
 from src.utils.nlp_classifier import NLPContentClassifier
 from src.utils.pwc_utils import get_pwc_details_for_paper
 from src.watchers.arxiv_watcher import ArxivWatcher
+
 # from paperswithcode import PapersWithCodeClient # Commented out for testing
 
 
@@ -75,7 +80,7 @@ class ArxivETL:
         # self.pwc_client = PapersWithCodeClient() # Commented out for testing
 
         self.logger.info(
-            f"ArxivETL initialized with {days_back} days back, {max_results} max results (PwC integration temporarily disabled for testing)"
+            f"ArxivETL initialized with {days_back} days back, {max_results} max results"
         )
 
     def extract(self) -> list[dict[str, Any]]:
@@ -91,16 +96,22 @@ class ArxivETL:
 
         # Load papers from watcher output
         papers_file = os.path.join(self.watcher.data_dir, "latest_papers.json")
-        self.logger.info(f"Attempting to load papers from: {papers_file}") # Detailed log
+        self.logger.info(
+            f"Attempting to load papers from: {papers_file}"
+        )  # Detailed log
 
         if not os.path.exists(papers_file):
-            self.logger.warning(f"File not found: {papers_file}. No papers found from watcher.") # Detailed log
+            self.logger.warning(
+                f"File not found: {papers_file}. No papers found from watcher."
+            )  # Detailed log
             # Listing directory contents for debugging
             try:
                 dir_contents = os.listdir(self.watcher.data_dir)
                 self.logger.info(f"Contents of {self.watcher.data_dir}: {dir_contents}")
             except Exception as e_ls:
-                self.logger.error(f"Could not list directory {self.watcher.data_dir}: {e_ls}")
+                self.logger.error(
+                    f"Could not list directory {self.watcher.data_dir}: {e_ls}"
+                )
             return []
 
         try:
@@ -224,20 +235,20 @@ class ArxivETL:
             #     self.logger.info(
             #         f"Fetching PwC data for paper ArXiv ID: {arxiv_id_url if arxiv_id_url else 'N/A'}, Title: {paper_title if paper_title else 'N/A'} (PwC integration temporarily disabled)"
             #     )
-                # fetched_pwc_info = get_pwc_details_for_paper(
-                #     arxiv_id_url=arxiv_id_url,
-                #     title=paper_title,
-                #     pwc_client=self.pwc_client, # This would error as self.pwc_client is commented out
-                # )
-                # if fetched_pwc_info:
-                #     self.logger.info(
-                #         f"Fetched PwC info for paper {arxiv_id_url if arxiv_id_url else paper_title}"
-                #     )
-                #     pwc_data.update(fetched_pwc_info)
-                # else:
-                #     self.logger.warning(
-                #         f"No PwC info found for paper {arxiv_id_url if arxiv_id_url else paper_title}"
-                #     )
+            # fetched_pwc_info = get_pwc_details_for_paper(
+            #     arxiv_id_url=arxiv_id_url,
+            #     title=paper_title,
+            #     pwc_client=self.pwc_client, # This would error as self.pwc_client is commented out
+            # )
+            # if fetched_pwc_info:
+            #     self.logger.info(
+            #         f"Fetched PwC info for paper {arxiv_id_url if arxiv_id_url else paper_title}"
+            #     )
+            #     pwc_data.update(fetched_pwc_info)
+            # else:
+            #     self.logger.warning(
+            #         f"No PwC info found for paper {arxiv_id_url if arxiv_id_url else paper_title}"
+            #     )
 
             # Create transformed paper with classification, GitHub, and PwC data
             transformed_paper = {
@@ -309,9 +320,11 @@ class ArxivETL:
 
             if "github_languages" in df.columns:
                 df["github_languages"] = df["github_languages"].apply(
-                    lambda x: ", ".join([f"{k}:{v}" for k, v in x.items()])
-                    if isinstance(x, dict)
-                    else x
+                    lambda x: (
+                        ", ".join([f"{k}:{v}" for k, v in x.items()])
+                        if isinstance(x, dict)
+                        else x
+                    )
                 )
 
             # Flatten lists of dictionaries for PwC fields
@@ -327,9 +340,11 @@ class ArxivETL:
                     # Let's try to make it a |-separated list of key aspects, e.g. name or id.
                     # Or convert the whole list of dicts to a JSON string.
                     df[col] = df[col].apply(
-                        lambda x: json.dumps(x)
-                        if isinstance(x, list) and x
-                        else (x if not isinstance(x, list) else None)
+                        lambda x: (
+                            json.dumps(x)
+                            if isinstance(x, list) and x
+                            else (x if not isinstance(x, list) else None)
+                        )
                     )
 
             # Save DataFrame
@@ -339,7 +354,7 @@ class ArxivETL:
         except Exception as e:
             self.logger.error(f"Error saving CSV: {e!s}")
 
-        # Save latest version for easy access
+        # Save latest aliases for easy access (dashboard)
         try:
             latest_json = os.path.join(self.processed_dir, "json/latest_papers.json")
             with open(latest_json, "w", encoding="utf-8") as f:
@@ -348,7 +363,37 @@ class ArxivETL:
             latest_csv = os.path.join(self.processed_dir, "csv/latest_papers.csv")
             df.to_csv(latest_csv, index=False, encoding="utf-8")
 
-            self.logger.info("Updated latest paper files")
+            # Canonical latest files for dashboard tabs
+            dashboard_latest_all = os.path.join(
+                self.data_dir, "arxiv_papers_latest.json"
+            )
+            with open(dashboard_latest_all, "w", encoding="utf-8") as f:
+                json.dump(transformed_papers, f, ensure_ascii=False, indent=2)
+
+            # Simple per-category splits (best-effort)
+            def by_cat(prefix: str):
+                return [
+                    p
+                    for p in transformed_papers
+                    if any(prefix in c for c in p.get("categories", []))
+                ]
+
+            splits = {
+                "arxiv_machine_learning_latest.json": by_cat("cs.LG")
+                + by_cat("stat.ML"),
+                "arxiv_computer_vision_latest.json": by_cat("cs.CV"),
+                "arxiv_natural_language_latest.json": by_cat("cs.CL"),
+                "arxiv_neural_networks_latest.json": by_cat("cs.NE"),
+                "arxiv_robotics_latest.json": by_cat("cs.RO"),
+                "arxiv_reinforcement_learning_latest.json": by_cat("cs.AI"),
+            }
+            for filename, items in splits.items():
+                with open(
+                    os.path.join(self.data_dir, filename), "w", encoding="utf-8"
+                ) as f:
+                    json.dump(items, f, ensure_ascii=False, indent=2)
+
+            self.logger.info("Updated latest ArXiv dashboard files")
         except Exception as e:
             self.logger.error(f"Error updating latest files: {e!s}")
 
@@ -431,7 +476,7 @@ class ArxivETL:
 
         except Exception as e:
             self.logger.error(f"Error in ETL pipeline: {e!s}")
-            raise # Re-raise the exception
+            raise  # Re-raise the exception
 
 
 if __name__ == "__main__":

@@ -99,9 +99,11 @@ class GoogleGeminiETL:
                     "url": getattr(entry, "link", ""),
                     "published_at": getattr(entry, "published", ""),
                     "summary": getattr(entry, "summary", ""),
-                    "content": getattr(entry, "content", [{}])[0].get("value", "")
-                    if hasattr(entry, "content")
-                    else "",
+                    "content": (
+                        getattr(entry, "content", [{}])[0].get("value", "")
+                        if hasattr(entry, "content")
+                        else ""
+                    ),
                     "source": "google_ai_blog",
                     "source_type": "rss",
                     "provider": "google",
@@ -144,9 +146,11 @@ class GoogleGeminiETL:
                     "url": getattr(entry, "link", ""),
                     "published_at": getattr(entry, "published", ""),
                     "summary": getattr(entry, "summary", ""),
-                    "content": getattr(entry, "content", [{}])[0].get("value", "")
-                    if hasattr(entry, "content")
-                    else "",
+                    "content": (
+                        getattr(entry, "content", [{}])[0].get("value", "")
+                        if hasattr(entry, "content")
+                        else ""
+                    ),
                     "source": "google_developers_blog",
                     "source_type": "rss",
                     "provider": "google",
@@ -189,9 +193,11 @@ class GoogleGeminiETL:
                     "url": getattr(entry, "link", ""),
                     "published_at": getattr(entry, "published", ""),
                     "summary": getattr(entry, "summary", ""),
-                    "content": getattr(entry, "content", [{}])[0].get("value", "")
-                    if hasattr(entry, "content")
-                    else "",
+                    "content": (
+                        getattr(entry, "content", [{}])[0].get("value", "")
+                        if hasattr(entry, "content")
+                        else ""
+                    ),
                     "source": "google_cloud_ai_blog",
                     "source_type": "rss",
                     "provider": "google",
@@ -273,9 +279,9 @@ class GoogleGeminiETL:
                             "title": title,
                             "url": self.sources["gemini_changelog"],
                             "published_at": published_at,
-                            "summary": content[:500] + "..."
-                            if len(content) > 500
-                            else content,
+                            "summary": (
+                                content[:500] + "..." if len(content) > 500 else content
+                            ),
                             "content": content,
                             "source": "gemini_changelog",
                             "source_type": "scraped",
@@ -341,9 +347,9 @@ class GoogleGeminiETL:
                             "title": title,
                             "url": self.sources["ai_studio"],
                             "published_at": datetime.now().isoformat(),
-                            "summary": content[:500] + "..."
-                            if len(content) > 500
-                            else content,
+                            "summary": (
+                                content[:500] + "..." if len(content) > 500 else content
+                            ),
                             "content": content,
                             "source": "google_ai_studio",
                             "source_type": "scraped",

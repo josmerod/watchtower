@@ -1,4 +1,5 @@
 """Exceptions module for Watchtower."""
+
 from src.exceptions.base import (
     WatchtowerError,
     ConfigurationError,

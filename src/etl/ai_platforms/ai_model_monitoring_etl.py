@@ -159,9 +159,11 @@ class AIModelMonitoringETL:
                     "url": getattr(entry, "link", ""),
                     "published_at": getattr(entry, "published", ""),
                     "summary": getattr(entry, "summary", ""),
-                    "content": getattr(entry, "content", [{}])[0].get("value", "")
-                    if hasattr(entry, "content")
-                    else "",
+                    "content": (
+                        getattr(entry, "content", [{}])[0].get("value", "")
+                        if hasattr(entry, "content")
+                        else ""
+                    ),
                     "source": source_name,
                     "source_type": "rss",
                     "provider": self._get_provider_from_source(source_name),
@@ -264,9 +266,9 @@ class AIModelMonitoringETL:
                             "title": title,
                             "url": self.sources["openai"]["changelog_url"],
                             "published_at": published_at,
-                            "summary": content[:500] + "..."
-                            if len(content) > 500
-                            else content,
+                            "summary": (
+                                content[:500] + "..." if len(content) > 500 else content
+                            ),
                             "content": content,
                             "source": "openai_changelog",
                             "source_type": "scraped",
@@ -359,9 +361,11 @@ class AIModelMonitoringETL:
                                     "title": title,
                                     "url": article_url,
                                     "published_at": published_at,
-                                    "summary": summary[:500] + "..."
-                                    if len(summary) > 500
-                                    else summary,
+                                    "summary": (
+                                        summary[:500] + "..."
+                                        if len(summary) > 500
+                                        else summary
+                                    ),
                                     "content": summary,
                                     "source": f"anthropic_{url_key}",
                                     "source_type": "scraped",
@@ -447,9 +451,9 @@ class AIModelMonitoringETL:
                             "title": title,
                             "url": self.sources["google"]["gemini_changelog"],
                             "published_at": published_at,
-                            "summary": content[:500] + "..."
-                            if len(content) > 500
-                            else content,
+                            "summary": (
+                                content[:500] + "..." if len(content) > 500 else content
+                            ),
                             "content": content,
                             "source": "gemini_changelog",
                             "source_type": "scraped",

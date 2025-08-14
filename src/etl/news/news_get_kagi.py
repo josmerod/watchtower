@@ -17,13 +17,13 @@ logger = get_logger("KagiRSSETL")
 # Kagi RSS feed URLs by category
 KAGI_RSS_FEEDS: Dict[str, str] = {
     "world": "https://kite.kagi.com/world.xml",
-    "usa": "https://kite.kagi.com/usa.xml", 
+    "usa": "https://kite.kagi.com/usa.xml",
     "business": "https://kite.kagi.com/business.xml",
     "science": "https://kite.kagi.com/science.xml",
     "gaming": "https://kite.kagi.com/gaming.xml",
     "ai": "https://kite.kagi.com/ai.xml",
     "europe": "https://kite.kagi.com/europe.xml",
-    "spain": "https://kite.kagi.com/spain.xml"
+    "spain": "https://kite.kagi.com/spain.xml",
 }
 
 
@@ -40,31 +40,35 @@ def get_kagi_rss_data(
         Dictionary mapping category names to lists of article dictionaries
     """
     all_articles = {}
-    
+
     for category, url in KAGI_RSS_FEEDS.items():
         articles = []
-        
+
         for attempt in range(max_retries):
             try:
                 logger.info(f"Fetching Kagi RSS feed for {category} from {url}")
                 feed = feedparser.parse(url)
 
                 if feed.bozo:
-                    logger.warning(f"Error parsing feed from Kagi {category}: {feed.bozo_exception}")
+                    logger.warning(
+                        f"Error parsing feed from Kagi {category}: {feed.bozo_exception}"
+                    )
                     break
 
                 if not feed.entries:
                     logger.warning(f"No entries found in Kagi RSS feed for {category}")
                     break
 
-                logger.debug(f"Found {len(feed.entries)} entries in Kagi {category} RSS feed")
+                logger.debug(
+                    f"Found {len(feed.entries)} entries in Kagi {category} RSS feed"
+                )
 
                 for entry in feed.entries:
                     try:
                         # Extract basic article information
                         title = entry.get("title", "")
                         url_link = entry.get("link", "")
-                        
+
                         # Extract published date
                         published_at = ""
                         if hasattr(entry, "published"):
@@ -92,13 +96,13 @@ def get_kagi_rss_data(
                         # Add any additional metadata
                         if hasattr(entry, "author"):
                             article["author"] = entry.author
-                        
+
                         if hasattr(entry, "tags") and entry.tags:
                             article["tags"] = [tag.term for tag in entry.tags]
 
                         articles.append(article)
                         logger.debug(f"Extracted Kagi {category} article: {title}")
-                        
+
                     except Exception as e:
                         logger.error(f"Error parsing Kagi {category} RSS entry: {e}")
                         continue
@@ -107,16 +111,20 @@ def get_kagi_rss_data(
                 break
 
             except Exception as e:
-                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for Kagi {category}: {e}")
+                logger.warning(
+                    f"Attempt {attempt + 1}/{max_retries} failed for Kagi {category}: {e}"
+                )
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                 else:
-                    logger.error(f"Error fetching Kagi {category} RSS feed after {max_retries} attempts: {e}")
+                    logger.error(
+                        f"Error fetching Kagi {category} RSS feed after {max_retries} attempts: {e}"
+                    )
 
         # Add a small delay between RSS feed requests to be respectful to the server
         time.sleep(1)
-        
+
         all_articles[category] = articles
         logger.info(f"Retrieved {len(articles)} articles from Kagi {category} RSS feed")
 
@@ -124,7 +132,7 @@ def get_kagi_rss_data(
 
 
 def process_kagi_articles(
-    all_articles: Dict[str, List[Dict[str, Any]]]
+    all_articles: Dict[str, List[Dict[str, Any]]],
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Process and transform Kagi articles into a standardized format.
 
@@ -135,7 +143,7 @@ def process_kagi_articles(
         Dictionary mapping category names to lists of processed article dictionaries
     """
     processed_data = {}
-    
+
     for category, articles in all_articles.items():
         logger.info(f"Processing {len(articles)} Kagi {category} articles")
         processed_articles = []
@@ -158,15 +166,19 @@ def process_kagi_articles(
                     },
                 }
                 processed_articles.append(processed_article)
-                logger.debug(f"Processed Kagi {category} article: {processed_article['title']}")
-                
+                logger.debug(
+                    f"Processed Kagi {category} article: {processed_article['title']}"
+                )
+
             except Exception as e:
                 logger.error(f"Error processing Kagi {category} article: {e}")
                 continue
 
         processed_data[category] = processed_articles
-        logger.info(f"Successfully processed {len(processed_articles)} Kagi {category} articles")
-    
+        logger.info(
+            f"Successfully processed {len(processed_articles)} Kagi {category} articles"
+        )
+
     return processed_data
 
 
@@ -177,12 +189,14 @@ def save_kagi_articles(processed_data: Dict[str, List[Dict[str, Any]]]) -> None:
         processed_data: Dictionary mapping category names to lists of processed article dictionaries
     """
     project_root = get_project_root()
-    
+
     for category, articles in processed_data.items():
         if not articles:
-            logger.info(f"No articles to save for Kagi {category}, skipping file generation")
+            logger.info(
+                f"No articles to save for Kagi {category}, skipping file generation"
+            )
             continue
-            
+
         # Create category-specific output directory
         output_dir = os.path.join(project_root, f"data/kagi_{category}")
         ensure_directories([f"data/kagi_{category}"])
@@ -192,7 +206,9 @@ def save_kagi_articles(processed_data: Dict[str, List[Dict[str, Any]]]) -> None:
         try:
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(articles, f, indent=2, ensure_ascii=False)
-            logger.info(f"Saved {len(articles)} Kagi {category} articles to {output_file}")
+            logger.info(
+                f"Saved {len(articles)} Kagi {category} articles to {output_file}"
+            )
         except Exception as e:
             logger.error(f"Error saving Kagi {category} articles to JSON: {e}")
 
@@ -200,11 +216,14 @@ def save_kagi_articles(processed_data: Dict[str, List[Dict[str, Any]]]) -> None:
         csv_file = os.path.join(output_dir, f"kagi_{category}.csv")
         try:
             import pandas as pd
+
             df = pd.DataFrame(articles)
             df.to_csv(csv_file, index=False, encoding="utf-8")
             logger.info(f"Saved Kagi {category} articles to {csv_file}")
         except ImportError:
-            logger.warning("pandas library not found. Skipping CSV generation for Kagi articles.")
+            logger.warning(
+                "pandas library not found. Skipping CSV generation for Kagi articles."
+            )
         except Exception as e:
             logger.error(f"Error saving Kagi {category} articles to CSV: {e}")
 
@@ -217,7 +236,9 @@ def main():
         all_articles = get_kagi_rss_data()
 
         if not any(articles for articles in all_articles.values()):
-            logger.warning("No articles retrieved from any Kagi RSS feeds, ETL process cannot continue")
+            logger.warning(
+                "No articles retrieved from any Kagi RSS feeds, ETL process cannot continue"
+            )
             return
 
         # Process the articles
@@ -227,7 +248,9 @@ def main():
         save_kagi_articles(processed_data)
 
         total_articles = sum(len(articles) for articles in processed_data.values())
-        logger.info(f"Kagi RSS ETL process completed successfully. Total articles processed: {total_articles}")
+        logger.info(
+            f"Kagi RSS ETL process completed successfully. Total articles processed: {total_articles}"
+        )
 
     except Exception as e:
         logger.error(f"Error in Kagi RSS ETL process: {e}", exc_info=True)

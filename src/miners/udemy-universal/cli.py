@@ -4,6 +4,7 @@ This script provides a CLI to extract Udemy course information from various
 scraping sources. It uses threading to scrape multiple sites concurrently
 and saves the collected course data to a JSON file.
 """
+
 # TODO: Standardize the code with the other projects. Current code has been migrated from other project.
 
 import json

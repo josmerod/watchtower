@@ -4,6 +4,7 @@ This module sets up custom logging for the DUCE (Discounted Udemy Course Enrolle
 application, providing console and file handlers, debug formatting options,
 and a TQDM-compatible handler.
 """
+
 # TODO: Standardize the code with the other projects. Current code has been migrated from other project.
 
 import json

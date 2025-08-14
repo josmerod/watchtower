@@ -1,4 +1,12 @@
 {
+  "Quick Links": [
+    {
+      "name": "Concentration music",
+      "url": "https://www.youtube.com/@OriondeMirage/videos",
+      "icon": "🎧",
+      "description": "DnB and Jungle Mix for concentration"
+    }
+  ],
   "Development Tools": [
     {
       "name": "Cursor Dashboard",

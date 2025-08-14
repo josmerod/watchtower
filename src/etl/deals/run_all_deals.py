@@ -12,7 +12,9 @@ import sys
 from datetime import datetime
 
 # Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+)
 
 from src.utils.logging import get_logger
 from src.etl.deals.bundle_deals_etl import BundleDealsETL
@@ -29,11 +31,12 @@ from src.etl.deals.health_fitness_deals_etl import HealthFitnessDealsETL
 # Initialize logger
 logger = get_logger("AllDealsETL")
 
+
 def run_all_deals_etl():
     """Run all deal ETL processes."""
     start_time = datetime.now()
     logger.info("Starting comprehensive deals data collection...")
-    
+
     etl_modules = [
         ("Bundle Deals", BundleDealsETL),
         ("Music Deals", MusicDealsETL),
@@ -44,58 +47,62 @@ def run_all_deals_etl():
         ("Travel Deals", TravelDealsETL),
         ("Crypto & Finance", CryptoFinanceDealsETL),
         ("Fashion & Retail", FashionRetailDealsETL),
-        ("Health & Fitness", HealthFitnessDealsETL)
+        ("Health & Fitness", HealthFitnessDealsETL),
     ]
-    
+
     results = {}
     total_records = 0
-    
+
     for name, etl_class in etl_modules:
         try:
             logger.info(f"\n{'='*50}")
             logger.info(f"Running {name} ETL...")
             logger.info(f"{'='*50}")
-            
+
             etl = etl_class()
             success = etl.run()
-            
+
             if success:
                 # Get record count from the ETL metrics if available
-                record_count = getattr(etl, '_last_load_count', 0)
+                record_count = getattr(etl, "_last_load_count", 0)
                 results[name] = {"status": "success", "records": record_count}
                 total_records += record_count
-                logger.info(f"✅ {name} ETL completed successfully ({record_count} records)")
+                logger.info(
+                    f"✅ {name} ETL completed successfully ({record_count} records)"
+                )
             else:
                 results[name] = {"status": "failed", "records": 0}
                 logger.error(f"❌ {name} ETL failed")
-                
+
         except Exception as e:
             results[name] = {"status": "error", "records": 0}
             logger.error(f"❌ {name} ETL error: {e}")
-    
+
     # Summary
     end_time = datetime.now()
     duration = (end_time - start_time).total_seconds()
-    
+
     logger.info(f"\n{'='*60}")
     logger.info("DEALS ETL SUMMARY")
     logger.info(f"{'='*60}")
     logger.info(f"Total execution time: {duration:.2f} seconds")
     logger.info(f"Total records collected: {total_records}")
     logger.info("")
-    
+
     for name, result in results.items():
         status_emoji = "✅" if result["status"] == "success" else "❌"
-        logger.info(f"{status_emoji} {name}: {result['status'].upper()} ({result['records']} records)")
-    
+        logger.info(
+            f"{status_emoji} {name}: {result['status'].upper()} ({result['records']} records)"
+        )
+
     successful_etls = sum(1 for r in results.values() if r["status"] == "success")
     logger.info(f"\nSuccess rate: {successful_etls}/{len(etl_modules)} ETL modules")
-    
+
     if successful_etls == len(etl_modules):
         logger.info("🎉 All deal ETL processes completed successfully!")
         logger.info("Data is ready for the dashboard at:")
         logger.info("  - Bundle deals: data/deals/bundle_deals.json")
-        logger.info("  - Music deals: data/deals/music_deals.json") 
+        logger.info("  - Music deals: data/deals/music_deals.json")
         logger.info("  - Bargain deals: data/deals/bargain_deals.json")
         logger.info("  - Educational deals: data/deals/educational_deals.json")
         logger.info("  - Book deals: data/deals/book_deals.json")
@@ -108,6 +115,7 @@ def run_all_deals_etl():
     else:
         logger.warning("⚠️ Some ETL processes failed. Check logs for details.")
         return False
+
 
 if __name__ == "__main__":
     success = run_all_deals_etl()

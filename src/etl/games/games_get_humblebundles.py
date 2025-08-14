@@ -4,6 +4,7 @@ This module uses Playwright to scrape active game, book, and software
 bundles from the Humble Bundle website. The scraped data is then
 processed and saved into JSON and CSV files.
 """
+
 import asyncio
 import json
 import os
@@ -75,7 +76,7 @@ class HumbleBundleScraper:
     def _extract_bundles_with_bs(self, soup, bundle_type: str, all_bundles: list):
         """Extracts bundle elements from HTML content using BeautifulSoup."""
         from bs4 import BeautifulSoup
-        
+
         bundle_elements = []
         selectors = [
             "div.tile, div.mosaic-tile",
@@ -96,9 +97,7 @@ class HumbleBundleScraper:
             logger.info(
                 f"No bundle elements found with selectors for {bundle_type}, trying direct link detection"
             )
-            link_patterns = [
-                f"a[href*='/{bundle_type}/']", "a[href*='/bundle/']"
-            ]
+            link_patterns = [f"a[href*='/{bundle_type}/']", "a[href*='/bundle/']"]
             for pattern in link_patterns:
                 link_elements = soup.select(pattern)
                 filtered_links = []
@@ -107,14 +106,20 @@ class HumbleBundleScraper:
                     if href and not any(
                         x in href
                         for x in [
-                            "/store/", "/choice/", "/membership/",
-                            "/blog/", "#", "?",
+                            "/store/",
+                            "/choice/",
+                            "/membership/",
+                            "/blog/",
+                            "#",
+                            "?",
                         ]
                     ):
                         text = link.text.strip()
                         if (
-                            text and len(text) > 3
-                            and text.lower() not in ["bundles", "games", "books", "software"]
+                            text
+                            and len(text) > 3
+                            and text.lower()
+                            not in ["bundles", "games", "books", "software"]
                         ):
                             filtered_links.append(link)
                 if filtered_links:
@@ -138,8 +143,11 @@ class HumbleBundleScraper:
 
     async def _extract_bundles_from_js(self, page, bundle_type: str, all_bundles: list):
         """Extracts bundle data embedded in JavaScript variables on the page."""
-        logger.info(f"Attempting to extract bundle data from JavaScript for {bundle_type}")
-        js_bundles_data = await page.evaluate(r"""
+        logger.info(
+            f"Attempting to extract bundle data from JavaScript for {bundle_type}"
+        )
+        js_bundles_data = await page.evaluate(
+            r"""
             () => {
                 try {
                     const results = [];
@@ -186,10 +194,13 @@ class HumbleBundleScraper:
                     return results;
                 } catch (e) { return [{error: e.toString()}]; }
             }
-        """)
+        """
+        )
 
         if js_bundles_data:
-            debug_js_path = os.path.join(self.debug_dir, f"humble_{bundle_type}_js_data.json")
+            debug_js_path = os.path.join(
+                self.debug_dir, f"humble_{bundle_type}_js_data.json"
+            )
             with open(debug_js_path, "w", encoding="utf-8") as f:
                 json.dump(js_bundles_data, f, indent=2)
 
@@ -198,45 +209,83 @@ class HumbleBundleScraper:
                 data = result.get("data", [])
                 if source == "bundleUrls" and isinstance(data, list):
                     for bundle_url_data in data:
-                        if not isinstance(bundle_url_data, dict): continue
-                        url, title, price = bundle_url_data.get("url"), bundle_url_data.get("title"), bundle_url_data.get("price", "Pay what you want")
-                        if url and title and not any(b["link"] == url for b in all_bundles):
+                        if not isinstance(bundle_url_data, dict):
+                            continue
+                        url, title, price = (
+                            bundle_url_data.get("url"),
+                            bundle_url_data.get("title"),
+                            bundle_url_data.get("price", "Pay what you want"),
+                        )
+                        if (
+                            url
+                            and title
+                            and not any(b["link"] == url for b in all_bundles)
+                        ):
                             detected_type = self._determine_bundle_type(url)
                             if title == "Pay What You Want" or len(title) < 5:
                                 title = self._extract_title_from_url(url)
-                            all_bundles.append({
-                                "title": title, "link": url, "price": price, "games": [], "type": detected_type,
-                                "end_date": (datetime.now(timezone.utc) + timedelta(days=14)).isoformat(),
-                            })
+                            all_bundles.append(
+                                {
+                                    "title": title,
+                                    "link": url,
+                                    "price": price,
+                                    "games": [],
+                                    "type": detected_type,
+                                    "end_date": (
+                                        datetime.now(timezone.utc) + timedelta(days=14)
+                                    ).isoformat(),
+                                }
+                            )
                 elif isinstance(data, list):
                     for bundle_item in data:
-                        if not isinstance(bundle_item, dict): continue
-                        bundle_info = self._extract_bundle_from_js_object(bundle_item, bundle_type)
-                        if bundle_info and not any(b["link"] == bundle_info["link"] for b in all_bundles):
+                        if not isinstance(bundle_item, dict):
+                            continue
+                        bundle_info = self._extract_bundle_from_js_object(
+                            bundle_item, bundle_type
+                        )
+                        if bundle_info and not any(
+                            b["link"] == bundle_info["link"] for b in all_bundles
+                        ):
                             all_bundles.append(bundle_info)
-                elif isinstance(data, dict) and "bundles" in data and isinstance(data["bundles"], list):
+                elif (
+                    isinstance(data, dict)
+                    and "bundles" in data
+                    and isinstance(data["bundles"], list)
+                ):
                     for bundle_item in data["bundles"]:
-                        if not isinstance(bundle_item, dict): continue
-                        bundle_info = self._extract_bundle_from_js_object(bundle_item, bundle_type)
-                        if bundle_info and not any(b["link"] == bundle_info["link"] for b in all_bundles):
+                        if not isinstance(bundle_item, dict):
+                            continue
+                        bundle_info = self._extract_bundle_from_js_object(
+                            bundle_item, bundle_type
+                        )
+                        if bundle_info and not any(
+                            b["link"] == bundle_info["link"] for b in all_bundles
+                        ):
                             all_bundles.append(bundle_info)
-        logger.info(f"Processed JS data for {bundle_type}, current total bundles: {len(all_bundles)}")
+        logger.info(
+            f"Processed JS data for {bundle_type}, current total bundles: {len(all_bundles)}"
+        )
 
-
-    async def _process_single_bundle_url(self, page, url: str, bundle_type: str, all_bundles: list):
+    async def _process_single_bundle_url(
+        self, page, url: str, bundle_type: str, all_bundles: list
+    ):
         """Processes a single Humble Bundle URL (games, books, etc.) to find bundles."""
         from bs4 import BeautifulSoup
+
         try:
             content = await self._navigate_and_debug_page(page, url, bundle_type)
             soup = BeautifulSoup(content, "html.parser")
 
-            bundles_found_bs = self._extract_bundles_with_bs(soup, bundle_type, all_bundles)
+            bundles_found_bs = self._extract_bundles_with_bs(
+                soup, bundle_type, all_bundles
+            )
 
-            if bundles_found_bs == 0 or bundle_type == "all": # "all" type might have more JS data
+            if (
+                bundles_found_bs == 0 or bundle_type == "all"
+            ):  # "all" type might have more JS data
                 await self._extract_bundles_from_js(page, bundle_type, all_bundles)
         except Exception as e:
             logger.error(f"Error scraping {bundle_type} bundles from {url}: {e}")
-
 
     async def scrape_bundles(self) -> list[dict[str, Any]]:
         """Scrape active bundles from Humble Bundle website using Playwright.
@@ -245,19 +294,19 @@ class HumbleBundleScraper:
             List of bundle metadata dictionaries.
         """
         from playwright.async_api import async_playwright
-        
+
         all_bundles = []
         bundle_sources = [
             ("https://www.humblebundle.com/games", "games"),
             ("https://www.humblebundle.com/books", "books"),
             ("https://www.humblebundle.com/software", "software"),
-            ("https://www.humblebundle.com/bundles", "all"), # General bundles page
+            ("https://www.humblebundle.com/bundles", "all"),  # General bundles page
         ]
 
         browser = None
         context = None
         page = None
-        
+
         try:
             async with async_playwright() as p_manager:
                 browser, context = await self._setup_playwright(p_manager)
@@ -265,31 +314,42 @@ class HumbleBundleScraper:
 
                 logger.info("Visiting main Humble Bundle site to establish cookies")
                 await page.goto("https://www.humblebundle.com/", timeout=60000)
-                await page.wait_for_timeout(3000) # Allow cookies to settle
+                await page.wait_for_timeout(3000)  # Allow cookies to settle
 
                 for url, bundle_type in bundle_sources:
-                    await self._process_single_bundle_url(page, url, bundle_type, all_bundles)
+                    await self._process_single_bundle_url(
+                        page, url, bundle_type, all_bundles
+                    )
 
             self._post_process_bundles(all_bundles)
 
         except Exception as e:
-            logger.error(f"Error in scrape_bundles main try-block: {e!s}", exc_info=True)
+            logger.error(
+                f"Error in scrape_bundles main try-block: {e!s}", exc_info=True
+            )
         finally:
-            if page: await page.close()
-            if context: await context.close()
-            if browser: await browser.close()
+            if page:
+                await page.close()
+            if context:
+                await context.close()
+            if browser:
+                await browser.close()
 
         if not all_bundles:
             logger.warning("All scraping methods failed. Creating placeholder bundle.")
-            all_bundles = [{
-                "title": "Humble Bundle Scraping Failed",
-                "link": "https://www.humblebundle.com/",
-                "end_date": datetime.now(timezone.utc).isoformat(),
-                "price": "Unknown",
-                "games": ["Scraping Failed - Check https://www.humblebundle.com/ directly"],
-                "type": "error",
-                "note": "Automatic scraping failed. Please visit the Humble Bundle website to see current bundles.",
-            }]
+            all_bundles = [
+                {
+                    "title": "Humble Bundle Scraping Failed",
+                    "link": "https://www.humblebundle.com/",
+                    "end_date": datetime.now(timezone.utc).isoformat(),
+                    "price": "Unknown",
+                    "games": [
+                        "Scraping Failed - Check https://www.humblebundle.com/ directly"
+                    ],
+                    "type": "error",
+                    "note": "Automatic scraping failed. Please visit the Humble Bundle website to see current bundles.",
+                }
+            ]
 
         logger.info(f"Retrieved a total of {len(all_bundles)} bundles")
         return all_bundles
@@ -380,9 +440,7 @@ class HumbleBundleScraper:
         else:
             return "unknown"
 
-    def _extract_bundle_info(
-        self, element, bundle_type: str
-    ) -> dict[str, Any] | None:
+    def _extract_bundle_info(self, element, bundle_type: str) -> dict[str, Any] | None:
         """Extract bundle information from an HTML element.
 
         Args:

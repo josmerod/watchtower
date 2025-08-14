@@ -18,7 +18,7 @@ __email__ = "team@watchtower.dev"
 
 __all__ = [
     # "BaseWatcher",
-    # "get_logger", 
+    # "get_logger",
     # "ensure_directories",
     # "get_project_root",
-] 
+]

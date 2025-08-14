@@ -938,9 +938,7 @@ class EnhancedArxivETL(BaseETL):
             )
             return None
 
-    def _get_pwc_info(
-        self, paper_data: dict[str, Any]
-    ) -> PapersWithCodeModel | None:
+    def _get_pwc_info(self, paper_data: dict[str, Any]) -> PapersWithCodeModel | None:
         """Get Papers With Code information."""
         try:
             arxiv_id_url = paper_data.get("id")

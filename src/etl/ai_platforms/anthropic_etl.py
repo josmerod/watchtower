@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Any
-import os # Required for IOError, OSError
+import os  # Required for IOError, OSError
 
 from src.etl.base import BaseETL
 from src.utils.logging import get_logger
@@ -245,17 +245,39 @@ class AnthropicETL(BaseETL):
 
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         output_file = self.output_dir / f"anthropic_platform_data_{timestamp}.json"
+        latest_file = self.output_dir / "anthropic_platform_latest.json"
 
         try:
+            # Save detailed data
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, default=str)
+            self.logger.info(f"Successfully saved Anthropic data to {output_file}")
+
+            # Save latest data
+            with open(latest_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, default=str)
+            self.logger.info(
+                f"Successfully updated latest Anthropic data at {latest_file}"
+            )
 
             self.metrics.records_loaded = len(data)
-            self.logger.info(f"Successfully loaded {len(data)} Anthropic records to {output_file}")
 
         except (IOError, OSError) as e:
-            self.logger.error(f"Failed to save Anthropic data to {output_file}: {e}")
-            raise LoadError(f"Failed to save Anthropic data to {output_file}: {e}", destination=str(output_file), destination_type="file") from e
-        except Exception as e: # Catch any other unexpected errors during load
-            self.logger.error(f"An unexpected error occurred during saving Anthropic data to {output_file}: {e}", exc_info=True)
-            raise LoadError(f"An unexpected error occurred during saving Anthropic data to {output_file}: {e}", destination=str(output_file), destination_type="file") from e
+            self.logger.error(
+                f"Failed to save Anthropic data to {output_file} or {latest_file}: {e}"
+            )
+            raise LoadError(
+                f"Failed to save Anthropic data: {e}",
+                destination=str(output_file),
+                destination_type="file",
+            ) from e
+        except Exception as e:  # Catch any other unexpected errors during load
+            self.logger.error(
+                f"An unexpected error occurred during saving Anthropic data: {e}",
+                exc_info=True,
+            )
+            raise LoadError(
+                f"An unexpected error occurred during saving Anthropic data: {e}",
+                destination=str(output_file),
+                destination_type="file",
+            ) from e

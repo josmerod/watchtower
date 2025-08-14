@@ -1,4 +1,4 @@
-### Watchtower Project Audit and Refactor Plan (Aug 2025)
+# Watchtower Project Audit and Refactor Plan (Aug 2025)
 
 This document is a comprehensive status review of the Watchtower platform and a prioritized, actionable refactor plan. It targets reliability of the periodic ETL set and quality of the Dash dashboard that consumes their outputs.
 
@@ -40,7 +40,7 @@ These symptoms map to concrete bugs and contract mismatches detailed below.
 
 ## P0 – Critical Fixes (Correctness/Data Contracts/Crashes)
 
-- [ ] Fix broken import in logging utilities so structured logging + settings apply globally
+- [x] Fix broken import in logging utilities so structured logging + settings apply globally
   - Cause: `src/utils/logging.py` does `from config.settings import get_settings` (missing `src.`) causing fallback basic logging.
   - Action: Change to `from src.config.settings import get_settings` and add a minimal import guard test.
 
@@ -48,11 +48,11 @@ These symptoms map to concrete bugs and contract mismatches detailed below.
   - Cause: `src/web/dashboard/components/videos_tab.py` redefines `get_data_path()` differently from `src/web/dashboard/utils.py` → inconsistent resolution.
   - Action: Use `src/web/dashboard/utils.py` across all components. Delete duplicates.
 
-- [ ] Fix Videos tab crash
+- [x] Fix Videos tab crash
   - Cause: `create_initial_video_cards()` builds list but returns `video_cards` which is not defined; list comprehension result is unused.
   - Action: Assign the list to `video_cards` and return it.
 
-- [ ] Normalize News tab schema mapping (title/url/date/source)
+- [x] Normalize News tab schema mapping (title/url/date/source)
   - Cause: Product Hunt JSON uses `name` for title; GitHub Trends uses repo fields; News table only reads `title` → “No Title”.
   - Action: Add robust fallback mapping in `news_tab.py`:
     - Title: `title` | `name` | `full_name`
@@ -61,28 +61,29 @@ These symptoms map to concrete bugs and contract mismatches detailed below.
     - Source: default to configured source name if missing.
 
 - [ ] Ensure every ETL writes stable “latest” artifacts used by the dashboard
-  - Product Hunt: Dashboard expects `data/product_hunt/product_hunt_latest.json` (OK in newer ETL); verify it exists on disk after runs.
-  - Git Trends: Dashboard expects `data/github_trends/github_trends_latest.json` (OK in ETL); verify.
-  - ArXiv: Dashboard config mixes specific timestamped files and `arxiv_papers_latest.json`; standardize on `*_latest.json` + update config to use them.
+  - [x] Product Hunt: Dashboard expects `data/product_hunt/product_hunt_latest.json` (exists; current ETL fetched 0 due to site/scraping constraints)
+  - [x] Git Trends: Dashboard expects `data/github_trends/github_trends_latest.json` (exists; current ETL returned 0 repos, investigate API constraints)
+  - [x] ArXiv: Standardize on `*_latest.json` and update config to use them (per-category sources removed; using `arxiv_papers_latest.json`)
+  - [x] Giveaways: Write `data/giveaways/free_games_latest.json` and consume from Games tab
 
-- [ ] Games giveaways mismatch
+- [x] Games giveaways mismatch
   - Cause: Games tab loads `data/games/giveaways.json` while dedicated Giveaways tab uses `data/giveaways/free_games.json` + others.
   - Action: Pick one canonical contract (recommended: `data/giveaways/*_latest.json`) and change Games tab to read the canonical giveaways dataset; update ETL writers to emit the canonical file.
 
-- [ ] AI Platforms tab broken config
+- [x] AI Platforms tab broken config
   - Cause: In `ai_platforms_tab.py`, `github_copilot` entry is missing a `path` value; several platform paths don’t exist (e.g., google_gemini directory not found).
   - Actions:
-    - Provide valid paths for each card and ensure corresponding ETLs write `*_latest.json`.
-    - Temporarily hide cards without data until ETLs exist.
+    - Provide valid paths for each card and ensure corresponding ETLs write `*_latest.json`. (Done for OpenAI, Anthropic, HuggingFace, GitHub Copilot; Google Gemini reads `data/ai_models/google/google_updates_latest.json`.)
+    - Hide cards without data until ETLs exist. (Implemented in tab render.)
 
-- [ ] Remove/repair duplicate Product Hunt ETLs
+- [x] Remove/repair duplicate Product Hunt ETLs
   - There are two modules: a Playwright-based `news_get_product_hunt.py` (contains a syntax error) and a “GraphQL” `news_get_producthunt.py` used by run scripts.
   - Action: Keep one implementation, fix/validate it, and delete/rename the other to avoid confusion.
 
-- [ ] Shortcuts tab shows empty
+- [x] Shortcuts tab shows empty
   - Action: Validate `data/shortcuts/predefined_shortcuts.json` format against loader (supports both legacy `{ categories: [...] }` and newer `{ "Category": [...] }`). Add schema validation and a small sample fallback if file is missing.
 
-- [ ] `src/web/dashboard/app.py` has dead code in dynamic tab renderer
+- [x] `src/web/dashboard/app.py` has dead code in dynamic tab renderer
   - Action: Remove branches for non-existent tabs (`tab-crypto`, `tab-travel`, `tab-watchers`) to avoid confusion and potential callback mismatches.
 
 ---
@@ -93,16 +94,18 @@ These symptoms map to concrete bugs and contract mismatches detailed below.
 
 - [ ] Define canonical dashboard contracts per domain in `src/models/` (Pydantic):
   - News: `NewsArticleModel` (already exists) → enforce at transform stage; add light adapter for each source in UI as backup.
-  - Product Hunt: `ProductHuntModel` with `title`, `url`, `published_at`, `summary`, `votes`, `source` normalized.
-  - Git Trends: repo mapping with `title` = `full_name`, `url` = `html_url`, `language`, `updated_at`.
-  - Giveaways: unify `title`, `url`, `platform`, `category`, `availability`, `promotion_end`, `is_active`.
+  - Product Hunt: `ProductHuntModel` with `title`, `url`, `published_at`, `summary`, `votes`, `source` normalized. (Soft validation integrated in ETL.)
+  - Git Trends: repo mapping with `title` = `full_name`, `url` = `html_url`, `language`, `updated_at`. (Soft validation integrated in ETL.)
+  - Giveaways: unify `title`, `url`, `platform`, `category`, `availability`, `promotion_end`, `is_active`. (Added `UnifiedGiveawayModel` in `src/models/giveaways.py` and integrated validation in Free Games ETL.)
   - ArXiv: ensure `EnhancedArxivPaperModel` fields are consistently present in `*_latest.json`.
 
 - [ ] Add “contract validators” per ETL in the transform/load stage
   - Use Pydantic validation to drop/repair invalid rows and record counts of fixes.
+  - Partially done: Free Games ETL now validates against `UnifiedGiveawayModel` (soft-fail, logs and continues).
 
 - [ ] Add an automated post-run sanity check
-  - After each ETL run, verify `*_latest.json` exists, is non-empty, and conforms to model → produce a simple JSON summary.
+  - [x] After each ETL run, verify `*_latest.json` exists, is non-empty, and conforms to model → produce a simple JSON summary (`data/metrics/etl_runs_latest.json`).
+  - [x] Per-ETL run summaries now persist to each ETL `output/` dir as `run_summary_latest.json` (plus timestamped), and are aggregated into `data/metrics/etl_runs_latest.json`.
 
 ### Orchestration and Scheduling
 
@@ -111,7 +114,7 @@ These symptoms map to concrete bugs and contract mismatches detailed below.
   - Emit flow run metadata to `data/metrics/etl_runs_latest.json` for the dashboard.
 
 - [ ] Implement retention policy (cleanup of timestamped files)
-  - Use `ETLConfig.cleanup_old_data_days` to purge older artifacts per directory.
+  - Use `ETLConfig.cleanup_old_data_days` to purge older artifacts per directory. (Implemented in `BaseETL._purge_old_artifacts()` and invoked post-load.)
 
 ### Logging, Errors, and Metrics
 
@@ -120,6 +123,8 @@ These symptoms map to concrete bugs and contract mismatches detailed below.
 - [ ] Add per-run performance metrics via `get_performance_logger` across ETLs and watchers
 - [ ] Ensure exception utilities attach context (`etl_name`, row counts, file paths)
 - [ ] Add a compact log viewer in the dashboard (tail last N lines per ETL)
+  - [x] Add `/health` endpoint to dashboard for runtime checks
+  - [x] Add `/metrics` endpoint exposing basic latest-file counts and mtimes
 
 ---
 
@@ -127,8 +132,10 @@ These symptoms map to concrete bugs and contract mismatches detailed below.
 
 - [ ] Single source of truth for paths
   - Replace manual `os.path` in dashboard components with `utils.get_data_path` or `get_settings().get_data_path`.
-- [ ] Cache heavy UI loads (News, Videos) for N seconds
+  - Partial: `games_tab.py` standardized to `get_data_path` for all loaders.
+- [x] Cache heavy UI loads (News, Videos) for N seconds
   - Add in-memory TTL cache per-tab to avoid re-reading dozens of files on each tab switch.
+  - Implemented: News tab (60s TTL); Videos tab (60s TTL); GitHub Trending tab (60s TTL) to avoid re-reading multiple large JSONs frequently.
 - [ ] Aggregate News
   - Add an ETL or service to pre-merge normalized news into `data/news/news_all_latest.json` for O(1) UI load.
 - [ ] Remove duplicated or legacy modules
@@ -191,7 +198,7 @@ These symptoms map to concrete bugs and contract mismatches detailed below.
   - [ ] Robust date parsing (already present) + add `updated_at` fallback
   - [ ] Ensure `source_display_name` is always set
 
-- [ ] Switch ArXiv Research tab to only use `*_latest.json` and delete hard-coded dated filenames from config
+- [x] Switch ArXiv Research tab to only use `*_latest.json` and delete hard-coded dated filenames from config
 
 - [ ] Canonicalize giveaways
   - [ ] Adopt `data/giveaways/*_latest.json` convention
@@ -214,7 +221,7 @@ These symptoms map to concrete bugs and contract mismatches detailed below.
 ### D. Dashboard Quality (P0/P2)
 
 - [ ] Remove dead `app.py` branches and unused callbacks
-- [ ] Standardize on `utils.get_data_path` and remove any inline path guessing
+- [ ] Standardize on `utils.get_data_path` and remove any inline path guessing (Partially applied in `courses_tab.py` and AI Platforms)
 - [ ] Add TTL caches (e.g., 60–300s) for heavy loaders (News, Videos)
 - [ ] Add graceful empty-state cards showing last successful ETL time if available
 
@@ -263,15 +270,13 @@ The project’s migration to UV is solid. Keep using `uv run` for all scripts an
 
 ## Quick Wins (High ROI in < 1 day)
 
-- [ ] Fix `src/utils/logging.py` import path
-- [ ] Repair `videos_tab.py` return value bug
-- [ ] Add `name`/`full_name` fallbacks in News tab
-- [ ] Hide AI Platform cards without data; fill valid `path` for those with data
-- [ ] Remove dead `app.py` branches
-- [ ] Switch ArXiv tab to `*_latest.json` only
+- [x] Fix `src/utils/logging.py` import path
+- [x] Repair `videos_tab.py` return value bug
+- [x] Add `name`/`full_name` fallbacks in News tab
+- [x] Hide AI Platform cards without data; fill valid `path` for those with data
+- [x] Remove dead `app.py` branches
+- [x] Switch ArXiv tab to `*_latest.json` only
 
 ---
 
 If any of the above observations are incorrect or out-of-date, we’ll update this plan accordingly after a short validation pass on your environment.
-
-

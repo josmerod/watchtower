@@ -1,4 +1,5 @@
 """Configuration module for Watchtower."""
+
 from src.config.models import (
     DatabaseConfig,
     ETLConfig,
@@ -12,7 +13,7 @@ from src.config.settings import Settings, get_settings
 
 __all__ = [
     "DatabaseConfig",
-    "ETLConfig", 
+    "ETLConfig",
     "LoggingConfig",
     "GoogleDriveConfig",
     "StreamlitConfig",

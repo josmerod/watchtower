@@ -4,6 +4,7 @@ This module initializes colorama and provides convenient shorthand
 variables for foreground, background, and style codes to be used
 for coloring terminal output.
 """
+
 # TODO: Standardize the code with the other projects. Current code has been migrated from other project.
 
 from colorama import Back, Fore, Style, init
