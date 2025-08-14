@@ -26,6 +26,7 @@ from bs4 import BeautifulSoup
 
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
+from src.models.news import ProductHuntModel
 from src.utils.logging import get_logger
 
 # Initialize logger for this module
@@ -276,72 +277,87 @@ def scrape_daily_products(
     try:
         response = session.get(base_url, timeout=30)
         response.raise_for_status()
-        
-        soup = BeautifulSoup(response.content, 'html.parser')
+
+        soup = BeautifulSoup(response.content, "html.parser")
         products = []
-        
+
         # Look for product containers
-        product_items = soup.find_all('div', {'data-test': 'homepage-section-item'}) or \
-                       soup.find_all('div', class_=lambda x: x and 'styles_item' in x) or \
-                       soup.find_all('li', {'data-test': 'post-item'})
-        
+        product_items = (
+            soup.find_all("div", {"data-test": "homepage-section-item"})
+            or soup.find_all("div", class_=lambda x: x and "styles_item" in x)
+            or soup.find_all("li", {"data-test": "post-item"})
+        )
+
         for item in product_items[:20]:  # Limit to 20 products
             try:
                 # Extract product name
-                name_elem = item.find('h3') or item.find('h2') or item.find('a', class_=lambda x: x and 'name' in x.lower() if x else False)
+                name_elem = (
+                    item.find("h3")
+                    or item.find("h2")
+                    or item.find(
+                        "a", class_=lambda x: x and "name" in x.lower() if x else False
+                    )
+                )
                 name = name_elem.get_text(strip=True) if name_elem else "No Title"
-                
+
                 # Extract link
-                link_elem = item.find('a', href=True)
-                link = link_elem['href'] if link_elem else ""
-                if link and not link.startswith('http'):
+                link_elem = item.find("a", href=True)
+                link = link_elem["href"] if link_elem else ""
+                if link and not link.startswith("http"):
                     link = base_url + link
-                
+
                 # Extract tagline/description
-                desc_elem = item.find('p') or item.find('div', class_=lambda x: x and 'tagline' in x.lower() if x else False)
+                desc_elem = item.find("p") or item.find(
+                    "div", class_=lambda x: x and "tagline" in x.lower() if x else False
+                )
                 tagline = desc_elem.get_text(strip=True) if desc_elem else ""
-                
+
                 # Extract vote count
-                vote_elem = item.find('span', class_=lambda x: x and 'vote' in x.lower() if x else False) or \
-                           item.find('div', class_=lambda x: x and 'vote' in x.lower() if x else False)
+                vote_elem = item.find(
+                    "span", class_=lambda x: x and "vote" in x.lower() if x else False
+                ) or item.find(
+                    "div", class_=lambda x: x and "vote" in x.lower() if x else False
+                )
                 votes = 0
                 if vote_elem:
                     vote_text = vote_elem.get_text(strip=True)
                     try:
-                        votes = int(''.join(filter(str.isdigit, vote_text)))
+                        votes = int("".join(filter(str.isdigit, vote_text)))
                     except ValueError:
                         votes = 0
-                
+
                 if name and name != "No Title":
                     product = {
-                        'id': f'ph_product_{len(products)}',
-                        'name': name,
-                        'tagline': tagline,
-                        'description': tagline,
-                        'url': link,
-                        'website': link,
-                        'slug': name.lower().replace(' ', '-'),
-                        'votes_count': votes,
-                        'comments_count': 0,
-                        'reviews_count': 0,
-                        'reviews_rating': 0.0,
-                        'featured_at': datetime.now(timezone.utc).isoformat(),
-                        'created_at': datetime.now(timezone.utc).isoformat(),
-                        'updated_at': datetime.now(timezone.utc).isoformat(),
-                        'thumbnail_url': '',
-                        'gallery_images': [],
-                        'topics': ['featured'],
-                        'makers': [],
-                        'hunters': [],
-                        'product_links': [{'type': 'website', 'url': link}] if link else [],
-                        'category': 'featured',
-                        'mock_data': False
+                        "id": f"ph_product_{len(products)}",
+                        "name": name,
+                        "tagline": tagline,
+                        "description": tagline,
+                        "url": link,
+                        "website": link,
+                        "slug": name.lower().replace(" ", "-"),
+                        "votes_count": votes,
+                        "comments_count": 0,
+                        "reviews_count": 0,
+                        "reviews_rating": 0.0,
+                        "featured_at": datetime.now(timezone.utc).isoformat(),
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                        "thumbnail_url": "",
+                        "gallery_images": [],
+                        "topics": ["featured"],
+                        "makers": [],
+                        "hunters": [],
+                        "product_links": (
+                            [{"type": "website", "url": link}] if link else []
+                        ),
+                        "category": "featured",
+                        "mock_data": False,
                     }
                     products.append(product)
             except Exception as e:
                 logger.warning(f"Error parsing product item: {e}")
                 continue
-        
+
         logger.info(f"Scraped {len(products)} products from daily page")
         return products
 
@@ -367,72 +383,87 @@ def scrape_topic_products(
         topic_url = f"{base_url}/topics/{topic}"
         response = session.get(topic_url, timeout=30)
         response.raise_for_status()
-        
-        soup = BeautifulSoup(response.content, 'html.parser')
+
+        soup = BeautifulSoup(response.content, "html.parser")
         products = []
-        
+
         # Look for product containers in topic pages
-        product_items = soup.find_all('div', {'data-test': 'post-item'}) or \
-                       soup.find_all('div', class_=lambda x: x and 'styles_item' in x) or \
-                       soup.find_all('li', {'data-test': 'post-item'})
-        
+        product_items = (
+            soup.find_all("div", {"data-test": "post-item"})
+            or soup.find_all("div", class_=lambda x: x and "styles_item" in x)
+            or soup.find_all("li", {"data-test": "post-item"})
+        )
+
         for item in product_items[:15]:  # Limit to 15 products per topic
             try:
                 # Extract product name
-                name_elem = item.find('h3') or item.find('h2') or item.find('a', class_=lambda x: x and 'name' in x.lower() if x else False)
+                name_elem = (
+                    item.find("h3")
+                    or item.find("h2")
+                    or item.find(
+                        "a", class_=lambda x: x and "name" in x.lower() if x else False
+                    )
+                )
                 name = name_elem.get_text(strip=True) if name_elem else "No Title"
-                
+
                 # Extract link
-                link_elem = item.find('a', href=True)
-                link = link_elem['href'] if link_elem else ""
-                if link and not link.startswith('http'):
+                link_elem = item.find("a", href=True)
+                link = link_elem["href"] if link_elem else ""
+                if link and not link.startswith("http"):
                     link = base_url + link
-                
+
                 # Extract tagline/description
-                desc_elem = item.find('p') or item.find('div', class_=lambda x: x and 'tagline' in x.lower() if x else False)
+                desc_elem = item.find("p") or item.find(
+                    "div", class_=lambda x: x and "tagline" in x.lower() if x else False
+                )
                 tagline = desc_elem.get_text(strip=True) if desc_elem else ""
-                
+
                 # Extract vote count
-                vote_elem = item.find('span', class_=lambda x: x and 'vote' in x.lower() if x else False) or \
-                           item.find('div', class_=lambda x: x and 'vote' in x.lower() if x else False)
+                vote_elem = item.find(
+                    "span", class_=lambda x: x and "vote" in x.lower() if x else False
+                ) or item.find(
+                    "div", class_=lambda x: x and "vote" in x.lower() if x else False
+                )
                 votes = 0
                 if vote_elem:
                     vote_text = vote_elem.get_text(strip=True)
                     try:
-                        votes = int(''.join(filter(str.isdigit, vote_text)))
+                        votes = int("".join(filter(str.isdigit, vote_text)))
                     except ValueError:
                         votes = 0
-                
+
                 if name and name != "No Title":
                     product = {
-                        'id': f'ph_topic_{topic}_{len(products)}',
-                        'name': name,
-                        'tagline': tagline,
-                        'description': tagline,
-                        'url': link,
-                        'website': link,
-                        'slug': name.lower().replace(' ', '-'),
-                        'votes_count': votes,
-                        'comments_count': 0,
-                        'reviews_count': 0,
-                        'reviews_rating': 0.0,
-                        'featured_at': datetime.now(timezone.utc).isoformat(),
-                        'created_at': datetime.now(timezone.utc).isoformat(),
-                        'updated_at': datetime.now(timezone.utc).isoformat(),
-                        'thumbnail_url': '',
-                        'gallery_images': [],
-                        'topics': [topic],
-                        'makers': [],
-                        'hunters': [],
-                        'product_links': [{'type': 'website', 'url': link}] if link else [],
-                        'category': topic,
-                        'mock_data': False
+                        "id": f"ph_topic_{topic}_{len(products)}",
+                        "name": name,
+                        "tagline": tagline,
+                        "description": tagline,
+                        "url": link,
+                        "website": link,
+                        "slug": name.lower().replace(" ", "-"),
+                        "votes_count": votes,
+                        "comments_count": 0,
+                        "reviews_count": 0,
+                        "reviews_rating": 0.0,
+                        "featured_at": datetime.now(timezone.utc).isoformat(),
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                        "thumbnail_url": "",
+                        "gallery_images": [],
+                        "topics": [topic],
+                        "makers": [],
+                        "hunters": [],
+                        "product_links": (
+                            [{"type": "website", "url": link}] if link else []
+                        ),
+                        "category": topic,
+                        "mock_data": False,
                     }
                     products.append(product)
             except Exception as e:
                 logger.warning(f"Error parsing product item: {e}")
                 continue
-        
+
         logger.info(f"Scraped {len(products)} products from topic {topic}")
         return products
 
@@ -552,6 +583,19 @@ def process_product_hunt_data(products: list[dict[str, Any]]) -> list[dict[str, 
                 "platform": "product_hunt",
                 "data_source": "product_hunt_scrape",
             }
+
+            # Soft validation against ProductHuntModel (title/link/published/summary/votes/source)
+            try:
+                _ = ProductHuntModel(
+                    title=processed_product.get("name") or processed_product.get("title", ""),
+                    link=processed_product.get("url") or processed_product.get("website", ""),
+                    published=processed_product.get("featuredAt") or processed_product.get("createdAt", ""),
+                    summary=processed_product.get("tagline") or processed_product.get("description", ""),
+                    author=processed_product.get("user", {}).get("name", ""),
+                    votes=int(processed_product.get("votesCount", 0)),
+                )
+            except Exception as e:
+                logger.warning(f"Validation failed for Product Hunt item: {e}")
 
             processed_products.append(processed_product)
 

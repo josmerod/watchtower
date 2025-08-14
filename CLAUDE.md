@@ -162,6 +162,17 @@ Located in `src/models/`, follows Pydantic BaseModel pattern:
 - **Legacy Support**: Streamlit components in `src/web/fullstreamlit/` for compatibility
 - **Interactive Features**: Implement Dash callbacks for real-time updates
 
+#### Videos Tab Implementation (`videos_tab.py`)
+- **VideoManager Class**: Handles YouTube video data loading and filtering
+- **Data Source**: `data/youtube/{channel_name}/youtube_videos.json` files
+- **Display Capacity**: Shows 48 videos per view (increased from 12 for better browsing)
+- **Channel Organization**: Categories (`aa-`, `zz-` prefixes) listed first, then alphabetical
+- **Automatic Filtering**: Channel dropdown triggers immediate video updates via single callback
+- **Error Handling**: Fallback cards for individual video loading failures
+- **Performance**: Thread-safe data loading with caching for 1,500+ videos across 16+ channels
+- **UI Components**: Bootstrap cards with thumbnails, titles, channels, and publication dates
+- **Callback Design**: Single callback prevents duplicate output conflicts with other dashboard tabs
+
 ### Configuration Management
 - **Settings System**: Pydantic Settings in `src/config/settings.py`
 - **Models**: Configuration models in `src/config/models.py`
@@ -183,8 +194,9 @@ Located in `src/models/`, follows Pydantic BaseModel pattern:
 - **Template Method**: BaseETL.run() orchestrates ETL phases
 - **Factory Pattern**: get_settings() with @lru_cache singleton
 - **State Pattern**: Watcher state management with JSON persistence
-- **Component Pattern**: Dash modular tab architecture
+- **Component Pattern**: Dash modular tab architecture with single-callback design
 - **Observer Pattern**: Event logging in watchers and ETL processes
+- **Manager Pattern**: VideoManager for centralized video data handling and filtering
 
 ### Performance Optimization
 - **Caching**: Component-level data caching and efficient rendering
@@ -194,6 +206,13 @@ Located in `src/models/`, follows Pydantic BaseModel pattern:
 - **Lazy Loading**: On-demand data loading in dashboard components
 
 ## Important Implementation Details
+
+### Dashboard Callback Best Practices
+- **Single Callback Pattern**: Use one callback per output to avoid "Duplicate callback outputs" errors
+- **Prevent Initial Call**: Set `prevent_initial_call=True` when initial content is provided statically
+- **Error Handling**: Always include try-catch blocks in callbacks with user-friendly error messages
+- **Component IDs**: Use unique, descriptive IDs to avoid conflicts between dashboard tabs
+- **Context Usage**: Use `dash.callback_context` to identify triggers in multi-input callbacks
 
 ### UV Package Manager Integration
 - Project uses UV for extremely fast dependency management

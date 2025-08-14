@@ -17,23 +17,30 @@ from src.models.anime import AnimeItem
 load_dotenv()
 
 # Configure basic logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 API_BASE_URL = "https://api.myanimelist.net/v2"
 CLIENT_ID_ENV_VAR = "MAL_CLIENT_ID"
 # Define OUTPUT_DIR at the module level for clarity, but it will be managed by the class instance
-MODULE_OUTPUT_DIR = pathlib.Path(__file__).resolve().parent.parent.parent.parent / "data" / "anime"
+MODULE_OUTPUT_DIR = (
+    pathlib.Path(__file__).resolve().parent.parent.parent.parent / "data" / "anime"
+)
 
 FIELDS_TO_REQUEST = "id,title,main_picture,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,media_type,status,genres,num_episodes,start_season,broadcast,source,average_episode_duration,rating,studios"
 
+
 class MalETL(BaseETL):
-    def __init__(self, batch_size: Optional[int] = None, enable_checkpointing: bool = False):
+    def __init__(
+        self, batch_size: Optional[int] = None, enable_checkpointing: bool = False
+    ):
         super().__init__(
             name="mal_anime_etl",
             description="ETL process for MyAnimeList anime data.",
             batch_size=batch_size,
-            enable_checkpointing=enable_checkpointing
+            enable_checkpointing=enable_checkpointing,
         )
 
         self.client_id = os.getenv(CLIENT_ID_ENV_VAR)
@@ -44,16 +51,17 @@ class MalETL(BaseETL):
 
         # Override the output_dir from BaseETL to match specific requirements
         self.output_dir = MODULE_OUTPUT_DIR
-        self._ensure_directories() # Call BaseETL's method to create this updated output_dir
+        self._ensure_directories()  # Call BaseETL's method to create this updated output_dir
 
     def _ensure_directories(self) -> None:
         """Ensure all required directories exist, including the custom output_dir."""
-        super()._ensure_directories() # Creates self.data_dir, self.checkpoint_dir
+        super()._ensure_directories()  # Creates self.data_dir, self.checkpoint_dir
         # self.output_dir is now MODULE_OUTPUT_DIR, ensure it also exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-
-    def _make_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def _make_request(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Makes a GET request to the MyAnimeList API.
         """
@@ -63,7 +71,7 @@ class MalETL(BaseETL):
 
         headers = {
             "X-MAL-CLIENT-ID": self.client_id,
-            "User-Agent": "WatchtowerMALETL/1.0"
+            "User-Agent": "WatchtowerMALETL/1.0",
         }
 
         logger.info(f"Making request to {url} with params: {params}")
@@ -74,32 +82,38 @@ class MalETL(BaseETL):
             return response.json()
         except requests.exceptions.HTTPError as e:
             logger.error(f"HTTP error occurred: {e} - Response: {e.response.text}")
-            self.metrics.error_count +=1
+            self.metrics.error_count += 1
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception occurred: {e}")
-            self.metrics.error_count +=1
+            self.metrics.error_count += 1
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to decode JSON response: {e} - Response: {response.text if 'response' in locals() else 'N/A'}")
+            logger.error(
+                f"Failed to decode JSON response: {e} - Response: {response.text if 'response' in locals() else 'N/A'}"
+            )
             self.metrics.error_count += 1
         return None
 
-    def _get_seasonal_anime_raw(self, year: int, season: str, limit: int = 100) -> Optional[Dict[str, Any]]:
+    def _get_seasonal_anime_raw(
+        self, year: int, season: str, limit: int = 100
+    ) -> Optional[Dict[str, Any]]:
         """Fetches raw seasonal anime data."""
         endpoint = f"/anime/season/{year}/{season}"
         params = {
             "limit": limit,
-            "sort": "anime_num_list_users", # Sort by popularity
-            "fields": FIELDS_TO_REQUEST
+            "sort": "anime_num_list_users",  # Sort by popularity
+            "fields": FIELDS_TO_REQUEST,
         }
         return self._make_request(endpoint, params)
 
-    def _get_ranked_anime_raw(self, ranking_type: str, limit: int = 100) -> Optional[Dict[str, Any]]:
+    def _get_ranked_anime_raw(
+        self, ranking_type: str, limit: int = 100
+    ) -> Optional[Dict[str, Any]]:
         """Fetches raw ranked anime data."""
         endpoint = "/anime/ranking"
         params = {
             "ranking_type": ranking_type,
             "limit": limit,
-            "fields": FIELDS_TO_REQUEST
+            "fields": FIELDS_TO_REQUEST,
         }
         return self._make_request(endpoint, params)
 
@@ -136,7 +150,9 @@ class MalETL(BaseETL):
             current_season = "fall"
 
         logger.info(f"Fetching seasonal anime for {current_year} {current_season}.")
-        extracted_data["seasonal"] = self._get_seasonal_anime_raw(current_year, current_season, limit=20)
+        extracted_data["seasonal"] = self._get_seasonal_anime_raw(
+            current_year, current_season, limit=20
+        )
 
         # Add a small delay to avoid hitting rate limits too quickly
         time.sleep(1)
@@ -163,7 +179,9 @@ class MalETL(BaseETL):
         time.sleep(1)
 
         logger.info("Fetching top upcoming anime.")
-        extracted_data["top_upcoming"] = self._get_ranked_anime_raw("upcoming", limit=50)
+        extracted_data["top_upcoming"] = self._get_ranked_anime_raw(
+            "upcoming", limit=50
+        )
 
         time.sleep(1)
 
@@ -185,10 +203,14 @@ class MalETL(BaseETL):
         logger.info("Fetching top special episodes.")
         extracted_data["top_special"] = self._get_ranked_anime_raw("special", limit=30)
 
-        self.metrics.records_extracted = sum(len(v.get('data', [])) for v in extracted_data.values() if v)
+        self.metrics.records_extracted = sum(
+            len(v.get("data", [])) for v in extracted_data.values() if v
+        )
         return extracted_data
 
-    def transform(self, data: Dict[str, Optional[Dict[str, Any]]]) -> Dict[str, List[AnimeItem]]:
+    def transform(
+        self, data: Dict[str, Optional[Dict[str, Any]]]
+    ) -> Dict[str, List[AnimeItem]]:
         """
         Transforms raw API data into lists of AnimeItem models.
         """
@@ -207,9 +229,9 @@ class MalETL(BaseETL):
         }
 
         for key, raw_response in data.items():
-            if raw_response and 'data' in raw_response:
-                for item_entry in raw_response.get('data', []):
-                    node_data = item_entry.get('node')
+            if raw_response and "data" in raw_response:
+                for item_entry in raw_response.get("data", []):
+                    node_data = item_entry.get("node")
                     if node_data:
                         try:
                             # The 'rank' field in API is sometimes part of 'ranking' dict
@@ -219,13 +241,21 @@ class MalETL(BaseETL):
                             # For now, we proceed assuming fields in FIELDS_TO_REQUEST are at node level
                             anime = AnimeItem(**node_data)
                             transformed_data[key].append(anime)
-                        except Exception as e: # Catch Pydantic validation errors or others
-                            logger.error(f"Error transforming item for {key}: {node_data.get('title', 'Unknown Title')}. Error: {e}")
+                        except (
+                            Exception
+                        ) as e:  # Catch Pydantic validation errors or others
+                            logger.error(
+                                f"Error transforming item for {key}: {node_data.get('title', 'Unknown Title')}. Error: {e}"
+                            )
                             self.metrics.records_failed += 1
             else:
-                logger.warning(f"No data or malformed response for '{key}' category during transformation.")
+                logger.warning(
+                    f"No data or malformed response for '{key}' category during transformation."
+                )
 
-        self.metrics.records_transformed = sum(len(v) for v in transformed_data.values())
+        self.metrics.records_transformed = sum(
+            len(v) for v in transformed_data.values()
+        )
         return transformed_data
 
     def load(self, data: Dict[str, List[AnimeItem]]) -> None:
@@ -233,7 +263,7 @@ class MalETL(BaseETL):
         Saves the transformed AnimeItem lists to JSON files.
         """
         self.logger.info("Starting MAL data loading.")
-        self.output_dir.mkdir(parents=True, exist_ok=True) # Ensure output_dir exists
+        self.output_dir.mkdir(parents=True, exist_ok=True)  # Ensure output_dir exists
 
         filenames = {
             "seasonal": "current_season_anime.json",
@@ -258,20 +288,29 @@ class MalETL(BaseETL):
             logger.info(f"Saving {len(anime_list)} items for {key} to {file_path}")
             try:
                 with open(file_path, "w", encoding="utf-8") as f:
-                    json.dump([item.model_dump(by_alias=True) for item in anime_list], f, indent=2, default=pydantic_encoder)
+                    json.dump(
+                        [item.model_dump(by_alias=True) for item in anime_list],
+                        f,
+                        indent=2,
+                        default=pydantic_encoder,
+                    )
                 loaded_count += len(anime_list)
             except IOError as e:
                 logger.error(f"Failed to save data for {key} to {file_path}: {e}")
-                self.metrics.error_count +=1
+                self.metrics.error_count += 1
                 raise Exception(f"Failed to save data for {key}: {e}") from e
-            except Exception as e: # Catch any other unexpected errors during save
-                logger.error(f"An unexpected error occurred while saving data for {key} to {file_path}: {e}")
+            except Exception as e:  # Catch any other unexpected errors during save
+                logger.error(
+                    f"An unexpected error occurred while saving data for {key} to {file_path}: {e}"
+                )
                 self.metrics.error_count += 1
                 raise Exception(f"Unexpected error saving data for {key}: {e}") from e
 
         self.metrics.records_loaded = loaded_count
-        if loaded_count == 0 and self.metrics.records_transformed > 0 :
-             logger.warning("Data was transformed but nothing was loaded. Check for issues.")
+        if loaded_count == 0 and self.metrics.records_transformed > 0:
+            logger.warning(
+                "Data was transformed but nothing was loaded. Check for issues."
+            )
 
 
 if __name__ == "__main__":
@@ -282,13 +321,15 @@ if __name__ == "__main__":
         # load_dotenv()
 
         etl_instance = MalETL()
-        etl_instance.run() # This will call extract, transform, load
+        etl_instance.run()  # This will call extract, transform, load
         logger.info("MyAnimeList ETL script finished successfully.")
 
-    except ValueError as ve: # Specifically for MAL_CLIENT_ID not set
+    except ValueError as ve:  # Specifically for MAL_CLIENT_ID not set
         logger.critical(f"ETL run failed due to configuration error: {ve}")
         # No need to print again, already logged by MalETL constructor
     except ETLError as e:
         logger.error(f"ETL process failed: {e}", exc_info=True)
     except Exception as e:
-        logger.error(f"An unexpected error occurred during ETL execution: {e}", exc_info=True)
+        logger.error(
+            f"An unexpected error occurred during ETL execution: {e}", exc_info=True
+        )

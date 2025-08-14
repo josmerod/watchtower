@@ -314,9 +314,7 @@ class AIMonitoringETL(BaseETL):
         self.logger.info(f"Transformed to {len(transformed_data)} records")
         return transformed_data
 
-    def _transform_model_release(
-        self, record: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    def _transform_model_release(self, record: dict[str, Any]) -> dict[str, Any] | None:
         """Transform model release data."""
         try:
             return {
@@ -345,9 +343,7 @@ class AIMonitoringETL(BaseETL):
             self.logger.error(f"Failed to transform platform update: {e}")
             return None
 
-    def _transform_api_metrics(
-        self, record: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    def _transform_api_metrics(self, record: dict[str, Any]) -> dict[str, Any] | None:
         """Transform API metrics data."""
         try:
             return {

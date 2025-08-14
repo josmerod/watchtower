@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Any
-import os # Required for IOError, OSError
+import os  # Required for IOError, OSError
 
 import requests
 from bs4 import BeautifulSoup
@@ -703,20 +703,37 @@ class OpenAIPlatformETL(BaseETL):
             # Save latest data
             with open(latest_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, default=str)
-            self.logger.info(f"Successfully updated latest OpenAI data at {latest_file}")
+            self.logger.info(
+                f"Successfully updated latest OpenAI data at {latest_file}"
+            )
 
             self.metrics.records_loaded = len(data)
-            
+
             # Generate OpenAI-specific summary
             self._generate_openai_summary(data, timestamp)
 
         except (IOError, OSError) as e:
-            self.logger.error(f"Failed to save OpenAI data to {output_file} or {latest_file}: {e}")
-            raise LoadError(f"Failed to save OpenAI data: {e}", destination=str(output_file), destination_type="file") from e
-        except Exception as e: # Catch any other unexpected errors during load (e.g., _generate_openai_summary)
-            self.logger.error(f"An unexpected error occurred during loading OpenAI data: {e}", exc_info=True)
+            self.logger.error(
+                f"Failed to save OpenAI data to {output_file} or {latest_file}: {e}"
+            )
+            raise LoadError(
+                f"Failed to save OpenAI data: {e}",
+                destination=str(output_file),
+                destination_type="file",
+            ) from e
+        except (
+            Exception
+        ) as e:  # Catch any other unexpected errors during load (e.g., _generate_openai_summary)
+            self.logger.error(
+                f"An unexpected error occurred during loading OpenAI data: {e}",
+                exc_info=True,
+            )
             # Ensure partial save doesn't leave inconsistent state if possible, or log that it might be
-            raise LoadError(f"An unexpected error occurred during loading OpenAI data: {e}", destination=str(output_file), destination_type="file") from e
+            raise LoadError(
+                f"An unexpected error occurred during loading OpenAI data: {e}",
+                destination=str(output_file),
+                destination_type="file",
+            ) from e
 
     def _generate_openai_summary(
         self, data: list[dict[str, Any]], timestamp: str

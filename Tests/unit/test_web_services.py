@@ -22,6 +22,7 @@ class TestDataService(unittest.TestCase):
     def tearDown(self):
         """Clean up test environment."""
         import shutil
+
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_data_service_initialization(self):
@@ -32,52 +33,54 @@ class TestDataService(unittest.TestCase):
         """Test load_json_data with existing file."""
         test_data = [
             {"id": 1, "title": "Test Item 1"},
-            {"id": 2, "title": "Test Item 2"}
+            {"id": 2, "title": "Test Item 2"},
         ]
-        
+
         # Create test data directory and file
         domain_dir = self.test_dir / "test_domain"
         domain_dir.mkdir()
         data_file = domain_dir / "test_data.json"
-        
-        with open(data_file, 'w') as f:
+
+        with open(data_file, "w") as f:
             json.dump(test_data, f)
-        
+
         result = self.data_service.load_json_data("test_domain", "test_data")
-        
+
         self.assertEqual(result, test_data)
         self.assertEqual(len(result), 2)
 
     def test_load_json_data_missing_file(self):
         """Test load_json_data with missing file."""
         result = self.data_service.load_json_data("missing_domain", "missing_file")
-        
+
         self.assertEqual(result, [])
 
     def test_get_file_stats_existing_file(self):
         """Test get_file_stats with existing file."""
         test_data = {"test": "data"}
-        
+
         domain_dir = self.test_dir / "test_domain"
         domain_dir.mkdir()
         data_file = domain_dir / "test_data.json"
-        
-        with open(data_file, 'w') as f:
+
+        with open(data_file, "w") as f:
             json.dump(test_data, f)
-        
+
         stats = self.data_service.get_file_stats("test_domain", "test_data", "json")
-        
+
         self.assertIsInstance(stats, dict)
         self.assertIn("exists", stats)
         self.assertTrue(stats["exists"])
 
     def test_get_file_stats_missing_file(self):
         """Test get_file_stats with missing file."""
-        stats = self.data_service.get_file_stats("missing_domain", "missing_file", "json")
-        
+        stats = self.data_service.get_file_stats(
+            "missing_domain", "missing_file", "json"
+        )
+
         self.assertIsInstance(stats, dict)
         self.assertFalse(stats["exists"])
 
 
-if __name__ == '__main__':
-    unittest.main() 
+if __name__ == "__main__":
+    unittest.main()

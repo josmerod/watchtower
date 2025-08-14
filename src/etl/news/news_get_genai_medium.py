@@ -4,6 +4,7 @@ This module retrieves articles related to Generative AI, LLMs, and related
 topics from various Medium RSS feeds. The fetched data is then
 processed and saved into JSON and CSV files.
 """
+
 import json
 import os
 import re
@@ -72,14 +73,14 @@ def get_medium_genai_data(
                         article = {
                             "title": entry.title if hasattr(entry, "title") else "",
                             "url": entry.link if hasattr(entry, "link") else "",
-                            "published_at": entry.published
-                            if hasattr(entry, "published")
-                            else "",
+                            "published_at": (
+                                entry.published if hasattr(entry, "published") else ""
+                            ),
                             "source": "medium.com",
                             "author": entry.author if hasattr(entry, "author") else "",
-                            "summary": entry.summary
-                            if hasattr(entry, "summary")
-                            else "",
+                            "summary": (
+                                entry.summary if hasattr(entry, "summary") else ""
+                            ),
                             "medium_id": entry.id if hasattr(entry, "id") else "",
                             "feed_source": rss_url,
                         }
@@ -213,9 +214,7 @@ def main():
         )
 
     except Exception as e:
-        logger.error(
-            f"Error in Medium Generative AI ETL process: {e!s}", exc_info=True
-        )
+        logger.error(f"Error in Medium Generative AI ETL process: {e!s}", exc_info=True)
 
 
 if __name__ == "__main__":

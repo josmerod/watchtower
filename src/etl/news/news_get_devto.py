@@ -16,9 +16,7 @@ from src.utils.logging import get_logger
 logger = get_logger("DevToETL")
 
 
-def get_devto_data(
-    max_retries: int = 3, retry_delay: int = 5
-) -> list[dict[str, Any]]:
+def get_devto_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str, Any]]:
     """Fetches articles from Dev.to by parsing RSS feeds.
 
     Args:
@@ -30,7 +28,7 @@ def get_devto_data(
     """
     rss_urls = [
         "https://dev.to/feed",  # Main feed
-        "https://dev.to/feed/latest"  # Latest articles
+        "https://dev.to/feed/latest",  # Latest articles
     ]
     articles = []
 
@@ -80,15 +78,17 @@ def get_devto_data(
                         # Extract categories/tags
                         tags = []
                         if hasattr(entry, "tags"):
-                            tags = [tag.term for tag in entry.tags if hasattr(tag, "term")]
+                            tags = [
+                                tag.term for tag in entry.tags if hasattr(tag, "term")
+                            ]
 
                         # Extract description/summary (clean HTML)
                         description = ""
                         if hasattr(entry, "summary"):
                             # Remove HTML tags from description for clean text
-                            description = re.sub(r'<[^>]+>', '', entry.summary)
+                            description = re.sub(r"<[^>]+>", "", entry.summary)
                             # Clean up extra whitespace
-                            description = re.sub(r'\s+', ' ', description).strip()
+                            description = re.sub(r"\s+", " ", description).strip()
                             # Limit description length
                             if len(description) > 500:
                                 description = description[:500] + "..."
@@ -135,7 +135,9 @@ def get_devto_data(
             unique_articles.append(article)
             seen_ids.add(article["article_id"])
 
-    logger.info(f"Retrieved {len(unique_articles)} unique articles from Dev.to RSS feeds")
+    logger.info(
+        f"Retrieved {len(unique_articles)} unique articles from Dev.to RSS feeds"
+    )
     return unique_articles
 
 

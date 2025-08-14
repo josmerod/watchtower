@@ -38,9 +38,7 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False, description="Enable debug mode")
 
     # Project paths
-    project_root: str | None = Field(
-        default=None, description="Project root directory"
-    )
+    project_root: str | None = Field(default=None, description="Project root directory")
     data_dir: str = Field(default="data", description="Data directory")
     logs_dir: str = Field(default="logs", description="Logs directory")
     config_dir: str = Field(default="config", description="Config directory")
@@ -57,7 +55,9 @@ class Settings(BaseSettings):
     watchers: WatcherConfig = Field(default_factory=WatcherConfig)
     etl: ETLConfig = Field(default_factory=ETLConfig)
     google_drive: GoogleDriveConfig = Field(default_factory=GoogleDriveConfig)
-    spanish_public_aid: SpanishPublicAidConfig = Field(default_factory=SpanishPublicAidConfig)
+    spanish_public_aid: SpanishPublicAidConfig = Field(
+        default_factory=SpanishPublicAidConfig
+    )
 
     class Config:
         """Pydantic configuration."""

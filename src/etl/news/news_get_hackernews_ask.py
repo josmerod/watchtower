@@ -114,11 +114,13 @@ def fetch_ask_hn_posts(
                         "score": story_data.get("score", 0),
                         "comments_count": story_data.get("descendants", 0),
                         "time": story_data.get("time"),
-                        "created_at": datetime.fromtimestamp(
-                            story_data.get("time", 0)
-                        ).isoformat()
-                        if story_data.get("time")
-                        else None,
+                        "created_at": (
+                            datetime.fromtimestamp(
+                                story_data.get("time", 0)
+                            ).isoformat()
+                            if story_data.get("time")
+                            else None
+                        ),
                         "type": story_data.get("type"),
                         "kids": story_data.get("kids", []),
                         "fetched_at": datetime.now().isoformat(),

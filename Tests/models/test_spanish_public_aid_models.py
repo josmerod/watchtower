@@ -30,9 +30,9 @@ class TestSpanishPublicAidModels:
         scope = GeographicScopeModel(
             scope=AidScope.AUTONOMOUS_COMMUNITY,
             autonomous_community="Comunidad Valenciana",
-            municipality="Valencia"
+            municipality="Valencia",
         )
-        
+
         assert scope.scope == AidScope.AUTONOMOUS_COMMUNITY
         assert scope.country == "España"  # Default value
         assert scope.autonomous_community == "Comunidad Valenciana"
@@ -42,20 +42,19 @@ class TestSpanishPublicAidModels:
         """Test AmountModel validation."""
         # Valid amount
         amount = AmountModel(
-            min_amount=Decimal('100.00'),
-            max_amount=Decimal('1000.00'),
-            payment_type=PaymentType.MONTHLY
+            min_amount=Decimal("100.00"),
+            max_amount=Decimal("1000.00"),
+            payment_type=PaymentType.MONTHLY,
         )
-        
-        assert amount.min_amount == Decimal('100.00')
-        assert amount.max_amount == Decimal('1000.00')
+
+        assert amount.min_amount == Decimal("100.00")
+        assert amount.max_amount == Decimal("1000.00")
         assert amount.currency == "EUR"  # Default
-        
+
         # Test negative amount validation
         with pytest.raises(ValueError):
             AmountModel(
-                min_amount=Decimal('-100.00'),
-                payment_type=PaymentType.LUMP_SUM
+                min_amount=Decimal("-100.00"), payment_type=PaymentType.LUMP_SUM
             )
 
     def test_requirement_model(self):
@@ -64,9 +63,9 @@ class TestSpanishPublicAidModels:
             title="Requisito de edad",
             description="Tener entre 18 y 35 años",
             is_mandatory=True,
-            documentation_needed=["DNI", "Certificado de empadronamiento"]
+            documentation_needed=["DNI", "Certificado de empadronamiento"],
         )
-        
+
         assert requirement.title == "Requisito de edad"
         assert requirement.is_mandatory is True
         assert len(requirement.documentation_needed) == 2
@@ -78,9 +77,9 @@ class TestSpanishPublicAidModels:
             description="Documento Nacional de Identidad",
             is_mandatory=True,
             format="PDF",
-            max_size_mb=5.0
+            max_size_mb=5.0,
         )
-        
+
         assert document.name == "DNI"
         assert document.is_mandatory is True
         assert document.max_size_mb == 5.0
@@ -91,9 +90,9 @@ class TestSpanishPublicAidModels:
             office_name="Oficina de Ayudas",
             phone="96 123 45 67",
             email="ayudas@gva.es",
-            address="Calle Ejemplo, 123, Valencia"
+            address="Calle Ejemplo, 123, Valencia",
         )
-        
+
         assert contact.office_name == "Oficina de Ayudas"
         assert contact.phone == "96 123 45 67"
         assert contact.email == "ayudas@gva.es"
@@ -102,7 +101,7 @@ class TestSpanishPublicAidModels:
         """Test SpanishPublicAidModel creation with required fields."""
         scope = GeographicScopeModel(scope=AidScope.NATIONAL)
         amount = AmountModel(payment_type=PaymentType.LUMP_SUM)
-        
+
         aid = SpanishPublicAidModel(
             title="Ayuda para vivienda",
             description="Ayuda económica para el alquiler de vivienda",
@@ -114,9 +113,9 @@ class TestSpanishPublicAidModels:
             amount=amount,
             status=AidStatus.OPEN,
             source_url="https://example.com/aid",
-            source_name="Example Source"
+            source_name="Example Source",
         )
-        
+
         assert aid.title == "Ayuda para vivienda"
         assert aid.aid_type == AidType.GRANT
         assert aid.category == AidCategory.HOUSING
@@ -127,10 +126,10 @@ class TestSpanishPublicAidModels:
         """Test SpanishPublicAidModel computed properties."""
         scope = GeographicScopeModel(scope=AidScope.NATIONAL)
         amount = AmountModel(payment_type=PaymentType.LUMP_SUM)
-        
+
         # Create aid with closing date in future
         future_date = datetime.utcnow() + timedelta(days=5)
-        
+
         aid = SpanishPublicAidModel(
             title="Test Aid",
             description="Test description",
@@ -143,17 +142,17 @@ class TestSpanishPublicAidModels:
             status=AidStatus.OPEN,
             source_url="https://example.com/aid",
             source_name="Test Source",
-            closing_date=future_date
+            closing_date=future_date,
         )
-        
+
         # Test is_active property
         assert aid.is_active is True
-        
+
         # Test days_until_closing property
         days_left = aid.days_until_closing
         assert days_left is not None
         assert days_left >= 4  # Should be around 5 days
-        
+
         # Test is_urgent property (closing within 7 days)
         assert aid.is_urgent is True
 
@@ -161,7 +160,7 @@ class TestSpanishPublicAidModels:
         """Test aid with inactive status."""
         scope = GeographicScopeModel(scope=AidScope.NATIONAL)
         amount = AmountModel(payment_type=PaymentType.LUMP_SUM)
-        
+
         aid = SpanishPublicAidModel(
             title="Closed Aid",
             description="Test description",
@@ -173,19 +172,19 @@ class TestSpanishPublicAidModels:
             amount=amount,
             status=AidStatus.CLOSED,  # Closed status
             source_url="https://example.com/aid",
-            source_name="Test Source"
+            source_name="Test Source",
         )
-        
+
         assert aid.is_active is False
 
     def test_spanish_public_aid_model_past_closing_date(self):
         """Test aid with past closing date."""
         scope = GeographicScopeModel(scope=AidScope.NATIONAL)
         amount = AmountModel(payment_type=PaymentType.LUMP_SUM)
-        
+
         # Create aid with closing date in past
         past_date = datetime.utcnow() - timedelta(days=5)
-        
+
         aid = SpanishPublicAidModel(
             title="Expired Aid",
             description="Test description",
@@ -198,9 +197,9 @@ class TestSpanishPublicAidModels:
             status=AidStatus.OPEN,
             source_url="https://example.com/aid",
             source_name="Test Source",
-            closing_date=past_date
+            closing_date=past_date,
         )
-        
+
         assert aid.is_active is False
         assert aid.days_until_closing == 0
 
@@ -208,7 +207,7 @@ class TestSpanishPublicAidModels:
         """Test data quality score validation."""
         scope = GeographicScopeModel(scope=AidScope.NATIONAL)
         amount = AmountModel(payment_type=PaymentType.LUMP_SUM)
-        
+
         # Valid quality score
         aid = SpanishPublicAidModel(
             title="Test Aid",
@@ -222,11 +221,11 @@ class TestSpanishPublicAidModels:
             status=AidStatus.OPEN,
             source_url="https://example.com/aid",
             source_name="Test Source",
-            data_quality_score=0.8
+            data_quality_score=0.8,
         )
-        
+
         assert aid.data_quality_score == 0.8
-        
+
         # Invalid quality score (> 1.0)
         with pytest.raises(ValueError):
             SpanishPublicAidModel(
@@ -241,7 +240,7 @@ class TestSpanishPublicAidModels:
                 status=AidStatus.OPEN,
                 source_url="https://example.com/aid",
                 source_name="Test Source",
-                data_quality_score=1.5
+                data_quality_score=1.5,
             )
 
     def test_aid_statistics_model(self):
@@ -249,45 +248,45 @@ class TestSpanishPublicAidModels:
         stats = AidStatisticsModel(
             total_aids=100,
             active_aids=75,
-            by_category={'vivienda': 30, 'empleo': 25, 'educacion': 20},
-            by_scope={'nacional': 40, 'autonomica': 35, 'local': 25},
-            by_status={'abierta': 75, 'cerrada': 20, 'en_evaluacion': 5},
-            total_budget=Decimal('1000000.00'),
-            average_amount=Decimal('10000.00'),
-            closing_soon=10
+            by_category={"vivienda": 30, "empleo": 25, "educacion": 20},
+            by_scope={"nacional": 40, "autonomica": 35, "local": 25},
+            by_status={"abierta": 75, "cerrada": 20, "en_evaluacion": 5},
+            total_budget=Decimal("1000000.00"),
+            average_amount=Decimal("10000.00"),
+            closing_soon=10,
         )
-        
+
         assert stats.total_aids == 100
         assert stats.active_aids == 75
-        assert stats.by_category['vivienda'] == 30
-        assert stats.total_budget == Decimal('1000000.00')
+        assert stats.by_category["vivienda"] == 30
+        assert stats.total_budget == Decimal("1000000.00")
         assert stats.closing_soon == 10
 
     def test_aid_search_filter(self):
         """Test AidSearchFilter model."""
         search_filter = AidSearchFilter(
-            keywords=['vivienda', 'joven'],
+            keywords=["vivienda", "joven"],
             categories=[AidCategory.HOUSING, AidCategory.YOUTH],
             scopes=[AidScope.AUTONOMOUS_COMMUNITY],
             statuses=[AidStatus.OPEN],
-            min_amount=Decimal('500.00'),
-            max_amount=Decimal('2000.00'),
-            autonomous_community='Comunidad Valenciana',
+            min_amount=Decimal("500.00"),
+            max_amount=Decimal("2000.00"),
+            autonomous_community="Comunidad Valenciana",
             beneficiary_types=[BeneficiaryType.INDIVIDUAL],
             closing_within_days=30,
-            only_active=True
+            only_active=True,
         )
-        
+
         assert len(search_filter.keywords) == 2
         assert AidCategory.HOUSING in search_filter.categories
-        assert search_filter.min_amount == Decimal('500.00')
+        assert search_filter.min_amount == Decimal("500.00")
         assert search_filter.only_active is True
 
     def test_model_serialization(self):
         """Test model serialization to dict."""
         scope = GeographicScopeModel(scope=AidScope.NATIONAL)
         amount = AmountModel(payment_type=PaymentType.LUMP_SUM)
-        
+
         aid = SpanishPublicAidModel(
             title="Test Aid",
             description="Test description",
@@ -299,22 +298,22 @@ class TestSpanishPublicAidModels:
             amount=amount,
             status=AidStatus.OPEN,
             source_url="https://example.com/aid",
-            source_name="Test Source"
+            source_name="Test Source",
         )
-        
+
         # Test model_dump
         data = aid.model_dump()
         assert isinstance(data, dict)
-        assert data['title'] == "Test Aid"
-        assert data['aid_type'] == AidType.GRANT.value
-        assert 'scope' in data
-        assert 'amount' in data
+        assert data["title"] == "Test Aid"
+        assert data["aid_type"] == AidType.GRANT.value
+        assert "scope" in data
+        assert "amount" in data
 
     def test_model_json_serialization(self):
         """Test model JSON serialization."""
         scope = GeographicScopeModel(scope=AidScope.NATIONAL)
         amount = AmountModel(payment_type=PaymentType.LUMP_SUM)
-        
+
         aid = SpanishPublicAidModel(
             title="Test Aid",
             description="Test description",
@@ -326,9 +325,9 @@ class TestSpanishPublicAidModels:
             amount=amount,
             status=AidStatus.OPEN,
             source_url="https://example.com/aid",
-            source_name="Test Source"
+            source_name="Test Source",
         )
-        
+
         # Test model_dump_json
         json_str = aid.model_dump_json()
         assert isinstance(json_str, str)
@@ -339,24 +338,24 @@ class TestSpanishPublicAidModels:
         assert AidScope.NATIONAL == "nacional"
         assert AidScope.AUTONOMOUS_COMMUNITY == "autonomica"
         assert AidScope.LOCAL == "local"
-        
+
         assert AidType.GRANT == "ayuda"
         assert AidType.SUBSIDY == "subvencion"
         assert AidType.SCHOLARSHIP == "beca"
-        
+
         assert AidCategory.HOUSING == "vivienda"
         assert AidCategory.EMPLOYMENT == "empleo"
         assert AidCategory.YOUTH == "juventud"
-        
+
         assert AidStatus.OPEN == "abierta"
         assert AidStatus.CLOSED == "cerrada"
-        
+
         assert BeneficiaryType.INDIVIDUAL == "persona_fisica"
         assert BeneficiaryType.COMPANY == "empresa"
-        
+
         assert PaymentType.LUMP_SUM == "pago_unico"
         assert PaymentType.MONTHLY == "mensual"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__])

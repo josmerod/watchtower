@@ -14,18 +14,21 @@ import os
 # Test that our core modules can be imported
 try:
     from src.config.settings import Settings
+
     SETTINGS_AVAILABLE = True
 except ImportError:
     SETTINGS_AVAILABLE = False
 
 try:
     from src.models.base import BaseModel, TimestampedModel
+
     MODELS_AVAILABLE = True
 except ImportError:
     MODELS_AVAILABLE = False
 
 try:
     from src.exceptions.base import WatchtowerError
+
     EXCEPTIONS_AVAILABLE = True
 except ImportError:
     EXCEPTIONS_AVAILABLE = False
@@ -66,35 +69,35 @@ class TestBasicFunctionality(unittest.TestCase):
     def test_json_operations(self):
         """Test JSON serialization and deserialization."""
         test_data = {"test": True, "number": 123, "list": [1, 2, 3]}
-        
+
         # Serialize to JSON string
         json_string = json.dumps(test_data)
         self.assertIsInstance(json_string, str)
-        
+
         # Deserialize from JSON string
         parsed_data = json.loads(json_string)
         self.assertEqual(parsed_data, test_data)
 
     def test_file_operations(self):
         """Test basic file operations."""
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("test content")
             temp_file = f.name
-        
+
         try:
             # Read the file
-            with open(temp_file, 'r') as f:
+            with open(temp_file, "r") as f:
                 content = f.read()
-            
+
             self.assertEqual(content, "test content")
-            
+
         finally:
             os.unlink(temp_file)
 
     def test_path_operations(self):
         """Test Path operations."""
         test_path = Path("test/directory/file.txt")
-        
+
         self.assertEqual(test_path.name, "file.txt")
         self.assertEqual(test_path.suffix, ".txt")
         self.assertEqual(test_path.stem, "file")
@@ -104,7 +107,7 @@ class TestBasicFunctionality(unittest.TestCase):
     def test_datetime_operations(self):
         """Test datetime operations."""
         now = datetime.now()
-        
+
         self.assertIsInstance(now, datetime)
         self.assertIsInstance(now.year, int)
         self.assertIsInstance(now.month, int)
@@ -141,7 +144,7 @@ class TestImports(unittest.TestCase):
         import datetime
         import pathlib
         import tempfile
-        
+
         # If we get here without ImportError, imports work
         self.assertTrue(True)
 
@@ -172,10 +175,10 @@ class TestEnvironment(unittest.TestCase):
     def test_environment_variables(self):
         """Test environment variable access."""
         # Test a common environment variable
-        path = os.environ.get('PATH')
+        path = os.environ.get("PATH")
         self.assertIsNotNone(path)
         self.assertIsInstance(path, str)
 
 
-if __name__ == '__main__':
-    unittest.main() 
+if __name__ == "__main__":
+    unittest.main()

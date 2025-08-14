@@ -34,21 +34,21 @@ class FourChanGeneralsETL(SimpleETL):
 
     def __init__(self, boards: List[str] | None = None, **kwargs: Any):
         self.boards = boards or [
-            "g",      # Technology
-            "vg",     # Video Games Generals
-            "t",      # Torrents/Technology
-            "pol",    # Politically Incorrect
-            "biz",    # Business & Finance
-            "sci",    # Science & Math
-            "tv",     # Television & Film
-            "fit",    # Fitness
-            "mu",     # Music
-            "v",      # Video Games
-            "k",      # Weapons
-            "o",      # Auto
-            "diy",    # Do It Yourself
-            "his",    # History & Humanities
-            "int",    # International
+            "g",  # Technology
+            "vg",  # Video Games Generals
+            "t",  # Torrents/Technology
+            "pol",  # Politically Incorrect
+            "biz",  # Business & Finance
+            "sci",  # Science & Math
+            "tv",  # Television & Film
+            "fit",  # Fitness
+            "mu",  # Music
+            "v",  # Video Games
+            "k",  # Weapons
+            "o",  # Auto
+            "diy",  # Do It Yourself
+            "his",  # History & Humanities
+            "int",  # International
         ]
         super().__init__(name="4chan_generals", **kwargs)
         # Replace logger name to something shorter / clearer
@@ -83,7 +83,9 @@ class FourChanGeneralsETL(SimpleETL):
     # ------------------------------------------------------------------
     # Transform
     # ------------------------------------------------------------------
-    def transform(self, data: List[dict[str, Any]]) -> List[dict[str, Any]]:  # noqa: D401
+    def transform(
+        self, data: List[dict[str, Any]]
+    ) -> List[dict[str, Any]]:  # noqa: D401
         """Filter *General* threads and clean up fields."""
         if not data:
             self.logger.warning("No data extracted – skipping transform phase.")
@@ -144,4 +146,4 @@ class FourChanGeneralsETL(SimpleETL):
             json.dumps(data, ensure_ascii=False, indent=2, default=str),
             encoding="utf-8",
         )
-        self.logger.info(f"Latest snapshot saved to {latest_path}") 
+        self.logger.info(f"Latest snapshot saved to {latest_path}")

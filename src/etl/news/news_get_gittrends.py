@@ -26,6 +26,7 @@ from urllib3.util.retry import Retry
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.models.github import GitHubRepositoryModel
 
 # Initialize logger for this module
 logger = get_logger("GitHubTrendsETL")
@@ -134,9 +135,11 @@ def get_trending_repositories(
                     "size": repo.get("size", 0),
                     "default_branch": repo.get("default_branch"),
                     "topics": repo.get("topics", []),
-                    "license": repo.get("license", {}).get("name")
-                    if repo.get("license")
-                    else None,
+                    "license": (
+                        repo.get("license", {}).get("name")
+                        if repo.get("license")
+                        else None
+                    ),
                     "owner": {
                         "login": repo.get("owner", {}).get("login"),
                         "type": repo.get("owner", {}).get("type"),
@@ -150,6 +153,37 @@ def get_trending_repositories(
                     "period": since,
                     "fetched_at": datetime.now().isoformat(),
                 }
+
+                # Soft validation to enforce dashboard contract shape
+                try:
+                    _ = GitHubRepositoryModel(
+                        repository_id=processed_repo.get("id"),
+                        name=processed_repo.get("name", ""),
+                        full_name=processed_repo.get("full_name", ""),
+                        description=processed_repo.get("description", ""),
+                        html_url=processed_repo.get("html_url", ""),
+                        language=processed_repo.get("language"),
+                        stars_count=processed_repo.get("stars_count", 0),
+                        forks_count=processed_repo.get("forks_count", 0),
+                        watchers_count=processed_repo.get("watchers_count", 0),
+                        open_issues_count=processed_repo.get("open_issues_count", 0),
+                        default_branch=processed_repo.get("default_branch"),
+                        topics=processed_repo.get("topics", []),
+                        license_name=processed_repo.get("license"),
+                        owner=processed_repo.get("owner"),
+                        repository_created_at=processed_repo.get("created_at"),
+                        repository_updated_at=processed_repo.get("updated_at"),
+                        pushed_at=processed_repo.get("pushed_at"),
+                        trending_period=since,
+                        trending_language=processed_repo.get("language") or "all",
+                        rss_title=None,
+                        rss_link=None,
+                        rss_published=None,
+                        source="github_trends",
+                        source_url=None,
+                    )
+                except Exception as e:
+                    logger.warning(f"Validation failed for GitHub repo {processed_repo.get('full_name','')}: {e}")
 
                 repositories.append(processed_repo)
 

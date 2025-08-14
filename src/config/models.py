@@ -113,7 +113,9 @@ class APIConfig(BaseModel):
         default=["GET", "POST", "PUT", "DELETE"], description="CORS allowed methods"
     )
     news_api_key: Optional[str] = Field(default=None, description="API key for NewsAPI")
-    mal_client_id: Optional[str] = Field(default=None, description="MyAnimeList API Client ID")
+    mal_client_id: Optional[str] = Field(
+        default=None, description="MyAnimeList API Client ID"
+    )
 
 
 class StreamlitConfig(BaseModel):
@@ -224,68 +226,68 @@ class GoogleDriveConfig(BaseModel):
 
 class SpanishPublicAidConfig(BaseModel):
     """Spanish Public Aid ETL configuration."""
-    
+
     enabled_sources: list[str] = Field(
         default=["bdns", "gva", "valencia", "labora"],
-        description="List of enabled data sources"
+        description="List of enabled data sources",
     )
     max_aids_per_source: int = Field(
-        default=100, ge=10, le=1000, 
-        description="Maximum aids to extract per source"
+        default=100, ge=10, le=1000, description="Maximum aids to extract per source"
     )
     data_quality_threshold: float = Field(
-        default=0.7, ge=0.0, le=1.0,
-        description="Minimum data quality score to include aid"
+        default=0.7,
+        ge=0.0,
+        le=1.0,
+        description="Minimum data quality score to include aid",
     )
     update_frequency_hours: int = Field(
-        default=6, ge=1, le=168,
-        description="Update frequency in hours"
+        default=6, ge=1, le=168, description="Update frequency in hours"
     )
     enable_duplicate_detection: bool = Field(
-        default=True,
-        description="Enable duplicate aid detection"
+        default=True, description="Enable duplicate aid detection"
     )
     max_description_length: int = Field(
-        default=2000, ge=100, le=10000,
-        description="Maximum description length to store"
+        default=2000,
+        ge=100,
+        le=10000,
+        description="Maximum description length to store",
     )
-    
+
     # Source-specific settings
     bdns_enabled: bool = Field(default=True, description="Enable BDNS source")
-    gva_enabled: bool = Field(default=True, description="Enable GVA source") 
+    gva_enabled: bool = Field(default=True, description="Enable GVA source")
     valencia_enabled: bool = Field(default=True, description="Enable Valencia source")
     labora_enabled: bool = Field(default=True, description="Enable LABORA source")
-    
+
     # Scraping settings
     request_delay_seconds: float = Field(
-        default=2.0, ge=0.5, le=10.0,
-        description="Delay between requests to be respectful"
+        default=2.0,
+        ge=0.5,
+        le=10.0,
+        description="Delay between requests to be respectful",
     )
     max_retries_per_source: int = Field(
-        default=3, ge=1, le=10,
-        description="Maximum retries per source on failure"
+        default=3, ge=1, le=10, description="Maximum retries per source on failure"
     )
-    
+
     # Classification settings
     auto_categorize: bool = Field(
-        default=True,
-        description="Enable automatic aid categorization"
+        default=True, description="Enable automatic aid categorization"
     )
     keyword_extraction: bool = Field(
-        default=True,
-        description="Enable automatic keyword extraction"
+        default=True, description="Enable automatic keyword extraction"
     )
-    
+
     # Notification settings
     notify_new_aids: bool = Field(
-        default=False,
-        description="Send notifications for new aids"
+        default=False, description="Send notifications for new aids"
     )
     notify_closing_soon: bool = Field(
-        default=False,
-        description="Send notifications for aids closing soon"
+        default=False, description="Send notifications for aids closing soon"
     )
     closing_soon_days: int = Field(
-        default=7, ge=1, le=30,
-        description="Days threshold for 'closing soon' notifications"
+        default=7,
+        ge=1,
+        le=30,
+        description="Days threshold for 'closing soon' notifications",
     )

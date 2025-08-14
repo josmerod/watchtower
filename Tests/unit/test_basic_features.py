@@ -11,12 +11,13 @@ if not (project_root / "src").exists():
     # If we're already in project root, adjust the path
     project_root = Path.cwd()
 
+
 def test_configuration():
     """Test configuration system."""
     print("Testing Configuration System...")
     try:
         from config.settings import get_settings
-        
+
         settings = get_settings()
         print(f"Settings loaded: {settings.app_name} v{settings.app_version}")
         print(f"Environment: {settings.environment}")
@@ -26,12 +27,13 @@ def test_configuration():
         print(f"Configuration error: {e}")
         return False
 
+
 def test_logging():
     """Test logging system."""
     print("\nTesting Logging System...")
     try:
         from utils.logging import get_logger
-        
+
         logger = get_logger("test_basic")
         logger.info("Test log message from basic features")
         print("Basic logging working")
@@ -40,35 +42,37 @@ def test_logging():
         print(f"Logging error: {e}")
         return False
 
+
 def test_exceptions():
     """Test exception handling."""
     print("\nTesting Exception Handling...")
     try:
         from exceptions.base import WatchtowerError
         from exceptions.watcher import WatcherTimeoutError
-        
+
         # Test basic exception
         try:
             raise WatchtowerError(
                 message="Test error",
                 error_code="TEST_ERROR",
-                context={"test": "context"}
+                context={"test": "context"},
             )
         except WatchtowerError as e:
             print(f"Basic exception handling: {e.error_code}")
-        
+
         print("Exception handling working")
         return True
     except Exception as e:
         print(f"Exception handling error: {e}")
         return False
 
+
 def test_data_models():
     """Test data models."""
     print("\nTesting Data Models...")
     try:
         from models.base import TimestampedModel
-        
+
         model = TimestampedModel()
         print(f"Timestamped model created with ID: {model.id}")
         return True
@@ -76,15 +80,16 @@ def test_data_models():
         print(f"Data models error: {e}")
         return False
 
+
 def test_file_system():
     """Test file system utilities."""
     print("\nTesting File System Utilities...")
     try:
         from utils.file_system import get_file_system_manager
-        
+
         fs_manager = get_file_system_manager()
         print(f"File system manager initialized: {fs_manager.project_root}")
-        
+
         # Test directory creation
         test_dir = "data/test_basic"
         dir_info = fs_manager.ensure_directory(test_dir)
@@ -94,11 +99,12 @@ def test_file_system():
         print(f"File system error: {e}")
         return False
 
+
 def main():
     """Run all tests."""
     print("Basic Features Test Suite")
     print("=" * 40)
-    
+
     tests = [
         test_configuration,
         test_logging,
@@ -106,10 +112,10 @@ def main():
         test_data_models,
         test_file_system,
     ]
-    
+
     passed = 0
     failed = 0
-    
+
     for test_func in tests:
         try:
             if test_func():
@@ -122,13 +128,14 @@ def main():
             failed += 1
             print(f"ERROR: {e}")
         print("-" * 40)
-    
+
     print(f"\nResults: {passed} passed, {failed} failed")
-    
+
     if failed > 0:
         sys.exit(1)
     else:
         print("All basic features tests passed!")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

@@ -22,27 +22,26 @@ class TestBaseWatcher(unittest.TestCase):
         """Set up test environment."""
         self.test_dir = Path(tempfile.mkdtemp())
         self.state_file = self.test_dir / "test_watcher_state.json"
-        
+
         class TestWatcher(BaseWatcher):
             """Test implementation of BaseWatcher."""
-            
+
             def extract_value(self, html_content):
                 """Mock implementation."""
                 return "test_value"
-            
+
             def has_changed(self, old_value, new_value):
                 """Mock implementation."""
                 return old_value != new_value
-        
+
         self.test_watcher = TestWatcher(
-            name="test_watcher",
-            url="https://example.com",
-            check_interval=60
+            name="test_watcher", url="https://example.com", check_interval=60
         )
 
     def tearDown(self):
         """Clean up test environment."""
         import shutil
+
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_base_watcher_initialization(self):
@@ -55,14 +54,14 @@ class TestBaseWatcher(unittest.TestCase):
         """Test extract_value method implementation."""
         html_content = "<html><body>Test</body></html>"
         value = self.test_watcher.extract_value(html_content)
-        
+
         self.assertEqual(value, "test_value")
 
     def test_has_changed_implementation(self):
         """Test has_changed method implementation."""
         # Same values should not be changed
         self.assertFalse(self.test_watcher.has_changed("same", "same"))
-        
+
         # Different values should be changed
         self.assertTrue(self.test_watcher.has_changed("old", "new"))
 
@@ -72,5 +71,5 @@ class TestBaseWatcher(unittest.TestCase):
         self.assertEqual(self.test_watcher.state_file, expected_path)
 
 
-if __name__ == '__main__':
-    unittest.main() 
+if __name__ == "__main__":
+    unittest.main()

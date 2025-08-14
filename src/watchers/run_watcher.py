@@ -4,6 +4,7 @@ This script allows users to list available watchers, run specific watchers,
 or run all available watchers. Watchers can be run once or continuously
 at specified intervals.
 """
+
 import os
 import sys
 import argparse
@@ -20,7 +21,7 @@ logger = get_logger("WatcherRunner")
 def list_available_watchers() -> List[str]:
     """
     List all available watchers in the system.
-    
+
     Returns:
         List[str]: List of watcher names
     """
@@ -30,25 +31,30 @@ def list_available_watchers() -> List[str]:
 def get_watcher_instance(watcher_name: str, check_interval: int = 3600):
     """
     Get an instance of the specified watcher.
-    
+
     Args:
         watcher_name (str): Name of the watcher to instantiate
         check_interval (int): Time in seconds between checks
-        
+
     Returns:
         Watcher instance or None if not found
     """
     if watcher_name == "ms_applied_skills":
         return MSAppliedSkillsWatcher(check_interval=check_interval)
-    
+
     logger.error(f"Unknown watcher: {watcher_name}")
     return None
 
 
-def run_watcher(watcher_name: str, continuous: bool, max_runs: Optional[int] = None, check_interval: int = 3600):
+def run_watcher(
+    watcher_name: str,
+    continuous: bool,
+    max_runs: Optional[int] = None,
+    check_interval: int = 3600,
+):
     """
     Run a specific watcher.
-    
+
     Args:
         watcher_name (str): Name of the watcher to run
         continuous (bool): Whether to run continuously
@@ -56,7 +62,7 @@ def run_watcher(watcher_name: str, continuous: bool, max_runs: Optional[int] = N
         check_interval (int): Time in seconds between checks
     """
     logger.info(f"Initializing watcher: {watcher_name}")
-    
+
     watcher = get_watcher_instance(watcher_name, check_interval)
     if watcher:
         logger.info(f"Starting watcher: {watcher_name}")
@@ -68,7 +74,7 @@ def run_watcher(watcher_name: str, continuous: bool, max_runs: Optional[int] = N
 def main():
     """Main function to parse arguments and run watchers."""
     parser = argparse.ArgumentParser(description="Run web page watchers")
-    
+
     parser.add_argument(
         "watcher",
         nargs="?",
@@ -76,44 +82,48 @@ def main():
         default="all",
         help="Watcher to run (default: all)",
     )
-    
+
     parser.add_argument(
-        "-o", "--once",
+        "-o",
+        "--once",
         action="store_true",
         help="Run watcher(s) once and exit",
     )
-    
+
     parser.add_argument(
-        "-n", "--num-runs",
+        "-n",
+        "--num-runs",
         type=int,
         default=None,
         help="Number of times to run the watcher before exiting",
     )
-    
+
     parser.add_argument(
-        "-i", "--interval",
+        "-i",
+        "--interval",
         type=int,
         default=3600,
         help="Check interval in seconds (default: 3600)",
     )
-    
+
     parser.add_argument(
-        "-l", "--list",
+        "-l",
+        "--list",
         action="store_true",
         help="List available watchers and exit",
     )
-    
+
     args = parser.parse_args()
-    
+
     if args.list:
         print("Available watchers:")
         for watcher in list_available_watchers():
             print(f"  - {watcher}")
         return
-    
+
     continuous = not args.once
     max_runs = args.num_runs
-    
+
     if args.watcher == "all":
         logger.info("Running all watchers")
         for watcher_name in list_available_watchers():
@@ -125,4 +135,4 @@ def main():
 if __name__ == "__main__":
     logger.info("Watcher runner script started")
     main()
-    logger.info("Watcher runner script completed") 
+    logger.info("Watcher runner script completed")

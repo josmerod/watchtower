@@ -4,6 +4,7 @@ This module provides base classes and utility functions used by the
 Udemy course mining and enrollment tools, including scraper logic,
 Udemy API interaction, and exception handling.
 """
+
 # TODO: Standardize the code with the other projects. Current code has been migrated from other project.
 
 import json
@@ -3577,9 +3578,11 @@ class Udemy:
                         "name": ins.get("display_name"),
                         "title": ins.get("job_title"),
                         "image": ins.get("image_100x100"),
-                        "url": f"https://{self.domain}{ins.get('url')}"
-                        if ins.get("url")
-                        else None,
+                        "url": (
+                            f"https://{self.domain}{ins.get('url')}"
+                            if ins.get("url")
+                            else None
+                        ),
                     }
                     for ins in instructors_data
                 ]
@@ -3770,11 +3773,15 @@ class Udemy:
                                         "name": ins.get("display_name"),
                                         "title": ins.get("job_title"),
                                         "image": ins.get("image_100x100"),
-                                        "url": f"https://{self.domain}{ins.get('url')}"
-                                        if ins.get("url")
-                                        else f"https://{self.domain}{ins.get('absolute_url')}"
-                                        if ins.get("absolute_url")
-                                        else None,
+                                        "url": (
+                                            f"https://{self.domain}{ins.get('url')}"
+                                            if ins.get("url")
+                                            else (
+                                                f"https://{self.domain}{ins.get('absolute_url')}"
+                                                if ins.get("absolute_url")
+                                                else None
+                                            )
+                                        ),
                                     }
                                     for ins in instructors_dma
                                 ]
@@ -3964,9 +3971,11 @@ class Udemy:
                                 temp_instructors.append(
                                     {
                                         "name": name,
-                                        "url": f"https://{self.domain}{url_path}"
-                                        if url_path.startswith("/")
-                                        else url_path,
+                                        "url": (
+                                            f"https://{self.domain}{url_path}"
+                                            if url_path.startswith("/")
+                                            else url_path
+                                        ),
                                         "title": None,
                                         "image": None,
                                     }

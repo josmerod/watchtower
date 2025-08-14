@@ -51,8 +51,12 @@ def get_deals():
     try:
         deals_feed = feedparser.parse(DEALS_RSS)
         if deals_feed.bozo:
-            logger.warning(f"Deals RSS feed is malformed or could not be parsed properly. Bozo exception: {deals_feed.bozo_exception}")
-        logger.debug(f"Retrieved {len(deals_feed.entries)} deals from RSS feed: {DEALS_RSS}")
+            logger.warning(
+                f"Deals RSS feed is malformed or could not be parsed properly. Bozo exception: {deals_feed.bozo_exception}"
+            )
+        logger.debug(
+            f"Retrieved {len(deals_feed.entries)} deals from RSS feed: {DEALS_RSS}"
+        )
 
         for entry in deals_feed.entries:
             try:
@@ -69,22 +73,33 @@ def get_deals():
                 store_name = store_match.group(1) if store_match else None
 
                 pub_date_str = entry.get("published", "")
-                pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z") if pub_date_str else None
+                pub_date = (
+                    datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z")
+                    if pub_date_str
+                    else None
+                )
 
-                deals_list.append({
-                    "title": entry.title,
-                    "link": entry.link,
-                    "published": pub_date,
-                    "price": lowest_price,
-                    "discount": f"-{best_discount}%" if best_discount else None,
-                    "store": store_name,
-                })
+                deals_list.append(
+                    {
+                        "title": entry.title,
+                        "link": entry.link,
+                        "published": pub_date,
+                        "price": lowest_price,
+                        "discount": f"-{best_discount}%" if best_discount else None,
+                        "store": store_name,
+                    }
+                )
             except (ValueError, TypeError, AttributeError) as e:
-                logger.error(f"Error processing deal entry '{entry.get('title', 'Unknown title')}': {e}", exc_info=True)
-                continue # Skip to next entry
+                logger.error(
+                    f"Error processing deal entry '{entry.get('title', 'Unknown title')}': {e}",
+                    exc_info=True,
+                )
+                continue  # Skip to next entry
 
     except Exception as e:
-        logger.error(f"Failed to fetch or parse deals RSS feed {DEALS_RSS}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to fetch or parse deals RSS feed {DEALS_RSS}: {e}", exc_info=True
+        )
         # Decide if we want to return partial data or nothing
         # For now, we'll proceed with what we have in deals_list
 
@@ -110,15 +125,23 @@ def get_deals():
 
         deals_df.to_json(deals_json_path, orient="records", date_format="iso")
         logger.info(f"Deals saved to {deals_json_path}")
-        deals_df.to_csv(deals_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
+        deals_df.to_csv(
+            deals_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ"
+        )
         logger.info(f"Deals saved to {deals_csv_path}")
 
     except (IOError, OSError) as e:
         logger.error(f"Error saving deals data: {e}", exc_info=True)
     except ImportError:
-        logger.error("Pandas library not found. Cannot save deals to CSV/JSON.", exc_info=True)
-    except Exception as e: # Catch other potential errors during DataFrame ops or saving
-        logger.error(f"An unexpected error occurred while saving deals: {e}", exc_info=True)
+        logger.error(
+            "Pandas library not found. Cannot save deals to CSV/JSON.", exc_info=True
+        )
+    except (
+        Exception
+    ) as e:  # Catch other potential errors during DataFrame ops or saving
+        logger.error(
+            f"An unexpected error occurred while saving deals: {e}", exc_info=True
+        )
 
 
 def get_bundles():
@@ -136,13 +159,21 @@ def get_bundles():
     try:
         bundles_feed = feedparser.parse(BUNDLES_RSS)
         if bundles_feed.bozo:
-            logger.warning(f"Bundles RSS feed is malformed. Bozo exception: {bundles_feed.bozo_exception}")
-        logger.debug(f"Retrieved {len(bundles_feed.entries)} bundles from RSS feed: {BUNDLES_RSS}")
+            logger.warning(
+                f"Bundles RSS feed is malformed. Bozo exception: {bundles_feed.bozo_exception}"
+            )
+        logger.debug(
+            f"Retrieved {len(bundles_feed.entries)} bundles from RSS feed: {BUNDLES_RSS}"
+        )
 
         for entry in bundles_feed.entries:
             try:
                 pub_date_str = entry.get("published", "")
-                pub_date = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z") if pub_date_str else None
+                pub_date = (
+                    datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z")
+                    if pub_date_str
+                    else None
+                )
 
                 games = re.findall(
                     r'<a href="https://isthereanydeal.com/game/[^"]+/info/">([^<]+)</a>',
@@ -152,19 +183,27 @@ def get_bundles():
                 prices_float = [float(price.replace(",", ".")) for price in prices_str]
                 highest_price = max(prices_float) if prices_float else None
 
-                bundles_list.append({
-                    "title": entry.title,
-                    "link": entry.link,
-                    "published": pub_date,
-                    "price": highest_price,
-                    "games": games,
-                })
+                bundles_list.append(
+                    {
+                        "title": entry.title,
+                        "link": entry.link,
+                        "published": pub_date,
+                        "price": highest_price,
+                        "games": games,
+                    }
+                )
             except (ValueError, TypeError, AttributeError) as e:
-                logger.error(f"Error processing bundle entry '{entry.get('title', 'Unknown title')}': {e}", exc_info=True)
+                logger.error(
+                    f"Error processing bundle entry '{entry.get('title', 'Unknown title')}': {e}",
+                    exc_info=True,
+                )
                 continue
 
     except Exception as e:
-        logger.error(f"Failed to fetch or parse bundles RSS feed {BUNDLES_RSS}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to fetch or parse bundles RSS feed {BUNDLES_RSS}: {e}",
+            exc_info=True,
+        )
 
     if not bundles_list:
         logger.warning("No bundles were successfully processed.")
@@ -177,22 +216,30 @@ def get_bundles():
 
         project_root = get_project_root()
         output_dir = os.path.join(project_root, "data/games")
-        ensure_directories(["data/games"]) # Ensure_directories should ideally be called once
+        ensure_directories(
+            ["data/games"]
+        )  # Ensure_directories should ideally be called once
 
         bundles_json_path = os.path.join(output_dir, "bundles.json")
         bundles_csv_path = os.path.join(output_dir, "bundles.csv")
 
         bundles_df.to_json(bundles_json_path, orient="records", date_format="iso")
         logger.info(f"Bundles saved to {bundles_json_path}")
-        bundles_df.to_csv(bundles_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
+        bundles_df.to_csv(
+            bundles_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ"
+        )
         logger.info(f"Bundles saved to {bundles_csv_path}")
 
     except (IOError, OSError) as e:
         logger.error(f"Error saving bundles data: {e}", exc_info=True)
     except ImportError:
-        logger.error("Pandas library not found. Cannot save bundles to CSV/JSON.", exc_info=True)
+        logger.error(
+            "Pandas library not found. Cannot save bundles to CSV/JSON.", exc_info=True
+        )
     except Exception as e:
-        logger.error(f"An unexpected error occurred while saving bundles: {e}", exc_info=True)
+        logger.error(
+            f"An unexpected error occurred while saving bundles: {e}", exc_info=True
+        )
 
 
 def get_giveaways():
@@ -209,42 +256,66 @@ def get_giveaways():
     try:
         giveaways_feed = feedparser.parse(GIVEAWAYS_RSS)
         if giveaways_feed.bozo:
-            logger.warning(f"Giveaways RSS feed is malformed. Bozo exception: {giveaways_feed.bozo_exception}")
+            logger.warning(
+                f"Giveaways RSS feed is malformed. Bozo exception: {giveaways_feed.bozo_exception}"
+            )
             # Still try to process what we can
-        
-        logger.debug(f"Retrieved {len(giveaways_feed.entries)} giveaways from RSS feed: {GIVEAWAYS_RSS}")
+
+        logger.debug(
+            f"Retrieved {len(giveaways_feed.entries)} giveaways from RSS feed: {GIVEAWAYS_RSS}"
+        )
 
         for entry in giveaways_feed.entries:
             try:
                 title = entry.title
                 link = entry.link
                 published_str = entry.get("published", "")
-                published = datetime.strptime(published_str, "%a, %d %b %Y %H:%M:%S %z") if published_str else None
+                published = (
+                    datetime.strptime(published_str, "%a, %d %b %Y %H:%M:%S %z")
+                    if published_str
+                    else None
+                )
 
                 description = entry.description
                 expires_match = re.search(r"expires on ([^<|]+)", description)
                 expires_str = expires_match.group(1).strip() if expires_match else None
-                expires = datetime.strptime(expires_str, "%a, %d %b %Y %H:%M:%S %z") if expires_str else None
+                expires = (
+                    datetime.strptime(expires_str, "%a, %d %b %Y %H:%M:%S %z")
+                    if expires_str
+                    else None
+                )
 
                 if expires and expires < datetime.now(expires.tzinfo):
                     logger.debug(f"Skipping expired giveaway: {title}")
                     continue
-                if published and published < datetime.now(published.tzinfo) - timedelta(days=14):
-                    logger.debug(f"Skipping old giveaway (published > 14 days ago): {title}")
+                if published and published < datetime.now(published.tzinfo) - timedelta(
+                    days=14
+                ):
+                    logger.debug(
+                        f"Skipping old giveaway (published > 14 days ago): {title}"
+                    )
                     continue
 
-                giveaways_list.append({
-                    "title": title,
-                    "link": link,
-                    "published": published,
-                    "expires": expires,
-                })
+                giveaways_list.append(
+                    {
+                        "title": title,
+                        "link": link,
+                        "published": published,
+                        "expires": expires,
+                    }
+                )
             except (ValueError, TypeError, AttributeError) as e:
-                logger.error(f"Error processing giveaway entry '{entry.get('title', 'Unknown title')}': {e}", exc_info=True)
+                logger.error(
+                    f"Error processing giveaway entry '{entry.get('title', 'Unknown title')}': {e}",
+                    exc_info=True,
+                )
                 continue
 
     except Exception as e:
-        logger.error(f"Failed to fetch or parse giveaways RSS feed {GIVEAWAYS_RSS}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to fetch or parse giveaways RSS feed {GIVEAWAYS_RSS}: {e}",
+            exc_info=True,
+        )
 
     if not giveaways_list:
         logger.warning("No giveaways were successfully processed.")
@@ -258,13 +329,15 @@ def get_giveaways():
             giveaways_csv_path = os.path.join(output_dir, "giveaways.csv")
 
             # Create empty JSON and CSV files
-            with open(giveaways_json_path, 'w') as f:
-                f.write('[]')
-            
-            with open(giveaways_csv_path, 'w') as f:
-                f.write('title|link|published|expires\n')  # Header only
+            with open(giveaways_json_path, "w") as f:
+                f.write("[]")
 
-            logger.info(f"Empty giveaways files created at {giveaways_json_path} and {giveaways_csv_path}")
+            with open(giveaways_csv_path, "w") as f:
+                f.write("title|link|published|expires\n")  # Header only
+
+            logger.info(
+                f"Empty giveaways files created at {giveaways_json_path} and {giveaways_csv_path}"
+            )
         except Exception as e:
             logger.error(f"Error creating empty giveaways files: {e}")
         return
@@ -284,15 +357,22 @@ def get_giveaways():
 
         giveaways_df.to_json(giveaways_json_path, orient="records", date_format="iso")
         logger.info(f"Giveaways saved to {giveaways_json_path}")
-        giveaways_df.to_csv(giveaways_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
+        giveaways_df.to_csv(
+            giveaways_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ"
+        )
         logger.info(f"Giveaways saved to {giveaways_csv_path}")
 
     except (IOError, OSError) as e:
         logger.error(f"Error saving giveaways data: {e}", exc_info=True)
     except ImportError:
-        logger.error("Pandas library not found. Cannot save giveaways to CSV/JSON.", exc_info=True)
+        logger.error(
+            "Pandas library not found. Cannot save giveaways to CSV/JSON.",
+            exc_info=True,
+        )
     except Exception as e:
-        logger.error(f"An unexpected error occurred while saving giveaways: {e}", exc_info=True)
+        logger.error(
+            f"An unexpected error occurred while saving giveaways: {e}", exc_info=True
+        )
 
 
 if __name__ == "__main__":

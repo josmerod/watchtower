@@ -632,9 +632,9 @@ class CookieManager:
             results["browsers"][browser]["browser_cookie3"] = {
                 "success": cookies_bc3 is not None,
                 "cookie_count": len(cookies_bc3) if cookies_bc3 else 0,
-                "has_required": self._validate_cookies(cookies_bc3)
-                if cookies_bc3
-                else False,
+                "has_required": (
+                    self._validate_cookies(cookies_bc3) if cookies_bc3 else False
+                ),
             }
 
             # Test SQLite extraction
@@ -642,9 +642,9 @@ class CookieManager:
             results["browsers"][browser]["sqlite"] = {
                 "success": cookies_sqlite is not None,
                 "cookie_count": len(cookies_sqlite) if cookies_sqlite else 0,
-                "has_required": self._validate_cookies(cookies_sqlite)
-                if cookies_sqlite
-                else False,
+                "has_required": (
+                    self._validate_cookies(cookies_sqlite) if cookies_sqlite else False
+                ),
             }
 
             # Overall success for this browser

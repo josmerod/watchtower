@@ -15,6 +15,7 @@ from src.models.base import TimestampedModel
 
 class ValenciaEvent(TimestampedModel):
     """Model for Valencia events."""
+
     title: str
     url: str = ""
     source: str = "visitvalencia.com"
@@ -28,15 +29,15 @@ class ValenciaEvent(TimestampedModel):
 
 class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
     """ETL for Valencia events from visitvalencia.com."""
-    
+
     def __init__(self):
         super().__init__(
             name="valencia_events",
             description="Extract Valencia events from visitvalencia.com",
             max_retries=3,
-            retry_delay=5
+            retry_delay=5,
         )
-    
+
     def get_current_and_next_month(self):
         """Returns the current and next month in YYYY-MM format.
 
@@ -65,7 +66,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         """
         url = f"https://www.visitvalencia.com/agenda-valencia?date={date}"
         self.logger.info(f"Fetching events from {url}")
-        
+
         # Send GET request to the webpage with increased timeout
         response = requests.get(url, timeout=30)
         response.raise_for_status()  # Raise exception for HTTP errors
@@ -397,26 +398,28 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         # Get current and next month
         current_month, next_month = self.get_current_and_next_month()
         self.logger.info(f"Fetching events for {current_month} and {next_month}")
-        
+
         all_events = []
-        
+
         # Get events for current month
         try:
             current_month_events = self.get_valencia_events(current_month)
             all_events.extend(current_month_events)
         except Exception as e:
             self.logger.error(f"Failed to fetch current month events: {e}")
-        
+
         # Get events for next month
         try:
             next_month_events = self.get_valencia_events(next_month)
             all_events.extend(next_month_events)
         except Exception as e:
             self.logger.error(f"Failed to fetch next month events: {e}")
-        
+
         return all_events
-    
-    def process_valencia_events(self, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+
+    def process_valencia_events(
+        self, events: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Process and transform Valencia events into a standardized format.
 
         Args:
@@ -564,7 +567,9 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     merged_event["description"] = event.get("description")
 
                 # Prefer more complete date information
-                if len(event.get("date_text", "")) > len(merged_event.get("date_text", "")):
+                if len(event.get("date_text", "")) > len(
+                    merged_event.get("date_text", "")
+                ):
                     merged_event["date_text"] = event.get("date_text")
                     merged_event["start_date"] = event.get("start_date", "")
                     merged_event["end_date"] = event.get("end_date", "")
@@ -578,13 +583,13 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         """Transform raw events into structured models."""
         if not data:
             return []
-        
+
         # Process events
         processed_events = self.process_valencia_events(data)
-        
+
         # Remove duplicates
         unique_events = self.remove_duplicates(processed_events)
-        
+
         # Convert to models
         models = []
         for event in unique_events:
@@ -593,29 +598,30 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             except Exception as e:
                 self.logger.error(f"Failed to create model for event: {e}")
                 continue
-        
+
         return models
-    
+
     def load(self, data: List[ValenciaEvent]) -> None:
         """Save events to JSON and CSV files."""
         if not data:
             self.logger.info("No data to load")
             return
-        
+
         # Convert to dictionaries
         data_dicts = [event.model_dump() for event in data]
-        
+
         # Save JSON
         json_file = self.output_dir / "valencia_events.json"
         json_file.write_text(
             json.dumps(data_dicts, indent=2, ensure_ascii=False, default=str),
-            encoding="utf-8"
+            encoding="utf-8",
         )
         self.logger.info(f"Saved {len(data_dicts)} events to {json_file}")
-        
+
         # Save CSV
         try:
             import pandas as pd
+
             csv_file = self.output_dir / "valencia_events.csv"
             pd.DataFrame(data_dicts).to_csv(csv_file, index=False, encoding="utf-8")
             self.logger.info(f"Saved CSV to {csv_file}")

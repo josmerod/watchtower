@@ -243,9 +243,11 @@ def get_bensbites_data(
 
                         article_data = {
                             "title": title,
-                            "url": url
-                            if url.startswith("http")
-                            else f"https://news.bensbites.com{url}",
+                            "url": (
+                                url
+                                if url.startswith("http")
+                                else f"https://news.bensbites.com{url}"
+                            ),
                             "published_at": published_at,
                             "source": source,
                             "votes": votes,
