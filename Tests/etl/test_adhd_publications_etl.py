@@ -42,7 +42,7 @@ SAMPLE_EFETCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
         <PMID Version="1">30000001</PMID>
         <DateCompleted>
             <Year>2023</Year>
-            <Month>01</Month>
+            <Month>1</Month>
             <Day>15</Day>
         </DateCompleted>
         <Article PubModel="Print">

@@ -13,12 +13,10 @@ Because someone needs to bring financial rigor to meme analysis! 📈🐸
 from __future__ import annotations
 
 import json
-import re
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+from datetime import datetime
+from typing import Any, Dict, List
 
 import requests
-from bs4 import BeautifulSoup
 
 from src.etl.base import BaseETL
 from src.utils.logging import get_logger

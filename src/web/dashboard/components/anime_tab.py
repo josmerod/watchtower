@@ -1,13 +1,12 @@
 """Anime Tab Component for Watchtower Dashboard"""
 
 import json
-import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, State, callback
-from pathlib import Path
-from typing import List, Dict, Any
 import logging
-from datetime import datetime, timedelta
-import calendar
+from pathlib import Path
+from typing import Any, Dict, List
+
+import dash_bootstrap_components as dbc
+from dash import html
 
 # Set up logging
 logger = logging.getLogger(__name__)

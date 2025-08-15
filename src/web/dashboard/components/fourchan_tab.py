@@ -1,12 +1,13 @@
 """4chan Generals Tab Component for Watchtower Dashboard"""
 
 import json
-import dash_bootstrap_components as dbc
-from dash import html, dcc, dash_table, Input, Output
-from pathlib import Path
-from typing import List, Dict, Any
 import logging
+from pathlib import Path
+from typing import Any, Dict, List
+
+import dash_bootstrap_components as dbc
 import pandas as pd
+from dash import dash_table, dcc, html
 
 # Set up logging
 logger = logging.getLogger(__name__)

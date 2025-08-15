@@ -9,7 +9,7 @@ import os
 import shutil
 import time
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List
 
 import feedparser
 import requests

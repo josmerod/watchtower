@@ -14,7 +14,6 @@ Output:
 import hashlib
 import json
 import os
-import sys
 import time
 from collections import defaultdict
 from datetime import datetime

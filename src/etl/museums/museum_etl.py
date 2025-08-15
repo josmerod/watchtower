@@ -1,6 +1,5 @@
 import logging  # Keep logging for the __main__ block, if needed, or for specific logger instances
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from typing import Any, Dict, List
 
 import requests
 

@@ -75,7 +75,6 @@ class HumbleBundleScraper:
 
     def _extract_bundles_with_bs(self, soup, bundle_type: str, all_bundles: list):
         """Extracts bundle elements from HTML content using BeautifulSoup."""
-        from bs4 import BeautifulSoup
 
         bundle_elements = []
         selectors = [

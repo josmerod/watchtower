@@ -1,37 +1,37 @@
 """Exceptions module for Watchtower."""
 
 from src.exceptions.base import (
-    WatchtowerError,
-    ConfigurationError,
-    ValidationError,
     AuthenticationError,
     AuthorizationError,
+    ConfigurationError,
+    ValidationError,
+    WatchtowerError,
 )
 from src.exceptions.etl import (
-    ETLError,
     CheckpointError,
-    ExtractionError,
-    TransformationError,
-    LoadError,
     DataSourceError,
     DataValidationError,
-    ETLTimeoutError,
     ETLConfigurationError,
+    ETLError,
+    ETLTimeoutError,
+    ExtractionError,
+    LoadError,
+    TransformationError,
 )
 from src.exceptions.scraping import (
-    ScrapingError,
-    RequestError,
     ParsingError,
     RateLimitError,
+    RequestError,
+    ScrapingError,
     TimeoutError,
 )
 from src.exceptions.watcher import (
-    WatcherError,
     WatcherConfigurationError,
+    WatcherConnectionError,
+    WatcherError,
     WatcherRuntimeError,
     WatcherTimeoutError,
     WatcherValidationError,
-    WatcherConnectionError,
 )
 
 __all__ = [

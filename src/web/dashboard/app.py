@@ -26,8 +26,8 @@ from src.web.dashboard.components.fourchan_tab import (
     render_fourchan_tab,
 )
 from src.web.dashboard.components.games_tab import render_games_tab
-from src.web.dashboard.components.giveaways_tab import create_giveaways_tab
 from src.web.dashboard.components.github_trending_tab import render_github_trending_tab
+from src.web.dashboard.components.giveaways_tab import create_giveaways_tab
 from src.web.dashboard.components.news_tab import render_news_tab
 from src.web.dashboard.components.scavenging_tab import (
     register_scavenging_callbacks,

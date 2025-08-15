@@ -6,21 +6,20 @@ to classify text documents, extract keywords, and identify topics.
 """
 
 import os
-import json
-import nltk
 import pickle
-import numpy as np
-from typing import List, Dict, Any, Tuple, Optional
 from collections import Counter
-from sklearn.feature_extraction.text import TfidfVectorizer
+from typing import Any, Dict, List, Optional
+
+import nltk
+import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import Normalizer
 
-import sys
-from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 
 class NLPContentClassifier:

@@ -5,8 +5,6 @@ or run all available watchers. Watchers can be run once or continuously
 at specified intervals.
 """
 
-import os
-import sys
 import argparse
 from typing import List, Optional
 

@@ -12,11 +12,10 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Any
-import os  # Required for IOError, OSError
 
 from src.etl.base import BaseETL
-from src.utils.logging import get_logger
 from src.exceptions.etl import LoadError
+from src.utils.logging import get_logger
 
 
 class AnthropicETL(BaseETL):

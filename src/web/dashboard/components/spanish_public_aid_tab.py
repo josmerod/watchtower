@@ -1,19 +1,17 @@
 """Spanish Public Aid Dashboard Component."""
 
 import json
-import os
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
+from datetime import datetime
+from typing import Dict, List, Optional
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, callback, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
+from dash import Input, Output, dash_table, dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # --- Data Loading ---
 

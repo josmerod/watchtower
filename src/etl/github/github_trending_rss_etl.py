@@ -15,7 +15,6 @@ Output:
 import json
 import re
 from datetime import datetime
-from pathlib import Path
 from typing import Any, List
 
 import feedparser
@@ -28,8 +27,8 @@ from src.models.github import (
     GitHubRepositoryModel,
     GitHubRepositoryOwner,
     GitHubTrendingFeed,
-    TrendingPeriod,
     RepositoryLanguage,
+    TrendingPeriod,
 )
 from src.utils.logging import get_logger
 

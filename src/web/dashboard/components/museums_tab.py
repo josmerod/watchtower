@@ -4,15 +4,14 @@ Cultural institutions and museum data integration
 """
 
 import json
-import pandas as pd
-import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, callback, dash_table
-from datetime import datetime, timezone
-import os
 import logging
 
+import dash_bootstrap_components as dbc
+import pandas as pd
+from dash import dash_table, html
+
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -97,7 +96,7 @@ def create_museums_table():
             else "None listed"
         )
         if len(museum["exhibitions"]) > 3:
-            exhibitions_str += f' +{len(museum["exhibitions"]) - 3} more'
+            exhibitions_str += f" +{len(museum['exhibitions']) - 3} more"
 
         row = {
             "Name": museum["name"],

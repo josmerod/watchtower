@@ -5,10 +5,11 @@ from RSS feeds, organized by time period and programming language.
 """
 
 import json
-import dash
-from dash import html
-import dash_bootstrap_components as dbc
 from datetime import datetime, timezone
+
+import dash
+import dash_bootstrap_components as dbc
+from dash import html
 
 # Import shared utilities
 from src.web.dashboard.utils import get_data_path, parse_date_universal
@@ -143,12 +144,16 @@ _GITHUB_TRENDING_ALL_CACHE = {"ts": 0, "data": {}}
 def get_all_github_trending_data():
     """Load fresh GitHub trending data from all configured feeds with TTL cache."""
     import time
+
     now = time.time()
-    if _GITHUB_TRENDING_ALL_CACHE.get("data") and (now - _GITHUB_TRENDING_ALL_CACHE.get("ts", 0) < 60):
+    if _GITHUB_TRENDING_ALL_CACHE.get("data") and (
+        now - _GITHUB_TRENDING_ALL_CACHE.get("ts", 0) < 60
+    ):
         return _GITHUB_TRENDING_ALL_CACHE["data"]
 
     result = {
-        feed_key: load_github_trending_data(config["path"]) for feed_key, config in GITHUB_TRENDING_FEEDS.items()
+        feed_key: load_github_trending_data(config["path"])
+        for feed_key, config in GITHUB_TRENDING_FEEDS.items()
     }
     _GITHUB_TRENDING_ALL_CACHE["ts"] = now
     _GITHUB_TRENDING_ALL_CACHE["data"] = result
@@ -200,9 +205,9 @@ def format_number(num):
     num = int(num) if isinstance(num, (int, float, str)) and str(num).isdigit() else 0
 
     if num >= 1000000:
-        return f"{num/1000000:.1f}M"
+        return f"{num / 1000000:.1f}M"
     elif num >= 1000:
-        return f"{num/1000:.1f}K"
+        return f"{num / 1000:.1f}K"
     else:
         return str(num)
 

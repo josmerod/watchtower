@@ -6,11 +6,11 @@ into tabular format for dashboard visualization.
 """
 
 import json
-import pandas as pd
-from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 import logging
+from pathlib import Path
+from typing import Dict, List
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 

@@ -1,13 +1,11 @@
 """Valencia Events ETL - Refactored to use BaseETL framework."""
 
 import json
-import time
 from datetime import datetime
 from typing import Any, List
 
 import requests
 from bs4 import BeautifulSoup
-from pydantic import BaseModel
 
 from src.etl.base import BaseETL
 from src.models.base import TimestampedModel

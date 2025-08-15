@@ -14,7 +14,6 @@ Output:
 import csv
 import json
 import os
-import sys
 import time
 from datetime import datetime, timedelta
 from typing import Any
@@ -23,10 +22,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from src.models.github import GitHubRepositoryModel
+
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-from src.models.github import GitHubRepositoryModel
 
 # Initialize logger for this module
 logger = get_logger("GitHubTrendsETL")
@@ -183,7 +183,9 @@ def get_trending_repositories(
                         source_url=None,
                     )
                 except Exception as e:
-                    logger.warning(f"Validation failed for GitHub repo {processed_repo.get('full_name','')}: {e}")
+                    logger.warning(
+                        f"Validation failed for GitHub repo {processed_repo.get('full_name', '')}: {e}"
+                    )
 
                 repositories.append(processed_repo)
 

@@ -13,14 +13,13 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Any
-import os  # Required for IOError, OSError
 
 import requests
 from bs4 import BeautifulSoup
 
 from src.etl.base import BaseETL
-from src.utils.logging import get_logger
 from src.exceptions.etl import LoadError
+from src.utils.logging import get_logger
 
 
 class OpenAIPlatformETL(BaseETL):
@@ -721,9 +720,7 @@ class OpenAIPlatformETL(BaseETL):
                 destination=str(output_file),
                 destination_type="file",
             ) from e
-        except (
-            Exception
-        ) as e:  # Catch any other unexpected errors during load (e.g., _generate_openai_summary)
+        except Exception as e:  # Catch any other unexpected errors during load (e.g., _generate_openai_summary)
             self.logger.error(
                 f"An unexpected error occurred during loading OpenAI data: {e}",
                 exc_info=True,

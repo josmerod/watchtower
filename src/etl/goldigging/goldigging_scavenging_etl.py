@@ -1,17 +1,16 @@
-import os
 import json
-import logging
-from datetime import datetime, timezone
-from typing import Dict, List, Any
+from datetime import timezone
 from pathlib import Path
+from typing import Any, Dict, List
 
 import feedparser
 import pandas as pd  # type: ignore
 from dateutil import parser as date_parser
 
+from src.utils.file_system import ensure_directories, get_project_root
+
 # Local utilities
 from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("ScavengingETL")
 

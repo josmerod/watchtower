@@ -6,14 +6,11 @@ software, and other giveaways from multiple sources.
 
 import json
 import os
-from datetime import datetime, timezone
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
-import dash
-from dash import dcc, html, Input, Output, callback
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
+from dash import Input, Output, callback, dcc, html
 
 from src.web.dashboard.utils import get_data_path
 

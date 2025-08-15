@@ -14,19 +14,19 @@ Output:
 import csv
 import json
 import os
-import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 import requests
+from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from bs4 import BeautifulSoup
+
+from src.models.news import ProductHuntModel
 
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
-from src.models.news import ProductHuntModel
 from src.utils.logging import get_logger
 
 # Initialize logger for this module
@@ -587,10 +587,14 @@ def process_product_hunt_data(products: list[dict[str, Any]]) -> list[dict[str, 
             # Soft validation against ProductHuntModel (title/link/published/summary/votes/source)
             try:
                 _ = ProductHuntModel(
-                    title=processed_product.get("name") or processed_product.get("title", ""),
-                    link=processed_product.get("url") or processed_product.get("website", ""),
-                    published=processed_product.get("featuredAt") or processed_product.get("createdAt", ""),
-                    summary=processed_product.get("tagline") or processed_product.get("description", ""),
+                    title=processed_product.get("name")
+                    or processed_product.get("title", ""),
+                    link=processed_product.get("url")
+                    or processed_product.get("website", ""),
+                    published=processed_product.get("featuredAt")
+                    or processed_product.get("createdAt", ""),
+                    summary=processed_product.get("tagline")
+                    or processed_product.get("description", ""),
                     author=processed_product.get("user", {}).get("name", ""),
                     votes=int(processed_product.get("votesCount", 0)),
                 )

@@ -1,20 +1,20 @@
-import os
-import json
-import sys
-import time
 import csv
-from datetime import datetime, timedelta
-from typing import List, Dict, Any  # Added typing imports
+import json
+import os
+import time
+from datetime import datetime
+from typing import Any, Dict, List  # Added typing imports
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from src.config.settings import get_settings
+from src.models.news import NewsArticleModel
+from src.utils.file_system import ensure_directories, get_project_root
+
 # Add project root to Python path
 from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories, get_project_root
-from src.models.news import NewsArticleModel, ContentLanguage
-from src.config.settings import get_settings
 
 logger = get_logger("NewsApiETL")
 

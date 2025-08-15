@@ -11,16 +11,17 @@ from pathlib import Path
 from typing import (
     Any,
     Generic,
-    TypeVar,
     List,
     Type,
+    TypeVar,
 )  # Added Type, ensured Generic, List, Any, TypeVar
 
-from pydantic import BaseModel, ValidationError as PydanticValidationError
+from pydantic import BaseModel
+from pydantic import ValidationError as PydanticValidationError
 
 from src.config.settings import get_settings
 from src.exceptions.base import handle_exception
-from src.exceptions.etl import ETLError, CheckpointError
+from src.exceptions.etl import CheckpointError, ETLError
 from src.utils.logging import get_logger, get_performance_logger
 
 # Type variables for generic ETL
@@ -215,12 +216,12 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 if attempt < self.max_retries:
                     delay = self.retry_delay * (2**attempt)
                     self.logger.warning(
-                        f"{operation_name} failed (attempt {attempt+1}/{self.max_retries+1}): {e}. Retrying in {delay}s..."
+                        f"{operation_name} failed (attempt {attempt + 1}/{self.max_retries + 1}): {e}. Retrying in {delay}s..."
                     )
                     time.sleep(delay)
                 else:
                     self.logger.error(
-                        f"{operation_name} failed after {self.max_retries+1} attempts: {e}"
+                        f"{operation_name} failed after {self.max_retries + 1} attempts: {e}"
                     )
         if last_exception:
             raise last_exception

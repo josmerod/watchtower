@@ -1,7 +1,6 @@
 import datetime
 import logging
 import os
-import shutil
 import zipfile
 from pathlib import Path
 from typing import List, Tuple
@@ -29,8 +28,8 @@ except ImportError:
 # This might need adjustment based on actual project structure and how settings are accessed.
 # e.g., from src.config import get_settings
 # For now, we'll assume a direct import is possible for the class definition.
-from src.config.settings import Settings
 from src.config.models import GoogleDriveConfig  # Assuming GoogleDriveConfig is here
+from src.config.settings import Settings
 
 # Configure basic logging
 # Using a named logger is better practice

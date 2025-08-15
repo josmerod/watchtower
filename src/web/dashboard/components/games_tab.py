@@ -1,15 +1,15 @@
-import os
 import json
-import pandas as pd
+import os
+import re  # For parsing prices
 from datetime import datetime, timezone
+
 import dash
-from dash import html, dcc
 import dash_bootstrap_components as dbc
+import pandas as pd
+from dash import dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, log_missing_file
-
-import re  # For parsing prices
+from src.web.dashboard.utils import file_exists, get_data_path, log_missing_file
 
 # --- Constants ---
 DATA_BASE_PATH = get_data_path("games", "")  # Relative to this file
@@ -1482,7 +1482,7 @@ if __name__ == "__main__":
                 "allkeyshop": "allkeyshop.json",
             }
             print(
-                f"  Verifique si {DATA_BASE_PATH}{filename_map.get(key, key+'.json')} existe y es válido."
+                f"  Verifique si {DATA_BASE_PATH}{filename_map.get(key, key + '.json')} existe y es válido."
             )
 
     app_test.run_server(debug=True, port=8057)

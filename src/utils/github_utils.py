@@ -6,9 +6,10 @@ links within text content.
 """
 
 import re
-import requests
-from typing import Optional, Dict, Any, Tuple
+from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlparse
+
+import requests
 
 from src.utils.logging import get_logger
 

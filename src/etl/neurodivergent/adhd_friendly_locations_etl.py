@@ -13,12 +13,8 @@ Creating a neurodivergent-friendly world, one location at a time! 🧠✨
 from __future__ import annotations
 
 import json
-import re
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-
-import requests
-from bs4 import BeautifulSoup
+from datetime import datetime
+from typing import Any, Dict, List
 
 from src.etl.base import BaseETL
 from src.utils.logging import get_logger

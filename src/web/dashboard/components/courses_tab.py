@@ -1,15 +1,12 @@
-import os
-import json
-import pandas as pd
 from datetime import datetime, timezone
+
 import dash
-from dash import html, dcc, Input, Output, State, Patch
 import dash_bootstrap_components as dbc
+import pandas as pd
+from dash import Input, Output, dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, dir_exists
-
-from dash.exceptions import PreventUpdate
+from src.web.dashboard.utils import file_exists, get_data_path
 
 # --- Constants ---
 COURSERA_DATA_PATH = get_data_path("classcentral", "coursera_courses.json")

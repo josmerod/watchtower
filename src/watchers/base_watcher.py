@@ -5,17 +5,17 @@ the common interface and core functionality for all watcher implementations.
 Watchers periodically check web pages for changes in specific values or content.
 """
 
-import os
 import json
+import os
 import time
-import requests
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-import sys
-from src.utils.logging import get_logger
+import requests
+
 from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 
 class BaseWatcher(ABC):

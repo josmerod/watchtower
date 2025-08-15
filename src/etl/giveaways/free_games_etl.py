@@ -13,21 +13,20 @@ Output:
 import json
 import os
 import sys
-import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Any, Dict, List
+
 import requests
-from bs4 import BeautifulSoup
 
 # Add the project root to the path
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 )
 
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
 from src.etl.base import BaseETL
 from src.models.giveaways import UnifiedGiveawayModel
+from src.utils.file_system import get_project_root
+from src.utils.logging import get_logger
 
 # Initialize logger
 logger = get_logger("FreeGamesETL")
@@ -377,7 +376,6 @@ class FreeGamesETL(BaseETL):
         """Load transformed free games data to files."""
         try:
             # Ensure output directory exists
-            import os
             from pathlib import Path
 
             output_dir = Path(get_project_root()) / "data" / "giveaways"

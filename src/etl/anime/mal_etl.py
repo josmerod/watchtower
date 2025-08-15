@@ -4,11 +4,11 @@ import logging
 import os
 import pathlib
 import time
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional
 
 import requests
-from pydantic.json import pydantic_encoder
 from dotenv import load_dotenv
+from pydantic.json import pydantic_encoder
 
 from src.etl.base import BaseETL, ETLError
 from src.models.anime import AnimeItem

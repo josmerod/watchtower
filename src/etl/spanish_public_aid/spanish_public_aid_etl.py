@@ -3,10 +3,9 @@
 import json
 import re
 import time
-from datetime import datetime, timedelta
-from decimal import Decimal
-from typing import Any, List, Dict, Optional
-from urllib.parse import urljoin, urlparse
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -14,18 +13,15 @@ from pydantic import ValidationError
 
 from src.etl.base import SimpleETL
 from src.models.spanish_public_aid import (
-    SpanishPublicAidModel,
-    AidScope,
-    AidType,
     AidCategory,
+    AidScope,
     AidStatus,
-    BeneficiaryType,
-    PaymentType,
-    GeographicScopeModel,
+    AidType,
     AmountModel,
-    RequirementModel,
-    DocumentModel,
-    ContactInfoModel,
+    BeneficiaryType,
+    GeographicScopeModel,
+    PaymentType,
+    SpanishPublicAidModel,
 )
 
 
@@ -926,7 +922,8 @@ class SpanishPublicAidETL(SimpleETL):
 
         # Create amount model with default values
         amount = AmountModel(
-            payment_type=PaymentType.LUMP_SUM, currency="EUR"  # Default value
+            payment_type=PaymentType.LUMP_SUM,
+            currency="EUR",  # Default value
         )
 
         # Determine status

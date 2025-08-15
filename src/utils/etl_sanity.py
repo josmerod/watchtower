@@ -6,12 +6,12 @@ Reads expected `*_latest.json` artifacts and writes a compact summary to
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-import json
-import os
 
 
 @dataclass

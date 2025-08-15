@@ -83,9 +83,7 @@ class FourChanGeneralsETL(SimpleETL):
     # ------------------------------------------------------------------
     # Transform
     # ------------------------------------------------------------------
-    def transform(
-        self, data: List[dict[str, Any]]
-    ) -> List[dict[str, Any]]:  # noqa: D401
+    def transform(self, data: List[dict[str, Any]]) -> List[dict[str, Any]]:  # noqa: D401
         """Filter *General* threads and clean up fields."""
         if not data:
             self.logger.warning("No data extracted – skipping transform phase.")

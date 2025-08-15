@@ -16,17 +16,17 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 )
 
-from src.utils.logging import get_logger
-from src.etl.deals.bundle_deals_etl import BundleDealsETL
-from src.etl.deals.music_deals_etl import MusicDealsETL
 from src.etl.deals.bargain_hunter_etl import BargainHunterETL
-from src.etl.deals.educational_deals_etl import EducationalDealsETL
 from src.etl.deals.book_deals_etl import BookDealsETL
-from src.etl.deals.software_deals_etl import SoftwareDealsETL
-from src.etl.deals.travel_deals_etl import TravelDealsETL
+from src.etl.deals.bundle_deals_etl import BundleDealsETL
 from src.etl.deals.crypto_finance_deals_etl import CryptoFinanceDealsETL
+from src.etl.deals.educational_deals_etl import EducationalDealsETL
 from src.etl.deals.fashion_retail_deals_etl import FashionRetailDealsETL
 from src.etl.deals.health_fitness_deals_etl import HealthFitnessDealsETL
+from src.etl.deals.music_deals_etl import MusicDealsETL
+from src.etl.deals.software_deals_etl import SoftwareDealsETL
+from src.etl.deals.travel_deals_etl import TravelDealsETL
+from src.utils.logging import get_logger
 
 # Initialize logger
 logger = get_logger("AllDealsETL")
@@ -55,9 +55,9 @@ def run_all_deals_etl():
 
     for name, etl_class in etl_modules:
         try:
-            logger.info(f"\n{'='*50}")
+            logger.info(f"\n{'=' * 50}")
             logger.info(f"Running {name} ETL...")
-            logger.info(f"{'='*50}")
+            logger.info(f"{'=' * 50}")
 
             etl = etl_class()
             success = etl.run()
@@ -82,9 +82,9 @@ def run_all_deals_etl():
     end_time = datetime.now()
     duration = (end_time - start_time).total_seconds()
 
-    logger.info(f"\n{'='*60}")
+    logger.info(f"\n{'=' * 60}")
     logger.info("DEALS ETL SUMMARY")
-    logger.info(f"{'='*60}")
+    logger.info(f"{'=' * 60}")
     logger.info(f"Total execution time: {duration:.2f} seconds")
     logger.info(f"Total records collected: {total_records}")
     logger.info("")

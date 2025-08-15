@@ -5,13 +5,13 @@ ArXiv for new papers in specified AI/ML and computer science categories.
 It extracts paper metadata and saves information about new or updated papers.
 """
 
-import os
-import feedparser
 import json
-from typing import Dict, Any, List, Set
-from datetime import datetime, timezone, timedelta
+import os
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
 
-import sys
+import feedparser
+
 from src.watchers.base_watcher import BaseWatcher
 
 

@@ -6,8 +6,7 @@ or title, ensuring that the dataset only contains unique course entries.
 
 import json
 import logging
-import os
-from typing import Dict, List, Any, Optional, Callable, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # Set up logging
 logger = logging.getLogger("course_deduplication")

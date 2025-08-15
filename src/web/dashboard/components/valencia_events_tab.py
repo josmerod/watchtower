@@ -1,13 +1,13 @@
 """Valencia Events Tab Component for Watchtower Dashboard"""
 
 import json
-import dash_bootstrap_components as dbc
-from dash import html, dcc, dash_table, Input, Output
-from pathlib import Path
-from typing import List, Dict, Any
 import logging
+from pathlib import Path
+from typing import Any, Dict, List
+
+import dash_bootstrap_components as dbc
 import pandas as pd
-from datetime import datetime
+from dash import Input, Output, dash_table, html
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -78,7 +78,9 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
             else (
                 f"{start_date} - {end_date}"
                 if start_date and end_date
-                else start_date if start_date else "Fecha por confirmar"
+                else start_date
+                if start_date
+                else "Fecha por confirmar"
             )
         )
 
@@ -186,7 +188,9 @@ def create_events_table(events: List[Dict[str, Any]]) -> dash_table.DataTable:
                 lambda x: (
                     x.get("name", "N/A")
                     if isinstance(x, dict)
-                    else str(x) if x else "N/A"
+                    else str(x)
+                    if x
+                    else "N/A"
                 )
             )
             display_columns.append("venue_name")
