@@ -1,14 +1,15 @@
 # src/etl/news/news_get_media_rss.py
-import os
-import sys
 import json
+import os
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import feedparser
+
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Ensure project root is on path
 from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("MediaRSSETL")
 

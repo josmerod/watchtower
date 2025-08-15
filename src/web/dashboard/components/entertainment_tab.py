@@ -4,18 +4,17 @@ Integrates entertainment-related ETLs including cinema, meme economics, and othe
 """
 
 import json
-import pandas as pd
-import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, callback, dash_table
-from datetime import datetime, timezone
-import os
 import logging
 from collections import Counter
+from datetime import datetime, timezone
+
+import dash_bootstrap_components as dbc
+import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
+from dash import Input, Output, callback, dash_table, dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -142,7 +141,9 @@ def process_entertainment_item(item):
             "showtimes": (
                 showtimes
                 if isinstance(showtimes, list)
-                else [showtimes] if showtimes else []
+                else [showtimes]
+                if showtimes
+                else []
             ),
             "trend_score": float(trend_score) if trend_score else 0,
             "engagement": int(engagement) if engagement else 0,

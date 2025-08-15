@@ -4,18 +4,18 @@ Specialized for ADHD research publications and neurodivergent-friendly locations
 """
 
 import json
-import pandas as pd
-import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, callback, dash_table
-from datetime import datetime, timezone
-import os
 import logging
 from collections import Counter
+from datetime import datetime, timezone
+
+import dash_bootstrap_components as dbc
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from dash import Input, Output, callback, dash_table, dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -468,7 +468,7 @@ def create_research_table(source_id, items):
                 else "None listed"
             )
             if len(item["accessibility_features"]) > 3:
-                features_str += f' +{len(item["accessibility_features"]) - 3} more'
+                features_str += f" +{len(item['accessibility_features']) - 3} more"
 
             row = {
                 "Name": item["title"],

@@ -1,8 +1,9 @@
 import json
-import dash
-from dash import html
-import dash_bootstrap_components as dbc
 from datetime import datetime, timezone
+
+import dash
+import dash_bootstrap_components as dbc
+from dash import html
 
 # Import shared utilities
 from src.web.dashboard.utils import get_data_path, parse_date_universal

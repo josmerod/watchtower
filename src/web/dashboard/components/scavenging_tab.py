@@ -1,13 +1,12 @@
 """Scavenging Tab Component for Watchtower Dashboard"""
 
-import json
-import dash_bootstrap_components as dbc
-from dash import html, dcc, dash_table, Input, Output, callback, State
-from pathlib import Path
-from typing import List, Dict, Any
 import logging
+from pathlib import Path
+from typing import Dict
+
+import dash_bootstrap_components as dbc
 import pandas as pd
-import base64
+from dash import Input, Output, dash_table, dcc, html
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -375,7 +374,6 @@ def register_scavenging_callbacks(app):
 
     # Register download callbacks for each category
     for category in categories_map.keys():
-
         # CSV Download callback
         @app.callback(
             Output(f"download-csv-data-{category}", "data"),

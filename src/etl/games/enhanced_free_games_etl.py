@@ -15,10 +15,8 @@ from __future__ import annotations
 import json
 import re
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
-import requests
-from bs4 import BeautifulSoup
 import feedparser
 
 from src.etl.base import BaseETL

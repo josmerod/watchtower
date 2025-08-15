@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import Field, HttpUrl
 
 # Assuming TimestampedModel is defined in src.models.base
 from src.models.base import TimestampedModel

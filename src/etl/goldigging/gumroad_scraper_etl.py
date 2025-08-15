@@ -7,16 +7,16 @@ It handles pagination using the 'from' parameter and supports both regular runs 
 
 import asyncio
 import json
-import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from urllib.parse import urljoin, urlparse
+from typing import List, Optional
 
 from playwright.async_api import (
-    async_playwright,
-    Page,
     Browser,
+    Page,
+    async_playwright,
+)
+from playwright.async_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
 
@@ -433,7 +433,6 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             if loop.is_running():
                 # If we're already in an event loop, create a new thread
                 import concurrent.futures
-                import threading
 
                 def run_in_thread():
                     new_loop = asyncio.new_event_loop()

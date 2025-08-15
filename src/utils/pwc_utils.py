@@ -6,9 +6,9 @@ using either an ArXiv ID or paper title. It handles API request retries
 and polite request delays.
 """
 
-from typing import Optional, Dict, Any, List
-import time
 import asyncio  # Added for sleep
+import time
+from typing import Any, Dict, Optional
 
 try:
     from paperswithcode import PapersWithCodeClient
@@ -310,7 +310,7 @@ if __name__ == "__main__":
                 for item_idx, item in enumerate(
                     value[:2]
                 ):  # Log first 2 items for brevity
-                    logger.info(f"    Item {item_idx+1}: {item}")
+                    logger.info(f"    Item {item_idx + 1}: {item}")
             else:
                 logger.info(f"  {key}: {value}")
     else:

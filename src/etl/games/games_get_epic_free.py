@@ -2,15 +2,16 @@
 
 """Fetch current free games from Epic Games Store API and save to JSON and CSV."""
 
-import sys
 import os
 from datetime import datetime, timezone
-import requests
+
 import pandas as pd
+import requests
+
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Add the project root to the path for imports
 from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("Epic_Free_Games_ETL")
 EPIC_API_URL = (

@@ -17,6 +17,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List
+
 import requests
 
 # Add the project root to the path
@@ -24,9 +25,9 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 )
 
+from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-from src.etl.base import BaseETL
 
 # Initialize logger
 logger = get_logger("RedditGiveawaysETL")

@@ -12,6 +12,8 @@ Output:
 """
 
 import json
+
+# Add the project root to the path to ensure imports work correctly
 import os
 import re
 import sys
@@ -20,10 +22,6 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from playwright.sync_api import sync_playwright
-
-# Add the project root to the path to ensure imports work correctly
-import os
-import sys
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
@@ -128,7 +126,7 @@ def scrape_new_releases(page) -> List[Dict[str, Any]]:
                     try:
                         href = match.get_attribute("href")
                         text = match.inner_text().strip()[:50]
-                        logger.info(f"  {pattern} match {i+1}: {text} -> {href}")
+                        logger.info(f"  {pattern} match {i + 1}: {text} -> {href}")
                     except:
                         pass
 
@@ -138,7 +136,7 @@ def scrape_new_releases(page) -> List[Dict[str, Any]]:
                 try:
                     href = link.get_attribute("href")
                     text = link.inner_text().strip()[:50]
-                    logger.debug(f"Sample link {i+1}: {text} -> {href}")
+                    logger.debug(f"Sample link {i + 1}: {text} -> {href}")
                 except:
                     pass
 
@@ -156,7 +154,7 @@ def scrape_new_releases(page) -> List[Dict[str, Any]]:
             # Scroll down gradually to trigger any lazy loading
             for i in range(3):
                 page.evaluate(
-                    f"window.scrollTo(0, document.body.scrollHeight * {(i+1)/3})"
+                    f"window.scrollTo(0, document.body.scrollHeight * {(i + 1) / 3})"
                 )
                 page.wait_for_timeout(2000)
 
@@ -469,7 +467,7 @@ def scrape_offers(page) -> List[Dict[str, Any]]:
                     try:
                         href = match.get_attribute("href")
                         text = match.inner_text().strip()[:50]
-                        logger.info(f"  {pattern} match {i+1}: {text} -> {href}")
+                        logger.info(f"  {pattern} match {i + 1}: {text} -> {href}")
                     except:
                         pass
 
@@ -479,7 +477,7 @@ def scrape_offers(page) -> List[Dict[str, Any]]:
                 try:
                     href = link.get_attribute("href")
                     text = link.inner_text().strip()[:50]
-                    logger.debug(f"Sample link {i+1}: {text} -> {href}")
+                    logger.debug(f"Sample link {i + 1}: {text} -> {href}")
                 except:
                     pass
 
@@ -497,7 +495,7 @@ def scrape_offers(page) -> List[Dict[str, Any]]:
             # Scroll down gradually to trigger any lazy loading
             for i in range(3):
                 page.evaluate(
-                    f"window.scrollTo(0, document.body.scrollHeight * {(i+1)/3})"
+                    f"window.scrollTo(0, document.body.scrollHeight * {(i + 1) / 3})"
                 )
                 page.wait_for_timeout(2000)
 

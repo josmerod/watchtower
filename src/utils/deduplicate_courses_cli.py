@@ -5,10 +5,10 @@ This script provides a convenient way to deduplicate existing course files.
 It can be used as a standalone tool or as part of an ETL pipeline.
 """
 
-import os
-import sys
 import argparse
 import logging
+import os
+import sys
 from pathlib import Path
 
 # Add project root to Python path

@@ -1,15 +1,13 @@
 import json
-import dash
-from dash import html, dcc, callback, Input, Output
+
 import dash_bootstrap_components as dbc
-from datetime import datetime, timezone
-import os
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
+from dash import dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # --- Data Loading ---
 

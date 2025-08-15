@@ -5,14 +5,12 @@ Integrates all AI platform monitoring ETLs including OpenAI, Anthropic, HuggingF
 
 import json
 import logging
-import os
-import sys
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, callback, dcc, dash_table, html
+from dash import Input, Output, callback, dash_table, dcc, html
 
-from src.web.dashboard.utils import get_data_path, file_exists, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -396,25 +394,30 @@ def render_ai_platforms_tab():
 
 def register_ai_platforms_callbacks(app):
     """Register callbacks for the AI Platforms tab"""
+
     # Single callback to handle all platform buttons to avoid conflicts
     @callback(
         Output("ai-platforms-data-display", "children"),
         Output("selected-ai-platform", "data"),
-        [Input(f"btn-{platform_id}", "n_clicks") for platform_id in AI_PLATFORMS_CONFIG.keys()],
+        [
+            Input(f"btn-{platform_id}", "n_clicks")
+            for platform_id in AI_PLATFORMS_CONFIG.keys()
+        ],
         prevent_initial_call=True,
     )
     def display_platform_data(*n_clicks_list):
         """Handle clicks from any platform button"""
         import dash
+
         ctx = dash.callback_context
-        
+
         if not ctx.triggered:
             return html.Div(), None
-        
+
         # Find which button was clicked
-        button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        platform_id = button_id.replace('btn-', '')
-        
+        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        platform_id = button_id.replace("btn-", "")
+
         if platform_id in AI_PLATFORMS_CONFIG:
             config = AI_PLATFORMS_CONFIG[platform_id]
             data = AI_PLATFORMS_DATA[platform_id]
@@ -434,7 +437,7 @@ def register_ai_platforms_callbacks(app):
                 ),
                 platform_id,
             )
-        
+
         return html.Div(), None
 
 

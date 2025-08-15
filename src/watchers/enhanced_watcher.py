@@ -2,25 +2,23 @@
 
 import asyncio
 import json
-import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union
+from datetime import datetime
+from typing import Any, Dict, Optional, Union
 
 import aiohttp
-from pydantic import BaseModel, Field, validator
+from pydantic import Field, validator
 
 from src.config.settings import get_settings
-from src.exceptions.base import WatchtowerError
 from src.exceptions.watcher import (
     WatcherError,
     WatcherTimeoutError,
     WatcherValidationError,
 )
-from src.models.base import BaseModel as BaseWatchtowerModel, TimestampedModel
-from src.utils.logging import get_logger, get_performance_logger
+from src.models.base import BaseModel as BaseWatchtowerModel
+from src.models.base import TimestampedModel
 from src.utils.file_system import get_file_system_manager
+from src.utils.logging import get_logger, get_performance_logger
 
 
 class WatcherState(TimestampedModel):

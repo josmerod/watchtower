@@ -6,10 +6,11 @@ import re
 import shutil
 import sys
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Set
-from urllib.parse import urlparse, urlunparse
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse, urlunparse
+
 import cv2
 import numpy as np
 
@@ -24,10 +25,10 @@ except NameError:  # Fallback for environments where __file__ is not defined
         sys.path.append(project_root)
 
 # Now import external dependencies
+import pytesseract
 import yt_dlp
 from moviepy import VideoFileClip
 from PIL import Image, ImageEnhance, ImageFilter
-import pytesseract
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Configure Tesseract path for Windows
@@ -787,7 +788,6 @@ def verify_tesseract_installation():
     try:
         # Test basic OCR functionality
         from PIL import Image
-        import numpy as np
 
         # Create a simple test image with text
         test_image = Image.new("RGB", (200, 50), color="white")
@@ -1060,7 +1060,7 @@ def extract_text_from_video_frames(
                 # Log progress for longer videos
                 if len(frame_times) > 10 and (i + 1) % 5 == 0:
                     logger.info(
-                        f"[PROGRESS] OCR progress: {i+1}/{len(frame_times)} frames ({((i+1)/len(frame_times)*100):.1f}%)"
+                        f"[PROGRESS] OCR progress: {i + 1}/{len(frame_times)} frames ({((i + 1) / len(frame_times) * 100):.1f}%)"
                     )
 
                 # Get frame at specified time
@@ -1105,7 +1105,7 @@ def extract_text_from_video_frames(
                 if ocr_result["urls"]:
                     all_urls.extend(ocr_result["urls"])
                     logger.info(
-                        f"[INFO] Found {len(ocr_result['urls'])} URLs in frame {i+1} at {frame_time:.1f}s"
+                        f"[INFO] Found {len(ocr_result['urls'])} URLs in frame {i + 1} at {frame_time:.1f}s"
                     )
 
                 previous_frame = frame
@@ -1395,7 +1395,7 @@ def main(args):
         video_start_time = time.time()
 
         logger.info(
-            f"[PROGRESS] Processing video {i}/{len(short_videos_meta)} ({(i/len(short_videos_meta)*100):.1f}% complete)"
+            f"[PROGRESS] Processing video {i}/{len(short_videos_meta)} ({(i / len(short_videos_meta) * 100):.1f}% complete)"
         )
         logger.info(f"[CURRENT] Current video: {video_meta['title']}")
 
@@ -1417,7 +1417,7 @@ def main(args):
             remaining_videos = len(short_videos_meta) - i
             estimated_time_remaining = remaining_videos * avg_time_per_video
             logger.info(
-                f"[TIMING] Video processed in {video_duration:.1f}s. Estimated time remaining: {estimated_time_remaining/60:.1f} minutes"
+                f"[TIMING] Video processed in {video_duration:.1f}s. Estimated time remaining: {estimated_time_remaining / 60:.1f} minutes"
             )
 
         # Log progress summary
@@ -1440,7 +1440,7 @@ def main(args):
         f"[COMPLETE] Processing complete! Final stats: {successful_processing} successful, {failed_processing} failed, {urls_found} total URLs found"
     )
     logger.info(
-        f"[TIMING] Total processing time: {total_time/60:.1f} minutes ({total_time/len(short_videos_meta):.1f}s per video)"
+        f"[TIMING] Total processing time: {total_time / 60:.1f} minutes ({total_time / len(short_videos_meta):.1f}s per video)"
     )
 
     # Save final results

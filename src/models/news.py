@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any
 from urllib.parse import urlparse
 
-from pydantic import Field, HttpUrl, field_validator, BaseModel
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 from src.models.base import TimestampedModel
 

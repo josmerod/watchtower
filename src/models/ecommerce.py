@@ -1,7 +1,8 @@
 # src/models/ecommerce.py
-from typing import Optional
-from pydantic import BaseModel, HttpUrl
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, HttpUrl
 
 
 class ShoppyProduct(BaseModel):

@@ -11,12 +11,14 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 from playwright.async_api import (
-    async_playwright,
-    Page,
     Browser,
+    Page,
+    async_playwright,
+)
+from playwright.async_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
 

@@ -1,11 +1,11 @@
 import json
-import os
+
 import dash
-from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
+from dash import Input, Output, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, dir_exists
+from src.web.dashboard.utils import get_data_path
 
 
 def create_shortcut_button(shortcut_info):

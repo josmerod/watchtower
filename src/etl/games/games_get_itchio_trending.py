@@ -2,16 +2,17 @@
 
 """Fetch trending games from itch.io and save to JSON and CSV."""
 
-import sys
 import os
 from datetime import datetime, timezone
-import requests
+
 import pandas as pd
+import requests
 from bs4 import BeautifulSoup
+
+from src.utils.file_system import ensure_directories, get_project_root
 
 # Add the project root to the path for imports
 from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("ItchIo_Trending_ETL")
 ITC_URL = "https://itch.io/games/top-sellers"  # Changed to use top sellers page

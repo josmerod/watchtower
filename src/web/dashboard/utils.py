@@ -3,8 +3,9 @@ Shared utilities for the Dashboard.
 """
 
 import os
-import pandas as pd
 from datetime import datetime, timezone
+
+import pandas as pd
 
 
 def get_project_root():

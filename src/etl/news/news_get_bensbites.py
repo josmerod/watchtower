@@ -14,7 +14,6 @@ Output:
 import json
 import os
 import random
-import sys
 import time
 from datetime import datetime, timedelta
 from typing import Any

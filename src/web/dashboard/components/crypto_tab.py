@@ -1,15 +1,16 @@
 import json
-from dash import html, dcc, dash_table
-import dash_bootstrap_components as dbc
-from datetime import datetime, timedelta
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import pandas as pd
-from collections import Counter, defaultdict
 import re
+from collections import Counter, defaultdict
+from datetime import datetime, timedelta
+
+import dash_bootstrap_components as dbc
+import pandas as pd
+import plotly.graph_objects as go
+from dash import dash_table, dcc, html
+from plotly.subplots import make_subplots
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # --- Enhanced Data Loading ---
 
@@ -599,7 +600,7 @@ def create_advanced_metrics_cards(data):
                         [
                             html.I(className="fas fa-exclamation-triangle me-1"),
                             (
-                                f"{(high_urgency/total_mentions*100):.1f}% of total"
+                                f"{(high_urgency / total_mentions * 100):.1f}% of total"
                                 if total_mentions > 0
                                 else "0%"
                             ),
@@ -649,7 +650,7 @@ def create_advanced_data_table(data):
     for item in data[:100]:  # Show top 100 items
         coins_str = ", ".join(item["coins_mentioned"][:3])
         if len(item["coins_mentioned"]) > 3:
-            coins_str += f" +{len(item['coins_mentioned'])-3} more"
+            coins_str += f" +{len(item['coins_mentioned']) - 3} more"
 
         keywords_str = ", ".join(item["keywords"][:3])
         if len(item["keywords"]) > 3:

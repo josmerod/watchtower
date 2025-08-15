@@ -5,15 +5,15 @@ from the `KNOWN_SKILLS` list within the `ms_skills_watcher.py` file and
 optionally update the watcher's state file.
 """
 
-import os
-import sys
-import json
 import argparse
+import json
+import os
 from typing import List, Optional
+
+from src.utils.file_system import get_project_root
 
 # Add the project root to the path to ensure imports work correctly
 from src.utils.logging import get_logger
-from src.utils.file_system import ensure_directories, get_project_root
 
 logger = get_logger("MSSkillsUpdater")
 

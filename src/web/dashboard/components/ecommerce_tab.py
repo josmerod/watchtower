@@ -4,16 +4,14 @@ Gumroad products, travel deals, and commercial opportunities
 """
 
 import json
-import pandas as pd
-import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, callback, dash_table
-from datetime import datetime, timezone
-import os
 import logging
-from collections import Counter
+
+import dash_bootstrap_components as dbc
+import pandas as pd
+from dash import Input, Output, callback, dash_table, dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -246,7 +244,7 @@ def create_ecommerce_table(source_id, items):
         # Format tags
         tags_str = ", ".join(item["tags"][:3]) if item["tags"] else "None"
         if len(item["tags"]) > 3:
-            tags_str += f' +{len(item["tags"]) - 3} more'
+            tags_str += f" +{len(item['tags']) - 3} more"
 
         row = {
             "Title": (

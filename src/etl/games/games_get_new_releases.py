@@ -1,18 +1,18 @@
-import requests
 import datetime
-import os
-import pandas as pd
 import json
-import logging
+import os
 import sys
+
+import pandas as pd
+import requests
 
 # Add project root to sys.path to allow imports from src
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.utils.logging import get_logger
 from src.utils.file_system import ensure_directories, get_project_root
+from src.utils.logging import get_logger
 
 # Constants
 RAWG_API_URL = "https://api.rawg.io/api/games"

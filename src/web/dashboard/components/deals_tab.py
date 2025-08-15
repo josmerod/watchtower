@@ -4,18 +4,16 @@ Aggregates all deal-related ETLs including bargain deals, software, books, trave
 """
 
 import json
-import pandas as pd
-import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, callback, dash_table
-from datetime import datetime, timezone
-import os
 import logging
 from collections import Counter
+
+import dash_bootstrap_components as dbc
+import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
+from dash import Input, Output, callback, dash_table, dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, file_exists, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -409,7 +407,9 @@ def create_deals_table(source_id, deals):
         urgency_badge = (
             "🔴"
             if deal["urgency"] == "high"
-            else "🟡" if deal["urgency"] == "medium" else "🟢"
+            else "🟡"
+            if deal["urgency"] == "medium"
+            else "🟢"
         )
 
         row = {

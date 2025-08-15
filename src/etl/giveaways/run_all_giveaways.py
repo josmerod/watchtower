@@ -16,10 +16,10 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 )
 
-from src.utils.logging import get_logger
-from src.etl.giveaways.reddit_giveaways_etl import RedditGiveawaysETL
-from src.etl.giveaways.free_games_etl import FreeGamesETL
 from src.etl.giveaways.free_courses_etl import FreeCoursesETL
+from src.etl.giveaways.free_games_etl import FreeGamesETL
+from src.etl.giveaways.reddit_giveaways_etl import RedditGiveawaysETL
+from src.utils.logging import get_logger
 
 # Initialize logger
 logger = get_logger("AllGiveawaysETL")
@@ -41,9 +41,9 @@ def run_all_giveaways_etl():
 
     for name, etl_class in etl_modules:
         try:
-            logger.info(f"\n{'='*50}")
+            logger.info(f"\n{'=' * 50}")
             logger.info(f"Running {name} ETL...")
-            logger.info(f"{'='*50}")
+            logger.info(f"{'=' * 50}")
 
             etl = etl_class()
             success = etl.run()
@@ -68,9 +68,9 @@ def run_all_giveaways_etl():
     end_time = datetime.now()
     duration = (end_time - start_time).total_seconds()
 
-    logger.info(f"\n{'='*60}")
+    logger.info(f"\n{'=' * 60}")
     logger.info("GIVEAWAYS ETL SUMMARY")
-    logger.info(f"{'='*60}")
+    logger.info(f"{'=' * 60}")
     logger.info(f"Total execution time: {duration:.2f} seconds")
     logger.info(f"Total records collected: {total_records}")
     logger.info("")

@@ -2,7 +2,6 @@
 
 import json
 import os
-import sys
 from datetime import datetime
 from typing import Any
 
@@ -18,7 +17,6 @@ from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
 from src.utils.logging import get_logger
 from src.utils.nlp_classifier import NLPContentClassifier
-from src.utils.pwc_utils import get_pwc_details_for_paper
 from src.watchers.arxiv_watcher import ArxivWatcher
 
 # from paperswithcode import PapersWithCodeClient # Commented out for testing

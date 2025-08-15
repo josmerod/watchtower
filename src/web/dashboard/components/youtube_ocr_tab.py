@@ -4,15 +4,12 @@ YouTube OCR Results Dashboard Tab
 This component provides visualization and analysis of YouTube shorts OCR results using Dash.
 """
 
-import dash
-import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, callback, ctx
-import plotly.express as px
-import plotly.graph_objects as go
-import pandas as pd
-from datetime import datetime
 import sys
 from pathlib import Path
+
+import dash_bootstrap_components as dbc
+import plotly.express as px
+from dash import Input, Output, dcc, html
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent.parent

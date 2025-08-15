@@ -3,11 +3,10 @@
 import json
 import time
 from datetime import datetime, timedelta
-from typing import Any, List, Optional
+from typing import List
 from urllib.parse import urljoin
 
 from playwright.sync_api import sync_playwright
-from pydantic import BaseModel
 
 from src.etl.base import BaseETL
 from src.models.base import TimestampedModel

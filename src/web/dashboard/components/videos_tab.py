@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -7,6 +8,9 @@ import pandas as pd
 from dash import Input, Output, dcc, html
 
 from src.web.dashboard.utils import get_data_path
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 class VideoManager:
@@ -19,12 +23,12 @@ class VideoManager:
 
     def load_data(self):
         """Load video data from YouTube directories."""
-        print("[VideoManager] Loading video data...")
+        logger.info("Loading video data...")
         self.video_data = {}
 
         youtube_path = Path(get_data_path("youtube"))
         if not youtube_path.exists():
-            print(f"[VideoManager] YouTube directory not found: {youtube_path}")
+            logger.warning(f"YouTube directory not found: {youtube_path}")
             self.loaded = True
             return
 
@@ -38,7 +42,7 @@ class VideoManager:
                 continue
 
             try:
-                with open(json_file, encoding='utf-8') as f:
+                with open(json_file, encoding="utf-8") as f:
                     videos = json.load(f)
 
                 if not videos:
@@ -48,34 +52,34 @@ class VideoManager:
                 processed_videos = []
                 for video in videos:
                     processed_video = {
-                        'title': video.get('title', 'No Title'),
-                        'url': video.get('url', ''),
-                        'thumbnail': video.get('thumbnail', ''),
-                        'channel': video.get('channel', channel_dir.name),
-                        'published_at': video.get('published_at', ''),
-                        'description': video.get('description', ''),
-                        'views': video.get('views', 0),
-                        'length': video.get('length', 0),
+                        "title": video.get("title", "No Title"),
+                        "url": video.get("url", ""),
+                        "thumbnail": video.get("thumbnail", ""),
+                        "channel": video.get("channel", channel_dir.name),
+                        "published_at": video.get("published_at", ""),
+                        "description": video.get("description", ""),
+                        "views": video.get("views", 0),
+                        "length": video.get("length", 0),
                     }
                     processed_videos.append(processed_video)
 
                 if processed_videos:
                     df = pd.DataFrame(processed_videos)
                     # Parse dates properly
-                    df['published_date'] = pd.to_datetime(
-                        df['published_at'], errors='coerce', utc=True
+                    df["published_date"] = pd.to_datetime(
+                        df["published_at"], errors="coerce", utc=True
                     )
-                    df = df.dropna(subset=['published_date'])
-                    df = df.sort_values('published_date', ascending=False)
+                    df = df.dropna(subset=["published_date"])
+                    df = df.sort_values("published_date", ascending=False)
 
                     self.video_data[channel_dir.name] = df
-                    print(f"[VideoManager] Loaded {len(df)} videos for {channel_dir.name}")
+                    logger.info(f"Loaded {len(df)} videos for {channel_dir.name}")
 
             except Exception as e:
-                print(f"[VideoManager] Error loading {json_file}: {e}")
+                logger.error(f"Error loading {json_file}: {e}")
 
-        print(f"[VideoManager] Total channels loaded: {len(self.video_data)}")
-        print(f"[VideoManager] Available channels: {list(self.video_data.keys())}")
+        logger.info(f"Total channels loaded: {len(self.video_data)}")
+        logger.info(f"Available channels: {list(self.video_data.keys())}")
         self.loaded = True
 
     def get_channels(self):
@@ -97,7 +101,7 @@ class VideoManager:
             for ch_name, df in self.video_data.items():
                 for _, video in df.iterrows():
                     video_dict = video.to_dict()
-                    video_dict['channel'] = ch_name
+                    video_dict["channel"] = ch_name
                     all_videos.append(video_dict)
         else:
             # Single channel
@@ -105,25 +109,27 @@ class VideoManager:
                 df = self.video_data[channel]
                 for _, video in df.iterrows():
                     video_dict = video.to_dict()
-                    video_dict['channel'] = channel
+                    video_dict["channel"] = channel
                     all_videos.append(video_dict)
 
-        print(f"[VideoManager] Retrieved {len(all_videos)} videos for channel '{channel}'")
+        logger.debug(f"Retrieved {len(all_videos)} videos for channel '{channel}'")
 
         # Apply search filter
         if search_term and search_term.strip():
             search_lower = search_term.lower().strip()
             filtered_videos = []
             for video in all_videos:
-                title = video.get('title', '').lower()
-                description = video.get('description', '').lower()
-                ch = video.get('channel', '').lower()
-                if (search_lower in title or
-                    search_lower in description or
-                    search_lower in ch):
+                title = video.get("title", "").lower()
+                description = video.get("description", "").lower()
+                ch = video.get("channel", "").lower()
+                if (
+                    search_lower in title
+                    or search_lower in description
+                    or search_lower in ch
+                ):
                     filtered_videos.append(video)
             all_videos = filtered_videos
-            print(f"[VideoManager] After search filter: {len(all_videos)} videos")
+            logger.debug(f"After search filter: {len(all_videos)} videos")
 
         # Apply date filter
         if days_filter and days_filter != "all":
@@ -132,18 +138,20 @@ class VideoManager:
                 cutoff_date = datetime.now(timezone.utc) - pd.Timedelta(days=days)
                 filtered_videos = []
                 for video in all_videos:
-                    pub_date = video.get('published_date')
+                    pub_date = video.get("published_date")
                     if pd.notna(pub_date) and pub_date >= cutoff_date:
                         filtered_videos.append(video)
                 all_videos = filtered_videos
-                print(f"[VideoManager] After date filter: {len(all_videos)} videos")
+                logger.debug(f"After date filter: {len(all_videos)} videos")
             except ValueError:
                 pass
 
         # Sort by date (newest first)
         all_videos.sort(
-            key=lambda x: x.get('published_date', datetime.min.replace(tzinfo=timezone.utc)),
-            reverse=True
+            key=lambda x: x.get(
+                "published_date", datetime.min.replace(tzinfo=timezone.utc)
+            ),
+            reverse=True,
         )
 
         # Apply limit
@@ -156,76 +164,97 @@ video_manager = VideoManager()
 
 def create_video_card(video):
     """Create a video card component."""
-    thumbnail_url = video.get('thumbnail', '')
+    thumbnail_url = video.get("thumbnail", "")
 
     # Thumbnail
     if thumbnail_url:
         thumbnail = html.Img(
             src=thumbnail_url,
             style={
-                'width': '100%',
-                'height': '180px',
-                'objectFit': 'cover',
-                'borderRadius': '8px 8px 0 0'
+                "width": "100%",
+                "height": "180px",
+                "objectFit": "cover",
+                "borderRadius": "8px 8px 0 0",
             },
-            className='card-img-top'
+            className="card-img-top",
         )
     else:
         thumbnail = html.Div(
             [
-                html.I(className='fas fa-video',
-                      style={'fontSize': '2rem', 'color': '#A37FFF'}),
+                html.I(
+                    className="fas fa-video",
+                    style={"fontSize": "2rem", "color": "#A37FFF"},
+                ),
                 html.Br(),
-                html.Span('Video', style={'color': '#A37FFF'})
+                html.Span("Video", style={"color": "#A37FFF"}),
             ],
             style={
-                'height': '180px',
-                'display': 'flex',
-                'flexDirection': 'column',
-                'alignItems': 'center',
-                'justifyContent': 'center',
-                'backgroundColor': '#3C3970',
-                'borderRadius': '8px 8px 0 0'
-            }
+                "height": "180px",
+                "display": "flex",
+                "flexDirection": "column",
+                "alignItems": "center",
+                "justifyContent": "center",
+                "backgroundColor": "#3C3970",
+                "borderRadius": "8px 8px 0 0",
+            },
         )
 
-    return dbc.Col([
-        dbc.Card([
-            thumbnail,
-            dbc.CardBody([
-                html.H6(
-                    html.A(
-                        video.get('title', 'No Title'),
-                        href=video.get('url', '#'),
-                        target='_blank',
-                        style={'color': '#A37FFF', 'textDecoration': 'none'}
+    return dbc.Col(
+        [
+            dbc.Card(
+                [
+                    thumbnail,
+                    dbc.CardBody(
+                        [
+                            html.H6(
+                                html.A(
+                                    video.get("title", "No Title"),
+                                    href=video.get("url", "#"),
+                                    target="_blank",
+                                    style={
+                                        "color": "#A37FFF",
+                                        "textDecoration": "none",
+                                    },
+                                ),
+                                className="card-title",
+                                style={
+                                    "fontSize": "0.9rem",
+                                    "overflow": "hidden",
+                                    "textOverflow": "ellipsis",
+                                    "display": "-webkit-box",
+                                    "-webkitLineClamp": "2",
+                                    "-webkitBoxOrient": "vertical",
+                                    "height": "2.5em",
+                                    "marginBottom": "0.5rem",
+                                },
+                            ),
+                            html.P(
+                                video.get("channel", "Unknown"),
+                                className="card-text text-muted",
+                                style={"fontSize": "0.8rem", "marginBottom": "0.25rem"},
+                            ),
+                            html.P(
+                                (
+                                    video.get("published_at", "")[:10]
+                                    if video.get("published_at")
+                                    else "Unknown date"
+                                ),
+                                className="card-text text-muted",
+                                style={"fontSize": "0.8rem", "marginBottom": "0"},
+                            ),
+                        ]
                     ),
-                    className='card-title',
-                    style={
-                        'fontSize': '0.9rem',
-                        'overflow': 'hidden',
-                        'textOverflow': 'ellipsis',
-                        'display': '-webkit-box',
-                        '-webkitLineClamp': '2',
-                        '-webkitBoxOrient': 'vertical',
-                        'height': '2.5em',
-                        'marginBottom': '0.5rem'
-                    }
-                ),
-                html.P(
-                    video.get('channel', 'Unknown'),
-                    className='card-text text-muted',
-                    style={'fontSize': '0.8rem', 'marginBottom': '0.25rem'}
-                ),
-                html.P(
-                    (video.get('published_at', '')[:10]
-                     if video.get('published_at') else 'Unknown date'),
-                    className='card-text text-muted',
-                    style={'fontSize': '0.8rem', 'marginBottom': '0'}
-                )
-            ])
-        ], className='h-100')
-    ], xs=12, sm=6, md=4, lg=3, xl=3, className='mb-3')
+                ],
+                className="h-100",
+            )
+        ],
+        xs=12,
+        sm=6,
+        md=4,
+        lg=3,
+        xl=3,
+        className="mb-3",
+    )
 
 
 def get_initial_video_display():
@@ -235,7 +264,7 @@ def get_initial_video_display():
         videos = video_manager.get_videos(channel="all", limit=48)
         if not videos:
             return [dbc.Alert("No videos found", color="warning")]
-        
+
         # Create video cards with error handling
         video_cards = []
         for video in videos:
@@ -244,26 +273,49 @@ def get_initial_video_display():
                 video_cards.append(card)
             except Exception as e:
                 # Add fallback card if video card creation fails
-                fallback_card = dbc.Col([
-                    dbc.Card([
-                        dbc.CardBody([
-                            html.H6("Video Load Error", className="card-title"),
-                            html.P(f"Failed to load: {video.get('title', 'Unknown')}", className="card-text"),
-                            html.Small(f"Error: {e}", className="text-danger")
-                        ])
-                    ], className="h-100")
-                ], xs=12, sm=6, md=4, lg=3, xl=3, className="mb-3")
+                fallback_card = dbc.Col(
+                    [
+                        dbc.Card(
+                            [
+                                dbc.CardBody(
+                                    [
+                                        html.H6(
+                                            "Video Load Error", className="card-title"
+                                        ),
+                                        html.P(
+                                            f"Failed to load: {video.get('title', 'Unknown')}",
+                                            className="card-text",
+                                        ),
+                                        html.Small(
+                                            f"Error: {e}", className="text-danger"
+                                        ),
+                                    ]
+                                )
+                            ],
+                            className="h-100",
+                        )
+                    ],
+                    xs=12,
+                    sm=6,
+                    md=4,
+                    lg=3,
+                    xl=3,
+                    className="mb-3",
+                )
                 video_cards.append(fallback_card)
-        
+
         # Return content with header
         content = [
-            dbc.Alert(f"📺 Showing {len(video_cards)} videos from all channels", 
-                     color="success", className="mb-3"),
-            html.Div(video_cards, className="row")
+            dbc.Alert(
+                f"📺 Showing {len(video_cards)} videos from all channels",
+                color="success",
+                className="mb-3",
+            ),
+            html.Div(video_cards, className="row"),
         ]
-        
+
         return content
-        
+
     except Exception as e:
         return [dbc.Alert(f"Error loading videos: {e}", color="danger")]
 
@@ -274,112 +326,137 @@ def render_videos_tab():
     channels = video_manager.get_channels()
 
     if not channels:
-        return html.Div([
-            html.H3("Videos", className="mb-3"),
-            dbc.Alert("No video data found. Please check if the YouTube ETL has run.",
-                     color="info")
-        ])
+        return html.Div(
+            [
+                html.H3("Videos", className="mb-3"),
+                dbc.Alert(
+                    "No video data found. Please check if the YouTube ETL has run.",
+                    color="info",
+                ),
+            ]
+        )
 
     # Create channel options
     channel_options = [{"label": "All Channels", "value": "all"}]
 
     # Organize channels (categories first)
-    categories = [ch for ch in sorted(channels) if ch.startswith(('aa-', 'zz-'))]
+    categories = [ch for ch in sorted(channels) if ch.startswith(("aa-", "zz-"))]
     others = [ch for ch in sorted(channels) if ch not in categories]
     ordered_channels = categories + others
 
     channel_options.extend([{"label": ch, "value": ch} for ch in ordered_channels])
 
-    return html.Div([
-        html.H3("Videos", className="mb-3"),
-
-        # Filter Controls
-        dbc.Row([
-            dbc.Col([
-                html.Label("Channel:", className="form-label small"),
-                dcc.Dropdown(
-                    id='video-channel-dropdown-new',
-                    options=channel_options,
-                    value='all',
-                    placeholder='Select a channel',
-                    clearable=False,
-                    className='mb-3'
-                )
-            ], width=12, md=4),
-
-            dbc.Col([
-                html.Label("Search:", className="form-label small"),
-                dbc.Input(
-                    id='video-search-input-new',
-                    placeholder='Search videos...',
-                    type='text',
-                    className='mb-3'
-                )
-            ], width=12, md=4),
-
-            dbc.Col([
-                html.Label("Date Filter:", className="form-label small"),
-                dcc.Dropdown(
-                    id='video-date-filter-new',
-                    options=[
-                        {'label': 'All Time', 'value': 'all'},
-                        {'label': 'Last 7 Days', 'value': '7'},
-                        {'label': 'Last 30 Days', 'value': '30'},
-                        {'label': 'Last 90 Days', 'value': '90'}
-                    ],
-                    value='all',
-                    clearable=False,
-                    className='mb-3'
-                )
-            ], width=12, md=4)
-        ], className='mb-3'),
-
-        # Videos container - loads 48 videos initially, updates via dropdown callback
-        html.Div(
-            id='videos-container', 
-            className='row',
-            children=get_initial_video_display()
-        ),
-
-        # Pagination info
-        html.Div(id='videos-pagination', className='d-flex justify-content-center mt-3')
-    ])
+    return html.Div(
+        [
+            html.H3("Videos", className="mb-3"),
+            # Filter Controls
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.Label("Channel:", className="form-label small"),
+                            dcc.Dropdown(
+                                id="video-channel-dropdown-new",
+                                options=channel_options,
+                                value="all",
+                                placeholder="Select a channel",
+                                clearable=False,
+                                className="mb-3",
+                            ),
+                        ],
+                        width=12,
+                        md=4,
+                    ),
+                    dbc.Col(
+                        [
+                            html.Label("Search:", className="form-label small"),
+                            dbc.Input(
+                                id="video-search-input-new",
+                                placeholder="Search videos...",
+                                type="text",
+                                className="mb-3",
+                            ),
+                        ],
+                        width=12,
+                        md=4,
+                    ),
+                    dbc.Col(
+                        [
+                            html.Label("Date Filter:", className="form-label small"),
+                            dcc.Dropdown(
+                                id="video-date-filter-new",
+                                options=[
+                                    {"label": "All Time", "value": "all"},
+                                    {"label": "Last 7 Days", "value": "7"},
+                                    {"label": "Last 30 Days", "value": "30"},
+                                    {"label": "Last 90 Days", "value": "90"},
+                                ],
+                                value="all",
+                                clearable=False,
+                                className="mb-3",
+                            ),
+                        ],
+                        width=12,
+                        md=4,
+                    ),
+                ],
+                className="mb-3",
+            ),
+            # Videos container - loads 48 videos initially, updates via dropdown callback
+            html.Div(
+                id="videos-container",
+                className="row",
+                children=get_initial_video_display(),
+            ),
+            # Pagination info
+            html.Div(
+                id="videos-pagination", className="d-flex justify-content-center mt-3"
+            ),
+        ]
+    )
 
 
 def register_video_callbacks(app):
     """Register video callbacks for filtering functionality."""
-    
+
     @app.callback(
-        Output('videos-container', 'children'),
-        Input('video-channel-dropdown-new', 'value'),
-        prevent_initial_call=True
+        Output("videos-container", "children"),
+        Input("video-channel-dropdown-new", "value"),
+        prevent_initial_call=True,
     )
     def update_videos_on_channel_change(selected_channel):
         """Update videos when channel selection changes."""
         try:
             if selected_channel is None:
                 selected_channel = "all"
-            
+
             # Get videos for selected channel
             videos = video_manager.get_videos(channel=selected_channel, limit=200)
-            
+
             if not videos:
-                return [dbc.Alert(f"No videos found for '{selected_channel}'", color="info")]
-            
+                return [
+                    dbc.Alert(f"No videos found for '{selected_channel}'", color="info")
+                ]
+
             # Create video cards
             video_cards = [create_video_card(video) for video in videos]
-            
+
             # Format channel name for display
-            channel_display = "all channels" if selected_channel == "all" else f"'{selected_channel}'"
-            
+            channel_display = (
+                "all channels" if selected_channel == "all" else f"'{selected_channel}'"
+            )
+
             content = [
-                dbc.Alert(f"📺 Showing {len(video_cards)} videos from {channel_display}", 
-                         color="success", className="mb-3"),
-                html.Div(video_cards, className="row")
+                dbc.Alert(
+                    f"📺 Showing {len(video_cards)} videos from {channel_display}",
+                    color="success",
+                    className="mb-3",
+                ),
+                html.Div(video_cards, className="row"),
             ]
-            
+
             return content
-            
+
         except Exception as e:
             return [dbc.Alert(f"Error loading videos: {e}", color="danger")]
 

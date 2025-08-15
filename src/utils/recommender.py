@@ -5,16 +5,16 @@ content-based filtering techniques to generate personalized recommendations
 for users based on their interests, viewed items, and ratings.
 """
 
-import os
 import json
+import os
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
-from typing import List, Dict, Any, Optional, Tuple
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-import sys
-from src.utils.logging import get_logger
 from src.utils.file_system import get_project_root
+from src.utils.logging import get_logger
 
 
 class PersonalRecommender:

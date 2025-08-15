@@ -5,28 +5,27 @@ Microsoft Learn website for new or updated "Applied Skills" credentials.
 It uses Playwright for dynamic content rendering and detailed information extraction.
 """
 
-import re
-import time
-import logging
 import asyncio
-import os
+import json
+import logging
 import sys
-from typing import Any, Optional, Dict, List
-from bs4 import BeautifulSoup
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import requests
+from bs4 import BeautifulSoup
 from playwright.async_api import (
-    async_playwright,
     Page,
-    Browser,
+    async_playwright,
+)
+from playwright.async_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
-import json
-from datetime import datetime, timedelta
-from pathlib import Path
 
 # Add the project root to the path to ensure imports work correctly
 from src.watchers.base_watcher import BaseWatcher
-from src.utils.logging import get_logger
 
 
 class MSAppliedSkillsWatcher(BaseWatcher):
@@ -858,7 +857,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
             if applied_skills_links:
                 for i, link in enumerate(applied_skills_links[:3]):  # Show first 3
                     self.logger.warning(
-                        f"Sample Applied Skills link {i+1}: {link.get('href')} - Text: '{link.get_text(strip=True)[:50]}'"
+                        f"Sample Applied Skills link {i + 1}: {link.get('href')} - Text: '{link.get_text(strip=True)[:50]}'"
                     )
 
         return skills_with_urls
@@ -1125,14 +1124,12 @@ class MSAppliedSkillsWatcher(BaseWatcher):
 
 
 if __name__ == "__main__":
-    import argparse
     import asyncio
-    import sys
-    import os
-    from pathlib import Path
 
     # Set up logging level
     import logging
+    import sys
+    from pathlib import Path
 
     logging.basicConfig(level=logging.INFO)
 

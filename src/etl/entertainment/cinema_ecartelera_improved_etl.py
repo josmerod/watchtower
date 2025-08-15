@@ -5,11 +5,10 @@ import random
 import re
 import time
 from datetime import datetime, timedelta
-from typing import Any, List, Optional
+from typing import List
 from urllib.parse import urljoin
 
 from playwright.sync_api import sync_playwright
-from pydantic import BaseModel
 
 from src.etl.base import BaseETL
 from src.models.base import TimestampedModel
@@ -190,7 +189,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             try:
                 for i in range(3):
                     page.evaluate(
-                        f"window.scrollTo(0, document.body.scrollHeight * {(i+1)/3})"
+                        f"window.scrollTo(0, document.body.scrollHeight * {(i + 1) / 3})"
                     )
                     page.wait_for_timeout(1000)
             except Exception as e:
@@ -322,7 +321,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
                         try:
                             text_content = elem.inner_text().strip()[:100]
                             self.logger.debug(
-                                f"Sample element {i+1}: {text_content}..."
+                                f"Sample element {i + 1}: {text_content}..."
                             )
                         except:
                             pass

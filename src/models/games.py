@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from pydantic import Field, HttpUrl
 
-from src.models.base import BaseModel, TimestampedModel
+from src.models.base import TimestampedModel
 
 
 class GamePlatform(str, Enum):

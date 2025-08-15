@@ -4,7 +4,6 @@ import asyncio
 import json
 import random
 import re
-import time
 from datetime import datetime
 
 from bs4 import BeautifulSoup
@@ -183,7 +182,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
 
             # Extract course data from elements
             for i, element in enumerate(course_elements):
-                self.logger.debug(f"Processing element {i+1}/{len(course_elements)}")
+                self.logger.debug(f"Processing element {i + 1}/{len(course_elements)}")
                 course_data = self._extract_course_from_element(element)
                 if course_data:
                     courses.append(course_data)
@@ -192,7 +191,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                     )
                 else:
                     self.logger.debug(
-                        f"Failed to extract course data from element {i+1}"
+                        f"Failed to extract course data from element {i + 1}"
                     )
 
             return courses
