@@ -98,7 +98,20 @@ if not exist data\arxiv mkdir data\arxiv
 if not exist data\games mkdir data\games
 if not exist data\news mkdir data\news
 if not exist data\courses mkdir data\courses
-echo [PASS] Directory structure created
+if not exist data\ai_platforms mkdir data\ai_platforms
+if not exist data\deals mkdir data\deals
+if not exist data\entertainment mkdir data\entertainment
+if not exist data\anime mkdir data\anime
+if not exist data\adhd mkdir data\adhd
+if not exist data\fourchan mkdir data\fourchan
+if not exist data\spanish_public_aid mkdir data\spanish_public_aid
+if not exist data\intelligence mkdir data\intelligence
+if not exist data\github mkdir data\github
+if not exist data\giveaways mkdir data\giveaways
+if not exist data\ecommerce mkdir data\ecommerce
+if not exist data\watchers mkdir data\watchers
+if not exist data\shortcuts mkdir data\shortcuts
+echo [PASS] Complete directory structure created
 echo.
 
 echo [STEP 6/6] Testing installation...
@@ -122,18 +135,21 @@ echo [SUCCESS] Watchtower is now installed and ready to use!
 echo.
 echo 🚀 Quick Start Commands:
 echo   Main Dashboard:    run_watchtower_dashboard.bat
-echo   Legacy Dashboard:  run_watchtower.bat
+echo   Legacy Dashboard:  run_streamlit_app.bat
 echo   Run ETL Processes: run_all_etl.bat
 echo   Complete System:   run_all_etl_and_dashboard.bat
 echo.
 echo 🌐 Dashboard URLs:
 echo   Main Dashboard:    http://localhost:7777
 echo   Legacy Dashboard:  http://localhost:8501
+echo   Health Check:      http://localhost:7777/health
+echo   Metrics:           http://localhost:7777/metrics
 echo.
 echo 📖 Documentation:
-echo   Setup Guide:       docs/setup-guide.md
-echo   Dashboard Guide:   docs/dashboard_guide.md
-echo   Development Setup: DEVELOPMENT_SETUP.md
+echo   Deployment Guide:  docs/DEPLOYMENT_GUIDE.md
+echo   Dashboard Guide:   docs/DASHBOARD_DEVELOPMENT_GUIDE.md
+echo   Development Setup: CLAUDE.md
+echo   Architecture:      docs/ARCHITECTURE_OVERVIEW.md
 echo.
 echo [INFO] For help, see: https://github.com/yourusername/watchtower
 echo ========================================================
