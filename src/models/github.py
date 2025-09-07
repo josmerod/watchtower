@@ -20,13 +20,198 @@ class TrendingPeriod(str, Enum):
 
 
 class RepositoryLanguage(str, Enum):
-    """Enum for supported programming languages."""
+    """Enum for supported programming languages.
+    
+    This enum supports all major programming languages that GitHub tracks.
+    Values are normalized to lowercase with hyphens for consistency.
+    """
 
+    # Special categories
     ALL = "all"
+    
+    # Major programming languages
     PYTHON = "python"
+    JAVASCRIPT = "javascript"
+    TYPESCRIPT = "typescript"
+    JAVA = "java"
+    C = "c"
+    CPP = "cpp"
+    CSHARP = "csharp"
+    GO = "go"
+    RUST = "rust"
+    PHP = "php"
+    RUBY = "ruby"
+    SWIFT = "swift"
+    KOTLIN = "kotlin"
+    SCALA = "scala"
+    DART = "dart"
+    R = "r"
+    MATLAB = "matlab"
+    PERL = "perl"
+    LUA = "lua"
+    HASKELL = "haskell"
+    CLOJURE = "clojure"
+    ELIXIR = "elixir"
+    ERLANG = "erlang"
+    F_SHARP = "fsharp"
+    OBJECTIVE_C = "objective-c"
+    
+    # Web technologies  
+    HTML = "html"
+    CSS = "css"
+    SCSS = "scss"
+    SASS = "sass"
+    LESS = "less"
+    VUE = "vue"
+    
+    # Shell and scripting
+    SHELL = "shell"
+    BASH = "bash"
+    POWERSHELL = "powershell"
+    BATCH = "batchfile"
+    
+    # Data and config languages
+    SQL = "sql"
+    JSON = "json"
+    YAML = "yaml"
+    XML = "xml"
+    TOML = "toml"
+    INI = "ini"
+    
+    # Specialized languages
     JUPYTER_NOTEBOOK = "jupyter-notebook"
     CUDA = "cuda"
     HCL = "hcl"  # Terraform
+    DOCKERFILE = "dockerfile"
+    MAKEFILE = "makefile"
+    CMAKE = "cmake"
+    
+    # Assembly and low-level
+    ASSEMBLY = "assembly"
+    WEBASSEMBLY = "webassembly"
+    
+    # Functional languages
+    LISP = "lisp"
+    SCHEME = "scheme"
+    ML = "ml"
+    OCAML = "ocaml"
+    
+    # Other notable languages
+    FORTRAN = "fortran"
+    COBOL = "cobol"
+    ADA = "ada"
+    PASCAL = "pascal"
+    DELPHI = "delphi"
+    VERILOG = "verilog"
+    VHDL = "vhdl"
+    
+    @classmethod
+    def from_github_language(cls, language: str | None) -> 'RepositoryLanguage':
+        """Convert GitHub language string to RepositoryLanguage enum.
+        
+        Handles case-insensitive matching and common variations.
+        Returns ALL if language is None or not recognized.
+        """
+        if not language:
+            return cls.ALL
+            
+        # Normalize the language string
+        normalized = language.lower().strip()
+        
+        # Direct mapping for common GitHub language variations
+        language_map = {
+            # Case variations
+            "python": cls.PYTHON,
+            "javascript": cls.JAVASCRIPT,
+            "typescript": cls.TYPESCRIPT,
+            "java": cls.JAVA,
+            "c": cls.C,
+            "c++": cls.CPP,
+            "cpp": cls.CPP,
+            "c#": cls.CSHARP,
+            "csharp": cls.CSHARP,
+            "go": cls.GO,
+            "rust": cls.RUST,
+            "php": cls.PHP,
+            "ruby": cls.RUBY,
+            "swift": cls.SWIFT,
+            "kotlin": cls.KOTLIN,
+            "scala": cls.SCALA,
+            "dart": cls.DART,
+            "r": cls.R,
+            "matlab": cls.MATLAB,
+            "perl": cls.PERL,
+            "lua": cls.LUA,
+            "haskell": cls.HASKELL,
+            "clojure": cls.CLOJURE,
+            "elixir": cls.ELIXIR,
+            "erlang": cls.ERLANG,
+            "f#": cls.F_SHARP,
+            "fsharp": cls.F_SHARP,
+            "objective-c": cls.OBJECTIVE_C,
+            "objc": cls.OBJECTIVE_C,
+            
+            # Web technologies
+            "html": cls.HTML,
+            "css": cls.CSS,
+            "scss": cls.SCSS,
+            "sass": cls.SASS,
+            "less": cls.LESS,
+            "vue": cls.VUE,
+            
+            # Shell and scripting
+            "shell": cls.SHELL,
+            "bash": cls.BASH,
+            "powershell": cls.POWERSHELL,
+            "batchfile": cls.BATCH,
+            "batch": cls.BATCH,
+            
+            # Data and config
+            "sql": cls.SQL,
+            "json": cls.JSON,
+            "yaml": cls.YAML,
+            "yml": cls.YAML,
+            "xml": cls.XML,
+            "toml": cls.TOML,
+            "ini": cls.INI,
+            
+            # Specialized
+            "jupyter notebook": cls.JUPYTER_NOTEBOOK,
+            "jupyter-notebook": cls.JUPYTER_NOTEBOOK,
+            "cuda": cls.CUDA,
+            "hcl": cls.HCL,
+            "terraform": cls.HCL,
+            "dockerfile": cls.DOCKERFILE,
+            "makefile": cls.MAKEFILE,
+            "cmake": cls.CMAKE,
+            
+            # Assembly
+            "assembly": cls.ASSEMBLY,
+            "webassembly": cls.WEBASSEMBLY,
+            "wasm": cls.WEBASSEMBLY,
+            
+            # Others
+            "fortran": cls.FORTRAN,
+            "cobol": cls.COBOL,
+            "ada": cls.ADA,
+            "pascal": cls.PASCAL,
+            "delphi": cls.DELPHI,
+            "verilog": cls.VERILOG,
+            "vhdl": cls.VHDL,
+        }
+        
+        # Try to find a match
+        mapped_language = language_map.get(normalized)
+        if mapped_language:
+            return mapped_language
+            
+        # If no exact match, try to find enum member by value matching
+        for member in cls:
+            if member.value.lower() == normalized:
+                return member
+                
+        # If still no match, return ALL (most permissive)
+        return cls.ALL
 
 
 class GitHubRepositoryOwner(BaseModel):
@@ -122,6 +307,20 @@ class GitHubRepositoryModel(TimestampedModel):
         elif isinstance(v, list):
             return [str(topic).strip() for topic in v if str(topic).strip()]
         return []
+
+    @field_validator("trending_language", mode="before")
+    @classmethod
+    def parse_trending_language(cls, v: Any) -> RepositoryLanguage:
+        """Parse trending language from GitHub API response.
+        
+        Handles case-insensitive matching and converts GitHub language names
+        to our normalized enum values.
+        """
+        if isinstance(v, RepositoryLanguage):
+            return v
+        if isinstance(v, str):
+            return RepositoryLanguage.from_github_language(v)
+        return RepositoryLanguage.ALL
 
     @field_validator(
         "repository_created_at",

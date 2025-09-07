@@ -36,9 +36,6 @@ REM Create logs directory if it doesn't exist
 if not exist logs mkdir logs
 
 REM Run all ETL and watcher scripts in parallel - only files that exist
-REM Games ETL
-if exist "src\etl\games\allkeyshop_etl.py" start /B %PYTHON_CMD% src/etl/games/allkeyshop_etl.py
-
 REM News ETL  
 if exist "src\etl\news\news_get_ycombinator.py" start /B %PYTHON_CMD% src/etl/news/news_get_ycombinator.py
 if exist "src\etl\news\news_get_futuretools.py" start /B %PYTHON_CMD% src/etl/news/news_get_futuretools.py
@@ -60,6 +57,12 @@ if exist "src\etl\news\news_get_media_rss.py" start /B %PYTHON_CMD% src/etl/news
 if exist "src\etl\news\news_get_meneame.py" start /B %PYTHON_CMD% src/etl/news/news_get_meneame.py
 if exist "src\etl\news\news_get_kagi.py" start /B %PYTHON_CMD% src/etl/news/news_get_kagi.py
 if exist "src\etl\news\news_get_devto.py" start /B %PYTHON_CMD% src/etl/news/news_get_devto.py
+if exist "src\etl\news\news_get_techcrunch.py" start /B %PYTHON_CMD% src/etl/news/news_get_techcrunch.py
+if exist "src\etl\news\news_get_venturebeat.py" start /B %PYTHON_CMD% src/etl/news/news_get_venturebeat.py
+if exist "src\etl\news\news_get_freecodecamp.py" start /B %PYTHON_CMD% src/etl/news/news_get_freecodecamp.py
+if exist "src\etl\news\news_get_google_ai_blog.py" start /B %PYTHON_CMD% src/etl/news/news_get_google_ai_blog.py
+if exist "src\etl\news\news_get_lobsters.py" start /B %PYTHON_CMD% src/etl/news/news_get_lobsters.py
+if exist "src\etl\news\news_get_arstechnica.py" start /B %PYTHON_CMD% src/etl/news/news_get_arstechnica.py
 
 REM Reddit ETL
 if exist "src\etl\news\reddit_unified_etl.py" start /B %PYTHON_CMD% src/etl/news/reddit_unified_etl.py
@@ -67,6 +70,9 @@ if exist "src\etl\giveaways\reddit_giveaways_etl.py" start /B %PYTHON_CMD% src/e
 
 REM Deals ETL
 if exist "src\etl\deals\run_all_deals.py" start /B %PYTHON_CMD% src/etl/deals/run_all_deals.py
+if exist "src\etl\deals\slickdeals_etl.py" start /B %PYTHON_CMD% src/etl/deals/slickdeals_etl.py
+if exist "src\etl\deals\woot_etl.py" start /B %PYTHON_CMD% src/etl/deals/woot_etl.py
+if exist "src\etl\deals\isthereanydeal_rss_etl.py" start /B %PYTHON_CMD% src/etl/deals/isthereanydeal_rss_etl.py
 
 REM Goldigging ETL
 if exist "src\etl\goldigging\goldigging_coursera_courses.py" start /B %PYTHON_CMD% src/etl/goldigging/goldigging_coursera_courses.py
@@ -82,14 +88,46 @@ if exist "src\etl\arxiv\arxiv_etl.py" start /B %PYTHON_CMD% src/etl/arxiv/arxiv_
 REM Anime ETL
 if exist "src\etl\anime\mal_etl.py" start /B %PYTHON_CMD% src/etl/anime/mal_etl.py
 
+REM AI Platforms
+if exist "src\etl\ai_platforms\papers_with_code_etl.py" start /B %PYTHON_CMD% src/etl/ai_platforms/papers_with_code_etl.py
+
 REM Watchers
 if exist "src\watchers\ms_skills_watcher.py" start /B %PYTHON_CMD% src/watchers/ms_skills_watcher.py
 
 REM Youtube ETL
 if exist "src\etl\youtube_shorts_ocr_etl.py" start /B %PYTHON_CMD% src/etl/youtube_shorts_ocr_etl.py
 
+REM Courses
+if exist "src\etl\courses\khan_academy_etl.py" start /B %PYTHON_CMD% src/etl/courses/khan_academy_etl.py
+REM Intelligence feeds
+if exist "src\etl\intelligence\sec_edgar_rss.py" start /B %PYTHON_CMD% src/etl/intelligence/sec_edgar_rss.py
+if exist "src\etl\intelligence\who_outbreaks_rss.py" start /B %PYTHON_CMD% src/etl/intelligence/who_outbreaks_rss.py
+
+REM Games ETL
+if exist "src\etl\games\games_get_deals.py" start /B %PYTHON_CMD% src/etl/games/games_get_deals.py
+if exist "src\etl\games\games_get_humblebundles.py" start /B %PYTHON_CMD% src/etl/games/games_get_humblebundles.py
+if exist "src\etl\games\games_get_new_releases.py" start /B %PYTHON_CMD% src/etl/games/games_get_new_releases.py
+if exist "src\etl\games\games_get_itchio_trending.py" start /B %PYTHON_CMD% src/etl/games/games_get_itchio_trending.py
+if exist "src\etl\games\games_get_epic_free.py" start /B %PYTHON_CMD% src/etl/games/games_get_epic_free.py
+if exist "src\etl\games\enhanced_free_games_etl.py" start /B %PYTHON_CMD% src/etl/games/enhanced_free_games_etl.py
+if exist "src\etl\games\games_get_gog_rss.py" start /B %PYTHON_CMD% src/etl/games/games_get_gog_rss.py
+if exist "src\etl\games\games_get_isthereanydeal_api.py" start /B %PYTHON_CMD% src/etl/games/games_get_isthereanydeal_api.py
+if exist "src\etl\games\games_get_metacritic_rss.py" start /B %PYTHON_CMD% src/etl/games/games_get_metacritic_rss.py
+if exist "src\etl\games\games_get_giantbomb.py" start /B %PYTHON_CMD% src/etl/games/games_get_giantbomb.py
+
+REM Entertainment ETL
+if exist "src\etl\entertainment\trakt_trending_etl.py" start /B %PYTHON_CMD% src/etl/entertainment/trakt_trending_etl.py
+if exist "src\etl\entertainment\spotify_browse_etl.py" start /B %PYTHON_CMD% src/etl/entertainment/spotify_browse_etl.py
+
+REM AI Platforms ETL
+if exist "src\etl\ai_platforms\replicate_models_etl.py" start /B %PYTHON_CMD% src/etl/ai_platforms/replicate_models_etl.py
+if exist "src\etl\ai_platforms\replicate_explore_playwright_etl.py" start /B %PYTHON_CMD% src/etl/ai_platforms/replicate_explore_playwright_etl.py
+
 REM Spanish Public Aid ETL
 if exist "src\etl\spanish_public_aid\spanish_public_aid_etl.py" start /B %PYTHON_CMD% src/etl/spanish_public_aid/spanish_public_aid_etl.py
+
+REM 4chan Generals ETL
+if exist "src\etl\fourchan\fourchan_generals_etl.py" start /B %PYTHON_CMD% src/etl/fourchan/fourchan_generals_etl.py
 
 
 echo All available ETL processes started in parallel using %PYTHON_CMD%
@@ -99,6 +137,8 @@ echo ETL processes are running in background...
 echo Data will be saved to respective directories:
 echo - data/games/
 echo - data/news/
+echo - data/ai_platforms/
+echo - data/courses/
 echo - data/meneame/
 echo - data/deals/
 echo - data/goldigging/
@@ -108,6 +148,7 @@ echo - data/youtube_shorts_ocr/
 echo - data/spanish_public_aid/
 echo - data/reddit_unified/
 echo - data/giveaways/
+echo - data/4chan_generals/
 echo.
 echo Script completed at %date% %time%
 echo Note: Individual ETL processes may still be running in background

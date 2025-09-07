@@ -54,8 +54,25 @@
       "Bash(then echo \"✅ Found in Linux script\")",
       "Bash(fi)",
       "Bash(if grep -q \"spanish_public_aid_etl.py\" run_all_etl.bat)",
-      "Bash(then echo \"✅ Found in Windows script\")"
+      "Bash(then echo \"✅ Found in Windows script\")",
+      "mcp__playwright__browser_navigate",
+      "Bash(dir:*)",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(if [ -f \"src/etl/fourchan/fourchan_generals_etl.py\" ])",
+      "Bash(then echo \"✅ 4chan ETL found and will be executed\")",
+      "Bash(else echo \"❌ 4chan ETL not found\")",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_close",
+      "Bash(jq:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__playwright__browser_snapshot"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "C:\\c\\Users\\josem"
+    ]
   }
 }

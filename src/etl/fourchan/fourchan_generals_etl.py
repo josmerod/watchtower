@@ -145,3 +145,14 @@ class FourChanGeneralsETL(SimpleETL):
             encoding="utf-8",
         )
         self.logger.info(f"Latest snapshot saved to {latest_path}")
+
+
+if __name__ == "__main__":
+    """Run the 4chan Generals ETL."""
+    etl = FourChanGeneralsETL()
+    try:
+        metrics = etl.run()
+        print(f"ETL completed successfully. Processed {metrics.records_extracted} records.")
+    except Exception as e:
+        print(f"ETL failed with error: {e}")
+        raise

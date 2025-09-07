@@ -1,0 +1,315 @@
+"""Intelligence Dashboard Tab
+
+Aggregates security/regulatory/health intelligence feeds (e.g., SEC EDGAR, WHO DON).
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from collections import Counter
+from datetime import datetime, timezone
+from typing import Any, Dict, List
+
+import dash_bootstrap_components as dbc
+import plotly.express as px
+from dash import Input, Output, callback, dash_table, dcc, html
+
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+INTEL_SOURCES_CONFIG: Dict[str, Dict[str, Any]] = {
+    "sec_edgar": {
+        "path": get_data_path("intelligence", "sec_edgar_latest.json"),
+        "name": "SEC EDGAR Filings",
+        "icon": "📑",
+        "category": "Regulatory",
+        "color": "primary",
+        "description": "Recent US SEC company filings",
+    },
+    "who_outbreaks": {
+        "path": get_data_path("intelligence", "who_outbreaks_latest.json"),
+        "name": "WHO Outbreak News",
+        "icon": "🩺",
+        "category": "Health",
+        "color": "danger",
+        "description": "Global disease outbreak news (WHO DON)",
+    },
+}
+
+
+def load_intel_data(file_path: str) -> List[Dict[str, Any]]:
+    try:
+        if not file_exists(file_path):
+            logger.info(f"Intelligence data file not found: {file_path}")
+            return []
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return [process_intel_item(item) for item in data if process_intel_item(item)]
+        return []
+    except Exception as e:
+        logger.error(f"Error loading intelligence data from {file_path}: {e}")
+        return []
+
+
+def process_intel_item(item: Dict[str, Any]) -> Dict[str, Any] | None:
+    try:
+        title = item.get("title", item.get("name", "Untitled"))
+        url = item.get("url", item.get("link", "#"))
+        published = item.get("published") or item.get("date") or item.get("created_at")
+        published_dt = parse_date_universal(published, "Intelligence")
+        content_type = item.get("content_type", item.get("type", "item"))
+        source = item.get("source", "unknown")
+        summary = item.get("summary", item.get("abstract", ""))
+        region = item.get("region", "global")
+        return {
+            "title": title,
+            "url": url,
+            "published": published_dt,
+            "content_type": content_type,
+            "source": source,
+            "summary": summary[:200] + ("..." if len(summary) > 200 else ""),
+            "region": region,
+        }
+    except Exception as e:
+        logger.error(f"Error processing intelligence item: {e}")
+        return None
+
+
+# Load data for all sources
+INTEL_DATA: Dict[str, List[Dict[str, Any]]] = {}
+for source_id, cfg in INTEL_SOURCES_CONFIG.items():
+    data = load_intel_data(cfg["path"])
+    INTEL_DATA[source_id] = data
+    logger.info(f"Loaded {len(data)} items for {cfg['name']}")
+
+
+def create_intel_summary_cards() -> List[html.Div]:
+    cards: List[html.Div] = []
+    for source_id, cfg in INTEL_SOURCES_CONFIG.items():
+        data = INTEL_DATA[source_id]
+        count = len(data)
+        latest = (
+            max((d["published"] for d in data if d.get("published")), default=None)
+            if data
+            else None
+        )
+        status_color = cfg["color"] if count > 0 else "secondary"
+        cards.append(
+            dbc.Col(
+                dbc.Card(
+                    [
+                        dbc.CardHeader(
+                            [
+                                html.H6(
+                                    [html.Span(cfg["icon"], className="me-2"), cfg["name"]],
+                                    className="mb-0",
+                                ),
+                                dbc.Badge(f"{count} items", color=status_color, className="float-end"),
+                            ]
+                        ),
+                        dbc.CardBody(
+                            [
+                                html.P(cfg["description"], className="small text-muted mb-2"),
+                                html.Div(
+                                    [
+                                        html.Strong("Category: "),
+                                        dbc.Badge(cfg["category"], color="info", className="ms-1"),
+                                    ]
+                                ),
+                                html.Div(
+                                    [
+                                        html.Strong("Latest: "),
+                                        html.Span(
+                                            latest.strftime("%Y-%m-%d %H:%M UTC") if latest else "N/A",
+                                            className="text-muted small",
+                                        ),
+                                    ],
+                                    className="mt-1",
+                                ),
+                                dbc.Button(
+                                    f"View {cfg['name']}",
+                                    id=f"btn-intel-{source_id}",
+                                    color="outline-primary",
+                                    size="sm",
+                                    className="w-100 mt-2",
+                                ),
+                            ]
+                        ),
+                    ],
+                    className="mb-3 h-100",
+                ),
+                md=6,
+            )
+        )
+    return cards
+
+
+def create_intel_table(source_id: str, items: List[Dict[str, Any]]) -> html.Div:
+    if not items:
+        return dbc.Alert("No intelligence items available for this source.", color="info")
+
+    # Sort by published desc
+    sorted_items = sorted(
+        items,
+        key=lambda x: x.get("published") or datetime.min.replace(tzinfo=timezone.utc),
+        reverse=True,
+    )
+
+    df_rows = []
+    for it in sorted_items:
+        date_str = it["published"].strftime("%Y-%m-%d %H:%M") if it.get("published") else "N/A"
+        df_rows.append(
+            {
+                "Title": it.get("title", "Untitled")[:100] + ("..." if len(it.get("title", "")) > 100 else ""),
+                "Date": date_str,
+                "Type": it.get("content_type", "item"),
+                "Region": it.get("region", "global"),
+                "URL": it.get("url", "#"),
+            }
+        )
+
+    columns = [
+        {"name": "Title", "id": "Title", "type": "text"},
+        {"name": "Date", "id": "Date", "type": "text"},
+        {"name": "Type", "id": "Type", "type": "text"},
+        {"name": "Region", "id": "Region", "type": "text"},
+        {"name": "Link", "id": "URL", "type": "text", "presentation": "markdown"},
+    ]
+
+    # Links to markdown
+    for row in df_rows:
+        row["URL"] = f"[Open]({row['URL']})" if row["URL"] and row["URL"] != "#" else "N/A"
+
+    return dash_table.DataTable(
+        data=df_rows,
+        columns=columns,
+        page_size=10,
+        sort_action="native",
+        filter_action="native",
+        style_cell={
+            "textAlign": "left",
+            "padding": "8px",
+            "fontFamily": "Poppins, sans-serif",
+            "maxWidth": "220px",
+            "overflow": "hidden",
+            "textOverflow": "ellipsis",
+        },
+        style_header={"backgroundColor": "#3C3970", "color": "#E2E8F0", "fontWeight": "bold"},
+        style_data={"backgroundColor": "#2D2B55", "color": "#CDD6F4", "whiteSpace": "normal", "height": "auto"},
+        style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "#252343"}],
+    )
+
+
+def create_timeline_chart(items: List[Dict[str, Any]]) -> html.Div:
+    dates = [it["published"].strftime("%Y-%m-%d") for it in items if it.get("published")]
+    if not dates:
+        return html.Div("No date data available for timeline")
+    counts = Counter(dates)
+    x = sorted(counts.keys())
+    y = [counts[d] for d in x]
+    fig = px.line(x=x, y=y, title="Items Over Time", labels={"x": "Date", "y": "Items"})
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="#CDD6F4",
+        title_font_color="#A37FFF",
+    )
+    return dcc.Graph(figure=fig)
+
+
+def render_intelligence_tab() -> html.Div:
+    total_items = sum(len(v) for v in INTEL_DATA.values())
+    return html.Div(
+        [
+            html.H3("Intelligence Feeds", className="mb-3"),
+            # Summary stats
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody([
+                                html.H4(total_items, className="text-primary mb-0"),
+                                html.P("Total Items", className="text-muted small mb-0"),
+                            ])
+                        ),
+                        md=3,
+                    ),
+                ],
+                className="mb-4",
+            ),
+            # Source cards
+            html.H4("Sources", className="text-primary mb-3"),
+            dbc.Row(create_intel_summary_cards(), className="mb-4"),
+            # Timeline for all items
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(html.H5("Timeline", className="mb-0")),
+                                    dbc.CardBody(
+                                        [
+                                            create_timeline_chart(
+                                                [it for items in INTEL_DATA.values() for it in items]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            )
+                        ],
+                        md=12,
+                    )
+                ],
+                className="mb-4",
+            ),
+            # Data display area
+            html.Div(id="intelligence-data-display"),
+            dcc.Store(id="selected-intel-source"),
+        ]
+    )
+
+
+def register_intelligence_callbacks(app):
+    # Single callback for all source buttons using app.callback
+    input_list = [Input(f"btn-intel-{source_id}", "n_clicks") for source_id in INTEL_SOURCES_CONFIG.keys()]
+    
+    @app.callback(
+        Output("intelligence-data-display", "children"),
+        Output("selected-intel-source", "data"),
+        input_list,
+        prevent_initial_call=True,
+    )
+    def display_intel_data(*n_clicks_list):
+        from dash import callback_context
+        ctx = callback_context
+        if not ctx.triggered:
+            return html.Div(), None
+            
+        # Find which button was triggered
+        triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        source_id = triggered_id.replace('btn-intel-', '')
+        
+        if source_id in INTEL_SOURCES_CONFIG:
+            cfg = INTEL_SOURCES_CONFIG[source_id]
+            items = INTEL_DATA[source_id]
+            return (
+                html.Div(
+                    [
+                        html.Hr(),
+                        html.H4(
+                            [html.Span(cfg["icon"], className="me-2"), f"{cfg['name']} Items"],
+                            className="text-primary mb-3",
+                        ),
+                        create_intel_table(source_id, items),
+                    ]
+                ),
+                source_id,
+            )
+        return html.Div(), None

@@ -123,6 +123,31 @@ NEWS_SOURCES_CONFIG = {
     },
     # Dev.to articles
     "devto": {"path": get_data_path("devto", "devto.json"), "name": "Dev.to"},
+    # New high-impact sources
+    "techcrunch": {
+        "path": get_data_path("news", "techcrunch_latest.json"),
+        "name": "TechCrunch",
+    },
+    "venturebeat": {
+        "path": get_data_path("news", "venturebeat_latest.json"),
+        "name": "VentureBeat",
+    },
+    "freecodecamp": {
+        "path": get_data_path("news", "freecodecamp_latest.json"),
+        "name": "freeCodeCamp",
+    },
+    "google_ai_blog": {
+        "path": get_data_path("news", "google_ai_blog_latest.json"),
+        "name": "Google AI Blog",
+    },
+    "lobsters": {
+        "path": get_data_path("news", "lobsters_latest.json"),
+        "name": "Lobsters",
+    },
+    "arstechnica": {
+        "path": get_data_path("news", "arstechnica_latest.json"),
+        "name": "Ars Technica",
+    },
 }
 
 
@@ -265,6 +290,7 @@ def format_article_date(article):
     # Common date fields in order of preference
     date_fields = [
         "published_at",
+        "published",
         "published_date",
         "created_at",
         "updated_at",
@@ -397,6 +423,12 @@ def render_news_tab():
             "keys": ["futuretools", "bensbites"],
             "id": "ft-bb",
         },
+        {"label": "TechCrunch", "keys": "techcrunch", "id": "tc"},
+        {"label": "VentureBeat", "keys": "venturebeat", "id": "vb"},
+        {"label": "freeCodeCamp", "keys": "freecodecamp", "id": "fcc"},
+        {"label": "Google AI Blog", "keys": "google_ai_blog", "id": "gaib"},
+        {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"},
+        {"label": "Ars Technica", "keys": "arstechnica", "id": "ars"},
         {"label": "Hacker News", "keys": "hackernews", "id": "hn"},
         {"label": "Medium GenAI", "keys": "medium_genai", "id": "med_genai"},
         {"label": "KDnuggets", "keys": "kdnuggets", "id": "kdn"},

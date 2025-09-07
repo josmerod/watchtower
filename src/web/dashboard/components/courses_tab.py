@@ -12,13 +12,15 @@ from src.web.dashboard.utils import file_exists, get_data_path
 COURSERA_DATA_PATH = get_data_path("classcentral", "coursera_courses.json")
 UDEMY_DATA_PATH = get_data_path("udemy", "udemy_courses.json")
 PLURALSIGHT_DATA_PATH = get_data_path("pluralsight_courses", "pluralsight_courses.json")
+KHAN_ACADEMY_DATA_PATH = get_data_path("courses", "khan_academy_latest.json")
 
 ALL_COURSES_DATA = {
     "coursera": pd.DataFrame(),
     "udemy": pd.DataFrame(),
     "pluralsight": pd.DataFrame(),
+    "khan": pd.DataFrame(),
 }
-COURSES_DATA_LOADED = {"coursera": False, "udemy": False, "pluralsight": False}
+COURSES_DATA_LOADED = {"coursera": False, "udemy": False, "pluralsight": False, "khan": False}
 # Page size for tables
 PAGE_SIZE = 15
 
@@ -229,7 +231,38 @@ def load_all_courses_data():
     load_coursera_data()
     load_udemy_data()
     load_pluralsight_data()
+    load_khan_academy_data()
     print("Attempted to load all courses data.")
+
+
+def load_khan_academy_data():
+    global ALL_COURSES_DATA, COURSES_DATA_LOADED
+    file_path = KHAN_ACADEMY_DATA_PATH
+    if not file_exists(file_path):
+        print(f"Warning (Khan): File not found at {file_path}")
+        ALL_COURSES_DATA["khan"] = pd.DataFrame()
+        COURSES_DATA_LOADED["khan"] = True
+        return
+    try:
+        df = pd.read_json(file_path)
+    except Exception as e:
+        print(f"Error (Khan): Failed to load or parse {file_path}. Error: {e}")
+        ALL_COURSES_DATA["khan"] = pd.DataFrame()
+        COURSES_DATA_LOADED["khan"] = True
+        return
+    if df.empty:
+        ALL_COURSES_DATA["khan"] = pd.DataFrame()
+        COURSES_DATA_LOADED["khan"] = True
+        return
+    # Standardize minimal columns
+    df.rename(columns={"content_kind": "type"}, inplace=True)
+    expected_cols = ["title", "url", "type", "subject_path", "language", "fetched_at"]
+    for col in expected_cols:
+        if col not in df.columns:
+            df[col] = None
+    ALL_COURSES_DATA["khan"] = df
+    COURSES_DATA_LOADED["khan"] = True
+    print(f"Info (Khan): Loaded {len(df)} items.")
 
 
 load_all_courses_data()
@@ -255,10 +288,6 @@ def create_coursera_table(df_subset):
                     html.Th("Subject"),
                     html.Th("Language"),
                     html.Th("Duration"),
-                    html.Th("Start Date"),
-                    html.Th("Added"),
-                    html.Th("Free"),
-                    html.Th("Certificate"),
                 ]
             )
         )
@@ -280,10 +309,6 @@ def create_coursera_table(df_subset):
                     html.Td(row.get("subject", "N/A")),
                     html.Td(row.get("language", "N/A")),
                     html.Td(row.get("duration", "N/A")),
-                    html.Td(format_coursera_display_date(row.get("start_date"))),
-                    html.Td(format_coursera_display_date(row.get("scraped_at"))),
-                    html.Td("Yes" if row.get("is_free") else "No"),
-                    html.Td("Yes" if row.get("certificate_offered") else "No"),
                 ]
             )
         )
@@ -507,6 +532,7 @@ def render_courses_tab():
         not COURSES_DATA_LOADED["coursera"]
         and not COURSES_DATA_LOADED["udemy"]
         and not COURSES_DATA_LOADED["pluralsight"]
+        and not COURSES_DATA_LOADED["khan"]
     ):
         return dbc.Alert(
             "All course data failed to load. Please check data sources and ETLs.",
@@ -543,6 +569,13 @@ def render_courses_tab():
                         tab_id="tab-pluralsight",
                         children=render_pluralsight_courses_sub_tab(
                             ALL_COURSES_DATA["pluralsight"]
+                        ),
+                    ),
+                    dbc.Tab(
+                        label="Khan Academy",
+                        tab_id="tab-khan",
+                        children=render_khan_courses_sub_tab(
+                            ALL_COURSES_DATA["khan"]
                         ),
                     ),
                 ],
@@ -775,7 +808,7 @@ def register_courses_callbacks(app):
 
             # Need a create_udemy_table helper
             table_header = [
-                html.Thead(html.Tr([html.Th("Title"), html.Th("Added Date")]))
+                html.Thead(html.Tr([html.Th("Title")]))
             ]
             table_body_rows = []
             for _, row in df_paginated.iterrows():
@@ -789,9 +822,6 @@ def register_courses_callbacks(app):
                                     target="_blank",
                                 )
                             ),
-                            html.Td(
-                                format_coursera_display_date(row.get("scraped_at"))
-                            ),  # Reusing date formatter
                         ]
                     )
                 )
@@ -939,8 +969,6 @@ def register_courses_callbacks(app):
                         [
                             html.Th("Title"),
                             html.Th("Instructor"),
-                            html.Th("Level"),
-                            html.Th("Added Date"),
                         ]
                     )
                 )
@@ -962,12 +990,6 @@ def register_courses_callbacks(app):
                                 if row.get("instructor") != "false"
                                 else "N/A"
                             ),
-                            html.Td(row.get("level", "N/A")),
-                            html.Td(
-                                format_coursera_display_date(
-                                    row.get("scraped_at_parsed")
-                                )
-                            ),  # Reusing date formatter
                         ]
                     )
                 )
@@ -1020,6 +1042,46 @@ def register_courses_callbacks(app):
     )
     def reset_pluralsight_pagination(_, __):
         return 1
+
+    # Khan: simple searchable list
+    @app.callback(
+        Output("khan-table-container", "children"),
+        Input("khan-search-input", "value"),
+        prevent_initial_call=False,
+    )
+    def update_khan_table(search_term):
+        try:
+            if not COURSES_DATA_LOADED["khan"]:
+                return dbc.Alert("Loading Khan Academy data...", color="info")
+            df = ALL_COURSES_DATA["khan"].copy()
+            if df.empty:
+                return dbc.Alert("No Khan Academy data available.", color="warning")
+            if search_term:
+                s = str(search_term).lower()
+                df = df[
+                    df["title"].str.lower().str.contains(s, na=False)
+                    | df["subject_path"].str.lower().str.contains(s, na=False)
+                ]
+            # Build simple table
+            header = [
+                html.Thead(html.Tr([html.Th("Title"), html.Th("Type"), html.Th("Subject")]))
+            ]
+            rows = []
+            for _, row in df.head(50).iterrows():
+                rows.append(
+                    html.Tr(
+                        [
+                            html.Td(
+                                html.A(row.get("title", "N/A"), href=row.get("url"), target="_blank")
+                            ),
+                            html.Td(row.get("type", "N/A")),
+                            html.Td(row.get("subject_path", "")),
+                        ]
+                    )
+                )
+            return dbc.Table(header + [html.Tbody(rows)], bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive")
+        except Exception as e:
+            return dbc.Alert(f"Error loading Khan Academy data: {str(e)}", color="danger")
 
 
 def render_pluralsight_courses_sub_tab(df):
@@ -1104,6 +1166,36 @@ def render_pluralsight_courses_sub_tab(df):
             ),
         ],
         className="mt-3",
+    )
+
+
+def render_khan_courses_sub_tab(df):
+    if not COURSES_DATA_LOADED["khan"]:
+        return dbc.Alert(
+            "Khan Academy data failed to load. Check logs.",
+            color="danger",
+            className="mt-3",
+        )
+    if df.empty:
+        return dbc.Alert(
+            "No Khan Academy data currently available (file might be empty).",
+            color="info",
+            className="mt-3",
+        )
+    return html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Input(id="khan-search-input", placeholder="Search by title/subject..."),
+                        md=12,
+                        className="mb-2",
+                    )
+                ],
+                className="mt-3 mb-3",
+            ),
+            html.Div(id="khan-table-container"),
+        ]
     )
 
 

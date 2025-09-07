@@ -6,12 +6,14 @@
 - Emphasis on code quality, maintainability, and scalability
 - Clear communication and comprehensive documentation
 - Security-first approach for data handling and API access
+- UV-first package management for 10-100x faster dependency resolution
+- Dash-based modern dashboard architecture with Bootstrap styling
 
 ## Actual Tech Stack (Based on Implementation Analysis)
 - **Core**: Python 3.10+
-- **Package Management**: pyproject.toml with setuptools, pip with requirements.txt (compatibility)
+- **Package Management**: UV (primary), pyproject.toml with setuptools/hatchling
 - **Code Quality**: Ruff (linting & formatting), mypy (type checking), pytest (testing)
-- **Web Framework**: Streamlit (primary dashboard), FastAPI (optional APIs)
+- **Web Framework**: Dash (primary dashboard), Streamlit (legacy compatibility), FastAPI (optional APIs)
 - **Data Processing**: pandas (primary), polars (declared but pandas dominant), NumPy
 - **ML/NLP**: scikit-learn, NLTK, transformers (text classification)
 - **Web Scraping**: requests, BeautifulSoup4, Playwright, feedparser
@@ -41,13 +43,18 @@
    - Auto-discovery of project root
    - Path resolution for relative/absolute paths
 
-4. **Streamlit Component Pattern** (`src/web/fullstreamlit/`)
-   - Tab-based modular architecture
+4. **Dash Component Pattern** (`src/web/dashboard/`)
+   - Tab-based modular architecture with Bootstrap styling
+   - Component managers for data loading and filtering
+   - Single callback pattern to prevent conflicts
+   - Performance optimization with caching strategies
+
+5. **Streamlit Legacy Pattern** (`src/web/fullstreamlit/`)
    - Ultra-optimized data service with caching
    - Component-based rendering with error handling
    - Performance optimization with TTL caching
 
-5. **Pydantic Model Pattern** (`src/models/`)
+6. **Pydantic Model Pattern** (`src/models/`)
    - Domain-specific models: ArxivPaperModel, TechnologyModel, SecurityModel
    - Enum-based classifications (TrendDirection, AdoptionLevel, etc.)
    - Timestamped and status models inheritance
@@ -55,11 +62,13 @@
 
 ## Data Flow Architecture (Actual Implementation)
 ```
-External Sources → Watchers → ETL Pipelines → JSON/CSV Storage → Streamlit Dashboard
-     ↓                ↓            ↓              ↓                    ↓
-- ArXiv RSS       - Monitor    - Extract      - File-based        - Tab Components
-- Course APIs     - Parse      - Transform    - Event logs        - Data Services  
-- News Feeds      - Store      - Classify     - Checkpoints       - Interactive UI
+External Sources → Watchers → ETL Pipelines → JSON/CSV Storage → Dash Dashboard
+     ↓                ↓            ↓              ↓                  ↓
+- ArXiv RSS       - Monitor    - Extract      - File-based      - Tab Components
+- Course APIs     - Parse      - Transform    - Event logs      - Data Managers  
+- News Feeds      - Store      - Classify     - Checkpoints     - Interactive UI
+- Game APIs       - Detect     - Validate     - Metrics         - Bootstrap Cards
+- AI Platforms    - Events     - Load         - Health APIs     - Real-time Updates
 ```
 
 ## Code Standards (Reflecting Actual Patterns)
@@ -69,6 +78,7 @@ External Sources → Watchers → ETL Pipelines → JSON/CSV Storage → Streaml
    - Google-style docstrings with examples
    - F-string formatting for logging and string operations
    - Context managers for file operations and resources
+   - UV commands: `uv sync --all-extras`, `uv run python`, `uv run pytest`
 
 2. **Architecture Patterns (Actually Used)**
    - Template Method: BaseETL.run() orchestrates extract/transform/load
@@ -105,25 +115,32 @@ External Sources → Watchers → ETL Pipelines → JSON/CSV Storage → Streaml
    - Implement checkpointing for long-running processes
    - Handle API rate limits with retry mechanisms
 
-2. **Streamlit Components**
+2. **Dash Components**
+   - Create tab functions in `src/web/dashboard/components/`
+   - Use data manager classes for data loading and filtering
+   - Implement single callback pattern to prevent conflicts
+   - Use Bootstrap components with dbc styling
+   - Error handling with graceful degradation
+
+3. **Streamlit Components (Legacy)**
    - Create tab functions in `src/web/fullstreamlit/components/`
    - Use ultra-optimized data service for data access
    - Implement error boundaries with render_tab_safely pattern
    - Cache data loading with appropriate TTL values
 
-3. **Data Models**
+4. **Data Models**
    - Use Pydantic BaseModel for all data structures
    - Implement domain-specific enums for classifications
    - Add validation methods and computed properties
    - Support JSON serialization for storage
 
-4. **Configuration Management**
+5. **Configuration Management**
    - Nested Pydantic Settings with double underscore env vars
    - Auto-discovery of project root directory
    - Component-specific configuration classes
    - Environment-based configuration overrides
 
-5. **Monitoring & Logging**
+6. **Monitoring & Logging**
    - Structured logging with component-specific loggers
    - Performance logging for ETL operations
    - Event logging for state changes
@@ -139,15 +156,26 @@ src/
 │   ├── base.py           # BaseETL framework with metrics
 │   ├── arxiv/            # ArXiv paper processing
 │   ├── courses/          # Course aggregation ETLs
-│   └── news/             # News and content ETLs
+│   ├── news/             # News and content ETLs
+│   ├── games/            # Game deals and releases
+│   ├── deals/            # Deal aggregation across categories
+│   ├── ai_platforms/     # AI platform monitoring
+│   └── entertainment/    # Cinema, anime, media content
 ├── models/               # Pydantic data models by domain
 │   ├── base.py           # Base models (TimestampedModel, etc.)
 │   ├── arxiv.py          # Research paper models
-│   └── technology.py     # Technology analysis models
+│   ├── technology.py     # Technology analysis models
+│   ├── games.py          # Game deals and releases
+│   └── entertainment.py  # Entertainment content models
 ├── watchers/             # Monitoring and change detection
 │   ├── base_watcher.py   # BaseWatcher with state management
 │   └── enhanced_watcher.py # Advanced watcher patterns
-├── web/fullstreamlit/    # Streamlit dashboard
+├── web/dashboard/        # Modern Dash dashboard (Primary)
+│   ├── app.py           # Main Dash app with tab container
+│   ├── components/      # Tab-specific components with data managers
+│   ├── utils.py         # Shared utilities and data paths
+│   └── assets/          # CSS, JS, and static files
+├── web/fullstreamlit/    # Legacy Streamlit dashboard
 │   ├── app.py           # Main application with tab routing
 │   ├── components/      # Tab-specific components
 │   └── utils/           # Data services and utilities
@@ -157,31 +185,88 @@ src/
 ```
 
 ## Development Workflow (Project-Specific)
-- Use `pyproject.toml` for dependency management and tool configuration
+- Use UV for ultra-fast dependency management: `uv sync --all-extras`
+- Use `pyproject.toml` for dependency and tool configuration
+- Run Python scripts: `uv run python src/script.py`
 - Run ETL pipelines via convenience scripts (run_all_etl.bat/.sh)
-- Test with pytest and maintain coverage reports
-- Use Ruff for code formatting and linting
-- Streamlit development with hot reload and caching
+- Test with pytest: `uv run pytest --cov=src`
+- Use Ruff for formatting and linting: `uv run ruff check .` and `uv run ruff format .`
+- Dashboard development:
+  - Primary: Dash dashboard at http://localhost:7777 (`uv run python run_watchtower_dashboard.py`)
+  - Legacy: Streamlit at http://localhost:8501 (`uv run streamlit run src/web/fullstreamlit/app.py`)
 
 ## Domain-Specific Best Practices
 - **ArXiv ETL**: Use RSS feeds, implement NLP classification, track research trends
 - **Course ETL**: Handle multiple platforms, deduplicate content, track pricing
 - **News ETL**: Parse RSS feeds, extract metadata, categorize content
+- **Games ETL**: Track deals, releases, bundles across multiple platforms
+- **AI Platforms ETL**: Monitor model releases, API changes, platform updates
+- **Entertainment ETL**: Cinema listings, anime schedules, media trends
+- **Deals ETL**: Aggregate deals across categories (software, books, health, travel)
 - **Watcher Development**: Implement state persistence, event logging, change detection
-- **Streamlit Apps**: Use component pattern, implement caching, handle errors gracefully
+- **Dash Components**: 
+  - Use data manager classes for loading and filtering
+  - Implement single callback per output to prevent conflicts
+  - Use Bootstrap components with dbc styling
+  - Handle errors gracefully with fallback UI
+  - Cache data appropriately for performance
+- **Streamlit Apps (Legacy)**: Use component pattern, implement caching, handle errors gracefully
 
 ## Technology Adoption Guidelines
+- **Package Management**: UV as primary tool for all operations
 - **Primary Data Processing**: pandas for most operations, polars for specific performance needs
 - **Web Scraping**: requests + BeautifulSoup for simple scraping, Playwright for complex sites  
 - **Configuration**: Pydantic Settings with environment variable support
 - **Storage**: JSON files for structured data, CSV for exports and analysis
-- **Caching**: Streamlit native caching for web apps, manual caching for ETL processes
+- **Dashboard Framework**: Dash with Bootstrap components (primary), Streamlit (legacy)
+- **Caching**: Dash callback caching and data manager caching for web apps
 - **Async Operations**: Use when dealing with multiple API calls or I/O operations
+- **UI Components**: Bootstrap cards, tabs, and layouts through dash-bootstrap-components
 
 ## Quality Assurance (Implementation-Based)
 - Type hints for all functions with Python 3.10+ syntax
 - Comprehensive error handling with custom exception classes
-- Unit tests with pytest focusing on ETL and data processing logic
+- Unit tests with pytest: `uv run pytest --cov=src --cov-report=html`
 - Integration tests for web scraping and API interactions
 - Performance monitoring with metrics collection
 - Code review focusing on data processing efficiency and error handling
+- Dashboard testing: Component functionality, callback behavior, error handling
+- Browser compatibility testing with Playwright integration
+
+## Dash-Specific Development Patterns
+
+### Component Architecture
+1. **Data Manager Pattern**
+   - Create manager classes for data loading, filtering, and caching
+   - Handle data source discovery and loading logic
+   - Implement thread-safe operations for concurrent access
+
+2. **Single Callback Pattern**
+   - One callback per output to prevent "Duplicate callback outputs" errors
+   - Use `prevent_initial_call=True` when static content provided
+   - Include comprehensive error handling in callbacks
+
+3. **Bootstrap Styling**
+   - Use `dash_bootstrap_components` for consistent UI
+   - Implement responsive layouts with Bootstrap grid system
+   - Apply consistent card layouts and spacing
+
+4. **Performance Optimization**
+   - Cache data at manager level with TTL strategies
+   - Lazy load data only when needed
+   - Use efficient rendering patterns for large datasets
+
+### Tab Development Workflow
+1. Create component file in `src/web/dashboard/components/`
+2. Implement data manager class with loading and filtering
+3. Create layout function with Bootstrap components
+4. Add callbacks with single output per callback
+5. Register tab in main app with health check
+6. Test callback behavior and error handling
+
+### Common Patterns
+- **Error Handling**: Try-catch blocks in all callbacks with user-friendly messages
+- **Data Loading**: JSON file discovery with fallback for missing files
+- **Filtering**: Dropdown/input components with callback-driven updates
+- **Display**: Bootstrap cards with consistent metadata display
+- **Navigation**: Tab-based architecture with health indicators

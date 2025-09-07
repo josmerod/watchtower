@@ -7,6 +7,14 @@
       "description": "DnB and Jungle Mix for concentration"
     }
   ],
+  "Challenges": [
+    {
+      "name": "NHK Easy News",
+      "url": "https://www3.nhk.or.jp/news/easy/",
+      "icon": "📰",
+      "description": "NHK Easy News"
+    }
+  ],
   "Development Tools": [
     {
       "name": "Cursor Dashboard",

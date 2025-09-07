@@ -5,10 +5,6 @@ import dash_bootstrap_components as dbc
 from dash import Input, Output, html  # Added Input, Output for Tabs and callback
 from flask import jsonify
 
-from src.web.dashboard.components.ai_platforms_tab import (
-    register_ai_platforms_callbacks,
-    render_ai_platforms_tab,
-)
 from src.web.dashboard.components.anime_tab import (
     register_anime_callbacks,
     render_anime_tab,
@@ -28,6 +24,10 @@ from src.web.dashboard.components.fourchan_tab import (
 from src.web.dashboard.components.games_tab import render_games_tab
 from src.web.dashboard.components.github_trending_tab import render_github_trending_tab
 from src.web.dashboard.components.giveaways_tab import create_giveaways_tab
+from src.web.dashboard.components.intelligence_tab import (
+    register_intelligence_callbacks,
+    render_intelligence_tab,
+)
 from src.web.dashboard.components.news_tab import render_news_tab
 from src.web.dashboard.components.scavenging_tab import (
     register_scavenging_callbacks,
@@ -49,10 +49,6 @@ from src.web.dashboard.components.valencia_events_tab import (
 from src.web.dashboard.components.videos_tab import (
     register_video_callbacks,
     render_videos_tab,
-)
-from src.web.dashboard.components.youtube_ocr_tab import (
-    register_youtube_ocr_callbacks,
-    render_youtube_ocr_tab,
 )
 
 # Initialize the Dash application with Bootstrap styling
@@ -123,6 +119,11 @@ app.layout = dbc.Container(
                             children=[render_games_tab()],
                         ),
                         dbc.Tab(
+                            label="Intelligence",
+                            tab_id="tab-intelligence",
+                            children=[render_intelligence_tab()],
+                        ),
+                        dbc.Tab(
                             label="Courses",
                             tab_id="tab-courses",
                             children=[render_courses_tab()],
@@ -148,11 +149,6 @@ app.layout = dbc.Container(
                             children=[render_valencia_events_tab()],
                         ),
                         dbc.Tab(
-                            label="YouTube OCR",
-                            tab_id="tab-youtube-ocr",
-                            children=[render_youtube_ocr_tab()],
-                        ),
-                        dbc.Tab(
                             label="🎁 Giveaways",
                             tab_id="tab-giveaways",
                             children=[create_giveaways_tab()],
@@ -161,11 +157,6 @@ app.layout = dbc.Container(
                             label="🏛️ Ayudas Públicas",
                             tab_id="tab-spanish-aid",
                             children=[render_spanish_public_aid_tab()],
-                        ),
-                        dbc.Tab(
-                            label="🤖 AI Platforms",
-                            tab_id="tab-ai-platforms",
-                            children=[render_ai_platforms_tab()],
                         ),
                         dbc.Tab(
                             label="📄 ArXiv Research",
@@ -266,10 +257,9 @@ register_anime_callbacks(app)
 register_fourchan_callbacks(app)
 register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
-register_youtube_ocr_callbacks(app)
 register_spanish_aid_callbacks(app)
-register_ai_platforms_callbacks(app)
 register_arxiv_callbacks(app)
+register_intelligence_callbacks(app)
 
 
 if __name__ == "__main__":

@@ -100,7 +100,7 @@ class FeedSourceModel(TimestampedModel):
     class Config:
         """Pydantic configuration."""
 
-        schema_extra = {
+        json_schema_extra = {
             "examples": [
                 {
                     "name": "Hacker News",
@@ -278,7 +278,7 @@ class NewsArticleModel(TimestampedModel):
     class Config:
         """Pydantic configuration."""
 
-        schema_extra = {
+        json_schema_extra = {
             "examples": [
                 {
                     "title": "New AI Model Achieves Breakthrough in Natural Language",
