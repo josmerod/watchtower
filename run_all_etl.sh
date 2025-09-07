@@ -36,11 +36,14 @@ run_etl() {
 
 # Run all ETL scripts in parallel and store their PIDs using UV
 pids=()
+# Games ETL
 run_etl "src/etl/games/games_get_deals.py" && pids+=($!)
 run_etl "src/etl/games/games_get_humblebundles.py" && pids+=($!)
 run_etl "src/etl/games/games_get_itchio_trending.py" && pids+=($!)
 run_etl "src/etl/games/games_get_new_releases.py" && pids+=($!)
-run_etl "src/etl/games/allkeyshop_etl.py" && pids+=($!)
+run_etl "src/etl/games/games_get_epic_free.py" && pids+=($!)
+run_etl "src/etl/games/enhanced_free_games_etl.py" && pids+=($!)
+run_etl "src/etl/games/games_get_metacritic_rss.py" && pids+=($!)
 run_etl "src/etl/news/news_get_ycombinator.py" && pids+=($!)
 run_etl "src/etl/news/news_get_futuretools.py" && pids+=($!)
 run_etl "src/etl/news/news_get_genai_medium.py" && pids+=($!)
@@ -77,6 +80,12 @@ run_etl "src/etl/news/news_get_kagi.py"
 
 # DEV.TO RSS FEEDS
 run_etl "src/etl/news/news_get_devto.py"
+run_etl "src/etl/news/news_get_techcrunch.py"
+run_etl "src/etl/news/news_get_venturebeat.py"
+run_etl "src/etl/news/news_get_freecodecamp.py"
+run_etl "src/etl/news/news_get_google_ai_blog.py"
+run_etl "src/etl/news/news_get_lobsters.py"
+run_etl "src/etl/news/news_get_arstechnica.py"
 
 
 # NEW MINING TOOLS
@@ -90,6 +99,33 @@ run_etl "src/etl/goldigging/viajeros_piratas_etl.py"
 
 # SPANISH PUBLIC AID SCRAPER
 run_etl "src/etl/spanish_public_aid/spanish_public_aid_etl.py"
+
+# 4CHAN GENERALS SCRAPER
+run_etl "src/etl/fourchan/fourchan_generals_etl.py"
+
+# Deals community feeds
+run_etl "src/etl/deals/slickdeals_etl.py"
+run_etl "src/etl/deals/woot_etl.py"
+run_etl "src/etl/deals/isthereanydeal_rss_etl.py"
+
+# AI Platforms
+run_etl "src/etl/ai_platforms/papers_with_code_etl.py"
+
+# Courses
+run_etl "src/etl/courses/khan_academy_etl.py"
+
+# Intelligence feeds
+run_etl "src/etl/intelligence/sec_edgar_rss.py"
+run_etl "src/etl/intelligence/who_outbreaks_rss.py"
+
+# Additional games
+run_etl "src/etl/games/games_get_gog_rss.py"
+run_etl "src/etl/games/games_get_isthereanydeal_api.py"
+run_etl "src/etl/entertainment/trakt_trending_etl.py"
+run_etl "src/etl/ai_platforms/replicate_models_etl.py"
+run_etl "src/etl/entertainment/spotify_browse_etl.py"
+run_etl "src/etl/ai_platforms/replicate_explore_playwright_etl.py"
+run_etl "src/etl/games/games_get_giantbomb.py"
 
 
 echo "All ETL processes started in parallel using UV"
@@ -160,3 +196,4 @@ echo "- data/meneame/"
 echo "- data/spanish_public_aid/"
 echo "- data/reddit_unified/"
 echo "- data/giveaways/"
+echo "- data/4chan_generals/"

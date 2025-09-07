@@ -81,155 +81,231 @@ def load_anime_data() -> Dict[str, List[Dict[str, Any]]]:
         }
 
 
-def create_community_rankings_section(
-    anime_data: Dict[str, List[Dict[str, Any]]],
-) -> html.Div:
-    """Create comprehensive community rankings section with extensive anime lists"""
+def create_anime_card(anime: Dict[str, Any], rank_info: Dict[str, str], idx: int) -> dbc.Card:
+    """Create an enhanced anime card with image and better layout"""
     try:
-        ranking_sections = []
-
-        # Define ranking categories with enhanced descriptions
-        ranking_info = {
-            "top_rated_all": {
-                "title": "🏆 All-Time Greatest Anime",
-                "description": "The highest-rated anime of all time according to MyAnimeList community (Top 100)",
-                "badge_color": "warning",
-                "icon": "👑",
-            },
-            "top_tv_series": {
-                "title": "📺 Top TV Series",
-                "description": "Best TV anime series ranked by community ratings (Top 100)",
-                "badge_color": "primary",
-                "icon": "🎬",
-            },
-            "top_movies": {
-                "title": "🎭 Top Anime Movies",
-                "description": "Highest-rated anime movies that define cinematic excellence (Top 50)",
-                "badge_color": "danger",
-                "icon": "🎯",
-            },
-            "top_airing": {
-                "title": "📡 Top Currently Airing",
-                "description": "Best anime currently broadcasting, updated live (Top 50)",
-                "badge_color": "success",
-                "icon": "⚡",
-            },
-            "top_upcoming": {
-                "title": "🔮 Most Anticipated Upcoming",
-                "description": "Highly anticipated anime releasing soon (Top 50)",
-                "badge_color": "info",
-                "icon": "🚀",
-            },
-            "top_ova": {
-                "title": "💎 Top OVA Series",
-                "description": "Original Video Animations with exceptional quality (Top 30)",
-                "badge_color": "secondary",
-                "icon": "💿",
-            },
-            "top_special": {
-                "title": "⭐ Top Special Episodes",
-                "description": "Special episodes, side stories, and unique content (Top 30)",
-                "badge_color": "dark",
-                "icon": "🌟",
-            },
-        }
-
-        for category, anime_list in anime_data.items():
-            if category not in ranking_info or not anime_list:
-                continue
-
-            info = ranking_info[category]
-
-            # Create ranking cards with enhanced layout
-            ranking_cards = []
-            for idx, anime in enumerate(anime_list[:50]):  # Show more for rankings
-                if not anime:
-                    continue
-
-                rank_display = anime.get("rank", idx + 1)
-                score = anime.get("mean")
-                title = anime.get("title", "Unknown Title")
-
-                # Create compact ranking card
-                card_content = [
-                    dbc.Row(
+        rank_display = anime.get("rank", idx + 1)
+        score = anime.get("mean")
+        title = anime.get("title", "Unknown Title")
+        image_url = anime.get("main_picture", {}).get("medium", "")
+        synopsis = anime.get("synopsis", "")
+        
+        # Truncate synopsis for card display
+        short_synopsis = synopsis[:120] + "..." if len(synopsis) > 120 else synopsis
+        
+        # Genre information
+        genres = anime.get("genres", [])
+        genre_names = [g.get("name", "") for g in genres[:3] if g]
+        
+        card_content = [
+            dbc.Row(
+                [
+                    # Image column
+                    dbc.Col(
                         [
-                            dbc.Col(
+                            html.Img(
+                                src=image_url if image_url else "/assets/anime-placeholder.png",
+                                style={
+                                    "width": "60px",
+                                    "height": "85px",
+                                    "objectFit": "cover",
+                                    "borderRadius": "4px",
+                                },
+                                className="mb-2",
+                            ) if image_url else html.Div(
+                                "🎌",
+                                style={
+                                    "fontSize": "2rem",
+                                    "textAlign": "center",
+                                    "width": "60px",
+                                    "height": "85px",
+                                    "display": "flex",
+                                    "alignItems": "center",
+                                    "justifyContent": "center",
+                                    "backgroundColor": "#f8f9fa",
+                                    "borderRadius": "4px",
+                                }
+                            )
+                        ],
+                        width=3,
+                        className="d-flex justify-content-center",
+                    ),
+                    # Content column
+                    dbc.Col(
+                        [
+                            html.Div(
                                 [
                                     dbc.Badge(
                                         f"#{rank_display}",
-                                        color=info["badge_color"],
-                                        className="me-2",
+                                        color=rank_info["badge_color"],
+                                        className="me-2 mb-1",
                                     ),
-                                    html.Strong(title, style={"fontSize": "0.95rem"}),
-                                ],
-                                width=8,
+                                    html.H6(
+                                        title,
+                                        className="mb-1",
+                                        style={"lineHeight": "1.2"},
+                                    ),
+                                ]
                             ),
-                            dbc.Col(
+                            html.Div(
                                 [
-                                    html.Div(
-                                        [
-                                            html.Small("⭐", className="me-1"),
-                                            html.Strong(
-                                                (
-                                                    f"{score:.2f}"
-                                                    if score is not None
-                                                    else "N/A"
-                                                ),
-                                                style={"fontSize": "0.9rem"},
-                                            ),
-                                        ],
-                                        className="text-end",
-                                    )
+                                    html.Span("⭐", className="me-1"),
+                                    html.Strong(
+                                        f"{score:.2f}" if score is not None else "N/A",
+                                        style={"fontSize": "0.9rem"},
+                                    ),
                                 ],
-                                width=4,
+                                className="mb-2",
                             ),
-                        ],
-                        className="align-items-center",
-                    )
-                ]
-
-                # Add genre info if available
-                genres = anime.get("genres", [])
-                if genres:
-                    genre_names = [g.get("name", "") for g in genres[:3] if g]
-                    if genre_names:
-                        card_content.append(
                             html.Div(
                                 [
                                     html.Small(
-                                        " • ".join(genre_names),
+                                        " • ".join(genre_names) if genre_names else "No genres",
                                         className="text-muted",
                                         style={"fontSize": "0.75rem"},
                                     )
                                 ],
-                                className="mt-1",
-                            )
-                        )
-
-                card = dbc.Card(
-                    dbc.CardBody(card_content, className="py-2 px-3"),
-                    className="mb-2 border-0 shadow-sm",
-                    style={"backgroundColor": "#f8f9fa"},
-                )
-                ranking_cards.append(card)
-
-            # Create section for this ranking category
-            section_content = html.Div(
-                [
-                    html.H4(
-                        [html.Span(info["icon"], className="me-2"), info["title"]],
-                        className="mb-2",
+                                className="mb-2",
+                            ),
+                            html.P(
+                                short_synopsis,
+                                className="text-muted mb-0",
+                                style={"fontSize": "0.8rem", "lineHeight": "1.3"},
+                            ) if short_synopsis else None,
+                        ],
+                        width=9,
                     ),
-                    html.P(info["description"], className="text-muted mb-3"),
-                    html.Div(ranking_cards),
-                    html.Hr(className="my-5"),
-                ]
+                ],
+                className="g-2",
             )
+        ]
+        
+        return dbc.Card(
+            dbc.CardBody(card_content, className="p-3"),
+            className="mb-3 h-100 shadow-sm border-0",
+            style={"backgroundColor": "#fafafa", "minHeight": "140px"},
+        )
+    except Exception as e:
+        logger.error(f"Error creating anime card: {e}")
+        return dbc.Card(
+            dbc.CardBody([html.P("Error loading anime")]),
+            className="mb-3",
+        )
 
-            ranking_sections.append(section_content)
 
-        if not ranking_sections:
+def create_community_rankings_section(
+    anime_data: Dict[str, List[Dict[str, Any]]],
+) -> html.Div:
+    """Create comprehensive community rankings section with multi-column layout"""
+    try:
+        # Define ranking categories with enhanced descriptions
+        ranking_info = {
+            "top_rated_all": {
+                "title": "🏆 All-Time Greatest",
+                "description": "Highest-rated anime of all time",
+                "badge_color": "warning",
+                "icon": "👑",
+                "display_count": 12,
+            },
+            "top_tv_series": {
+                "title": "📺 Top TV Series",
+                "description": "Best TV anime series",
+                "badge_color": "primary",
+                "icon": "🎬",
+                "display_count": 12,
+            },
+            "top_movies": {
+                "title": "🎭 Top Movies",
+                "description": "Highest-rated anime movies",
+                "badge_color": "danger",
+                "icon": "🎯",
+                "display_count": 12,
+            },
+            "top_airing": {
+                "title": "📡 Currently Airing",
+                "description": "Best anime currently broadcasting",
+                "badge_color": "success",
+                "icon": "⚡",
+                "display_count": 12,
+            },
+            "top_upcoming": {
+                "title": "🔮 Upcoming",
+                "description": "Most anticipated upcoming anime",
+                "badge_color": "info",
+                "icon": "🚀",
+                "display_count": 12,
+            },
+            "top_ova": {
+                "title": "💎 Top OVA",
+                "description": "Best Original Video Animations",
+                "badge_color": "secondary",
+                "icon": "💿",
+                "display_count": 8,
+            },
+            "top_special": {
+                "title": "⭐ Special Episodes",
+                "description": "Top special episodes and content",
+                "badge_color": "dark",
+                "icon": "🌟",
+                "display_count": 8,
+            },
+        }
+
+        # Group categories for multi-column layout
+        primary_categories = ["top_rated_all", "top_tv_series", "top_movies"]
+        secondary_categories = ["top_airing", "top_upcoming"]
+        tertiary_categories = ["top_ova", "top_special"]
+        
+        def create_category_column(categories: List[str]) -> html.Div:
+            """Create a column of anime categories"""
+            column_content = []
+            
+            for category in categories:
+                if category not in anime_data or not anime_data[category]:
+                    continue
+                    
+                anime_list = anime_data[category]
+                info = ranking_info[category]
+                display_count = info["display_count"]
+                
+                # Create anime cards for this category
+                anime_cards = []
+                for idx, anime in enumerate(anime_list[:display_count]):
+                    if not anime:
+                        continue
+                    card = create_anime_card(anime, info, idx)
+                    anime_cards.append(card)
+                
+                if anime_cards:
+                    category_section = html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.H4(
+                                        [html.Span(info["icon"], className="me-2"), info["title"]],
+                                        className="mb-2",
+                                        style={"fontSize": "1.25rem"},
+                                    ),
+                                    html.P(
+                                        info["description"],
+                                        className="text-muted mb-3",
+                                        style={"fontSize": "0.9rem"},
+                                    ),
+                                ],
+                                className="mb-3",
+                            ),
+                            html.Div(anime_cards),
+                        ],
+                        className="mb-5",
+                    )
+                    column_content.append(category_section)
+            
+            return html.Div(column_content)
+
+        # Check if we have any data
+        available_categories = [cat for cat in ranking_info.keys() if anime_data.get(cat)]
+        
+        if not available_categories:
             return html.Div(
                 [
                     dbc.Alert(
@@ -258,28 +334,45 @@ def create_community_rankings_section(
 
         return html.Div(
             [
+                # Header
                 dbc.Row(
                     [
                         dbc.Col(
                             [
-                                html.Div(
-                                    [
-                                        html.H3(
-                                            "🏅 Community Rankings", className="mb-3"
-                                        ),
-                                        html.P(
-                                            "Comprehensive anime rankings based on MyAnimeList community ratings, "
-                                            "updated regularly to reflect the latest community preferences.",
-                                            className="text-muted mb-4",
-                                        ),
-                                    ]
-                                )
+                                html.H3("🏅 Community Rankings", className="mb-2"),
+                                html.P(
+                                    "MyAnimeList community rankings updated regularly",
+                                    className="text-muted mb-4",
+                                ),
                             ]
                         )
                     ],
                     className="mb-4",
                 ),
-                html.Div(ranking_sections),
+                # Multi-column layout
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            create_category_column(primary_categories),
+                            width=12,
+                            lg=4,
+                            className="mb-4",
+                        ),
+                        dbc.Col(
+                            create_category_column(secondary_categories),
+                            width=12,
+                            lg=4,
+                            className="mb-4",
+                        ),
+                        dbc.Col(
+                            create_category_column(tertiary_categories),
+                            width=12,
+                            lg=4,
+                            className="mb-4",
+                        ),
+                    ],
+                    className="g-4",
+                ),
             ]
         )
 

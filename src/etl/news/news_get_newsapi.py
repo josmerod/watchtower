@@ -331,9 +331,16 @@ def main():
     settings = get_settings()
     api_key = settings.api.news_api_key
     if not api_key:
-        logger.error(
-            "NewsAPI key not found in settings (checked API_NEWS_API_KEY). Please ensure it is set in your .env file or environment variables."
+        logger.warning(
+            "NewsAPI key not found in settings (checked API_NEWS_API_KEY). "
+            "NewsAPI data collection will be skipped. "
+            "To enable NewsAPI: set API_NEWS_API_KEY in your .env file or environment variables."
         )
+        # Create empty output files to maintain consistency in data structure
+        empty_data = []
+        file_paths = save_data(empty_data, output_dir, source_name="newsapi_no_key")
+        logger.info(f"Created empty NewsAPI output files (no API key): {file_paths}")
+        logger.info("NewsAPI ETL completed (skipped due to missing API key)")
         return
 
     session = create_session()

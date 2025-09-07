@@ -951,10 +951,7 @@ a:hover, .btn-link:hover {
 
 /* Enhanced Statistics Cards */
 .card-body h4 {
-    background: linear-gradient(135deg, #A37FFF, #B792FF) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
+    color: #A37FFF !important;
     font-weight: 700 !important;
     text-shadow: 0 2px 4px rgba(163, 127, 255, 0.3) !important;
 }
@@ -1068,13 +1065,11 @@ a:hover, .btn-link:hover {
 
 /* Enhanced Main Header */
 h1, .h1 {
-    background: linear-gradient(135deg, #A37FFF, #B792FF, #C9A7FF) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
+    color: #A37FFF !important;
     text-align: center !important;
-    text-shadow: 0 4px 8px rgba(163, 127, 255, 0.3) !important;
+    text-shadow: 0 2px 4px rgba(163, 127, 255, 0.3) !important;
     position: relative !important;
+    font-weight: 700 !important;
 }
 
 h1::after, .h1::after {

@@ -100,7 +100,7 @@ class BundleDealsETL(BaseETL):
             deals = []
             for item in items[:10]:  # Get latest 10 posts
                 try:
-                    title = item.find("title").text if item.find("title") else "Unknown"
+                    title = item.find("title").text if item.find("title") else ""
                     link = item.find("link").text if item.find("link") else ""
                     description = (
                         item.find("description").text
@@ -110,7 +110,7 @@ class BundleDealsETL(BaseETL):
                     pub_date = item.find("pubdate").text if item.find("pubdate") else ""
 
                     # Only include items that look like bundles/deals
-                    title_lower = title.lower()
+                    title_lower = (title or "").lower()
                     if any(
                         keyword in title_lower
                         for keyword in [
@@ -349,7 +349,9 @@ class BundleDealsETL(BaseETL):
 
     def _determine_deal_type(self, title: str, description: str) -> str:
         """Determine the type of deal based on content."""
-        text = (title + " " + description).lower()
+        title_safe = title or ""
+        description_safe = description or ""
+        text = (title_safe + " " + description_safe).lower()
 
         if any(
             keyword in text for keyword in ["humble choice", "monthly", "subscription"]
@@ -390,7 +392,9 @@ class BundleDealsETL(BaseETL):
 
     def _extract_bundle_tags(self, title: str, description: str) -> List[str]:
         """Extract relevant tags from bundle title and description."""
-        text = f"{title} {description}".lower()
+        title_safe = title or ""
+        description_safe = description or ""
+        text = f"{title_safe} {description_safe}".lower()
 
         category_keywords = {
             "games": ["game", "gaming", "steam", "drm-free", "indie"],
@@ -425,10 +429,13 @@ class BundleDealsETL(BaseETL):
 
         for deal in deals:
             try:
-                # Clean up title
-                title = deal["title"].strip()
+                # Clean up title with null safety
+                raw_title = deal.get("title", "")
+                title = (raw_title or "").strip()
                 if len(title) > 200:
                     title = title[:197] + "..."
+                if not title:  # Skip deals with no title
+                    continue
 
                 # Calculate value score
                 value_score = self._calculate_value_score(deal)
@@ -534,8 +541,8 @@ class BundleDealsETL(BaseETL):
 
     def _determine_urgency(self, deal: Dict[str, Any]) -> str:
         """Determine urgency level of the deal."""
-        time_remaining = deal.get("time_remaining", "").lower()
-        deal_type = deal.get("deal_type", "")
+        time_remaining = (deal.get("time_remaining") or "").lower()
+        deal_type = deal.get("deal_type") or ""
 
         if any(
             keyword in time_remaining

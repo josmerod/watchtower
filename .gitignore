@@ -1,3 +1,9 @@
+# Ignore all vscode, claude and cursor config files
+.claude/
+.cursor/
+.vscode/
+.VSCodeCounter/
+
 # Data directories
 **/data/
 
@@ -28,13 +34,14 @@ src/etl/goldigging/free_udemy_courses/Courses/
 src/miners/udemy-universal/courses_to_enroll.json
 src/miners/udemy-universal/debug_rd_page.html
 
-# Miners
+# Miners specific
 src/miners/asf-winonly/config/
 src/miners/asf-winonly/logs/
 
 # Environment variables file
 # Contains sensitive information like API keys, do not commit.
 .env
+secrets/
 
 # Temporary files
 *.tmp*

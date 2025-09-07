@@ -101,6 +101,47 @@ DEALS_SOURCES_CONFIG = {
         "color": "secondary",
         "description": "Software bundles, game bundles, and multi-item deal packages",
     },
+    "itad_deals": {
+        "path": get_data_path("deals", "isthereanydeal_deals_latest.json"),
+        "name": "ITAD Deals",
+        "icon": "🎮",
+        "category": "Games",
+        "color": "primary",
+        "description": "Latest game deals from IsThereAnyDeal (RSS)",
+    },
+    "itad_bundles": {
+        "path": get_data_path("deals", "isthereanydeal_bundles_latest.json"),
+        "name": "ITAD Bundles",
+        "icon": "🧰",
+        "category": "Games",
+        "color": "secondary",
+        "description": "Game bundles from IsThereAnyDeal (RSS)",
+    },
+    "itad_giveaways": {
+        "path": get_data_path("deals", "isthereanydeal_giveaways_latest.json"),
+        "name": "ITAD Giveaways",
+        "icon": "🎁",
+        "category": "Games",
+        "color": "success",
+        "description": "Game giveaways from IsThereAnyDeal (RSS)",
+    },
+    # New community-driven feeds
+    "slickdeals": {
+        "path": get_data_path("deals", "slickdeals_latest.json"),
+        "name": "Slickdeals",
+        "icon": "🔥",
+        "category": "Community Deals",
+        "color": "danger",
+        "description": "Community-validated hot deals across categories",
+    },
+    "woot": {
+        "path": get_data_path("deals", "woot_latest.json"),
+        "name": "Woot!",
+        "icon": "⚡",
+        "category": "Daily Deals",
+        "color": "warning",
+        "description": "Amazon-owned daily deals with limited quantities",
+    },
 }
 
 
@@ -144,9 +185,31 @@ def process_deal_item(deal):
         current_price = deal.get(
             "current_price", deal.get("sale_price", deal.get("price", 0))
         )
+        # Fallback for feeds that provide structured price info
+        price_struct = deal.get("price_mentioned") or deal.get("price_info")
+        if isinstance(price_struct, dict):
+            if not original_price:
+                if "original_price" in price_struct and price_struct.get("original_price"):
+                    original_price = price_struct.get("original_price")
+                elif isinstance(price_struct.get("prices"), list) and price_struct["prices"]:
+                    try:
+                        original_price = max(float(p) for p in price_struct["prices"])
+                    except Exception:
+                        pass
+            if not current_price:
+                if "sale_price" in price_struct and price_struct.get("sale_price"):
+                    current_price = price_struct.get("sale_price")
+                elif isinstance(price_struct.get("prices"), list) and price_struct["prices"]:
+                    try:
+                        current_price = min(float(p) for p in price_struct["prices"])
+                    except Exception:
+                        pass
 
         # Calculate savings if not provided
         discount_percentage = deal.get("discount_percentage", 0)
+        # Fallback if discount is a structure with percentage/amount
+        if isinstance(discount_percentage, dict):
+            discount_percentage = discount_percentage.get("percentage", 0)
         savings = deal.get("savings", 0)
 
         if original_price and current_price and original_price > current_price:
@@ -162,7 +225,7 @@ def process_deal_item(deal):
         bargain_score = deal.get("bargain_score", deal.get("score", 0))
 
         # Urgency and timing
-        urgency = deal.get("urgency", "low")
+        urgency = deal.get("urgency", deal.get("deal_urgency", "low"))
         expires_at = None
         if "expires_at" in deal or "expiry_date" in deal:
             expires_at = parse_date_universal(
@@ -171,9 +234,13 @@ def process_deal_item(deal):
 
         # Platform and store info
         platform = deal.get("platform", deal.get("source", "Unknown"))
-        store_name = deal.get(
-            "store_name", deal.get("store", deal.get("retailer", platform))
-        )
+        store_name = deal.get("store_name", deal.get("store", deal.get("retailer")))
+        if not store_name:
+            stores = deal.get("store_mentioned")
+            if isinstance(stores, list) and stores:
+                store_name = ", ".join(stores)
+            else:
+                store_name = platform
 
         # Categories and tags
         category = deal.get("category", "general")

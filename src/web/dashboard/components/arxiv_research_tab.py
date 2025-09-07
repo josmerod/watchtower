@@ -1,29 +1,31 @@
 """
-ArXiv Research Dashboard Tab
-Advanced scientific paper analysis and visualization with categorization and trend analysis
+ArXiv Research Dashboard Tab - Simplified Paper Browser
+Clean, fast interface for discovering ArXiv research papers
 """
 
 import json
 import logging
-from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 
+import dash
 import dash_bootstrap_components as dbc
-import plotly.express as px
-import plotly.graph_objects as go
-from dash import Input, Output, callback, dcc, html
+import pandas as pd
+from dash import Input, Output, dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
+from src.web.dashboard.utils import file_exists, get_data_path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ArXiv category mapping for better visualization
+# ArXiv data path
+ARXIV_DATA_PATH = get_data_path("arxiv", "arxiv_papers_latest.json")
+
+# ArXiv category mapping for better display
 ARXIV_CATEGORY_MAPPING = {
     "cs.AI": "Artificial Intelligence",
-    "cs.LG": "Machine Learning",
+    "cs.LG": "Machine Learning", 
     "cs.CV": "Computer Vision",
     "cs.CL": "Natural Language Processing",
     "cs.RO": "Robotics",
@@ -41,530 +43,409 @@ ARXIV_CATEGORY_MAPPING = {
     "q-bio.NC": "Quantitative Biology - Neurons",
 }
 
-# Enhanced ArXiv configuration with multiple data sources
-ARXIV_SOURCES_CONFIG = {
-    "arxiv_papers": {
-        "path": get_data_path("arxiv", "arxiv_papers_latest.json"),
-        "name": "Latest Papers",
-        "icon": "📄",
-        "description": "Most recent ArXiv papers across all categories",
-    }
-}
+# Global data storage
+ALL_ARXIV_DATA = pd.DataFrame()
+ARXIV_DATA_LOADED = False
+PAGE_SIZE = 15
 
-
-def load_arxiv_data(file_path):
-    """Load and parse ArXiv data from JSON file"""
+def load_arxiv_data():
+    """Load ArXiv papers data from JSON file"""
+    global ALL_ARXIV_DATA, ARXIV_DATA_LOADED
+    
+    if not file_exists(ARXIV_DATA_PATH):
+        logger.warning(f"ArXiv data file not found: {ARXIV_DATA_PATH}")
+        ALL_ARXIV_DATA = pd.DataFrame()
+        ARXIV_DATA_LOADED = True
+        return
+    
     try:
-        if not file_exists(file_path):
-            logger.warning(f"ArXiv data file not found: {file_path}")
-            return []
-
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(ARXIV_DATA_PATH, 'r', encoding='utf-8') as f:
             data = json.load(f)
-
-        if isinstance(data, list):
-            processed_data = []
-            for paper in data:
-                processed_paper = process_arxiv_paper(paper)
-                if processed_paper:
-                    processed_data.append(processed_paper)
-            return processed_data
-
-        return []
-    except Exception as e:
-        logger.error(f"Error loading ArXiv data from {file_path}: {e}")
-        return []
-
-
-def process_arxiv_paper(paper):
-    """Process individual ArXiv paper with enhanced metadata"""
-    try:
-        # Extract and clean title
-        title = paper.get("title", "Unknown Title").strip()
-
-        # Extract abstract with length limit
-        abstract = paper.get("abstract", "No abstract available").strip()
-        abstract_preview = abstract[:300] + "..." if len(abstract) > 300 else abstract
-
-        # Parse publication date
-        pub_date = None
-        for date_field in ["published_date", "published", "date"]:
-            if date_field in paper:
-                pub_date = parse_date_universal(paper[date_field])
-                break
-
+        
+        if not data:
+            logger.warning("ArXiv data file is empty")
+            ALL_ARXIV_DATA = pd.DataFrame()
+            ARXIV_DATA_LOADED = True
+            return
+        
+        df = pd.DataFrame(data)
+        
+        # Process data for better display
+        df['display_title'] = df['title'].str.replace('\n', ' ').str.strip()
+        df['display_summary'] = df['summary'].str.replace('\n', ' ').str.strip()
+        df['summary_preview'] = df['display_summary'].apply(
+            lambda x: x[:200] + "..." if len(str(x)) > 200 else x
+        )
+        
         # Process authors
-        authors = paper.get("authors", [])
-        if isinstance(authors, str):
-            authors = [authors]
-        authors_str = ", ".join(authors[:3])  # Show first 3 authors
-        if len(authors) > 3:
-            authors_str += f" +{len(authors) - 3} more"
-
+        df['authors_display'] = df['authors'].apply(
+            lambda x: ', '.join(x[:3]) + (f' +{len(x)-3} more' if len(x) > 3 else '') 
+            if isinstance(x, list) else str(x)
+        )
+        
         # Process categories
-        categories = paper.get("categories", [])
-        if isinstance(categories, str):
-            categories = [categories]
-
-        # Map categories to human-readable names
-        category_names = []
-        for cat in categories:
-            category_names.append(ARXIV_CATEGORY_MAPPING.get(cat, cat))
-
-        primary_category = paper.get(
-            "primary_category", categories[0] if categories else "Unknown"
+        df['primary_category_display'] = df['categories'].apply(
+            lambda x: ARXIV_CATEGORY_MAPPING.get(x[0], x[0]) if isinstance(x, list) and x else 'Unknown'
         )
-        primary_category_name = ARXIV_CATEGORY_MAPPING.get(
-            primary_category, primary_category
-        )
-
-        # Extract search/classification category if available
-        search_category = paper.get(
-            "search_category", paper.get("classification", "general")
-        )
-
-        return {
-            "title": title,
-            "abstract": abstract,
-            "abstract_preview": abstract_preview,
-            "authors": authors,
-            "authors_str": authors_str,
-            "published_date": pub_date,
-            "categories": categories,
-            "category_names": category_names,
-            "primary_category": primary_category,
-            "primary_category_name": primary_category_name,
-            "search_category": search_category,
-            "arxiv_id": paper.get("arxiv_id", paper.get("id", "Unknown")),
-            "url": paper.get("url", paper.get("link", "#")),
-            "doi": paper.get("doi", None),
-            "journal_reference": paper.get("journal_reference", None),
-            "citation_count": paper.get("citation_count", 0),
-            "source": paper.get("source", "arxiv"),
-            "raw_data": paper,
-        }
+        
+        # Process publication date
+        df['published_date'] = pd.to_datetime(df['published'], errors='coerce')
+        df['published_display'] = df['published_date'].dt.strftime('%Y-%m-%d')
+        
+        # Sort by publication date (newest first)
+        df = df.sort_values('published_date', ascending=False, na_position='last')
+        
+        ALL_ARXIV_DATA = df
+        ARXIV_DATA_LOADED = True
+        logger.info(f"Loaded {len(df)} ArXiv papers")
+        
     except Exception as e:
-        logger.error(f"Error processing ArXiv paper: {e}")
-        return None
+        logger.error(f"Error loading ArXiv data: {e}")
+        ALL_ARXIV_DATA = pd.DataFrame()
+        ARXIV_DATA_LOADED = True
 
+def format_date_display(date_str):
+    """Format date for display"""
+    if pd.isna(date_str) or not date_str:
+        return "N/A"
+    return date_str
 
-def _load_all_arxiv_data():
-    data_map = {}
-    for source_id, config in ARXIV_SOURCES_CONFIG.items():
-        data = load_arxiv_data(config["path"])
-        data_map[source_id] = data
-        logger.info(f"Loaded {len(data)} papers for {config['name']}")
-    return data_map
-
-
-# Load at import and provide a simple TTL refresh when rendering
-ARXIV_DATA = _load_all_arxiv_data()
-ALL_ARXIV_PAPERS = [p for v in ARXIV_DATA.values() for p in v]
-
-
-def create_category_distribution_chart():
-    """Create a pie chart showing distribution of paper categories"""
-    if not ALL_ARXIV_PAPERS:
-        return html.Div("No data available for visualization")
-
-    # Count categories
-    category_counts = Counter()
-    for paper in ALL_ARXIV_PAPERS:
-        category_counts[paper["primary_category_name"]] += 1
-
-    # Get top 10 categories
-    top_categories = dict(category_counts.most_common(10))
-
-    fig = px.pie(
-        values=list(top_categories.values()),
-        names=list(top_categories.keys()),
-        title="Distribution of Research Categories",
-        color_discrete_sequence=px.colors.qualitative.Set3,
-    )
-
-    fig.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font_color="#CDD6F4",
-        title_font_color="#A37FFF",
-    )
-
-    return dcc.Graph(figure=fig)
-
-
-def create_timeline_chart():
-    """Create a timeline chart showing publication trends"""
-    if not ALL_ARXIV_PAPERS:
-        return html.Div("No data available for timeline")
-
-    # Group papers by date
-    papers_with_dates = [p for p in ALL_ARXIV_PAPERS if p["published_date"]]
-    if not papers_with_dates:
-        return html.Div("No date information available")
-
-    # Create daily counts
-    date_counts = Counter()
-    for paper in papers_with_dates:
-        date_str = paper["published_date"].strftime("%Y-%m-%d")
-        date_counts[date_str] += 1
-
-    dates = list(date_counts.keys())
-    counts = list(date_counts.values())
-
-    fig = go.Figure(
-        data=go.Scatter(
-            x=dates,
-            y=counts,
-            mode="lines+markers",
-            name="Papers Published",
-            line=dict(color="#A37FFF", width=2),
-            marker=dict(color="#A37FFF", size=6),
-        )
-    )
-
-    fig.update_layout(
-        title="Publication Timeline",
-        xaxis_title="Date",
-        yaxis_title="Number of Papers",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font_color="#CDD6F4",
-        title_font_color="#A37FFF",
-    )
-
-    return dcc.Graph(figure=fig)
-
-
-def create_source_summary_cards():
-    """Create summary cards for each ArXiv source"""
-    cards = []
-
-    for source_id, config in ARXIV_SOURCES_CONFIG.items():
-        data = ARXIV_DATA[source_id]
-        paper_count = len(data)
-
-        # Get latest publication date
-        latest_date = "No data"
-        if data:
-            dates = [p["published_date"] for p in data if p["published_date"]]
-            if dates:
-                latest_date = max(dates).strftime("%Y-%m-%d")
-
-        # Status color
-        status_color = "success" if paper_count > 0 else "secondary"
-
-        card = dbc.Card(
-            [
-                dbc.CardHeader(
-                    [
-                        html.H6(
-                            [
-                                html.Span(config["icon"], className="me-2"),
-                                config["name"],
-                            ],
-                            className="mb-0",
-                        ),
-                        dbc.Badge(
-                            f"{paper_count} papers",
-                            color=status_color,
-                            className="float-end",
-                        ),
-                    ]
-                ),
-                dbc.CardBody(
-                    [
-                        html.P(
-                            config["description"], className="small text-muted mb-2"
-                        ),
-                        html.Div(
-                            [
-                                html.Strong("Latest: "),
-                                html.Span(latest_date, className="text-muted small"),
-                            ]
-                        ),
-                        dbc.Button(
-                            f"View {config['name']}",
-                            id=f"btn-arxiv-{source_id}",
-                            color="outline-primary",
-                            size="sm",
-                            className="w-100 mt-2",
-                        ),
-                    ]
-                ),
-            ],
-            className="mb-3 h-100",
-        )
-
-        cards.append(dbc.Col(card, md=4, lg=3))
-
-    return cards
-
-
-def create_papers_table(source_id, papers):
-    """Simplify ArXiv display to a News-like table of latest papers."""
-    if not papers:
-        return dbc.Alert("No papers available.", color="info", className="text-center")
-
-    # Sort newest first and limit
-    sorted_papers = sorted(
-        papers, key=lambda p: p.get("published_date") or datetime.min, reverse=True
-    )[:100]
-
+def create_papers_table(df_subset):
+    """Create a table displaying ArXiv papers"""
+    if df_subset.empty:
+        return dbc.Alert("No papers match your criteria.", color="info")
+    
     table_header = [
         html.Thead(
-            html.Tr(
-                [
-                    html.Th("Title"),
-                    html.Th("Category"),
-                    html.Th("Published"),
-                ]
-            )
+            html.Tr([
+                html.Th("Title"),
+                html.Th("Authors"),
+                html.Th("Category"),
+                html.Th("Published"),
+                html.Th("Summary"),
+            ])
         )
     ]
-
-    rows = []
-    for p in sorted_papers:
-        title = p.get("title", "Unknown Title")
-        url = p.get("url") or p.get("link") or "#"
-        cat = p.get("primary_category_name", "Unknown")
-        pub = (
-            p.get("published_date").strftime("%Y-%m-%d")
-            if p.get("published_date")
-            else "N/A"
+    
+    table_body_rows = []
+    for _, paper in df_subset.iterrows():
+        # Create clickable title with ArXiv link
+        title_link = html.A(
+            paper.get('display_title', 'Unknown Title'),
+            href=paper.get('link', '#'),
+            target="_blank",
+            className="text-decoration-none"
         )
-        rows.append(
-            html.Tr(
-                [
-                    html.Td(html.A(title, href=url, target="_blank") if url else title),
-                    html.Td(cat),
-                    html.Td(pub),
-                ]
+        
+        # Add GitHub link if available
+        title_cell_content = [title_link]
+        if paper.get('github_html_url'):
+            github_link = html.A(
+                html.I(className="fab fa-github ms-2"),
+                href=paper['github_html_url'],
+                target="_blank",
+                title="View GitHub Repository",
+                className="text-muted"
             )
+            title_cell_content.append(github_link)
+        
+        table_body_rows.append(
+            html.Tr([
+                html.Td(title_cell_content),
+                html.Td(
+                    paper.get('authors_display', 'Unknown'),
+                    className="small"
+                ),
+                html.Td(
+                    dbc.Badge(
+                        paper.get('primary_category_display', 'Unknown'),
+                        color="outline-primary",
+                        className="small"
+                    )
+                ),
+                html.Td(
+                    format_date_display(paper.get('published_display')),
+                    className="small text-muted"
+                ),
+                html.Td(
+                    paper.get('summary_preview', 'No summary available'),
+                    className="small text-muted",
+                    style={"max-width": "300px"}
+                ),
+            ])
         )
-
+    
+    table_body = [html.Tbody(table_body_rows)]
     return dbc.Table(
-        table_header + [html.Tbody(rows)],
+        table_header + table_body,
         bordered=True,
         hover=True,
         responsive=True,
         striped=True,
         size="sm",
-        color="dark",
-        className="table-responsive",
+        className="table-responsive"
     )
-
 
 def render_arxiv_research_tab():
-    """Main render function for the ArXiv Research tab"""
-    # Lightweight refresh (avoid stale tables)
-    global ARXIV_DATA, ALL_ARXIV_PAPERS
-    ARXIV_DATA = _load_all_arxiv_data()
-    ALL_ARXIV_PAPERS = [p for v in ARXIV_DATA.values() for p in v]
-
-    total_papers = len(ALL_ARXIV_PAPERS)
-    total_categories = len(set(p["primary_category_name"] for p in ALL_ARXIV_PAPERS))
-    active_sources = sum(1 for data in ARXIV_DATA.values() if len(data) > 0)
-
-    return html.Div(
-        [
-            # Header with statistics
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            html.H3(
-                                [
-                                    html.I(className="fas fa-graduation-cap me-2"),
-                                    "ArXiv Research Papers",
-                                ],
-                                className="text-primary mb-3",
-                            ),
-                            # Summary statistics
-                            dbc.Row(
-                                [
-                                    dbc.Col(
-                                        [
-                                            dbc.Card(
-                                                [
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.H4(
-                                                                total_papers,
-                                                                className="text-primary mb-0",
-                                                            ),
-                                                            html.P(
-                                                                "Total Papers",
-                                                                className="text-muted small mb-0",
-                                                            ),
-                                                        ]
-                                                    )
-                                                ]
-                                            )
-                                        ],
-                                        md=3,
-                                    ),
-                                    dbc.Col(
-                                        [
-                                            dbc.Card(
-                                                [
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.H4(
-                                                                total_categories,
-                                                                className="text-success mb-0",
-                                                            ),
-                                                            html.P(
-                                                                "Research Categories",
-                                                                className="text-muted small mb-0",
-                                                            ),
-                                                        ]
-                                                    )
-                                                ]
-                                            )
-                                        ],
-                                        md=3,
-                                    ),
-                                    dbc.Col(
-                                        [
-                                            dbc.Card(
-                                                [
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.H4(
-                                                                active_sources,
-                                                                className="text-info mb-0",
-                                                            ),
-                                                            html.P(
-                                                                "Active Sources",
-                                                                className="text-muted small mb-0",
-                                                            ),
-                                                        ]
-                                                    )
-                                                ]
-                                            )
-                                        ],
-                                        md=3,
-                                    ),
-                                    dbc.Col(
-                                        [
-                                            dbc.Card(
-                                                [
-                                                    dbc.CardBody(
-                                                        [
-                                                            html.H4(
-                                                                "Live",
-                                                                className="text-warning mb-0",
-                                                            ),
-                                                            html.P(
-                                                                "Status",
-                                                                className="text-muted small mb-0",
-                                                            ),
-                                                        ]
-                                                    )
-                                                ]
-                                            )
-                                        ],
-                                        md=3,
-                                    ),
-                                ],
-                                className="mb-4",
-                            ),
-                        ]
-                    )
-                ]
-            ),
-            # Analytics charts
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            dbc.Card(
-                                [
-                                    dbc.CardHeader(
-                                        html.H5(
-                                            "Category Distribution", className="mb-0"
-                                        )
-                                    ),
-                                    dbc.CardBody(
-                                        [create_category_distribution_chart()]
-                                    ),
-                                ]
-                            )
-                        ],
-                        md=6,
-                    ),
-                    dbc.Col(
-                        [
-                            dbc.Card(
-                                [
-                                    dbc.CardHeader(
-                                        html.H5(
-                                            "Publication Timeline", className="mb-0"
-                                        )
-                                    ),
-                                    dbc.CardBody([create_timeline_chart()]),
-                                ]
-                            )
-                        ],
-                        md=6,
-                    ),
-                ],
-                className="mb-4",
-            ),
-            # Source summary cards
-            html.H4("Research Categories", className="text-primary mb-3"),
-            dbc.Row(create_source_summary_cards(), className="mb-4"),
-            # Data display area
-            html.Div(id="arxiv-data-display"),
-            # Storage for selected source
-            dcc.Store(id="selected-arxiv-source"),
-        ]
-    )
-
+    """Main render function for ArXiv Research tab"""
+    # Load data on render
+    load_arxiv_data()
+    
+    if not ARXIV_DATA_LOADED:
+        return dbc.Alert(
+            "ArXiv data failed to load. Check logs.", 
+            color="danger", 
+            className="mt-3"
+        )
+    
+    if ALL_ARXIV_DATA.empty:
+        return dbc.Alert(
+            "No ArXiv papers data currently available.", 
+            color="info", 
+            className="mt-3"
+        )
+    
+    # Prepare filter options
+    categories = ALL_ARXIV_DATA['primary_category_display'].dropna().unique()
+    category_options = [{"label": cat, "value": cat} for cat in sorted(categories)]
+    
+    total_papers = len(ALL_ARXIV_DATA)
+    latest_date = ALL_ARXIV_DATA['published_display'].dropna().iloc[0] if not ALL_ARXIV_DATA.empty else "N/A"
+    
+    return html.Div([
+        # Header with simple stats
+        dbc.Row([
+            dbc.Col([
+                html.H3([
+                    html.I(className="fas fa-graduation-cap me-2"),
+                    "ArXiv Research Papers"
+                ], className="text-primary mb-3"),
+                dbc.Row([
+                    dbc.Col([
+                        html.H5(f"{total_papers:,}", className="text-primary mb-0"),
+                        html.P("Total Papers", className="text-muted small mb-0")
+                    ], md=4),
+                    dbc.Col([
+                        html.H5(f"{len(categories)}", className="text-success mb-0"), 
+                        html.P("Categories", className="text-muted small mb-0")
+                    ], md=4),
+                    dbc.Col([
+                        html.H5(latest_date, className="text-info mb-0"),
+                        html.P("Latest Paper", className="text-muted small mb-0")
+                    ], md=4),
+                ], className="mb-4")
+            ])
+        ]),
+        
+        # Search and filter controls
+        dbc.Row([
+            dbc.Col([
+                dbc.Input(
+                    id="arxiv-search-input",
+                    placeholder="Search by title or abstract...",
+                    className="mb-2"
+                )
+            ], md=6),
+            dbc.Col([
+                dcc.Dropdown(
+                    id="arxiv-category-dropdown",
+                    options=category_options,
+                    placeholder="Filter by category",
+                    className="mb-2"
+                )
+            ], md=4),
+            dbc.Col([
+                dbc.Button(
+                    "Clear Filters",
+                    id="arxiv-clear-button",
+                    color="outline-secondary",
+                    size="sm",
+                    className="w-100"
+                )
+            ], md=2)
+        ], className="mb-3"),
+        
+        # Papers table container
+        html.Div(id="arxiv-papers-container"),
+        
+        # Pagination
+        html.Div(
+            id="arxiv-pagination-wrapper",
+            className="d-flex justify-content-between align-items-center mt-3",
+            children=[
+                html.Div(id="arxiv-pagination-info", className="text-muted"),
+                html.Div(
+                    className="d-flex align-items-center gap-2",
+                    children=[
+                        dbc.Button(
+                            "« Previous",
+                            id="arxiv-prev-btn",
+                            size="sm",
+                            outline=True,
+                            color="primary",
+                            disabled=True,
+                        ),
+                        dbc.Input(
+                            id="arxiv-page-input",
+                            type="number",
+                            value=1,
+                            min=1,
+                            max=1,
+                            style={"width": "80px", "textAlign": "center"},
+                            size="sm",
+                        ),
+                        html.Span("of", className="mx-2 text-muted"),
+                        html.Span(id="arxiv-total-pages", className="text-muted"),
+                        dbc.Button(
+                            "Next »",
+                            id="arxiv-next-btn",
+                            size="sm",
+                            outline=True,
+                            color="primary",
+                            disabled=True,
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    ])
 
 def register_arxiv_callbacks(app):
-    """Register callbacks for the ArXiv Research tab"""
-
-    # Create callbacks for each source button
-    for source_id in ARXIV_SOURCES_CONFIG.keys():
-
-        @callback(
-            Output("arxiv-data-display", "children"),
-            Output("selected-arxiv-source", "data"),
-            Input(f"btn-arxiv-{source_id}", "n_clicks"),
-            prevent_initial_call=True,
-        )
-        def display_arxiv_data(n_clicks, source_id=source_id):
-            if n_clicks:
-                config = ARXIV_SOURCES_CONFIG[source_id]
-                papers = ARXIV_DATA[source_id]
-
+    """Register callbacks for ArXiv Research tab"""
+    
+    @app.callback(
+        [
+            Output("arxiv-papers-container", "children"),
+            Output("arxiv-pagination-info", "children"),
+            Output("arxiv-total-pages", "children"),
+            Output("arxiv-page-input", "max"),
+            Output("arxiv-page-input", "value"),
+            Output("arxiv-prev-btn", "disabled"),
+            Output("arxiv-next-btn", "disabled"),
+        ],
+        [
+            Input("arxiv-search-input", "value"),
+            Input("arxiv-category-dropdown", "value"),
+            Input("arxiv-page-input", "value"),
+            Input("arxiv-prev-btn", "n_clicks"),
+            Input("arxiv-next-btn", "n_clicks"),
+        ],
+        prevent_initial_call=False,
+    )
+    def update_arxiv_papers(search_term, category, current_page, prev_clicks, next_clicks):
+        try:
+            if not ARXIV_DATA_LOADED:
                 return (
-                    html.Div(
-                        [
-                            html.Hr(),
-                            html.H4(
-                                [
-                                    html.Span(config["icon"], className="me-2"),
-                                    f"{config['name']} Papers",
-                                ],
-                                className="text-primary mb-3",
-                            ),
-                            create_papers_table(source_id, papers),
-                        ]
-                    ),
-                    source_id,
+                    dbc.Alert("Loading ArXiv data...", color="info"),
+                    "", "1", 1, 1, True, True
                 )
+            
+            if ALL_ARXIV_DATA.empty:
+                return (
+                    dbc.Alert("No ArXiv data available.", color="warning"),
+                    "", "1", 1, 1, True, True
+                )
+            
+            # Apply filters
+            df_filtered = ALL_ARXIV_DATA.copy()
+            
+            if search_term:
+                search_lower = search_term.lower()
+                df_filtered = df_filtered[
+                    df_filtered['display_title'].str.lower().contains(search_lower, na=False) |
+                    df_filtered['display_summary'].str.lower().contains(search_lower, na=False)
+                ]
+            
+            if category:
+                df_filtered = df_filtered[df_filtered['primary_category_display'] == category]
+            
+            if df_filtered.empty:
+                return (
+                    dbc.Alert("No papers match your filters.", color="info"),
+                    "", "1", 1, 1, True, True
+                )
+            
+            # Calculate pagination
+            total_items = len(df_filtered)
+            max_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
+            
+            # Handle pagination button clicks
+            ctx = dash.callback_context
+            if ctx.triggered:
+                prop_id = ctx.triggered[0]["prop_id"]
+                if "prev-btn" in prop_id:
+                    current_page = max(1, (current_page or 1) - 1)
+                elif "next-btn" in prop_id:
+                    current_page = min(max_pages, (current_page or 1) + 1)
+            
+            current_page = max(1, min(current_page or 1, max_pages))
+            
+            # Get page data
+            start_idx = (current_page - 1) * PAGE_SIZE
+            end_idx = start_idx + PAGE_SIZE
+            df_paginated = df_filtered.iloc[start_idx:end_idx]
+            
+            # Create table
+            table = create_papers_table(df_paginated)
+            
+            # Pagination info
+            pagination_info = f"Showing {start_idx + 1}-{min(end_idx, total_items)} of {total_items} papers"
+            
+            # Button states
+            prev_disabled = current_page <= 1
+            next_disabled = current_page >= max_pages
+            
+            return (
+                table,
+                pagination_info,
+                str(max_pages),
+                max_pages,
+                current_page,
+                prev_disabled,
+                next_disabled,
+            )
+            
+        except Exception as e:
+            logger.error(f"Error updating ArXiv papers: {e}")
+            return (
+                dbc.Alert(f"Error loading ArXiv data: {str(e)}", color="danger"),
+                "", "1", 1, 1, True, True
+            )
+    
+    # Reset pagination when filters change
+    @app.callback(
+        Output("arxiv-page-input", "value", allow_duplicate=True),
+        [
+            Input("arxiv-search-input", "value"),
+            Input("arxiv-category-dropdown", "value"),
+        ],
+        prevent_initial_call=True,
+    )
+    def reset_arxiv_pagination(search_term, category):
+        return 1
+    
+    # Clear filters callback
+    @app.callback(
+        [
+            Output("arxiv-search-input", "value"),
+            Output("arxiv-category-dropdown", "value"),
+        ],
+        Input("arxiv-clear-button", "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def clear_arxiv_filters(n_clicks):
+        if n_clicks:
+            return "", None
+        return dash.no_update, dash.no_update
 
-            return html.Div(), None
-
+# Load data when module is imported
+load_arxiv_data()
 
 if __name__ == "__main__":
     print("ArXiv Research Tab - Data Summary:")
-    for source_id, config in ARXIV_SOURCES_CONFIG.items():
-        paper_count = len(ARXIV_DATA[source_id])
-        print(f"  {config['name']}: {paper_count} papers")
-
-    total = len(ALL_ARXIV_PAPERS)
-    categories = len(set(p["primary_category_name"] for p in ALL_ARXIV_PAPERS))
-    print(f"  Total: {total} papers across {categories} categories")
+    print(f"  Papers loaded: {len(ALL_ARXIV_DATA)}")
+    if not ALL_ARXIV_DATA.empty:
+        categories = ALL_ARXIV_DATA['primary_category_display'].nunique()
+        print(f"  Categories: {categories}")
+        latest = ALL_ARXIV_DATA['published_display'].dropna().iloc[0]
+        print(f"  Latest paper: {latest}")

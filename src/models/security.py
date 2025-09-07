@@ -306,7 +306,7 @@ class VulnerabilityModel(TimestampedModel):
     class Config:
         """Pydantic configuration."""
 
-        schema_extra = {
+        json_schema_extra = {
             "examples": [
                 {
                     "vulnerability_id": "WTWR-2025-001",

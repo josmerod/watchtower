@@ -51,7 +51,7 @@ class SpanishPublicAidETL(SimpleETL):
             },
             "gva": {
                 "url": "https://www.gva.es/es/inicio/procedimientos",
-                "search_url": "https://sede.gva.es/es/web/sede-electronica/buscar-procedimientos",
+                "search_url": "https://www.gva.es/es/inicio/procedimientos",  # Updated working URL
                 "name": "Generalitat Valenciana",
                 "scope": AidScope.AUTONOMOUS_COMMUNITY,
                 "enabled": self.config.gva_enabled,
@@ -198,7 +198,8 @@ class SpanishPublicAidETL(SimpleETL):
             # Search for aid listings in GVA using working URLs
             search_urls = [
                 "https://dadesobertes.gva.es/es/dataset/eco-gvo-subv-2025",  # Open data subsidies
-                "https://sede.gva.es/es/web/sede-electronica/buscar-procedimientos",  # Electronic headquarters
+                "https://www.gva.es/es/inicio/procedimientos",  # Main procedures page (updated working URL)
+                "https://sede.gva.es/es/procedimientos",  # Alternative procedures URL
             ]
 
             for url in search_urls:
@@ -245,7 +246,8 @@ class SpanishPublicAidETL(SimpleETL):
                             continue
 
                 except Exception as e:
-                    self.logger.error(f"Error fetching from GVA URL {url}: {e}")
+                    self.logger.warning(f"Error fetching from GVA URL {url}: {e}")
+                    self.logger.info(f"Continuing with next URL...")
                     continue
 
         except Exception as e:

@@ -47,15 +47,43 @@ def fetch_media_feeds() -> List[Dict[str, Any]]:
         for entry in feed.entries:
             published_raw = entry.get("published", "")
             try:
-                # Attempt to parse with timezone, fallback to without if it fails
-                try:
-                    published = datetime.strptime(
-                        published_raw, "%a, %d %b %Y %H:%M:%S %z"
-                    ).isoformat()
-                except ValueError:
-                    published = datetime.strptime(
-                        published_raw, "%a, %d %b %Y %H:%M:%S %Z"
-                    ).isoformat()
+                # Try multiple date formats in order of preference
+                # 1. ISO 8601 format (used by The Verge and modern feeds)
+                if "T" in published_raw and ("+" in published_raw or "-" in published_raw[-6:]):
+                    try:
+                        # Handle ISO 8601 with timezone offset (e.g., 2025-08-15T13:30:00-04:00)
+                        published = datetime.fromisoformat(published_raw).isoformat()
+                    except ValueError:
+                        # Try ISO 8601 with Z timezone
+                        if published_raw.endswith("Z"):
+                            published_raw_utc = published_raw[:-1] + "+00:00"
+                            published = datetime.fromisoformat(published_raw_utc).isoformat()
+                        else:
+                            raise ValueError(f"Could not parse ISO format: {published_raw}")
+                
+                # 2. RFC 2822 format with timezone (traditional RSS format)
+                elif any(day in published_raw for day in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]):
+                    try:
+                        published = datetime.strptime(
+                            published_raw, "%a, %d %b %Y %H:%M:%S %z"
+                        ).isoformat()
+                    except ValueError:
+                        published = datetime.strptime(
+                            published_raw, "%a, %d %b %Y %H:%M:%S %Z"
+                        ).isoformat()
+                
+                # 3. Try other common formats
+                else:
+                    # Try simple ISO format without timezone
+                    try:
+                        published = datetime.fromisoformat(published_raw).isoformat()
+                    except ValueError:
+                        # Try parsing as timestamp
+                        try:
+                            published = datetime.fromtimestamp(float(published_raw)).isoformat()
+                        except (ValueError, TypeError):
+                            raise ValueError(f"Unknown date format: {published_raw}")
+                
             except Exception as e:
                 logger.warning(
                     f"Could not parse publication date '{published_raw}' for entry '{entry.get('title')}' from {source}: {e}. Using raw value."

@@ -48,6 +48,30 @@ ENTERTAINMENT_SOURCES_CONFIG = {
         "color": "warning",
         "description": "Trending memes, meme coin analysis, and internet culture economics",
     },
+    "trakt_movies": {
+        "path": get_data_path("entertainment", "trakt_movies_latest.json"),
+        "name": "Trakt Movies",
+        "icon": "🎥",
+        "category": "Movies",
+        "color": "primary",
+        "description": "Trending movies from Trakt.tv",
+    },
+    "trakt_shows": {
+        "path": get_data_path("entertainment", "trakt_shows_latest.json"),
+        "name": "Trakt Shows",
+        "icon": "📺",
+        "category": "TV",
+        "color": "info",
+        "description": "Trending shows from Trakt.tv",
+    },
+    "spotify_browse": {
+        "path": get_data_path("entertainment", "spotify_browse_latest.json"),
+        "name": "Spotify Browse",
+        "icon": "🎵",
+        "category": "Music",
+        "color": "success",
+        "description": "Featured playlists and new releases from Spotify",
+    },
 }
 
 
@@ -172,6 +196,27 @@ for source_id, data in ENTERTAINMENT_DATA.items():
         item["source_category"] = ENTERTAINMENT_SOURCES_CONFIG[source_id]["category"]
         item["source_name"] = ENTERTAINMENT_SOURCES_CONFIG[source_id]["name"]
         ALL_ENTERTAINMENT.append(item)
+
+
+def create_simple_table(items, columns):
+    if not items:
+        return dbc.Alert("No data available.", color="info", className="mt-3")
+    # Trim
+    rows = []
+    for it in items[:50]:
+        rows.append({k: it.get(k) for k in columns})
+    data_table_cols = [{"name": c.replace("_", " ").title(), "id": c, "type": "text"} for c in columns]
+    return dash_table.DataTable(
+        data=rows,
+        columns=data_table_cols,
+        page_size=10,
+        sort_action="native",
+        filter_action="native",
+        style_cell={"textAlign": "left", "padding": "8px", "fontFamily": "Poppins, sans-serif"},
+        style_header={"backgroundColor": "#3C3970", "color": "#E2E8F0", "fontWeight": "bold"},
+        style_data={"backgroundColor": "#2D2B55", "color": "#CDD6F4", "whiteSpace": "normal", "height": "auto"},
+        style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "#252343"}],
+    )
 
 
 def create_genre_distribution_chart():
@@ -467,13 +512,13 @@ def render_entertainment_tab():
 
     total_items = len(ALL_ENTERTAINMENT)
     total_genres = len(
-        set(item["genre"] for item in ALL_ENTERTAINMENT if item["genre"] != "Unknown")
+        set(item["genre"] for item in ALL_ENTERTAINMENT if item.get("genre") and item["genre"] != "Unknown")
     )
     active_sources = sum(1 for data in ENTERTAINMENT_DATA.values() if len(data) > 0)
 
     # Calculate average rating
     avg_rating = 0
-    valid_ratings = [item["rating"] for item in ALL_ENTERTAINMENT if item["rating"] > 0]
+    valid_ratings = [item["rating"] for item in ALL_ENTERTAINMENT if item.get("rating") and item["rating"] > 0]
     if valid_ratings:
         avg_rating = sum(valid_ratings) / len(valid_ratings)
 
@@ -620,6 +665,15 @@ def render_entertainment_tab():
             # Entertainment categories
             html.H4("Entertainment Categories", className="text-primary mb-3"),
             dbc.Row(create_entertainment_summary_cards(), className="mb-4"),
+            # Trakt & Spotify tables
+            html.H4("Trending Movies (Trakt)", className="text-primary mb-2"),
+            create_simple_table(ENTERTAINMENT_DATA.get("trakt_movies", []), ["title", "year", "watchers"]),
+            html.H4("Trending Shows (Trakt)", className="text-primary mt-4 mb-2"),
+            create_simple_table(ENTERTAINMENT_DATA.get("trakt_shows", []), ["title", "year", "watchers"]),
+            html.H4("Spotify New Releases", className="text-primary mt-4 mb-2"),
+            create_simple_table((ENTERTAINMENT_DATA.get("spotify_browse", []) or {}).get("new_releases", []) if isinstance(ENTERTAINMENT_DATA.get("spotify_browse", {}), dict) else [], ["name", "release_date", "artists"]),
+            html.H4("Spotify Featured Playlists", className="text-primary mt-4 mb-2"),
+            create_simple_table((ENTERTAINMENT_DATA.get("spotify_browse", []) or {}).get("playlists", []) if isinstance(ENTERTAINMENT_DATA.get("spotify_browse", {}), dict) else [], ["name", "owner", "tracks"]),
             # Data display area
             html.Div(id="entertainment-data-display"),
             # Storage for selected source

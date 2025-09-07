@@ -19,7 +19,9 @@ ALL_GAMES_DATA = {
     "giveaways": pd.DataFrame(),
     "trending": pd.DataFrame(),
     "new_releases": pd.DataFrame(),
-    "allkeyshop": pd.DataFrame(),
+    "metacritic": pd.DataFrame(),
+    "giantbomb_games": pd.DataFrame(),
+    "giantbomb_reviews": pd.DataFrame(),
 }
 DATA_LOADED_SUCCESSFULLY = {key: False for key in ALL_GAMES_DATA}
 
@@ -325,11 +327,21 @@ def load_bundles_data():
 
 def load_giveaways_data():
     global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
-    # Prefer canonical cross-domain giveaways dataset if present
+    # Prefer enhanced free games dataset first, then canonical cross-domain giveaways dataset if present
+    enhanced_latest_path = get_data_path("enhanced_free_games", "output/latest_free_games_recommendations.json")
+    enhanced_latest_dir = get_data_path("enhanced_free_games", "output/enhanced_free_games_20250822_195728.json")
     latest_path = get_data_path("giveaways", "free_games_latest.json")
     canonical_path = get_data_path("giveaways", "free_games.json")
     legacy_path = get_data_path("games", "giveaways.json")
-    if file_exists(latest_path):
+    epic_free_path = get_data_path("games", "epic_free_games.json")
+    
+    if file_exists(enhanced_latest_path):
+        file_path = enhanced_latest_path
+    elif file_exists(enhanced_latest_dir):
+        file_path = enhanced_latest_dir
+    elif file_exists(epic_free_path):
+        file_path = epic_free_path
+    elif file_exists(latest_path):
         file_path = latest_path
     elif file_exists(canonical_path):
         file_path = canonical_path
@@ -368,6 +380,8 @@ def load_giveaways_data():
             "publishedDate": "published_date_str",  # Or similar field for when it was posted
             "expiryDate": "expiry_date_str",  # Or similar field for when it expires
             "name": "title",
+            "start_date": "published_date_str",  # Epic Games format
+            "end_date": "expiry_date_str",       # Epic Games format
         },
         inplace=True,
     )
@@ -375,6 +389,12 @@ def load_giveaways_data():
     # Map common alternative fields from the new canonical dataset
     if "store" not in df.columns and "platform" in df.columns:
         df["store"] = df["platform"]
+    if "store" not in df.columns:
+        # Infer store from filename or set default
+        if "epic" in file_path.lower():
+            df["store"] = "Epic Games Store"
+        else:
+            df["store"] = "Unknown"
     if "expiry_date_str" not in df.columns or df["expiry_date_str"].isna().all():
         if "promotion_end" in df.columns:
             df["expiry_date_str"] = df["promotion_end"]
@@ -590,95 +610,6 @@ def load_new_releases_data():
     print(f"Info (New Releases): Loaded {len(df)} new releases.")
 
 
-def load_allkeyshop_data():
-    global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
-    file_path = os.path.normpath(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            DATA_BASE_PATH,
-            "allkeyshop.json",
-        )
-    )
-
-    if not file_exists(file_path):
-        print(f"Warning (AllKeyShop): File not found at {file_path}")
-        ALL_GAMES_DATA["allkeyshop"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["allkeyshop"] = False
-        return
-
-    try:
-        df = pd.read_json(file_path)
-    except ValueError as e:
-        print(f"Error (AllKeyShop): Could not decode JSON from {file_path}. Error: {e}")
-        ALL_GAMES_DATA["allkeyshop"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["allkeyshop"] = False
-        return
-    except Exception as e:
-        print(f"Error (AllKeyShop): Failed to read or process {file_path}. Error: {e}")
-        ALL_GAMES_DATA["allkeyshop"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["allkeyshop"] = False
-        return
-
-    if df.empty:
-        ALL_GAMES_DATA["allkeyshop"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["allkeyshop"] = True
-        print("Info (AllKeyShop): allkeyshop.json was empty.")
-        return
-
-    # Standardize columns for AllKeyShop data
-    df.rename(columns={"url": "link", "fetched_at": "fetched_date_str"}, inplace=True)
-
-    # Ensure essential columns exist
-    expected_cols = [
-        "title",
-        "link",
-        "current_price",
-        "original_price",
-        "discount_percentage",
-        "store_name",
-        "deal_score",
-        "game_type",
-        "is_dlc",
-        "fetched_date_str",
-        "source",
-    ]
-    for col in expected_cols:
-        if col not in df.columns:
-            df[col] = None
-
-    # Parse dates
-    df["fetched_date"] = df["fetched_date_str"].apply(lambda x: parse_game_date(x))
-
-    # Ensure price columns are numeric
-    df["current_price_numeric"] = pd.to_numeric(
-        df["current_price"], errors="coerce"
-    ).fillna(0.0)
-    df["original_price_numeric"] = pd.to_numeric(
-        df["original_price"], errors="coerce"
-    ).fillna(0.0)
-    df["discount_percentage_numeric"] = pd.to_numeric(
-        df["discount_percentage"], errors="coerce"
-    ).fillna(0.0)
-    df["deal_score_numeric"] = pd.to_numeric(df["deal_score"], errors="coerce").fillna(
-        0.0
-    )
-
-    # Calculate savings
-    df["savings"] = df["original_price_numeric"] - df["current_price_numeric"]
-    df["savings"] = df["savings"].apply(lambda x: max(0, x))  # Ensure non-negative
-
-    # Sort by fetched date (most recent first) and then by discount percentage
-    df = df.sort_values(
-        by=["fetched_date", "discount_percentage_numeric"],
-        ascending=[False, False],
-        na_position="last",
-    )
-
-    ALL_GAMES_DATA["allkeyshop"] = df
-    DATA_LOADED_SUCCESSFULLY["allkeyshop"] = True
-    print(f"Info (AllKeyShop): Loaded {len(df)} AllKeyShop games.")
-
-
 def load_all_games_data():
     # This will call the individual loaders
     load_deals_data()
@@ -686,7 +617,61 @@ def load_all_games_data():
     load_giveaways_data()
     load_trending_data()
     load_new_releases_data()
-    load_allkeyshop_data()
+    # Optional: Metacritic reviews from RSS
+    try:
+        file_path = get_data_path("games", "metacritic_latest.json")
+        if file_exists(file_path):
+            df = pd.read_json(file_path)
+            # Standardize minimal columns
+            df.rename(
+                columns={
+                    "link": "url",
+                    "published": "published_date_str",
+                },
+                inplace=True,
+            )
+            if "published_date_str" not in df.columns:
+                df["published_date_str"] = None
+            df["published_date"] = df["published_date_str"].apply(lambda x: parse_game_date(x))
+            ALL_GAMES_DATA["metacritic"] = df
+            DATA_LOADED_SUCCESSFULLY["metacritic"] = True
+        else:
+            DATA_LOADED_SUCCESSFULLY["metacritic"] = False
+    except Exception as e:
+        print(f"Error (Metacritic): {e}")
+        DATA_LOADED_SUCCESSFULLY["metacritic"] = False
+    # GiantBomb games
+    try:
+        gb_games = get_data_path("games", "giantbomb_games_latest.json")
+        if file_exists(gb_games):
+            df = pd.read_json(gb_games)
+            df.rename(columns={"title": "name", "release_date": "release_date_str"}, inplace=True)
+            if "release_date_str" in df.columns:
+                df["release_date"] = df["release_date_str"].apply(lambda x: parse_game_date(x))
+            ALL_GAMES_DATA["giantbomb_games"] = df
+            DATA_LOADED_SUCCESSFULLY["giantbomb_games"] = True
+        else:
+            DATA_LOADED_SUCCESSFULLY["giantbomb_games"] = False
+    except Exception as e:
+        print(f"Error (GiantBomb games): {e}")
+        DATA_LOADED_SUCCESSFULLY["giantbomb_games"] = False
+
+    # GiantBomb reviews
+    try:
+        gb_reviews = get_data_path("games", "giantbomb_reviews_latest.json")
+        if file_exists(gb_reviews):
+            df = pd.read_json(gb_reviews)
+            df.rename(columns={"publish_date": "publish_date_str"}, inplace=True)
+            if "publish_date_str" in df.columns:
+                df["publish_date"] = df["publish_date_str"].apply(lambda x: parse_game_date(x))
+            ALL_GAMES_DATA["giantbomb_reviews"] = df
+            DATA_LOADED_SUCCESSFULLY["giantbomb_reviews"] = True
+        else:
+            DATA_LOADED_SUCCESSFULLY["giantbomb_reviews"] = False
+    except Exception as e:
+        print(f"Error (GiantBomb reviews): {e}")
+        DATA_LOADED_SUCCESSFULLY["giantbomb_reviews"] = False
+
     print("Attempted to load all games data.")
 
 
@@ -940,6 +925,97 @@ def render_trending_sub_tab(df):
     )
 
 
+def render_metacritic_sub_tab(df):
+    if not DATA_LOADED_SUCCESSFULLY.get("metacritic", False) or df.empty:
+        return dbc.Alert(
+            "No Metacritic reviews available or failed to load.",
+            color="info",
+            className="mt-3 alert-info",
+        )
+
+    table_header = [
+        html.Thead(
+            html.Tr(
+                [
+                    html.Th("Title"),
+                    html.Th("Score"),
+                    html.Th("Published"),
+                ]
+            )
+        )
+    ]
+    rows = []
+    for _, row in df.head(50).iterrows():
+        title = row.get("title", "N/A")
+        url = row.get("url") or row.get("link")
+        score = row.get("metacritic_score", "N/A")
+        published = row.get("published_date") or row.get("published")
+        rows.append(
+            html.Tr(
+                [
+                    html.Td(html.A(title, href=url, target="_blank") if url else title),
+                    html.Td(str(int(score)) if pd.notna(score) else "N/A"),
+                    html.Td(format_display_date(published)),
+                ]
+            )
+        )
+    return dbc.Table(
+        [table_header[0], html.Tbody(rows)],
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive mt-3",
+    )
+
+
+def render_giantbomb_games_sub_tab(df):
+    if not DATA_LOADED_SUCCESSFULLY.get("giantbomb_games", False) or df.empty:
+        return dbc.Alert("No GiantBomb games available.", color="info", className="mt-3")
+    header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Release"), html.Th("Genres")]))]
+    rows = []
+    for _, row in df.head(50).iterrows():
+        title = row.get("name", "N/A")
+        url = row.get("url")
+        rd = row.get("release_date")
+        genres_val = row.get("genres")
+        genres = ", ".join(genres_val) if isinstance(genres_val, list) else (genres_val or "")
+        rows.append(
+            html.Tr(
+                [
+                    html.Td(html.A(title, href=url, target="_blank") if url else title),
+                    html.Td(format_display_date(rd)),
+                    html.Td(genres or "N/A"),
+                ]
+            )
+        )
+    return dbc.Table(header + [html.Tbody(rows)], bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive mt-3")
+
+
+def render_giantbomb_reviews_sub_tab(df):
+    if not DATA_LOADED_SUCCESSFULLY.get("giantbomb_reviews", False) or df.empty:
+        return dbc.Alert("No GiantBomb reviews available.", color="info", className="mt-3")
+    header = [html.Thead(html.Tr([html.Th("Game"), html.Th("Score"), html.Th("Published")]))]
+    rows = []
+    for _, row in df.head(50).iterrows():
+        game = (row.get("game") or {}).get("name") if isinstance(row.get("game"), dict) else row.get("title", "Review")
+        url = row.get("url")
+        score = row.get("score", "N/A")
+        pd_dt = row.get("publish_date")
+        rows.append(
+            html.Tr(
+                [
+                    html.Td(html.A(game or "Review", href=url, target="_blank") if url else (game or "Review")),
+                    html.Td(str(score) if score is not None else "N/A"),
+                    html.Td(format_display_date(pd_dt)),
+                ]
+            )
+        )
+    return dbc.Table(header + [html.Tbody(rows)], bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive mt-3")
+
+
 def render_new_releases_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get("new_releases", False) or df.empty:
         return dbc.Alert(
@@ -1003,349 +1079,6 @@ def render_new_releases_sub_tab(df):
     )
 
 
-def render_allkeyshop_new_releases_sub_tab(df):
-    """Render AllKeyShop new releases sub-tab."""
-    new_releases_df = (
-        df[df["game_type"] == "new_release"] if not df.empty else pd.DataFrame()
-    )
-
-    if not DATA_LOADED_SUCCESSFULLY.get("allkeyshop", False) or new_releases_df.empty:
-        return dbc.Alert(
-            "No AllKeyShop new releases data currently available or failed to load.",
-            color="info",
-            className="mt-3 alert-info",
-        )
-
-    # Summary cards
-    summary_cards = dbc.Row(
-        [
-            dbc.Col(
-                [
-                    dbc.Card(
-                        [
-                            dbc.CardBody(
-                                [
-                                    html.H4(
-                                        f"{len(new_releases_df)}",
-                                        className="card-title text-primary",
-                                    ),
-                                    html.P("New Releases", className="card-text"),
-                                ]
-                            )
-                        ]
-                    )
-                ],
-                width=3,
-            ),
-            dbc.Col(
-                [
-                    dbc.Card(
-                        [
-                            dbc.CardBody(
-                                [
-                                    html.H4(
-                                        f"€{new_releases_df['current_price_numeric'].mean():.2f}",
-                                        className="card-title text-success",
-                                    ),
-                                    html.P("Average Price", className="card-text"),
-                                ]
-                            )
-                        ]
-                    )
-                ],
-                width=3,
-            ),
-            dbc.Col(
-                [
-                    dbc.Card(
-                        [
-                            dbc.CardBody(
-                                [
-                                    html.H4(
-                                        f"{len(new_releases_df[new_releases_df['current_price_numeric'] == 0])}",
-                                        className="card-title text-info",
-                                    ),
-                                    html.P("Free Games", className="card-text"),
-                                ]
-                            )
-                        ]
-                    )
-                ],
-                width=3,
-            ),
-            dbc.Col(
-                [
-                    dbc.Card(
-                        [
-                            dbc.CardBody(
-                                [
-                                    html.H4(
-                                        f"{len(new_releases_df[new_releases_df['is_dlc'] == True])}",
-                                        className="card-title text-warning",
-                                    ),
-                                    html.P("DLC/Expansions", className="card-text"),
-                                ]
-                            )
-                        ]
-                    )
-                ],
-                width=3,
-            ),
-        ],
-        className="mb-4",
-    )
-
-    # Games table
-    table_header = [
-        html.Thead(
-            html.Tr(
-                [
-                    html.Th("Title"),
-                    html.Th("Store"),
-                    html.Th("Price"),
-                    html.Th("Type"),
-                    html.Th("Fetched"),
-                ]
-            )
-        )
-    ]
-
-    table_body_rows = []
-    for _, row in new_releases_df.head(50).iterrows():
-        price_display = (
-            "FREE"
-            if row.get("current_price_numeric", 0) == 0
-            else f"€{row.get('current_price_numeric', 0):.2f}"
-        )
-        price_color = (
-            "success" if row.get("current_price_numeric", 0) == 0 else "primary"
-        )
-
-        game_type = "DLC" if row.get("is_dlc") else "Game"
-        type_color = "warning" if row.get("is_dlc") else "info"
-
-        table_body_rows.append(
-            html.Tr(
-                [
-                    html.Td(
-                        html.A(
-                            row.get("title", "N/A"),
-                            href=row.get("link"),
-                            target="_blank",
-                        )
-                    ),
-                    html.Td(row.get("store_name", "N/A")),
-                    html.Td(dbc.Badge(price_display, color=price_color)),
-                    html.Td(dbc.Badge(game_type, color=type_color)),
-                    html.Td(format_display_date(row.get("fetched_date"))),
-                ]
-            )
-        )
-
-    table_body = [html.Tbody(table_body_rows)]
-    games_table = dbc.Table(
-        table_header + table_body,
-        bordered=True,
-        hover=True,
-        responsive=True,
-        striped=True,
-        size="sm",
-        color="dark",
-        className="table-responsive mt-3",
-    )
-
-    return html.Div([summary_cards, games_table])
-
-
-def render_allkeyshop_deals_sub_tab(df):
-    """Render AllKeyShop deals/offers sub-tab."""
-    deals_df = df[df["game_type"] == "offer"] if not df.empty else pd.DataFrame()
-
-    if not DATA_LOADED_SUCCESSFULLY.get("allkeyshop", False) or deals_df.empty:
-        return dbc.Alert(
-            "No AllKeyShop deals data currently available or failed to load.",
-            color="info",
-            className="mt-3 alert-info",
-        )
-
-    # Filter for deals with discounts
-    discounted_deals = deals_df[deals_df["discount_percentage_numeric"] > 0]
-
-    # Summary cards
-    summary_cards = dbc.Row(
-        [
-            dbc.Col(
-                [
-                    dbc.Card(
-                        [
-                            dbc.CardBody(
-                                [
-                                    html.H4(
-                                        f"{len(deals_df)}",
-                                        className="card-title text-primary",
-                                    ),
-                                    html.P("Total Deals", className="card-text"),
-                                ]
-                            )
-                        ]
-                    )
-                ],
-                width=3,
-            ),
-            dbc.Col(
-                [
-                    dbc.Card(
-                        [
-                            dbc.CardBody(
-                                [
-                                    html.H4(
-                                        f"{len(discounted_deals)}",
-                                        className="card-title text-success",
-                                    ),
-                                    html.P("With Discounts", className="card-text"),
-                                ]
-                            )
-                        ]
-                    )
-                ],
-                width=3,
-            ),
-            dbc.Col(
-                [
-                    dbc.Card(
-                        [
-                            dbc.CardBody(
-                                [
-                                    html.H4(
-                                        f"{discounted_deals['discount_percentage_numeric'].mean():.0f}%",
-                                        className="card-title text-warning",
-                                    ),
-                                    html.P("Avg Discount", className="card-text"),
-                                ]
-                            )
-                        ]
-                    )
-                ],
-                width=3,
-            ),
-            dbc.Col(
-                [
-                    dbc.Card(
-                        [
-                            dbc.CardBody(
-                                [
-                                    html.H4(
-                                        f"€{discounted_deals['savings'].sum():.2f}",
-                                        className="card-title text-info",
-                                    ),
-                                    html.P("Total Savings", className="card-text"),
-                                ]
-                            )
-                        ]
-                    )
-                ],
-                width=3,
-            ),
-        ],
-        className="mb-4",
-    )
-
-    # Deals table
-    table_header = [
-        html.Thead(
-            html.Tr(
-                [
-                    html.Th("Title"),
-                    html.Th("Store"),
-                    html.Th("Current Price"),
-                    html.Th("Original Price"),
-                    html.Th("Discount"),
-                    html.Th("Deal Score"),
-                    html.Th("Fetched"),
-                ]
-            )
-        )
-    ]
-
-    table_body_rows = []
-    for _, row in deals_df.head(50).iterrows():
-        current_price = row.get("current_price_numeric", 0)
-        original_price = row.get("original_price_numeric", 0)
-        discount_pct = row.get("discount_percentage_numeric", 0)
-        deal_score = row.get("deal_score_numeric", 0)
-
-        # Price display
-        current_price_display = (
-            "FREE" if current_price == 0 else f"€{current_price:.2f}"
-        )
-        current_price_color = "success" if current_price == 0 else "primary"
-
-        # Original price display
-        original_price_display = (
-            f"€{original_price:.2f}" if original_price > 0 else "N/A"
-        )
-
-        # Discount display
-        discount_display = f"{discount_pct:.0f}%" if discount_pct > 0 else "N/A"
-        discount_color = (
-            "success"
-            if discount_pct >= 50
-            else ("warning" if discount_pct >= 25 else "secondary")
-        )
-
-        # Deal score display
-        deal_score_display = f"{deal_score:.0f}/100" if deal_score > 0 else "N/A"
-        score_color = (
-            "success"
-            if deal_score >= 80
-            else ("warning" if deal_score >= 60 else "secondary")
-        )
-
-        table_body_rows.append(
-            html.Tr(
-                [
-                    html.Td(
-                        html.A(
-                            row.get("title", "N/A"),
-                            href=row.get("link"),
-                            target="_blank",
-                        )
-                    ),
-                    html.Td(row.get("store_name", "N/A")),
-                    html.Td(
-                        dbc.Badge(current_price_display, color=current_price_color)
-                    ),
-                    html.Td(original_price_display),
-                    html.Td(
-                        dbc.Badge(discount_display, color=discount_color)
-                        if discount_pct > 0
-                        else "N/A"
-                    ),
-                    html.Td(
-                        dbc.Badge(deal_score_display, color=score_color)
-                        if deal_score > 0
-                        else "N/A"
-                    ),
-                    html.Td(format_display_date(row.get("fetched_date"))),
-                ]
-            )
-        )
-
-    table_body = [html.Tbody(table_body_rows)]
-    deals_table = dbc.Table(
-        table_header + table_body,
-        bordered=True,
-        hover=True,
-        responsive=True,
-        striped=True,
-        size="sm",
-        color="dark",
-        className="table-responsive mt-3",
-    )
-
-    return html.Div([summary_cards, deals_table])
-
-
 def render_games_tab():
     # Load fresh data each time
     load_all_games_data()
@@ -1365,6 +1098,8 @@ def render_games_tab():
                 file_path = get_data_path("games", "itchio_trending.json")
             if key == "new_releases":
                 file_path = get_data_path("games", "new_releases.json")
+            if key == "metacritic":
+                file_path = get_data_path("games", "metacritic_latest.json")
 
             if file_exists(
                 file_path
@@ -1428,17 +1163,24 @@ def render_games_tab():
                         ),
                     ),
                     dbc.Tab(
-                        label="AllKeyShop - Nuevos",
-                        tab_id="subtab-allkeyshop-new",
-                        children=render_allkeyshop_new_releases_sub_tab(
-                            ALL_GAMES_DATA["allkeyshop"]
+                        label="Reseñas (Metacritic)",
+                        tab_id="subtab-metacritic",
+                        children=render_metacritic_sub_tab(
+                            ALL_GAMES_DATA["metacritic"]
                         ),
                     ),
                     dbc.Tab(
-                        label="AllKeyShop - Ofertas",
-                        tab_id="subtab-allkeyshop-deals",
-                        children=render_allkeyshop_deals_sub_tab(
-                            ALL_GAMES_DATA["allkeyshop"]
+                        label="GiantBomb Juegos",
+                        tab_id="subtab-giantbomb-games",
+                        children=render_giantbomb_games_sub_tab(
+                            ALL_GAMES_DATA["giantbomb_games"]
+                        ),
+                    ),
+                    dbc.Tab(
+                        label="GiantBomb Reseñas",
+                        tab_id="subtab-giantbomb-reviews",
+                        children=render_giantbomb_reviews_sub_tab(
+                            ALL_GAMES_DATA["giantbomb_reviews"]
                         ),
                     ),
                 ],
@@ -1461,8 +1203,6 @@ if __name__ == "__main__":
         load_trending_data()
     if not DATA_LOADED_SUCCESSFULLY["new_releases"]:
         load_new_releases_data()
-    if not DATA_LOADED_SUCCESSFULLY["allkeyshop"]:
-        load_allkeyshop_data()
 
     app_test = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     app_test.layout = dbc.Container(render_games_tab(), fluid=True, className="py-4")
@@ -1479,7 +1219,6 @@ if __name__ == "__main__":
                 "giveaways": "giveaways.json",
                 "trending": "itchio_trending.json",
                 "new_releases": "new_releases.json",
-                "allkeyshop": "allkeyshop.json",
             }
             print(
                 f"  Verifique si {DATA_BASE_PATH}{filename_map.get(key, key + '.json')} existe y es válido."

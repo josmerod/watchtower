@@ -1,13 +1,12 @@
 # Ideas propias (libreta y otros)
 
+
+- Limpieza de logs de forma automática (mantener 5,6 versiones de logs, limpiar los más antiguos. Correr automáticamente cada ejecución de la etl).
 - Rutas de senderismo en Valencia y alrededores, quizás con un mapa o indicadores para ir a google maps
 - Planes de turismo (en valencia y alrededores), quizás usando alguna api de turismo pública de la generalitat o similares, puede ser que la tengan en turismovirtual??? (esto lo dijo la IA) o algo por el estilo 
-- Explotar una API de noticias? Alguna en específico ? Estilo NewsAPI? Algo que sea generoso con el uso para poder sacar noticias en "semi tiempo real"
-- Explorar los juegos de itch.io mejor valorados que sean gratuitos o de pago (no se si es necesario que sean gratuitos). Ver algo para que tambien se vean los juegos que son "trending" en itch.io, similar a lo que se ha hecho para Product Hunt.
-- Buscador de ayudas públicas, bubernamentales para personas, fuentes del gobierno, otras fuentes de ayudas, etc...
+- Buscador de ayudas públicas, gubernamentales para personas, fuentes del gobierno, otras fuentes de ayudas, etc...
 - Nuevos datasets publicos expuestos por el gobierno español, tipo datos.gob.es, etc... ver los nuevos y explotar la metadata para ver si hay algo útil.
 - Datasets o modelos que sean trending en hugginface, kaggle o plataformas similares. Mejorar lo ya existente.
-- Resumen de posts en 4chan o simialres. Quizás solo de algunos boards en concreto, y solo para los posts que son general.
 - Experiencias de VR o similares... que sean directos para el PC con las gafas conectadas o para Meta Quest. Si son gratuitas mejor. Debe haber algun directorio o algo similar...
 - Resumen / feed de chollometro o similares? Algo relevante? API, algo similar?
 - Otras páginas de deals? Limited Time Deals? Product Hunt? etc...
@@ -18,26 +17,20 @@
 - Directorio recetas de cocina (batch cooking? una web que tenga directorio y sean decentes? algo?)
 - Refinar / añadir categorías a la parte de Youtube. (Audiolibros? Podcasts?) 
 - Feed de z-library o algo similar? Un rss o algo, para temas relevantes.
-- Goodreads non-fiction top (RSS o similar, api?)
+- Goodreads non-fiction top (RSS o similar, api?). Recientes...
 - Mejor refinamiento de medium, nuevas categorías, algo de prefiltrado?
 - Google cloud skills boost parser (de las cosas nuevas que añaden, quizás si tienen RSS o algo por el estilo).
 - AWS skills builder parser (de las cosas nuevas que añaden, quizás si tienen RSS o algo por el estilo).
 - Buscador / feed de audiolibros (quizás storytel, torrents o páginas de descarga de audiolibros).
 - Buscador / feed de libros (quizás goodreads, librerías locales, etc...) de non-fiction. Quizás con categorías. Ver posibles fuentes e implementar.
-- Buscador / feed de películas / animes. Animes de temporada, top animes, top peliculas. Usar api?
-- Limpieza y optimización de la UX de la interfaz de streamlit.
-- Papers y recursos para el TDAH, clásicos y modernos (trending).
 - Buscador / feed de cursos online. (quizás freecodecamp, udemy, etc...), que sean trending.
 - Bypass substacks + skool (la web esa de suscripciones a clases). Buscar...
-- Feeds reddit, que sean relevantes. r/Piracy? 
+- Feeds reddit, que sean relevantes. r/Piracy? Mejorar ya existente.
 - Rastreador shoppy.gg y similares.
 - Home server utils? Directorio o algo que de las últimas tendencias / aplicaciones al respecto.
-- Mejor interfaz para los watchers. 
 - Youtube: Canales de temas de cloud.
 - New York Times bestsellers. Pero de no ficción.
 - Mejora y fuentes nuevas para buscador planes de Valencia.
-- Feed algo estilo intercambiosvirtuales.es (más nuevo).
-- Gestión de API keys / secretos de la plataforma (si se empieza a usar alguna).
 - Preferencias y persistencia de preferencias del usuario.
 - uv o similar para gestionar versiones de python, etc...
 - Despliegue en MiniPC. Ver como estandarizar el despliegue.
@@ -50,7 +43,7 @@
 - Anime Calendar + watchlist. Algo relevante mediante API? Persistencia para saber cuando llegan los siguientes capítulos. Posiblemente enlazar con un traker como nyaa.si o algo similar.
 - ADHD Toolbox (como la web, scrappearla o similar, hay una de How to ADHD).
 - Friki news, noticias frikis y similar. 
-- Gemas ocultas en allkeyshop o similares, bajo precio, buena nota. Quizás sacando su metascore de algun sitio y o ver si hay alguna api.
+- Gemas ocultas en sitios de deals, bajo precio, buena nota. Quizás sacando su metascore de algun sitio y o ver si hay alguna api.
 - Script o algo siimlar para el Stream Farmer para añadir free packages https://steamdb.info/freepackages/
 - Laptop friendly coffee shops in Valencia and around. Platforms offor i
 
@@ -64,7 +57,7 @@
 - **Base**: Actual `games_get_humblebundles.py` y `games_get_deals.py`
 - **Extensiones Prácticas**:
   - Itch.io trending games scraping (similar a Humble Bundle pattern)
-  - AllKeyShop integration para gemas ocultas con metascore
+  - Deal sites integration para gemas ocultas con metascore
   - Steam wishlist tracking con historical price alerts
   - Epic Games free weekly games automation
 - **Implementación**: Extender gaming ETL existente con nuevos scrapers

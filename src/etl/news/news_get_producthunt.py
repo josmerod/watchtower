@@ -281,30 +281,119 @@ def scrape_daily_products(
         soup = BeautifulSoup(response.content, "html.parser")
         products = []
 
-        # Look for product containers
-        product_items = (
-            soup.find_all("div", {"data-test": "homepage-section-item"})
-            or soup.find_all("div", class_=lambda x: x and "styles_item" in x)
-            or soup.find_all("li", {"data-test": "post-item"})
-        )
+        # Look for product containers with updated and more flexible selectors
+        product_items = []
+        
+        # Try multiple selector strategies
+        selectors_to_try = [
+            # Modern Product Hunt selectors (2025)
+            ("div", {"data-test": "homepage-section-item"}),
+            ("div", {"data-test": "post-item"}),
+            ("li", {"data-test": "post-item"}),
+            ("article", None),
+            
+            # CSS class-based selectors (more flexible)
+            ("div", lambda x: x and "styles_item" in x.lower()),
+            ("div", lambda x: x and "post" in x.lower() and "item" in x.lower()),
+            ("div", lambda x: x and "product" in x.lower()),
+            ("li", lambda x: x and "item" in x.lower()),
+            
+            # General structure-based selectors
+            ("div", lambda x: x and any(keyword in x.lower() for keyword in ["card", "tile", "item", "post"]) if x else False),
+        ]
+        
+        for tag, selector in selectors_to_try:
+            if selector is None:
+                items = soup.find_all(tag)
+            elif isinstance(selector, dict):
+                items = soup.find_all(tag, selector)
+            else:
+                items = soup.find_all(tag, class_=selector)
+            
+            if items:
+                product_items = items
+                logger.info(f"Found {len(items)} potential product items using selector: {tag} with {type(selector).__name__}")
+                break
+        
+        # If no structured items found, try finding any links that might be products
+        if not product_items:
+            logger.warning("No structured product items found, trying generic link extraction")
+            all_links = soup.find_all("a", href=True)
+            # Filter for product-like links
+            product_links = []
+            for link in all_links:
+                href = link.get("href", "")
+                text = link.get_text(strip=True)
+                if (href.startswith("/posts/") or "product" in href.lower()) and text and len(text) > 5:
+                    product_links.append(link.parent if link.parent else link)
+            product_items = product_links[:20]  # Limit to prevent over-scraping
+            
+            if product_items:
+                logger.info(f"Found {len(product_items)} product-like links as fallback")
+            else:
+                logger.warning("No product items found at all - website structure may have changed significantly")
+                
+                # Debug: Save HTML snippet for investigation (first 5000 chars)
+                html_snippet = str(soup)[:5000]
+                logger.debug(f"HTML structure sample: {html_snippet}")
+                
+                # Try to find any meaningful content
+                all_divs = soup.find_all("div")[:50]  # First 50 divs
+                logger.info(f"Found {len(all_divs)} div elements on page")
+                
+                # Look for any text that might indicate products
+                page_text = soup.get_text()
+                if any(word in page_text.lower() for word in ["product", "launch", "vote", "maker"]):
+                    logger.info("Page contains product-related text, selectors might be the issue")
+                else:
+                    logger.warning("Page doesn't contain expected product-related content")
 
         for item in product_items[:20]:  # Limit to 20 products
             try:
-                # Extract product name
+                # Extract product name with more flexible selectors
                 name_elem = (
                     item.find("h3")
-                    or item.find("h2")
-                    or item.find(
-                        "a", class_=lambda x: x and "name" in x.lower() if x else False
-                    )
+                    or item.find("h2") 
+                    or item.find("h4")
+                    or item.find("h1")
+                    or item.find("a", class_=lambda x: x and "name" in x.lower() if x else False)
+                    or item.find("span", class_=lambda x: x and "name" in x.lower() if x else False)
+                    or item.find("div", class_=lambda x: x and "title" in x.lower() if x else False)
                 )
-                name = name_elem.get_text(strip=True) if name_elem else "No Title"
+                
+                # If no structured name element, try to get the most prominent text
+                if not name_elem:
+                    # Look for the first link with substantial text
+                    links_with_text = [a for a in item.find_all("a", href=True) if len(a.get_text(strip=True)) > 5]
+                    if links_with_text:
+                        name_elem = links_with_text[0]
+                    else:
+                        # Get any significant text from the item
+                        texts = [elem for elem in item.find_all(text=True) if len(elem.strip()) > 5]
+                        name = texts[0].strip() if texts else "No Title"
+                
+                name = name_elem.get_text(strip=True) if name_elem and hasattr(name_elem, 'get_text') else (name_elem if isinstance(name_elem, str) else "No Title")
 
-                # Extract link
+                # Extract link with better fallback logic
                 link_elem = item.find("a", href=True)
-                link = link_elem["href"] if link_elem else ""
+                if not link_elem and hasattr(item, 'get'):
+                    # If item itself is a link
+                    link = item.get("href", "") if item.name == "a" else ""
+                else:
+                    link = link_elem["href"] if link_elem else ""
+                
                 if link and not link.startswith("http"):
                     link = base_url + link
+                
+                # If no direct link found, try to construct from product name
+                if not link and name and name != "No Title":
+                    # Try to find any link in the item that might lead to the product
+                    all_links = item.find_all("a", href=True)
+                    for potential_link in all_links:
+                        href = potential_link.get("href", "")
+                        if "/posts/" in href or "product" in href.lower():
+                            link = base_url + href if not href.startswith("http") else href
+                            break
 
                 # Extract tagline/description
                 desc_elem = item.find("p") or item.find(
@@ -387,12 +476,55 @@ def scrape_topic_products(
         soup = BeautifulSoup(response.content, "html.parser")
         products = []
 
-        # Look for product containers in topic pages
-        product_items = (
-            soup.find_all("div", {"data-test": "post-item"})
-            or soup.find_all("div", class_=lambda x: x and "styles_item" in x)
-            or soup.find_all("li", {"data-test": "post-item"})
-        )
+        # Look for product containers in topic pages with flexible selectors
+        product_items = []
+        
+        # Try multiple selector strategies for topic pages
+        selectors_to_try = [
+            # Topic-specific selectors
+            ("div", {"data-test": "post-item"}),
+            ("li", {"data-test": "post-item"}),
+            ("article", None),
+            
+            # CSS class-based selectors
+            ("div", lambda x: x and "styles_item" in x.lower()),
+            ("div", lambda x: x and "post" in x.lower()),
+            ("div", lambda x: x and "product" in x.lower()),
+            ("li", lambda x: x and "item" in x.lower()),
+            
+            # General selectors
+            ("div", lambda x: x and any(keyword in x.lower() for keyword in ["card", "tile", "item"]) if x else False),
+        ]
+        
+        for tag, selector in selectors_to_try:
+            if selector is None:
+                items = soup.find_all(tag)
+            elif isinstance(selector, dict):
+                items = soup.find_all(tag, selector)
+            else:
+                items = soup.find_all(tag, class_=selector)
+            
+            if items:
+                product_items = items
+                logger.info(f"Found {len(items)} topic product items using selector: {tag}")
+                break
+        
+        # Fallback for topic pages
+        if not product_items:
+            logger.warning(f"No structured items found for topic {topic}, trying link extraction")
+            all_links = soup.find_all("a", href=True)
+            product_links = []
+            for link in all_links:
+                href = link.get("href", "")
+                text = link.get_text(strip=True)
+                if (href.startswith("/posts/") or "product" in href.lower()) and text and len(text) > 5:
+                    product_links.append(link.parent if link.parent else link)
+            product_items = product_links[:15]
+            
+            if product_items:
+                logger.info(f"Found {len(product_items)} product-like links for topic {topic}")
+            else:
+                logger.warning(f"No items found for topic {topic}")
 
         for item in product_items[:15]:  # Limit to 15 products per topic
             try:
