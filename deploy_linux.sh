@@ -104,9 +104,10 @@ fi
 echo ""
 
 echo "[STEP 5/6] Creating required directories..."
-mkdir -p data/{arxiv,games,news,courses}
+mkdir -p data/{arxiv,games,news,courses,ai_platforms,deals,entertainment,anime,adhd,fourchan,spanish_public_aid,intelligence,github,giveaways,ecommerce}
+mkdir -p data/watchers data/shortcuts
 mkdir -p logs
-echo "[PASS] Directory structure created"
+echo "[PASS] Complete directory structure created"
 echo ""
 
 echo "[STEP 6/6] Testing installation..."
@@ -129,18 +130,21 @@ echo "[SUCCESS] Watchtower is now installed and ready to use!"
 echo ""
 echo "🚀 Quick Start Commands:"
 echo "  Main Dashboard:    ./run_watchtower_dashboard.sh"
-echo "  Legacy Dashboard:  ./run_streamlit.sh"
+echo "  Legacy Dashboard:  ./run_streamlit_app.sh"
 echo "  Run ETL Processes: ./run_all_etl.sh"
 echo "  Complete System:   ./run_all_etl_and_dashboard.sh"
 echo ""
 echo "🌐 Dashboard URLs:"
 echo "  Main Dashboard:    http://localhost:7777"
 echo "  Legacy Dashboard:  http://localhost:8501"
+echo "  Health Check:      http://localhost:7777/health"
+echo "  Metrics:           http://localhost:7777/metrics"
 echo ""
 echo "📖 Documentation:"
-echo "  Setup Guide:       docs/setup-guide.md"
-echo "  Dashboard Guide:   docs/dashboard_guide.md"
-echo "  Development Setup: DEVELOPMENT_SETUP.md"
+echo "  Deployment Guide:  docs/DEPLOYMENT_GUIDE.md"
+echo "  Dashboard Guide:   docs/DASHBOARD_DEVELOPMENT_GUIDE.md"
+echo "  Development Setup: CLAUDE.md"
+echo "  Architecture:      docs/ARCHITECTURE_OVERVIEW.md"
 echo ""
 echo "[INFO] For help, see: https://github.com/yourusername/watchtower"
 echo "========================================================"
