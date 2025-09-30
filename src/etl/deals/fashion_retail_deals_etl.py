@@ -36,25 +36,108 @@ class FashionRetailDealsETL(BaseETL):
     def __init__(self):
         super().__init__("fashion_retail_deals")
         self.sources = {
+            # European Fashion Retailers (Physical items - European focus)
+            "asos": {
+                "name": "ASOS",
+                "url": "https://www.asos.com/",
+                "sale_url": "https://www.asos.com/sale/",
+                "category": "fashion",
+                "region": "europe",
+            },
+            "zara": {
+                "name": "Zara",
+                "url": "https://www.zara.com/",
+                "sale_url": "https://www.zara.com/es/en/sale",
+                "category": "fashion",
+                "region": "europe",
+            },
+            "hm": {
+                "name": "H&M",
+                "url": "https://www.hm.com/",
+                "sale_url": "https://www.hm.com/entrance.ahtml?orguri=%2Fsale",
+                "category": "fashion",
+                "region": "europe",
+            },
+            "primark": {
+                "name": "Primark",
+                "url": "https://www.primark.com/",
+                "sale_url": "https://www.primark.com/en-gb/sale",
+                "category": "fashion",
+                "region": "europe",
+            },
+            "next_uk": {
+                "name": "Next UK",
+                "url": "https://www.next.co.uk/",
+                "sale_url": "https://www.next.co.uk/clearance",
+                "category": "fashion",
+                "region": "europe",
+            },
+            "marks_spencer": {
+                "name": "Marks & Spencer",
+                "url": "https://www.marksandspencer.com/",
+                "sale_url": "https://www.marksandspencer.com/l/sale",
+                "category": "fashion",
+                "region": "europe",
+            },
+            "debenhams": {
+                "name": "Debenhams",
+                "url": "https://www.debenhams.com/",
+                "sale_url": "https://www.debenhams.com/sale",
+                "category": "fashion",
+                "region": "europe",
+            },
+            "john_lewis": {
+                "name": "John Lewis",
+                "url": "https://www.johnlewis.com/",
+                "sale_url": "https://www.johnlewis.com/anyday",
+                "category": "fashion",
+                "region": "europe",
+            },
+            "boohoo": {
+                "name": "Boohoo",
+                "url": "https://www.boohoo.com/",
+                "sale_url": "https://www.boohoo.com/page/sale",
+                "category": "fashion",
+                "region": "europe",
+            },
+            "missguided": {
+                "name": "Missguided",
+                "url": "https://www.missguided.co.uk/",
+                "sale_url": "https://www.missguided.co.uk/sale",
+                "category": "fashion",
+                "region": "europe",
+            },
+            # Global/International Fashion (Digital items or international shipping)
+            "uniqlo": {
+                "name": "Uniqlo",
+                "url": "https://www.uniqlo.com/",
+                "sale_url": "https://www.uniqlo.com/us/en/sale",
+                "category": "fashion",
+                "region": "global",
+            },
             "nordstrom_rack": {
                 "name": "Nordstrom Rack",
                 "clearance_url": "https://www.nordstromrack.com/clearance",
                 "category": "fashion",
+                "region": "global",
             },
             "6pm": {
                 "name": "6PM",
                 "deals_url": "https://www.6pm.com/",
                 "category": "fashion",
+                "region": "global",
             },
             "rue_la_la": {
                 "name": "Rue La La",
                 "boutiques_url": "https://www.ruelala.com/boutiques",
                 "category": "fashion",
+                "region": "global",
             },
             "overstock": {
                 "name": "Overstock",
                 "deals_url": "https://www.overstock.com/deals",
                 "category": "home_fashion",
+                "region": "global",
             },
         }
 
@@ -74,6 +157,155 @@ class FashionRetailDealsETL(BaseETL):
     def _get_curated_fashion_retail_deals(self) -> List[Dict[str, Any]]:
         """Get manually curated list of fashion and retail deals."""
         curated = [
+            # European Fashion Deals
+            {
+                "title": "ASOS Sale - Up to 70% Off Fashion",
+                "description": "Trendy clothing, shoes, and accessories with fast European delivery",
+                "url": "https://www.asos.com/sale/",
+                "platform": "ASOS",
+                "category": "fashion",
+                "deal_type": "seasonal_sale",
+                "original_price": 80,
+                "current_price": 24,
+                "savings": 56,
+                "discount_percentage": 70,
+                "brand_tier": "contemporary",
+                "product_category": "clothing",
+                "region": "europe",
+                "shipping": "free_over_40",
+                "return_policy": "28_days",
+                "tags": ["trendy", "fast fashion", "uk delivery"],
+                "created_date": datetime.now(timezone.utc).isoformat(),
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "source": "Curated",
+            },
+            {
+                "title": "Zara Special Prices - Up to 50% Off",
+                "description": "Contemporary fashion with European style and fast delivery",
+                "url": "https://www.zara.com/es/en/sale",
+                "platform": "Zara",
+                "category": "fashion",
+                "deal_type": "special_prices",
+                "original_price": 60,
+                "current_price": 30,
+                "savings": 30,
+                "discount_percentage": 50,
+                "brand_tier": "contemporary",
+                "product_category": "clothing",
+                "region": "europe",
+                "shipping": "free_over_50",
+                "return_policy": "30_days",
+                "tags": ["contemporary", "spanish", "fast fashion"],
+                "created_date": datetime.now(timezone.utc).isoformat(),
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "source": "Curated",
+            },
+            {
+                "title": "H&M Sale - Fashion for All",
+                "description": "Affordable fashion with sustainable options and European delivery",
+                "url": "https://www.hm.com/entrance.ahtml?orguri=%2Fsale",
+                "platform": "H&M",
+                "category": "fashion",
+                "deal_type": "seasonal_sale",
+                "original_price": 40,
+                "current_price": 20,
+                "savings": 20,
+                "discount_percentage": 50,
+                "brand_tier": "affordable",
+                "product_category": "clothing",
+                "region": "europe",
+                "shipping": "free_over_25",
+                "return_policy": "30_days",
+                "tags": ["affordable", "sustainable", "swedish"],
+                "created_date": datetime.now(timezone.utc).isoformat(),
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "source": "Curated",
+            },
+            {
+                "title": "Primark Amazing Value Fashion",
+                "description": "Budget-friendly fashion with stores across Europe",
+                "url": "https://www.primark.com/en-gb/sale",
+                "platform": "Primark",
+                "category": "fashion",
+                "deal_type": "value_deals",
+                "original_price": 25,
+                "current_price": 10,
+                "savings": 15,
+                "discount_percentage": 60,
+                "brand_tier": "budget",
+                "product_category": "clothing",
+                "region": "europe",
+                "shipping": "in_store_only",
+                "return_policy": "28_days",
+                "tags": ["budget", "value", "irish"],
+                "created_date": datetime.now(timezone.utc).isoformat(),
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "source": "Curated",
+            },
+            {
+                "title": "Next UK Clearance - Up to 70% Off",
+                "description": "Quality clothing and homeware with UK delivery",
+                "url": "https://www.next.co.uk/clearance",
+                "platform": "Next UK",
+                "category": "fashion",
+                "deal_type": "clearance",
+                "original_price": 100,
+                "current_price": 30,
+                "savings": 70,
+                "discount_percentage": 70,
+                "brand_tier": "mid_range",
+                "product_category": "clothing",
+                "region": "europe",
+                "shipping": "free_over_50",
+                "return_policy": "28_days",
+                "tags": ["quality", "clearance", "uk"],
+                "created_date": datetime.now(timezone.utc).isoformat(),
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "source": "Curated",
+            },
+            {
+                "title": "Marks & Spencer Sale",
+                "description": "British quality fashion with European delivery options",
+                "url": "https://www.marksandspencer.com/l/sale",
+                "platform": "Marks & Spencer",
+                "category": "fashion",
+                "deal_type": "seasonal_sale",
+                "original_price": 80,
+                "current_price": 40,
+                "savings": 40,
+                "discount_percentage": 50,
+                "brand_tier": "premium",
+                "product_category": "clothing",
+                "region": "europe",
+                "shipping": "free_over_60",
+                "return_policy": "35_days",
+                "tags": ["premium", "british", "quality"],
+                "created_date": datetime.now(timezone.utc).isoformat(),
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "source": "Curated",
+            },
+            {
+                "title": "Boohoo Sale - Trendy Fashion",
+                "description": "Fast fashion with European delivery and student discounts",
+                "url": "https://www.boohoo.com/page/sale",
+                "platform": "Boohoo",
+                "category": "fashion",
+                "deal_type": "seasonal_sale",
+                "original_price": 50,
+                "current_price": 20,
+                "savings": 30,
+                "discount_percentage": 60,
+                "brand_tier": "trendy",
+                "product_category": "clothing",
+                "region": "europe",
+                "shipping": "free_over_35",
+                "return_policy": "28_days",
+                "tags": ["trendy", "fast fashion", "uk"],
+                "created_date": datetime.now(timezone.utc).isoformat(),
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "source": "Curated",
+            },
+            # Global Fashion (for digital/international items)
             {
                 "title": "Nordstrom Rack Up to 70% Off Designer",
                 "description": "Designer clothing, shoes, and accessories at up to 70% off retail prices",
@@ -480,16 +712,27 @@ class FashionRetailDealsETL(BaseETL):
         """Calculate fashion value score for ranking deals."""
         score = 0.0
 
-        # Platform reputation weight
+        # Platform reputation weight - prioritize European sources for physical items
         platform = deal.get("platform", "").lower()
-        if any(name in platform for name in ["nordstrom", "nordstrom rack"]):
-            score += 5.0  # Premium reputation
+        region = deal.get("region", "").lower()
+
+        if region == "europe":
+            if any(name in platform for name in ["asos", "zara", "hm", "h&m"]):
+                score += 5.0  # European fast fashion leaders
+            elif any(name in platform for name in ["primark", "next", "marks", "marks & spencer"]):
+                score += 4.5  # European value retailers
+            elif any(name in platform for name in ["boohoo", "debenhams", "john lewis"]):
+                score += 4.0  # European department stores
+            else:
+                score += 3.5  # Other European sources
+        elif any(name in platform for name in ["nordstrom", "nordstrom rack"]):
+            score += 4.5  # Premium reputation
         elif any(name in platform for name in ["6pm", "rue la la", "dsw"]):
-            score += 4.5  # Specialized fashion
+            score += 4.0  # Specialized fashion
         elif any(name in platform for name in ["tjx", "marshall", "tj maxx"]):
-            score += 4.0  # Off-price value
-        elif any(name in platform for name in ["zara", "uniqlo", "h&m"]):
-            score += 3.5  # Fast fashion
+            score += 3.5  # Off-price value
+        elif any(name in platform for name in ["uniqlo"]):
+            score += 3.0  # Global but good quality
         else:
             score += 2.0
 

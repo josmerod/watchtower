@@ -36,6 +36,69 @@ NEWS_SOURCES_CONFIG = {
         "path": get_data_path("news", "arstechnica_latest.json"),
         "name": "Ars Technica",
     },
+    # Added from Knowledge Garden
+    "futuretools": {
+        "path": get_data_path("futuretools", "futuretoolsnews.json"),
+        "name": "FutureTools",
+    },
+    "bensbites": {
+        "path": get_data_path("bensbites", "bensbites_news.json"),
+        "name": "Ben's Bites",
+    },
+    "hackernews": {
+        "path": get_data_path("hackernews", "hackernews.json"),
+        "name": "Hacker News",
+    },
+    "medium_genai": {
+        "path": get_data_path("medium_genai", "medium_genai.json"),
+        "name": "Medium GenAI",
+    },
+    "kdnuggets": {
+        "path": get_data_path("kdnuggets", "kdnuggets.json"),
+        "name": "KDnuggets",
+    },
+    "meneame_general": {
+        "path": get_data_path("meneame", "meneame_general_latest.json"),
+        "name": "Meneame General",
+    },
+    "meneame_tecnologia": {
+        "path": get_data_path("meneame", "meneame_tecnologia_latest.json"),
+        "name": "Meneame Tech",
+    },
+    "indiehackers": {
+        "path": get_data_path("indie_hackers", "posts.json"),
+        "name": "Indie Hackers",
+    },
+    # Kagi RSS sources by category
+    "kagi_world": {
+        "path": get_data_path("kagi_world", "kagi_world.json"),
+        "name": "Kagi World",
+    },
+    "kagi_usa": {
+        "path": get_data_path("kagi_usa", "kagi_usa.json"),
+        "name": "Kagi USA",
+    },
+    "kagi_business": {
+        "path": get_data_path("kagi_business", "kagi_business.json"),
+        "name": "Kagi Business",
+    },
+    "kagi_science": {
+        "path": get_data_path("kagi_science", "kagi_science.json"),
+        "name": "Kagi Science",
+    },
+    "kagi_gaming": {
+        "path": get_data_path("kagi_gaming", "kagi_gaming.json"),
+        "name": "Kagi Gaming",
+    },
+    "kagi_ai": {"path": get_data_path("kagi_ai", "kagi_ai.json"), "name": "Kagi AI"},
+    "kagi_europe": {
+        "path": get_data_path("kagi_europe", "kagi_europe.json"),
+        "name": "Kagi Europe",
+    },
+    "kagi_spain": {
+        "path": get_data_path("kagi_spain", "kagi_spain.json"),
+        "name": "Kagi Spain",
+    },
 }
 
 
@@ -314,6 +377,22 @@ def render_news_tab():
         {"label": "Google AI Blog", "keys": "google_ai_blog", "id": "gaib"},
         {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"},
         {"label": "Ars Technica", "keys": "arstechnica", "id": "ars"},
+        {"label": "FutureTools & Ben's Bites", "keys": ["futuretools", "bensbites"], "id": "ft-bb"},
+        {"label": "Hacker News", "keys": "hackernews", "id": "hn"},
+        {"label": "Medium GenAI", "keys": "medium_genai", "id": "med_genai"},
+        {"label": "KDnuggets", "keys": "kdnuggets", "id": "kdn"},
+        {"label": "Meneame General", "keys": "meneame_general", "id": "men_gen"},
+        {"label": "Meneame Tech", "keys": "meneame_tecnologia", "id": "men_tec"},
+        {"label": "Indie Hackers", "keys": "indiehackers", "id": "ih"},
+        # Kagi RSS feeds as individual tabs
+        {"label": "Kagi World", "keys": "kagi_world", "id": "kagi_world"},
+        {"label": "Kagi USA", "keys": "kagi_usa", "id": "kagi_usa"},
+        {"label": "Kagi Business", "keys": "kagi_business", "id": "kagi_business"},
+        {"label": "Kagi Science", "keys": "kagi_science", "id": "kagi_science"},
+        {"label": "Kagi Gaming", "keys": "kagi_gaming", "id": "kagi_gaming"},
+        {"label": "Kagi AI", "keys": "kagi_ai", "id": "kagi_ai"},
+        {"label": "Kagi Europe", "keys": "kagi_europe", "id": "kagi_europe"},
+        {"label": "Kagi Spain", "keys": "kagi_spain", "id": "kagi_spain"},
     ]
 
     tabs_children = []

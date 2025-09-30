@@ -2,6 +2,7 @@
 
 import json
 from datetime import datetime
+from pathlib import Path
 from typing import Any, List
 
 import requests
@@ -34,8 +35,9 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             description="Extract Valencia events from multiple sources (visitvalencia.com, meetup.com, eventbrite)",
             max_retries=3,
             retry_delay=5,
-            output_dir="data/valencia_events",  # Write directly to main data directory
         )
+        # Override output directory to write directly to main data directory
+        self.output_dir = Path("data/valencia_events")
 
     def get_current_and_next_month(self):
         """Returns the current and next month in YYYY-MM format.
@@ -392,28 +394,205 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         )
         return events
 
+    def get_meetup_events(self) -> List[dict]:
+        """Fetch events from Meetup.com for Valencia."""
+        try:
+            self.logger.info("Fetching events from Meetup.com")
+
+            # Note: Meetup.com requires API key for full access
+            # For now, we'll use web scraping approach
+            url = "https://www.meetup.com/es-ES/find/?location=es--Valencia&source=EVENTS"
+
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            events = []
+
+            # Look for event cards in Meetup's search results
+            event_cards = soup.find_all('div', {'data-testid': 'event-card'})
+
+            for card in event_cards[:20]:  # Limit to first 20 events
+                try:
+                    title_element = card.find('h3') or card.find('h2')
+                    title = title_element.text.strip() if title_element else ""
+
+                    if not title:
+                        continue
+
+                    # Extract date information
+                    date_element = card.find('time') or card.find('span', string=lambda t: t and ('202' in t or 'ene' in t.lower() or 'feb' in t.lower()))
+                    date_text = date_element.get('datetime', '') if date_element else ""
+                    if not date_text and date_element:
+                        date_text = date_element.text.strip()
+
+                    # Extract URL
+                    link = card.find('a')
+                    event_url = ""
+                    if link and 'href' in link.attrs:
+                        href = link['href']
+                        if href.startswith('/'):
+                            event_url = f"https://meetup.com{href}"
+                        else:
+                            event_url = href
+
+                    # Extract description/location
+                    desc_element = card.find('p')
+                    description = desc_element.text.strip() if desc_element else ""
+
+                    # Category - try to infer from title/description
+                    category = "meetup"
+                    if any(word in title.lower() for word in ['tech', 'tecnología', 'programming', 'desarrollo']):
+                        category = "tecnología"
+                    elif any(word in title.lower() for word in ['música', 'music', 'concierto']):
+                        category = "música"
+
+                    if title:
+                        events.append({
+                            "title": title,
+                            "url": event_url,
+                            "date_text": date_text,
+                            "category": category,
+                            "description": description,
+                            "source": "meetup.com",
+                        })
+
+                except Exception as e:
+                    self.logger.error(f"Error parsing Meetup event: {e}")
+                    continue
+
+            self.logger.info(f"Found {len(events)} events from Meetup.com")
+            return events
+
+        except Exception as e:
+            self.logger.error(f"Error fetching Meetup events: {e}")
+            return []
+
+    def get_eventbrite_events(self) -> List[dict]:
+        """Fetch events from Eventbrite for Valencia."""
+        try:
+            self.logger.info("Fetching events from Eventbrite")
+
+            # Eventbrite API would require API key, so we'll use web scraping
+            url = "https://www.eventbrite.es/d/spain--valencia/all-events/"
+
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            events = []
+
+            # Look for event cards
+            event_cards = soup.find_all('div', class_=lambda x: x and 'event-card' in x.lower())
+
+            # If that doesn't work, look for event listings
+            if not event_cards:
+                event_cards = soup.find_all('div', class_=lambda x: x and any(term in x.lower() for term in ['event', 'card', 'listing']))
+
+            for card in event_cards[:15]:  # Limit to first 15 events
+                try:
+                    title_element = card.find('h3') or card.find('h2') or card.find('h4')
+                    title = title_element.text.strip() if title_element else ""
+
+                    if not title:
+                        continue
+
+                    # Extract date
+                    date_element = card.find('p', class_=lambda x: x and 'date' in x.lower())
+                    date_text = date_element.text.strip() if date_element else ""
+
+                    # Extract URL
+                    link = card.find('a')
+                    event_url = ""
+                    if link and 'href' in link.attrs:
+                        href = link['href']
+                        if href.startswith('/'):
+                            event_url = f"https://eventbrite.com{href}"
+                        else:
+                            event_url = href
+
+                    # Extract description
+                    desc_element = card.find('p', class_=lambda x: x and 'description' in x.lower())
+                    description = desc_element.text.strip() if desc_element else ""
+
+                    # Category
+                    category = "eventbrite"
+                    if any(word in title.lower() for word in ['tech', 'tecnología', 'startup']):
+                        category = "tecnología"
+                    elif any(word in title.lower() for word in ['música', 'concierto', 'festival']):
+                        category = "música"
+
+                    if title:
+                        events.append({
+                            "title": title,
+                            "url": event_url,
+                            "date_text": date_text,
+                            "category": category,
+                            "description": description,
+                            "source": "eventbrite.com",
+                        })
+
+                except Exception as e:
+                    self.logger.error(f"Error parsing Eventbrite event: {e}")
+                    continue
+
+            self.logger.info(f"Found {len(events)} events from Eventbrite")
+            return events
+
+        except Exception as e:
+            self.logger.error(f"Error fetching Eventbrite events: {e}")
+            return []
+
     def extract(self) -> List[dict]:
-        """Extract events from Valencia website for current and next month."""
-        # Get current and next month
-        current_month, next_month = self.get_current_and_next_month()
-        self.logger.info(f"Fetching events for {current_month} and {next_month}")
+        """Extract events from multiple sources for Valencia."""
+        self.logger.info("Starting multi-source Valencia events extraction")
 
         all_events = []
 
-        # Get events for current month
+        # 1. Get events from visitvalencia.com (current and next month)
         try:
+            current_month, next_month = self.get_current_and_next_month()
+            self.logger.info(f"Fetching events for {current_month} and {next_month}")
+
+            # Get events for current month
             current_month_events = self.get_valencia_events(current_month)
             all_events.extend(current_month_events)
-        except Exception as e:
-            self.logger.error(f"Failed to fetch current month events: {e}")
 
-        # Get events for next month
-        try:
+            # Get events for next month
             next_month_events = self.get_valencia_events(next_month)
             all_events.extend(next_month_events)
-        except Exception as e:
-            self.logger.error(f"Failed to fetch next month events: {e}")
 
+            self.logger.info(f"Retrieved {len(current_month_events) + len(next_month_events)} events from visitvalencia.com")
+        except Exception as e:
+            self.logger.error(f"Failed to fetch visitvalencia.com events: {e}")
+
+        # 2. Get events from Meetup.com
+        try:
+            meetup_events = self.get_meetup_events()
+            all_events.extend(meetup_events)
+            self.logger.info(f"Retrieved {len(meetup_events)} events from meetup.com")
+        except Exception as e:
+            self.logger.error(f"Failed to fetch meetup.com events: {e}")
+
+        # 3. Get events from Eventbrite
+        try:
+            eventbrite_events = self.get_eventbrite_events()
+            all_events.extend(eventbrite_events)
+            self.logger.info(f"Retrieved {len(eventbrite_events)} events from eventbrite.com")
+        except Exception as e:
+            self.logger.error(f"Failed to fetch eventbrite.com events: {e}")
+
+        self.logger.info(f"Total events collected from all sources: {len(all_events)}")
         return all_events
 
     def process_valencia_events(
