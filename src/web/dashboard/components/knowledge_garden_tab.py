@@ -10,37 +10,125 @@ from src.web.dashboard.utils import get_data_path, parse_date_universal
 
 # --- Data Loading ---
 
-# NEWS TAB - Actual news sites and aggregators
-NEWS_SOURCES_CONFIG = {
-    "techcrunch": {
-        "path": get_data_path("news", "techcrunch_latest.json"),
-        "name": "TechCrunch",
+# KNOWLEDGE GARDEN TAB - Reddit, dev communities, and similar sources
+KNOWLEDGE_SOURCES_CONFIG = {
+    "futuretools": {
+        "path": get_data_path("futuretools", "futuretoolsnews.json"),
+        "name": "FutureTools",
     },
-    "venturebeat": {
-        "path": get_data_path("news", "venturebeat_latest.json"),
-        "name": "VentureBeat",
+    "bensbites": {
+        "path": get_data_path("bensbites", "bensbites_news.json"),
+        "name": "Ben's Bites",
     },
-    "freecodecamp": {
-        "path": get_data_path("news", "freecodecamp_latest.json"),
-        "name": "freeCodeCamp",
+    "hackernews": {
+        "path": get_data_path("hackernews", "hackernews.json"),
+        "name": "Hacker News",
     },
-    "google_ai_blog": {
-        "path": get_data_path("news", "google_ai_blog_latest.json"),
-        "name": "Google AI Blog",
+    "medium_genai": {
+        "path": get_data_path("medium_genai", "medium_genai.json"),
+        "name": "Medium GenAI",
     },
-    "lobsters": {
-        "path": get_data_path("news", "lobsters_latest.json"),
-        "name": "Lobsters",
+    "kdnuggets": {
+        "path": get_data_path("kdnuggets", "kdnuggets.json"),
+        "name": "KDnuggets",
     },
-    "arstechnica": {
-        "path": get_data_path("news", "arstechnica_latest.json"),
-        "name": "Ars Technica",
+    "gooddevs": {
+        "path": get_data_path("gooddevs", "gooddevs_latest.json"),
+        "name": "Good Devs",
     },
+    "meneame_general": {
+        "path": get_data_path("meneame", "meneame_general_latest.json"),
+        "name": "Meneame General",
+    },
+    "meneame_tecnologia": {
+        "path": get_data_path("meneame", "meneame_tecnologia_latest.json"),
+        "name": "Meneame Tech",
+    },
+    "podcasts": {
+        "path": get_data_path("podcasts", "podcasts_latest.json"),
+        "name": "Podcasts",
+    },
+    "product_hunt": {
+        "path": get_data_path("product_hunt", "product_hunt_latest.json"),
+        "name": "Product Hunt",
+    },
+    # Developer Communities
+    "indiehackers": {
+        "path": get_data_path("indie_hackers", "posts.json"),
+        "name": "Indie Hackers",
+    },
+    "gittrends": {
+        "path": get_data_path("github_trends", "github_trends_latest.json"),
+        "name": "Git Trends",
+    },
+    "hackernews_ask": {
+        "path": get_data_path("hackernews_ask", "hackernews_ask_latest.json"),
+        "name": "HN Ask",
+    },
+    "stackoverflow_trends": {
+        "path": get_data_path(
+            "stackoverflow_trends", "stackoverflow_trends_latest.json"
+        ),
+        "name": "Stack Overflow",
+    },
+    # Unified Reddit sources by category
+    "reddit_unified": {
+        "path": get_data_path("reddit_unified", "reddit_unified_latest.json"),
+        "name": "Reddit All",
+    },
+    "reddit_ai_ml": {
+        "path": get_data_path("reddit_unified", "reddit_ai_ml_latest.json"),
+        "name": "Reddit AI/ML",
+    },
+    "reddit_programming": {
+        "path": get_data_path("reddit_unified", "reddit_programming_latest.json"),
+        "name": "Reddit Programming",
+    },
+    "reddit_tech": {
+        "path": get_data_path("reddit_unified", "reddit_tech_latest.json"),
+        "name": "Reddit Tech",
+    },
+    "reddit_devops": {
+        "path": get_data_path("reddit_unified", "reddit_devops_latest.json"),
+        "name": "Reddit DevOps",
+    },
+    # Kagi RSS sources by category
+    "kagi_world": {
+        "path": get_data_path("kagi_world", "kagi_world.json"),
+        "name": "Kagi World",
+    },
+    "kagi_usa": {
+        "path": get_data_path("kagi_usa", "kagi_usa.json"),
+        "name": "Kagi USA",
+    },
+    "kagi_business": {
+        "path": get_data_path("kagi_business", "kagi_business.json"),
+        "name": "Kagi Business",
+    },
+    "kagi_science": {
+        "path": get_data_path("kagi_science", "kagi_science.json"),
+        "name": "Kagi Science",
+    },
+    "kagi_gaming": {
+        "path": get_data_path("kagi_gaming", "kagi_gaming.json"),
+        "name": "Kagi Gaming",
+    },
+    "kagi_ai": {"path": get_data_path("kagi_ai", "kagi_ai.json"), "name": "Kagi AI"},
+    "kagi_europe": {
+        "path": get_data_path("kagi_europe", "kagi_europe.json"),
+        "name": "Kagi Europe",
+    },
+    "kagi_spain": {
+        "path": get_data_path("kagi_spain", "kagi_spain.json"),
+        "name": "Kagi Spain",
+    },
+    # Dev.to articles
+    "devto": {"path": get_data_path("devto", "devto.json"), "name": "Dev.to"},
 }
 
 
-def load_news_from_file(file_path):
-    """Loads news items from a JSON file."""
+def load_knowledge_from_file(file_path):
+    """Loads knowledge items from a JSON file."""
     try:
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
@@ -70,36 +158,36 @@ def load_news_from_file(file_path):
                 )
                 return []
     except FileNotFoundError:
-        print(f"Warning: News file not found at {file_path}")
+        print(f"Warning: Knowledge file not found at {file_path}")
         return []
     except json.JSONDecodeError:
         print(f"Warning: Could not decode JSON from {file_path}")
         return []
     except Exception as e:
-        print(f"Error loading news from {file_path}: {e}")
+        print(f"Error loading knowledge from {file_path}: {e}")
         return []
 
 
-# Load news data dynamically instead of at import time
-def get_all_news_data():
-    """Load fresh news data from all configured sources."""
+# Load knowledge data dynamically instead of at import time
+def get_all_knowledge_data():
+    """Load fresh knowledge data from all configured sources."""
     # Simple TTL cache to avoid re-reading dozens of files on each tab switch
     # Cache in module state for ~60 seconds
     import time
 
-    global _NEWS_CACHE  # type: ignore
+    global _KNOWLEDGE_CACHE  # type: ignore
     now = time.time()
     try:
-        if _NEWS_CACHE and now - _NEWS_CACHE.get("ts", 0) < 60:
-            return _NEWS_CACHE["data"]
+        if _KNOWLEDGE_CACHE and now - _KNOWLEDGE_CACHE.get("ts", 0) < 60:
+            return _KNOWLEDGE_CACHE["data"]
     except NameError:
         pass
 
     data = {
-        source_key: load_news_from_file(config["path"])
-        for source_key, config in NEWS_SOURCES_CONFIG.items()
+        source_key: load_knowledge_from_file(config["path"])
+        for source_key, config in KNOWLEDGE_SOURCES_CONFIG.items()
     }
-    _NEWS_CACHE = {"ts": now, "data": data}
+    _KNOWLEDGE_CACHE = {"ts": now, "data": data}
     return data
 
 
@@ -166,7 +254,7 @@ def parse_date(date_str):
             pass  # Not a valid float or timestamp
 
     # Use the shared date parsing function as fallback
-    return parse_date_universal(s_date, "News")
+    return parse_date_universal(s_date, "Knowledge")
 
 
 # --- Layout Generation ---
@@ -197,31 +285,28 @@ def format_article_date(article):
     return parsed_dt.strftime("%Y-%m-%d %H:%M UTC") if parsed_dt else "Date N/A"
 
 
-# Removed create_article_card function as it's no longer needed for table view
-
-
-def create_news_source_tab_content(source_keys, combined_name=None):
-    """Creates the content for a news tab as a table, potentially combining multiple sources.
+def create_knowledge_source_tab_content(source_keys, combined_name=None):
+    """Creates the content for a knowledge tab as a table, potentially combining multiple sources.
 
     Sorts articles by date before limiting.
     """
     all_articles_for_tab = []
     if isinstance(source_keys, str):  # Single source key
         source_keys = [source_keys]
-        source_display_name = NEWS_SOURCES_CONFIG[source_keys[0]]["name"]
+        source_display_name = KNOWLEDGE_SOURCES_CONFIG[source_keys[0]]["name"]
     else:  # List of source keys (for combined tabs)
-        source_display_name = combined_name or "Combined News"
+        source_display_name = combined_name or "Combined Knowledge"
 
     # Load fresh data each time
-    all_news_data = get_all_news_data()
+    all_knowledge_data = get_all_knowledge_data()
 
     for key in source_keys:
-        articles_from_source = all_news_data.get(key, [])
+        articles_from_source = all_knowledge_data.get(key, [])
         # Add source name to each article for display in the table
         for article in articles_from_source:
             # Use 'source_display' to ensure we have a consistent field for the table
             article["source_display_name"] = article.get(
-                "source", NEWS_SOURCES_CONFIG[key]["name"]
+                "source", KNOWLEDGE_SOURCES_CONFIG[key]["name"]
             )
         all_articles_for_tab.extend(articles_from_source)
 
@@ -245,7 +330,7 @@ def create_news_source_tab_content(source_keys, combined_name=None):
 
     if not articles_to_display:
         return dbc.Alert(
-            f"No news items available for {source_display_name}.", color="info"
+            f"No knowledge items available for {source_display_name}.", color="info"
         )
 
     # Create table header
@@ -304,22 +389,53 @@ def create_news_source_tab_content(source_keys, combined_name=None):
     )
 
 
-# Main function to render the news tab
-def render_news_tab():
-    """Render the complete news tab with all sub-tabs."""
+# Main function to render the knowledge garden tab
+def render_knowledge_garden_tab():
+    """Render the complete knowledge garden tab with all sub-tabs."""
     tab_definitions = [
-        {"label": "TechCrunch", "keys": "techcrunch", "id": "tc"},
-        {"label": "VentureBeat", "keys": "venturebeat", "id": "vb"},
-        {"label": "freeCodeCamp", "keys": "freecodecamp", "id": "fcc"},
-        {"label": "Google AI Blog", "keys": "google_ai_blog", "id": "gaib"},
-        {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"},
-        {"label": "Ars Technica", "keys": "arstechnica", "id": "ars"},
+        {
+            "label": "FutureTools & Ben's Bites",
+            "keys": ["futuretools", "bensbites"],
+            "id": "ft-bb",
+        },
+        {"label": "Hacker News", "keys": "hackernews", "id": "hn"},
+        {"label": "Medium GenAI", "keys": "medium_genai", "id": "med_genai"},
+        {"label": "KDnuggets", "keys": "kdnuggets", "id": "kdn"},
+        {"label": "Good Devs", "keys": "gooddevs", "id": "gd"},
+        {"label": "Meneame General", "keys": "meneame_general", "id": "men_gen"},
+        {"label": "Meneame Tech", "keys": "meneame_tecnologia", "id": "men_tec"},
+        {"label": "Podcasts", "keys": "podcasts", "id": "pod"},
+        {"label": "Reddit AI/ML", "keys": "reddit_ai_ml", "id": "reddit_ai_ml"},
+        {
+            "label": "Reddit Programming",
+            "keys": "reddit_programming",
+            "id": "reddit_prog",
+        },
+        {"label": "Reddit Tech", "keys": "reddit_tech", "id": "reddit_tech"},
+        {"label": "Reddit DevOps", "keys": "reddit_devops", "id": "reddit_devops"},
+        {"label": "Reddit All", "keys": "reddit_unified", "id": "reddit_all"},
+        {"label": "Indie Hackers", "keys": "indiehackers", "id": "ih"},
+        {"label": "Git Trends", "keys": "gittrends", "id": "gt"},
+        {"label": "HN Ask", "keys": "hackernews_ask", "id": "hn_ask"},
+        {"label": "Stack Overflow", "keys": "stackoverflow_trends", "id": "so"},
+        {"label": "Product Hunt", "keys": "product_hunt", "id": "ph"},
+        # Kagi RSS feeds as individual tabs
+        {"label": "Kagi World", "keys": "kagi_world", "id": "kagi_world"},
+        {"label": "Kagi USA", "keys": "kagi_usa", "id": "kagi_usa"},
+        {"label": "Kagi Business", "keys": "kagi_business", "id": "kagi_business"},
+        {"label": "Kagi Science", "keys": "kagi_science", "id": "kagi_science"},
+        {"label": "Kagi Gaming", "keys": "kagi_gaming", "id": "kagi_gaming"},
+        {"label": "Kagi AI", "keys": "kagi_ai", "id": "kagi_ai"},
+        {"label": "Kagi Europe", "keys": "kagi_europe", "id": "kagi_europe"},
+        {"label": "Kagi Spain", "keys": "kagi_spain", "id": "kagi_spain"},
+        # Developer community tab
+        {"label": "Dev.to", "keys": "devto", "id": "devto"},
     ]
 
     tabs_children = []
     for tab_def in tab_definitions:
-        tab_id = f"news-tab-{tab_def['id']}"
-        content = create_news_source_tab_content(
+        tab_id = f"knowledge-tab-{tab_def['id']}"
+        content = create_knowledge_source_tab_content(
             tab_def["keys"], combined_name=tab_def["label"]
         )
         tabs_children.append(
@@ -333,11 +449,11 @@ def render_news_tab():
 
     return html.Div(
         [
-            html.H3("News Feed", className="mb-3"),
+            html.H3("Knowledge Garden", className="mb-3"),
             dbc.Tabs(
-                id="news-source-tabs-main",
+                id="knowledge-source-tabs-main",
                 children=tabs_children,
-                active_tab="news-tab-ft-bb",
+                active_tab="knowledge-tab-ft-bb",
             ),  # Default active tab
         ]
     )
@@ -347,22 +463,22 @@ if __name__ == "__main__":
     # For testing this component independently
     app_test = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-    # The render_news_tab now produces the full tabbed layout
+    # The render_knowledge_garden_tab now produces the full tabbed layout
     app_test.layout = dbc.Container(
         [
-            html.H1("News Tab Test (Standalone)"),
-            render_news_tab(),  # This will include the tabs and initial content
+            html.H1("Knowledge Garden Tab Test (Standalone)"),
+            render_knowledge_garden_tab(),  # This will include the tabs and initial content
         ],
         fluid=True,
         className="py-4",
     )
 
-    print("Running standalone test for news_tab.py...")
+    print("Running standalone test for knowledge_garden_tab.py...")
     print(f"Displaying max {MAX_ARTICLES_PER_SOURCE} articles per tab, sorted by date.")
     print(
-        "Expected news JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json"
+        "Expected knowledge JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json"
     )
     print(
         "Check console for warnings about missing files or parsing errors, especially date parsing."
     )
-    app_test.run(debug=True, port=8052)
+    app_test.run(debug=True, port=8053)
