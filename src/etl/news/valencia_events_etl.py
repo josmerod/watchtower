@@ -26,14 +26,15 @@ class ValenciaEvent(TimestampedModel):
 
 
 class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
-    """ETL for Valencia events from visitvalencia.com."""
+    """ETL for Valencia events from multiple sources."""
 
     def __init__(self):
         super().__init__(
             name="valencia_events",
-            description="Extract Valencia events from visitvalencia.com",
+            description="Extract Valencia events from multiple sources (visitvalencia.com, meetup.com, eventbrite)",
             max_retries=3,
             retry_delay=5,
+            output_dir="data/valencia_events",  # Write directly to main data directory
         )
 
     def get_current_and_next_month(self):
@@ -436,66 +437,97 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 start_date = ""
                 end_date = ""
 
-                # Try multiple date formats
-                if "Del" in date_info and "al" in date_info:
-                    parts = date_info.split("al")
-                    start_part = parts[0].replace("Del", "").strip()
-                    end_part = parts[1].strip()
-                    start_date = start_part
-                    end_date = end_part
-                elif "2025" in date_info:
-                    # Try to extract date with 2025 year
-                    date_parts = [
-                        part.strip() for part in date_info.split() if "2025" in part
-                    ]
-                    if date_parts:
-                        start_date = date_parts[0]
-                        if len(date_parts) > 1:
-                            end_date = date_parts[1]
+                # Enhanced date parsing for Spanish format
+                import re
+
+                # Pattern 1: "Del DD/MM/YYYY al DD/MM/YYYY"
+                del_al_pattern = re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})\s+al\s+(\d{1,2}/\d{1,2}/\d{4})', date_info, re.IGNORECASE)
+                if del_al_pattern:
+                    start_date = del_al_pattern.group(1)
+                    end_date = del_al_pattern.group(2)
+                # Pattern 2: "Del DD/MM/YYYY"
+                elif re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})', date_info, re.IGNORECASE):
+                    del_pattern = re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})', date_info, re.IGNORECASE)
+                    start_date = del_pattern.group(1) if del_pattern else ""
+                # Pattern 3: Look for any dates in YYYY-MM-DD or DD/MM/YYYY format
+                elif re.search(r'\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}', date_info):
+                    date_matches = re.findall(r'\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}', date_info)
+                    if date_matches:
+                        start_date = date_matches[0]
+                        if len(date_matches) > 1:
+                            end_date = date_matches[1]
+                # Pattern 4: Look for month names and years
+                elif re.search(r'(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)', date_info, re.IGNORECASE):
+                    # Keep the original text if it contains month names
+                    pass
 
                 # Clean up titles (sometimes they contain the event type)
                 title = event.get("title", "").strip()
 
-                # If no category but it's in the description, use that
+                # Enhanced category and description extraction
                 category = event.get("category", "").strip()
                 description = event.get("description", "").strip()
+                title = event.get("title", "").strip()
 
+                # Expanded category keywords
+                category_keywords = {
+                    "exposición": "exposición",
+                    "música": "música",
+                    "concierto": "música",
+                    "festival": "festival",
+                    "gastronomía": "gastronomía",
+                    "food": "gastronomía",
+                    "espectáculo": "espectáculo",
+                    "teatro": "espectáculo",
+                    "deporte": "deporte",
+                    "sports": "deporte",
+                    "naturaleza": "naturaleza",
+                    "outdoor": "naturaleza",
+                    "fiestas": "fiestas",
+                    "celebración": "fiestas",
+                    "cultura": "cultura",
+                    "arte": "arte",
+                    "literatura": "literatura",
+                    "educación": "educación",
+                    "tecnología": "tecnología",
+                    "tech": "tecnología",
+                    "conferencia": "conferencia",
+                    "taller": "taller",
+                    "workshop": "taller",
+                }
+
+                # Try to extract category from title if not already set
+                if not category:
+                    lower_title = title.lower()
+                    for keyword, cat in category_keywords.items():
+                        if keyword in lower_title:
+                            category = cat
+                            break
+
+                # Try to extract category from description if still not found
                 if not category and description:
                     lower_desc = description.lower()
-                    for cat in [
-                        "exposición",
-                        "música",
-                        "gastronomía",
-                        "espectáculo",
-                        "deporte",
-                        "naturaleza",
-                        "fiestas",
-                        "festival",
-                    ]:
-                        if cat in lower_desc:
+                    for keyword, cat in category_keywords.items():
+                        if keyword in lower_desc:
                             category = cat
                             break
 
-                # Sometimes description and category are swapped
-                if not description and category and len(category) > 15:
-                    description = category
-                    category = ""
+                # Enhanced description extraction - if description is empty, use title context
+                if not description and title:
+                    # Extract meaningful description from title if it's long enough
+                    if len(title) > 30:
+                        # Look for descriptive parts after common prefixes
+                        desc_parts = title.split(":")
+                        if len(desc_parts) > 1:
+                            description = desc_parts[1].strip()
+                        else:
+                            desc_parts = title.split("-")
+                            if len(desc_parts) > 1:
+                                description = desc_parts[1].strip()
 
-                    # Try to extract category from description
-                    lower_desc = description.lower()
-                    for cat in [
-                        "exposición",
-                        "música",
-                        "gastronomía",
-                        "espectáculo",
-                        "deporte",
-                        "naturaleza",
-                        "fiestas",
-                        "festival",
-                    ]:
-                        if cat in lower_desc:
-                            category = cat
-                            break
+                # Final fallback - ensure we have some description
+                if not description:
+                    description = title
 
                 processed_event = {
                     "title": title,

@@ -101,6 +101,14 @@ DEALS_SOURCES_CONFIG = {
         "color": "secondary",
         "description": "Software bundles, game bundles, and multi-item deal packages",
     },
+    "hardware_tech_deals": {
+        "path": get_data_path("deals", "hardware_tech_deals.json"),
+        "name": "Hardware & Tech",
+        "icon": "🔧",
+        "category": "Technology",
+        "color": "info",
+        "description": "Electronics, computers, gadgets, and tech accessories",
+    },
     "itad_deals": {
         "path": get_data_path("deals", "isthereanydeal_deals_latest.json"),
         "name": "ITAD Deals",

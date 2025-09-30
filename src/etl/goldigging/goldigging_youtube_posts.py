@@ -2,8 +2,9 @@ import concurrent.futures
 import json
 import logging
 import os
+import time
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Dict, Optional, Tuple
 
 import pandas as pd
 import yt_dlp
@@ -19,6 +20,13 @@ logging.basicConfig(level=logging.INFO)
 BASE_OUTPUT_DIR = "data/youtube"
 MAX_VIDEOS_PER_CHANNEL = 50
 DEFAULT_DAYS_LOOKBACK = 42  # 6 weeks
+
+# Performance optimization constants
+MAX_WORKERS_PER_CHANNEL = 8  # Max concurrent video fetches per channel
+RATE_LIMIT_DELAY = 0.1  # Delay between API calls in seconds
+CACHE_TTL = 300  # Cache TTL in seconds (5 minutes)
+CHANNEL_CACHE: Dict[str, Tuple[dict, float]] = {}  # Cache for channel info
+VIDEO_CACHE: Dict[str, Tuple[dict, float]] = {}  # Cache for video details
 
 
 # Load channel topics from JSON file
@@ -36,13 +44,149 @@ def load_channel_topics() -> dict[str, Any]:
 CHANNEL_TOPICS = load_channel_topics()
 
 
+def get_cached_channel_info(channel_handle: str, ydl: yt_dlp.YoutubeDL) -> Optional[dict]:
+    """Get cached channel info or fetch fresh data with caching."""
+    current_time = time.time()
+
+    # Check cache first
+    if channel_handle in CHANNEL_CACHE:
+        cached_data, cache_time = CHANNEL_CACHE[channel_handle]
+        if current_time - cache_time < CACHE_TTL:
+            logger.debug(f"Using cached channel info for {channel_handle}")
+            return cached_data
+
+    # Fetch fresh data
+    channel_urls = [
+        f"https://www.youtube.com/@{channel_handle}/videos",
+        f"https://www.youtube.com/c/{channel_handle}/videos",
+        f"https://www.youtube.com/channel/{channel_handle}/videos",
+    ]
+
+    for url in channel_urls:
+        try:
+            channel_info = ydl.extract_info(url, download=False)
+            if channel_info:
+                # Cache the result
+                CHANNEL_CACHE[channel_handle] = (channel_info, current_time)
+                logger.debug(f"Fetched and cached channel info for {channel_handle}")
+                return channel_info
+        except Exception as e:
+            logger.debug(f"Failed URL {url} for {channel_handle}: {e!s}")
+            continue
+
+    logger.warning(f"No channel info found for {channel_handle}")
+    return None
+
+
+def get_cached_video_info(video_id: str, ydl: yt_dlp.YoutubeDL) -> Optional[dict]:
+    """Get cached video info or fetch fresh data with caching."""
+    current_time = time.time()
+
+    # Check cache first
+    if video_id in VIDEO_CACHE:
+        cached_data, cache_time = VIDEO_CACHE[video_id]
+        if current_time - cache_time < CACHE_TTL:
+            logger.debug(f"Using cached video info for {video_id}")
+            return cached_data
+
+    # Fetch fresh data
+    try:
+        video_info = ydl.extract_info(
+            f"https://www.youtube.com/watch?v={video_id}", download=False
+        )
+        if video_info:
+            # Cache the result
+            VIDEO_CACHE[video_id] = (video_info, current_time)
+            logger.debug(f"Fetched and cached video info for {video_id}")
+            return video_info
+    except Exception as e:
+        logger.debug(f"Failed to fetch video info for {video_id}: {e!s}")
+
+    return None
+
+
+def rate_limited_fetch(url: str, ydl: yt_dlp.YoutubeDL, delay: float = RATE_LIMIT_DELAY) -> Optional[dict]:
+    """Fetch data with rate limiting."""
+    try:
+        result = ydl.extract_info(url, download=False)
+        if delay > 0:
+            time.sleep(delay)
+        return result
+    except Exception as e:
+        logger.debug(f"Rate limited fetch failed for {url}: {e!s}")
+        if delay > 0:
+            time.sleep(delay)
+        return None
+
+
+def process_video_batch(video_ids: list[str], ydl: yt_dlp.YoutubeDL) -> list[dict]:
+    """Process a batch of videos concurrently."""
+    video_data_list = []
+
+    def fetch_video_details(video_id: str) -> Optional[dict]:
+        """Fetch detailed information for a single video."""
+        video_info = get_cached_video_info(video_id, ydl)
+        if not video_info:
+            return None
+
+        # Convert timestamp to ISO format
+        published_at = (
+            datetime.fromtimestamp(video_info.get("timestamp", 0)).isoformat() + "Z"
+        )
+
+        return {
+            "title": video_info.get("title", ""),
+            "url": video_info.get("webpage_url", ""),
+            "channel": video_info.get("channel", ""),
+            "published_at": published_at,
+            "description": video_info.get("description", ""),
+            "views": video_info.get("view_count", 0),
+            "length": video_info.get("duration", 0),
+            "thumbnail": video_info.get(
+                "thumbnail",
+                # Try to get the highest quality thumbnail available
+                next(
+                    (t["url"] for t in reversed(video_info.get("thumbnails", [])) if "url" in t),
+                    "",
+                ),
+            ),
+            "metadata": {
+                "api_source": "yt_dlp",
+                "processed_at": datetime.now().isoformat(),
+            },
+        }
+
+    # Use ThreadPoolExecutor for concurrent video processing
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS_PER_CHANNEL) as executor:
+        # Submit all video fetch tasks
+        future_to_video_id = {
+            executor.submit(fetch_video_details, video_id): video_id
+            for video_id in video_ids
+        }
+
+        # Collect results as they complete
+        for future in concurrent.futures.as_completed(future_to_video_id):
+            video_id = future_to_video_id[future]
+            try:
+                video_data = future.result()
+                if video_data:
+                    video_data_list.append(video_data)
+                    logger.debug(f"Processed video: {video_data['title']}")
+                else:
+                    logger.debug(f"Failed to process video: {video_id}")
+            except Exception as e:
+                logger.error(f"Error processing video {video_id}: {e!s}")
+
+    return video_data_list
+
+
 def get_channel_videos_by_id(
     channel_handle: str,
     published_after: str = (
         datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)
     ).isoformat(),
 ) -> list[dict]:
-    """Fetch videos from a channel using yt-dlp."""
+    """Fetch videos from a channel using yt-dlp with optimized parallel processing."""
     try:
         ydl_opts = {
             "extract_flat": True,  # Do not download videos
@@ -52,89 +196,50 @@ def get_channel_videos_by_id(
             "playlist_items": f"1-{MAX_VIDEOS_PER_CHANNEL}",  # Limit number of videos to fetch
         }
 
-        videos = []
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # Get channel URL - try both @ handle and direct channel URL formats
-            channel_urls = [
-                f"https://www.youtube.com/@{channel_handle}/videos",
-                f"https://www.youtube.com/c/{channel_handle}/videos",
-                f"https://www.youtube.com/channel/{channel_handle}/videos",
-            ]
-
-            channel_info = None
-            for url in channel_urls:
-                try:
-                    channel_info = ydl.extract_info(url, download=False)
-                    if channel_info:
-                        break
-                except Exception:
-                    continue
+            # Get channel info with caching
+            channel_info = get_cached_channel_info(channel_handle, ydl)
 
             if not channel_info:
                 logger.error(f"No se pudo encontrar el canal: {channel_handle}")
                 return []
 
-            # Process videos
-            for entry in channel_info.get("entries", []):
-                try:
-                    if not entry:
-                        continue
+            # Extract video IDs and filter by date
+            video_ids = []
+            entries = channel_info.get("entries", [])
 
-                    # Get detailed video information
-                    video_info = ydl.extract_info(
-                        f"https://www.youtube.com/watch?v={entry['id']}", download=False
-                    )
+            for entry in entries:
+                if not entry:
+                    continue
 
-                    if not video_info:
-                        continue
+                # Convert timestamp to ISO format for comparison
+                entry_timestamp = entry.get("timestamp", 0)
+                if entry_timestamp:
+                    published_at = datetime.fromtimestamp(entry_timestamp).isoformat() + "Z"
 
-                    # Convert timestamp to ISO format
-                    published_at = (
-                        datetime.fromtimestamp(
-                            video_info.get("timestamp", 0)
-                        ).isoformat()
-                        + "Z"
-                    )
-
-                    # Skip if video is older than published_after or newer than published_before
+                    # Skip if video is older than published_after
                     if published_at < published_after:
                         break
 
-                    video_data = {
-                        "title": video_info.get("title", ""),
-                        "url": video_info.get("webpage_url", ""),
-                        "channel": video_info.get("channel", ""),
-                        "published_at": published_at,
-                        "description": video_info.get("description", ""),
-                        "views": video_info.get("view_count", 0),
-                        "length": video_info.get("duration", 0),
-                        "thumbnail": video_info.get(
-                            "thumbnail",
-                            # Try to get the highest quality thumbnail available
-                            next(
-                                (
-                                    t["url"]
-                                    for t in reversed(video_info.get("thumbnails", []))
-                                    if "url" in t
-                                ),
-                                "",
-                            ),
-                        ),
-                        "metadata": {
-                            "api_source": "yt_dlp",
-                            "processed_at": datetime.now().isoformat(),
-                        },
-                    }
-                    videos.append(video_data)
-                    logger.debug(f"Video procesado: {video_data['title']}")
+                    video_ids.append(entry["id"])
 
-                except Exception as e:
-                    logger.error(
-                        f"Error processing video {entry.get('id', 'unknown')}: {e!s}"
-                    )
-                    continue
+            if not video_ids:
+                logger.info(f"No recent videos found for {channel_handle}")
+                return []
 
-        return videos
+            logger.info(f"Processing {len(video_ids)} videos from {channel_handle}")
+
+            # Process videos in parallel batches
+            video_data_list = process_video_batch(video_ids, ydl)
+
+            # Filter out videos that are too old (double-check after fetching details)
+            filtered_videos = []
+            for video_data in video_data_list:
+                if video_data and video_data["published_at"] >= published_after:
+                    filtered_videos.append(video_data)
+
+            logger.info(f"Successfully processed {len(filtered_videos)} recent videos from {channel_handle}")
+            return filtered_videos
 
     except Exception as e:
         logger.error(f"Error al obtener videos para {channel_handle}: {e!s}")

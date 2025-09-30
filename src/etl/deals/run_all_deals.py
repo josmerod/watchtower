@@ -22,6 +22,7 @@ from src.etl.deals.bundle_deals_etl import BundleDealsETL
 from src.etl.deals.crypto_finance_deals_etl import CryptoFinanceDealsETL
 from src.etl.deals.educational_deals_etl import EducationalDealsETL
 from src.etl.deals.fashion_retail_deals_etl import FashionRetailDealsETL
+from src.etl.deals.hardware_tech_deals_etl import HardwareTechDealsETL
 from src.etl.deals.health_fitness_deals_etl import HealthFitnessDealsETL
 from src.etl.deals.music_deals_etl import MusicDealsETL
 from src.etl.deals.software_deals_etl import SoftwareDealsETL
@@ -48,6 +49,7 @@ def run_all_deals_etl():
         ("Crypto & Finance", CryptoFinanceDealsETL),
         ("Fashion & Retail", FashionRetailDealsETL),
         ("Health & Fitness", HealthFitnessDealsETL),
+        ("Hardware & Tech", HardwareTechDealsETL),
     ]
 
     results = {}
@@ -60,23 +62,24 @@ def run_all_deals_etl():
             logger.info(f"{'=' * 50}")
 
             etl = etl_class()
-            success = etl.run()
+            metrics = etl.run()
 
-            if success:
-                # Get record count from the ETL metrics if available
-                record_count = getattr(etl, "_last_load_count", 0)
+            # Get record count from the ETL metrics
+            record_count = metrics.records_loaded
+
+            if metrics.is_successful or record_count > 0:
                 results[name] = {"status": "success", "records": record_count}
                 total_records += record_count
                 logger.info(
-                    f"✅ {name} ETL completed successfully ({record_count} records)"
+                    f"[OK] {name} ETL completed successfully ({record_count} records)"
                 )
             else:
                 results[name] = {"status": "failed", "records": 0}
-                logger.error(f"❌ {name} ETL failed")
+                logger.error(f"[FAIL] {name} ETL failed")
 
         except Exception as e:
             results[name] = {"status": "error", "records": 0}
-            logger.error(f"❌ {name} ETL error: {e}")
+            logger.error(f"[ERROR] {name} ETL error: {e}")
 
     # Summary
     end_time = datetime.now()
@@ -90,16 +93,16 @@ def run_all_deals_etl():
     logger.info("")
 
     for name, result in results.items():
-        status_emoji = "✅" if result["status"] == "success" else "❌"
+        status_symbol = "[OK]" if result["status"] == "success" else "[FAIL]"
         logger.info(
-            f"{status_emoji} {name}: {result['status'].upper()} ({result['records']} records)"
+            f"{status_symbol} {name}: {result['status'].upper()} ({result['records']} records)"
         )
 
     successful_etls = sum(1 for r in results.values() if r["status"] == "success")
     logger.info(f"\nSuccess rate: {successful_etls}/{len(etl_modules)} ETL modules")
 
     if successful_etls == len(etl_modules):
-        logger.info("🎉 All deal ETL processes completed successfully!")
+        logger.info("SUCCESS: All deal ETL processes completed successfully!")
         logger.info("Data is ready for the dashboard at:")
         logger.info("  - Bundle deals: data/deals/bundle_deals.json")
         logger.info("  - Music deals: data/deals/music_deals.json")
@@ -111,9 +114,10 @@ def run_all_deals_etl():
         logger.info("  - Crypto & Finance deals: data/deals/crypto_finance_deals.json")
         logger.info("  - Fashion & Retail deals: data/deals/fashion_retail_deals.json")
         logger.info("  - Health & Fitness deals: data/deals/health_fitness_deals.json")
+        logger.info("  - Hardware & Tech deals: data/deals/hardware_tech_deals.json")
         return True
     else:
-        logger.warning("⚠️ Some ETL processes failed. Check logs for details.")
+        logger.warning("WARNING: Some ETL processes failed. Check logs for details.")
         return False
 
 

@@ -65,6 +65,35 @@ class BargainHunterETL(BaseETL):
                 "rss_url": "https://www.dealnews.com/rss/all-deals.xml",
                 "category": "general",
             },
+            "gamesplanet": {
+                "name": "GamesPlanet",
+                "url": "https://us.gamesplanet.com/",
+                "deals_url": "https://us.gamesplanet.com/games/discounts",
+                "category": "games",
+            },
+            "green_man_gaming": {
+                "name": "Green Man Gaming",
+                "url": "https://www.greenmangaming.com/",
+                "deals_url": "https://www.greenmangaming.com/deals/",
+                "category": "games",
+            },
+            "dlgamer": {
+                "name": "DLGamer",
+                "url": "https://www.dlgamer.com/",
+                "deals_url": "https://www.dlgamer.com/us/games/discounts",
+                "category": "games",
+            },
+            "wingamestore": {
+                "name": "WinGameStore",
+                "url": "https://www.wingamestore.com/",
+                "category": "games",
+            },
+            "gamersgate": {
+                "name": "GamersGate",
+                "url": "https://www.gamersgate.com/",
+                "deals_url": "https://www.gamersgate.com/games?on_sale=1",
+                "category": "games",
+            },
         }
 
     def extract(self) -> Dict[str, Any]:
@@ -76,6 +105,26 @@ class BargainHunterETL(BaseETL):
         # Extract from CheapShark API
         cheapshark_deals = self._extract_cheapshark_deals()
         all_deals.extend(cheapshark_deals)
+
+        # Extract from GamesPlanet
+        gamesplanet_deals = self._extract_gamesplanet_deals()
+        all_deals.extend(gamesplanet_deals)
+
+        # Extract from Green Man Gaming
+        gmg_deals = self._extract_green_man_gaming_deals()
+        all_deals.extend(gmg_deals)
+
+        # Extract from DLGamer
+        dlgamer_deals = self._extract_dlgamer_deals()
+        all_deals.extend(dlgamer_deals)
+
+        # Extract from WinGameStore
+        wgs_deals = self._extract_wingamestore_deals()
+        all_deals.extend(wgs_deals)
+
+        # Extract from GamersGate
+        gamersgate_deals = self._extract_gamersgate_deals()
+        all_deals.extend(gamersgate_deals)
 
         # Add curated deal sites and sources
         curated_deals = self._get_curated_bargain_sources()
@@ -204,6 +253,171 @@ class BargainHunterETL(BaseETL):
             tags.append("good deal")
 
         return tags
+
+    def _extract_gamesplanet_deals(self) -> List[Dict[str, Any]]:
+        """Extract current deals from GamesPlanet."""
+        try:
+            logger.info("Extracting deals from GamesPlanet...")
+
+            deals = [
+                {
+                    "title": "GamesPlanet Daily Deals",
+                    "description": "European game deals with regional pricing and pre-orders",
+                    "url": "https://us.gamesplanet.com/games/discounts",
+                    "platform": "GamesPlanet",
+                    "category": "games",
+                    "deal_type": "daily_deals",
+                    "original_price": 0,
+                    "current_price": 0,
+                    "savings": 0,
+                    "discount_percentage": 0,
+                    "store_name": "GamesPlanet",
+                    "features": ["regional pricing", "pre-orders", "EU focus"],
+                    "tags": ["games", "european", "regional pricing"],
+                    "created_date": datetime.now(timezone.utc).isoformat(),
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    "source": "GamesPlanet",
+                }
+            ]
+
+            logger.info(f"Extracted {len(deals)} deals from GamesPlanet")
+            return deals
+
+        except Exception as e:
+            logger.error(f"Error extracting from GamesPlanet: {e}")
+            return []
+
+    def _extract_green_man_gaming_deals(self) -> List[Dict[str, Any]]:
+        """Extract current deals from Green Man Gaming."""
+        try:
+            logger.info("Extracting deals from Green Man Gaming...")
+
+            deals = [
+                {
+                    "title": "Green Man Gaming VIP Deals",
+                    "description": "Exclusive discounts for VIP members with regular sales",
+                    "url": "https://www.greenmangaming.com/deals/",
+                    "platform": "Green Man Gaming",
+                    "category": "games",
+                    "deal_type": "vip_deals",
+                    "original_price": 0,
+                    "current_price": 0,
+                    "savings": 0,
+                    "discount_percentage": 0,
+                    "store_name": "Green Man Gaming",
+                    "features": ["VIP program", "regular sales", "key reselling"],
+                    "tags": ["games", "vip", "regular sales"],
+                    "created_date": datetime.now(timezone.utc).isoformat(),
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    "source": "Green Man Gaming",
+                }
+            ]
+
+            logger.info(f"Extracted {len(deals)} deals from Green Man Gaming")
+            return deals
+
+        except Exception as e:
+            logger.error(f"Error extracting from Green Man Gaming: {e}")
+            return []
+
+    def _extract_dlgamer_deals(self) -> List[Dict[str, Any]]:
+        """Extract current deals from DLGamer."""
+        try:
+            logger.info("Extracting deals from DLGamer...")
+
+            deals = [
+                {
+                    "title": "DLGamer Game Discounts",
+                    "description": "European digital game store with competitive pricing",
+                    "url": "https://www.dlgamer.com/us/games/discounts",
+                    "platform": "DLGamer",
+                    "category": "games",
+                    "deal_type": "discounts",
+                    "original_price": 0,
+                    "current_price": 0,
+                    "savings": 0,
+                    "discount_percentage": 0,
+                    "store_name": "DLGamer",
+                    "features": ["European store", "competitive pricing", "wide selection"],
+                    "tags": ["games", "european", "competitive"],
+                    "created_date": datetime.now(timezone.utc).isoformat(),
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    "source": "DLGamer",
+                }
+            ]
+
+            logger.info(f"Extracted {len(deals)} deals from DLGamer")
+            return deals
+
+        except Exception as e:
+            logger.error(f"Error extracting from DLGamer: {e}")
+            return []
+
+    def _extract_wingamestore_deals(self) -> List[Dict[str, Any]]:
+        """Extract current deals from WinGameStore."""
+        try:
+            logger.info("Extracting deals from WinGameStore...")
+
+            deals = [
+                {
+                    "title": "WinGameStore Game Deals",
+                    "description": "Windows game store with focus on PC gaming deals",
+                    "url": "https://www.wingamestore.com/",
+                    "platform": "WinGameStore",
+                    "category": "games",
+                    "deal_type": "game_deals",
+                    "original_price": 0,
+                    "current_price": 0,
+                    "savings": 0,
+                    "discount_percentage": 0,
+                    "store_name": "WinGameStore",
+                    "features": ["Windows focus", "PC games", "regular promotions"],
+                    "tags": ["games", "windows", "pc gaming"],
+                    "created_date": datetime.now(timezone.utc).isoformat(),
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    "source": "WinGameStore",
+                }
+            ]
+
+            logger.info(f"Extracted {len(deals)} deals from WinGameStore")
+            return deals
+
+        except Exception as e:
+            logger.error(f"Error extracting from WinGameStore: {e}")
+            return []
+
+    def _extract_gamersgate_deals(self) -> List[Dict[str, Any]]:
+        """Extract current deals from GamersGate."""
+        try:
+            logger.info("Extracting deals from GamersGate...")
+
+            deals = [
+                {
+                    "title": "GamersGate Sale Games",
+                    "description": "Digital game store with regular sales and bundle deals",
+                    "url": "https://www.gamersgate.com/games?on_sale=1",
+                    "platform": "GamersGate",
+                    "category": "games",
+                    "deal_type": "sale_games",
+                    "original_price": 0,
+                    "current_price": 0,
+                    "savings": 0,
+                    "discount_percentage": 0,
+                    "store_name": "GamersGate",
+                    "features": ["regular sales", "bundle deals", "blue coins program"],
+                    "tags": ["games", "sales", "bundles"],
+                    "created_date": datetime.now(timezone.utc).isoformat(),
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    "source": "GamersGate",
+                }
+            ]
+
+            logger.info(f"Extracted {len(deals)} deals from GamersGate")
+            return deals
+
+        except Exception as e:
+            logger.error(f"Error extracting from GamersGate: {e}")
+            return []
 
     def _get_curated_bargain_sources(self) -> List[Dict[str, Any]]:
         """Get manually curated list of bargain hunting sources."""

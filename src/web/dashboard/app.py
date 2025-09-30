@@ -28,6 +28,9 @@ from src.web.dashboard.components.intelligence_tab import (
     register_intelligence_callbacks,
     render_intelligence_tab,
 )
+from src.web.dashboard.components.knowledge_garden_tab import (
+    render_knowledge_garden_tab,
+)
 from src.web.dashboard.components.news_tab import render_news_tab
 from src.web.dashboard.components.scavenging_tab import (
     register_scavenging_callbacks,
@@ -50,6 +53,7 @@ from src.web.dashboard.components.videos_tab import (
     register_video_callbacks,
     render_videos_tab,
 )
+from src.web.dashboard.components.deals_tab import render_deals_tab
 
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(
@@ -102,6 +106,11 @@ app.layout = dbc.Container(
                             label="News",
                             tab_id="tab-news",
                             children=[render_news_tab()],
+                        ),
+                        dbc.Tab(
+                            label="🌱 Knowledge Garden",
+                            tab_id="tab-knowledge-garden",
+                            children=[render_knowledge_garden_tab()],
                         ),
                         dbc.Tab(
                             label="GitHub Trending",
@@ -163,6 +172,11 @@ app.layout = dbc.Container(
                             tab_id="tab-arxiv-research",
                             children=[render_arxiv_research_tab()],
                         ),
+                        dbc.Tab(
+                            label="💰 Deals & Offers",
+                            tab_id="tab-deals",
+                            children=[render_deals_tab()],
+                        ),
                     ],
                 )
             )
@@ -198,6 +212,17 @@ def metrics() -> str:
         "github_trends": base / "github_trends" / "github_trends_latest.json",
         "arxiv_papers": base / "arxiv" / "arxiv_papers_latest.json",
         "free_games": base / "giveaways" / "free_games_latest.json",
+        "bundle_deals": base / "deals" / "bundle_deals.json",
+        "music_deals": base / "deals" / "music_deals.json",
+        "bargain_deals": base / "deals" / "bargain_deals.json",
+        "educational_deals": base / "deals" / "educational_deals.json",
+        "book_deals": base / "deals" / "book_deals.json",
+        "software_deals": base / "deals" / "software_deals.json",
+        "travel_deals": base / "deals" / "travel_deals.json",
+        "crypto_finance_deals": base / "deals" / "crypto_finance_deals.json",
+        "fashion_retail_deals": base / "deals" / "fashion_retail_deals.json",
+        "health_fitness_deals": base / "deals" / "health_fitness_deals.json",
+        "hardware_tech_deals": base / "deals" / "hardware_tech_deals.json",
     }
 
     summary = {"generated_at": datetime.utcnow().isoformat(timespec="seconds")}

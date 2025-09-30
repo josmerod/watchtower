@@ -15,6 +15,66 @@
       "description": "NHK Easy News"
     }
   ],
+  "Repositories of Knowledge": [
+    {
+      "name": "Best websites a programmer should visit",
+      "url": "https://github.com/sdmg15/Best-websites-a-programmer-should-visit",
+      "icon": "🌟",
+      "description": "Best websites a programmer should visit"
+    },
+    {
+      "name": "Awesome awesome awesome",
+      "url": "https://github.com/sdmg15/Best-websites-a-programmer-should-visit link",
+      "icon": "🌟",
+      "description": "Awesome awesome awesome"
+    },
+    {
+      "name": "Definitive List of Lists",
+      "url": "https://github.com/jnv/lists",
+      "icon": "🌟",
+      "description": "Definitive List of Lists"
+    },
+    {
+      "name": "GitHub Trending",
+      "url": "https://github.com/trending",
+      "icon": "🌟",
+      "description": "Trending repositories on GitHub"
+    },
+    {
+      "name": "Awesome bash",
+      "url": "https://github.com/alebcay/awesome-shell",
+      "icon": "🐚",
+      "description": "Awesome bash"
+    },
+    {
+      "name": "Awesome design patterns",
+      "url": "https://github.com/DovAmir/awesome-design-patterns",
+      "icon": "🎨",
+      "description": "Awesome design patterns"
+    },
+    {
+      "name": "Awesome selfhosted",
+      "url": "https://awesome-selfhosted.net",
+      "icon": "🌐",
+      "description": "Awesome selfhosted"
+    }
+  ],
+  "Reference resources": [
+    {
+      "name": "Best results from Claude Code",
+      "url": "https://www.dzombak.com/blog/2025/08/getting-good-results-from-claude-code/",
+      "icon": "💬",
+      "description": "Best results from Claude Code"
+    }
+  ],
+  "Music": [
+    {
+      "name": "DJ Micha El Saler",
+      "url": "https://www.torrentip.es/djmichaelsaler/",
+      "icon": "🎧",
+      "description": "DJ Micha El Saler"
+    }
+  ],
   "Development Tools": [
     {
       "name": "Cursor Dashboard",
