@@ -12,37 +12,9 @@ from src.web.dashboard.utils import get_data_path, parse_date_universal
 
 # KNOWLEDGE GARDEN TAB - Reddit, dev communities, and similar sources
 KNOWLEDGE_SOURCES_CONFIG = {
-    "futuretools": {
-        "path": get_data_path("futuretools", "futuretoolsnews.json"),
-        "name": "FutureTools",
-    },
-    "bensbites": {
-        "path": get_data_path("bensbites", "bensbites_news.json"),
-        "name": "Ben's Bites",
-    },
-    "hackernews": {
-        "path": get_data_path("hackernews", "hackernews.json"),
-        "name": "Hacker News",
-    },
-    "medium_genai": {
-        "path": get_data_path("medium_genai", "medium_genai.json"),
-        "name": "Medium GenAI",
-    },
-    "kdnuggets": {
-        "path": get_data_path("kdnuggets", "kdnuggets.json"),
-        "name": "KDnuggets",
-    },
     "gooddevs": {
         "path": get_data_path("gooddevs", "gooddevs_latest.json"),
         "name": "Good Devs",
-    },
-    "meneame_general": {
-        "path": get_data_path("meneame", "meneame_general_latest.json"),
-        "name": "Meneame General",
-    },
-    "meneame_tecnologia": {
-        "path": get_data_path("meneame", "meneame_tecnologia_latest.json"),
-        "name": "Meneame Tech",
     },
     "podcasts": {
         "path": get_data_path("podcasts", "podcasts_latest.json"),
@@ -53,10 +25,6 @@ KNOWLEDGE_SOURCES_CONFIG = {
         "name": "Product Hunt",
     },
     # Developer Communities
-    "indiehackers": {
-        "path": get_data_path("indie_hackers", "posts.json"),
-        "name": "Indie Hackers",
-    },
     "gittrends": {
         "path": get_data_path("github_trends", "github_trends_latest.json"),
         "name": "Git Trends",
@@ -91,36 +59,6 @@ KNOWLEDGE_SOURCES_CONFIG = {
     "reddit_devops": {
         "path": get_data_path("reddit_unified", "reddit_devops_latest.json"),
         "name": "Reddit DevOps",
-    },
-    # Kagi RSS sources by category
-    "kagi_world": {
-        "path": get_data_path("kagi_world", "kagi_world.json"),
-        "name": "Kagi World",
-    },
-    "kagi_usa": {
-        "path": get_data_path("kagi_usa", "kagi_usa.json"),
-        "name": "Kagi USA",
-    },
-    "kagi_business": {
-        "path": get_data_path("kagi_business", "kagi_business.json"),
-        "name": "Kagi Business",
-    },
-    "kagi_science": {
-        "path": get_data_path("kagi_science", "kagi_science.json"),
-        "name": "Kagi Science",
-    },
-    "kagi_gaming": {
-        "path": get_data_path("kagi_gaming", "kagi_gaming.json"),
-        "name": "Kagi Gaming",
-    },
-    "kagi_ai": {"path": get_data_path("kagi_ai", "kagi_ai.json"), "name": "Kagi AI"},
-    "kagi_europe": {
-        "path": get_data_path("kagi_europe", "kagi_europe.json"),
-        "name": "Kagi Europe",
-    },
-    "kagi_spain": {
-        "path": get_data_path("kagi_spain", "kagi_spain.json"),
-        "name": "Kagi Spain",
     },
     # Dev.to articles
     "devto": {"path": get_data_path("devto", "devto.json"), "name": "Dev.to"},
@@ -393,17 +331,7 @@ def create_knowledge_source_tab_content(source_keys, combined_name=None):
 def render_knowledge_garden_tab():
     """Render the complete knowledge garden tab with all sub-tabs."""
     tab_definitions = [
-        {
-            "label": "FutureTools & Ben's Bites",
-            "keys": ["futuretools", "bensbites"],
-            "id": "ft-bb",
-        },
-        {"label": "Hacker News", "keys": "hackernews", "id": "hn"},
-        {"label": "Medium GenAI", "keys": "medium_genai", "id": "med_genai"},
-        {"label": "KDnuggets", "keys": "kdnuggets", "id": "kdn"},
         {"label": "Good Devs", "keys": "gooddevs", "id": "gd"},
-        {"label": "Meneame General", "keys": "meneame_general", "id": "men_gen"},
-        {"label": "Meneame Tech", "keys": "meneame_tecnologia", "id": "men_tec"},
         {"label": "Podcasts", "keys": "podcasts", "id": "pod"},
         {"label": "Reddit AI/ML", "keys": "reddit_ai_ml", "id": "reddit_ai_ml"},
         {
@@ -414,20 +342,10 @@ def render_knowledge_garden_tab():
         {"label": "Reddit Tech", "keys": "reddit_tech", "id": "reddit_tech"},
         {"label": "Reddit DevOps", "keys": "reddit_devops", "id": "reddit_devops"},
         {"label": "Reddit All", "keys": "reddit_unified", "id": "reddit_all"},
-        {"label": "Indie Hackers", "keys": "indiehackers", "id": "ih"},
         {"label": "Git Trends", "keys": "gittrends", "id": "gt"},
         {"label": "HN Ask", "keys": "hackernews_ask", "id": "hn_ask"},
         {"label": "Stack Overflow", "keys": "stackoverflow_trends", "id": "so"},
         {"label": "Product Hunt", "keys": "product_hunt", "id": "ph"},
-        # Kagi RSS feeds as individual tabs
-        {"label": "Kagi World", "keys": "kagi_world", "id": "kagi_world"},
-        {"label": "Kagi USA", "keys": "kagi_usa", "id": "kagi_usa"},
-        {"label": "Kagi Business", "keys": "kagi_business", "id": "kagi_business"},
-        {"label": "Kagi Science", "keys": "kagi_science", "id": "kagi_science"},
-        {"label": "Kagi Gaming", "keys": "kagi_gaming", "id": "kagi_gaming"},
-        {"label": "Kagi AI", "keys": "kagi_ai", "id": "kagi_ai"},
-        {"label": "Kagi Europe", "keys": "kagi_europe", "id": "kagi_europe"},
-        {"label": "Kagi Spain", "keys": "kagi_spain", "id": "kagi_spain"},
         # Developer community tab
         {"label": "Dev.to", "keys": "devto", "id": "devto"},
     ]

@@ -309,4 +309,4 @@ if __name__ == "__main__":
     # If this script (app.py) is run directly, ensure CWD allows components to find their data.
     # Typically, one would run `run_watchtower_dashboard.py` from the project root.
 
-    app.run_server(debug=False, port=8050)  # Default Dash port for direct app run
+    app.run(debug=False, port=8050)  # Default Dash port for direct app run
