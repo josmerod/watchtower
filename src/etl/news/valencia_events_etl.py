@@ -1,6 +1,7 @@
 """Valencia Events ETL - Refactored to use BaseETL framework."""
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, List
@@ -106,13 +107,39 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 title_element = block.find(["h2", "h3"])
                 title = title_element.text.strip() if title_element else ""
 
-                # Extract date
-                date_element = block.find(
-                    string=lambda t: t
-                    and isinstance(t, str)
-                    and ("Del" in t or "al" in t or "2025" in t)
-                )
-                date_text = date_element.strip() if date_element else ""
+                # Extract date - improved logic
+                date_text = ""
+
+                # Look for date patterns in the block
+                date_candidates = []
+
+                # Pattern 1: Look for text containing "Del" and "al"
+                for string in block.strings:
+                    text = string.strip()
+                    if "Del" in text and "al" in text and ("2025" in text or "2024" in text):
+                        date_candidates.append(text)
+
+                # Pattern 2: Look for text containing "Fecha:"
+                for string in block.strings:
+                    text = string.strip()
+                    if "Fecha:" in text and ("2025" in text or "2024" in text):
+                        date_candidates.append(text)
+
+                # Pattern 3: Look for standalone date patterns
+                for string in block.strings:
+                    text = string.strip()
+                    if re.search(r'\d{1,2}/\d{1,2}/\d{4}', text) and ("2025" in text or "2024" in text):
+                        date_candidates.append(text)
+
+                # Use the best candidate (prefer longer, more complete date info)
+                if date_candidates:
+                    # Sort by length (longer is usually more complete)
+                    date_candidates.sort(key=len, reverse=True)
+                    date_text = date_candidates[0]
+
+                # Fallback: if no good date found, don't use title as date
+                if not date_text:
+                    date_text = ""
 
                 # Extract URL
                 link = block.find("a")
@@ -617,25 +644,29 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 end_date = ""
 
                 # Enhanced date parsing for Spanish format
-                import re
 
-                # Pattern 1: "Del DD/MM/YYYY al DD/MM/YYYY"
-                del_al_pattern = re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})\s+al\s+(\d{1,2}/\d{1,2}/\d{4})', date_info, re.IGNORECASE)
+                # Pattern 1: "Del DD/MM/YYYY al DD/MM/YYYY" (with optional extra spaces)
+                del_al_pattern = re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})\s*al\s+(\d{1,2}/\d{1,2}/\d{4})', date_info, re.IGNORECASE)
                 if del_al_pattern:
                     start_date = del_al_pattern.group(1)
                     end_date = del_al_pattern.group(2)
-                # Pattern 2: "Del DD/MM/YYYY"
+                # Pattern 2: "Del DD/MM/YYYY" (single date)
                 elif re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})', date_info, re.IGNORECASE):
                     del_pattern = re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})', date_info, re.IGNORECASE)
                     start_date = del_pattern.group(1) if del_pattern else ""
-                # Pattern 3: Look for any dates in YYYY-MM-DD or DD/MM/YYYY format
+                # Pattern 3: "Fecha: Del DD/MM/YYYY al DD/MM/YYYY" (with "Fecha:" prefix)
+                elif re.search(r'Fecha:\s*Del\s+(\d{1,2}/\d{1,2}/\d{4})\s*al\s+(\d{1,2}/\d{1,2}/\d{4})', date_info, re.IGNORECASE):
+                    fecha_pattern = re.search(r'Fecha:\s*Del\s+(\d{1,2}/\d{1,2}/\d{4})\s*al\s+(\d{1,2}/\d{1,2}/\d{4})', date_info, re.IGNORECASE)
+                    start_date = fecha_pattern.group(1) if fecha_pattern else ""
+                    end_date = fecha_pattern.group(2) if fecha_pattern else ""
+                # Pattern 4: Look for any dates in YYYY-MM-DD or DD/MM/YYYY format
                 elif re.search(r'\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}', date_info):
                     date_matches = re.findall(r'\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}', date_info)
                     if date_matches:
                         start_date = date_matches[0]
                         if len(date_matches) > 1:
                             end_date = date_matches[1]
-                # Pattern 4: Look for month names and years
+                # Pattern 5: Look for month names and years
                 elif re.search(r'(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)', date_info, re.IGNORECASE):
                     # Keep the original text if it contains month names
                     pass

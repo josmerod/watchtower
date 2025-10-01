@@ -1,7 +1,13 @@
 {
   "Quick Links": [
     {
-      "name": "Concentration music",
+      "name": "Concentration music (endel)",
+      "url": "https://app.endel.io/player/deeper",
+      "icon": "🎧",
+      "description": "Concentration music (endel)"
+    },
+    {
+      "name": "Concentration music (youtube)",
       "url": "https://www.youtube.com/@OriondeMirage/videos",
       "icon": "🎧",
       "description": "DnB and Jungle Mix for concentration"

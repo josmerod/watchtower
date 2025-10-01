@@ -1,0 +1,32 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libgomp1 \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV package manager
+RUN pip install uv
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files for dependency installation
+COPY pyproject.toml uv.lock README.md ./
+
+# Install dependencies in development mode
+RUN uv sync --frozen
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash watchtower
+USER watchtower
+
+# Expose ports
+EXPOSE 7777
+
+# Default command for development with hot reload
+CMD ["uv", "run", "python", "src/launcher/main.py", "--mode", "development"]

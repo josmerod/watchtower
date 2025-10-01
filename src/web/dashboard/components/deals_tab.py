@@ -362,213 +362,11 @@ def create_savings_distribution_chart():
     return dcc.Graph(figure=fig)
 
 
-def create_deals_summary_cards():
-    """Create summary cards for each deals source"""
-    cards = []
-
-    # Sort by number of deals (descending)
-    sorted_sources = sorted(
-        DEALS_SOURCES_CONFIG.items(), key=lambda x: len(DEALS_DATA[x[0]]), reverse=True
-    )
-
-    for source_id, config in sorted_sources:
-        data = DEALS_DATA[source_id]
-        deal_count = len(data)
-
-        # Calculate average discount
-        avg_discount = 0
-        if data:
-            valid_discounts = [
-                d["discount_percentage"] for d in data if d["discount_percentage"] > 0
-            ]
-            if valid_discounts:
-                avg_discount = sum(valid_discounts) / len(valid_discounts)
-
-        # Calculate total savings
-        total_savings = sum(d["savings"] for d in data if d["savings"] > 0)
-
-        # Status color
-        status_color = config["color"] if deal_count > 0 else "secondary"
-
-        card = dbc.Card(
-            [
-                dbc.CardHeader(
-                    [
-                        html.H6(
-                            [
-                                html.Span(config["icon"], className="me-2"),
-                                config["name"],
-                            ],
-                            className="mb-0",
-                        ),
-                        dbc.Badge(
-                            f"{deal_count} deals",
-                            color=status_color,
-                            className="float-end",
-                        ),
-                    ]
-                ),
-                dbc.CardBody(
-                    [
-                        html.P(
-                            config["description"], className="small text-muted mb-2"
-                        ),
-                        html.Div(
-                            [
-                                html.Strong("Avg Discount: "),
-                                html.Span(
-                                    f"{avg_discount:.1f}%", className="text-success"
-                                ),
-                            ],
-                            className="mb-1",
-                        ),
-                        html.Div(
-                            [
-                                html.Strong("Total Savings: "),
-                                html.Span(
-                                    f"${total_savings:.0f}", className="text-warning"
-                                ),
-                            ],
-                            className="mb-2",
-                        ),
-                        dbc.Button(
-                            f"View {config['name']}",
-                            id=f"btn-deals-{source_id}",
-                            color="outline-primary",
-                            size="sm",
-                            className="w-100",
-                        ),
-                    ]
-                ),
-            ],
-            className="mb-3 h-100",
-        )
-
-        cards.append(dbc.Col(card, md=6, lg=4))
-
-    return cards
-
-
-def create_deals_table(source_id, deals):
-    """Create a detailed table for deals"""
-    if not deals:
-        return dbc.Alert(
-            "No deals available for this category.",
-            color="info",
-            className="text-center",
-        )
-
-    # Sort deals by discount percentage (descending)
-    sorted_deals = sorted(deals, key=lambda x: x["discount_percentage"], reverse=True)
-
-    # Convert to DataFrame
-    df_data = []
-    for deal in sorted_deals:
-        # Format prices
-        original_price_str = (
-            f"${deal['original_price']:.2f}" if deal["original_price"] > 0 else "N/A"
-        )
-        current_price_str = (
-            f"${deal['current_price']:.2f}" if deal["current_price"] > 0 else "Free"
-        )
-        savings_str = f"${deal['savings']:.2f}" if deal["savings"] > 0 else "N/A"
-        discount_str = (
-            f"{deal['discount_percentage']:.1f}%"
-            if deal["discount_percentage"] > 0
-            else "N/A"
-        )
-
-        # Urgency indicator
-        urgency_badge = (
-            "🔴"
-            if deal["urgency"] == "high"
-            else "🟡"
-            if deal["urgency"] == "medium"
-            else "🟢"
-        )
-
-        row = {
-            "Title": (
-                deal["title"][:80] + "..." if len(deal["title"]) > 80 else deal["title"]
-            ),
-            "Description": deal["description"],
-            "Original Price": original_price_str,
-            "Current Price": current_price_str,
-            "Savings": savings_str,
-            "Discount": discount_str,
-            "Rating": (
-                f"{deal['deal_rating']:.1f}" if deal["deal_rating"] > 0 else "N/A"
-            ),
-            "Store": deal["store_name"],
-            "Urgency": f"{urgency_badge} {deal['urgency'].title()}",
-            "URL": deal["url"],
-        }
-        df_data.append(row)
-
-    df = pd.DataFrame(df_data)
-
-    # Create DataTable columns
-    columns = [
-        {"name": "Title", "id": "Title", "type": "text"},
-        {"name": "Description", "id": "Description", "type": "text"},
-        {"name": "Original Price", "id": "Original Price", "type": "text"},
-        {"name": "Current Price", "id": "Current Price", "type": "text"},
-        {"name": "Savings", "id": "Savings", "type": "text"},
-        {"name": "Discount", "id": "Discount", "type": "text"},
-        {"name": "Rating", "id": "Rating", "type": "text"},
-        {"name": "Store", "id": "Store", "type": "text"},
-        {"name": "Urgency", "id": "Urgency", "type": "text"},
-        {"name": "Link", "id": "URL", "type": "text", "presentation": "markdown"},
-    ]
-
-    # Convert URLs to markdown links
-    df["URL"] = df.apply(
-        lambda row: f"[🛒 Get Deal]({row['URL']})" if row["URL"] != "#" else "N/A",
-        axis=1,
-    )
-
-    return dash_table.DataTable(
-        data=df.to_dict("records"),
-        columns=columns,
-        page_size=15,
-        sort_action="native",
-        filter_action="native",
-        style_cell={
-            "textAlign": "left",
-            "padding": "8px",
-            "fontFamily": "Poppins, sans-serif",
-            "maxWidth": "150px",
-            "overflow": "hidden",
-            "textOverflow": "ellipsis",
-        },
-        style_header={
-            "backgroundColor": "#3C3970",
-            "color": "#E2E8F0",
-            "fontWeight": "bold",
-        },
-        style_data={
-            "backgroundColor": "#2D2B55",
-            "color": "#CDD6F4",
-            "whiteSpace": "normal",
-            "height": "auto",
-        },
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#252343"},
-            # Highlight high discount deals
-            {
-                "if": {
-                    "filter_query": "{Discount} contains %",
-                    "column_id": "Discount",
-                },
-                "backgroundColor": "#3C5A3C",
-                "color": "#AEF4AE",
-            },
-        ],
-    )
+# Note: Removed old callback-based functions since we're using static tabs now
 
 
 def render_deals_tab():
-    """Main render function for the Deals dashboard tab"""
+    """Main render function for the Deals dashboard tab - simplified without callbacks"""
 
     total_deals = len(ALL_DEALS)
     total_categories = len(set(deal["source_category"] for deal in ALL_DEALS))
@@ -719,52 +517,116 @@ def render_deals_tab():
                 ],
                 className="mb-4",
             ),
-            # Deals categories
+            # Deals categories with direct content (no callbacks)
             html.H4("Deal Categories", className="text-primary mb-3"),
-            dbc.Row(create_deals_summary_cards(), className="mb-4"),
-            # Data display area
-            html.Div(id="deals-data-display"),
-            # Storage for selected source
-            dcc.Store(id="selected-deals-source"),
+            dbc.Row(create_deals_tabs_content(), className="mb-4"),
         ]
     )
 
 
-def register_deals_callbacks(app):
-    """Register callbacks for the Deals dashboard tab"""
+def create_deals_tabs_content():
+    """Create tabbed content for all deal categories (similar to news tab)"""
+    tab_definitions = [
+        {"label": "🎮 Bundle Deals", "keys": "bundle_deals", "id": "bundle"},
+        {"label": "🎵 Music Deals", "keys": "music_deals", "id": "music"},
+        {"label": "🛒 Bargain Hunter", "keys": "bargain_deals", "id": "bargain"},
+        {"label": "📚 Educational", "keys": "educational_deals", "id": "educational"},
+        {"label": "📖 Books", "keys": "book_deals", "id": "books"},
+        {"label": "💻 Software", "keys": "software_deals", "id": "software"},
+        {"label": "✈️ Travel", "keys": "travel_deals", "id": "travel"},
+        {"label": "💰 Crypto & Finance", "keys": "crypto_finance_deals", "id": "crypto"},
+        {"label": "👗 Fashion & Retail", "keys": "fashion_retail_deals", "id": "fashion"},
+        {"label": "🏃 Health & Fitness", "keys": "health_fitness_deals", "id": "health"},
+        {"label": "🔧 Hardware & Tech", "keys": "hardware_tech_deals", "id": "hardware"},
+    ]
 
-    # Create callbacks for each source button
-    for source_id in DEALS_SOURCES_CONFIG.keys():
-
-        @callback(
-            Output("deals-data-display", "children"),
-            Output("selected-deals-source", "data"),
-            Input(f"btn-deals-{source_id}", "n_clicks"),
-            prevent_initial_call=True,
+    tabs_children = []
+    for tab_def in tab_definitions:
+        tab_id = f"deals-tab-{tab_def['id']}"
+        content = create_deals_category_tab_content(tab_def["keys"])
+        tabs_children.append(
+            dbc.Tab(
+                label=tab_def["label"],
+                tab_id=tab_id,
+                children=content,
+            )
         )
-        def display_deals_data(n_clicks, source_id=source_id):
-            if n_clicks:
-                config = DEALS_SOURCES_CONFIG[source_id]
-                deals = DEALS_DATA[source_id]
 
-                return (
-                    html.Div(
-                        [
-                            html.Hr(),
-                            html.H4(
-                                [
-                                    html.Span(config["icon"], className="me-2"),
-                                    f"{config['name']} Deals",
-                                ],
-                                className="text-primary mb-3",
-                            ),
-                            create_deals_table(source_id, deals),
-                        ]
+    return dbc.Tabs(
+        id="deals-category-tabs",
+        children=tabs_children,
+        active_tab="deals-tab-bundle",
+    )
+
+
+def create_deals_category_tab_content(category_key):
+    """Create content for a specific deal category (similar to news tab)"""
+    deals = DEALS_DATA.get(category_key, [])
+
+    if not deals:
+        return dbc.Alert(
+            f"No deals available for this category.", color="info"
+        )
+
+    # Sort deals by discount percentage (highest first)
+    sorted_deals = sorted(deals, key=lambda x: x["discount_percentage"], reverse=True)
+
+    # Create table
+    table_header = [
+        html.Thead(
+            html.Tr(
+                [
+                    html.Th("Title"),
+                    html.Th("Platform"),
+                    html.Th("Original Price"),
+                    html.Th("Current Price"),
+                    html.Th("Savings"),
+                    html.Th("Discount"),
+                    html.Th("Rating"),
+                ]
+            )
+        )
+    ]
+
+    table_body_rows = []
+    for deal in sorted_deals[:50]:  # Limit to 50 deals for performance
+        savings_display = f"${deal['savings']:.2f}" if deal["savings"] > 0 else "N/A"
+        discount_display = f"{deal['discount_percentage']:.1f}%" if deal["discount_percentage"] > 0 else "N/A"
+        rating_display = f"{deal['deal_rating']:.1f}" if deal["deal_rating"] > 0 else "N/A"
+
+        table_body_rows.append(
+            html.Tr(
+                [
+                    html.Td(
+                        html.A(
+                            deal["title"],
+                            href=deal["url"],
+                            target="_blank",
+                            className="text-decoration-none",
+                        )
                     ),
-                    source_id,
-                )
+                    html.Td(deal["platform"]),
+                    html.Td(f"${deal['original_price']:.2f}" if deal["original_price"] > 0 else "N/A"),
+                    html.Td(f"${deal['current_price']:.2f}" if deal["current_price"] > 0 else "Free"),
+                    html.Td(savings_display),
+                    html.Td(discount_display),
+                    html.Td(rating_display),
+                ]
+            )
+        )
 
-            return html.Div(), None
+    table_body = [html.Tbody(table_body_rows)]
+
+    return dbc.Table(
+        table_header + table_body,
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive mt-3",
+    )
 
 
 if __name__ == "__main__":
@@ -779,3 +641,10 @@ if __name__ == "__main__":
     print(
         f"  Total: {total} deals across {categories} categories, ${total_savings:.0f} in potential savings"
     )
+
+    # Test the new static tab system
+    try:
+        tabs_content = create_deals_tabs_content()
+        print("Static tabs system created successfully")
+    except Exception as e:
+        print(f"Error creating static tabs: {e}")

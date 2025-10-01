@@ -1,630 +1,436 @@
 {
-    "IDownloadCoupons": [
-        [
-            "TOGAF 9 Part 1 (Foundation) Practice Exams",
-            "https://www.udemy.com/course/mastering-speech-language-models-from-asr-to-emotion-ai/?couponCode=VOICEAI_SEPT_2"
-        ],
-        [
-            "TOGAF 9 Part 2 (Certified) Practice Exams",
-            "https://www.udemy.com/course/ccna-200-301-exam-success-expert-answers-explanations/?couponCode=9BA65D62A692EE18C645"
-        ],
-        [
-            "TOGAF Enterprise Architecture Combined Part 1 and Part 2",
-            "https://www.udemy.com/course/option-strategy-adjustment-chatgpt-mastering-risk/?couponCode=GOODWILL"
-        ],
-        [
-            "TOGAF Enterprise Architecture Part 1 Practice Exams",
-            "https://www.udemy.com/course/active-directory-pentesting-with-kali-linux-practical-lab/?couponCode=KEEPLEARNING"
-        ],
-        [
-            "TOGAF 9 Combined Part 1 and Part 2 Practice Exams",
-            "https://www.udemy.com/course/professional-diploma-of-product-owner/?couponCode=1B27EA23683DA38116CE"
-        ],
-        [
-            "Genesys Cloud CX Certified Professional: Consolidated Exams",
-            "https://www.udemy.com/course/professional-diploma-government-public-sector-technology/?couponCode=22405575A15F4C013A1E"
-        ],
-        [
-            "Professional Diploma in Warehouse Management",
-            "https://www.udemy.com/course/ai-for-law-professionals-2025/?couponCode=AILAWYER"
-        ],
-        [
-            "Professional Certificate: Product Management and Development",
-            "https://www.udemy.com/course/apple-certified-support-professional-practice-exams/?couponCode=2C3CC87EA35A9FC4E41A"
-        ],
-        [
-            "Tracking en Tiempo Real con Flutter, Laravel + ChatGPT",
-            "https://www.udemy.com/course/apple-certified-support-professional-practice-exams/?couponCode=2C3CC87EA35A9FC4E41A"
-        ],
-        [
-            "Professional Certificate in SMM Social Media Marketing",
-            "https://www.udemy.com/course/ai-for-law-professionals-2025/?couponCode=AILAWYER"
-        ],
-        [
-            "Kubernetes Helm Charts (HELM-201): 1500 Questions",
-            "https://www.udemy.com/course/mastering-speech-language-models-from-asr-to-emotion-ai/?couponCode=VOICEAI_SEPT_2"
-        ],
-        [
-            "Migra un Sitio Web de WordPress a otro Dominio o Hosting",
-            "https://www.udemy.com/course/kubernetes-cks-practice-test-cks-103-1500-questions/?couponCode=REALPROMOTION"
-        ],
-        [
-            "Professional Certificate in Customer Experience Management",
-            "https://www.udemy.com/course/diffusez-vos-huiles-essentielles-en-toute-securite/?couponCode=743FC06566E17CEB9601"
-        ],
-        [
-            "Professional Certificate in Marketing & Marketing Management",
-            "https://www.udemy.com/course/php-oop-with-mysql-2023-build-restaurant-management-system/?couponCode=PHPRESTAURANT53"
-        ],
-        [
-            "Executive Certificate in Sales Management",
-            "https://www.udemy.com/course/ccna-200-301-exam-success-expert-answers-explanations/?couponCode=9BA65D62A692EE18C645"
-        ],
-        [
-            "Diploma Executivo em Liderança",
-            "https://www.udemy.com/course/css-bootstrap-javascript-web-development-course/?couponCode=63F4A63C5F54279DFFD3"
-        ],
-        [
-            "Crea Correos Corporativos con Dominio Propio en Gmail 2025",
-            "https://www.udemy.com/course/ccna-200-301-exam-success-expert-answers-explanations/?couponCode=9BA65D62A692EE18C645"
-        ],
-        [
-            "Cómo Crear una Página web con WordPress y Elementor 2025",
-            "https://www.udemy.com/course/la-nature-qui-soigne-lessentiel-des-huiles-essentielles/?couponCode=2EE7F1D2314096023720"
-        ],
-        [
-            "WP Rocket 2025: Mejora la Velocidad de Carga en WordPress",
-            "https://www.udemy.com/course/dieting-nutrition-weight-loss-tips-for-good-healthy-life/?couponCode=FB57B384342BF27F3EC8"
-        ],
-        [
-            "Curso de HostGator 2025: El Hosting Ideal Para WordPress",
-            "https://www.udemy.com/course/professional-diploma-government-public-sector-technology/?couponCode=22405575A15F4C013A1E"
-        ],
-        [
-            "Cómo Crear una Tienda Online con WordPress Desde Cero 2025",
-            "https://www.udemy.com/course/dieting-nutrition-weight-loss-tips-for-good-healthy-life/?couponCode=FB57B384342BF27F3EC8"
-        ],
-        [
-            "Máster en WordPress 2025, ¡Desde Cero Hasta Experto!",
-            "https://www.udemy.com/course/professional-diploma-in-technical-project-management/?couponCode=AC7E3AFF604E0794CE96"
-        ],
-        [
-            "Cómo Crear una Landing Page con WordPress Desde Cero 2025",
-            "https://www.udemy.com/course/active-directory-pentesting-with-kali-linux-practical-lab/?couponCode=KEEPLEARNING"
-        ],
-        [
-            "Cómo Crear una Tarjeta de Presentación Digital con WordPress",
-            "https://www.udemy.com/course/active-directory-pentesting-with-kali-linux-practical-lab/?couponCode=KEEPLEARNING"
-        ],
-        [
-            "English Test Preparation IELTS Practice Exams",
-            "https://www.udemy.com/course/apple-certified-support-professional-practice-exams/?couponCode=2C3CC87EA35A9FC4E41A"
-        ],
-        [
-            "Business Data Analysis: The Strategic Thinking Masterclass",
-            "https://www.udemy.com/course/active-directory-pentesting-with-kali-linux-practical-lab/?couponCode=KEEPLEARNING"
-        ],
-        [
-            "CBSA: BTA Certified Blockchain Solution Architect Exam Prep",
-            "https://www.udemy.com/course/javascript-fundamentals-course-for-beginners/?couponCode=DC2588BAB36804475DFB"
-        ],
-        [
-            "Decision Making for Leaders and Managers",
-            "https://www.udemy.com/course/mastering-speech-language-models-from-asr-to-emotion-ai/?couponCode=VOICEAI_SEPT_2"
-        ],
-        [
-            "Hitachi Vantara VSP Midrange Family Installation Exam Prep",
-            "https://www.udemy.com/course/cybersecurity-fundamentals-isaca-practice-exam-questions/?couponCode=58347F72A1DC6B7FA68D"
-        ],
-        [
-            "Web3 & Cryptocurrency Market analysing Tool Using WordPress",
-            "https://www.udemy.com/course/ai-for-law-professionals-2025/?couponCode=AILAWYER"
-        ],
-        [
-            "SSCP – System Security Certified Practitioner (SSCP)",
-            "https://www.udemy.com/course/web-development-bootcamp-with-html-css-php-mysql-wordpress/?couponCode=17D50FFD68CEBD7CE36E"
-        ],
-        [
-            "AWS Certified DevOps Engineer – Professional Practice Exams",
-            "https://www.udemy.com/course/dieting-nutrition-weight-loss-tips-for-good-healthy-life/?couponCode=FB57B384342BF27F3EC8"
-        ],
-        [
-            "AWS Certified Machine Learning Engineer Associate Prep Exams",
-            "https://www.udemy.com/course/web-development-bootcamp-with-html-css-php-mysql-wordpress/?couponCode=17D50FFD68CEBD7CE36E"
-        ],
-        [
-            "DP-700 Fabric Data Engineer Associate Practice Exams",
-            "https://www.udemy.com/course/mini-course-on-effective-communications-skills/?couponCode=742B6BBE527BC27057A5"
-        ],
-        [
-            "AZ-700 Azure Network Engineer Associate Practice Exams",
-            "https://www.udemy.com/course/the-complete-business-process-reengineering-master-class/?couponCode=52D0AA985ED3F915290B"
-        ],
-        [
-            "AZ-800 Windows Server Hybrid Infrastructure Practice Exams",
-            "https://www.udemy.com/course/the-complete-business-process-reengineering-master-class/?couponCode=52D0AA985ED3F915290B"
-        ],
-        [
-            "DP-900 Microsoft Azure Data Fundamentals Exams",
-            "https://www.udemy.com/course/dieting-nutrition-weight-loss-tips-for-good-healthy-life/?couponCode=FB57B384342BF27F3EC8"
-        ],
-        [
-            "PL-200: Power Platform Functional Consultant Practice Exams",
-            "https://www.udemy.com/course/the-complete-business-process-reengineering-master-class/?couponCode=52D0AA985ED3F915290B"
-        ],
-        [
-            "GCP ACE – Associate Cloud Engineer Practice Exams",
-            "https://www.udemy.com/course/dieting-nutrition-weight-loss-tips-for-good-healthy-life/?couponCode=FB57B384342BF27F3EC8"
-        ],
-        [
-            "GCP PCA – Professional Cloud Architect Practice Exams",
-            "https://www.udemy.com/course/mini-course-on-effective-communications-skills/?couponCode=742B6BBE527BC27057A5"
-        ],
-        [
-            "GCP CDL – Cloud Digital Leader Practice Exams",
-            "https://www.udemy.com/course/web-development-bootcamp-with-html-css-php-mysql-wordpress/?couponCode=17D50FFD68CEBD7CE36E"
-        ],
-        [
-            "GCP ADP – Associate Data Practitioner Practice Exams",
-            "https://www.udemy.com/course/active-directory-pentesting-with-kali-linux-practical-lab/?couponCode=KEEPLEARNING"
-        ],
-        [
-            "GCP Professional Cloud Network Engineer Practice Exams",
-            "https://www.udemy.com/course/how-to-make-smarter-decisions-and-stop-making-foolish-ones/?couponCode=4C60D73FD2CFF5B4E12C"
-        ],
-        [
-            "GCP Professional Cloud DevOps Engineer Practice Exams",
-            "https://www.udemy.com/course/the-complete-business-process-reengineering-master-class/?couponCode=52D0AA985ED3F915290B"
-        ],
-        [
-            "GCP Professional Cloud Database Engineer Practice Exams",
-            "https://www.udemy.com/course/apple-certified-support-professional-practice-exams/?couponCode=2C3CC87EA35A9FC4E41A"
-        ],
-        [
-            "GCP Professional Cloud Security Engineer Practice Exams",
-            "https://www.udemy.com/course/dieting-nutrition-weight-loss-tips-for-good-healthy-life/?couponCode=FB57B384342BF27F3EC8"
-        ],
-        [
-            "GCP Professional Data Engineer Practice Exams",
-            "https://www.udemy.com/course/php-oop-with-mysql-2023-build-restaurant-management-system/?couponCode=PHPRESTAURANT53"
-        ],
-        [
-            "GCP Professional Machine Learning Engineer Practice Exams",
-            "https://www.udemy.com/course/diffusez-vos-huiles-essentielles-en-toute-securite/?couponCode=743FC06566E17CEB9601"
-        ]
-    ],
     "E-next": [
         [
-            "Advanced Certificate in Financial Analysis and Management",
-            "https://www.udemy.com/course/advanced-certificate-in-financial-analysis-and-management/?couponCode=CCC2638095830C05AF5B"
+            "Digital Marketing Automation: One Step Ahead of Competitors",
+            "https://www.udemy.com/course/digital-marketing-automation-one-step-ahead-of-competitors/?couponCode=01OCTOBER2025"
         ],
         [
-            "Python Programming Mastery: From Beginner to Pro",
-            "https://www.udemy.com/course/python-programming-mastery-from-beginner-to-pro/?couponCode=6691405E4FAF640A4347"
+            "Account-Based Marketing - ABM: Increase Your B2B Efficiency",
+            "https://www.udemy.com/course/account-based-marketing-increase-your-b2b-efficiency/?couponCode=01OCTOBER2025"
         ],
         [
-            "JavaScript Mastery From Basics to Advanced 2025",
-            "https://www.udemy.com/course/javascript-mastery-from-basics-to-advanced/?couponCode=F832FF6BE2D15D2BA00B"
+            "Etsy: The Ultimate Guide to Boosting Your Business",
+            "https://www.udemy.com/course/etsy-promotion/?couponCode=01OCTOBER2025"
         ],
         [
-            "Mastering HTML5: From Beginner to Advanced 2025",
-            "https://www.udemy.com/course/mastering-html5-from-beginner-to-advanced/?couponCode=4EC96FFE746B9A94F671"
+            "Complete Figma Course: Web & Mobile Projects from Scratch",
+            "https://www.udemy.com/course/figma-practical-design/?couponCode=01OCTOBER2025"
         ],
         [
-            "Leadership Reflexivity",
-            "https://www.udemy.com/course/leadership-reflexivity/?couponCode=0C51100DAE7D1061B48D"
+            "Google Ads 2025: How to Drive Sales With PPC!",
+            "https://www.udemy.com/course/google-ads-for-beginners-how-to-drive-sales-with-ppc/?couponCode=01OCTOBER2025"
         ],
         [
-            "Leadership Consciousness for Global Unity",
-            "https://www.udemy.com/course/leadership-consciousness-for-global-unity/?couponCode=1E21BF7294E447FAB468"
+            "Microsoft Excel Comprehensive Guide",
+            "https://www.udemy.com/course/excel-guide/?couponCode=01OCTOBER2025"
         ],
         [
-            "Professional Certificate in Financial Analysis and Modeling",
-            "https://www.udemy.com/course/professional-certificate-in-financial-analysis-and-modeling/?couponCode=49C71029B4BF920BF2E5"
+            "AI-Powered Social Media Marketing: ChatGPT and 100 AI Tools",
+            "https://www.udemy.com/course/social-media-marketing-strategy-course/?couponCode=01OCTOBER2025"
         ],
         [
-            "Master Marketing Automation with Microsoft Copilot",
-            "https://www.udemy.com/course/master-marketing-automation-with-microsoft-copilot/?couponCode=30SEPTEMBER2025"
+            "How to Create Your Perfect LinkedIn Outreach Campaign",
+            "https://www.udemy.com/course/how-to-create-your-perfect-linkedin-outreach-campaign/?couponCode=01OCTOBER2025"
         ],
         [
-            "Reputation Management: Take Control of Your Company's Image",
-            "https://www.udemy.com/course/reputation_management/?couponCode=30SEPTEMBER2025"
+            "Facebook Ads: Run Your First Ad Campaign",
+            "https://www.udemy.com/course/facebook-ads-run-your-first-ad-campaign/?couponCode=01OCTOBER2025"
         ],
         [
-            "Professional Certificate in Project and Process Management",
-            "https://www.udemy.com/course/professional-certificate-in-project-and-process-management/?couponCode=9F3433D3542432751601"
+            "Google My Business. How to Master Powerful Tool for Company",
+            "https://www.udemy.com/course/google-my-business-how-to-master-powerful-tool-for-company/?couponCode=01OCTOBER2025"
         ],
         [
-            "١٧ - ١٨ - الدعاية والإعلان والعلاقات العامة",
-            "https://www.udemy.com/course/vkgxkicw/?couponCode=EF4163CECA5915F489B0"
+            "Grow Your Sales With Conversion Rate Optimization (CRO)",
+            "https://www.udemy.com/course/conversion-optimization-course/?couponCode=01OCTOBER2025"
         ],
         [
-            "Advanced Certificate in Business & Marketing Strategy",
-            "https://www.udemy.com/course/advanced-certificate-in-business-marketing-strategy/?couponCode=943F742C860BF2BC850E"
+            "Web Analytics with Similarweb: from Basic to PRO!",
+            "https://www.udemy.com/course/web-analytics-with-similarweb-from-basic-to-pro/?couponCode=01OCTOBER2025"
         ],
         [
-            "Mastering Procurement and Supply Chain Management",
-            "https://www.udemy.com/course/procurementandscm/?couponCode=5B9CC1A4F467F1DC572B"
+            "LPIC-2 Exam 201 Part 1 Linux Engineer Practice Exams",
+            "https://www.udemy.com/course/lpic-2-exam-201-part-1-linux-engineer-practice-exams/?couponCode=BCCDCC30AC91FEB38488"
         ],
         [
-            "Project Based Python Create 8 Powerful Tools Step by Step",
-            "https://www.udemy.com/course/project-based-python-create-8-powerful-tools-step-by-step/?couponCode=C721B6D7CFBE8484EB6C"
+            "LPIC-2 Exam 202 Part 2 Linux Engineer Practice Exams",
+            "https://www.udemy.com/course/lpic-2-exam-202-part-2-linux-engineer-practice-exams/?couponCode=039EF97204607C06AB30"
         ],
         [
-            "Microsoft Word Mastery: Essential Skill for Job and Business",
-            "https://www.udemy.com/course/microsoft-word-mastery-essential-skill-for-job-and-business/?couponCode=E2F194F24B902849A040"
+            "Sourcer Recruiter: AI, Boolean Search & Talent Sourcing [EN]",
+            "https://www.udemy.com/course/sourcer-recruiter-ai-boolean-search-talent-sourcing-en/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Adobe Illustrator for T-Shirt Design: From Sketch to Print",
-            "https://www.udemy.com/course/adobe-illustrator-for-t-shirt-design-from-sketch-to-print/?couponCode=F6804CCD74D6B343C7D7"
+            "AI HR-агенты: автоматизация HR без кода на ChatGPT и др [RU]",
+            "https://www.udemy.com/course/ai-hr-agents-chatgpt-ru/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "UI/UX Design Masterclass with Adobe XD: From Beginner to Pro",
-            "https://www.udemy.com/course/uiux-design-masterclass-with-adobe-xd-from-beginner-to-pro/?couponCode=2CBBE60337EB921E89A9"
+            "Chief of Staff: стратегический партнер по операциям [RU]",
+            "https://www.udemy.com/course/chief-of-staff-ru/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Graphic Design Masterclass: Master Illustrator & Photoshop",
-            "https://www.udemy.com/course/graphic-design-masterclass-master-illustrator-photoshop/?couponCode=39EAE2677F74A00AEFC7"
+            "Управління командою повний курс для ефективних лідерів [UA]",
+            "https://www.udemy.com/course/people-management-ua/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Blue Prism Foundation Course Step By Step",
-            "https://www.udemy.com/course/blue-prism-beginners-course-step-by-step/?couponCode=1000FREEUDEMYCOUPONS"
+            "Professional Diploma in Office Administration Management",
+            "https://www.udemy.com/course/postgraduate-diploma-in-office-administration-management/?couponCode=2C5A08DF2E7207845AF4"
         ],
         [
-            "RPA:Microsoft Power Automate Desktop:Intelligent Automation",
-            "https://www.udemy.com/course/power-automate-desktop-course-intelligent-automation/?couponCode=1000FREEUDEMYCOUPONS"
+            "Zatrudnianie programistów rekrutacja i pozyskiwanie IT [PL+]",
+            "https://www.udemy.com/course/zatrudnianie-programistow-rekrutacja-i-pozyskiwanie-it-pl/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Advanced RPA - Microsoft Power Automate With AI Builder",
-            "https://www.udemy.com/course/microsoft-power-automate-with-ai-builder/?couponCode=1000FREEUDEMYCOUPONS"
+            "Recompensas Totais: Benefícios, Incentivos e EVP [PT+]",
+            "https://www.udemy.com/course/recompensas-totais-beneficios-incentivos-e-evp-pt/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "AI-Powered Product Marketing and Market Research",
-            "https://www.udemy.com/course/ai-powered-product-marketing-and-market-research/?couponCode=2474BD4A706E0ACF4C9A"
+            "RecruitGPT Master AI + ChatGPT for Recruiting Sourcing [EN]",
+            "https://www.udemy.com/course/recruitgpt-master-ai-chatgpt-for-recruiting-sourcing/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Microsoft Office Specialist: Microsoft Excel Advanced Expert",
-            "https://www.udemy.com/course/microsoft-office-specialist-microsoft-excel-advanced-expert/?couponCode=43B5D4DA073FAC952BBF"
+            "Gestión de Proyectos y Certificación PMBOK 7.0 PMI [ES]",
+            "https://www.udemy.com/course/gestion-de-proyectos-y-certificacion-pmbok-70-pmi-es/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "GAQM Certified Scrum Master Practice Exams",
-            "https://www.udemy.com/course/gaqm-certified-scrum-master-practice-exams/?couponCode=09513449637CBE650718"
+            "Recrutamento com IA: Automatize e Otimize Contratações [PT+]",
+            "https://www.udemy.com/course/recrutamento-com-ia-automatize-e-otimize-contratacoes-pt/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Canva Graphics Design Course For Beginners & Non Designers",
-            "https://www.udemy.com/course/canva-graphics-design-course-for-beginners-non-designers/?couponCode=432DC28D9CA9028FC923"
+            "Масовий підбір: швидко наймати десятки співробітників [UA]",
+            "https://www.udemy.com/course/mass-recruitment-ua/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Data Center Infrastructure & Design: Operation & Maintenance",
-            "https://www.udemy.com/course/data-center-infrastructure-design-datacenter/?couponCode=F9F1A855F8229462D310"
+            "Gestión del Conocimiento con Confluence, Jira y Notion [ES+]",
+            "https://www.udemy.com/course/gestion-del-conocimiento-con-confluence-jira-y-notion-es/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Professional Certificate in Risk Management",
-            "https://www.udemy.com/course/professional-certificate-in-risk-management/?couponCode=24634A258B38F470EE31"
+            "IA RH: Inteligência Artificial e ChatGPT no RH [PT+]",
+            "https://www.udemy.com/course/ia-rh-inteligencia-artificial-e-chatgpt-no-rh-pt/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "HVAC Design For Beginners - From HVAC Beginner to HVAC PRO",
-            "https://www.udemy.com/course/hvac-design-engineering-mastery-triple-hvac-certification/?couponCode=05B9A55278B4DA53D35C"
+            "C&B no Sistema de Recompensas Totais da Empresa [PT+]",
+            "https://www.udemy.com/course/cb-no-sistema-de-recompensas-totais-da-empresa-pt/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "HVAC Duct Design Using Software (Free HVAC Software Inc.)",
-            "https://www.udemy.com/course/hvac-engineering-duct-design/?couponCode=65E12409D50081A4BE40"
+            "Senior IT Recruiter: Весь цикл ІТ рекрутингу від А до Я [UA]",
+            "https://www.udemy.com/course/senior-it-recruiter-ua/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Presentation Skills 101: Presentation Skills Complete Course",
-            "https://www.udemy.com/course/presentations-and-public-speaking/?couponCode=88FCE48F18BFCB70304C"
+            "HRBP: Certificación de Socio Estratégico de RRHH 2025 [ES+]",
+            "https://www.udemy.com/course/hrbp-certificacion-de-socio-estrategico-de-rrhh-2025/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Plumbing 101: Plumbing Design Basics ( DUAL Certification )",
-            "https://www.udemy.com/course/plumbing-design-engineering/?couponCode=3EEB3677D214EE93CA7A"
+            "AI Recruitment: Automatizace a optimalizace náboru [CZ+]",
+            "https://www.udemy.com/course/ai-recruitment-automatizace-a-optimalizace-naboru-cz/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "HVAC For Beginners: Understanding HVAC Design & HVAC Systems",
-            "https://www.udemy.com/course/hvac-systems/?couponCode=D39DB0D57425069F48B5"
+            "AI Recruitment – Automasi & Optimum Proses Pengambilan [MS+]",
+            "https://www.udemy.com/course/ai-recruitment-automasi-optimum-proses-pengambilan-ms/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Project Management 101 (Project Management Certification)",
-            "https://www.udemy.com/course/project-management-concepts/?couponCode=5BC6DE2463546BA47FB7"
+            "GameDev Recruiter: Рекрутинг в игровой индустрии [RU]",
+            "https://www.udemy.com/course/gamedev-recruiter/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "HVAC Engineering Fundamentals & HVAC Design Best Practices",
-            "https://www.udemy.com/course/hvac-engineering-core-concepts-practices/?couponCode=8DF3839F78B58ADE231F"
+            "CEO Эффективное управление бизнесом командой стратегией [RU]",
+            "https://www.udemy.com/course/chief-executive-officer-ru/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "HVAC Design Basics: HVAC Chiller System Flowrate Calculation",
-            "https://www.udemy.com/course/hvac-chiller-flow-rate-calculation-and-chilled-sytem-intro/?couponCode=773908A6D83E4298400F"
+            "LPIC-1 Exam 102 Part 2 Linux Administration Practice Exams",
+            "https://www.udemy.com/course/lpic-1-exam-102-part-2-linux-administration-practice-exams/?couponCode=CADDB0E9995A041922DB"
         ],
         [
-            "Strategic Management & Business Planning – Certification",
-            "https://www.udemy.com/course/strategic-management-business-planning-certification/?couponCode=SEP-END"
+            "LPIC-1 Exam 101 Part 1 Linux Administrator Practice Exams",
+            "https://www.udemy.com/course/lpic-1-exam-101-part-1-linux-administrator-practice-exams/?couponCode=028FD1C1BBBB4204D1B2"
         ],
         [
-            "Finance Essentials for Non-Financial Managers – Executive",
-            "https://www.udemy.com/course/finance-essentials-for-non-financial-managers-executive/?couponCode=SEP-END"
+            "Leadership Mastery: Modern Leaders' Practical Training",
+            "https://www.udemy.com/course/2024-leadership-mastery-modern-leaders-practical-training/?couponCode=D938779EE84DF5E746F8"
         ],
         [
-            "Certified Negotiation Professional: Advanced Business Skills",
-            "https://www.udemy.com/course/certified-negotiation-professional-advanced-business-skills/?couponCode=SEP-END"
+            "Professional Diploma in CRM Platforms Management",
+            "https://www.udemy.com/course/crm-at-sales-service-marketing-and-business-management/?couponCode=E62F29D97B4D8F61FC7E"
         ],
         [
-            "Certified Operations Manager: From Strategy to Execution",
-            "https://www.udemy.com/course/certified-operations-manager-from-strategy-to-execution/?couponCode=SEP-END"
+            "Trade Candlestick Patterns with 95% Accuracy in any Market",
+            "https://www.udemy.com/course/trade-candlestick-patterns-with-95-accuracy-in-any-market/?couponCode=OPENFORALL"
         ],
         [
-            "Business Intelligence: Data-Driven Decision Making",
-            "https://www.udemy.com/course/business-intelligence-data-driven-decision-making/?couponCode=SEP-END"
+            "Kubernetes Multi-Cluster (K8S-MC-203): 1500 Questions",
+            "https://www.udemy.com/course/kubernetes-multi-cluster-k8s-mc-203-1500-questions/?couponCode=CLUSTERS2025"
         ],
         [
-            "Certified Business Analyst: Tools, Techniques & Frameworks",
-            "https://www.udemy.com/course/certified-business-analyst-tools-techniques-frameworks/?couponCode=SEP-END"
+            "Professional Diploma in Digitalization of Retail Banking",
+            "https://www.udemy.com/course/digitisation/?couponCode=B20351F55C76CA00DF54"
         ],
         [
-            "Lean Six Sigma Certification: Business Process Improvement",
-            "https://www.udemy.com/course/lean-six-sigma-certification-business-process-improvement/?couponCode=SEP-END"
+            "Mastering Goals & Systems and Leverages with ChatGPT",
+            "https://www.udemy.com/course/mastering-goals-systems-and-leverages-with-chatgpt/?couponCode=B01B90305EE51CFE1235"
         ],
         [
-            "Agile HR Certification: Modern Human Resource Practices",
-            "https://www.udemy.com/course/agile-hr-certification-modern-human-resource-practices/?couponCode=SEP-END"
+            "ChatGPT × Systems Thinking for Marketers",
+            "https://www.udemy.com/course/chatgpt-systems-thinking-for-marketers/?couponCode=D2F2E38B8D335746684F"
         ],
         [
-            "Professional Agile Methodology Certification",
-            "https://www.udemy.com/course/professional-agile-methodology-certification/?couponCode=SEP-END"
+            "Learning Agility With ChatGPT: Learn, Unlearn and Relearn",
+            "https://www.udemy.com/course/learning-agility-with-chatgpt-learn-unlearn-and-relearn/?couponCode=22A21E3D06092EB8558A"
         ],
         [
-            "Professional Certificate in DevOps",
-            "https://www.udemy.com/course/professional-certificate-in-devops/?couponCode=DBF1D0EB5A6037ADF40D"
+            "Análise de RH decisões e previsões baseadas em dados [PT+]",
+            "https://www.udemy.com/course/analise-de-rh-decisoes-e-previsoes-baseadas-em-dados-pt/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Digital Marketing Certification: SEO, Google Ads & Social",
-            "https://www.udemy.com/course/digital-marketing-certification-seo-google-ads-social/?couponCode=SEP-END"
+            "Całkowite wynagrodzenie świadczenia premie motywacyjne [PL]",
+            "https://www.udemy.com/course/cakowite-wynagrodzenie-swiadczenia-premie-motywacyjne-pl/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Lean & Quality Management, Six Sigma, Continuous Improvement",
-            "https://www.udemy.com/course/lean-quality-management-six-sigma-continuous-improvement/?couponCode=EB004414B5830AE2ECB9"
+            "AI HR: Sztuczna inteligencja i ChatGPT [PL+]",
+            "https://www.udemy.com/course/ai-hr-sztuczna-inteligencja-i-chatgpt-pl/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "IASSC Certified Lean Six Sigma Black Belt Practice Exams",
-            "https://www.udemy.com/course/iassc-certified-lean-six-sigma-black-belt-practice-exams-z/?couponCode=8D8A33A48B1B85F39FF7"
+            "KI im Personalwesen: Künstliche Intelligenz & ChatGPT [DE+]",
+            "https://www.udemy.com/course/ki-im-personalwesen-kunstliche-intelligenz-chatgpt-de/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Certified Strategic Leadership Professional",
-            "https://www.udemy.com/course/certified-strategic-leadership-professional/?couponCode=SEP-END"
+            "COO: Director operațional și director de operațiuni [RO]",
+            "https://www.udemy.com/course/coo-director-operational-si-director-de-operatiuni-ro/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Certified ChatGPT & Prompt Engineering Professional",
-            "https://www.udemy.com/course/certified-chatgpt-prompt-engineering-professional/?couponCode=SEP-END"
+            "HR Toolkit and Playbook for CEO and Managers [EN]",
+            "https://www.udemy.com/course/ceos-hr-toolkit-2025-hiring-onboarding-and-strategy/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Generative AI Tools Certification",
-            "https://www.udemy.com/course/generative-ai-tools-certification/?couponCode=SEP-END"
+            "Generative AI for Sales",
+            "https://www.udemy.com/course/generative-ai-for-sales/?couponCode=01OCTOBER2025"
         ],
         [
-            "Certified AI Fundamentals Professional",
-            "https://www.udemy.com/course/certified-ai-fundamentals-professional/?couponCode=SEP-END"
+            "Profesional en Recursos Humanos Internacional PHRi HRCI [ES]",
+            "https://www.udemy.com/course/profesional-en-recursos-humanos-internacional-phri-hrci-es/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Remote Team Management: Productivity, Tools & Leadership",
-            "https://www.udemy.com/course/remote-team-management-productivity-tools-leadership/?couponCode=SEP-END"
+            "La Guía del CEO: Manual para Directores Generales [ES+]",
+            "https://www.udemy.com/course/la-guia-del-ceo-manual-para-directores-generales-es/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Certified Agile & Scrum Mastery: Practical Projects & Tools",
-            "https://www.udemy.com/course/certified-agile-scrum-mastery-practical-projects-tools/?couponCode=SEP-END"
+            "Estrategia de Marca Empleadora y Reclutamiento | 2025 [ES]",
+            "https://www.udemy.com/course/estrategia-de-marca-empleadora-y-reclutamiento-2025-es/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "PMP Exam Preparation Course: Project Management Professional",
-            "https://www.udemy.com/course/pmp-exam-preparation-course-project-management-professional/?couponCode=SEP-END"
+            "aPHRi ⭑ Asociado Profesional en Recursos Humanos HRCI [ES+]",
+            "https://www.udemy.com/course/aphri-asociado-profesional-en-recursos-humanos-hrci-es/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Investor Pitch Deck & Fundraising Certification: Win Startup",
-            "https://www.udemy.com/course/investor-pitch-deck-fundraising-certification-win-startup/?couponCode=SEP-END"
+            "AI w rekrutacji: Automatyzacja i optymalizacja HR [PL+]",
+            "https://www.udemy.com/course/ai-w-rekrutacji-automatyzacja-i-optymalizacja-hr-pl/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Startup Launch Certification: Idea to MVP to Market",
-            "https://www.udemy.com/course/startup-launch-certification-idea-to-mvp-to-market/?couponCode=SEP-END"
+            "COO: चीफ ऑपरेटिंग ऑफिसर और संचालन निदेशक 2025 [HI+]",
+            "https://www.udemy.com/course/coo-2025-hi/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Certified Entrepreneur: Launch & Grow Your Business",
-            "https://www.udemy.com/course/certified-entrepreneur-launch-grow-your-business/?couponCode=SEP-END"
+            "HRBP: certificação de Parceiro Estratégico de RH 2025 [PT+]",
+            "https://www.udemy.com/course/hrbp-certificacao-de-parceiro-estrategico-de-rh-2025-pt/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Leadership & Team Building Certification: Practical Skills",
-            "https://www.udemy.com/course/leadership-team-building-certification-practical-skills/?couponCode=SEP-END"
+            "Reclutamiento con IA: Automatiza y Optimiza RRHH [ES+]",
+            "https://www.udemy.com/course/reclutamiento-con-ia-automatizacion-y-optimizacion-en-rrhh/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Certified Time Management: Productivity & Focus Mastery",
-            "https://www.udemy.com/course/certified-time-management-productivity-focus-mastery/?couponCode=SEP-END"
+            "Опросы сотрудников в Google Forms и анализ HR-данных [RU]",
+            "https://www.udemy.com/course/employee-survey-ru/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Emotional Intelligence: Personal & Professional Excellence",
-            "https://www.udemy.com/course/emotional-intelligence-personal-professional-excellence/?couponCode=SEP-END"
+            "Shopify: Your Essential Guide to E-commerce Success",
+            "https://www.udemy.com/course/shopify-complete-guide/?couponCode=01OCTOBER2025"
         ],
         [
-            "Certified Brand Strategy: Build, Position & Elevate Brand",
-            "https://www.udemy.com/course/certified-brand-strategy-build-position-elevate-brand/?couponCode=SEP-END"
+            "Midjourney For Beginners: Creating Visuals Using AI",
+            "https://www.udemy.com/course/midjourney-comprehensive/?couponCode=01OCTOBER2025"
         ],
         [
-            "Growth Hacking Certification for Startups: Scale Smarter",
-            "https://www.udemy.com/course/growth-hacking-certification-for-startups-scale-smarter/?couponCode=SEP-END"
+            "Build Your Best Cold Email Strategy!",
+            "https://www.udemy.com/course/cold-marketing-strategy/?couponCode=01OCTOBER2025"
         ],
         [
-            "Certified Social Media Marketing: Fundamentals to Campaigns",
-            "https://www.udemy.com/course/certified-social-media-marketing-fundamentals-to-campaigns/?couponCode=SEP-END"
+            "Blogging and Influencer Marketing",
+            "https://www.udemy.com/course/blogging-and-influencer-marketing/?couponCode=01OCTOBER2025"
         ],
         [
-            "IT Recruiting Step by Step with Templates",
-            "https://www.udemy.com/course/it-recruiting-step-by-step-with-templates-w/?couponCode=BB6D7C20AF5D23BD14F5"
+            "Facebook Ads 2025: Launch Your Best Advertising Campaign",
+            "https://www.udemy.com/course/facebook-ads-launch-pro-advertising-campaigns/?couponCode=01OCTOBER2025"
         ],
         [
-            "Tow Power Masterclass: How to Start A Tow Truck Business?",
-            "https://www.udemy.com/course/tow-power-masterclass-how-to-start-a-tow-truck-business/?couponCode=62076E188D5BD8B040AD"
+            "Grow your business with Chatbot Marketing!",
+            "https://www.udemy.com/course/chatbot-marketing-course/?couponCode=01OCTOBER2025"
         ],
         [
-            "CDMP Data Management Fundamentals (DMF) Practice Exams",
-            "https://www.udemy.com/course/cdmp-data-management-fundamentals-dmf-practice-exams/?couponCode=5BE5167E21FE033CFFBA"
+            "AI-Powered Digital Marketer. ChatGPT & 80+ AI tools to grow",
+            "https://www.udemy.com/course/digital-marketing-strategy-from-scratch-course/?couponCode=01OCTOBER2025"
         ],
         [
-            "Data Quality, Data Management & Data Governance Certificate",
-            "https://www.udemy.com/course/data-quality-data-management-data-governance-certificate/?couponCode=68EB0F41A42DA2ABB0ED"
+            "Email Marketing. Increase Sales With Email Marketing!",
+            "https://www.udemy.com/course/email-marketing-for-beginners-course/?couponCode=01OCTOBER2025"
         ],
         [
-            "Reprendre le Contrôle du Temps Par L'Immersion Totale",
-            "https://www.udemy.com/course/immersion/?couponCode=FE5829D06586DB020681"
+            "Сорсер-Рекрутер: поиск кандидатов, AI и Boolean-поиск [RU]",
+            "https://www.udemy.com/course/ai-boolean-ru/?couponCode=PAPAHR_OCT_I"
         ],
         [
-            "Exploratory Data Analysis & Visualization with Python",
-            "https://www.udemy.com/course/exploratory-data-analysis-visualization-with-python/?couponCode=0A54094DCDF4EF361122"
+            "Complete Onshape for Beginners: Project-Based Approach",
+            "https://www.udemy.com/course/complete-onshape-for-beginners-project-based-approach/?couponCode=8284F2392B1CBE6E8EF7"
         ],
         [
-            "Advanced Certificate in Customer Experience Management",
-            "https://www.udemy.com/course/advanced-certificate-in-customer-experience-management/?couponCode=56C1FC1741806F8A90B3"
+            "Mastering AutoCAD 2D & 3D for Beginners",
+            "https://www.udemy.com/course/mastering-autocad-2d-3d-for-beginners/?couponCode=29891BB4A7354E7E4D12"
         ],
         [
-            "HashiCorp Certified: Vault Associate Practice Exams",
-            "https://www.udemy.com/course/hashicorp-certified-vault-associate-practice-exams-b/?couponCode=DEE639DDB9A91BDC30BD"
+            "The Complete Java Programming Mastery - Developers Bootcamp",
+            "https://www.udemy.com/course/the-complete-java-programming-mastery-developers-bootcamp/?couponCode=FF75C5BA623A0570B9EA"
         ],
         [
-            "عقل خارق",
-            "https://www.udemy.com/course/super-brain/?couponCode=BRAINPOWER"
+            "Leading Across Generations / Multigenerational Leadership",
+            "https://www.udemy.com/course/leading-across-generations-multigenerational-leadership/?couponCode=337B03A8892E039C0396"
         ],
         [
-            "Project Management Methodologies: Agile, Scrum, and PMP",
-            "https://www.udemy.com/course/project-management-methodologies-agile-scrum-and-pmp/?couponCode=2761CDD363140DFFDDCC"
+            "Python Programming: Build and Deploy Your Own Applications.",
+            "https://www.udemy.com/course/python-programming-build-and-deploy-your-own-applications/?couponCode=29CD039CAE8D6AF3E291"
         ],
         [
-            "HashiCorp Certified: Terraform Associate Practice Exams",
-            "https://www.udemy.com/course/hashicorp-certified-terraform-associate-practice-exams-z/?couponCode=CAFC09B2315B1DA8E425"
+            "Implement ISO 14067: Carbon Accounting Step by Step",
+            "https://www.udemy.com/course/implement-iso-14067-carbon-accounting-step-by-step/?couponCode=0B347F1ED06B47C17EAB"
         ],
         [
-            "Data Analysis with Pandas & NumPy",
-            "https://www.udemy.com/course/data-analysis-with-pandas-numpy/?couponCode=8A74FBBD7A2D11DF3655"
+            "APK Reverse Engineering Expert Exam (Theoretical)",
+            "https://www.udemy.com/course/apk-reverse-engineering-expert-exam-theoretical/?couponCode=HACKER002"
         ],
         [
-            "Intro to European Digital Operational Resilience Act (DORA)",
-            "https://www.udemy.com/course/intro-to-european-digital-operational-resilience-act-dora/?couponCode=86FE373BB09D4E4CCF19"
+            "AI-Augmented and Agentic Penetration Testing Expert Exam",
+            "https://www.udemy.com/course/ai-augmented-and-agentic-penetration-testing-expert-exam/?couponCode=HACKER002"
         ],
         [
-            "The PhD Toolkit: A Complete Masterclass For Ph.D. Students",
-            "https://www.udemy.com/course/the-phd-toolkit/?couponCode=2037A62AE90B3304A79C"
+            "Generative AI & Deepfake-Powered Attacks: Practice Test",
+            "https://www.udemy.com/course/generative-ai-deepfake-powered-attacks-practice-test/?couponCode=HACKER002"
         ],
         [
-            "Professional Certificate in SQL and SQL for Data Analysis",
-            "https://www.udemy.com/course/professional-certificate-in-sql-and-sql-for-data-analysis/?couponCode=FC67773B9F13B0E1FD38"
+            "Ultimate RHCE Professional Certification Exam",
+            "https://www.udemy.com/course/ultimate-rhce-professional-certification-exam/?couponCode=HACKER002"
         ],
         [
-            "Sports Marketing: Principles & Strategies",
-            "https://www.udemy.com/course/sports-marketing/?couponCode=SFREE_36"
+            "CEH v12 Professional Exam",
+            "https://www.udemy.com/course/ceh-v12-professional-exam/?couponCode=HACKER002"
         ],
         [
-            "Gestão de Empresas e Empreendedorismo",
-            "https://www.udemy.com/course/gestao-de-empresas-e-empreendedorismo/?couponCode=709747D9F445654849C9"
+            "Học Tập trung & Học Phân tán - Effective Learning by BRAIN",
+            "https://www.udemy.com/course/hoc-tap-trung-hoc-phan-tan-effective-learning-by-brain/?couponCode=OCTOPEN0"
         ],
         [
-            "Advanced Certificate in Program and Project Management",
-            "https://www.udemy.com/course/advanced-certificate-in-program-and-project-management/?couponCode=3060D94EA76505D542AC"
+            "Manager Essential - Build Dream Team & Trí tuệ cảm xúc (EQ)",
+            "https://www.udemy.com/course/manager-essential-build-dream-team-tri-tue-cam-xuc-eq/?couponCode=OCTOPEN0"
         ],
         [
-            "Java Concurrency: Multithreading with Exercises - 2025",
-            "https://www.udemy.com/course/java-concurrency-iter-academy/?couponCode=CCY-SEPTEMBER25-3"
+            "Làm chủ căng thẳng nơi làm việc | Manage Stress in Workplace",
+            "https://www.udemy.com/course/cang-thang-chon-cong-so-hieu-quan-ly-tot-cang-thang/?couponCode=OCTOPEN0"
         ],
         [
-            "Java Basics in Practice with 35+ Exercises & Quizzes - 2025",
-            "https://www.udemy.com/course/java-intro-in-practice-iter-academy/?couponCode=INTRO-SEPTEMBER25-3"
+            "Tâm lý học Xã hội - Social Psychology 101",
+            "https://www.udemy.com/course/tam-ly-hoc-xa-hoi-social-psychology-101/?couponCode=OCTOPEN0"
         ],
         [
-            "Java OOP: Object Oriented Programming with Exercises - 2025",
-            "https://www.udemy.com/course/java-oop-iter-academy/?couponCode=OOP-SEPTEMBER25-3"
+            "ICF PCC Practice Mock Test | Scenario Based Questions 2025",
+            "https://www.udemy.com/course/icf-pcc-practice-mock-test-scenario-based-questions-2025/?couponCode=OCTOPEN0"
         ],
         [
-            "Android Studio: Complete guide of android app development",
-            "https://www.udemy.com/course/android-studio-complete-guide-of-android-app-development/?couponCode=FF60267B0F8216945243"
+            "ICF ACC Practice Mock Test | Basic Ethics and Scenario Based",
+            "https://www.udemy.com/course/icf-acc-practice-mock-test-basic-ethics-and-scenario-based/?couponCode=OCTOPEN0"
         ],
         [
-            "Java: Complete Java Core for Beginners with Exercises - 2025",
-            "https://www.udemy.com/course/java-core-in-practice-iter-academy/?couponCode=CORE-SEPTEMBER25-3"
+            "Professional Scrum Product Owner II (PSPO II) Practice Test",
+            "https://www.udemy.com/course/professional-scrum-product-owner-ii-pspo-ii-practice-test-n/?couponCode=OCTOPEN0"
         ],
         [
-            "Docker Certified Associate Practice Exams",
-            "https://www.udemy.com/course/docker-certified-associate-practice-exams/?couponCode=3A5519D5FE804BA3C557"
+            "Professional Scrum Product Owner I (PSPO I) Practice Test",
+            "https://www.udemy.com/course/professional-scrum-product-owner-i-pspo-i-practice-test/?couponCode=OCTOPEN0"
         ],
         [
-            "Professional Diploma in Program Management",
-            "https://www.udemy.com/course/professional-diploma-in-program-management/?couponCode=707F98055075CFFCFFCA"
+            "Certified Associate Project Management [CAPM] Practice Exams",
+            "https://www.udemy.com/course/certified-associate-project-management-capm-practice-exams-f/?couponCode=OCTOPEN0"
         ],
         [
-            "Contracts Management (Best Practices Theory & Application)",
-            "https://www.udemy.com/course/contract-management-best-practices-theory-application/?couponCode=BESTKNOWLEDGE"
+            "Nhập môn Tâm lý học cơ bản - Psychology Fundamental 101",
+            "https://www.udemy.com/course/nhap-mon-tam-ly-hoc-co-ban-psychology-fundamental-101/?couponCode=OCTOPEN0"
         ],
         [
-            "Data Analyst: Professional Certificate in Data Analysis",
-            "https://www.udemy.com/course/data-analyst-professional-certificate-in-data-analysis/?couponCode=69214ED32497E6641AA6"
+            "Practice Test- PMI PgMP Program Management Professional 2025",
+            "https://www.udemy.com/course/pmi-pgmp-program-management-professional-practice-test-2025/?couponCode=OCTOPEN0"
         ],
         [
-            "APICS Certified Supply Chain Professional Practice Exams",
-            "https://www.udemy.com/course/apics-certified-supply-chain-professional-practice-exams/?couponCode=96176228E9C2CD4D062D"
+            "Agile Certified Practitioner (PMI-ACP)  Practice Exam 2025",
+            "https://www.udemy.com/course/agile-certified-practitioner-pmi-acp-practice-exam-2025-x/?couponCode=OCTOPEN0"
         ],
         [
-            "Business Strategy And Business Model Innovation - 2025",
-            "https://www.udemy.com/course/business-model-generation-modeling-business-model-canvas/?couponCode=E4ACEC3F74478D3B3B2B"
+            "Practice Exams for COBIT 2019 Foundation | Latest Updated",
+            "https://www.udemy.com/course/cobit-2019-foundation-mock-practice-exams-2024-updated/?couponCode=OCTOPEN0"
         ],
         [
-            "PHP CodeIgniter 4: Build Travel Agency Management System",
-            "https://www.udemy.com/course/php-codeigniter-4-build-travel-agency-management-system/?couponCode=CITRAVELANDTOURS26"
+            "ServiceNow Certified System Administrator(CSA) Practice Exam",
+            "https://www.udemy.com/course/servicenow-certified-system-administratorcsa-practice-exam-z/?couponCode=OCTOPEN0"
         ],
         [
-            "No & Low Code AI Marketing Automation",
-            "https://www.udemy.com/course/no-low-code-marketing-automation/?couponCode=30SEPTEMBER2025"
+            "Program Management Professional  Practice Exam 2024",
+            "https://www.udemy.com/course/program-management-professional-pgmp-practice-exam-2024/?couponCode=OCTOPEN0"
         ],
         [
-            "Associate Professional Risk Manager APRM Certificate",
-            "https://www.udemy.com/course/associate-professional-risk-manager-aprm-certificate/?couponCode=B0676AAE2F223EFC97E0"
+            "CCNA (Cisco Certified Network Associate) Practice Exams 2024",
+            "https://www.udemy.com/course/ccna-cisco-certified-network-associate-practice-exams-2024/?couponCode=OCTOPEN0"
         ],
         [
-            "Mastering Solidity, the Ethereum Programming Language",
-            "https://www.udemy.com/course/mastering-solidity/?couponCode=9C6F0BB453EC772937A3"
+            "Salesforce Administrator ADM-201 Mock Exams | 2024",
+            "https://www.udemy.com/course/salesforce-administrator-adm-201-mock-exams-2024/?couponCode=OCTOPEN0"
         ],
         [
-            "Intentional Leadership",
-            "https://www.udemy.com/course/intentional-leadership/?couponCode=SEPT-FREE"
+            "Microsoft Azure AZ-900 Practice Test | Latest Questions 2024",
+            "https://www.udemy.com/course/microsoft-azure-az-900-practice-test-latest-questions-2024/?couponCode=OCTOPEN0"
         ],
         [
-            "Hypnotic Language Mastery: Create Scripts for Influence",
-            "https://www.udemy.com/course/hypnotic-language-mastery-create-scripts-for-influence/?couponCode=NEWFREE"
+            "Practice Tests | Certified Risk Information Systems Control",
+            "https://www.udemy.com/course/crisc-practice-test-exam-simulation-detail-explanation/?couponCode=OCTOPEN0"
         ],
         [
-            "Watercolor poppies. From sketch to finished work.",
-            "https://www.udemy.com/course/watercolor-poppies-from-sketch-to-finished-work/?couponCode=C406AA3131C562A28AD3"
+            "Practice Exams for Certified Information System Auditor",
+            "https://www.udemy.com/course/certified-information-systems-auditor-cisa-practice-exams-w/?couponCode=OCTOPEN0"
         ],
         [
-            "Digital Transformation & Customer Experience Management CXM",
-            "https://www.udemy.com/course/digital-transformation-customer-experience-management-cxm/?couponCode=3CC27414FC0F0E66CBAE"
+            "Microsoft Azure Fundamentals AZ-900 | AZ 900 Practice Test",
+            "https://www.udemy.com/course/azue-az-900-az-900-practice-test-exam-latest-questions/?couponCode=OCTOPEN0"
         ],
         [
-            "Product Marketing: Advanced Go-to-Market (GTM) Strategy",
-            "https://www.udemy.com/course/product-marketing-and-development-go-to-market-strategy/?couponCode=E22989DFA91B9130D630"
+            "Entry Certificate in Business Analysis (ECBA) Practice Test",
+            "https://www.udemy.com/course/entry-certificate-in-business-analysis-ecba-practice-test/?couponCode=OCTOPEN0"
         ],
         [
-            "Mastering Social Media Marketing and Management",
-            "https://www.udemy.com/course/mastering-social-media-marketing-management/?couponCode=7D2444ACBC74E56441FF"
+            "Cisco Certified Network Associate (200-301) Practice | 2024",
+            "https://www.udemy.com/course/cisco-certified-network-associate-200-301-practice-2024/?couponCode=OCTOPEN0"
         ],
         [
-            "Leadership - Leading a Community",
-            "https://www.udemy.com/course/leadership-leading-a-community/?couponCode=SEPT-FREE"
+            "Entry Certificate Business Analysis (IIBA ECBA) Mock Exams",
+            "https://www.udemy.com/course/entry-certificate-business-analysis-iiba-ecba-mock-exams/?couponCode=OCTOPEN0"
         ],
         [
-            "Marketing & Customer Experience Management CXM Excellence",
-            "https://www.udemy.com/course/marketing-and-customer-experience-management-cxm-excellence/?couponCode=1164FE48931BCC4E4750"
+            "Practice Test for Certified Information System Auditor",
+            "https://www.udemy.com/course/cisa-exam-questions-for-2023-06-full-hard-test-part-02/?couponCode=OCTOPEN0"
         ],
         [
-            "Certificate in Business & Operations Management Excellence",
-            "https://www.udemy.com/course/certificate-in-business-and-operations-management-excellence/?couponCode=98AB4A123C9B440A6DD5"
+            "Professional Scrum Master PSM 1 / PSM1 Practice Test Exam",
+            "https://www.udemy.com/course/professional-scrum-master-psm-1-psm1-mock-exams-2023/?couponCode=OCTOPEN0"
         ],
         [
-            "Introduction to Risk Management in Financial Services",
-            "https://www.udemy.com/course/introduction-to-risk-management-in-financial-services/?couponCode=SEPT-FREE"
+            "Professional Agile Leadership P\bAL / PAL-I \bPractice Exams",
+            "https://www.udemy.com/course/professional-agile-leadership-pal-pal-i-practice-exams/?couponCode=OCTOPEN0"
         ],
         [
-            "Mastering the Art of Professional Speaking",
-            "https://www.udemy.com/course/mastering-the-art-of-professional-speaking/?couponCode=SPEAKING_OCT_25"
+            "Professional Scrum Master PSM 2 / PSM2 \bPractice Test Exam",
+            "https://www.udemy.com/course/professional-scrum-master-psm-2-psm2-practice-exams/?couponCode=OCTOPEN0"
         ]
     ],
     "Course Vania": [
@@ -661,430 +467,434 @@
             "https://www.udemy.com/course/100-days-of-code/"
         ],
         [
-            "Practical OSINT: The Complete Course for Beginners",
-            "https://www.udemy.com/course/practical-osint/?couponCode=4800B3BF713DB8538555"
+            "Mastering AutoCAD 2D & 3D for Beginners",
+            "https://www.udemy.com/course/mastering-autocad-2d-3d-for-beginners/?couponCode=29891BB4A7354E7E4D12"
         ],
         [
-            "Practical OSINT: The Complete Course for Beginners",
-            "https://www.udemy.com/course/practical-osint/?couponCode=4800B3BF713DB8538555"
+            "Mastering AutoCAD 2D & 3D for Beginners",
+            "https://www.udemy.com/course/mastering-autocad-2d-3d-for-beginners/?couponCode=29891BB4A7354E7E4D12"
         ],
         [
-            "Practical Osint The Complete Course For Beginners",
-            "https://www.udemy.com/course/practical-osint/?couponCode=4800B3BF713DB8538555"
+            "Mastering Autocad 2D And 3D For Beginners",
+            "https://www.udemy.com/course/mastering-autocad-2d-3d-for-beginners/?couponCode=29891BB4A7354E7E4D12"
         ],
         [
-            "Practical OSINT: The Complete Course for Beginners",
-            "https://www.udemy.com/course/practical-osint/?couponCode=4800B3BF713DB8538555"
+            "Mastering AutoCAD 2D & 3D for Beginners",
+            "https://www.udemy.com/course/mastering-autocad-2d-3d-for-beginners/?couponCode=29891BB4A7354E7E4D12"
         ],
         [
-            "Practical OSINT: The Complete Course for Beginners",
-            "https://www.udemy.com/course/practical-osint/?couponCode=4800B3BF713DB8538555"
+            "Mastering AutoCAD 2D & 3D for Beginners",
+            "https://www.udemy.com/course/mastering-autocad-2d-3d-for-beginners/?couponCode=29891BB4A7354E7E4D12"
         ],
         [
-            "Practical OSINT: The Complete Course for Beginners",
-            "https://www.udemy.com/course/practical-osint/?couponCode=4800B3BF713DB8538555"
+            "Mastering AutoCAD 2D & 3D for Beginners",
+            "https://www.udemy.com/course/mastering-autocad-2d-3d-for-beginners/?couponCode=29891BB4A7354E7E4D12"
         ],
         [
-            "Practical OSINT: The Complete Course for Beginners",
-            "https://www.udemy.com/course/practical-osint/?couponCode=4800B3BF713DB8538555"
-        ],
-        [
-            "Preview this course",
-            "https://www.udemy.com/course/practical-osint/?couponCode=4800B3BF713DB8538555"
-        ],
-        [
-            "Google Flow Masterclass- Make AI Video from Prompts & Images",
-            "https://www.udemy.com/course/google-flow-masterclass-make-ai-videos-from-prompts-and-images/?couponCode=SEPT_OCT_2025"
-        ],
-        [
-            "Google Flow Masterclass- Make AI Video from Prompts & Images",
-            "https://www.udemy.com/course/google-flow-masterclass-make-ai-videos-from-prompts-and-images/?couponCode=SEPT_OCT_2025"
-        ],
-        [
-            "Google Flow Masterclass Make Ai Video From Prompts Images",
-            "https://www.udemy.com/course/google-flow-masterclass-make-ai-videos-from-prompts-and-images/?couponCode=SEPT_OCT_2025"
-        ],
-        [
-            "Google Flow Masterclass- Make AI Video from Prompts & Images",
-            "https://www.udemy.com/course/google-flow-masterclass-make-ai-videos-from-prompts-and-images/?couponCode=SEPT_OCT_2025"
-        ],
-        [
-            "Google Flow Masterclass- Make AI Video from Prompts & Images",
-            "https://www.udemy.com/course/google-flow-masterclass-make-ai-videos-from-prompts-and-images/?couponCode=SEPT_OCT_2025"
-        ],
-        [
-            "Google Flow Masterclass- Make AI Video from Prompts & Images",
-            "https://www.udemy.com/course/google-flow-masterclass-make-ai-videos-from-prompts-and-images/?couponCode=SEPT_OCT_2025"
-        ],
-        [
-            "Google Flow Masterclass- Make AI Video from Prompts & Images",
-            "https://www.udemy.com/course/google-flow-masterclass-make-ai-videos-from-prompts-and-images/?couponCode=SEPT_OCT_2025"
+            "Mastering AutoCAD 2D & 3D for Beginners",
+            "https://www.udemy.com/course/mastering-autocad-2d-3d-for-beginners/?couponCode=29891BB4A7354E7E4D12"
         ],
         [
             "Preview this course",
-            "https://www.udemy.com/course/google-flow-masterclass-make-ai-videos-from-prompts-and-images/?couponCode=SEPT_OCT_2025"
+            "https://www.udemy.com/course/mastering-autocad-2d-3d-for-beginners/?couponCode=29891BB4A7354E7E4D12"
         ],
         [
-            "The PhD Toolkit: A Complete Masterclass For Ph. D. Students",
-            "https://www.udemy.com/course/the-phd-toolkit/?couponCode=2037A62AE90B3304A79C"
+            "Complete Onshape for Beginners: Project-Based Approach",
+            "https://www.udemy.com/course/complete-onshape-for-beginners-project-based-approach/?couponCode=8284F2392B1CBE6E8EF7"
         ],
         [
-            "The PhD Toolkit: A Complete Masterclass For Ph. D. Students",
-            "https://www.udemy.com/course/the-phd-toolkit/?couponCode=2037A62AE90B3304A79C"
+            "Complete Onshape for Beginners: Project-Based Approach",
+            "https://www.udemy.com/course/complete-onshape-for-beginners-project-based-approach/?couponCode=8284F2392B1CBE6E8EF7"
         ],
         [
-            "The Phd Toolkit A Complete Masterclass For Ph D Students 2",
-            "https://www.udemy.com/course/the-phd-toolkit/?couponCode=2037A62AE90B3304A79C"
+            "Complete Onshape For Beginners Project Based Approach",
+            "https://www.udemy.com/course/complete-onshape-for-beginners-project-based-approach/?couponCode=8284F2392B1CBE6E8EF7"
         ],
         [
-            "The PhD Toolkit: A Complete Masterclass For Ph. D. Students",
-            "https://www.udemy.com/course/the-phd-toolkit/?couponCode=2037A62AE90B3304A79C"
+            "Complete Onshape for Beginners: Project-Based Approach",
+            "https://www.udemy.com/course/complete-onshape-for-beginners-project-based-approach/?couponCode=8284F2392B1CBE6E8EF7"
         ],
         [
-            "The PhD Toolkit: A Complete Masterclass For Ph. D. Students",
-            "https://www.udemy.com/course/the-phd-toolkit/?couponCode=2037A62AE90B3304A79C"
+            "Complete Onshape for Beginners: Project-Based Approach",
+            "https://www.udemy.com/course/complete-onshape-for-beginners-project-based-approach/?couponCode=8284F2392B1CBE6E8EF7"
         ],
         [
-            "The PhD Toolkit: A Complete Masterclass For Ph. D. Students",
-            "https://www.udemy.com/course/the-phd-toolkit/?couponCode=2037A62AE90B3304A79C"
+            "Complete Onshape for Beginners: Project-Based Approach",
+            "https://www.udemy.com/course/complete-onshape-for-beginners-project-based-approach/?couponCode=8284F2392B1CBE6E8EF7"
         ],
         [
-            "The PhD Toolkit: A Complete Masterclass For Ph. D. Students",
-            "https://www.udemy.com/course/the-phd-toolkit/?couponCode=2037A62AE90B3304A79C"
-        ],
-        [
-            "Preview this course",
-            "https://www.udemy.com/course/the-phd-toolkit/?couponCode=2037A62AE90B3304A79C"
-        ],
-        [
-            "HVAC Design Basics: HVAC Chiller System Flowrate Calculation",
-            "https://www.udemy.com/course/hvac-chiller-flow-rate-calculation-and-chilled-sytem-intro/?couponCode=773908A6D83E4298400F"
-        ],
-        [
-            "HVAC Design Basics: HVAC Chiller System Flowrate Calculation",
-            "https://www.udemy.com/course/hvac-chiller-flow-rate-calculation-and-chilled-sytem-intro/?couponCode=773908A6D83E4298400F"
-        ],
-        [
-            "Hvac Chiller System Hvac Chw Flow Rate Design Calculation",
-            "https://www.udemy.com/course/hvac-chiller-flow-rate-calculation-and-chilled-sytem-intro/?couponCode=773908A6D83E4298400F"
-        ],
-        [
-            "HVAC Design Basics: HVAC Chiller System Flowrate Calculation",
-            "https://www.udemy.com/course/hvac-chiller-flow-rate-calculation-and-chilled-sytem-intro/?couponCode=773908A6D83E4298400F"
-        ],
-        [
-            "HVAC Design Basics: HVAC Chiller System Flowrate Calculation",
-            "https://www.udemy.com/course/hvac-chiller-flow-rate-calculation-and-chilled-sytem-intro/?couponCode=773908A6D83E4298400F"
-        ],
-        [
-            "HVAC Design Basics: HVAC Chiller System Flowrate Calculation",
-            "https://www.udemy.com/course/hvac-chiller-flow-rate-calculation-and-chilled-sytem-intro/?couponCode=773908A6D83E4298400F"
-        ],
-        [
-            "HVAC Design Basics: HVAC Chiller System Flowrate Calculation",
-            "https://www.udemy.com/course/hvac-chiller-flow-rate-calculation-and-chilled-sytem-intro/?couponCode=773908A6D83E4298400F"
+            "Complete Onshape for Beginners: Project-Based Approach",
+            "https://www.udemy.com/course/complete-onshape-for-beginners-project-based-approach/?couponCode=8284F2392B1CBE6E8EF7"
         ],
         [
             "Preview this course",
-            "https://www.udemy.com/course/hvac-chiller-flow-rate-calculation-and-chilled-sytem-intro/?couponCode=773908A6D83E4298400F"
+            "https://www.udemy.com/course/complete-onshape-for-beginners-project-based-approach/?couponCode=8284F2392B1CBE6E8EF7"
         ],
         [
-            "Plumbing 101: Plumbing Design Basics ( DUAL Certification )",
-            "https://www.udemy.com/course/plumbing-design-engineering/?couponCode=3EEB3677D214EE93CA7A"
+            "Master Data Structures with Hands-on Python",
+            "https://www.udemy.com/course/data-structures-python/?couponCode=554EF07F48EE5925C8FC"
         ],
         [
-            "Plumbing 101: Plumbing Design Basics ( DUAL Certification )",
-            "https://www.udemy.com/course/plumbing-design-engineering/?couponCode=3EEB3677D214EE93CA7A"
+            "Master Data Structures with Hands-on Python",
+            "https://www.udemy.com/course/data-structures-python/?couponCode=554EF07F48EE5925C8FC"
         ],
         [
-            "Plumbing 101 Plumbing Design Basics Dual Certification",
-            "https://www.udemy.com/course/plumbing-design-engineering/?couponCode=3EEB3677D214EE93CA7A"
+            "Master Data Structures With Hands On Python",
+            "https://www.udemy.com/course/data-structures-python/?couponCode=554EF07F48EE5925C8FC"
         ],
         [
-            "Plumbing 101: Plumbing Design Basics ( DUAL Certification )",
-            "https://www.udemy.com/course/plumbing-design-engineering/?couponCode=3EEB3677D214EE93CA7A"
+            "Master Data Structures with Hands-on Python",
+            "https://www.udemy.com/course/data-structures-python/?couponCode=554EF07F48EE5925C8FC"
         ],
         [
-            "Plumbing 101: Plumbing Design Basics ( DUAL Certification )",
-            "https://www.udemy.com/course/plumbing-design-engineering/?couponCode=3EEB3677D214EE93CA7A"
+            "Master Data Structures with Hands-on Python",
+            "https://www.udemy.com/course/data-structures-python/?couponCode=554EF07F48EE5925C8FC"
         ],
         [
-            "Plumbing 101: Plumbing Design Basics ( DUAL Certification )",
-            "https://www.udemy.com/course/plumbing-design-engineering/?couponCode=3EEB3677D214EE93CA7A"
+            "Master Data Structures with Hands-on Python",
+            "https://www.udemy.com/course/data-structures-python/?couponCode=554EF07F48EE5925C8FC"
         ],
         [
-            "Plumbing 101: Plumbing Design Basics ( DUAL Certification )",
-            "https://www.udemy.com/course/plumbing-design-engineering/?couponCode=3EEB3677D214EE93CA7A"
-        ],
-        [
-            "Preview this course",
-            "https://www.udemy.com/course/plumbing-design-engineering/?couponCode=3EEB3677D214EE93CA7A"
-        ],
-        [
-            "HVAC Duct Design Using Software (Free HVAC Software Inc.)",
-            "https://www.udemy.com/course/hvac-engineering-duct-design/?couponCode=65E12409D50081A4BE40"
-        ],
-        [
-            "HVAC Duct Design Using Software (Free HVAC Software Inc.)",
-            "https://www.udemy.com/course/hvac-engineering-duct-design/?couponCode=65E12409D50081A4BE40"
-        ],
-        [
-            "Hvac Duct Design Using Software Free Software Included",
-            "https://www.udemy.com/course/hvac-engineering-duct-design/?couponCode=65E12409D50081A4BE40"
-        ],
-        [
-            "HVAC Duct Design Using Software (Free HVAC Software Inc.)",
-            "https://www.udemy.com/course/hvac-engineering-duct-design/?couponCode=65E12409D50081A4BE40"
-        ],
-        [
-            "HVAC Duct Design Using Software (Free HVAC Software Inc.)",
-            "https://www.udemy.com/course/hvac-engineering-duct-design/?couponCode=65E12409D50081A4BE40"
-        ],
-        [
-            "HVAC Duct Design Using Software (Free HVAC Software Inc.)",
-            "https://www.udemy.com/course/hvac-engineering-duct-design/?couponCode=65E12409D50081A4BE40"
-        ],
-        [
-            "HVAC Duct Design Using Software (Free HVAC Software Inc.)",
-            "https://www.udemy.com/course/hvac-engineering-duct-design/?couponCode=65E12409D50081A4BE40"
+            "Master Data Structures with Hands-on Python",
+            "https://www.udemy.com/course/data-structures-python/?couponCode=554EF07F48EE5925C8FC"
         ],
         [
             "Preview this course",
-            "https://www.udemy.com/course/hvac-engineering-duct-design/?couponCode=65E12409D50081A4BE40"
+            "https://www.udemy.com/course/data-structures-python/?couponCode=554EF07F48EE5925C8FC"
         ],
         [
-            "HVAC Design For Beginners – From HVAC Beginner to HVAC PRO",
-            "https://www.udemy.com/course/hvac-design-engineering-mastery-triple-hvac-certification/?couponCode=05B9A55278B4DA53D35C"
+            "Build with Google AI: Apps, Videos & Stunning Visuals",
+            "https://www.udemy.com/course/build-with-google-ai-apps-videos-stunning-visuals/?couponCode=601C04A06EDC50F258C4"
         ],
         [
-            "HVAC Design For Beginners – From HVAC Beginner to HVAC PRO",
-            "https://www.udemy.com/course/hvac-design-engineering-mastery-triple-hvac-certification/?couponCode=05B9A55278B4DA53D35C"
+            "Build with Google AI: Apps, Videos & Stunning Visuals",
+            "https://www.udemy.com/course/build-with-google-ai-apps-videos-stunning-visuals/?couponCode=601C04A06EDC50F258C4"
         ],
         [
-            "Hvac Design Course For Beginners Hvac Beginner To Hvac Pro",
-            "https://www.udemy.com/course/hvac-design-engineering-mastery-triple-hvac-certification/?couponCode=05B9A55278B4DA53D35C"
+            "Build With Google Ai Apps Videos And Stunning Visuals",
+            "https://www.udemy.com/course/build-with-google-ai-apps-videos-stunning-visuals/?couponCode=601C04A06EDC50F258C4"
         ],
         [
-            "HVAC Design For Beginners – From HVAC Beginner to HVAC PRO",
-            "https://www.udemy.com/course/hvac-design-engineering-mastery-triple-hvac-certification/?couponCode=05B9A55278B4DA53D35C"
+            "Build with Google AI: Apps, Videos & Stunning Visuals",
+            "https://www.udemy.com/course/build-with-google-ai-apps-videos-stunning-visuals/?couponCode=601C04A06EDC50F258C4"
         ],
         [
-            "HVAC Design For Beginners – From HVAC Beginner to HVAC PRO",
-            "https://www.udemy.com/course/hvac-design-engineering-mastery-triple-hvac-certification/?couponCode=05B9A55278B4DA53D35C"
+            "Build with Google AI: Apps, Videos & Stunning Visuals",
+            "https://www.udemy.com/course/build-with-google-ai-apps-videos-stunning-visuals/?couponCode=601C04A06EDC50F258C4"
         ],
         [
-            "HVAC Design For Beginners – From HVAC Beginner to HVAC PRO",
-            "https://www.udemy.com/course/hvac-design-engineering-mastery-triple-hvac-certification/?couponCode=05B9A55278B4DA53D35C"
+            "Build with Google AI: Apps, Videos & Stunning Visuals",
+            "https://www.udemy.com/course/build-with-google-ai-apps-videos-stunning-visuals/?couponCode=601C04A06EDC50F258C4"
         ],
         [
-            "HVAC Design For Beginners – From HVAC Beginner to HVAC PRO",
-            "https://www.udemy.com/course/hvac-design-engineering-mastery-triple-hvac-certification/?couponCode=05B9A55278B4DA53D35C"
-        ],
-        [
-            "Preview this course",
-            "https://www.udemy.com/course/hvac-design-engineering-mastery-triple-hvac-certification/?couponCode=05B9A55278B4DA53D35C"
-        ],
-        [
-            "Canva Masterclass in Hindi: Graphic Design for Non-Designers",
-            "https://www.udemy.com/course/canva-graphics-design-course-for-beginners-non-designers/?couponCode=432DC28D9CA9028FC923"
-        ],
-        [
-            "Canva Masterclass in Hindi: Graphic Design for Non-Designers",
-            "https://www.udemy.com/course/canva-graphics-design-course-for-beginners-non-designers/?couponCode=432DC28D9CA9028FC923"
-        ],
-        [
-            "Canva Masterclass In Hindi Graphic Design For Non Designers",
-            "https://www.udemy.com/course/canva-graphics-design-course-for-beginners-non-designers/?couponCode=432DC28D9CA9028FC923"
-        ],
-        [
-            "Canva Masterclass in Hindi: Graphic Design for Non-Designers",
-            "https://www.udemy.com/course/canva-graphics-design-course-for-beginners-non-designers/?couponCode=432DC28D9CA9028FC923"
-        ],
-        [
-            "Canva Masterclass in Hindi: Graphic Design for Non-Designers",
-            "https://www.udemy.com/course/canva-graphics-design-course-for-beginners-non-designers/?couponCode=432DC28D9CA9028FC923"
-        ],
-        [
-            "Canva Masterclass in Hindi: Graphic Design for Non-Designers",
-            "https://www.udemy.com/course/canva-graphics-design-course-for-beginners-non-designers/?couponCode=432DC28D9CA9028FC923"
-        ],
-        [
-            "Canva Masterclass in Hindi: Graphic Design for Non-Designers",
-            "https://www.udemy.com/course/canva-graphics-design-course-for-beginners-non-designers/?couponCode=432DC28D9CA9028FC923"
+            "Build with Google AI: Apps, Videos & Stunning Visuals",
+            "https://www.udemy.com/course/build-with-google-ai-apps-videos-stunning-visuals/?couponCode=601C04A06EDC50F258C4"
         ],
         [
             "Preview this course",
-            "https://www.udemy.com/course/canva-graphics-design-course-for-beginners-non-designers/?couponCode=432DC28D9CA9028FC923"
+            "https://www.udemy.com/course/build-with-google-ai-apps-videos-stunning-visuals/?couponCode=601C04A06EDC50F258C4"
         ],
         [
-            "How to Communicate Effectively on Controversial Issues",
-            "https://www.udemy.com/course/how-to-communicate-effectively-on-controversial-issues/"
+            "Python Complete Course: with 30+ Hands-on Tasks and Solution",
+            "https://www.udemy.com/course/learning-python-for-beginners-1-data-types-input-format/?couponCode=047CEDB3B872AF93F578"
         ],
         [
-            "How to Communicate Effectively on Controversial Issues",
-            "https://www.udemy.com/course/how-to-communicate-effectively-on-controversial-issues/"
+            "Python Complete Course: with 30+ Hands-on Tasks and Solution",
+            "https://www.udemy.com/course/learning-python-for-beginners-1-data-types-input-format/?couponCode=047CEDB3B872AF93F578"
         ],
         [
-            "How To Communicate Effectively On Controversial Issues",
-            "https://www.udemy.com/course/how-to-communicate-effectively-on-controversial-issues/"
+            "Python Complete Course With 30 Hands On Tasks And Solution",
+            "https://www.udemy.com/course/learning-python-for-beginners-1-data-types-input-format/?couponCode=047CEDB3B872AF93F578"
         ],
         [
-            "How to Communicate Effectively on Controversial Issues",
-            "https://www.udemy.com/course/how-to-communicate-effectively-on-controversial-issues/"
+            "Python Complete Course: with 30+ Hands-on Tasks and Solution",
+            "https://www.udemy.com/course/learning-python-for-beginners-1-data-types-input-format/?couponCode=047CEDB3B872AF93F578"
         ],
         [
-            "How to Communicate Effectively on Controversial Issues",
-            "https://www.udemy.com/course/how-to-communicate-effectively-on-controversial-issues/"
+            "Python Complete Course: with 30+ Hands-on Tasks and Solution",
+            "https://www.udemy.com/course/learning-python-for-beginners-1-data-types-input-format/?couponCode=047CEDB3B872AF93F578"
         ],
         [
-            "How to Communicate Effectively on Controversial Issues",
-            "https://www.udemy.com/course/how-to-communicate-effectively-on-controversial-issues/"
+            "Python Complete Course: with 30+ Hands-on Tasks and Solution",
+            "https://www.udemy.com/course/learning-python-for-beginners-1-data-types-input-format/?couponCode=047CEDB3B872AF93F578"
         ],
         [
-            "How to Communicate Effectively on Controversial Issues",
-            "https://www.udemy.com/course/how-to-communicate-effectively-on-controversial-issues/"
-        ],
-        [
-            "Preview this course",
-            "https://www.udemy.com/course/how-to-communicate-effectively-on-controversial-issues/"
-        ],
-        [
-            "Mastering Go-To-Market (GTM): A Step-by-Step Guide",
-            "https://www.udemy.com/course/mastering-go-to-market-gtm-a-step-by-step-guide/?couponCode=1E1504EC1230307735CF"
-        ],
-        [
-            "Mastering Go-To-Market (GTM): A Step-by-Step Guide",
-            "https://www.udemy.com/course/mastering-go-to-market-gtm-a-step-by-step-guide/?couponCode=1E1504EC1230307735CF"
-        ],
-        [
-            "Mastering Go To Market Gtm A Step By Step Guide",
-            "https://www.udemy.com/course/mastering-go-to-market-gtm-a-step-by-step-guide/?couponCode=1E1504EC1230307735CF"
-        ],
-        [
-            "Mastering Go-To-Market (GTM): A Step-by-Step Guide",
-            "https://www.udemy.com/course/mastering-go-to-market-gtm-a-step-by-step-guide/?couponCode=1E1504EC1230307735CF"
-        ],
-        [
-            "Mastering Go-To-Market (GTM): A Step-by-Step Guide",
-            "https://www.udemy.com/course/mastering-go-to-market-gtm-a-step-by-step-guide/?couponCode=1E1504EC1230307735CF"
-        ],
-        [
-            "Mastering Go-To-Market (GTM): A Step-by-Step Guide",
-            "https://www.udemy.com/course/mastering-go-to-market-gtm-a-step-by-step-guide/?couponCode=1E1504EC1230307735CF"
-        ],
-        [
-            "Mastering Go-To-Market (GTM): A Step-by-Step Guide",
-            "https://www.udemy.com/course/mastering-go-to-market-gtm-a-step-by-step-guide/?couponCode=1E1504EC1230307735CF"
+            "Python Complete Course: with 30+ Hands-on Tasks and Solution",
+            "https://www.udemy.com/course/learning-python-for-beginners-1-data-types-input-format/?couponCode=047CEDB3B872AF93F578"
         ],
         [
             "Preview this course",
-            "https://www.udemy.com/course/mastering-go-to-market-gtm-a-step-by-step-guide/?couponCode=1E1504EC1230307735CF"
+            "https://www.udemy.com/course/learning-python-for-beginners-1-data-types-input-format/?couponCode=047CEDB3B872AF93F578"
         ],
         [
-            "PHP CodeIgniter 4: Build Travel Agency Management System",
-            "https://www.udemy.com/course/php-codeigniter-4-build-travel-agency-management-system/?couponCode=CITRAVELANDTOURS26"
+            "C++ Programming Made Easy: From Basics to Advanced Concepts",
+            "https://www.udemy.com/course/c-programming-made-easy-from-basics-to-advanced-concepts/?couponCode=1994ECEBCCA93834B6EF"
         ],
         [
-            "PHP CodeIgniter 4: Build Travel Agency Management System",
-            "https://www.udemy.com/course/php-codeigniter-4-build-travel-agency-management-system/?couponCode=CITRAVELANDTOURS26"
+            "C++ Programming Made Easy: From Basics to Advanced Concepts",
+            "https://www.udemy.com/course/c-programming-made-easy-from-basics-to-advanced-concepts/?couponCode=1994ECEBCCA93834B6EF"
         ],
         [
-            "Php Codeigniter 4 Build Travel Agency Management System",
-            "https://www.udemy.com/course/php-codeigniter-4-build-travel-agency-management-system/?couponCode=CITRAVELANDTOURS26"
+            "C Programming Made Easy From Basics To Advanced Concepts",
+            "https://www.udemy.com/course/c-programming-made-easy-from-basics-to-advanced-concepts/?couponCode=1994ECEBCCA93834B6EF"
         ],
         [
-            "PHP CodeIgniter 4: Build Travel Agency Management System",
-            "https://www.udemy.com/course/php-codeigniter-4-build-travel-agency-management-system/?couponCode=CITRAVELANDTOURS26"
+            "C++ Programming Made Easy: From Basics to Advanced Concepts",
+            "https://www.udemy.com/course/c-programming-made-easy-from-basics-to-advanced-concepts/?couponCode=1994ECEBCCA93834B6EF"
         ],
         [
-            "PHP CodeIgniter 4: Build Travel Agency Management System",
-            "https://www.udemy.com/course/php-codeigniter-4-build-travel-agency-management-system/?couponCode=CITRAVELANDTOURS26"
+            "C++ Programming Made Easy: From Basics to Advanced Concepts",
+            "https://www.udemy.com/course/c-programming-made-easy-from-basics-to-advanced-concepts/?couponCode=1994ECEBCCA93834B6EF"
         ],
         [
-            "PHP CodeIgniter 4: Build Travel Agency Management System",
-            "https://www.udemy.com/course/php-codeigniter-4-build-travel-agency-management-system/?couponCode=CITRAVELANDTOURS26"
+            "C++ Programming Made Easy: From Basics to Advanced Concepts",
+            "https://www.udemy.com/course/c-programming-made-easy-from-basics-to-advanced-concepts/?couponCode=1994ECEBCCA93834B6EF"
         ],
         [
-            "PHP CodeIgniter 4: Build Travel Agency Management System",
-            "https://www.udemy.com/course/php-codeigniter-4-build-travel-agency-management-system/?couponCode=CITRAVELANDTOURS26"
-        ],
-        [
-            "Preview this course",
-            "https://www.udemy.com/course/php-codeigniter-4-build-travel-agency-management-system/?couponCode=CITRAVELANDTOURS26"
-        ],
-        [
-            "Diploma in Data Protection and Security (GDPR) Accredited",
-            "https://www.udemy.com/course/data-protection-and-security/?couponCode=J0USER_80"
-        ],
-        [
-            "Diploma in Data Protection and Security (GDPR) Accredited",
-            "https://www.udemy.com/course/data-protection-and-security/?couponCode=J0USER_80"
-        ],
-        [
-            "Data Protection And Security Gdpr",
-            "https://www.udemy.com/course/data-protection-and-security/?couponCode=J0USER_80"
-        ],
-        [
-            "Diploma in Data Protection and Security (GDPR) Accredited",
-            "https://www.udemy.com/course/data-protection-and-security/?couponCode=J0USER_80"
-        ],
-        [
-            "Diploma in Data Protection and Security (GDPR) Accredited",
-            "https://www.udemy.com/course/data-protection-and-security/?couponCode=J0USER_80"
-        ],
-        [
-            "Diploma in Data Protection and Security (GDPR) Accredited",
-            "https://www.udemy.com/course/data-protection-and-security/?couponCode=J0USER_80"
-        ],
-        [
-            "Diploma in Data Protection and Security (GDPR) Accredited",
-            "https://www.udemy.com/course/data-protection-and-security/?couponCode=J0USER_80"
+            "C++ Programming Made Easy: From Basics to Advanced Concepts",
+            "https://www.udemy.com/course/c-programming-made-easy-from-basics-to-advanced-concepts/?couponCode=1994ECEBCCA93834B6EF"
         ],
         [
             "Preview this course",
-            "https://www.udemy.com/course/data-protection-and-security/?couponCode=J0USER_80"
+            "https://www.udemy.com/course/c-programming-made-easy-from-basics-to-advanced-concepts/?couponCode=1994ECEBCCA93834B6EF"
+        ],
+        [
+            "C Programming Masterclass: Build Your Programming Foundation",
+            "https://www.udemy.com/course/c-programming-masterclass-build-your-programming-foundation/?couponCode=00C23B7B2A3CB0D17A34"
+        ],
+        [
+            "C Programming Masterclass: Build Your Programming Foundation",
+            "https://www.udemy.com/course/c-programming-masterclass-build-your-programming-foundation/?couponCode=00C23B7B2A3CB0D17A34"
+        ],
+        [
+            "C Programming Masterclass Build Your Programming Foundation",
+            "https://www.udemy.com/course/c-programming-masterclass-build-your-programming-foundation/?couponCode=00C23B7B2A3CB0D17A34"
+        ],
+        [
+            "C Programming Masterclass: Build Your Programming Foundation",
+            "https://www.udemy.com/course/c-programming-masterclass-build-your-programming-foundation/?couponCode=00C23B7B2A3CB0D17A34"
+        ],
+        [
+            "C Programming Masterclass: Build Your Programming Foundation",
+            "https://www.udemy.com/course/c-programming-masterclass-build-your-programming-foundation/?couponCode=00C23B7B2A3CB0D17A34"
+        ],
+        [
+            "C Programming Masterclass: Build Your Programming Foundation",
+            "https://www.udemy.com/course/c-programming-masterclass-build-your-programming-foundation/?couponCode=00C23B7B2A3CB0D17A34"
+        ],
+        [
+            "C Programming Masterclass: Build Your Programming Foundation",
+            "https://www.udemy.com/course/c-programming-masterclass-build-your-programming-foundation/?couponCode=00C23B7B2A3CB0D17A34"
+        ],
+        [
+            "Preview this course",
+            "https://www.udemy.com/course/c-programming-masterclass-build-your-programming-foundation/?couponCode=00C23B7B2A3CB0D17A34"
+        ],
+        [
+            "HTML5 Masterclass: Build Modern and Mobile Friendly Websites",
+            "https://www.udemy.com/course/html5-masterclass-build-modern-and-mobile-friendly-websites/?couponCode=20CD26DD443D7C489CD5"
+        ],
+        [
+            "HTML5 Masterclass: Build Modern and Mobile Friendly Websites",
+            "https://www.udemy.com/course/html5-masterclass-build-modern-and-mobile-friendly-websites/?couponCode=20CD26DD443D7C489CD5"
+        ],
+        [
+            "Html5 Masterclass Build Modern And Mobile Friendly Websites",
+            "https://www.udemy.com/course/html5-masterclass-build-modern-and-mobile-friendly-websites/?couponCode=20CD26DD443D7C489CD5"
+        ],
+        [
+            "HTML5 Masterclass: Build Modern and Mobile Friendly Websites",
+            "https://www.udemy.com/course/html5-masterclass-build-modern-and-mobile-friendly-websites/?couponCode=20CD26DD443D7C489CD5"
+        ],
+        [
+            "HTML5 Masterclass: Build Modern and Mobile Friendly Websites",
+            "https://www.udemy.com/course/html5-masterclass-build-modern-and-mobile-friendly-websites/?couponCode=20CD26DD443D7C489CD5"
+        ],
+        [
+            "HTML5 Masterclass: Build Modern and Mobile Friendly Websites",
+            "https://www.udemy.com/course/html5-masterclass-build-modern-and-mobile-friendly-websites/?couponCode=20CD26DD443D7C489CD5"
+        ],
+        [
+            "HTML5 Masterclass: Build Modern and Mobile Friendly Websites",
+            "https://www.udemy.com/course/html5-masterclass-build-modern-and-mobile-friendly-websites/?couponCode=20CD26DD443D7C489CD5"
+        ],
+        [
+            "Preview this course",
+            "https://www.udemy.com/course/html5-masterclass-build-modern-and-mobile-friendly-websites/?couponCode=20CD26DD443D7C489CD5"
+        ],
+        [
+            "H2O Gen AI Ecosystem Overview – Level 1",
+            "https://www.udemy.com/course/h2o-ecosystem-overview-level-1/?couponCode=SEP-FREE3"
+        ],
+        [
+            "H2O Gen AI Ecosystem Overview – Level 1",
+            "https://www.udemy.com/course/h2o-ecosystem-overview-level-1/?couponCode=SEP-FREE3"
+        ],
+        [
+            "H2O Gen Ai Ecosystem Overview Level 1 2",
+            "https://www.udemy.com/course/h2o-ecosystem-overview-level-1/?couponCode=SEP-FREE3"
+        ],
+        [
+            "H2O Gen AI Ecosystem Overview – Level 1",
+            "https://www.udemy.com/course/h2o-ecosystem-overview-level-1/?couponCode=SEP-FREE3"
+        ],
+        [
+            "H2O Gen AI Ecosystem Overview – Level 1",
+            "https://www.udemy.com/course/h2o-ecosystem-overview-level-1/?couponCode=SEP-FREE3"
+        ],
+        [
+            "H2O Gen AI Ecosystem Overview – Level 1",
+            "https://www.udemy.com/course/h2o-ecosystem-overview-level-1/?couponCode=SEP-FREE3"
+        ],
+        [
+            "H2O Gen AI Ecosystem Overview – Level 1",
+            "https://www.udemy.com/course/h2o-ecosystem-overview-level-1/?couponCode=SEP-FREE3"
+        ],
+        [
+            "Preview this course",
+            "https://www.udemy.com/course/h2o-ecosystem-overview-level-1/?couponCode=SEP-FREE3"
+        ],
+        [
+            "Mastering AML Targeted Financial Sanctions",
+            "https://www.udemy.com/course/mastering-aml-targeted-financial-sanctions/?couponCode=9A1D87F816A68663938D"
+        ],
+        [
+            "Mastering AML Targeted Financial Sanctions",
+            "https://www.udemy.com/course/mastering-aml-targeted-financial-sanctions/?couponCode=9A1D87F816A68663938D"
+        ],
+        [
+            "Mastering Aml Targeted Financial Sanctions",
+            "https://www.udemy.com/course/mastering-aml-targeted-financial-sanctions/?couponCode=9A1D87F816A68663938D"
+        ],
+        [
+            "Mastering AML Targeted Financial Sanctions",
+            "https://www.udemy.com/course/mastering-aml-targeted-financial-sanctions/?couponCode=9A1D87F816A68663938D"
+        ],
+        [
+            "Mastering AML Targeted Financial Sanctions",
+            "https://www.udemy.com/course/mastering-aml-targeted-financial-sanctions/?couponCode=9A1D87F816A68663938D"
+        ],
+        [
+            "Mastering AML Targeted Financial Sanctions",
+            "https://www.udemy.com/course/mastering-aml-targeted-financial-sanctions/?couponCode=9A1D87F816A68663938D"
+        ],
+        [
+            "Mastering AML Targeted Financial Sanctions",
+            "https://www.udemy.com/course/mastering-aml-targeted-financial-sanctions/?couponCode=9A1D87F816A68663938D"
+        ],
+        [
+            "Preview this course",
+            "https://www.udemy.com/course/mastering-aml-targeted-financial-sanctions/?couponCode=9A1D87F816A68663938D"
+        ],
+        [
+            "Complete English Speaking Fluency Course with Weekly Meeting",
+            "https://www.udemy.com/course/english-for-intermediate-learn-to-speak-english-using-story/?couponCode=2F88459D971DF12862AA"
+        ],
+        [
+            "Complete English Speaking Fluency Course with Weekly Meeting",
+            "https://www.udemy.com/course/english-for-intermediate-learn-to-speak-english-using-story/?couponCode=2F88459D971DF12862AA"
+        ],
+        [
+            "Complete English Speaking Fluency Course With Weekly Meeting 2",
+            "https://www.udemy.com/course/english-for-intermediate-learn-to-speak-english-using-story/?couponCode=2F88459D971DF12862AA"
+        ],
+        [
+            "Complete English Speaking Fluency Course with Weekly Meeting",
+            "https://www.udemy.com/course/english-for-intermediate-learn-to-speak-english-using-story/?couponCode=2F88459D971DF12862AA"
+        ],
+        [
+            "Complete English Speaking Fluency Course with Weekly Meeting",
+            "https://www.udemy.com/course/english-for-intermediate-learn-to-speak-english-using-story/?couponCode=2F88459D971DF12862AA"
+        ],
+        [
+            "Complete English Speaking Fluency Course with Weekly Meeting",
+            "https://www.udemy.com/course/english-for-intermediate-learn-to-speak-english-using-story/?couponCode=2F88459D971DF12862AA"
+        ],
+        [
+            "Complete English Speaking Fluency Course with Weekly Meeting",
+            "https://www.udemy.com/course/english-for-intermediate-learn-to-speak-english-using-story/?couponCode=2F88459D971DF12862AA"
+        ],
+        [
+            "Preview this course",
+            "https://www.udemy.com/course/english-for-intermediate-learn-to-speak-english-using-story/?couponCode=2F88459D971DF12862AA"
+        ],
+        [
+            "Anti Money Laundering (AML CFT) and CDD a complete guide",
+            "https://www.udemy.com/course/aml-cft-and-cdd-complete-guide/?couponCode=D1271F8AB2B22A630BCB"
+        ],
+        [
+            "Anti Money Laundering (AML CFT) and CDD a complete guide",
+            "https://www.udemy.com/course/aml-cft-and-cdd-complete-guide/?couponCode=D1271F8AB2B22A630BCB"
+        ],
+        [
+            "Anti Money Laundering Aml Cft And Cdd A Complete Guide",
+            "https://www.udemy.com/course/aml-cft-and-cdd-complete-guide/?couponCode=D1271F8AB2B22A630BCB"
+        ],
+        [
+            "Anti Money Laundering (AML CFT) and CDD a complete guide",
+            "https://www.udemy.com/course/aml-cft-and-cdd-complete-guide/?couponCode=D1271F8AB2B22A630BCB"
+        ],
+        [
+            "Anti Money Laundering (AML CFT) and CDD a complete guide",
+            "https://www.udemy.com/course/aml-cft-and-cdd-complete-guide/?couponCode=D1271F8AB2B22A630BCB"
+        ],
+        [
+            "Anti Money Laundering (AML CFT) and CDD a complete guide",
+            "https://www.udemy.com/course/aml-cft-and-cdd-complete-guide/?couponCode=D1271F8AB2B22A630BCB"
+        ],
+        [
+            "Anti Money Laundering (AML CFT) and CDD a complete guide",
+            "https://www.udemy.com/course/aml-cft-and-cdd-complete-guide/?couponCode=D1271F8AB2B22A630BCB"
+        ],
+        [
+            "Preview this course",
+            "https://www.udemy.com/course/aml-cft-and-cdd-complete-guide/?couponCode=D1271F8AB2B22A630BCB"
         ]
     ],
     "Udemy Freebies": [
         [
-            "Machine Learning and Deep Learning Projects in Python",
-            "https://www.udemy.com/machine-learning-and-deep-learning-projects-in-python/?couponCode=54C58D0B693C21B9D693"
+            "Microsoft Excel Comprehensive Guide",
+            "https://www.udemy.com/excel-guide/?couponCode=01OCTOBER2025"
         ],
         [
-            "Generative AI for Personal Productivity: Get More Done",
-            "https://www.udemy.com/generative-ai-for-personal-productivity/?couponCode=30SEPTEMBER2025"
+            "Digital Marketing Automation: One Step Ahead of Competitors",
+            "https://www.udemy.com/digital-marketing-automation-one-step-ahead-of-competitors/?couponCode=01OCTOBER2025"
         ],
         [
-            "Effective Cold Email Outreach: From Strategy to Execution",
-            "https://www.udemy.com/effective-cold-email-outreach-from-strategy-to-execution/?couponCode=30SEPTEMBER2025"
+            "Google Ads 2025: How to Drive Sales With PPC!",
+            "https://www.udemy.com/google-ads-for-beginners-how-to-drive-sales-with-ppc/?couponCode=01OCTOBER2025"
         ],
         [
-            "AI-Driven Market Analysis & Prediction",
-            "https://www.udemy.com/ai-driven-market-analysis-prediction-av/?couponCode=30SEPTEMBER2025"
+            "Facebook Ads: Run Your First Ad Campaign",
+            "https://www.udemy.com/facebook-ads-run-your-first-ad-campaign/?couponCode=01OCTOBER2025"
         ],
         [
-            "How to Generate Marketing Leads with AI",
-            "https://www.udemy.com/generate-marketing-leads-with-ai/?couponCode=30SEPTEMBER2025"
+            "Google My Business. How to Master Powerful Tool for Company",
+            "https://www.udemy.com/google-my-business-how-to-master-powerful-tool-for-company/?couponCode=01OCTOBER2025"
         ],
         [
-            "DeepSeek R1 for Business and Marketing: Harness AI Insights",
-            "https://www.udemy.com/deepseek-r1-for-business-and-marketing-harness-ai-insights/?couponCode=30SEPTEMBER2025"
+            "Web Analytics with Similarweb: from Basic to PRO!",
+            "https://www.udemy.com/web-analytics-with-similarweb-from-basic-to-pro/?couponCode=01OCTOBER2025"
         ],
         [
-            "Master Marketing Automation with Microsoft Copilot",
-            "https://www.udemy.com/master-marketing-automation-with-microsoft-copilot/?couponCode=30SEPTEMBER2025"
+            "Grow Your Sales With Conversion Rate Optimization (CRO)",
+            "https://www.udemy.com/conversion-optimization-course/?couponCode=01OCTOBER2025"
         ],
         [
-            "Ultimate Product Management Course: Build, Launch, Succeed",
-            "https://www.udemy.com/ultimate-product-management/?couponCode=30SEPTEMBER2025"
+            "Account-Based Marketing - ABM: Increase Your B2B Efficiency",
+            "https://www.udemy.com/account-based-marketing-increase-your-b2b-efficiency/?couponCode=01OCTOBER2025"
         ],
         [
-            "Complete Freelance MBA 2024: Digitalize Service Businesses",
-            "https://www.udemy.com/complete-freelance-mba-2024-digitalize-service-businesses/?couponCode=30SEPTEMBER2025"
+            "Etsy: The Ultimate Guide to Boosting Your Business",
+            "https://www.udemy.com/etsy-promotion/?couponCode=01OCTOBER2025"
         ],
         [
-            "Reputation Management: Take Control of Your Company's Image",
-            "https://www.udemy.com/reputation_management/?couponCode=30SEPTEMBER2025"
+            "Social Media Marketing Strategy 2025: Launch Your SMM!",
+            "https://www.udemy.com/social-media-marketing-strategy-course/?couponCode=01OCTOBER2025"
+        ],
+        [
+            "How to Create Your Perfect LinkedIn Outreach Campaign",
+            "https://www.udemy.com/how-to-create-your-perfect-linkedin-outreach-campaign/?couponCode=01OCTOBER2025"
         ]
     ]
 }

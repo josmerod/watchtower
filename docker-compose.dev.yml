@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  watchtower:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: watchtower-dev
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_MODE=development
+      - WATCHTOWER_ETL_INTERVAL=1800  # Run ETL every 30 minutes in dev
+      - WATCHTOWER_DASHBOARD_PORT=7777
+      - WATCHTOWER_LOG_LEVEL=DEBUG
+      - WATCHTOWER_HOT_RELOAD=true
+    volumes:
+      - .:/app  # Mount entire project for hot reload
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./secrets:/app/secrets:ro
+    ports:
+      - "7777:7777"
+    networks:
+      - watchtower-network
+
+networks:
+  watchtower-network:
+    driver: bridge

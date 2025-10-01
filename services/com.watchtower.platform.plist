@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.watchtower.platform</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/uv</string>
+        <string>run</string>
+        <string>python</string>
+        <string>src/launcher/main.py</string>
+        <string>--mode</string>
+        <string>production</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/opt/watchtower</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>WATCHTOWER_MODE</key>
+        <string>production</string>
+        <key>WATCHTOWER_ETL_INTERVAL</key>
+        <string>3600</string>
+        <key>WATCHTOWER_DASHBOARD_PORT</key>
+        <string>7777</string>
+        <key>WATCHTOWER_LOG_LEVEL</key>
+        <string>INFO</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>NetworkState</key>
+        <true/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/opt/watchtower/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/opt/watchtower/logs/launchd.err.log</string>
+
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>65536</integer>
+    </dict>
+
+    <key>HardResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>65536</integer>
+    </dict>
+</dict>
+</plist>
