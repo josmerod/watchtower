@@ -5,12 +5,14 @@ the common interface and core functionality for all watcher implementations.
 Watchers periodically check web pages for changes in specific values or content.
 """
 
+from __future__ import annotations
+
 import json
-import os
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import Any
 
 import requests
 
@@ -19,51 +21,64 @@ from src.utils.logging import get_logger
 
 
 class BaseWatcher(ABC):
-    """
-    Base class for all watchers.
+    """Base class for all watchers.
 
     Watchers are processes that periodically check if a web page has changed
     with respect to some specific value or content. If a change is detected,
     they trigger an alarm.
     """
 
-    def __init__(self, name: str, url: str, check_interval: int = 3600):
-        """
-        Initialize the base watcher.
+    def __init__(
+        self,
+        name: str,
+        url: str,
+        check_interval: int = 3600,
+        max_retries: int = 3,
+        retry_delay: int = 5,
+    ):
+        """Initialize the base watcher.
 
         Args:
-            name (str): Unique name for this watcher
-            url (str): URL to watch for changes
-            check_interval (int): Time in seconds between checks (default: 1 hour)
+            name: Unique name for this watcher
+            url: URL to watch for changes
+            check_interval: Time in seconds between checks (default: 1 hour)
+            max_retries: Maximum number of retry attempts for network operations
+            retry_delay: Initial delay in seconds between retries (exponential backoff)
         """
         self.name = name
         self.url = url
         self.check_interval = check_interval
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
         self.logger = get_logger(f"Watcher_{name}")
 
-        # Ensure storage directories exist
-        self.project_root = get_project_root()
-        self.data_dir = os.path.join(self.project_root, f"data/watchers/{self.name}")
+        # Initialize paths using pathlib
+        self.project_root = Path(get_project_root())
+        self.data_dir = self.project_root / "data" / "watchers" / self.name
         ensure_directories([f"data/watchers/{self.name}"])
 
         # Path to store the state file
-        self.state_file = os.path.join(self.data_dir, "state.json")
+        self.state_file = self.data_dir / "state.json"
 
         # Path to store events
-        self.events_dir = os.path.join(self.data_dir, "events")
+        self.events_dir = self.data_dir / "events"
         ensure_directories([f"data/watchers/{self.name}/events"])
 
         # Load previous state if exists
         self.previous_state = self._load_state()
 
-    def _load_state(self) -> Dict[str, Any]:
-        """Load the previous state from the state file."""
-        if os.path.exists(self.state_file):
+    def _load_state(self) -> dict[str, Any]:
+        """Load the previous state from the state file.
+
+        Returns:
+            Dictionary containing the previous state
+        """
+        if self.state_file.exists():
             try:
-                with open(self.state_file, "r") as f:
-                    return json.load(f)
+                state_data = self.state_file.read_text(encoding="utf-8")
+                return json.loads(state_data)
             except Exception as e:
-                self.logger.error(f"Error loading state file: {str(e)}")
+                self.logger.error(f"Error loading state file: {e!s}")
 
         # Return empty state if file doesn't exist or can't be loaded
         return {
@@ -72,29 +87,35 @@ class BaseWatcher(ABC):
             "first_seen": datetime.now().isoformat(),
         }
 
-    def _save_state(self, state: Dict[str, Any]):
-        """Save the current state to the state file."""
+    def _save_state(self, state: dict[str, Any]) -> None:
+        """Save the current state to the state file.
+
+        Args:
+            state: State dictionary to save
+        """
         try:
-            with open(self.state_file, "w") as f:
-                json.dump(state, f, indent=2)
+            state_json = json.dumps(state, indent=2, ensure_ascii=False)
+            self.state_file.write_text(state_json, encoding="utf-8")
         except Exception as e:
-            self.logger.error(f"Error saving state file: {str(e)}")
+            self.logger.error(f"Error saving state file: {e!s}")
 
     def _record_event(
         self,
         event_type: str,
         old_value: Any,
         new_value: Any,
-        details: Optional[Dict[str, Any]] = None,
-    ):
-        """
-        Record a change event.
+        details: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Record a change event.
 
         Args:
-            event_type (str): Type of event (e.g., 'change_detected')
+            event_type: Type of event (e.g., 'change_detected')
             old_value: Previous value
             new_value: Current value
             details: Additional details about the event
+
+        Returns:
+            Dictionary containing the recorded event
         """
         timestamp = datetime.now()
         event_id = f"{timestamp.strftime('%Y%m%d%H%M%S')}_{event_type}"
@@ -111,53 +132,73 @@ class BaseWatcher(ABC):
         }
 
         # Save event to file
-        event_file = os.path.join(self.events_dir, f"{event_id}.json")
+        event_file = self.events_dir / f"{event_id}.json"
         try:
-            with open(event_file, "w") as f:
-                json.dump(event, f, indent=2)
+            event_json = json.dumps(event, indent=2, ensure_ascii=False)
+            event_file.write_text(event_json, encoding="utf-8")
             self.logger.info(f"Event recorded: {event_id}")
         except Exception as e:
-            self.logger.error(f"Error recording event: {str(e)}")
+            self.logger.error(f"Error recording event: {e!s}")
 
         return event
 
     def fetch_page(self) -> str:
-        """
-        Fetch the page content.
+        """Fetch the page content with retry logic.
 
         Returns:
-            str: HTML content of the page
+            HTML content of the page
 
         Raises:
-            Exception: If the page cannot be fetched
+            Exception: If the page cannot be fetched after all retries
         """
-        try:
-            self.logger.info(f"Fetching {self.url}")
-            response = requests.get(self.url, timeout=30)
-            response.raise_for_status()
-            return response.text
-        except Exception as e:
-            self.logger.error(f"Error fetching URL {self.url}: {str(e)}")
-            raise
+        last_exception = None
+
+        for attempt in range(self.max_retries):
+            try:
+                self.logger.info(
+                    f"Fetching {self.url} (attempt {attempt + 1}/{self.max_retries})"
+                )
+                response = requests.get(self.url, timeout=30)
+                response.raise_for_status()
+                return response.text
+
+            except Exception as e:
+                last_exception = e
+                if attempt < self.max_retries - 1:
+                    delay = self.retry_delay * (2**attempt)  # Exponential backoff
+                    self.logger.warning(
+                        f"Error fetching URL {self.url}: {e!s}. "
+                        f"Retrying in {delay}s... (attempt {attempt + 1}/{self.max_retries})"
+                    )
+                    time.sleep(delay)
+                else:
+                    self.logger.error(
+                        f"Failed to fetch URL {self.url} after {self.max_retries} attempts: {e!s}"
+                    )
+
+        if last_exception:
+            raise last_exception
+
+        raise RuntimeError(f"Failed to fetch {self.url} after {self.max_retries} retries")
 
     @abstractmethod
     def extract_value(self, html_content: str) -> Any:
-        """
-        Extract the value to watch from the HTML content.
+        """Extract the value to watch from the HTML content.
+
         Must be implemented by subclasses.
 
         Args:
-            html_content (str): HTML content of the page
+            html_content: HTML content of the page
 
         Returns:
-            Any: The extracted value
+            The extracted value
         """
         pass
 
     @abstractmethod
     def has_changed(self, old_value: Any, new_value: Any) -> bool:
-        """
-        Determine if the value has changed enough to trigger an alarm.
+        """Determine if the value has changed enough to trigger an alarm.
+
         Must be implemented by subclasses.
 
         Args:
@@ -165,13 +206,12 @@ class BaseWatcher(ABC):
             new_value: Current extracted value
 
         Returns:
-            bool: True if the change should trigger an alarm, False otherwise
+            True if the change should trigger an alarm, False otherwise
         """
         pass
 
-    def trigger_alarm(self, old_value: Any, new_value: Any):
-        """
-        Trigger an alarm when a change is detected.
+    def trigger_alarm(self, old_value: Any, new_value: Any) -> None:
+        """Trigger an alarm when a change is detected.
 
         Args:
             old_value: Previous value
@@ -182,17 +222,15 @@ class BaseWatcher(ABC):
         )
 
         # Record the event
-        event = self._record_event(
+        self._record_event(
             event_type="change_detected", old_value=old_value, new_value=new_value
         )
 
         # TODO: In the future, implement notification mechanisms here
-        # For now, we just log the event
+        # (e.g., email, Slack, webhook)
 
-    def check(self):
-        """
-        Check if the watched value has changed.
-        """
+    def check(self) -> None:
+        """Check if the watched value has changed."""
         try:
             # Fetch the page
             html_content = self.fetch_page()
@@ -212,12 +250,10 @@ class BaseWatcher(ABC):
                     "first_seen": self.previous_state["first_seen"],
                 }
                 self._save_state(new_state)
-                # return # MODIFIED FOR TESTING: Allow flow through to has_changed
+                return
 
             # Check if value has changed
-            old_value = self.previous_state[
-                "last_value"
-            ]  # This will be None if it was the first check and we didn't return
+            old_value = self.previous_state["last_value"]
             if self.has_changed(old_value, current_value):
                 self.trigger_alarm(old_value, current_value)
 
@@ -228,17 +264,17 @@ class BaseWatcher(ABC):
                 "first_seen": self.previous_state["first_seen"],
             }
             self._save_state(new_state)
+            self.previous_state = new_state
 
         except Exception as e:
-            self.logger.error(f"Error checking watcher {self.name}: {str(e)}")
+            self.logger.error(f"Error checking watcher {self.name}: {e!s}")
 
-    def run(self, continuous: bool = True, max_runs: int = None):
-        """
-        Run the watcher, either continuously or for a specified number of runs.
+    def run(self, continuous: bool = True, max_runs: int | None = None) -> None:
+        """Run the watcher, either continuously or for a specified number of runs.
 
         Args:
-            continuous (bool): Whether to run continuously
-            max_runs (int, optional): Maximum number of runs if not continuous
+            continuous: Whether to run continuously
+            max_runs: Maximum number of runs if not continuous
         """
         self.logger.info(f"Starting watcher for {self.name} ({self.url})")
 
@@ -258,6 +294,6 @@ class BaseWatcher(ABC):
         except KeyboardInterrupt:
             self.logger.info("Watcher stopped by user")
         except Exception as e:
-            self.logger.error(f"Watcher failed: {str(e)}")
+            self.logger.error(f"Watcher failed: {e!s}")
 
         self.logger.info(f"Watcher {self.name} finished after {run_count} runs")

@@ -7,9 +7,8 @@ Specialized monitoring for Google AI platform updates including:
 - Google AI blog and research
 """
 
-import asyncio
-import json
-import os
+from __future__ import annotations
+
 import re
 from datetime import datetime
 from typing import Any
@@ -18,21 +17,19 @@ import feedparser
 import requests
 from bs4 import BeautifulSoup
 
-# Ensure project root is on path
-from src.utils.file_system import ensure_directories, get_project_root
-from src.utils.logging import get_logger
-
-logger = get_logger("GoogleGeminiETL")
+from src.etl.base import BaseETL
 
 
-class GoogleGeminiETL:
-    """Specialized ETL for Google Gemini platform monitoring."""
+class GoogleGeminiETL(BaseETL[dict[str, Any], dict[str, Any]]):
+    """Specialized ETL for Google Gemini platform monitoring using BaseETL framework."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """Initialize Google Gemini ETL."""
-        self.project_root = get_project_root()
-        self.output_dir = os.path.join(self.project_root, "data/ai_models/google")
-        ensure_directories(["data/ai_models/google"])
+        super().__init__(
+            name="google_gemini",
+            description="Google Gemini and AI platform updates ETL",
+            **kwargs,
+        )
 
         self.sources = {
             "gemini_changelog": "https://ai.google.dev/gemini-api/docs/changelog",
@@ -43,38 +40,139 @@ class GoogleGeminiETL:
             "vertex_ai": "https://cloud.google.com/vertex-ai",
         }
 
-    async def fetch_google_updates(self) -> list[dict[str, Any]]:
-        """Fetch all Google AI platform updates.
+    def extract(self) -> list[dict[str, Any]]:
+        """Extract Google AI platform updates from multiple sources.
 
         Returns:
-            List of Google update dictionaries.
+            List of raw update dictionaries from all sources
         """
+        self.logger.info("Starting extraction from Google AI sources")
+
         all_updates = []
 
         # Fetch RSS feeds
-        ai_blog_updates = await self._fetch_ai_blog_rss()
-        developers_blog_updates = await self._fetch_developers_blog_rss()
-        cloud_ai_updates = await self._fetch_cloud_ai_rss()
+        all_updates.extend(self._fetch_ai_blog_rss())
+        all_updates.extend(self._fetch_developers_blog_rss())
+        all_updates.extend(self._fetch_cloud_ai_rss())
 
         # Fetch scraped sources
-        changelog_updates = await self._scrape_gemini_changelog()
-        ai_studio_updates = await self._scrape_ai_studio()
+        all_updates.extend(self._scrape_gemini_changelog())
+        all_updates.extend(self._scrape_ai_studio())
 
-        all_updates.extend(ai_blog_updates)
-        all_updates.extend(developers_blog_updates)
-        all_updates.extend(cloud_ai_updates)
-        all_updates.extend(changelog_updates)
-        all_updates.extend(ai_studio_updates)
+        self.logger.info(f"Extracted {len(all_updates)} total updates from all sources")
+        return all_updates
+
+    def transform(self, updates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Transform and filter updates to model-related content.
+
+        Args:
+            updates: Raw updates from all sources
+
+        Returns:
+            Filtered and processed updates
+        """
+        if not updates:
+            self.logger.warning("No updates to transform")
+            return []
+
+        self.logger.info(f"Transforming {len(updates)} Google updates")
 
         # Filter for model-related content
-        model_updates = self._filter_model_updates(all_updates)
+        filtered = self._filter_model_updates(updates)
 
-        return model_updates
+        # Process and deduplicate
+        processed = []
+        seen_titles = set()
 
-    async def _fetch_ai_blog_rss(self) -> list[dict[str, Any]]:
+        for update in filtered:
+            title = update.get("title", "").strip()
+            if not title or title in seen_titles:
+                continue
+
+            seen_titles.add(title)
+
+            processed_update = {
+                "title": title,
+                "url": update.get("url", ""),
+                "provider": "google",
+                "source": update.get("source", ""),
+                "source_type": update.get("source_type", "unknown"),
+                "published_at": update.get("published_at", ""),
+                "summary": update.get("summary", ""),
+                "content": update.get("content", ""),
+                "metadata": {
+                    "api_source": update.get("source_type", "unknown"),
+                    "processed_at": datetime.now().isoformat(),
+                    "entry_id": update.get("entry_id", ""),
+                    "feed_url": update.get("feed_url", ""),
+                },
+            }
+            processed.append(processed_update)
+
+        self.logger.info(
+            f"Transformed and filtered to {len(processed)} unique model-related updates"
+        )
+        return processed
+
+    def load(self, updates: list[dict[str, Any]]) -> None:
+        """Load processed updates to JSON and CSV files.
+
+        Args:
+            updates: Processed update dictionaries
+        """
+        if not updates:
+            self.logger.warning("No updates to load")
+            return
+
+        self.logger.info(f"Loading {len(updates)} Google updates")
+
+        import json
+
+        import pandas as pd
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # Save timestamped JSON
+        json_file = self.output_dir / f"google_updates_{timestamp}.json"
+        json_file.write_text(
+            json.dumps(updates, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
+        # Save latest JSON
+        latest_json = self.output_dir / "google_updates_latest.json"
+        latest_json.write_text(
+            json.dumps(updates, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
+        # Save CSV files
+        try:
+            df = pd.DataFrame(updates)
+
+            # Flatten metadata column for CSV
+            if "metadata" in df.columns:
+                for key in ["api_source", "processed_at", "entry_id", "feed_url"]:
+                    df[f"metadata_{key}"] = df["metadata"].apply(
+                        lambda x: x.get(key, "") if isinstance(x, dict) else ""
+                    )
+                df = df.drop(columns=["metadata"])
+
+            csv_file = self.output_dir / f"google_updates_{timestamp}.csv"
+            df.to_csv(csv_file, index=False, encoding="utf-8")
+
+            latest_csv = self.output_dir / "google_updates_latest.csv"
+            df.to_csv(latest_csv, index=False, encoding="utf-8")
+
+            self.logger.info(
+                f"Saved {len(updates)} updates to {json_file} and {csv_file}"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error saving CSV: {e}")
+
+    def _fetch_ai_blog_rss(self) -> list[dict[str, Any]]:
         """Fetch Google AI blog RSS feed."""
         try:
-            logger.info("Fetching Google AI blog RSS")
+            self.logger.info("Fetching Google AI blog RSS")
 
             response = requests.get(
                 self.sources["ai_blog_rss"],
@@ -88,7 +186,7 @@ class GoogleGeminiETL:
             feed = feedparser.parse(response.content)
 
             if not feed.entries:
-                logger.warning("No entries found in Google AI blog RSS")
+                self.logger.warning("No entries found in Google AI blog RSS")
                 return []
 
             updates = []
@@ -111,17 +209,18 @@ class GoogleGeminiETL:
                 }
                 updates.append(update)
 
-            logger.info(f"Fetched {len(updates)} entries from Google AI blog")
+            self.logger.info(f"Fetched {len(updates)} entries from Google AI blog")
             return updates
 
         except Exception as e:
-            logger.error(f"Error fetching Google AI blog RSS: {e}")
+            self.logger.error(f"Error fetching Google AI blog RSS: {e}")
+            self.metrics.records_failed += 1
             return []
 
-    async def _fetch_developers_blog_rss(self) -> list[dict[str, Any]]:
+    def _fetch_developers_blog_rss(self) -> list[dict[str, Any]]:
         """Fetch Google Developers blog RSS feed."""
         try:
-            logger.info("Fetching Google Developers blog RSS")
+            self.logger.info("Fetching Google Developers blog RSS")
 
             response = requests.get(
                 self.sources["developers_blog_rss"],
@@ -135,7 +234,7 @@ class GoogleGeminiETL:
             feed = feedparser.parse(response.content)
 
             if not feed.entries:
-                logger.warning("No entries found in Google Developers blog RSS")
+                self.logger.warning("No entries found in Google Developers blog RSS")
                 return []
 
             updates = []
@@ -158,17 +257,18 @@ class GoogleGeminiETL:
                 }
                 updates.append(update)
 
-            logger.info(f"Fetched {len(updates)} entries from Google Developers blog")
+            self.logger.info(f"Fetched {len(updates)} entries from Google Developers blog")
             return updates
 
         except Exception as e:
-            logger.error(f"Error fetching Google Developers blog RSS: {e}")
+            self.logger.error(f"Error fetching Google Developers blog RSS: {e}")
+            self.metrics.records_failed += 1
             return []
 
-    async def _fetch_cloud_ai_rss(self) -> list[dict[str, Any]]:
+    def _fetch_cloud_ai_rss(self) -> list[dict[str, Any]]:
         """Fetch Google Cloud AI blog RSS feed."""
         try:
-            logger.info("Fetching Google Cloud AI blog RSS")
+            self.logger.info("Fetching Google Cloud AI blog RSS")
 
             response = requests.get(
                 self.sources["cloud_ai_blog_rss"],
@@ -182,7 +282,7 @@ class GoogleGeminiETL:
             feed = feedparser.parse(response.content)
 
             if not feed.entries:
-                logger.warning("No entries found in Google Cloud AI blog RSS")
+                self.logger.warning("No entries found in Google Cloud AI blog RSS")
                 return []
 
             updates = []
@@ -205,17 +305,18 @@ class GoogleGeminiETL:
                 }
                 updates.append(update)
 
-            logger.info(f"Fetched {len(updates)} entries from Google Cloud AI blog")
+            self.logger.info(f"Fetched {len(updates)} entries from Google Cloud AI blog")
             return updates
 
         except Exception as e:
-            logger.error(f"Error fetching Google Cloud AI blog RSS: {e}")
+            self.logger.error(f"Error fetching Google Cloud AI blog RSS: {e}")
+            self.metrics.records_failed += 1
             return []
 
-    async def _scrape_gemini_changelog(self) -> list[dict[str, Any]]:
+    def _scrape_gemini_changelog(self) -> list[dict[str, Any]]:
         """Scrape Gemini API changelog."""
         try:
-            logger.info("Scraping Gemini API changelog")
+            self.logger.info("Scraping Gemini API changelog")
 
             response = requests.get(
                 self.sources["gemini_changelog"],
@@ -289,17 +390,18 @@ class GoogleGeminiETL:
                         }
                     )
 
-            logger.info(f"Scraped {len(updates)} updates from Gemini changelog")
+            self.logger.info(f"Scraped {len(updates)} updates from Gemini changelog")
             return updates
 
         except Exception as e:
-            logger.error(f"Error scraping Gemini changelog: {e}")
+            self.logger.error(f"Error scraping Gemini changelog: {e}")
+            self.metrics.records_failed += 1
             return []
 
-    async def _scrape_ai_studio(self) -> list[dict[str, Any]]:
+    def _scrape_ai_studio(self) -> list[dict[str, Any]]:
         """Scrape Google AI Studio for updates."""
         try:
-            logger.info("Scraping Google AI Studio")
+            self.logger.info("Scraping Google AI Studio")
 
             response = requests.get(
                 self.sources["ai_studio"],
@@ -357,19 +459,18 @@ class GoogleGeminiETL:
                         }
                     )
 
-            logger.info(f"Scraped {len(updates)} updates from Google AI Studio")
+            self.logger.info(f"Scraped {len(updates)} updates from Google AI Studio")
             return updates
 
         except Exception as e:
-            logger.error(f"Error scraping Google AI Studio: {e}")
+            self.logger.error(f"Error scraping Google AI Studio: {e}")
+            self.metrics.records_failed += 1
             return []
 
     def _filter_model_updates(
         self, updates: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
         """Filter updates to only include model-related content."""
-        filtered = []
-
         google_keywords = [
             "gemini",
             "bard",
@@ -398,116 +499,20 @@ class GoogleGeminiETL:
             "multimodal",
         ]
 
+        filtered = []
         for update in updates:
             text_content = f"{update.get('title', '')} {update.get('summary', '')} {update.get('content', '')}".lower()
 
             if any(keyword in text_content for keyword in google_keywords):
                 filtered.append(update)
 
-        logger.info(
-            f"Filtered {len(filtered)} model-related updates from {len(updates)} total Google updates"
+        self.logger.info(
+            f"Filtered {len(filtered)} model-related updates from {len(updates)} total"
         )
         return filtered
 
-    def process_updates(self, updates: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Process and standardize Google updates."""
-        logger.info(f"Processing {len(updates)} Google updates")
-
-        processed = []
-        seen_titles = set()
-
-        for update in updates:
-            title = update.get("title", "").strip()
-            if title and title not in seen_titles:
-                seen_titles.add(title)
-
-                processed_update = {
-                    "title": title,
-                    "url": update.get("url", ""),
-                    "provider": "google",
-                    "source": update.get("source", ""),
-                    "source_type": update.get("source_type", "unknown"),
-                    "published_at": update.get("published_at", ""),
-                    "summary": update.get("summary", ""),
-                    "content": update.get("content", ""),
-                    "metadata": {
-                        "api_source": update.get("source_type", "unknown"),
-                        "processed_at": datetime.now().isoformat(),
-                        "entry_id": update.get("entry_id", ""),
-                        "feed_url": update.get("feed_url", ""),
-                    },
-                }
-                processed.append(processed_update)
-
-        logger.info(f"Successfully processed {len(processed)} unique Google updates")
-        return processed
-
-    def save_updates(self, updates: list[dict[str, Any]]) -> None:
-        """Save Google updates to JSON and CSV files."""
-        if not updates:
-            logger.warning("No Google updates to save")
-            return
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        # Save JSON files
-        json_file = os.path.join(self.output_dir, f"google_updates_{timestamp}.json")
-        with open(json_file, "w", encoding="utf-8") as f:
-            json.dump(updates, f, indent=2, ensure_ascii=False)
-
-        latest_json = os.path.join(self.output_dir, "google_updates_latest.json")
-        with open(latest_json, "w", encoding="utf-8") as f:
-            json.dump(updates, f, indent=2, ensure_ascii=False)
-
-        # Save CSV files
-        try:
-            import pandas as pd
-
-            df = pd.DataFrame(updates)
-
-            csv_file = os.path.join(self.output_dir, f"google_updates_{timestamp}.csv")
-            df.to_csv(csv_file, index=False, encoding="utf-8")
-
-            latest_csv = os.path.join(self.output_dir, "google_updates_latest.csv")
-            df.to_csv(latest_csv, index=False, encoding="utf-8")
-
-            logger.info(
-                f"Saved {len(updates)} Google updates to {json_file} and {csv_file}"
-            )
-
-        except ImportError:
-            logger.warning("pandas not available, skipping CSV export")
-            logger.info(f"Saved {len(updates)} Google updates to {json_file}")
-
-
-async def main():
-    """Main entry point for the Google Gemini ETL process."""
-    logger.info("Starting Google Gemini ETL process")
-
-    try:
-        etl = GoogleGeminiETL()
-
-        # Fetch updates
-        updates = await etl.fetch_google_updates()
-
-        if not updates:
-            logger.warning("No Google updates retrieved, ETL process will exit")
-            return
-
-        # Process updates
-        processed_updates = etl.process_updates(updates)
-
-        # Save results
-        etl.save_updates(processed_updates)
-
-        logger.info(
-            f"Google Gemini ETL completed successfully. Processed {len(processed_updates)} updates."
-        )
-
-    except Exception as e:
-        logger.error(f"Error in Google Gemini ETL process: {e}", exc_info=True)
-        raise
-
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Run the ETL pipeline
+    etl = GoogleGeminiETL()
+    etl.run()

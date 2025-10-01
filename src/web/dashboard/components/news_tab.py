@@ -168,7 +168,6 @@ def get_all_news_data():
 
 # --- Helper function to parse dates ---
 def parse_date(date_str):
-    """Parse date string into UTC datetime object."""
     if date_str is None or str(date_str).strip() == "":
         return None
 
@@ -265,6 +264,7 @@ def format_article_date(article):
 
 def create_news_source_tab_content(source_keys, combined_name=None):
     """Creates the content for a news tab as a table, potentially combining multiple sources.
+b as a table, potentially combining multiple sources.
 
     Sorts articles by date before limiting.
     """

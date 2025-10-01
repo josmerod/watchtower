@@ -1,0 +1,37 @@
+[Unit]
+Description=Watchtower Intelligence Platform
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=watchtower
+Group=watchtower
+WorkingDirectory=/opt/watchtower
+ExecStart=/usr/local/bin/uv run python src/launcher/main.py --mode production
+Restart=always
+RestartSec=10
+
+# Environment variables
+Environment=WATCHTOWER_MODE=production
+Environment=WATCHTOWER_ETL_INTERVAL=3600
+Environment=WATCHTOWER_DASHBOARD_PORT=7777
+Environment=WATCHTOWER_LOG_LEVEL=INFO
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=2G
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=watchtower
+
+[Install]
+WantedBy=multi-user.target

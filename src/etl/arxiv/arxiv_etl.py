@@ -1,7 +1,8 @@
 """ETL module for fetching, processing, and classifying research papers from ArXiv."""
 
+from __future__ import annotations
+
 import json
-import os
 from datetime import datetime
 from typing import Any
 
@@ -13,17 +14,14 @@ try:
 except Exception:  # noqa: BLE001
     PapersWithCodeClient = None  # type: ignore
 
-from src.utils.file_system import ensure_directories, get_project_root
+from src.etl.base import BaseETL
 from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
-from src.utils.logging import get_logger
 from src.utils.nlp_classifier import NLPContentClassifier
 from src.watchers.arxiv_watcher import ArxivWatcher
 
-# from paperswithcode import PapersWithCodeClient # Commented out for testing
 
-
-class ArxivETL:
-    """ETL process for ArXiv papers.
+class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
+    """ETL process for ArXiv papers using BaseETL framework.
 
     This ETL:
     1. Collects papers from ArXiv using the ArxivWatcher
@@ -34,48 +32,36 @@ class ArxivETL:
 
     def __init__(
         self,
-        name: str = "arxiv",
         days_back: int = 7,
         max_results: int = 100,
         n_clusters: int = 10,
+        **kwargs,
     ):
         """Initialize the ArXiv ETL.
 
         Args:
-            name (str): Name for this ETL process
-            days_back (int): Number of days back to collect papers
-            max_results (int): Maximum number of papers to retrieve
-            n_clusters (int): Number of clusters for the classifier
+            days_back: Number of days back to collect papers
+            max_results: Maximum number of papers to retrieve
+            n_clusters: Number of clusters for the classifier
+            **kwargs: Additional arguments for BaseETL
         """
-        self.name = name
-        self.logger = get_logger(f"ETL_{name}")
-
-        # Initialize paths
-        self.project_root = get_project_root()
-        self.data_dir = os.path.join(self.project_root, f"data/{name}")
-        self.processed_dir = os.path.join(self.data_dir, "processed")
-
-        # Ensure directories exist
-        ensure_directories(
-            [
-                f"data/{name}",
-                f"data/{name}/processed",
-                f"data/{name}/processed/csv",
-                f"data/{name}/processed/json",
-            ]
+        super().__init__(
+            name="arxiv",
+            description="ArXiv research papers ETL with NLP classification",
+            **kwargs,
         )
 
-        # Initialize components
+        # Initialize watcher
         self.watcher = ArxivWatcher(
-            name=name,
+            name="arxiv",
             days_back=days_back,
             max_results=max_results,
             check_interval=86400,  # Run daily
         )
 
-        self.classifier = NLPContentClassifier(name=f"{name}_classifier")
+        # Initialize classifier
+        self.classifier = NLPContentClassifier(name="arxiv_classifier")
         self.n_clusters = n_clusters
-        # self.pwc_client = PapersWithCodeClient() # Commented out for testing
 
         self.logger.info(
             f"ArxivETL initialized with {days_back} days back, {max_results} max results"
@@ -85,7 +71,7 @@ class ArxivETL:
         """Extract papers from ArXiv.
 
         Returns:
-            List[Dict[str, Any]]: List of papers with metadata
+            List of papers with metadata
         """
         self.logger.info("Starting extraction phase")
 
@@ -93,19 +79,19 @@ class ArxivETL:
         self.watcher.run(continuous=False, max_runs=1)
 
         # Load papers from watcher output
-        papers_file = os.path.join(self.watcher.data_dir, "latest_papers.json")
-        self.logger.info(
-            f"Attempting to load papers from: {papers_file}"
-        )  # Detailed log
+        papers_file = self.watcher.data_dir / "latest_papers.json"
+        self.logger.info(f"Attempting to load papers from: {papers_file}")
 
-        if not os.path.exists(papers_file):
+        if not papers_file.exists():
             self.logger.warning(
                 f"File not found: {papers_file}. No papers found from watcher."
-            )  # Detailed log
-            # Listing directory contents for debugging
+            )
+            # List directory contents for debugging
             try:
-                dir_contents = os.listdir(self.watcher.data_dir)
-                self.logger.info(f"Contents of {self.watcher.data_dir}: {dir_contents}")
+                dir_contents = list(self.watcher.data_dir.iterdir())
+                self.logger.info(
+                    f"Contents of {self.watcher.data_dir}: {dir_contents}"
+                )
             except Exception as e_ls:
                 self.logger.error(
                     f"Could not list directory {self.watcher.data_dir}: {e_ls}"
@@ -113,8 +99,7 @@ class ArxivETL:
             return []
 
         try:
-            with open(papers_file, encoding="utf-8") as f:
-                papers = json.load(f)
+            papers = json.loads(papers_file.read_text(encoding="utf-8"))
             self.logger.info(f"Loaded {len(papers)} papers from watcher")
             return papers
         except Exception as e:
@@ -122,13 +107,13 @@ class ArxivETL:
             return []
 
     def transform(self, papers: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Transform and enrich papers with NLP classification, GitHub repository info, and PapersWithCode data.
+        """Transform and enrich papers with NLP classification and GitHub repository info.
 
         Args:
-            papers (List[Dict[str, Any]]): Raw papers from extraction phase
+            papers: Raw papers from extraction phase
 
         Returns:
-            List[Dict[str, Any]]: Transformed papers with classification, GitHub, and PapersWithCode info
+            Transformed papers with classification and GitHub info
         """
         if not papers:
             self.logger.warning("No papers to transform")
@@ -141,19 +126,16 @@ class ArxivETL:
             f"{paper.get('title', '')} {paper.get('summary', '')}" for paper in papers
         ]
 
-        # Check if classifier is already trained
-        model_path = os.path.join(self.classifier.models_dir, "model.pkl")
-        if not os.path.exists(model_path):
-            # Train new classifier
+        # Train or load classifier
+        model_path = self.classifier.models_dir / "model.pkl"
+        if not model_path.exists():
             self.logger.info("Training new classifier")
             self.classifier.train_classifier(
                 texts_for_classification, n_clusters=self.n_clusters
             )
             self.classifier.save_model()
         else:
-            # Try to load existing model
             if not self.classifier.load_model():
-                # If loading fails, train a new one
                 self.logger.info("Training new classifier (failed to load existing)")
                 self.classifier.train_classifier(
                     texts_for_classification, n_clusters=self.n_clusters
@@ -163,9 +145,9 @@ class ArxivETL:
         # Classify all papers
         classifications = self.classifier.batch_classify(texts_for_classification)
 
-        # Merge classifications, GitHub info, and PapersWithCode info with papers
+        # Merge classifications and GitHub info with papers
         transformed_papers = []
-        github_token = os.getenv("GITHUB_TOKEN")  # For authenticated GitHub requests
+        github_token = None  # Configure via environment if needed
 
         for i, paper in enumerate(papers):
             classification = classifications[i]
@@ -211,44 +193,7 @@ class ArxivETL:
                         f"Failed to fetch GitHub info for {github_urls[0]}"
                     )
 
-            # Initialize PapersWithCode fields (Commented out for testing)
-            # pwc_data = {
-            #     "pwc_id": None,
-            #     "pwc_url": None,
-            #     "pwc_title": None,
-            #     "pwc_proceeding": None,
-            #     "pwc_repositories": [],
-            #     "pwc_datasets": [],
-            #     "pwc_tasks_and_metrics": [],
-            #     "pwc_methods": [],
-            # }
-
-            # Fetch PapersWithCode data (Commented out for testing)
-            # arxiv_id_url = paper.get(
-            #     "id"
-            # )  # This is often the arxiv URL like http://arxiv.org/abs/xxxx.xxxx
-            # paper_title = paper.get("title")
-
-            # if arxiv_id_url or paper_title:
-            #     self.logger.info(
-            #         f"Fetching PwC data for paper ArXiv ID: {arxiv_id_url if arxiv_id_url else 'N/A'}, Title: {paper_title if paper_title else 'N/A'} (PwC integration temporarily disabled)"
-            #     )
-            # fetched_pwc_info = get_pwc_details_for_paper(
-            #     arxiv_id_url=arxiv_id_url,
-            #     title=paper_title,
-            #     pwc_client=self.pwc_client, # This would error as self.pwc_client is commented out
-            # )
-            # if fetched_pwc_info:
-            #     self.logger.info(
-            #         f"Fetched PwC info for paper {arxiv_id_url if arxiv_id_url else paper_title}"
-            #     )
-            #     pwc_data.update(fetched_pwc_info)
-            # else:
-            #     self.logger.warning(
-            #         f"No PwC info found for paper {arxiv_id_url if arxiv_id_url else paper_title}"
-            #     )
-
-            # Create transformed paper with classification, GitHub, and PwC data
+            # Create transformed paper with classification and GitHub data
             transformed_paper = {
                 **paper,
                 "cluster_id": classification["cluster_id"],
@@ -256,22 +201,22 @@ class ArxivETL:
                 "cluster_keywords": classification["cluster_keywords"],
                 "extracted_keywords": classification["document_keywords"],
                 **github_info,
-                # **pwc_data,  # Add PapersWithCode information (Commented out for testing)
                 "processed_date": datetime.now().isoformat(),
             }
 
             transformed_papers.append(transformed_paper)
 
         self.logger.info(
-            f"Transformed {len(transformed_papers)} papers into {len(set(c['cluster_id'] for c in classifications))} clusters, enriched with GitHub and PapersWithCode data."
+            f"Transformed {len(transformed_papers)} papers into "
+            f"{len(set(c['cluster_id'] for c in classifications))} clusters"
         )
         return transformed_papers
 
-    def load(self, transformed_papers: list[dict[str, Any]]):
+    def load(self, transformed_papers: list[dict[str, Any]]) -> None:
         """Load the transformed papers into various formats.
 
         Args:
-            transformed_papers (List[Dict[str, Any]]): Transformed papers with classification, GitHub, and PwC info
+            transformed_papers: Transformed papers with classification and GitHub info
         """
         if not transformed_papers:
             self.logger.warning("No papers to load")
@@ -282,33 +227,34 @@ class ArxivETL:
         # Generate timestamp for filenames
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
+        # Create processed subdirectories
+        json_dir = self.output_dir / "json"
+        csv_dir = self.output_dir / "csv"
+        json_dir.mkdir(parents=True, exist_ok=True)
+        csv_dir.mkdir(parents=True, exist_ok=True)
+
         # Save as JSON
-        json_file = os.path.join(self.processed_dir, f"json/papers_{timestamp}.json")
+        json_file = json_dir / f"papers_{timestamp}.json"
         try:
-            with open(json_file, "w", encoding="utf-8") as f:
-                json.dump(transformed_papers, f, ensure_ascii=False, indent=2)
+            json_file.write_text(
+                json.dumps(transformed_papers, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
             self.logger.info(f"Saved JSON to {json_file}")
         except Exception as e:
             self.logger.error(f"Error saving JSON: {e!s}")
 
         # Save as CSV
         try:
-            # Convert to DataFrame
             df = pd.DataFrame(transformed_papers)
 
             # Handle nested/complex fields for CSV (flatten lists/dicts to strings)
-            # Original fields: authors, categories, cluster_keywords, extracted_keywords
-            # GitHub fields: github_languages (dict), github_topics (list)
-            # PwC fields: pwc_repositories (list of dicts), pwc_datasets (list of dicts),
-            #             pwc_tasks_and_metrics (list of dicts), pwc_methods (list of str)
-
             cols_to_flatten_simple_list = [
                 "authors",
                 "categories",
                 "cluster_keywords",
                 "extracted_keywords",
                 "github_topics",
-                "pwc_methods",
             ]
             for col in cols_to_flatten_simple_list:
                 if col in df.columns:
@@ -325,28 +271,8 @@ class ArxivETL:
                     )
                 )
 
-            # Flatten lists of dictionaries for PwC fields
-            list_of_dicts_cols = [
-                "pwc_repositories",
-                "pwc_datasets",
-                "pwc_tasks_and_metrics",
-            ]
-            for col in list_of_dicts_cols:
-                if col in df.columns:
-                    # Convert list of dicts to a string representation of JSON or simplify
-                    # For CSV, a simple string representation of list of dicts might be too complex.
-                    # Let's try to make it a |-separated list of key aspects, e.g. name or id.
-                    # Or convert the whole list of dicts to a JSON string.
-                    df[col] = df[col].apply(
-                        lambda x: (
-                            json.dumps(x)
-                            if isinstance(x, list) and x
-                            else (x if not isinstance(x, list) else None)
-                        )
-                    )
-
             # Save DataFrame
-            csv_file = os.path.join(self.processed_dir, f"csv/papers_{timestamp}.csv")
+            csv_file = csv_dir / f"papers_{timestamp}.csv"
             df.to_csv(csv_file, index=False, encoding="utf-8")
             self.logger.info(f"Saved CSV to {csv_file}")
         except Exception as e:
@@ -354,21 +280,23 @@ class ArxivETL:
 
         # Save latest aliases for easy access (dashboard)
         try:
-            latest_json = os.path.join(self.processed_dir, "json/latest_papers.json")
-            with open(latest_json, "w", encoding="utf-8") as f:
-                json.dump(transformed_papers, f, ensure_ascii=False, indent=2)
+            latest_json = json_dir / "latest_papers.json"
+            latest_json.write_text(
+                json.dumps(transformed_papers, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
 
-            latest_csv = os.path.join(self.processed_dir, "csv/latest_papers.csv")
+            latest_csv = csv_dir / "latest_papers.csv"
             df.to_csv(latest_csv, index=False, encoding="utf-8")
 
             # Canonical latest files for dashboard tabs
-            dashboard_latest_all = os.path.join(
-                self.data_dir, "arxiv_papers_latest.json"
+            dashboard_latest_all = self.data_dir / "arxiv_papers_latest.json"
+            dashboard_latest_all.write_text(
+                json.dumps(transformed_papers, ensure_ascii=False, indent=2),
+                encoding="utf-8",
             )
-            with open(dashboard_latest_all, "w", encoding="utf-8") as f:
-                json.dump(transformed_papers, f, ensure_ascii=False, indent=2)
 
-            # Simple per-category splits (best-effort)
+            # Simple per-category splits
             def by_cat(prefix: str):
                 return [
                     p
@@ -386,10 +314,9 @@ class ArxivETL:
                 "arxiv_reinforcement_learning_latest.json": by_cat("cs.AI"),
             }
             for filename, items in splits.items():
-                with open(
-                    os.path.join(self.data_dir, filename), "w", encoding="utf-8"
-                ) as f:
-                    json.dump(items, f, ensure_ascii=False, indent=2)
+                (self.data_dir / filename).write_text(
+                    json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
+                )
 
             self.logger.info("Updated latest ArXiv dashboard files")
         except Exception as e:
@@ -402,7 +329,7 @@ class ArxivETL:
         """Generate statistics about the paper clusters.
 
         Args:
-            papers (List[Dict[str, Any]]): Transformed papers with cluster information
+            papers: Transformed papers with cluster information
         """
         if not papers:
             return
@@ -442,39 +369,16 @@ class ArxivETL:
         }
 
         # Save statistics
-        stats_file = os.path.join(self.processed_dir, "cluster_statistics.json")
+        processed_dir = self.output_dir.parent / "processed"
+        processed_dir.mkdir(parents=True, exist_ok=True)
+        stats_file = processed_dir / "cluster_statistics.json"
         try:
-            with open(stats_file, "w", encoding="utf-8") as f:
-                json.dump(statistics, f, ensure_ascii=False, indent=2)
+            stats_file.write_text(
+                json.dumps(statistics, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
             self.logger.info(f"Saved cluster statistics to {stats_file}")
         except Exception as e:
             self.logger.error(f"Error saving cluster statistics: {e!s}")
-
-    def run(self):
-        """Run the complete ETL pipeline."""
-        self.logger.info("Starting ArXiv ETL pipeline")
-
-        try:
-            # Extract
-            papers = self.extract()
-            if not papers:
-                self.logger.warning("No papers extracted, stopping pipeline")
-                return
-
-            # Transform
-            transformed_papers = self.transform(papers)
-            if not transformed_papers:
-                self.logger.warning("No papers transformed, stopping pipeline")
-                return
-
-            # Load
-            self.load(transformed_papers)
-
-            self.logger.info("ArXiv ETL pipeline completed successfully")
-
-        except Exception as e:
-            self.logger.error(f"Error in ETL pipeline: {e!s}")
-            raise  # Re-raise the exception
 
 
 if __name__ == "__main__":

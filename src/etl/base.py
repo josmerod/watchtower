@@ -202,7 +202,15 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             ) from e
 
     def _generate_checksum(self, data: Any) -> str:
-        return hashlib.md5(
+        """Generate SHA256 checksum for data integrity verification.
+
+        Args:
+            data: Data to generate checksum for.
+
+        Returns:
+            SHA256 hexdigest string.
+        """
+        return hashlib.sha256(
             json.dumps(data, sort_keys=True, default=str).encode()
         ).hexdigest()
 

@@ -2,6 +2,7 @@
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -24,12 +25,20 @@ def load_valencia_events() -> List[Dict[str, Any]]:
 
         # Load general Valencia events
         if VALENCIA_EVENTS_FILE.exists():
+            # Get file modification time for debugging
+            file_mtime = VALENCIA_EVENTS_FILE.stat().st_mtime
+            file_time = datetime.fromtimestamp(file_mtime).strftime("%Y-%m-%d %H:%M:%S")
+
             with open(VALENCIA_EVENTS_FILE, "r", encoding="utf-8") as f:
                 general_events = json.load(f)
                 if isinstance(general_events, list):
                     all_events.extend(general_events)
                 elif isinstance(general_events, dict):
                     all_events.append(general_events)
+
+            logger.info(f"✅ Loaded {len(general_events)} Valencia events from {VALENCIA_EVENTS_FILE} (modified: {file_time})")
+        else:
+            logger.warning(f"❌ Valencia events file not found: {VALENCIA_EVENTS_FILE}")
 
         # Load tech-specific events
         if TECH_EVENTS_FILE.exists():
@@ -40,7 +49,7 @@ def load_valencia_events() -> List[Dict[str, Any]]:
                 elif isinstance(tech_events, dict):
                     all_events.append(tech_events)
 
-        logger.info(f"Loaded {len(all_events)} Valencia events")
+        logger.info(f"Total loaded {len(all_events)} Valencia events")
         return all_events
     except Exception as e:
         logger.error(f"Error loading Valencia events: {e}")
@@ -284,6 +293,12 @@ def render_valencia_events_tab() -> html.Div:
                 className="p-4",
             )
 
+        # Get last modification time for display
+        last_updated = "Nunca"
+        if VALENCIA_EVENTS_FILE.exists():
+            file_mtime = VALENCIA_EVENTS_FILE.stat().st_mtime
+            last_updated = datetime.fromtimestamp(file_mtime).strftime("%d/%m/%Y %H:%M")
+
         # Statistics
         total_events = len(events_data)
         categories = set(event.get("category", "General") for event in events_data)
@@ -419,6 +434,10 @@ def render_valencia_events_tab() -> html.Div:
                                     "Eventos locales y tecnológicos en Valencia y alrededores",
                                     className="text-muted",
                                 ),
+                                html.Small(
+                                    f"Última actualización: {last_updated}",
+                                    className="text-muted",
+                                ),
                             ]
                         )
                     ],
@@ -467,14 +486,14 @@ def register_valencia_events_callbacks(app):
 
     @app.callback(
         [
-            Output("events-cards-container", "style"),
-            Output("events-table-container", "style"),
-            Output("events-cards-view-btn", "outline"),
-            Output("events-table-view-btn", "outline"),
+            Output("cards-container", "style"),
+            Output("table-container", "style"),
+            Output("cards-view-btn", "outline"),
+            Output("table-view-btn", "outline"),
         ],
         [
-            Input("events-cards-view-btn", "n_clicks"),
-            Input("events-table-view-btn", "n_clicks"),
+            Input("cards-view-btn", "n_clicks"),
+            Input("table-view-btn", "n_clicks"),
         ],
     )
     def toggle_events_view(cards_clicks, table_clicks):
@@ -482,18 +501,18 @@ def register_valencia_events_callbacks(app):
         if table_clicks and (not cards_clicks or table_clicks > cards_clicks):
             # Show table view
             return (
-                {"display": "none"},  # events-cards-container
-                {"display": "block"},  # events-table-container
-                True,  # events-cards-view-btn outline
-                False,  # events-table-view-btn outline
+                {"display": "none"},  # cards-container
+                {"display": "block"},  # table-container
+                True,  # cards-view-btn outline
+                False,  # table-view-btn outline
             )
         else:
             # Show cards view (default)
             return (
-                {"display": "block"},  # events-cards-container
-                {"display": "none"},  # events-table-container
-                False,  # events-cards-view-btn outline
-                True,  # events-table-view-btn outline
+                {"display": "block"},  # cards-container
+                {"display": "none"},  # table-container
+                False,  # cards-view-btn outline
+                True,  # table-view-btn outline
             )
 
     @app.callback(

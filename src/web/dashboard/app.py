@@ -45,7 +45,7 @@ from src.web.dashboard.components.spanish_public_aid_tab import (
     register_spanish_aid_callbacks,
     render_spanish_public_aid_tab,
 )
-from src.web.dashboard.components.valencia_events_tab import (
+from src.web.dashboard.components.valencia_events_new_tab import (
     register_valencia_events_callbacks,
     render_valencia_events_tab,
 )

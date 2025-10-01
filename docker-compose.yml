@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  watchtower:
+    build: .
+    container_name: watchtower-app
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_MODE=production
+      - WATCHTOWER_ETL_INTERVAL=3600  # Run ETL every hour
+      - WATCHTOWER_DASHBOARD_PORT=7777
+      - WATCHTOWER_LOG_LEVEL=INFO
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./secrets:/app/secrets:ro
+    ports:
+      - "7777:7777"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7777/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - watchtower-network
+
+  # Optional: Redis for caching and job queue (if needed in future)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: watchtower-redis
+  #   restart: unless-stopped
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - watchtower-network
+
+networks:
+  watchtower-network:
+    driver: bridge
+
+# Uncomment if using Redis
+# volumes:
+#   redis_data:
