@@ -47,6 +47,9 @@ COPY secrets/ ./secrets/
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/.venv/lib/python3.11/site-packages"
 
+# Install Playwright browsers and dependencies
+RUN playwright install --with-deps
+
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash watchtower
 USER watchtower
