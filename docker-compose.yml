@@ -7,13 +7,13 @@ services:
     restart: unless-stopped
     environment:
       - WATCHTOWER_MODE=production
-      - WATCHTOWER_ETL_INTERVAL=3600  # Run ETL every hour
+      - WATCHTOWER_ETL_INTERVAL=7200  # Run ETL every 2 hours
       - WATCHTOWER_DASHBOARD_PORT=7777
       - WATCHTOWER_LOG_LEVEL=INFO
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./secrets:/app/secrets:ro
+      - /mnt/user/appdata/watchtower/data:/app/data
+      - /mnt/user/appdata/watchtower/logs:/app/logs
+      - /mnt/user/appdata/watchtower/secrets:/app/secrets:ro
     ports:
       - "7777:7777"
     healthcheck:
