@@ -31,6 +31,7 @@ MEGALITH is designed to automate the collection of information from news sites, 
       - [Legacy Streamlit Dashboard (Optional)](#legacy-streamlit-dashboard-optional)
       - [Complete System Launch](#complete-system-launch)
   - [Docker](#docker)
+  - [unRAID Deployment](#unraid-deployment)
   - [Scheduling and Automation (Legacy)](#scheduling-and-automation-legacy)
   - [Automated Backups](#automated-backups)
   - [Important Notes \& Known Issues (Prefect Implementation)](#important-notes--known-issues-prefect-implementation)
@@ -82,7 +83,7 @@ This project is ideal for users who need to stay updated on specific topics, tra
     -   Interactive Streamlit application providing a holistic view of collected data.
     -   Categorized data presentation: Shortcuts, Videos, News, Games, Courses, Watchers, and Administrative functionalities.
     -   Features include interactive data tables, search, filtering, and potentially data export.
--   **Scheduling & Automation**:
+-   **Scheduling \& Automation**:
     -   Cross-platform shell (`.sh`) and batch (`.bat`) scripts for automating the execution of ETL tasks, watchers, and the dashboard.
     -   Support for setting up tasks as background processes or services (e.g., using systemd on Linux or Task Scheduler on Windows).
     -   Centralized logging for all components, typically aggregated within the `logs/` directory.
@@ -97,7 +98,7 @@ This project is ideal for users who need to stay updated on specific topics, tra
 -   **Data Processing**: Polars (primary), Pandas (secondary), NumPy
 -   **Web Dashboard**: Streamlit
 -   **Dependency Management**: Poetry (preferred, using `pyproject.toml`), pip with `requirements.txt` (for compatibility)
--   **Code Formatting & Linting**: Ruff
+-   **Code Formatting \& Linting**: Ruff
 -   **Testing**: pytest
 -   **Version Control**: Git
 -   **Containerization**: Docker (see `Dockerfile`)
@@ -184,7 +185,7 @@ UV is the modern Python package manager that makes dependency management extreme
     ```bash
     # Windows
     powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-    
+
     # macOS/Linux
     curl -LsSf https://astral.sh/uv/install.sh | sh
     ```
@@ -193,7 +194,7 @@ UV is the modern Python package manager that makes dependency management extreme
     ```bash
     # Install all dependencies (automatically creates virtual environment)
     uv sync --all-extras
-    
+
     # Install Playwright browsers
     uv run playwright install
     ```
@@ -383,7 +384,7 @@ This will start the main dashboard at `http://localhost:7777`. This is the **pri
 #### Legacy Streamlit Dashboard (Optional)
 
 For the legacy Streamlit dashboard (if needed):
--   Windows: `.\run_watchtower.bat` 
+-   Windows: `.\run_watchtower.bat`
 -   macOS/Linux: `bash run_streamlit.sh`
 
 This will start the legacy dashboard at `http://localhost:8501`.
@@ -417,6 +418,37 @@ docker run -p 8501:8501 --env-file .env watchtower-app
 -   For persistent data, mount volumes: `-v /path/on/host:/app/data` (adjust paths accordingly).
 -   Refer to the `Dockerfile` for build stages, exposed ports, and entry points.
 
+## unRAID Deployment
+
+To deploy the application on an unRAID server, you can use the provided `docker-compose.yml` file. The volume mappings in this file are pre-configured to use the recommended unRAID appdata directory structure:
+
+```yaml
+volumes:
+  - /mnt/user/appdata/watchtower/data:/app/data
+  - /mnt/user/appdata/watchtower/logs:/app/logs
+  - /mnt/user/appdata/watchtower/secrets:/app/secrets:ro
+```
+
+Before deploying, ensure that you have the "User Scripts" plugin installed on your unRAID server. Then, follow these steps:
+
+1.  **Create the necessary directories:**
+    ```bash
+    mkdir -p /mnt/user/appdata/watchtower/data
+    mkdir -p /mnt/user/appdata/watchtower/logs
+    mkdir -p /mnt/user/appdata/watchtower/secrets
+    ```
+
+2.  **Place your `secrets` files:**
+    Copy any necessary secret files (e.g., API keys, configuration files) into the `/mnt/user/appdata/watchtower/secrets` directory.
+
+3.  **Run the application:**
+    Navigate to the directory containing the `docker-compose.yml` file and run the following command:
+    ```bash
+    docker-compose up -d
+    ```
+
+This will start the application in detached mode. You can view the logs using `docker-compose logs -f`.
+
 ## Scheduling and Automation (Legacy)
 
 The information below pertains to the older, script-based scheduling methods. **With the introduction of Prefect, it is highly recommended to use Prefect Deployments for scheduling and automation as described in the "Running Workflows with Prefect" section.**
@@ -437,7 +469,7 @@ This project includes a feature to automatically back up the `/data` and `/logs`
 
 For detailed setup instructions, please see [Google Drive Backup Configuration](./docs/google_drive_backup.md).
 
-## Important Notes & Known Issues (Prefect Implementation)
+## Important Notes \& Known Issues (Prefect Implementation)
 
 -   **PapersWithCode Client**: The `paperswithcode-client` dependency is currently commented out in `requirements.txt` due to historical Pydantic v1 conflicts. Consequently, its usage within `src/etl/arxiv/arxiv_etl.py` (for enriching ArXiv papers with PwC data) is also commented out. This part of the ArXiv ETL is therefore disabled.
 -   **Python Path for Flows**: The Prefect flow scripts located in `prefect_flows/` (e.g., `news_flow.py`, `data_collection_flow.py`) have had `sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))` added at the beginning. This is a workaround to ensure that modules from the `src/` directory can be imported correctly when these flows are executed. For long-term stability and best practices, consider setting up the project as an installable Python package or managing `PYTHONPATH` externally.
@@ -521,7 +553,7 @@ We welcome contributions! Please follow these guidelines to ensure a smooth proc
 
 -   PRs will be reviewed by maintainers. Be prepared for feedback and requests for changes.
 -   Maintain communication and address review comments promptly.
--   Once approved and all checks pass, your PR will be merged. Maintainers may squash or rebase commits.
+--   Once approved and all checks pass, your PR will be merged. Maintainers may squash or rebase commits.
 
 Thank you for contributing to MEGALITH!
 
@@ -563,7 +595,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 For questions, issues, or collaboration, please refer to:
 -   **GitHub Issues**: [Project's GitHub Issues Page](https://github.com/yourusername/megalith/issues) (Replace with actual link)
 -   **Project Maintainer**: `<your.email@example.com>` or [GitHub Profile](https://github.com/yourusername) (Update with actual contact information)
--   
+-
 
 ## Assessment
 
@@ -608,7 +640,7 @@ Watchtower Solution Quality Assessment
   - Single-Process Architecture: No horizontal scaling capabilities
   - Memory Management: Limited optimization for long-running processes
 
-  3. Monitoring & Observability
+  3. Monitoring \& Observability
   - Limited Metrics: Basic ETL metrics but no system-wide monitoring
   - No Health Endpoints: Missing service health monitoring
   - Alert System: Incomplete notification infrastructure
