@@ -29,6 +29,12 @@
       "description": "Best websites a programmer should visit"
     },
     {
+      "name": "Awesome talks",
+      "url": "https://github.com/JanVanRyswyck/awesome-talks",
+      "icon": "🌟",
+      "description": "Awesome talks"
+    },
+    {
       "name": "Awesome awesome awesome",
       "url": "https://github.com/sdmg15/Best-websites-a-programmer-should-visit link",
       "icon": "🌟",

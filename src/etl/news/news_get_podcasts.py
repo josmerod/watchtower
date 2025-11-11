@@ -31,7 +31,7 @@ PODCAST_FEEDS: dict[str, str] = {
     "MLOpsCommunity": "https://anchor.fm/s/174cb1b8/podcast/rss",
     "IHaveADHD": "https://ihaveadhd.com/feed/",
     "ADHDExperts": "http://feeds.libsyn.com/44408/rss",
-    "LexFridman": "https://lexfridman.com/feed/podcast/",
+    "LexFridman": "https://lexfridman.com/feed/podcast/"
 }
 
 
