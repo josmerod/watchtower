@@ -1,0 +1,236 @@
+version: '3.8'
+
+services:
+  # Main Dashboard Service
+  watchtower-dashboard:
+    build:
+      context: .
+      target: base
+    container_name: watchtower-dashboard
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_MODE=production
+      - WATCHTOWER_DASHBOARD_PORT=7777
+      - WATCHTOWER_LOG_LEVEL=INFO
+      - DATABASE_URL=postgresql://watchtower:${POSTGRES_PASSWORD}@postgres:5432/watchtower
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./secrets:/app/secrets:ro
+    ports:
+      - "7777:7777"
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7777/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - watchtower-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ETL Worker Service
+  watchtower-etl:
+    build:
+      context: .
+      target: base
+    container_name: watchtower-etl
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_MODE=etl_only
+      - WATCHTOWER_ETL_INTERVAL=1800  # 30 minutes
+      - WATCHTOWER_LOG_LEVEL=INFO
+      - DATABASE_URL=postgresql://watchtower:${POSTGRES_PASSWORD}@postgres:5432/watchtower
+      - REDIS_URL=redis://redis:6379/0
+      - CONCURRENCY_LIMIT=3
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./secrets:/app/secrets:ro
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - watchtower-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # Watcher Service
+  watchtower-watchers:
+    build:
+      context: .
+      target: base
+    container_name: watchtower-watchers
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_MODE=watchers_only
+      - WATCHTOWER_LOG_LEVEL=INFO
+      - DATABASE_URL=postgresql://watchtower:${POSTGRES_PASSWORD}@postgres:5432/watchtower
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./secrets:/app/secrets:ro
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - watchtower-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: watchtower-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=watchtower
+      - POSTGRES_USER=watchtower
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-watchtower123}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U watchtower"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - watchtower-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: watchtower-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - watchtower-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: watchtower-nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - watchtower-dashboard
+    networks:
+      - watchtower-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: watchtower-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - watchtower-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: watchtower-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - watchtower-network
+
+networks:
+  watchtower-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

@@ -67,7 +67,9 @@
       "mcp__playwright__browser_close",
       "Bash(jq:*)",
       "mcp__sequential-thinking__sequentialthinking",
-      "mcp__playwright__browser_snapshot"
+      "mcp__playwright__browser_snapshot",
+      "Bash(findstr:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

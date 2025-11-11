@@ -7,12 +7,17 @@
       "TraversyMedia",
       "freecodecamp",
       "ArjanCodes",
+      "HealthyDev",
       "t3dotgg",
+      "GOTO-",
+      "NDC",
+      "RobertElderSoftware",
       "ishaqhamin",
       "james-willett",
       "Sentdex",
       "TwoMinutePapers",
       "YannicKilcher",
+      "InternetOfBugs",
       "CodeEmporium",
       "mreflow",
       "Deeplearningai",
@@ -24,7 +29,9 @@
       "NoBoilerplate",
       "pragmaticengineer",
       "mouredev",
+      "_JohnHammond",
       "FaztCode",
+      "hnasr",
       "midudev",
       "midulive",
       "PeladoNerd",
@@ -79,6 +86,7 @@
       "MoneyMacroLofi",
       "unlearningeconomics9021",
       "SecondThought",
+      "RobertElderSoftware",
       "democracyatwrk",
       "EpicEconomics",
       "MoneyMacro"
@@ -238,9 +246,6 @@
     "description": "Memes",
     "channels": [
       "bigjpeldevorador",
-      "JesúsGMaestro",
-      "RIMBEL35",
-      "mundodesconocido",
       "JollyWangcore",
       "jollysbigolvideohole9402",
       "DjRecuerdosYT",
@@ -248,7 +253,6 @@
       "ElcanaldeKorah",
       "OrdinarySausage",
       "LaTierraesBlanda",
-      "Exponiendolaverdad",
       "RinConIllo222",
       "SrTrilineo",
       "BaityLive",
@@ -305,6 +309,18 @@
       "bobross_thejoyofpainting",
       "thebootlegboy2",
       "DJMAITHAI"
+    ]
+  },
+  "zz-porros": {
+    "description": "Porros",
+    "channels": [
+      "JesúsGMaestro",
+      "RIMBEL35",
+      "mundodesconocido",
+      "elithecomputerguy",
+      "EliComputerGuyLive",
+      "Exponiendolaverdad",
+      "FailedNormal"
     ]
   }
 } 

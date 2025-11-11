@@ -34,6 +34,7 @@ SUBREDDITS_CONFIG = {
     "OpenAI": {"type": "json", "category": "ai_ml"},
     # Programming/Development
     "programming": {"type": "json", "category": "programming"},
+    "coding": {"type": "json", "category": "programming"},
     "webdev": {"type": "json", "category": "programming"},
     "Python": {"type": "json", "category": "programming"},
     "javascript": {"type": "json", "category": "programming"},
@@ -44,7 +45,6 @@ SUBREDDITS_CONFIG = {
     "cpp": {"type": "json", "category": "programming"},
     "java": {"type": "json", "category": "programming"},
     "learnpython": {"type": "json", "category": "programming"},
-    "coding": {"type": "json", "category": "programming"},
     # Tech/Business
     "technology": {"type": "json", "category": "tech"},
     "tech": {"type": "json", "category": "tech"},
