@@ -34,10 +34,10 @@ workflow_status:
 
   # Phase 0: Discovery (Optional)
   brainstorm-project: "docs/bmm-brainstorming-session-2025-01-11.md"  # agent: analyst - COMPLETED 2025-01-11
-  research: required  # agent: analyst
+  research: "docs/research-technical-2025-01-11.md"  # agent: analyst
 
   # Phase 1: Planning
-  prd: required  # agent: pm
+  prd: "docs/PRD.md"  # agent: pm - COMPLETED 2025-01-11
   validate-prd: optional  # agent: pm
   create-design: conditional  # agent: ux-designer
 

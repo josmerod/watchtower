@@ -69,7 +69,10 @@
       "mcp__sequential-thinking__sequentialthinking",
       "mcp__playwright__browser_snapshot",
       "Bash(findstr:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "WebSearch",
+      "Bash(cat:*)",
+      "Bash(\"C:\\Users\\josem\\watchtower\\docs\\epics.md\")"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
