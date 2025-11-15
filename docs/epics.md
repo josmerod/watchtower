@@ -608,36 +608,45 @@ So that **I only receive alerts for content I care about**.
 
 ---
 
-### Story 3.3: Browser Push Notifications
+### Story 3.3: Telegram Bot Notifications
 
 As a **user**,
-I want **to receive browser notifications when new content matches my rules**,
-So that **I'm immediately alerted to time-sensitive opportunities**.
+I want **to receive Telegram notifications when new content matches my rules**,
+So that **I'm immediately alerted to time-sensitive opportunities with persistent message history**.
 
 **Acceptance Criteria:**
 
-**Given** I've granted browser notification permission
+**Given** I've linked my Telegram account to Megalith
 **When** an alert event is generated (Story 3.1)
-**Then** I receive a browser notification (if browser channel enabled)
+**Then** I receive a Telegram message (if Telegram channel enabled)
 
-**And** notification shows: title, source, brief preview, timestamp
+**And** message shows: title, source, brief preview, timestamp, direct link to content
 
-**When** I click the notification
+**And** message uses rich Markdown formatting (bold titles, clickable links)
+
+**When** I click the link in the message
 **Then** dashboard opens to that content item
 
-**And** notification is marked as "read"
+**And** message remains in Telegram chat history for later review
 
-**And** I can dismiss or snooze notifications
+**And** I can configure quiet hours (no notifications during specified times)
 
 **Prerequisites:** Story 3.1 (alert events), Story 3.2 (user rules)
 
 **Technical Notes:**
-- Use Web Notifications API (request permission on first alert rule creation)
-- Implement notification service in `src/alerts/notifications.py`
-- Poll alert events every 30 seconds when dashboard is open
-- Use Service Workers for background notifications (future enhancement)
-- Notification payload: title, body (preview), icon, data (content_url)
-- Deep link to specific content item when clicked
+- Use `python-telegram-bot 20.x` library
+- Create Telegram bot via @BotFather, store bot token in environment variables
+- Implement in `src/alerts/telegram_bot.py`
+- User onboarding flow:
+  1. User creates first alert rule
+  2. System generates unique verification code
+  3. User messages bot with `/start <code>` to link account
+  4. System stores user's Telegram chat_id in user profile
+- Message format: `🔔 *{title}*\n📰 Source: {source}\n🔗 [View in Megalith]({url})\n⏰ {timestamp}`
+- Respect quiet hours from user preferences
+- Handle Telegram API rate limits gracefully
+- Log delivery status to alert events
+- Future enhancement: Inline buttons for "Mark as Read", "Snooze 1h"
 
 ---
 
