@@ -72,7 +72,8 @@
       "Bash(test:*)",
       "WebSearch",
       "Bash(cat:*)",
-      "Bash(\"C:\\Users\\josem\\watchtower\\docs\\epics.md\")"
+      "Bash(\"C:\\Users\\josem\\watchtower\\docs\\epics.md\")",
+      "Bash(del:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

@@ -30,7 +30,10 @@ OutputType = TypeVar("OutputType")
 
 
 class ETLMetrics(BaseModel):
-    """Model for ETL execution metrics."""
+    """Model for ETL execution metrics.
+
+    Enhanced in Epic 1, Story 1.1 to include detailed error tracking and checkpoint status.
+    """
 
     start_time: datetime
     end_time: datetime | None = None
@@ -41,6 +44,12 @@ class ETLMetrics(BaseModel):
     records_failed: int = 0
     error_count: int = 0
     warnings_count: int = 0
+
+    # Story 1.1: Enhanced error tracking
+    errors_detail: List[dict[str, Any]] = []
+
+    # Story 1.1: Checkpoint status tracking
+    checkpoint_status: str | None = None  # "resumed" | "new_run" | "checkpoint_saved" | "checkpoint_failed"
 
     def finish(self) -> None:
         self.end_time = datetime.utcnow()
@@ -57,6 +66,45 @@ class ETLMetrics(BaseModel):
     @property
     def is_successful(self) -> bool:
         return self.records_loaded > 0 and self.error_count == 0
+
+    def add_error_detail(
+        self,
+        error_message: str,
+        error_type: str,
+        stack_trace: str | None = None,
+        context: dict[str, Any] | None = None,
+        input_data: Any = None
+    ) -> None:
+        """Add detailed error information to metrics.
+
+        Args:
+            error_message: Human-readable error message
+            error_type: Exception class name
+            stack_trace: Full stack trace (optional)
+            context: Additional context about the error
+            input_data: Input data that caused the error (sanitized)
+        """
+        error_detail = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "message": error_message,
+            "type": error_type,
+        }
+
+        if stack_trace:
+            error_detail["stack_trace"] = stack_trace
+
+        if context:
+            error_detail["context"] = context
+
+        if input_data is not None:
+            # Truncate large input data to prevent massive metrics files
+            input_str = str(input_data)
+            if len(input_str) > 500:
+                input_str = input_str[:500] + "... (truncated)"
+            error_detail["input_data"] = input_str
+
+        self.errors_detail.append(error_detail)
+        self.error_count += 1
 
 
 class ETLCheckpoint(BaseModel):
@@ -358,11 +406,15 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         self.metrics = ETLMetrics(start_time=datetime.utcnow())
         run_threw_exception = False
         try:
+            # Story 1.1: Track checkpoint status
             self.current_checkpoint = self._load_checkpoint()
             if self.current_checkpoint:
+                self.metrics.checkpoint_status = "resumed"
                 self.logger.info(
                     f"Resuming from checkpoint: {self.current_checkpoint.checkpoint_id}"
                 )
+            else:
+                self.metrics.checkpoint_status = "new_run"
 
             extracted = self._retry_operation("extract", self.extract)
             self.metrics.records_extracted = len(extracted)
@@ -405,8 +457,19 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
 
         except Exception as e:
             run_threw_exception = True
-            self.metrics.error_count += 1
+
+            # Story 1.1: Capture detailed error information
+            import traceback
+            stack_trace = traceback.format_exc()
             err_ctx = {"etl_name": self.name, "metrics": self.metrics.model_dump()}
+
+            self.metrics.add_error_detail(
+                error_message=str(e),
+                error_type=type(e).__name__,
+                stack_trace=stack_trace,
+                context=err_ctx
+            )
+
             wt_err = handle_exception(
                 e, logger=self.logger, reraise=False, add_context=err_ctx
             )
@@ -441,6 +504,9 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                     "records_loaded": self.metrics.records_loaded,
                     "records_failed": self.metrics.records_failed,
                     "error_count": self.metrics.error_count,
+                    # Story 1.1: Include enhanced metrics
+                    "errors_detail": self.metrics.errors_detail,
+                    "checkpoint_status": self.metrics.checkpoint_status,
                     "success": self.metrics.is_successful
                     and self.metrics.error_count == 0,
                     "output_dir": str(self.output_dir),

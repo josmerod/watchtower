@@ -1,1656 +1,1573 @@
 # Architecture Document - Megalith (Watchtower)
 
-**Project**: Megalith (Watchtower)
-**Author**: Joshi
-**Date**: 2025-01-12
-**Version**: 1.0.0
-**Type**: Brownfield Project (Existing Codebase)
-**Complexity Level**: High - Multi-domain data aggregation platform
+**Project**: megalith
+**Author**: Joshi (with Winston, Architect)
+**Date**: 2025-01-14
+**Version**: 2.0
+**Project Type**: Brownfield Web Application (Data Intelligence Platform)
 
 ---
 
 ## Executive Summary
 
-**Megalith (Watchtower)** is a comprehensive data intelligence and monitoring platform that aggregates, processes, and monitors information from 50+ diverse sources including research papers, news feeds, games, courses, AI platforms, and social media.
+Megalith's architecture is built on **pragmatic, boring technology that works**. This is a brownfield platform with 50+ operational ETL pipelines and a sophisticated dashboard - our architectural decisions preserve this solid foundation while enabling multi-user expansion, smart notifications, and API integrations.
 
-**Core Architectural Philosophy**: **Extensibility through Patterns**
+**Core Architectural Philosophy:**
+- **Extensibility First**: The <30-minute source integration capability is the platform's magic - all decisions preserve this
+- **Boring Technology**: Battle-tested libraries over cutting-edge frameworks
+- **File-Based Performance**: JSON storage remains primary data layer, database only where needed (user management)
+- **Incremental Enhancement**: Add capabilities without disrupting existing 50+ ETL pipelines
 
-The architecture prioritizes **rapid source integration** (<30min per new source) through well-defined framework patterns (BaseETL, BaseWatcher) while maintaining high performance and data quality.
+**Key Architectural Decisions:**
+1. **Hybrid Storage**: SQLite for users/preferences, file-based JSON for data sources (preserves existing architecture)
+2. **Authentication**: Flask-Login for security-critical user management
+3. **Real-Time**: Telegram Bot API for instant alerts (better than email), 60s polling for dashboard updates
+4. **API Layer**: FastAPI for external integrations (Epic 9), separate service in same container
+5. **Performance**: Built-in Python tools (@lru_cache, difflib) before external dependencies
 
-**Key Metrics**:
-- **50+ Active Data Sources** (target: 100+)
-- **<30 minute** source integration time (via scaffolding tools)
-- **<2 second** dashboard load time with 10K+ items
-- **File-based JSON** storage (no database) for simplicity and performance
-- **Template Method Pattern** as core extensibility mechanism
-
----
-
-## Table of Contents
-
-1. [Technology Stack](#1-technology-stack)
-2. [System Architecture](#2-system-architecture)
-3. [Project Structure](#3-project-structure)
-4. [Core Framework Patterns](#4-core-framework-patterns)
-5. [Cross-Cutting Concerns](#5-cross-cutting-concerns)
-6. [Epic-to-Architecture Mapping](#6-epic-to-architecture-mapping)
-7. [Implementation Patterns for AI Agents](#7-implementation-patterns-for-ai-agents)
-8. [Performance & Scalability](#8-performance--scalability)
-9. [Security](#9-security)
-10. [Testing Strategy](#10-testing-strategy)
-11. [Deployment](#11-deployment)
+This architecture supports **10-20 users with 1-3 concurrent** (realistic scale), enables all 9 epics, and maintains the rapid extensibility that makes Megalith special.
 
 ---
 
-## 1. Technology Stack
+## Project Context (Brownfield)
 
-### Core Technologies
+**Important**: Megalith is NOT a greenfield project. This architecture document describes:
+- **Existing foundation** to preserve (50+ ETL pipelines, Dash dashboard, BaseETL framework)
+- **New architectural decisions** for Epics 1-9 (multi-user, notifications, API, intelligence features)
+- **Integration patterns** between existing and new components
 
-| Layer | Technology | Justification |
-|-------|-----------|---------------|
-| **Language** | Python 3.10+ | Modern type hints, match statements, async support |
-| **Package Manager** | UV | 10-100x faster than pip, consistent dependency resolution |
-| **Web Framework** | Dash + Flask | Python-native reactive framework, no separate frontend |
-| **UI Components** | dash-bootstrap-components | Bootstrap 5 styling, responsive design |
-| **Data Visualization** | Plotly | Interactive charts, dashboard integration |
-| **Data Validation** | Pydantic v2 | Type-safe models, settings management |
-| **Data Processing** | Pandas + Polars | Pandas for compatibility, Polars for performance |
-| **Web Scraping** | BeautifulSoup4, Playwright, Requests, Cloudscraper | Multi-strategy scraping for different site types |
-| **Testing** | pytest + pytest-cov | Standard Python testing with coverage |
-| **Code Quality** | Ruff (linting + formatting), mypy (type checking) | Fast, modern tooling |
-| **Logging** | Python logging + custom StructuredFormatter | JSON structured logs, performance tracking |
-
-### Data Storage Decision: **File-Based JSON**
-
-**Choice**: File-based JSON storage in `data/` directory
-
-**Rationale**:
-1. **Simplicity**: No database setup, migrations, or ORM complexity
-2. **Performance**: Direct file reads are fast for read-heavy workloads
-3. **Version Control**: Data files can be backed up easily
-4. **Portability**: Works across environments without database dependencies
-5. **Inspection**: JSON files are human-readable and debuggable
-
-**Trade-offs**:
-- ❌ No ACID transactions (acceptable for read-heavy, append-mostly workloads)
-- ❌ No complex queries (mitigated by Pandas/Polars for filtering)
-- ✅ Perfect for 10K-50K items per domain (current scale)
-- ✅ Dashboard caching makes file reads negligible
-
-**Future Migration Path** (if needed at 100K+ items):
-- PostgreSQL with SQLAlchemy for transactional data
-- Keep file-based storage for archival and cold data
+**No starter template initialization needed** - the platform is operational. New components integrate into existing structure.
 
 ---
 
-## 2. System Architecture
+## Decision Summary
 
-### 2.1 High-Level Architecture
+| Category | Decision | Version/Library | Affects Epics | Rationale | Provided By |
+|----------|----------|----------------|---------------|-----------|-------------|
+| **Data - Users** | SQLite | sqlite3 (built-in) or SQLAlchemy 2.x | 5, 5.5, 8, 9 | User management, preferences, sessions. Scales to 20 users, ACID guarantees, no server overhead | New |
+| **Data - Sources** | File-based JSON | Built-in json module | All | Preserves existing architecture, fast reads, simple backup, proven at current scale | Existing |
+| **Authentication** | Flask-Login | flask-login 0.6.x | 5, 5.5, 9 | Battle-tested security, session management, CSRF protection, Dash-compatible | New |
+| **Password Hashing** | bcrypt | bcrypt 4.x | 5 | Industry standard, 12 rounds minimum, future-proof security | New |
+| **Dashboard Framework** | Dash | dash 2.x | All | Existing foundation, Bootstrap components, Plotly integration | Existing |
+| **UI Components** | Bootstrap 5 | dash-bootstrap-components 1.x | All | Responsive design, accessible components, familiar patterns | Existing |
+| **Data Validation** | Pydantic | pydantic 2.x | All | Type-safe models, automatic validation, FastAPI integration | Existing |
+| **Configuration** | Pydantic Settings | pydantic-settings 2.x | All | Environment variables, nested configs, type validation | Existing |
+| **ETL Framework** | BaseETL (Custom) | N/A - Internal pattern | All | Template method pattern, checkpointing, metrics, retry logic | Existing |
+| **Watcher System** | BaseWatcher (Custom) | N/A - Internal pattern | 3, 4 | State persistence, event logging, configurable intervals | Existing |
+| **Real-Time Notifications** | Telegram Bot API | python-telegram-bot 20.x | 3 | Instant delivery, free/unlimited, rich formatting, user-friendly | New |
+| **Dashboard Updates** | Dash Interval Polling | dcc.Interval (built-in) | 3 | 60s polling acceptable for intelligence aggregation, zero infrastructure | New |
+| **REST API** | FastAPI | fastapi 0.110.x | 9 | Auto-docs, Pydantic integration, modern, async support | New |
+| **API Server** | Uvicorn | uvicorn 0.27.x | 9 | ASGI server for FastAPI, production-ready, async support | New |
+| **Dashboard Server** | Waitress | waitress 3.x | All | Cross-platform WSGI server, Windows/UnRAID compatible, production-ready | New |
+| **Data Processing** | Pandas + Polars | pandas 2.x, polars 0.20.x | All | High-performance data operations, existing patterns | Existing |
+| **Web Scraping** | Playwright + BeautifulSoup4 | playwright 1.x, bs4 4.x | All | Browser automation, HTML parsing, existing pipelines | Existing |
+| **HTTP Requests** | Requests + Cloudscraper | requests 2.x, cloudscraper 1.x | All | HTTP client, cloudflare bypass, proven reliability | Existing |
+| **Search (Current)** | Client-side filtering | JavaScript Array.filter | 1 | Sufficient for 10K items/tab, no dependencies, instant results | New |
+| **Search (Future)** | PostgreSQL FTS | N/A - if needed | 1 | Migration path if data exceeds 100K items and client-side becomes slow | Future |
+| **Deduplication** | difflib | difflib (built-in) | 4 | Title similarity >80%, no dependencies, sufficient accuracy | New |
+| **NLP Classification** | Enhanced keywords | Custom + regex | 4 | Low resource usage, improve existing keyword approach, no heavy models | Enhanced |
+| **Caching** | LRU Cache | functools.lru_cache (built-in) | 7 | Zero config, built-in, perfect for function-level caching | New |
+| **Task Scheduling** | Cron/systemd | OS-level | All | ETL scheduling, cleanup jobs, proven reliability | Existing |
+| **Package Manager** | UV | uv 0.1.x | All | 10-100x faster than pip, existing tooling | Existing |
+| **Testing** | pytest | pytest 8.x | All | Unit/integration tests, coverage reporting, existing patterns | Existing |
+| **Linting/Formatting** | Ruff | ruff 0.2.x | All | Fast linter/formatter, strict rules, existing config | Existing |
+| **Type Checking** | mypy | mypy 1.8.x | All | Static type checking, strict mode, existing config | Existing |
+| **Deployment** | Docker + UnRAID | docker 24.x | All | Containerization, UnRAID deployment, existing setup | Existing |
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        External Data Sources                     │
-│  ArXiv │ GitHub │ Reddit │ News │ Games │ Courses │ AI Platforms│
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      ETL Framework Layer                         │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐                │
-│  │  BaseETL   │  │ ArXiv ETL  │  │ News ETL   │ ... (50+ ETLs) │
-│  │ (Template) │  │ (Concrete) │  │ (Concrete) │                │
-│  └────────────┘  └────────────┘  └────────────┘                │
-│       │                │                │                        │
-│       ▼                ▼                ▼                        │
-│  [Extract] ──▶ [Transform] ──▶ [Load] ──▶ JSON Files           │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     Data Storage Layer                           │
-│  data/{source}/output/{source}_{timestamp}.json                │
-│  data/{source}/output/{source}_latest.json                     │
-│  data/{source}/checkpoints/latest.json                         │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                ┌───────────┴───────────┐
-                ▼                       ▼
-┌────────────────────────┐  ┌────────────────────────┐
-│   Watcher System       │  │  Dashboard Layer       │
-│  (Real-time Monitor)   │  │  (Dash + Bootstrap)    │
-│                        │  │                        │
-│  ┌──────────────┐      │  │  ┌──────────────┐     │
-│  │ BaseWatcher  │      │  │  │ Tab Manager  │     │
-│  │ (Template)   │      │  │  │  Pattern     │     │
-│  └──────────────┘      │  │  └──────────────┘     │
-│  • State Persistence   │  │  • Single Callback    │
-│  • Event Logging       │  │  • Lazy Loading       │
-│  • Change Detection    │  │  • Bootstrap UI       │
-└────────────────────────┘  └────────────────────────┘
-```
-
-### 2.2 Data Flow
-
-```
-External API/RSS ──▶ ETL Pipeline ──▶ JSON Storage ──▶ Dashboard
-     │                   │               │                │
-     ▼                   ▼               ▼                ▼
-┌──────────┐      ┌──────────┐    ┌──────────┐    ┌──────────┐
-│ • HTTP   │      │ • Extract│    │ • File   │    │ • Manager│
-│ • RSS    │      │ • Trans  │    │ • Cached │    │ • Filter │
-│ • API    │      │ • Valida │    │ • Events │    │ • Display│
-│ • Scrape │      │ • Load   │    │ • Latest │    │ • Search │
-└──────────┘      └──────────┘    └──────────┘    └──────────┘
-```
-
-### 2.3 Three-Layer Pattern
-
-**Layer 1: Data Acquisition** (ETL Pipelines)
-- Inherit from `BaseETL`
-- Implement: `extract()`, `transform()`, `load()`
-- Automatic: metrics, checkpointing, retry logic, validation
-
-**Layer 2: Data Storage** (File System + JSON)
-- Timestamped files for history: `{name}_{YYYYmmdd_HHMMSS}.json`
-- Latest symlinks for fast access: `{name}_latest.json`
-- Checkpoints for resumability: `checkpoints/latest.json`
-- Metrics for monitoring: `data/metrics/etl_runs_latest.json`
-
-**Layer 3: Data Presentation** (Dash Dashboard)
-- Manager classes (VideoManager pattern) for data handling
-- Single callback pattern to prevent Dash conflicts
-- Component-based tabs with filters, search, pagination
-- Real-time health monitoring via `/health` and `/metrics` endpoints
+**Version Note**: All versions are current as of January 2025 and will be verified during implementation.
 
 ---
 
-## 3. Project Structure
+## Project Structure
 
 ```
 watchtower/
-├── .bmad/                        # BMAD workflow system (dev tooling)
-│   └── bmm/                      # BMad Method workflows
-│       ├── agents/               # Specialized AI agents (Architect, Dev, etc.)
-│       ├── workflows/            # Multi-step workflows (PRD, Architecture, etc.)
-│       └── config.yaml           # BMad configuration
-│
-├── src/                          # Source code (primary development)
-│   ├── etl/                      # ETL pipelines (50+ sources)
-│   │   ├── base.py               # BaseETL framework ⭐
-│   │   ├── arxiv/                # ArXiv research papers
-│   │   ├── news/                 # News aggregation (HN, Reddit, Medium)
-│   │   ├── games/                # Game deals (Steam, Epic, Humble)
-│   │   ├── goldigging/           # Educational courses (Udemy, Coursera)
-│   │   ├── ai_platforms/         # AI platform monitoring (OpenAI, Anthropic)
-│   │   ├── entertainment/        # Cinema, meme economy
-│   │   ├── deals/                # Deal aggregation
-│   │   ├── anime/                # MyAnimeList data
-│   │   ├── adhd/                 # PubMed research papers
-│   │   ├── fourchan/             # 4chan general threads
-│   │   ├── spanish_public_aid/   # Government aid programs
-│   │   └── intelligence/         # Advanced data analysis
-│   │
-│   ├── watchers/                 # Real-time monitoring
-│   │   ├── base_watcher.py       # BaseWatcher framework ⭐
-│   │   └── run_watcher.py        # Watcher orchestration
-│   │
-│   ├── web/                      # Web interfaces
-│   │   ├── dashboard/            # Main Dash dashboard ⭐ (port 7777)
-│   │   │   ├── app.py            # Dash application entry point
-│   │   │   ├── components/       # Tab components (videos_tab.py, etc.)
-│   │   │   ├── assets/           # CSS, JS, images
-│   │   │   └── utils.py          # Dashboard utilities
-│   │   └── fullstreamlit/        # Legacy Streamlit dashboard (port 8501)
-│   │
-│   ├── models/                   # Pydantic data models
-│   │   ├── base.py               # TimestampedModel, StatusModel
-│   │   ├── arxiv.py              # ArxivPaperModel
-│   │   ├── technology.py         # TechnologyModel
-│   │   ├── games.py              # GameDealModel
-│   │   └── ...                   # 20+ domain models
-│   │
-│   ├── config/                   # Configuration management
-│   │   ├── settings.py           # Pydantic Settings ⭐
-│   │   └── models.py             # Configuration models
-│   │
-│   ├── exceptions/               # Custom exception hierarchy
-│   │   ├── base.py               # WatchtowerError (root)
-│   │   ├── etl.py                # ETL-specific exceptions
-│   │   ├── scraping.py           # Scraping exceptions
-│   │   └── watcher.py            # Watcher exceptions
-│   │
-│   ├── utils/                    # Shared utilities
-│   │   ├── logging.py            # Structured logging ⭐
-│   │   ├── nlp_classifier.py     # NLP classification
-│   │   ├── file_system.py        # Path resolution
-│   │   └── github_utils.py       # GitHub repository analysis
-│   │
-│   ├── miners/                   # Advanced data mining tools
-│   │   ├── udemy-universal/      # Udemy course automation
-│   │   ├── asf-winonly/          # Steam game automation
-│   │   └── crypto_sentiment/     # Crypto sentiment analysis
-│   │
-│   └── analytics/                # Data analysis and trends
-│       ├── trends.py             # Trend analysis
-│       └── performance.py        # Performance analytics
-│
-├── data/                         # Data storage (gitignored)
-│   ├── {source_name}/            # Per-source directories
-│   │   ├── output/               # Processed data files
-│   │   │   ├── {source}_{timestamp}.json
-│   │   │   └── {source}_latest.json
-│   │   └── checkpoints/          # Resumability state
-│   │       └── latest.json
-│   ├── watchers/                 # Watcher state and events
+├── .bmad/                          # BMAD methodology artifacts
+│   ├── bmm/                        # BMM workflow files
+│   └── templates/                  # Code generation templates
+├── data/                           # Data storage layer
+│   ├── megalith.db                 # SQLite database (NEW - Epic 5)
+│   │   ├── users                   # User accounts
+│   │   ├── sessions                # User sessions
+│   │   ├── preferences             # User preferences
+│   │   └── alert_rules             # Notification rules
+│   ├── users/                      # Per-user data (NEW - Epic 5.5)
+│   │   └── {user_id}/
+│   │       ├── preferences.json    # Dashboard customization
+│   │       ├── alerts/             # Alert events
+│   │       ├── sources/            # Personal data sources
+│   │       └── activity_log.json   # Usage tracking (Epic 8)
+│   ├── shared/                     # Shared data sources (EXISTING - all 50+ sources)
+│   │   ├── youtube/
+│   │   │   └── youtube_videos.json
+│   │   ├── arxiv/
+│   │   │   └── arxiv_papers.json
+│   │   ├── news/
+│   │   ├── games/
+│   │   ├── courses/
+│   │   └── ... (50+ other sources)
+│   ├── watchers/                   # Watcher state (EXISTING)
 │   │   └── {watcher_name}/
 │   │       ├── state.json
 │   │       └── events/
-│   ├── metrics/                  # System-wide metrics
-│   │   └── etl_runs_latest.json
-│   └── shortcuts/                # Dashboard shortcuts
-│
-├── docs/                         # Documentation
-│   ├── PRD.md                    # Product Requirements Document
-│   ├── epics.md                  # Epic breakdown (48 stories, 9 epics)
-│   ├── architecture.md           # THIS FILE ⭐
-│   └── research-technical-*.md   # Technical research notes
-│
-├── Tests/                        # Test suite
-│   ├── unit/                     # Unit tests
-│   ├── integration/              # Integration tests
-│   ├── etl/                      # ETL-specific tests
-│   ├── models/                   # Model validation tests
-│   └── performance/              # Performance tests
-│
-├── logs/                         # Application logs (gitignored)
-│   └── watchtower.log            # Rotating log file
-│
-├── run_watchtower_dashboard.py  # Dashboard entry point
-├── run_all_etl.sh|.bat           # Run all ETL pipelines
-├── pyproject.toml                # UV project configuration
-├── .env                          # Environment variables (gitignored)
-└── README.md                     # Project README
-
-⭐ = Core architectural components
+│   ├── metrics/                    # ETL performance metrics (NEW - Epic 1)
+│   │   ├── {etl_name}/
+│   │   └── profiling/              # Performance profiling (Epic 7)
+│   └── backups/                    # Data backups
+├── src/
+│   ├── api/                        # FastAPI REST API (NEW - Epic 9)
+│   │   ├── main.py                 # API entry point
+│   │   ├── routers/                # API route modules
+│   │   │   ├── sources.py
+│   │   │   ├── content.py
+│   │   │   ├── users.py
+│   │   │   └── alerts.py
+│   │   ├── auth.py                 # API authentication
+│   │   └── models.py               # API response models
+│   ├── auth/                       # Authentication system (NEW - Epic 5)
+│   │   ├── login_manager.py        # Flask-Login setup
+│   │   ├── models.py               # User model
+│   │   └── utils.py                # Password hashing, session management
+│   ├── alerts/                     # Notification system (NEW - Epic 3)
+│   │   ├── engine.py               # Alert rule engine
+│   │   ├── telegram_bot.py         # Telegram bot integration
+│   │   └── models.py               # AlertRule, AlertEvent models
+│   ├── analytics/                  # Intelligence features (NEW - Epic 8)
+│   │   ├── trends.py               # Trend detection
+│   │   ├── recommendations.py      # Usage-based recommendations
+│   │   └── related.py              # Related content engine
+│   ├── config/
+│   │   ├── settings.py             # Pydantic settings (EXISTING)
+│   │   └── models.py               # Config models (EXISTING)
+│   ├── data_quality/               # Data quality pipeline (NEW - Epic 4)
+│   │   ├── deduplication.py        # Duplicate detection (difflib)
+│   │   ├── classification.py       # Enhanced NLP classification
+│   │   ├── relevance.py            # Relevance scoring
+│   │   ├── retention.py            # Retention policies
+│   │   └── migration.py            # Data migration utilities
+│   ├── etl/                        # ETL pipelines (EXISTING)
+│   │   ├── base.py                 # BaseETL framework
+│   │   ├── arxiv/
+│   │   ├── news/
+│   │   ├── games/
+│   │   ├── courses/
+│   │   └── ... (50+ sources)
+│   ├── models/                     # Pydantic data models (EXISTING)
+│   │   ├── base.py
+│   │   ├── arxiv_model.py
+│   │   ├── game_deal_model.py
+│   │   └── ... (50+ models)
+│   ├── registry/                   # Source registry (NEW - Epic 6)
+│   │   └── registry.py             # Source metadata catalog
+│   ├── utils/
+│   │   ├── nlp_classifier.py       # NLP classification (EXISTING, Enhanced in Epic 4)
+│   │   ├── file_system.py          # Path resolution (EXISTING)
+│   │   └── logging.py              # Structured logging (EXISTING)
+│   ├── watchers/                   # Watcher system (EXISTING)
+│   │   ├── base_watcher.py         # BaseWatcher framework
+│   │   └── run_watcher.py          # Watcher orchestration
+│   ├── web/
+│   │   ├── dashboard/              # Main Dash dashboard (EXISTING)
+│   │   │   ├── app.py              # Dashboard entry point
+│   │   │   ├── components/         # Tab components
+│   │   │   │   ├── videos_tab.py
+│   │   │   │   ├── papers_tab.py
+│   │   │   │   ├── news_tab.py
+│   │   │   │   ├── metrics_tab.py  # NEW - Epic 1
+│   │   │   │   └── ... (15+ tabs)
+│   │   │   ├── assets/             # CSS, JavaScript
+│   │   │   └── utils.py            # Shared utilities
+│   │   └── fullstreamlit/          # Legacy Streamlit (EXISTING - compatibility)
+│   ├── exceptions/                 # Custom exceptions (EXISTING)
+│   └── miners/                     # Advanced data mining tools (EXISTING)
+├── tests/                          # Test suite (EXISTING)
+│   ├── unit/
+│   ├── integration/
+│   ├── etl/
+│   └── models/
+├── logs/                           # Application logs (EXISTING)
+├── docs/                           # Documentation
+│   ├── architecture.md             # This file
+│   ├── PRD.md                      # Product requirements
+│   ├── epics.md                    # Epic breakdown
+│   ├── CLAUDE.md                   # Development guide (EXISTING)
+│   └── bmm-workflow-status.yaml    # BMM workflow tracking
+├── .env                            # Environment variables (gitignored)
+├── .cursorrules                    # Cursor IDE rules (EXISTING)
+├── pyproject.toml                  # UV project config (EXISTING)
+├── requirements.txt                # Python dependencies (EXISTING)
+├── docker-compose.yml              # Docker orchestration (EXISTING)
+├── Dockerfile                      # Container definition (EXISTING)
+├── run_watchtower_dashboard.py    # Dashboard launcher (EXISTING)
+├── run_all_etl.sh                  # ETL orchestration script (EXISTING)
+└── README.md                       # Project overview (EXISTING)
 ```
+
+**Key Architectural Boundaries:**
+- `src/etl/` - Data ingestion layer (50+ sources, BaseETL pattern)
+- `src/watchers/` - Real-time monitoring layer (BaseWatcher pattern)
+- `data/` - Persistence layer (hybrid: SQLite + JSON files)
+- `src/web/dashboard/` - Presentation layer (Dash + Bootstrap)
+- `src/api/` - Integration layer (FastAPI - NEW in Epic 9)
+- `src/auth/` - Security layer (Flask-Login - NEW in Epic 5)
+- `src/alerts/` - Notification layer (Telegram - NEW in Epic 3)
 
 ---
 
-## 4. Core Framework Patterns
+## Epic to Architecture Mapping
 
-### 4.1 BaseETL: Template Method Pattern
-
-**Purpose**: Provide consistent ETL pipeline structure with built-in error handling, metrics, checkpointing, and retry logic.
-
-**Pattern**: Template Method (Gang of Four)
-
-**Abstract Interface**:
-```python
-class BaseETL(ABC, Generic[InputType, OutputType]):
-    @abstractmethod
-    def extract(self) -> List[InputType]:
-        """Extract raw data from source."""
-        pass
-
-    @abstractmethod
-    def transform(self, data: List[InputType]) -> List[OutputType]:
-        """Transform raw data into validated Pydantic models."""
-        pass
-
-    @abstractmethod
-    def load(self, data: List[OutputType]) -> None:
-        """Load transformed data to JSON files."""
-        pass
-
-    def run(self) -> ETLMetrics:
-        """Template method: orchestrates extract → transform → load."""
-        # Handles: checkpointing, retries, metrics, logging, errors
-```
-
-**Built-in Features**:
-- ✅ **ETLMetrics**: Automatic performance tracking (start_time, duration, records_extracted, success_rate)
-- ✅ **Checkpointing**: Resume from last successful point (`ETLCheckpoint` model)
-- ✅ **Retry Logic**: Exponential backoff for transient failures (max 3 retries)
-- ✅ **Batch Processing**: Configurable batch sizes for memory efficiency
-- ✅ **Data Validation**: Pydantic model validation with error reporting
-- ✅ **Retention Management**: Auto-cleanup of old timestamped files (configurable days)
-- ✅ **Structured Logging**: Component-specific loggers with performance metrics
-
-**Concrete Implementation Example**:
-```python
-from src.etl.base import BaseETL
-from src.models.arxiv import ArxivPaperModel
-
-class ArxivETL(BaseETL[dict, ArxivPaperModel]):
-    def extract(self) -> List[dict]:
-        # Fetch from ArXiv RSS feed
-        return raw_papers
-
-    def transform(self, data: List[dict]) -> List[ArxivPaperModel]:
-        # Validate using Pydantic model
-        return self.validate_data(data, ArxivPaperModel)
-
-    def load(self, data: List[ArxivPaperModel]) -> None:
-        # Save to data/arxiv/output/arxiv_{timestamp}.json
-        # Save to data/arxiv/output/arxiv_latest.json
-```
-
-**Key Decisions**:
-- `Generic[InputType, OutputType]` for type safety
-- Automatic metrics collection (no manual tracking)
-- Checkpoint files in `data/{etl_name}/checkpoints/latest.json`
-- Output files in `data/{etl_name}/output/`
+| Epic | Primary Architecture Components | Data Storage | Key Technologies |
+|------|--------------------------------|--------------|------------------|
+| **Epic 1: Observability** | `src/metrics/`, `data/metrics/`, `web/dashboard/components/metrics_tab.py` | `data/metrics/{etl_name}/*.json` | BaseETL metrics, Plotly charts, health API endpoints |
+| **Epic 2: Personalization** | `src/auth/preferences.py`, `web/dashboard/` (enhanced) | Browser localStorage (Phase 1) → `data/users/{user_id}/preferences.json` (Phase 2) | Dash callbacks, JSON storage |
+| **Epic 3: Notifications** | `src/alerts/`, `data/alerts/` | `data/alerts/{user_id}/rules.json`, `data/alerts/{user_id}/events/*.json` | Telegram Bot API, Dash Interval polling, Alert rule engine |
+| **Epic 4: Data Quality** | `src/data_quality/`, `src/utils/nlp_classifier.py` | Enhanced data files with `duplicate_group_id`, `relevance_score` | difflib, enhanced keyword NLP, retention policies |
+| **Epic 5: Multi-User Auth** | `src/auth/`, `data/megalith.db` | SQLite tables: `users`, `sessions` | Flask-Login, bcrypt, SQLite |
+| **Epic 5.5: Per-User Prefs** | `src/auth/preferences.py`, `data/users/{user_id}/` | `data/users/{user_id}/preferences.json`, `data/users/{user_id}/sources/` | User-scoped data, migration from localStorage |
+| **Epic 6: Integration Tools** | `src/registry/`, `src/templates/` | `data/registry/sources.json` | CLI scaffolding, source metadata |
+| **Epic 7: Tech Debt** | All `src/etl/` (refactored), `tests/` (expanded) | `data/metrics/profiling/` | pytest, coverage, cProfile, @lru_cache |
+| **Epic 8: Intelligence** | `src/analytics/`, `web/dashboard/components/insights_tab.py` | `data/users/{user_id}/activity_log.json`, `data/analytics/trends/` | Heuristic algorithms, Plotly visualizations |
+| **Epic 9: Ecosystem** | `src/api/`, webhooks, browser extension | API uses existing `data/` sources | FastAPI, Uvicorn, OpenAPI docs, Telegram webhooks |
 
 ---
 
-### 4.2 BaseWatcher: Event-Driven Monitoring
+## Technology Stack Details
 
-**Purpose**: Monitor data sources for changes and trigger events.
+### Core Technologies
 
-**Pattern**: Observer Pattern + State Machine
+**Backend Framework:**
+- **Dash 2.x**: Reactive dashboard framework (existing)
+  - Built on Flask (enables Flask-Login integration)
+  - Component-based architecture with callbacks
+  - Single-callback pattern per component to prevent conflicts
+  - Bootstrap styling via dash-bootstrap-components
 
-**Abstract Interface**:
+**API Framework (NEW - Epic 9):**
+- **FastAPI 0.110.x**: Modern Python API framework
+  - Automatic OpenAPI/Swagger documentation
+  - Pydantic integration for request/response validation
+  - Async support for performance
+  - Separate service on port 8000
+
+**Authentication (NEW - Epic 5):**
+- **Flask-Login 0.6.x**: Session management and authentication
+  - Integrates with Dash's Flask server
+  - Secure session cookies (HTTP-only, secure flag)
+  - Remember-me functionality
+  - CSRF protection
+
+**Data Layer:**
+- **SQLite** (built-in or SQLAlchemy 2.x): User management
+  - Tables: users, sessions, preferences, alert_rules
+  - ACID transactions for auth operations
+  - File-based (`data/megalith.db`)
+  - No server overhead
+
+- **File-based JSON**: Data sources (existing)
+  - Fast read performance
+  - Simple backup (copy files)
+  - `data/{source}/output/*.json` pattern
+  - Latest file symlinks for quick access
+
+**Data Processing:**
+- **Pandas 2.x**: Primary data manipulation (existing)
+- **Polars 0.20.x**: High-performance alternative (existing)
+- **Pydantic 2.x**: Data validation and models (existing)
+
+**Notification System (NEW - Epic 3):**
+- **python-telegram-bot 20.x**: Telegram Bot API client
+  - Instant push notifications
+  - Rich message formatting
+  - Free and unlimited
+  - User-friendly onboarding
+
+**Production Servers:**
+- **Waitress 3.x**: WSGI server for Dash dashboard
+  - Cross-platform (Windows/UnRAID compatible)
+  - Production-ready
+  - Port 7777
+
+- **Uvicorn 0.27.x**: ASGI server for FastAPI
+  - High-performance async support
+  - Production-ready
+  - Port 8000
+
+### Integration Points
+
+**Dashboard ↔ Data Layer:**
 ```python
-class BaseWatcher(ABC):
-    @abstractmethod
-    def get_current_value(self) -> Any:
-        """Get current state from source."""
-        pass
-
-    @abstractmethod
-    def check_for_changes(self, old_value: Any, new_value: Any) -> bool:
-        """Determine if change is significant."""
-        pass
-
-    def run(self, once: bool = False) -> None:
-        """Main monitoring loop with state persistence."""
-```
-
-**Built-in Features**:
-- ✅ **State Persistence**: JSON-based checkpoint in `data/watchers/{name}/state.json`
-- ✅ **Event Logging**: Timestamped change events in `data/watchers/{name}/events/`
-- ✅ **Configurable Intervals**: Flexible polling frequencies (default: 1 hour)
-- ✅ **Exception Resilience**: Continues operation despite individual failures
-- ✅ **Automatic Directory Creation**: Self-managing file system structure
-
-**Typical Use Case**: Monitor ArXiv for new papers, trigger notifications
-
----
-
-### 4.3 Pydantic Models: Data Validation & Settings
-
-**Purpose**: Type-safe data models and settings management.
-
-**Pattern**: Data Transfer Object (DTO) + Settings Object
-
-**Model Hierarchy**:
-```python
-class TimestampedModel(BaseModel):
-    """Base for all data models with timestamp tracking."""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-class ArxivPaperModel(TimestampedModel):
-    """Domain-specific model with validation."""
-    title: str
-    authors: List[str]
-    abstract: str
-    published: datetime
-    url: str
-    categories: List[str]
-```
-
-**Settings Management**:
-```python
-from src.config.settings import get_settings
-
-settings = get_settings()  # Singleton with @lru_cache
-data_path = settings.get_data_path("arxiv", "output")
-```
-
-**Key Features**:
-- ✅ **Environment Variable Support**: Double underscore delimiter (`DATABASE__URL`)
-- ✅ **Nested Configurations**: Component-specific configs (ETLConfig, WatcherConfig)
-- ✅ **Auto-discovery**: Automatic project root detection via markers
-- ✅ **Type Validation**: Full Pydantic validation with custom validators
-- ✅ **Path Management**: Automatic conversion to absolute paths
-
----
-
-### 4.4 Dashboard Manager Pattern
-
-**Purpose**: Centralized data handling and filtering for dashboard tabs.
-
-**Pattern**: Manager Pattern + Single Callback
-
-**VideoManager Example** (from `videos_tab.py`):
-```python
+# VideoManager pattern (existing)
 class VideoManager:
-    """Manages video data loading and filtering."""
-
-    def __init__(self):
-        self.video_data = {}  # Channel -> DataFrame
-        self.loaded = False
-
-    def load_data(self):
-        """Load all video data from JSON files."""
-        for channel_dir in youtube_path.iterdir():
-            json_file = channel_dir / "youtube_videos.json"
-            df = pd.read_json(json_file)
-            self.video_data[channel_dir.name] = df
-
-    def get_videos(self, channel=None, search_term=None, days_filter=None, limit=200):
-        """Get filtered videos with caching."""
-        # Apply filters, return results
+    @lru_cache(maxsize=128)  # NEW - Epic 7 caching
+    def load_videos(self, channel: str) -> List[Video]:
+        # Read from data/youtube/{channel}/youtube_videos.json
+        pass
 ```
 
-**Single Callback Pattern**:
+**ETL Pipeline ↔ Watchers:**
 ```python
-@app.callback(
-    Output("videos-display", "children"),
-    Input("channel-dropdown", "value"),
-    Input("search-input", "value"),
-    prevent_initial_call=True
+# BaseETL writes data → BaseWatcher monitors changes
+# Watcher detects new content → Alert engine evaluates → Telegram notification
+```
+
+**Dashboard ↔ Authentication (NEW - Epic 5):**
+```python
+from flask_login import login_required, current_user
+
+@app.callback(...)
+@login_required
+def protected_callback():
+    user_prefs = load_preferences(current_user.id)
+    # Return user-specific data
+```
+
+**Dashboard ↔ Notifications (NEW - Epic 3):**
+```python
+# Dash Interval polls every 60s
+dcc.Interval(id='notification-poll', interval=60*1000)
+
+@app.callback(Output('notifications', 'children'), Input('notification-poll', 'n_intervals'))
+def check_notifications():
+    # Read data/alerts/{user_id}/events/*.json
+    # Return new alerts for display
+```
+
+**FastAPI ↔ Data Sources (NEW - Epic 9):**
+```python
+from fastapi import FastAPI, Depends
+from src.api.auth import get_current_user
+
+@app.get("/api/content/{domain}")
+def get_content(domain: str, user: User = Depends(get_current_user)):
+    # Load from data/shared/{domain}/*.json
+    # Apply user's personalization filters
+    return content
+```
+
+**Telegram Bot ↔ Alert Engine (NEW - Epic 3):**
+```python
+# Alert rule matches → Generate event → Send Telegram message
+from telegram import Bot
+
+bot = Bot(token=settings.telegram_bot_token)
+bot.send_message(
+    chat_id=user.telegram_chat_id,
+    text=f"🔔 New free course: {course.title}",
+    parse_mode="Markdown"
 )
-def update_videos(channel, search_term):
-    """Single callback updates entire video display."""
-    videos = video_manager.get_videos(channel, search_term)
-    return create_video_cards(videos)
 ```
-
-**Key Decisions**:
-- ✅ **One Manager per Tab**: VideoManager, PapersManager, NewsManager, etc.
-- ✅ **One Callback per Output**: Prevents "Duplicate callback outputs" errors
-- ✅ **Lazy Loading**: Data loaded on first access, cached thereafter
-- ✅ **Thread-Safe**: Manager instances are module-level singletons
 
 ---
 
-## 5. Cross-Cutting Concerns
+## Implementation Patterns
 
-### 5.1 Error Handling
+These patterns ensure consistency across all AI agents implementing features.
 
-**Custom Exception Hierarchy**:
-```
-WatchtowerError (root)
-├── ConfigurationError
-├── ValidationError
-├── AuthenticationError
-├── AuthorizationError
-├── ETLError
-│   ├── CheckpointError
-│   ├── ExtractionError
-│   ├── TransformationError
-│   ├── LoadError
-│   ├── DataSourceError
-│   ├── DataValidationError
-│   ├── ETLTimeoutError
-│   └── ETLConfigurationError
-├── ScrapingError
-│   ├── RequestError
-│   ├── ParsingError
-│   ├── RateLimitError
-│   └── TimeoutError
-└── WatcherError
-    ├── WatcherConfigurationError
-    ├── WatcherRuntimeError
-    ├── WatcherTimeoutError
-    ├── WatcherValidationError
-    └── WatcherConnectionError
-```
+### Naming Conventions
 
-**Error Handling Strategy**:
-1. **Context Preservation**: All exceptions carry context dicts
-2. **handle_exception()**: Centralized error handling utility
-3. **Graceful Degradation**: Dashboard continues functioning despite errors
-4. **Structured Logging**: Errors logged with full context and stack traces
-5. **Retry Logic**: Exponential backoff for transient failures
+**Files and Directories:**
+- Python files: `snake_case.py` (e.g., `arxiv_etl.py`, `user_preferences.py`)
+- Test files: `test_{module}.py` (e.g., `test_arxiv_etl.py`)
+- Directories: `snake_case/` (e.g., `data_quality/`, `alert_rules/`)
+- Models: `{name}_model.py` (e.g., `arxiv_model.py`, `user_model.py`)
 
-**Example**:
+**Python Code:**
+- Classes: `PascalCase` (e.g., `BaseETL`, `VideoManager`, `AlertEngine`)
+- Functions/methods: `snake_case` (e.g., `load_videos()`, `check_notifications()`)
+- Constants: `UPPER_SNAKE_CASE` (e.g., `DEFAULT_TIMEOUT`, `MAX_RETRIES`)
+- Private methods: `_leading_underscore` (e.g., `_validate_config()`)
+
+**Database (SQLite):**
+- Tables: `snake_case` plural (e.g., `users`, `sessions`, `alert_rules`)
+- Columns: `snake_case` (e.g., `user_id`, `created_at`, `password_hash`)
+- Foreign keys: `{table}_id` (e.g., `user_id` references `users.id`)
+
+**API Endpoints:**
+- REST paths: `/api/{resource}` lowercase (e.g., `/api/sources`, `/api/users/{id}`)
+- Query parameters: `snake_case` (e.g., `?source_filter=arxiv&limit=50`)
+
+### Code Organization Patterns
+
+**ETL Modules:**
 ```python
-try:
-    data = extract_from_api()
-except RequestError as e:
-    logger.error(f"API request failed: {e}", exc_info=True)
-    raise DataSourceError(
-        "Failed to fetch data from API",
-        context={"url": api_url, "attempt": retry_count},
-        cause=e
-    ) from e
-```
-
----
-
-### 5.2 Logging Strategy
-
-**Structured Logging with JSON**:
-```python
-from src.utils.logging import get_logger, get_performance_logger
-
-logger = get_logger("ETL.ArXiv")
-perf_logger = get_performance_logger("ETL.ArXiv")
-
-logger.info("Starting ArXiv ETL", extra={"source": "arxiv", "batch_size": 100})
-
-perf_logger.start("ETL_ArXiv")
-# ... do work ...
-perf_logger.end(success=True, extra_data={"records": 150})
-```
-
-**Log Output Format** (JSON):
-```json
-{
-  "timestamp": "2025-01-12T10:30:45.123456",
-  "level": "INFO",
-  "logger": "ETL.ArXiv",
-  "message": "Starting ArXiv ETL",
-  "module": "arxiv_etl",
-  "function": "extract",
-  "line": 42,
-  "source": "arxiv",
-  "batch_size": 100,
-  "process_id": 12345,
-  "thread_id": 67890
-}
-```
-
-**Log Levels**:
-- **DEBUG**: Detailed diagnostic information (development only)
-- **INFO**: General informational messages (default)
-- **WARNING**: Warning messages (non-critical issues)
-- **ERROR**: Error messages (operation failed, but app continues)
-- **CRITICAL**: Critical errors (app may crash)
-
-**Log Rotation**:
-- File: `logs/watchtower.log`
-- Max size: 10MB per file
-- Backup count: 5 files
-- Encoding: UTF-8
-
----
-
-### 5.3 Date & Time Handling
-
-**Standard Practice**: **Always use UTC timestamps**
-
-```python
-from datetime import datetime
-
-# ✅ CORRECT: UTC timestamps
-created_at = datetime.utcnow()
-timestamp_str = datetime.utcnow().isoformat()
-
-# ✅ CORRECT: Parsing with timezone awareness
-df["published_date"] = pd.to_datetime(df["published_at"], errors="coerce", utc=True)
-
-# ❌ INCORRECT: Local time (ambiguous across timezones)
-created_at = datetime.now()  # Don't use this!
-```
-
-**File Naming Convention**:
-```python
-# Timestamped files
-filename = f"{source_name}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
-# Example: arxiv_20250112_103045.json
-```
-
-**JSON Serialization**:
-```python
-# Store as ISO 8601 strings
-{"created_at": "2025-01-12T10:30:45.123456"}
-
-# Parse back
-created_at = datetime.fromisoformat(data["created_at"])
-```
-
----
-
-### 5.4 Data Persistence Patterns
-
-**File Naming Convention**:
-```
-data/{source_name}/output/{source}_{YYYYmmdd_HHMMSS}.json  # Timestamped
-data/{source_name}/output/{source}_latest.json             # Latest copy
-data/{source_name}/checkpoints/latest.json                 # Checkpoint
-data/{source_name}/output/run_summary_{timestamp}.json     # Metrics
-data/{source_name}/output/run_summary_latest.json          # Latest metrics
-```
-
-**Directory Structure Rules**:
-1. Each ETL/Watcher creates `data/{name}/` automatically
-2. Subdirectories: `output/`, `checkpoints/`, `events/`
-3. Retention: Auto-delete timestamped files older than N days (configurable)
-4. `*_latest.*` files are NEVER deleted
-
-**JSON Format**:
-```python
-{
-    "generated_at": "2025-01-12T10:30:45",
-    "source": "arxiv",
-    "items": [
-        {
-            "id": "2501.12345",
-            "title": "Paper Title",
-            "created_at": "2025-01-12T09:00:00",
-            # ... more fields
-        }
-    ],
-    "metadata": {
-        "count": 150,
-        "etl_version": "1.0.0"
-    }
-}
-```
-
----
-
-### 5.5 API Response Formats
-
-**Health Check Endpoint** (`/health`):
-```json
-{
-    "status": "ok",           // "ok" | "degraded" | "down"
-    "timestamp": "2025-01-12T10:30:45",
-    "version": "0.1.0",
-    "uptime_seconds": 86400,
-    "etl_health": {
-        "total_sources": 52,
-        "failed_last_run": 2,
-        "success_rate": 96.15
-    }
-}
-```
-
-**Metrics Endpoint** (`/metrics`):
-```json
-{
-    "generated_at": "2025-01-12T10:30:45",
-    "runs": {
-        "arxiv": {
-            "etl_name": "arxiv",
-            "start_time": "2025-01-12T09:00:00",
-            "duration_seconds": 45.2,
-            "records_loaded": 150,
-            "success": true,
-            "last_updated": "2025-01-12T09:00:45"
-        },
-        "news": {
-            "etl_name": "news",
-            "start_time": "2025-01-12T09:05:00",
-            "duration_seconds": 32.1,
-            "records_loaded": 420,
-            "success": true,
-            "last_updated": "2025-01-12T09:05:32"
-        }
-    }
-}
-```
-
----
-
-### 5.6 Testing Approach
-
-**Test Organization**:
-```
-Tests/
-├── unit/           # Unit tests for individual functions
-├── integration/    # Integration tests for ETL workflows
-├── etl/           # ETL-specific tests
-├── models/        # Pydantic model validation tests
-├── web/           # Dashboard component tests
-└── performance/   # Performance and load tests
-```
-
-**Testing Patterns**:
-
-**1. ETL Testing**:
-```python
-import pytest
-from src.etl.arxiv.arxiv_etl import ArxivETL
-
-def test_arxiv_extract(mock_arxiv_api):
-    """Test ArXiv extraction with mocked API."""
-    etl = ArxivETL(name="test_arxiv")
-    data = etl.extract()
-    assert len(data) > 0
-    assert all("title" in item for item in data)
-
-def test_arxiv_transform():
-    """Test ArXiv transformation and validation."""
-    etl = ArxivETL(name="test_arxiv")
-    raw_data = [{"title": "Test", "authors": ["Alice"], ...}]
-    models = etl.transform(raw_data)
-    assert all(isinstance(m, ArxivPaperModel) for m in models)
-```
-
-**2. Model Testing**:
-```python
-def test_arxiv_model_validation():
-    """Test Pydantic model validation."""
-    valid_data = {
-        "title": "Test Paper",
-        "authors": ["Alice", "Bob"],
-        "abstract": "Test abstract",
-        "published": "2025-01-12T10:00:00",
-        "url": "https://arxiv.org/abs/2501.12345",
-        "categories": ["cs.AI"]
-    }
-    model = ArxivPaperModel(**valid_data)
-    assert model.title == "Test Paper"
-
-def test_arxiv_model_invalid():
-    """Test validation errors."""
-    with pytest.raises(ValidationError):
-        ArxivPaperModel(title="Test", authors=[])  # Missing required fields
-```
-
-**3. Dashboard Testing**:
-```python
-def test_video_manager_load():
-    """Test VideoManager data loading."""
-    manager = VideoManager()
-    manager.load_data()
-    assert len(manager.get_channels()) > 0
-
-def test_video_filtering():
-    """Test video filtering logic."""
-    manager = VideoManager()
-    videos = manager.get_videos(channel="ai-news", search_term="GPT")
-    assert all("gpt" in v["title"].lower() for v in videos)
-```
-
-**Coverage Targets** (from Epic 7.2):
-- **Overall**: 70% minimum
-- **BaseETL**: 90% target
-- **Models**: 80% target
-- **Dashboard**: 60% target
-
-**Test Execution**:
-```bash
-# Run all tests with coverage
-uv run pytest --cov=src --cov-report=html --cov-report=term
-
-# Run specific test categories
-uv run pytest Tests/etl/ -v
-uv run pytest Tests/models/ -v
-uv run pytest Tests/integration/ -v
-```
-
----
-
-## 6. Epic-to-Architecture Mapping
-
-This section maps the 9 epics from `docs/epics.md` to architectural components and patterns.
-
-### Epic 1: Observability Infrastructure
-**Architectural Components**:
-- **ETLMetrics Model**: Already implemented in `src/etl/base.py`
-- **Health Check API**: Add Flask endpoints `/health` and `/metrics` to `src/web/dashboard/app.py`
-- **Metrics Dashboard Tab**: New component `src/web/dashboard/components/metrics_tab.py`
-- **Structured Logging**: Already implemented in `src/utils/logging.py`
-
-**Patterns Used**:
-- Template Method (BaseETL provides automatic metrics)
-- Singleton (Settings for metrics configuration)
-- REST API (Health check endpoints)
-
-**Key Decisions**:
-- Metrics stored in `data/metrics/etl_runs_latest.json` (aggregated)
-- Per-ETL metrics in `data/{etl}/output/run_summary_latest.json`
-- Search implemented client-side (Dash callbacks) for <1s response
-
----
-
-### Epic 2: Personalized Intelligence Hub
-**Architectural Components**:
-- **Browser LocalStorage**: Preferences stored client-side initially
-- **PreferencesManager**: New manager class for preference handling
-- **Dashboard Tab Customization**: Modify `src/web/dashboard/app.py` layout generation
-- **Responsive CSS**: Bootstrap responsive breakpoints
-
-**Patterns Used**:
-- Manager Pattern (PreferencesManager)
-- Strategy Pattern (Filter presets)
-- Observer Pattern (Real-time filter updates)
-
-**Key Decisions**:
-- Preferences stored in browser `localStorage` initially (single-user)
-- Migration to server-side storage in Epic 5.5 (multi-user)
-- Items-per-page: 12, 24, 48, 96 options
-- Tab customization: visibility + order
-
----
-
-### Epic 3: Smart Notifications & Alerts
-**Architectural Components**:
-- **AlertEngine**: New class in `src/alerts/engine.py`
-- **AlertRule Model**: Pydantic model with conditions
-- **Web Notifications API**: Browser push notifications
-- **Watcher Integration**: BaseWatcher triggers alert evaluation
-
-**Patterns Used**:
-- Rule Engine Pattern (Alert conditions)
-- Observer Pattern (Watcher → Alert Engine)
-- Event Sourcing (Alert events stored as JSON)
-
-**Key Decisions**:
-- Alert rules in `data/alerts/{user_id}/rules.json`
-- Alert events in `data/alerts/{user_id}/events/`
-- Deduplication: Content hash + 1-hour time window
-- Channels: Browser notifications, Email (future)
-
----
-
-### Epic 4: Intelligent Data Quality
-**Architectural Components**:
-- **DeduplicationEngine**: New class in `src/data_quality/deduplication.py`
-- **Enhanced NLP Classifier**: Improve `src/utils/nlp_classifier.py`
-- **RelevanceScorer**: New class in `src/data_quality/relevance.py`
-- **RetentionManager**: New class in `src/data_quality/retention.py`
-
-**Patterns Used**:
-- Strategy Pattern (Multiple deduplication strategies)
-- Pipeline Pattern (Dedup → Classify → Score → Store)
-- Scheduled Job Pattern (Daily cleanup)
-
-**Key Decisions**:
-- Title similarity: `difflib.SequenceMatcher` (ratio > 0.8)
-- Multi-label classification supported
-- Relevance score: `(recency * 0.4) + (source_rep * 0.3) + (category_match * 0.3)`
-- Retention policies per source type (news: 30d, papers: 1y, deals: 7d)
-
----
-
-### Epic 5: Multi-User Foundation
-**Architectural Components**:
-- **User Model**: Pydantic model in `src/models/user.py`
-- **AuthenticationService**: New class in `src/auth/service.py`
-- **SessionManager**: Flask-Login or custom session management
-- **User Storage**: `data/users/users.json` or SQLite
-
-**Patterns Used**:
-- Singleton Pattern (AuthenticationService)
-- Decorator Pattern (Login required decorators)
-- Factory Pattern (User creation)
-
-**Key Decisions**:
-- Password hashing: bcrypt (12 rounds)
-- Session storage: Secure HTTP-only cookies
-- Session timeout: 30 minutes inactive, 7 days absolute
-- Rate limiting: 5 failed attempts per 15 minutes per IP
-
-**Future Migration Path**:
-- If users >100: Migrate to PostgreSQL with SQLAlchemy
-- If distributed: Add Redis for session storage
-
----
-
-### Epic 5.5: Per-User Personalization
-**Architectural Components**:
-- **UserPreferencesModel**: Pydantic model
-- **Per-User Storage**: `data/users/{user_id}/preferences.json`
-- **PreferencesMigration**: Data migration from localStorage to server
-
-**Patterns Used**:
-- Repository Pattern (User preferences CRUD)
-- Migration Pattern (Single-user → Multi-user data migration)
-
-**Key Decisions**:
-- Preferences: `{tab_visibility, tab_order, items_per_page, saved_filters, shortcuts}`
-- Shared sources: `data/{source}/` (global)
-- Personal sources: `data/users/{user_id}/sources/` (per-user)
-
----
-
-### Epic 6: Source Integration Acceleration
-**Architectural Components**:
-- **SourceRegistry**: New class in `src/registry/registry.py`
-- **CLI Scaffolding Tool**: `src/scripts/new_source.py` (Click or argparse)
-- **Templates**: Source templates in `src/templates/` or `.bmad/templates/`
-
-**Patterns Used**:
-- Registry Pattern (Central source catalog)
-- Template Method (Source code generation)
-- Decorator Pattern (`@source` metadata decorator)
-
-**Key Decisions**:
-- CLI: `megalith new-source <name> --type <rss|api|scraper>`
-- Generated files: Model, ETL, Tab, Test
-- Auto-register in `data/registry/sources.json`
-
----
-
-### Epic 7: Technical Debt & Performance Sprint
-**Architectural Components**:
-- **BaseETL v2.0**: Enhanced ETL framework
-- **DataMigrator**: Migration tool in `src/data_quality/migration.py`
-- **Performance Profiler**: cProfile + custom analysis
-
-**Patterns Used**:
-- Refactoring Patterns (Extract Method, Extract Class)
-- Migration Pattern (Schema version migrations)
-
-**Key Decisions**:
-- Target: 10 oldest ETLs refactored to BaseETL v2.0
-- Test coverage: 40% → 70% (BaseETL: 90%, Models: 80%)
-- Dashboard load time: 2s → 1s (via lazy loading, virtual scrolling)
-- Complexity: Cyclomatic complexity <10 per function
-
----
-
-### Epic 8: Simple Intelligence Features
-**Architectural Components**:
-- **RecommendationEngine**: New class in `src/analytics/recommendations.py`
-- **TrendAnalyzer**: New class in `src/analytics/trends.py`
-- **RelatedContentEngine**: New class in `src/analytics/related.py`
-- **Activity Tracker**: User interaction logging
-
-**Patterns Used**:
-- Strategy Pattern (Multiple recommendation algorithms)
-- Observer Pattern (User activity tracking)
-
-**Key Decisions**:
-- Recommendations: Top 5 sources by clicks + Top 3 categories + Similar content
-- Trends: 7-day rolling window, >30% increase = trending
-- Insights: Bar charts (Plotly), Pie charts, Line charts, Heatmaps
-
----
-
-### Epic 9: Platform Ecosystem & Integrations
-**Architectural Components**:
-- **REST API**: Flask-RESTX or FastAPI in `src/api/`
-- **Webhook System**: Webhook delivery in `src/webhooks/`
-- **Browser Extension**: Manifest V3 extension
-
-**Patterns Used**:
-- REST API Pattern (Resource-based endpoints)
-- Webhook Pattern (Event-driven notifications)
-- API Gateway Pattern (Rate limiting, auth)
-
-**Key Decisions**:
-- API framework: Flask-RESTX (integrated with Dash) or FastAPI (performance)
-- Rate limiting: 100 requests/hour per user
-- Webhook retry: 3 attempts (30s, 5m, 30m delays)
-- OpenAPI documentation at `/api/docs`
-
----
-
-## 7. Implementation Patterns for AI Agents
-
-This section defines **naming conventions, structure patterns, and coding standards** to ensure AI-assisted development (e.g., Claude Code, GitHub Copilot) produces **consistent, maintainable code**.
-
-### 7.1 File and Directory Naming
-
-**General Rules**:
-- **Python files**: `snake_case.py` (e.g., `arxiv_etl.py`, `video_manager.py`)
-- **Test files**: `test_{module}.py` (e.g., `test_arxiv_etl.py`)
-- **Data directories**: `{source_name}/` (e.g., `arxiv/`, `news/`, `youtube/`)
-- **Markdown docs**: `kebab-case.md` (e.g., `architecture.md`, `epic-breakdown.md`)
-
-**ETL Module Naming**:
-```
-src/etl/{domain}/{domain}_etl.py
-src/models/{domain}.py
-src/web/dashboard/components/{domain}_tab.py
-tests/etl/test_{domain}_etl.py
-```
-
-**Example**:
-```
-src/etl/arxiv/arxiv_etl.py          # ArxivETL class
-src/models/arxiv.py                 # ArxivPaperModel
-src/web/dashboard/components/papers_tab.py  # Papers tab (displays ArXiv + others)
-tests/etl/test_arxiv_etl.py         # Test suite
-```
-
----
-
-### 7.2 Class and Function Naming
-
-**Class Names**: `PascalCase`
-- ETL classes: `{Domain}ETL` (e.g., `ArxivETL`, `NewsETL`, `GamesETL`)
-- Models: `{Domain}Model` (e.g., `ArxivPaperModel`, `GameDealModel`)
-- Managers: `{Domain}Manager` (e.g., `VideoManager`, `PapersManager`)
-- Services: `{Purpose}Service` (e.g., `AuthenticationService`, `NotificationService`)
-
-**Function Names**: `snake_case`
-- Public methods: `get_videos()`, `load_data()`, `extract()`, `transform()`, `load()`
-- Private methods: `_ensure_directories()`, `_load_checkpoint()`, `_retry_operation()`
-- Test functions: `test_{functionality}()` (e.g., `test_arxiv_extract()`)
-
-**Constants**: `UPPER_SNAKE_CASE`
-```python
-MAX_RETRIES = 3
-DEFAULT_BATCH_SIZE = 100
-API_BASE_URL = "https://api.example.com"
-```
-
----
-
-### 7.3 Code Structure Standards
-
-**Import Order** (PEP 8 + isort):
-```python
-# 1. Standard library
-from __future__ import annotations
-import json
-import logging
-from datetime import datetime
-from pathlib import Path
-from typing import Any, List, Optional
-
-# 2. Third-party libraries
-import pandas as pd
-from pydantic import BaseModel, Field
-
-# 3. Local imports
-from src.config.settings import get_settings
-from src.etl.base import BaseETL
-from src.models.arxiv import ArxivPaperModel
-from src.utils.logging import get_logger
-```
-
-**Type Hints**: **ALWAYS required**
-```python
-def get_videos(
-    self,
-    channel: Optional[str] = None,
-    search_term: Optional[str] = None,
-    days_filter: Optional[int] = None,
-    limit: int = 200
-) -> List[dict[str, Any]]:
-    """Get filtered videos with type-safe parameters."""
-    pass
-```
-
-**Docstrings**: **Google Style**
-```python
-def extract(self) -> List[dict]:
-    """Extract papers from ArXiv RSS feed.
-
-    Fetches the latest papers from cs.AI, cs.LG, and stat.ML categories.
-
-    Returns:
-        List[dict]: Raw paper dictionaries with keys: title, authors, abstract,
-                    published, url, categories.
-
-    Raises:
-        DataSourceError: If ArXiv API is unreachable or returns invalid data.
-
-    Example:
-        >>> etl = ArxivETL(name="arxiv")
-        >>> papers = etl.extract()
-        >>> len(papers)
-        150
-    """
-    pass
-```
-
----
-
-### 7.4 Pydantic Model Standards
-
-**Base Model Pattern**:
-```python
-from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, Field, HttpUrl
-
-class TimestampedModel(BaseModel):
-    """Base model with automatic timestamps."""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
-class ArxivPaperModel(TimestampedModel):
-    """ArXiv research paper data model."""
-    id: str = Field(..., description="ArXiv paper ID (e.g., 2501.12345)")
-    title: str = Field(..., min_length=1, max_length=500)
-    authors: List[str] = Field(..., min_items=1)
-    abstract: str = Field(..., min_length=10)
-    published: datetime
-    url: HttpUrl
-    categories: List[str] = Field(default_factory=list)
-
-    @validator("id")
-    def validate_arxiv_id(cls, v):
-        """Ensure ArXiv ID format is correct."""
-        if not v.startswith("2"):  # Simple check
-            raise ValueError("Invalid ArXiv ID format")
-        return v
-```
-
-**Field Naming**: `snake_case`
-**Validation**: Use `@validator` decorators for custom validation
-**Config**: Always specify `json_encoders` for datetime serialization
-
----
-
-### 7.5 ETL Implementation Pattern
-
-**Standard ETL Structure**:
-```python
-from typing import List
-from src.etl.base import BaseETL
-from src.models.arxiv import ArxivPaperModel
-from src.utils.logging import get_logger
-
-logger = get_logger(__name__)
-
-class ArxivETL(BaseETL[dict, ArxivPaperModel]):
-    """ArXiv research papers ETL pipeline."""
-
-    def __init__(self, **kwargs):
-        super().__init__(
-            name="arxiv",
-            description="ArXiv research papers ETL",
-            batch_size=100,
-            enable_checkpointing=True,
-            **kwargs
-        )
-        self.api_url = "https://export.arxiv.org/rss/cs"
-
-    def extract(self) -> List[dict]:
-        """Extract papers from ArXiv RSS feed."""
-        logger.info(f"Fetching papers from {self.api_url}")
-        # Implementation
-        return raw_papers
-
-    def transform(self, data: List[dict]) -> List[ArxivPaperModel]:
-        """Transform raw papers into validated models."""
-        return self.validate_data(data, ArxivPaperModel)
+# All ETL classes inherit from BaseETL
+class ArxivETL(BaseETL):
+    def extract(self) -> List[Dict]:
+        """Fetch data from external source."""
+        pass
+
+    def transform(self, raw_data: List[Dict]) -> List[ArxivPaperModel]:
+        """Validate and transform data."""
+        pass
 
     def load(self, data: List[ArxivPaperModel]) -> None:
-        """Save papers to JSON files."""
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-
-        # Timestamped file
-        output_file = self.output_dir / f"arxiv_{timestamp}.json"
-        output_file.write_text(
-            json.dumps(
-                [p.model_dump() for p in data],
-                ensure_ascii=False,
-                indent=2,
-                default=str
-            ),
-            encoding="utf-8"
-        )
-
-        # Latest file
-        latest_file = self.output_dir / "arxiv_latest.json"
-        latest_file.write_text(output_file.read_text(), encoding="utf-8")
-
-        logger.info(f"Saved {len(data)} papers to {output_file}")
-
-# Entry point
-if __name__ == "__main__":
-    etl = ArxivETL()
-    metrics = etl.run()
-    print(f"ETL completed: {metrics.success_rate:.1f}% success rate")
+        """Save to data/arxiv/output/*.json."""
+        pass
 ```
 
----
-
-### 7.6 Dashboard Component Pattern
-
-**Tab Component Structure**:
+**Dashboard Components:**
 ```python
-# src/web/dashboard/components/papers_tab.py
-import logging
-from pathlib import Path
-import pandas as pd
-import dash_bootstrap_components as dbc
-from dash import Input, Output, html, dcc
+# Tab function + Manager class pattern
+def videos_tab():
+    """Render videos tab layout."""
+    return html.Div([...])
 
-from src.web.dashboard.utils import get_data_path
+class VideoManager:
+    """Handle video data loading and filtering."""
+
+    @lru_cache(maxsize=128)
+    def load_videos(self, channel: str) -> List[Video]:
+        """Load and cache video data."""
+        pass
+
+# Single callback per tab (prevents conflicts)
+@app.callback(
+    Output('videos-display', 'children'),
+    Input('channel-dropdown', 'value')
+)
+def update_videos(channel: str):
+    manager = VideoManager()
+    videos = manager.load_videos(channel)
+    return render_video_cards(videos)
+```
+
+**API Modules:**
+```python
+# FastAPI router pattern
+from fastapi import APIRouter, Depends
+
+router = APIRouter(prefix="/api/sources", tags=["sources"])
+
+@router.get("/")
+def list_sources(user: User = Depends(get_current_user)):
+    """List all data sources."""
+    return {"sources": load_source_registry()}
+```
+
+### Error Handling Patterns
+
+**ETL Pipelines:**
+```python
+# Use custom exception hierarchy
+from src.exceptions import ETLError, ValidationError, NetworkError
+
+try:
+    data = self.extract()
+except NetworkError as e:
+    logger.error(f"Network failure: {e}")
+    raise  # Let retry mechanism handle
+except ValidationError as e:
+    logger.warning(f"Invalid data: {e}")
+    # Skip invalid items, continue processing
+```
+
+**Dashboard Callbacks:**
+```python
+# Graceful degradation with user feedback
+@app.callback(...)
+def callback_with_error_handling():
+    try:
+        result = process_data()
+        return result
+    except Exception as e:
+        logger.exception("Callback failed")
+        return html.Div([
+            html.P("⚠️ Error loading data", className="text-danger"),
+            html.P(str(e), className="text-muted")
+        ])
+```
+
+**API Endpoints:**
+```python
+# Consistent error responses
+from fastapi import HTTPException
+
+@router.get("/content/{domain}")
+def get_content(domain: str):
+    if domain not in VALID_DOMAINS:
+        raise HTTPException(status_code=404, detail=f"Domain '{domain}' not found")
+
+    try:
+        data = load_content(domain)
+        return {"data": data}
+    except Exception as e:
+        logger.exception(f"Failed to load {domain}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+```
+
+### Logging Patterns
+
+**Structured Logging:**
+```python
+import logging
 
 logger = logging.getLogger(__name__)
 
-class PapersManager:
-    """Manages papers data loading and filtering."""
+# Always include context
+logger.info("ETL started", extra={
+    "etl_name": "arxiv",
+    "start_time": datetime.now().isoformat(),
+    "config": {"batch_size": 100}
+})
 
-    def __init__(self):
-        self.papers_data = pd.DataFrame()
-        self.loaded = False
-
-    def load_data(self):
-        """Load papers from ArXiv JSON files."""
-        arxiv_path = Path(get_data_path("arxiv", "output", "arxiv_latest.json"))
-        if arxiv_path.exists():
-            self.papers_data = pd.read_json(arxiv_path)
-            logger.info(f"Loaded {len(self.papers_data)} papers")
-        self.loaded = True
-
-    def get_papers(self, category=None, search_term=None, days_filter=None, limit=100):
-        """Get filtered papers."""
-        if not self.loaded:
-            self.load_data()
-        # Apply filters
-        return filtered_papers
-
-# Singleton instance
-papers_manager = PapersManager()
-
-def create_papers_tab():
-    """Create Papers tab layout."""
-    return dbc.Container([
-        dbc.Row([
-            dbc.Col([
-                # Filters
-                dcc.Dropdown(id="papers-category-dropdown", ...),
-                dcc.Input(id="papers-search-input", ...),
-            ], width=3),
-            dbc.Col([
-                # Content display
-                html.Div(id="papers-display")
-            ], width=9)
-        ])
-    ])
-
-def register_callbacks(app):
-    """Register Dash callbacks (SINGLE CALLBACK PATTERN)."""
-
-    @app.callback(
-        Output("papers-display", "children"),
-        Input("papers-category-dropdown", "value"),
-        Input("papers-search-input", "value"),
-        prevent_initial_call=True
-    )
-    def update_papers(category, search_term):
-        """Update papers display based on filters."""
-        papers = papers_manager.get_papers(category, search_term)
-        return create_paper_cards(papers)
-
-def create_paper_cards(papers):
-    """Create Bootstrap cards for papers."""
-    cards = []
-    for paper in papers:
-        card = dbc.Card([
-            dbc.CardBody([
-                html.H5(paper["title"]),
-                html.P(f"Authors: {', '.join(paper['authors'])}"),
-                html.P(paper["abstract"][:200] + "..."),
-                dbc.Button("Read More", href=paper["url"], external_link=True)
-            ])
-        ])
-        cards.append(card)
-    return cards
-```
-
-**Key Patterns**:
-- ✅ One Manager per tab (singleton instance)
-- ✅ `create_{tab}_tab()` function returns layout
-- ✅ `register_callbacks(app)` function for callback registration
-- ✅ Single callback per output (prevents conflicts)
-- ✅ Lazy loading (`if not self.loaded: self.load_data()`)
-
----
-
-### 7.7 Testing Patterns
-
-**Test File Structure**:
-```python
-# tests/etl/test_arxiv_etl.py
-import pytest
-from unittest.mock import Mock, patch
-from src.etl.arxiv.arxiv_etl import ArxivETL
-from src.models.arxiv import ArxivPaperModel
-
-@pytest.fixture
-def arxiv_etl():
-    """Fixture for ArxivETL instance."""
-    return ArxivETL(name="test_arxiv")
-
-@pytest.fixture
-def sample_arxiv_data():
-    """Fixture for sample ArXiv data."""
-    return [
-        {
-            "id": "2501.12345",
-            "title": "Test Paper",
-            "authors": ["Alice", "Bob"],
-            "abstract": "Test abstract content",
-            "published": "2025-01-12T10:00:00",
-            "url": "https://arxiv.org/abs/2501.12345",
-            "categories": ["cs.AI"]
-        }
-    ]
-
-def test_arxiv_extract_success(arxiv_etl):
-    """Test successful extraction from ArXiv."""
-    with patch("requests.get") as mock_get:
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.text = "<rss>...</rss>"
-
-        data = arxiv_etl.extract()
-        assert len(data) > 0
-        assert all("title" in item for item in data)
-
-def test_arxiv_transform_valid_data(arxiv_etl, sample_arxiv_data):
-    """Test transformation with valid data."""
-    models = arxiv_etl.transform(sample_arxiv_data)
-    assert len(models) == 1
-    assert isinstance(models[0], ArxivPaperModel)
-    assert models[0].title == "Test Paper"
-
-def test_arxiv_transform_invalid_data(arxiv_etl):
-    """Test transformation with invalid data."""
-    invalid_data = [{"title": "Test"}]  # Missing required fields
-    models = arxiv_etl.transform(invalid_data)
-    assert len(models) == 0  # Invalid data filtered out
-    assert arxiv_etl.metrics.records_failed == 1
-
-def test_arxiv_load(arxiv_etl, sample_arxiv_data, tmp_path):
-    """Test loading data to JSON files."""
-    arxiv_etl.output_dir = tmp_path
-    models = [ArxivPaperModel(**sample_arxiv_data[0])]
-
-    arxiv_etl.load(models)
-
-    # Check latest file exists
-    latest_file = tmp_path / "arxiv_latest.json"
-    assert latest_file.exists()
-
-    # Check timestamped file exists
-    timestamped_files = list(tmp_path.glob("arxiv_*.json"))
-    assert len(timestamped_files) >= 2  # latest + timestamped
-```
-
----
-
-### 7.8 Error Messages and Logging Standards
-
-**Error Messages**:
-```python
-# ❌ BAD: Vague error
-raise ValueError("Invalid data")
-
-# ✅ GOOD: Specific, actionable error
-raise DataValidationError(
-    f"ArXiv paper missing required field 'authors': {paper['id']}",
-    context={"paper_id": paper["id"], "missing_fields": ["authors"]}
-)
-```
-
-**Logging Standards**:
-```python
-# ❌ BAD: No context
-logger.info("Data loaded")
-
-# ✅ GOOD: Rich context
-logger.info(
-    f"Loaded {len(data)} papers from ArXiv",
-    extra={"source": "arxiv", "count": len(data), "duration_seconds": 12.3}
-)
-
-# ❌ BAD: No exception context
+# Error context preservation
 try:
-    data = fetch_data()
+    process_data()
 except Exception as e:
-    logger.error(f"Error: {e}")
+    logger.exception("Processing failed", extra={
+        "etl_name": "arxiv",
+        "error_type": type(e).__name__,
+        "input_data": data_sample  # Never log full data
+    })
+```
 
-# ✅ GOOD: Full exception context
-try:
-    data = fetch_data()
-except RequestError as e:
-    logger.error(
-        f"Failed to fetch ArXiv data: {e}",
-        exc_info=True,
-        extra={"url": api_url, "retry_count": retry_count}
-    )
-    raise
+**Log Levels:**
+- `DEBUG`: Detailed diagnostic information (development only)
+- `INFO`: General informational messages (ETL start/complete, user actions)
+- `WARNING`: Unexpected but handled situations (data validation failures, retries)
+- `ERROR`: Error events that require attention (ETL failures, API errors)
+- `CRITICAL`: Critical failures requiring immediate action (database corruption, auth failures)
+
+### Data Persistence Patterns
+
+**File Writes (Atomic):**
+```python
+import json
+from pathlib import Path
+
+def save_data(data: List[Dict], output_path: Path):
+    """Atomic file write using temp file + rename."""
+    temp_path = output_path.with_suffix('.tmp')
+
+    # Write to temp file
+    with temp_path.open('w') as f:
+        json.dump(data, f, indent=2)
+
+    # Atomic rename
+    temp_path.rename(output_path)
+```
+
+**SQLite Transactions:**
+```python
+import sqlite3
+
+def update_user_preferences(user_id: int, preferences: dict):
+    """Update preferences with transaction."""
+    conn = sqlite3.connect('data/megalith.db')
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE preferences SET value = ? WHERE user_id = ?",
+            (json.dumps(preferences), user_id)
+        )
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+```
+
+### Testing Patterns
+
+**Unit Tests:**
+```python
+import pytest
+from src.etl.arxiv.arxiv_etl import ArxivETL
+
+def test_arxiv_transform_valid_data():
+    """Test transform with valid data."""
+    etl = ArxivETL()
+    raw_data = [{"title": "Test Paper", "authors": ["Author 1"]}]
+
+    result = etl.transform(raw_data)
+
+    assert len(result) == 1
+    assert result[0].title == "Test Paper"
+
+def test_arxiv_transform_invalid_data():
+    """Test transform with invalid data."""
+    etl = ArxivETL()
+    raw_data = [{"invalid": "data"}]
+
+    with pytest.raises(ValidationError):
+        etl.transform(raw_data)
+```
+
+**Integration Tests:**
+```python
+def test_arxiv_etl_end_to_end(tmp_path):
+    """Test complete ETL pipeline."""
+    etl = ArxivETL(output_dir=tmp_path)
+
+    etl.run()
+
+    # Verify output file created
+    output_files = list(tmp_path.glob("*.json"))
+    assert len(output_files) == 1
+
+    # Verify data validity
+    with output_files[0].open() as f:
+        data = json.load(f)
+        assert len(data) > 0
+        assert all('title' in item for item in data)
 ```
 
 ---
 
-## 8. Performance & Scalability
+## Consistency Rules
 
-### 8.1 Current Performance Baseline
+### Date/Time Handling
 
-**Measured Performance** (from PRD NFRs):
-- **Dashboard Load Time**: ~2 seconds (target: <2s)
-- **ETL Run Time**: <5 minutes per source (50+ sources in parallel)
-- **Data Volume**: 10K-50K items per domain
-- **Concurrent Users**: 1 (single-user, expanding to 3-5 in Epic 5)
+**Format:** ISO 8601 strings for storage, timezone-aware datetime objects in code
+```python
+from datetime import datetime, timezone
 
-### 8.2 Performance Optimization Strategies
+# Storage
+timestamp = datetime.now(timezone.utc).isoformat()  # "2025-01-14T10:30:00+00:00"
 
-**Dashboard Optimization** (Epic 7.3):
-1. **Lazy Loading**: Only load active tab data
-2. **Virtual Scrolling**: For lists with 1,000+ items
-3. **Client-Side Caching**: Manager classes cache loaded data
-4. **Optimized JSON Parsing**: Use `orjson` or `ijson` for large files
-5. **Service Worker**: Cache static assets and API responses
+# Parsing
+dt = datetime.fromisoformat(timestamp)
 
-**ETL Optimization**:
-1. **Batch Processing**: Configurable batch sizes (default: 100 items)
-2. **Parallel Execution**: Multiple ETLs run concurrently via shell scripts
-3. **Checkpointing**: Resume from last successful point on failures
-4. **Incremental Loading**: Only fetch new items (where supported by source)
+# Display (dashboard)
+display_time = dt.strftime("%Y-%m-%d %H:%M")  # "2025-01-14 10:30"
+```
 
-**Data Storage Optimization**:
-1. **Retention Policies**: Auto-cleanup old timestamped files (configurable days)
-2. **Compression**: Future: gzip for archived data
-3. **Indexing**: Future: JSON-based indices for fast lookups
+**Consistency:**
+- All timestamps stored in UTC
+- Display in user's local time (browser handles conversion)
+- File timestamps in format: `{name}_{YYYYMMDD_HHMMSS}.json`
 
-### 8.3 Scalability Targets
+### API Response Format
 
-**Near-Term** (Epics 1-7):
-- ✅ 100+ data sources (from 50+)
-- ✅ 100K items per domain (from 10K-50K)
-- ✅ 3-5 concurrent users (from 1)
-- ✅ <1 second dashboard load (from ~2s)
+**Success Response:**
+```json
+{
+  "data": [...],
+  "meta": {
+    "count": 150,
+    "page": 1,
+    "total_pages": 15
+  }
+}
+```
 
-**Long-Term** (Epics 8-9):
-- ⏳ PostgreSQL migration for 1M+ items
-- ⏳ Redis caching for multi-user sessions
-- ⏳ Horizontal scaling with load balancing
-- ⏳ CDN for static assets
+**Error Response:**
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid source filter",
+    "details": {
+      "field": "source_filter",
+      "allowed_values": ["arxiv", "news", "games"]
+    }
+  }
+}
+```
 
----
+### Configuration Precedence
 
-## 9. Security
+1. Environment variables (highest priority)
+2. `.env` file
+3. Config file (`src/config/settings.py` defaults)
+4. Code defaults (lowest priority)
 
-### 9.1 Current Security Posture
-
-**Single-User Security** (Current State):
-- ✅ **Local Network Only**: No public exposure
-- ✅ **Environment Variables**: Sensitive config in `.env` (gitignored)
-- ✅ **Input Validation**: Pydantic models validate all external data
-- ✅ **Path Security**: Secure file path handling (no traversal attacks)
-
-**Authentication** (Epic 5):
-- ✅ **Password Hashing**: bcrypt with 12 rounds
-- ✅ **Session Management**: HTTP-only, secure cookies
-- ✅ **CSRF Protection**: Flask-WTF or custom token generation
-- ✅ **Rate Limiting**: 5 failed attempts per 15 minutes per IP
-
-### 9.2 Security Best Practices
-
-**Data Handling**:
-1. **Never Log Sensitive Data**: Passwords, API keys, tokens
-2. **Sanitize User Input**: Validate all input with Pydantic
-3. **Secure API Keys**: Store in environment variables, never commit
-
-**Web Security**:
-1. **HTTPS Only**: Enforce HTTPS in production (Epic 5)
-2. **Secure Cookies**: `HttpOnly`, `Secure`, `SameSite=Lax` flags
-3. **CSRF Tokens**: Validate on all state-changing operations
-4. **XSS Prevention**: Escape all user-generated content in dashboard
-
-**API Security** (Epic 9):
-1. **Authentication**: API keys or OAuth2
-2. **Rate Limiting**: 100 requests/hour per user
-3. **Input Validation**: Pydantic models for all API payloads
-4. **CORS Configuration**: Whitelist allowed origins
-
-### 9.3 Future Security Enhancements
-
-- ⏳ **2FA Support**: Two-factor authentication for admin users
-- ⏳ **Audit Logging**: Track user actions and data access
-- ⏳ **Encryption at Rest**: Encrypt sensitive data files
-- ⏳ **Security Scanning**: Automated dependency vulnerability scanning
+```python
+# Example
+DATABASE_PATH = os.getenv("DATABASE_PATH", "data/megalith.db")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # Required, no default
+```
 
 ---
 
-## 10. Testing Strategy
+## Data Architecture
 
-See [Section 5.6](#56-testing-approach) for detailed testing patterns.
+### Database Schema (SQLite)
 
-**Summary**:
-- **Framework**: pytest + pytest-cov
-- **Coverage Target**: 70% overall (BaseETL: 90%, Models: 80%, Dashboard: 60%)
-- **Test Types**: Unit, Integration, ETL, Model Validation, Performance
-- **Mocking**: Mock external APIs to keep tests fast (<5 min total suite)
-- **CI/CD**: Future: Fail build if coverage drops below 70%
+**users table:**
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    is_admin BOOLEAN DEFAULT FALSE,
+    telegram_chat_id TEXT,  -- For Telegram notifications
+    created_at TEXT NOT NULL,
+    last_login TEXT
+);
+```
+
+**sessions table:**
+```sql
+CREATE TABLE sessions (
+    id TEXT PRIMARY KEY,  -- Session ID
+    user_id INTEGER NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+**preferences table:**
+```sql
+CREATE TABLE preferences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,  -- JSON string
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, key)
+);
+```
+
+**alert_rules table:**
+```sql
+CREATE TABLE alert_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    conditions TEXT NOT NULL,  -- JSON: {sources, keywords, categories}
+    channels TEXT NOT NULL,    -- JSON: ["telegram", "email"]
+    active BOOLEAN DEFAULT TRUE,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+### File-Based Data Models
+
+**Shared Data Sources:**
+```
+data/shared/
+├── youtube/{channel}/youtube_videos.json
+├── arxiv/arxiv_papers.json
+├── news/hackernews.json
+├── games/free_games.json
+└── ... (50+ sources)
+```
+
+**Per-User Data:**
+```
+data/users/{user_id}/
+├── preferences.json              # Dashboard customization
+├── alerts/
+│   ├── rules.json               # Alert rules (also in SQLite)
+│   └── events/
+│       └── {timestamp}_alert.json
+├── sources/                     # Personal data sources
+│   └── {source_name}/*.json
+└── activity_log.json            # Usage tracking for recommendations
+```
+
+**Metrics Data:**
+```
+data/metrics/
+├── {etl_name}/
+│   └── {timestamp}_metrics.json
+└── profiling/
+    └── {etl_name}_profile.json
+```
+
+### Data Relationships
+
+```
+User (SQLite)
+  ├─ 1:N → Sessions (SQLite)
+  ├─ 1:N → Preferences (SQLite + JSON)
+  ├─ 1:N → AlertRules (SQLite)
+  ├─ 1:N → AlertEvents (JSON files)
+  ├─ 1:1 → ActivityLog (JSON file)
+  └─ 1:N → PersonalSources (JSON files)
+
+Shared Sources (JSON files)
+  ├─ Read by all users
+  ├─ Written by ETL pipelines
+  └─ Filtered by user preferences
+```
 
 ---
 
-## 11. Deployment
+## API Contracts
 
-### 11.1 Current Deployment (Local Development)
+### Authentication Endpoints
 
-**Setup**:
+**POST /api/auth/login**
+```json
+Request:
+{
+  "username": "joshi",
+  "password": "secure_password"
+}
+
+Response (200):
+{
+  "token": "eyJ...",
+  "user": {
+    "id": 1,
+    "username": "joshi",
+    "email": "joshi@example.com"
+  }
+}
+```
+
+**POST /api/auth/logout**
+```json
+Request: (authenticated)
+
+Response (200):
+{
+  "message": "Logged out successfully"
+}
+```
+
+### Content Endpoints
+
+**GET /api/sources**
+```json
+Response:
+{
+  "data": [
+    {
+      "id": "arxiv",
+      "name": "ArXiv Papers",
+      "type": "RSS",
+      "update_frequency": "daily",
+      "item_count": 1250,
+      "last_updated": "2025-01-14T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "count": 52
+  }
+}
+```
+
+**GET /api/content/{domain}?limit=50&offset=0**
+```json
+Response:
+{
+  "data": [
+    {
+      "id": "arxiv_2501_12345",
+      "title": "Advanced AI Paper",
+      "source": "arxiv",
+      "date": "2025-01-14",
+      "url": "https://arxiv.org/...",
+      "preview": "Abstract text..."
+    }
+  ],
+  "meta": {
+    "count": 50,
+    "total": 1250,
+    "page": 1,
+    "total_pages": 25
+  }
+}
+```
+
+### User Preferences Endpoints
+
+**GET /api/user/preferences**
+```json
+Response:
+{
+  "data": {
+    "tab_visibility": {
+      "videos": true,
+      "papers": true,
+      "news": false
+    },
+    "tab_order": ["videos", "papers", "deals"],
+    "items_per_page": 48
+  }
+}
+```
+
+**PUT /api/user/preferences**
+```json
+Request:
+{
+  "tab_visibility": {
+    "videos": true,
+    "papers": true
+  }
+}
+
+Response (200):
+{
+  "message": "Preferences updated",
+  "data": { ... }
+}
+```
+
+### Alert Endpoints
+
+**GET /api/alerts?unread_only=true**
+```json
+Response:
+{
+  "data": [
+    {
+      "id": "alert_123",
+      "title": "New free course detected",
+      "source": "udemy",
+      "timestamp": "2025-01-14T10:30:00Z",
+      "read": false,
+      "content_url": "https://..."
+    }
+  ],
+  "meta": {
+    "count": 5,
+    "unread_count": 3
+  }
+}
+```
+
+### Webhook Payloads
+
+**content.new event:**
+```json
+{
+  "event": "content.new",
+  "timestamp": "2025-01-14T10:30:00Z",
+  "data": {
+    "source": "arxiv",
+    "items": [
+      {
+        "id": "arxiv_2501_12345",
+        "title": "New Paper",
+        "url": "https://..."
+      }
+    ]
+  },
+  "signature": "sha256=..."
+}
+```
+
+---
+
+## Security Architecture
+
+### Authentication Flow
+
+**User Registration:**
+1. User submits username, email, password
+2. Validate password strength (min 12 characters)
+3. Hash password with bcrypt (12 rounds)
+4. Store in SQLite `users` table
+5. Create initial preferences record
+
+**Login Flow:**
+1. User submits credentials
+2. Lookup user by username/email
+3. Verify password with bcrypt
+4. Create session (Flask-Login)
+5. Store session in SQLite `sessions` table
+6. Return secure HTTP-only cookie
+
+**Session Management:**
+- Session timeout: 7 days (remember-me) or 30 minutes (default)
+- HTTP-only cookies (prevent XSS)
+- Secure flag (HTTPS only in production)
+- SameSite=Lax (CSRF protection)
+- Server-side session storage (SQLite)
+
+### Password Security
+
+**Requirements:**
+- Minimum 12 characters
+- No complexity requirements (passphrase-friendly)
+- Bcrypt hashing with 12 rounds
+
+**Password Reset (Future):**
+- Email-based reset tokens
+- Token expiration: 1 hour
+- Single-use tokens
+
+### API Security
+
+**Authentication:**
+- API keys stored in user profile
+- Bearer token authentication: `Authorization: Bearer {api_key}`
+- Rate limiting: 100 requests/hour per user
+
+**Rate Limiting:**
+```python
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
+
+@app.get("/api/sources")
+@limiter.limit("100/hour")
+def get_sources():
+    pass
+```
+
+**CORS Configuration:**
+```python
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:7777"],  # Dashboard only
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
+```
+
+### Data Security
+
+**Sensitive Configuration:**
+- All API keys, tokens, passwords in environment variables or `.env` file
+- `.env` file gitignored
+- No secrets committed to version control
+
+**Input Validation:**
+- All external data validated via Pydantic models
+- SQL injection prevention: parameterized queries (SQLite/SQLAlchemy)
+- Path traversal prevention: validate file paths, use absolute paths only
+
+**File Permissions:**
+- `data/` directory: read/write for app user only
+- `data/megalith.db`: 600 (owner read/write only)
+- Log files: 644 (owner read/write, others read)
+
+---
+
+## Performance Considerations
+
+### Dashboard Performance
+
+**Current State:**
+- Initial page load: ~2 seconds
+- Tab switching: ~500ms
+- Filter application: ~300ms
+
+**Optimization Targets (Epic 7):**
+- Initial load: <1 second
+- Tab switching: <300ms
+- Filter application: <200ms
+
+**Optimization Strategies:**
+
+1. **Lazy Loading:**
+```python
+# Only load data for active tab
+@app.callback(Output('tab-content', 'children'), Input('tabs', 'value'))
+def render_tab(active_tab):
+    if active_tab == 'videos':
+        return load_videos_tab()  # Loads data only when tab accessed
+    # Other tabs not loaded
+```
+
+2. **Function-Level Caching:**
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+def load_videos(channel: str) -> List[Video]:
+    """Cache video data for 128 unique channel queries."""
+    with open(f'data/youtube/{channel}/youtube_videos.json') as f:
+        return json.load(f)
+```
+
+3. **Client-Side Filtering:**
+```javascript
+// Filter in browser for instant response (<200ms)
+const filtered = videos.filter(v =>
+    v.channel === selectedChannel &&
+    v.title.includes(searchQuery)
+);
+```
+
+4. **Pagination:**
+```python
+# Display 48 items per page (configurable)
+items_per_page = user_preferences.get('items_per_page', 48)
+page_data = all_items[offset:offset+items_per_page]
+```
+
+### ETL Performance
+
+**Current State:**
+- Single pipeline: ~2-5 minutes
+- All 50+ pipelines: ~2 hours sequential
+
+**Optimization Strategies:**
+
+1. **Batch Processing:**
+```python
+def process_batch(items: List[Dict], batch_size: int = 100):
+    """Process items in batches to manage memory."""
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i+batch_size]
+        yield transform_batch(batch)
+```
+
+2. **Parallel Execution (Future):**
 ```bash
-# 1. Install dependencies with UV (10-100x faster than pip)
+# Run independent ETLs in parallel
+python src/etl/arxiv/arxiv_etl.py &
+python src/etl/news/news_etl.py &
+wait
+```
+
+3. **Incremental Updates:**
+```python
+# Only fetch new items since last run
+last_run = load_checkpoint()
+new_items = fetch_since(last_run.timestamp)
+```
+
+### Database Performance
+
+**SQLite Optimization:**
+```sql
+-- Indexes for common queries
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_preferences_user_id ON preferences(user_id);
+CREATE INDEX idx_alert_rules_user_id ON alert_rules(user_id);
+
+-- PRAGMA settings for performance
+PRAGMA journal_mode = WAL;  -- Write-Ahead Logging for concurrency
+PRAGMA synchronous = NORMAL;  -- Balance safety vs performance
+PRAGMA cache_size = -64000;  -- 64MB cache
+```
+
+**Connection Pooling (if using SQLAlchemy):**
+```python
+from sqlalchemy import create_engine
+
+engine = create_engine(
+    'sqlite:///data/megalith.db',
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True
+)
+```
+
+---
+
+## Deployment Architecture
+
+### Docker Container Structure
+
+**Dockerfile:**
+```dockerfile
+FROM python:3.10-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV package manager
+RUN pip install uv
+
+# Copy project files
+WORKDIR /app
+COPY . /app
+
+# Install Python dependencies
+RUN uv sync --all-extras
+
+# Install Playwright browsers
+RUN uv run playwright install --with-deps chromium
+
+# Create data directories
+RUN mkdir -p data/shared data/users data/metrics data/watchers logs
+
+# Expose ports
+EXPOSE 7777 8000
+
+# Start both services
+CMD ["./start.sh"]
+```
+
+**start.sh:**
+```bash
+#!/bin/bash
+set -e
+
+# Start FastAPI (Epic 9)
+uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
+
+# Start Dash dashboard
+uv run waitress-serve --host=0.0.0.0 --port=7777 run_watchtower_dashboard:server &
+
+# Wait for both processes
+wait
+```
+
+**docker-compose.yml:**
+```yaml
+version: '3.8'
+
+services:
+  watchtower:
+    build: .
+    container_name: megalith
+    ports:
+      - "7777:7777"  # Dashboard
+      - "8000:8000"  # API
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+```
+
+### UnRAID Deployment
+
+**Current Setup:**
+- Docker container deployment
+- Data persistence via volume mounts
+- Port mapping: 7777 (dashboard), 8000 (API - future)
+
+**Environment Variables:**
+```bash
+# .env file (not committed)
+DATABASE_PATH=data/megalith.db
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+SECRET_KEY=your_flask_secret_key_here
+```
+
+### Production Checklist
+
+**Security:**
+- [ ] HTTPS enabled (reverse proxy)
+- [ ] Secure cookie flags set
+- [ ] Environment variables configured
+- [ ] Database file permissions set (600)
+- [ ] API rate limiting enabled
+
+**Performance:**
+- [ ] Waitress/Uvicorn configured for production
+- [ ] SQLite WAL mode enabled
+- [ ] Log rotation configured
+- [ ] Caching enabled
+
+**Monitoring:**
+- [ ] Health check endpoints responding
+- [ ] Metrics collection active
+- [ ] Log aggregation configured
+- [ ] Backup strategy implemented
+
+---
+
+## Development Environment
+
+### Prerequisites
+
+**System Requirements:**
+- Python 3.10+
+- UV package manager (recommended) or pip/venv
+- Git
+- Docker (for containerized deployment)
+
+**Operating System Support:**
+- Linux (Ubuntu 20.04+, Debian 11+)
+- macOS (11+)
+- Windows 10+
+
+### Setup Commands
+
+**Using UV (Recommended):**
+```bash
+# Clone repository
+git clone https://github.com/josmerod/watchtower.git
+cd watchtower
+
+# Install dependencies
 uv sync --all-extras
 
-# 2. Install Playwright browsers
+# Install Playwright browsers
 uv run playwright install
 
-# 3. Configure environment
+# Create .env file
 cp .env.example .env
-# Edit .env with API keys, settings
+# Edit .env with your configuration
 
-# 4. Run ETL pipelines
-./run_all_etl.sh          # Linux/Mac
-.\run_all_etl.bat         # Windows
+# Initialize database
+uv run python src/scripts/init_database.py
 
-# 5. Start dashboard
+# Run dashboard
 uv run python run_watchtower_dashboard.py
-# Available at http://localhost:7777
+
+# Run all ETL pipelines
+./run_all_etl.sh  # Linux/Mac
+.\run_all_etl.bat  # Windows
 ```
 
-**Directory Creation**:
-- Automatic via `Settings.create_directories()`
-- Creates: `data/`, `logs/`, `config/` on first run
-
-### 11.2 Production Deployment (Future)
-
-**Docker** (already configured):
-- ✅ Dockerfile exists in project root
-- ✅ Docker Compose for multi-container setup
-- ⏳ Production configuration needed (Epic 5, 7)
-
-**unRAID Deployment** (already configured):
-- ✅ Branch: `unraid-deployment-setup`
-- ✅ Docker support configured
-
-**Environment Variables** (Production):
+**Using pip/venv:**
 ```bash
-# Application
-APP_NAME=Watchtower
-ENVIRONMENT=production
-DEBUG=false
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
 
-# Database (if migrating from JSON)
-DATABASE__URL=postgresql://user:pass@localhost:5432/watchtower
+# Install dependencies
+pip install -r requirements.txt
+playwright install
 
-# Security
-SECRET_KEY=<random-32-char-string>
-SESSION_TIMEOUT=1800  # 30 minutes
-
-# API Keys (External Services)
-OPENAI_API_KEY=<key>
-ANTHROPIC_API_KEY=<key>
+# Same steps as above for .env, database, running
 ```
 
-### 11.3 Monitoring & Observability
+### Development Workflow
 
-**Health Checks**:
-- Endpoint: `/health` (status, uptime, ETL health)
-- Endpoint: `/metrics` (ETL run summaries, success rates)
+**Running Services:**
+```bash
+# Dashboard only (development mode)
+uv run python run_watchtower_dashboard.py
 
-**Logging**:
-- File: `logs/watchtower.log` (rotating, 10MB max, 5 backups)
-- Format: Structured JSON (production), human-readable (development)
+# FastAPI only (when implementing Epic 9)
+uv run uvicorn src.api.main:app --reload --port 8000
 
-**Performance Monitoring**:
-- ETL Metrics: Automatic collection in `data/metrics/etl_runs_latest.json`
-- Dashboard: Metrics tab (Epic 1.4)
+# Both services (production-like)
+docker-compose up
+```
 
----
+**Running Tests:**
+```bash
+# All tests
+uv run pytest
 
-## Appendix A: Decision Log
+# Specific test category
+uv run pytest tests/etl/
+uv run pytest tests/models/
 
-| Decision | Rationale | Trade-offs | Date |
-|----------|-----------|-----------|------|
-| **File-based JSON Storage** | Simplicity, performance for read-heavy workloads, no database setup | No ACID transactions, limited query capabilities | 2024-Q4 |
-| **UV Package Manager** | 10-100x faster than pip, consistent dependency resolution | Newer tool, smaller ecosystem than pip | 2024-Q4 |
-| **Dash over Streamlit** | Better component control, production-ready, Bootstrap integration | Steeper learning curve than Streamlit | 2024-Q4 |
-| **Template Method Pattern** | Enforces consistent ETL structure, reduces boilerplate | Less flexibility for non-standard ETLs | 2024-Q4 |
-| **Single Callback Pattern** | Prevents Dash callback conflicts, easier debugging | May require larger callbacks for complex interactions | 2024-Q4 |
-| **Pydantic Everywhere** | Type safety, automatic validation, settings management | Performance overhead for large data volumes (acceptable) | 2024-Q4 |
-| **Structured JSON Logging** | Machine-readable, better for log aggregation | Harder to read directly (use log viewers) | 2024-Q4 |
-| **UTC Timestamps** | Avoids timezone ambiguity, global consistency | Requires timezone conversion for display | 2024-Q4 |
-| **BaseETL Checkpointing** | Resumability, fault tolerance | Additional I/O overhead (minimal) | 2024-Q4 |
-| **Manager Pattern (Dashboard)** | Centralized data handling, caching, thread-safe | Singleton instances (acceptable for current scale) | 2024-Q4 |
+# With coverage
+uv run pytest --cov=src --cov-report=html --cov-report=term
+```
 
----
+**Code Quality:**
+```bash
+# Linting
+uv run ruff check .
 
-## Appendix B: Future Architectural Decisions
+# Formatting
+uv run ruff format .
 
-**Pending Decisions** (Epics 8-9):
-1. **Database Migration**: If/when to migrate from JSON to PostgreSQL
-2. **API Framework**: Flask-RESTX vs. FastAPI for REST API
-3. **Caching Layer**: Redis vs. in-memory caching for multi-user sessions
-4. **Message Queue**: Celery vs. RQ for background jobs (email digests, etc.)
-5. **Frontend Framework**: Keep Dash vs. migrate to React/Vue (if needed)
+# Type checking
+uv run mypy src/
+```
 
-**Evaluation Criteria**:
-- Performance impact
-- Development velocity
-- Maintenance complexity
-- Team expertise
-- Cost (hosting, licensing)
+**ETL Development:**
+```bash
+# Run single ETL pipeline
+uv run python src/etl/arxiv/arxiv_etl.py
 
----
+# Run with profiling (Epic 7)
+uv run python -m cProfile -o profile.stats src/etl/arxiv/arxiv_etl.py
 
-## Appendix C: Architectural Principles
-
-**Core Principles**:
-1. **Simplicity Over Complexity**: Choose boring tech that works
-2. **Extensibility Through Patterns**: Template method enables rapid source integration
-3. **Performance by Design**: File-based storage, lazy loading, caching
-4. **Type Safety**: Python 3.10+ type hints, Pydantic models
-5. **Observability**: Structured logging, metrics collection, health checks
-6. **Developer Productivity**: UV, Ruff, mypy, pytest for fast iteration
-7. **AI-First Development**: Clear patterns and documentation for AI-assisted coding
-
-**SOLID Principles**:
-- ✅ **Single Responsibility**: Each ETL handles one source
-- ✅ **Open/Closed**: BaseETL open for extension, closed for modification
-- ✅ **Liskov Substitution**: All ETLs substitutable for BaseETL
-- ✅ **Interface Segregation**: Minimal abstract methods (extract, transform, load)
-- ✅ **Dependency Inversion**: Depend on abstractions (BaseETL, BaseWatcher)
+# Generate new ETL scaffold (Epic 6)
+uv run python src/scripts/new_source.py --name crypto_news --type rss
+```
 
 ---
 
-## Document Metadata
+## Architecture Decision Records (ADRs)
 
-**Version History**:
-- v1.0.0 (2025-01-12): Initial architecture document (Joshi, Winston)
+### ADR-001: SQLite for User Management
 
-**Related Documents**:
-- [PRD.md](./PRD.md): Product Requirements Document
-- [epics.md](./epics.md): Epic and story breakdown
-- [CLAUDE.md](../CLAUDE.md): Claude Code instructions
-- [.cursorrules](../.cursorrules): Cursor IDE rules
+**Context**: Epic 5 requires multi-user support with authentication, session management, and user preferences. Need to choose between file-based storage (consistent with existing architecture) vs. database.
 
-**Approval Status**: ✅ Approved for implementation
+**Decision**: Use SQLite for user management, keep file-based JSON for data sources.
 
-**Next Review Date**: 2025-02-12 (after Epic 1 completion)
+**Rationale:**
+- User operations require ACID transactions (auth, sessions)
+- SQLite handles 10-20 users with 1-3 concurrent easily
+- No server overhead (embedded database)
+- Migration path to PostgreSQL if scale exceeds expectations
+- Keeps existing file-based ETL architecture untouched
+
+**Consequences:**
+- Hybrid architecture (SQLite + JSON files)
+- Need database migration tooling
+- Introduces SQLAlchemy or raw sqlite3 dependency
+
+**Status**: Accepted
+
+---
+
+### ADR-002: Flask-Login for Authentication
+
+**Context**: Multi-user system needs secure authentication. Options: custom auth (full control) vs. Flask-Login (battle-tested library).
+
+**Decision**: Use Flask-Login for session management and authentication.
+
+**Rationale:**
+- Security-critical code should not be DIY
+- Flask-Login is industry standard (13+ years, millions of deployments)
+- Seamless Dash integration (Dash runs on Flask)
+- Handles sessions, remember-me, CSRF protection automatically
+- Time-to-market: focus on features, not building auth from scratch
+
+**Consequences:**
+- Adds flask-login dependency
+- Requires bcrypt for password hashing
+- Must follow Flask-Login patterns for protected routes
+
+**Status**: Accepted
+
+---
+
+### ADR-003: Telegram Bot API for Notifications
+
+**Context**: Epic 3 requires real-time alerts. Options: email (SMTP/Resend), browser notifications (WebSockets/polling), Telegram.
+
+**Decision**: Use Telegram Bot API for instant alerts, 60-second polling for dashboard updates.
+
+**Rationale:**
+- **User preference**: Explicit request for Telegram over email
+- Instant delivery (better than email or 60s polling)
+- Free and unlimited (no rate limits or costs)
+- Rich notifications (formatted messages, links, inline buttons)
+- Simple API with excellent Python library (python-telegram-bot)
+- Tech-savvy users already have Telegram
+
+**Consequences:**
+- Users must link Telegram account to Megalith profile
+- Requires Telegram bot setup via @BotFather
+- Email digests (Epic 9.6) still need SMTP later
+
+**Status**: Accepted
+
+---
+
+### ADR-004: FastAPI for REST API
+
+**Context**: Epic 9 requires REST API for external integrations, browser extension, webhooks. Options: extend Dash with Flask routes, Flask-RESTX, or FastAPI.
+
+**Decision**: Use FastAPI as separate service (port 8000), run alongside Dash (port 7777) in same Docker container.
+
+**Rationale:**
+- Auto-generated OpenAPI/Swagger documentation (Epic 9.5 requirement)
+- Pydantic integration (reuse existing models)
+- Modern, async-capable for future scale
+- Clean separation of concerns (dashboard vs. API)
+- Light usage expected - no need for complex infrastructure
+- Single container deployment keeps complexity manageable
+
+**Consequences:**
+- Two services to manage (Dash + FastAPI)
+- Need reverse proxy or expose both ports
+- Slightly more complex deployment (mitigated by Docker)
+
+**Status**: Accepted
+
+---
+
+### ADR-005: Client-Side Search Initially
+
+**Context**: Story 1.3 requires full-text search. Options: client-side filtering, PostgreSQL FTS, Elasticsearch.
+
+**Decision**: Start with client-side JavaScript filtering, migrate to PostgreSQL FTS if data exceeds 100K items.
+
+**Rationale:**
+- Current scale: 10K items per tab - client-side is instant (<1 second)
+- Zero infrastructure (no search server needed)
+- Simple implementation (Array.filter in JavaScript)
+- Migration path exists if scale demands it
+- Boring technology: works today, upgrade only if needed
+
+**Consequences:**
+- Performance degrades if data grows beyond 100K items
+- Limited to simple substring/keyword matching
+- No advanced features (fuzzy search, relevance ranking) initially
+
+**Status**: Accepted
+
+---
+
+### ADR-006: LRU Cache for Performance
+
+**Context**: Epic 7 requires dashboard performance optimization (2s → 1s load time). Options: Redis cache, in-memory cache, file-based cache, @lru_cache.
+
+**Decision**: Use Python's built-in @lru_cache decorator for function-level caching.
+
+**Rationale:**
+- Zero configuration (built-in Python)
+- Perfect for function memoization (load_videos, load_papers)
+- No external dependencies
+- Sufficient for 10-20 concurrent users
+- Can add Redis later if cross-process caching needed
+
+**Consequences:**
+- Cache lost on application restart
+- Per-process cache (not shared across workers)
+- Need to manage cache invalidation (TTL or manual)
+
+**Status**: Accepted
+
+---
+
+### ADR-007: Enhanced Keywords for NLP Classification
+
+**Context**: Epic 4 improves NLP classification for better categorization. Options: spaCy (heavy models), NLTK (lighter), enhanced keyword approach.
+
+**Decision**: Enhance existing keyword-based classification with regex patterns and confidence scoring, defer spaCy unless accuracy becomes critical.
+
+**Rationale:**
+- Low resource usage (no 100MB+ models to load)
+- Existing keyword approach works reasonably well
+- Improvements possible without heavy dependencies (regex, better keyword lists, confidence scores)
+- Can add spaCy later if accuracy demands it
+
+**Consequences:**
+- Limited accuracy vs. ML-based approaches
+- Manual keyword list maintenance
+- No contextual understanding
+
+**Status**: Accepted
+
+---
+
+## Appendix: Technology Versions
+
+**As of January 2025** (verify during implementation):
+
+| Technology | Version | Notes |
+|------------|---------|-------|
+| Python | 3.10+ | Existing requirement |
+| UV | 0.1.x | Existing package manager |
+| Dash | 2.14.x | Verify latest stable |
+| dash-bootstrap-components | 1.5.x | Verify latest |
+| Plotly | 5.18.x | Bundled with Dash |
+| FastAPI | 0.110.x | Verify latest stable |
+| Uvicorn | 0.27.x | ASGI server for FastAPI |
+| Waitress | 3.0.x | WSGI server for Dash |
+| Flask-Login | 0.6.x | Verify latest stable |
+| bcrypt | 4.1.x | Password hashing |
+| python-telegram-bot | 20.x | Verify latest v20 |
+| Pydantic | 2.5.x | Existing v2 |
+| pydantic-settings | 2.1.x | Config management |
+| SQLAlchemy | 2.0.x | If using ORM (optional) |
+| Pandas | 2.1.x | Existing |
+| Polars | 0.20.x | Existing |
+| Playwright | 1.41.x | Existing |
+| BeautifulSoup4 | 4.12.x | Existing |
+| Requests | 2.31.x | Existing |
+| cloudscraper | 1.2.x | Existing |
+| pytest | 8.0.x | Testing |
+| pytest-cov | 4.1.x | Coverage |
+| Ruff | 0.2.x | Linting/formatting |
+| mypy | 1.8.x | Type checking |
+
+---
+
+**End of Architecture Document**
+
+_Generated by BMAD Decision Architecture Workflow v1.3.2_
+_Date: 2025-01-14_
+_For: Joshi_
+_Agent: Winston (Architect)_
