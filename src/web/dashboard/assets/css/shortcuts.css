@@ -1,0 +1,653 @@
+/**
+ * Shortcuts Sidebar Styles
+ * Styles for the shortcuts component with drag-and-drop support
+ */
+
+/* Shortcuts sidebar styles */
+#shortcuts-sidebar {
+    background-color: #f8f9fa;
+}
+
+/* Shortcut cards */
+.shortcut-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    cursor: move;
+    background: white;
+    margin-bottom: 8px;
+}
+
+.shortcut-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+/* Drag and drop states */
+.shortcut-card.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.shortcut-ghost {
+    opacity: 0.4;
+    background-color: #e3f2fd;
+    border: 2px dashed #007bff;
+}
+
+.shortcut-chosen {
+    border-color: #007bff !important;
+    background-color: #e3f2fd;
+}
+
+.shortcut-dragging {
+    opacity: 0.8;
+}
+
+/* Domain sections */
+[id^="shortcuts-domain-"] {
+    min-height: 60px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+[id^="shortcuts-domain-"]:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Domain headers */
+[id^="shortcuts-domain-"] .border-bottom {
+    border-color: #e9ecef !important;
+}
+
+/* Shortcut links */
+[id^="shortcut-link-"] {
+    color: #212529;
+    transition: color 0.2s ease;
+}
+
+[id^="shortcut-link-"]:hover {
+    color: #007bff !important;
+}
+
+/* Action buttons */
+.shortcut-card .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.shortcut-card .btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    transform: scale(1.05);
+}
+
+.shortcut-card .btn-outline-secondary:hover:not(:disabled) {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    cursor: grab;
+}
+
+/* Domain badges */
+.badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Toggle button enhancements */
+#shortcuts-sidebar-toggle {
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+#shortcuts-sidebar-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Stats badge */
+#shortcuts-stats {
+    transition: all 0.3s ease;
+}
+
+/* Empty state styles */
+.shortcuts-empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #6c757d;
+}
+
+.shortcuts-empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Loading state */
+.shortcuts-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.shortcuts-loading .spinner-border {
+    margin-right: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .shortcut-card {
+        margin-bottom: 12px;
+    }
+
+    .shortcut-card .card-body {
+        padding: 1rem;
+    }
+
+    .shortcut-card h6 {
+        font-size: 0.9rem;
+    }
+
+    .shortcut-card .btn-sm {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    /* Make touch targets larger on mobile */
+    .shortcut-card .btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+}
+
+/* Animation for shortcut addition */
+@keyframes shortcutAdded {
+    0% {
+        opacity: 0;
+        transform: translateX(-20px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+.shortcut-card.new-shortcut {
+    animation: shortcutAdded 0.3s ease-out;
+}
+
+/* Animation for shortcut removal */
+@keyframes shortcutRemoved {
+    0% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(20px) scale(0.8);
+    }
+}
+
+.shortcut-card.removing-shortcut {
+    animation: shortcutRemoved 0.3s ease-out;
+}
+
+/* Drag drop indicator */
+.drag-drop-indicator {
+    height: 2px;
+    background-color: #007bff;
+    border-radius: 1px;
+    margin: 4px 0;
+    transition: all 0.2s ease;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    #shortcuts-sidebar {
+        background-color: #2d3748;
+        color: #e2e8f0;
+    }
+
+    .shortcut-card {
+        background-color: #4a5568;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+
+    .shortcut-card:hover {
+        border-color: #63b3ed;
+        box-shadow: 0 2px 8px rgba(99, 179, 237, 0.15);
+    }
+
+    [id^="shortcut-link-"] {
+        color: #e2e8f0;
+    }
+
+    [id^="shortcut-link-"]:hover {
+        color: #63b3ed !important;
+    }
+
+    .shortcut-ghost {
+        background-color: #2d3748;
+        border-color: #63b3ed;
+    }
+
+    .shortcut-chosen {
+        background-color: #2d3748;
+        border-color: #63b3ed;
+    }
+}
+
+/* Smooth transitions for all interactive elements */
+.shortcut-card *,
+[id^="shortcut-link-"],
+.shortcut-card .btn {
+    transition: all 0.2s ease;
+}
+
+/* Keyboard navigation focus styles */
+.shortcut-card:focus-within {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+[id^="shortcut-link-"]:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Accessibility improvements */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .shortcut-card {
+        border-width: 2px;
+    }
+
+    .shortcut-card:hover {
+        border-width: 3px;
+    }
+
+    [id^="shortcut-link-"]:focus {
+        outline-width: 3px;
+    }
+}
+
+/* ========================================
+   Customize Tabs Drag & Drop Styles
+   ======================================== */
+
+/* Tab customization items */
+.customize-tab-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    cursor: move;
+    background: white;
+    margin-bottom: 8px;
+    position: relative;
+    user-select: none;
+}
+
+.customize-tab-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+/* Tab customization drag and drop states */
+.tab-customization-ghost {
+    opacity: 0.4;
+    background-color: #e3f2fd;
+    border: 2px dashed #007bff !important;
+    border-radius: 8px;
+}
+
+.tab-customization-chosen {
+    border-color: #007bff !important;
+    background-color: #e3f2fd;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    transform: scale(1.02);
+}
+
+.tab-customization-dragging {
+    opacity: 0.8;
+    transform: rotate(1deg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+.tab-dragging {
+    opacity: 0.7;
+    transform: scale(0.95);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Drag handle styles */
+.customize-tab-item .fa-grip-vertical {
+    color: #6c757d;
+    transition: all 0.2s ease;
+    cursor: grab;
+}
+
+.customize-tab-item:hover .fa-grip-vertical {
+    color: #007bff;
+}
+
+.customize-tab-item .fa-grip-vertical:active {
+    cursor: grabbing;
+    color: #0056b3;
+}
+
+/* Tab item content */
+.customize-tab-item .flex-grow-1 {
+    min-width: 0; /* Prevent flex items from overflowing */
+}
+
+.customize-tab-item .fw-medium {
+    font-weight: 500;
+    color: #212529;
+}
+
+/* Visibility toggle switch */
+.customize-tab-item .form-switch {
+    margin: 0;
+}
+
+.customize-tab-item .form-check-input {
+    cursor: pointer;
+}
+
+/* Tab container */
+[id^="tabs-container-"] {
+    min-height: 400px;
+    position: relative;
+}
+
+/* Drop zone indicators */
+.customize-tab-item.drag-over {
+    background-color: rgba(0, 123, 255, 0.05);
+    border-color: #007bff;
+}
+
+/* Drag placeholder */
+.sortable-drag {
+    opacity: 0.8 !important;
+    transform: rotate(2deg);
+}
+
+/* Animation for tab reordering */
+@keyframes tabReorder {
+    0% {
+        opacity: 0.7;
+        transform: scale(0.95);
+    }
+    50% {
+        opacity: 0.9;
+        transform: scale(1.02);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.customize-tab-item.reorder-animation {
+    animation: tabReorder 0.3s ease-out;
+}
+
+/* Animation for visibility toggle */
+@keyframes visibilityToggle {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.customize-tab-item.visibility-changed {
+    animation: visibilityToggle 0.2s ease-out;
+}
+
+/* Modal enhancements for customization */
+[id^="customize-tabs-modal-"] .modal-dialog {
+    max-width: 800px;
+}
+
+[id^="customize-tabs-modal-"] .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Statistics section */
+[id^="customize-tabs-stats-"] {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Instructions alert */
+.alert-info .alert-heading {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.alert-info .list-unstyled {
+    margin-bottom: 0;
+}
+
+/* Action buttons */
+[id^="customize-tabs-modal-"] .btn-group .btn {
+    border-radius: 6px;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+[id^="customize-tabs-modal-"] .btn-group .btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Loading state for tabs */
+.customize-tabs-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    color: #6c757d;
+    text-align: center;
+}
+
+.customize-tabs-loading .spinner-border {
+    margin-bottom: 1rem;
+}
+
+.customize-tabs-loading .small {
+    opacity: 0.8;
+}
+
+/* Empty state */
+.customize-tabs-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    color: #6c757d;
+    text-align: center;
+}
+
+.customize-tabs-empty i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.customize-tabs-empty h5 {
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+/* Tab numbers */
+.customize-tab-item .me-3 {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.875rem;
+    min-width: 30px;
+    text-align: center;
+}
+
+/* Tab icons */
+.customize-tab-item .fa {
+    width: 16px;
+    text-align: center;
+}
+
+/* Success/Error notifications */
+.alert-success.alert-dismissible.fade.show.position-fixed,
+.alert-danger.alert-dismissible.fade.show.position-fixed {
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+}
+
+/* Responsive adjustments for tab customization */
+@media (max-width: 768px) {
+    [id^="customize-tabs-modal-"] .modal-dialog {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+    }
+
+    .customize-tab-item {
+        padding: 1rem !important;
+        margin-bottom: 12px;
+    }
+
+    .customize-tab-item .flex-grow-1 {
+        font-size: 0.9rem;
+    }
+
+    .customize-tab-item .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Make touch targets larger on mobile */
+    .customize-tab-item .form-check-input {
+        transform: scale(1.2);
+        margin: 0;
+    }
+
+    .customize-tab-item .fa-grip-vertical {
+        font-size: 1.2rem;
+        padding: 0.5rem;
+    }
+}
+
+/* Dark mode support for tab customization */
+@media (prefers-color-scheme: dark) {
+    .customize-tab-item {
+        background-color: #4a5568;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+
+    .customize-tab-item:hover {
+        border-color: #63b3ed;
+        box-shadow: 0 2px 8px rgba(99, 179, 237, 0.15);
+    }
+
+    .tab-customization-ghost {
+        background-color: #2d3748;
+        border-color: #63b3ed !important;
+    }
+
+    .tab-customization-chosen {
+        background-color: #2d3748;
+        border-color: #63b3ed !important;
+    }
+
+    .customize-tab-item .fw-medium {
+        color: #e2e8f0;
+    }
+
+    .customize-tab-item .me-3 {
+        color: #a0aec0;
+    }
+
+    .customize-tab-item .fa-grip-vertical {
+        color: #a0aec0;
+    }
+
+    .customize-tab-item:hover .fa-grip-vertical {
+        color: #63b3ed;
+    }
+}
+
+/* Smooth transitions for all tab customization elements */
+.customize-tab-item,
+.customize-tab-item *,
+.customize-tab-item .form-check-input,
+.customize-tab-item .fa-grip-vertical {
+    transition: all 0.2s ease;
+}
+
+/* Keyboard navigation focus styles for tab customization */
+.customize-tab-item:focus-within {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+.customize-tab-item .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Accessibility improvements for tab customization */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High contrast mode support for tab customization */
+@media (prefers-contrast: high) {
+    .customize-tab-item {
+        border-width: 2px;
+    }
+
+    .customize-tab-item:hover {
+        border-width: 3px;
+    }
+
+    .tab-customization-ghost {
+        border-width: 3px !important;
+    }
+}

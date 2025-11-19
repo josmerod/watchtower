@@ -4,8 +4,8 @@
 
 **Project:** Watchtower (MEGALITH)
 **Type:** Data Processing & ETL Platform
-**Generated:** 2025-01-11
-**Documentation Version:** 2.1 (BMM Document-Project Workflow)
+**Generated:** 2025-11-17
+**Documentation Version:** 3.0 (BMM Document-Project Workflow - Exhaustive Scan)
 
 ---
 
@@ -29,7 +29,7 @@
 | **Dashboard Tabs** | 15+ interactive components |
 | **Python Files** | 200+ |
 | **Test Coverage Target** | ≥80% |
-| **Documentation Pages** | 20+ comprehensive guides |
+| **Documentation Pages** | 25+ comprehensive guides |
 
 ### Tech Stack at a Glance
 
@@ -48,572 +48,291 @@
 ### Core Reference Documents
 
 1. **[Project Overview](./project-overview.md)** ⭐ **START HERE**
-   - Executive summary and project statistics
-   - High-level architecture and design patterns
+   - Executive summary and architecture overview
    - Technology stack details
-   - Development workflow and commands
-   - Deployment options
-   - Security and best practices
+   - Development workflow guidance
 
-2. **[Data Models Reference](./data-models-main.md)** 📊
-   - Complete Pydantic model documentation (21 models)
-   - Base model hierarchy (BaseModel, TimestampedModel, etc.)
-   - 15 domain-specific models (ArXiv, Games, News, Courses, etc.)
-   - Validation patterns and best practices
-   - Data storage patterns
-   - Migration strategy
+2. **[Architecture Documentation](./architecture.md)**
+   - Detailed system architecture
+   - Component relationships and patterns
+   - Design principles and decisions
 
-3. **[Source Tree Analysis](./source-tree-analysis.md)** 🗂️
-   - Annotated directory structure (50+ directories)
-   - Critical paths explained (etl/, models/, watchers/, web/)
-   - Entry points for all components
-   - Integration points between modules
-   - Navigation guide for common tasks
+3. **[Data Models Reference](./data-models-main.md)**
+   - Complete Pydantic model documentation
+   - 21 data models with field descriptions
+   - Enum definitions and validations
 
----
+4. **[Source Tree Analysis](./source-tree-analysis.md)**
+   - Complete directory structure with annotations
+   - Critical folders explained
+   - Entry points and integration points
 
-## 📖 Existing Documentation
+### Development Guides
 
-### Getting Started
+5. **[Development Guide](./QUICKSTART.md)**
+   - UV setup and installation
+   - Local development commands
+   - Common development tasks
 
-- **[Quickstart Guide](./QUICKSTART.md)** ⚡
-  - Get up and running in 10 minutes
-  - Installation with UV or pip
-  - First ETL execution
-  - Dashboard launch
+6. **[Contributing Guide](./CONTRIBUTING.md)**
+   - Code style and standards
+   - PR process and review guidelines
+   - Testing requirements
 
-- **[FAQ](./FAQ.md)**
-  - Frequently asked questions
-  - Common troubleshooting
-  - Best practices
-
-### Technical Documentation
-
-#### Architecture & Design
-
-- **[Architecture Overview](./technical/ARCHITECTURE_OVERVIEW.md)** 🏗️
-  - System architecture and design principles
-  - Component interactions and data flow
-  - Design patterns in use
-  - SOLID principles application
-
-#### Core Components
-
-- **[ETL Development Guide](./technical/ETL_DEVELOPMENT_GUIDE.md)** 🔄
-  - BaseETL template method pattern
-  - Creating custom ETL pipelines
-  - Metrics collection and checkpointing
-  - Retry mechanisms and error handling
-  - ETL best practices
-
-- **[Watchers Guide](./technical/WATCHERS_GUIDE.md)** 👀
-  - BaseWatcher observer pattern
-  - Complete watcher development documentation
-  - State persistence and event logging
-  - Advanced monitoring patterns
-  - Deployment and scheduling (systemd, Windows Task Scheduler)
-
-- **[Dashboard Development Guide](./technical/DASHBOARD_DEVELOPMENT_GUIDE.md)** 📊
-  - Dash dashboard architecture (primary, port 7777)
-  - Component-based tab system
-  - VideoManager and data manager patterns
-  - Single callback pattern (prevents conflicts)
-  - Performance optimization
-  - Bootstrap UI and mobile responsiveness
-
-- **[Configuration Guide](./technical/CONFIGURATION_GUIDE.md)** ⚙️
-  - Pydantic Settings system
-  - Environment variable management
-  - Nested configuration models
-  - Auto-discovery patterns
+7. **[Configuration Guide](./technical/CONFIGURATION_GUIDE.md)**
+   - Pydantic settings management
+   - Environment variable configuration
+   - Component-specific settings
 
 ### Deployment & Operations
 
-- **[Deployment Guide](./technical/DEPLOYMENT_GUIDE.md)** 🚀
-  - Local development setup
-  - Docker deployment
-  - Basic deployment strategies
+8. **[Deployment Guide](./technical/DEPLOYMENT_GUIDE.md)**
+   - Production deployment instructions
+   - Docker and containerization
+   - Environment setup
 
-- **[Advanced Deployment Guide](./technical/ADVANCED_DEPLOYMENT_GUIDE.md)** 🚢
-  - Production deployment with Docker/Podman
-  - Unraid server configuration
-  - Systemd services
-  - Performance tuning
+9. **[Advanced Deployment](./technical/ADVANCED_DEPLOYMENT_GUIDE.md)**
+   - Scalability considerations
+   - High availability configurations
+   - Performance optimization
 
-### Community & Contributing
+### Business & Planning
 
-- **[Contributing Guide](./CONTRIBUTING.md)** 🤝
-  - How to contribute to the project
-  - Code style and conventions
-  - PR process
-  - Testing requirements
+10. **[Product Requirements Document](./PRD.md)**
+    - Feature specifications and requirements
+    - User stories and acceptance criteria
+    - Development roadmap
 
----
+11. **[Epics & Features](./epics.md)**
+    - Detailed feature breakdown
+    - Epic 8: Intelligence Data Sources Catalog
+    - Implementation status tracking
 
-## 🗺️ Project Structure
-
-### Repository Type: Monolith
-
-Single cohesive codebase with modular organization.
-
-```
-watchtower/
-├── src/                    # Main source code
-│   ├── etl/               # ETL pipelines (20+ domains) ⭐
-│   ├── models/            # Pydantic data models (21 models) ⭐
-│   ├── watchers/          # Monitoring system ⭐
-│   ├── web/               # Dashboards (Dash + Streamlit) ⭐
-│   ├── analytics/         # Data analysis
-│   ├── miners/            # Advanced mining tools
-│   ├── config/            # Configuration management
-│   ├── utils/             # Shared utilities
-│   └── exceptions/        # Custom exceptions
-│
-├── data/                   # JSON data storage (50+ sources) ⭐
-│   ├── arxiv/
-│   ├── news/
-│   ├── games/
-│   ├── courses/
-│   └── watchers/
-│
-├── docs/                   # Documentation ⭐
-├── Tests/                  # Test suite
-└── [config files]          # pyproject.toml, docker-compose.yml, etc.
-```
-
-**⭐ = Critical directories for development**
+12. **[Implementation Readiness Report](./epic-8-implementation-readiness-report.md)**
+    - Current implementation status
+    - Technical readiness assessment
+    - Risk analysis and mitigation
 
 ---
 
-## 🔧 Development Quick Commands
+## 🔍 Existing Technical Documentation
 
-### Setup
+### Architecture & Design
 
-```bash
-# UV (Recommended - 10-100x faster)
-uv sync --all-extras
-uv run playwright install
+13. **[Architecture Overview](./technical/ARCHITECTURE_OVERVIEW.md)**
+    - System architecture deep dive
+    - Component interaction diagrams
+    - Design patterns explanation
 
-# Traditional pip/venv
-pip install -r requirements.txt
-playwright install
-```
+### Research & Analysis
 
-### Running ETLs
+14. **[Technical Research](./research-technical-2025-01-11.md)**
+    - Technology research findings
+    - Alternative solutions analysis
+    - Technical decision documentation
 
-```bash
-# All ETLs
-./run_all_etl.sh              # Linux/Mac
-.\run_all_etl.bat             # Windows
+15. **[Brainstorming Session](./bmm-brainstorming-session-2025-01-11.md)**
+    - Feature ideation and exploration
+    - Innovation opportunities
+    - Strategic technical discussions
 
-# Specific ETL
-uv run python src/etl/arxiv/arxiv_etl.py
-uv run python src/etl/news/news_get_ycombinator.py
-```
+### User Documentation
 
-### Dashboards
+16. **[FAQ](./FAQ.md)**
+    - Common questions and answers
+    - Troubleshooting guidance
+    - User support information
 
-```bash
-# Dash (Primary) - Port 7777
-uv run python run_watchtower_dashboard.py
-
-# Streamlit (Legacy) - Port 8501
-uv run streamlit run src/web/fullstreamlit/app.py
-```
-
-### Watchers
-
-```bash
-# List watchers
-uv run python src/watchers/run_watcher.py --list
-
-# Run specific watcher
-uv run python src/watchers/run_watcher.py arxiv_watcher
-
-# Run once (no loop)
-uv run python src/watchers/run_watcher.py arxiv_watcher --once
-```
-
-### Testing
-
-```bash
-# All tests with coverage
-uv run pytest --cov=src --cov-report=html
-
-# Specific test categories
-uv run pytest Tests/etl/
-uv run pytest Tests/models/
-uv run pytest Tests/integration/
-```
-
-### Code Quality
-
-```bash
-# Linting and formatting
-uv run ruff check .
-uv run ruff format .
-
-# Type checking
-uv run mypy src/
-```
+17. **[Master Index](./INDEX.md)**
+    - Complete documentation navigation
+    - Cross-reference guide
+    - Topic organization
 
 ---
 
-## 🎨 Architecture Patterns
+## 🚀 Getting Started
 
-### Design Patterns
+### For New Developers
 
-| Pattern | Location | Purpose | Key Classes |
-|---------|----------|---------|-------------|
-| **Template Method** | `src/etl/base.py` | ETL lifecycle | `BaseETL` |
-| **Observer** | `src/watchers/base_watcher.py` | Event monitoring | `BaseWatcher` |
-| **Factory** | `src/config/settings.py` | Config creation | `get_settings()` |
-| **Manager** | `src/web/dashboard/components/` | Data handling | `VideoManager`, etc. |
-| **Repository** | `data/` directories | Data persistence | JSON files |
+1. **Prerequisites**
+   ```bash
+   # Install UV (10-100x faster than pip)
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
 
-### Data Flow
+2. **Project Setup**
+   ```bash
+   # Clone and setup
+   git clone <repository-url>
+   cd watchtower
+   uv sync --all-extras
+   ```
 
-```
-External Source → ETL.extract() → ETL.transform() → Pydantic Validation
-                                                           ↓
-JSON Storage (data/) ← ETL.load()                     Model
-                                                           ↓
-Dashboard Components ← Read JSON ← Data Manager
-```
+3. **Run Development Dashboard**
+   ```bash
+   # Main dashboard (Dash-based)
+   uv run python run_watchtower_dashboard.py
+   # Available at http://localhost:7777
 
----
+   # Legacy dashboard (Streamlit)
+   uv run streamlit run src/web/fullstreamlit/app.py
+   # Available at http://localhost:8501
+   ```
 
-## 📊 Data Models Summary
+4. **Run ETL Pipelines**
+   ```bash
+   # Run all ETL pipelines
+   ./run_all_etl.sh  # Linux/Mac
+   .\run_all_etl.bat # Windows
 
-### Base Model Hierarchy
+   # Run specific ETL
+   uv run python src/etl/arxiv/arxiv_etl.py
+   ```
 
-1. **BaseModel** - Core Pydantic configuration
-2. **TimestampedModel** - Adds id, created_at, updated_at (most domain models extend this)
-3. **StatusModel** - Operation status tracking
-4. **ErrorModel** - Structured error information
-5. **PaginationModel** - Pagination support
-6. **PaginatedResponse** - Generic paginated response
+### For AI-Assisted Development
 
-### Domain Models (15 Total)
+**Primary AI Source:** This document (`bmm-index.md`) serves as the primary context for Claude Code and AI assistants.
 
-| Model | File | Purpose |
-|-------|------|---------|
-| `ArxivPaperModel` | `arxiv.py` | Research papers with TRL & commercial potential |
-| `AnimeModel` | `anime.py` | MyAnimeList data |
-| `NewsArticleModel` | `news.py` | Multi-source news aggregation |
-| `GameDealModel` | `games.py` | Game deals with pricing |
-| `CourseModel` | `course.py` | Course data from multiple platforms |
-| `GitHubTrendingModel` | `github.py` | GitHub trending repositories |
-| `GiveawayModel` | `giveaways.py` | Giveaways and free items |
-| `SecurityAlertModel` | `security.py` | CVE tracking and security |
-| `TechnologyModel` | `technology.py` | Technology trend analysis |
-| `ADHDPublicationModel` | `adhd.py` | ADHD research papers |
-| `SpanishPublicAidModel` | `spanish_public_aid.py` | Government aid programs |
-| `EcommerceDealModel` | `ecommerce.py` | E-commerce deals |
-| `EventModel` | `events.py` | Valencia events |
-| `MuseumModel` | `museums.py` | Museum exhibitions |
-| `GitHubRepositoryModel` | `arxiv.py` | GitHub repo metadata |
+**Key Context Points:**
+- UV-first development environment
+- Dash-based dashboard with Streamlit legacy
+- Comprehensive ETL framework with 20+ domains
+- Pydantic-based data validation and configuration
+- File-based JSON storage architecture
 
-**See:** [Data Models Reference](./data-models-main.md) for complete documentation
+**Common Development Patterns:**
+- Inherit from `BaseETL` for new data sources
+- Use Pydantic models for all data structures
+- Follow single-callback pattern in Dash components
+- Implement Manager classes for complex data handling
 
----
+### For Production Deployment
 
-## 🔄 ETL Pipelines Summary
+1. **Health Monitoring**
+   ```bash
+   # Health check endpoints
+   curl http://localhost:7777/health
+   curl http://localhost:7777/metrics
+   ```
 
-### Active Pipelines (20+ Domains)
+2. **Configuration Management**
+   - Use environment variables with double underscore delimiter
+   - Store sensitive data in `.env` files
+   - Reference configuration via `src/config/settings.py`
 
-| Domain | Location | Output | Primary Models |
-|--------|----------|--------|----------------|
-| **ArXiv** | `src/etl/arxiv/` | `data/arxiv/` | `ArxivPaperModel` |
-| **News** | `src/etl/news/` | `data/news/` | `NewsArticleModel` |
-| **Games** | `src/etl/games/` | `data/games/` | `GameDealModel` |
-| **Courses** | `src/etl/courses/` | `data/courses/` | `CourseModel` |
-| **Anime** | `src/etl/anime/` | `data/anime/` | `AnimeModel` |
-| **GitHub** | `src/etl/github/` | `data/github/` | `GitHubTrendingModel` |
-| **AI Platforms** | `src/etl/ai_platforms/` | `data/ai_platforms/` | Various |
-| **ADHD** | `src/etl/adhd/` | `data/adhd_publications/` | `ADHDPublicationModel` |
-| **Giveaways** | `src/etl/giveaways/` | `data/giveaways/` | `GiveawayModel` |
-| **Museums** | `src/etl/museums/` | `data/museums/` | `MuseumModel` |
-| **Valencia Events** | `src/etl/news/valencia_events_etl.py` | `data/valencia_events/` | `EventModel` |
-| **Spanish Aid** | `src/etl/spanish_public_aid/` | `data/spanish_public_aid/` | `SpanishPublicAidModel` |
-| **4chan** | `src/etl/fourchan/` | `data/4chan_generals/` | Custom |
-| **Deals** | `src/etl/deals/` | `data/deals/` | `EcommerceDealModel` |
-| **Entertainment** | `src/etl/entertainment/` | `data/entertainment/` | Various |
-| **Intelligence** | `src/etl/intelligence/` | `data/intelligence/` | Various |
-| **Neurodivergent** | `src/etl/neurodivergent/` | `data/neurodivergent/` | Custom |
-| **E-commerce** | `src/etl/ecommerce/` | `data/ecommerce/` | `EcommerceDealModel` |
-| **Gold Digging** | `src/etl/goldigging/` | `data/goldigging/` | `CourseModel` |
-| **Miners** | `src/miners/` | Various | Multiple |
-
-**All ETLs extend `BaseETL`** from `src/etl/base.py`
+3. **Data Management**
+   - JSON files stored in `data/` directory
+   - Timestamped outputs with automatic cleanup
+   - Checkpoint-based recovery for ETL processes
 
 ---
 
-## 🌐 Dashboard Components
+## 📊 Project Architecture Summary
 
-### Dash Dashboard (Primary - Port 7777)
+### Core Components
 
-**Tab Components** (`src/web/dashboard/components/`):
-- `videos_tab.py` - YouTube video browser (VideoManager, 48 videos/view)
-- `courses_tab.py` - Course deals browser
-- `games_tab.py` - Game deals tracker
-- `news_tab.py` - News aggregation viewer
-- `arxiv_tab.py` - Research papers explorer
-- `anime_tab.py` - Anime listings
-- [15+ total tabs]
+| Component | Purpose | Key Files |
+|-----------|---------|-----------|
+| **ETL Framework** | Data extraction and processing | `src/etl/base.py` |
+| **Dashboard System** | Interactive data visualization | `src/web/dashboard/` |
+| **Data Models** | Schema validation and structure | `src/models/` |
+| **Configuration** | Settings and environment management | `src/config/settings.py` |
+| **Testing Suite** | Quality assurance and validation | `Tests/` |
 
-**Key Patterns:**
-- Single callback per output (prevents conflicts)
-- Data manager classes for data loading
-- Bootstrap UI with mobile responsiveness
-- Error boundaries for graceful degradation
+### Data Flow Architecture
 
-**Health Endpoints:**
-- `GET /health` - System health status
-- `GET /metrics` - Performance metrics
+```
+External Sources → ETL Pipelines → JSON Storage → Dashboard Components → User Interface
+       ↓                ↓              ↓                ↓
+   50+ Platforms    BaseETL Class   data/ Directory   Dash/Streamlit
+   (APIs, RSS, etc.)  Template Method  Timestamped     Interactive UI
+                      Pattern         Files           Components
+```
 
-### Streamlit Dashboard (Legacy - Port 8501)
+### Development Workflow
 
-Maintained for compatibility, simpler component structure.
+1. **Local Development** → UV + Ruff + MyPy + Pytest
+2. **Code Quality** → Google-style docstrings + Type annotations
+3. **Testing** → Unit + Integration + E2E + Performance tests
+4. **Documentation** → Auto-generated + Manual guides
+5. **Deployment** → Docker + Environment configuration
 
 ---
 
-## 🔍 Common Development Tasks
+## 🔧 Advanced Features
 
-### Adding New ETL Pipeline
+### ETL Framework Capabilities
 
-**Steps:**
-1. Create model: `src/models/{domain}.py` (extend `TimestampedModel`)
-2. Create ETL: `src/etl/{domain}/{etl_name}.py` (extend `BaseETL`)
-3. Implement methods: `extract()`, `transform()`, `load()`
-4. Add tests: `Tests/etl/test_{domain}.py`
-5. Add dashboard tab: `src/web/dashboard/components/{domain}_tab.py`
+- **Resumable Operations:** Checkpoint-based recovery
+- **Batch Processing:** Memory-efficient data handling
+- **Retry Logic:** Exponential backoff for transient failures
+- **Metrics Collection:** Performance and success tracking
+- **Error Handling:** Comprehensive exception hierarchy
 
-**Example:**
-```python
-from src.etl.base import BaseETL
-from src.models.{domain} import {DomainModel}
+### Dashboard Features
 
-class {Domain}ETL(BaseETL):
-    def extract(self):
-        # Fetch data from source
-        pass
-
-    def transform(self, raw_data):
-        # Clean and validate
-        return [DomainModel(**item) for item in raw_data]
-
-    def load(self, data):
-        # Write to data/{domain}/
-        pass
-```
-
-### Adding New Watcher
-
-**Steps:**
-1. Create watcher: `src/watchers/{domain}_watcher.py` (extend `BaseWatcher`)
-2. Implement: `get_current_value()`, `check_for_changes()`
-3. Run: `uv run python src/watchers/run_watcher.py {domain}_watcher`
-
-### Adding Dashboard Component
-
-**Steps:**
-1. Create tab: `src/web/dashboard/components/{name}_tab.py`
-2. Create data manager class
-3. Register tab in dashboard app
-4. Follow single callback pattern
-
----
-
-## 🧪 Testing Strategy
-
-### Test Organization
-
-```
-Tests/
-├── unit/           # Unit tests (70%)
-├── integration/    # Integration tests (20%)
-├── etl/           # ETL-specific tests
-├── models/        # Model validation tests
-├── web/           # Dashboard tests
-└── performance/   # Performance tests (10%)
-```
-
-### Running Tests
-
-```bash
-# All tests
-uv run pytest
-
-# With coverage
-uv run pytest --cov=src --cov-report=html
-
-# Specific category
-uv run pytest Tests/etl/ -v
-uv run pytest Tests/models/ -v
-```
-
-**Coverage Target:** ≥80% for `src/`
-
----
-
-## 🚀 Deployment Options
-
-### Local Development
-
-```bash
-# Dashboard only
-uv run python run_watchtower_dashboard.py
-
-# ETL + Dashboard
-./run_all_etl_and_dashboard.sh
-```
-
-### Docker
-
-```bash
-# Production
-docker-compose up -d
-
-# Development
-docker-compose -f docker-compose.dev.yml up
-
-# Enhanced
-docker-compose -f docker-compose.enhanced.yml up
-```
-
-### Production Scripts
-
-- **Linux:** `./deploy_linux.sh`
-- **macOS:** `./deploy_mac.sh`
-- **Windows:** `deploy_windows.bat`
-
----
-
-## 🔐 Security & Configuration
-
-### Environment Variables
-
-Sensitive data in `.env` (gitignored):
-- API keys (OpenAI, Anthropic, GitHub, etc.)
-- Database credentials
-- Configuration secrets
-
-**Template:** `.env.template`
+- **Real-time Updates:** Live data loading with caching
+- **Interactive Filtering:** Dynamic content filtering
+- **Mobile Responsive:** Bootstrap-based responsive design
+- **Component Architecture:** Modular tab-based system
+- **Error Boundaries:** Graceful degradation handling
 
 ### Configuration Management
 
-**Pydantic Settings** (`src/config/settings.py`):
-- Environment variable support (`COMPONENT__SETTING` format)
-- Auto-discovery of project root
-- Nested configuration models
-- Type validation
+- **Nested Settings:** Component-specific configuration
+- **Environment Variables:** Double underscore delimiter support
+- **Type Validation:** Full Pydantic validation
+- **Auto-discovery:** Project root detection
+- **Path Management:** Absolute path conversion
 
 ---
 
-## 📈 Performance Characteristics
+## 📈 Performance & Scalability
 
-### ETL Performance
+### Optimization Features
 
-| Pipeline | Runtime | Data Volume |
-|----------|---------|-------------|
-| ArXiv | 2-5 min | 100-500 papers |
-| News | 5-10 min | 1000-2000 articles |
-| Games | 3-7 min | 500-1000 deals |
-| Courses | 2-5 min | 200-500 courses |
-| **Full Run** | **30-60 min** | **All sources** |
+- **Caching Strategy:** Multi-level caching for data loading
+- **Lazy Loading:** On-demand data rendering
+- **Batch Processing:** Configurable batch sizes
+- **JSON Storage:** Fast read operations with pandas/polars
+- **Concurrent Execution:** Parallel processing where possible
 
-### Dashboard Performance
+### Monitoring & Health
 
-- **Load Time:** <2s (initial)
-- **Tab Switch:** <500ms
-- **Data Refresh:** <1s
-- **Concurrent Users:** ~50-100 (tested)
+- **Health Endpoints:** `/health` and `/metrics` APIs
+- **Performance Metrics:** ETL processing times and success rates
+- **Error Tracking:** Comprehensive error logging and context
+- **Resource Monitoring:** Memory and CPU usage tracking
 
 ---
 
-## 🆘 Support & Resources
+## 🎯 Development Standards
 
-### Documentation
+### Code Quality Requirements
 
-- **This Index:** Primary AI retrieval source
-- **Project Overview:** `./project-overview.md`
-- **Technical Guides:** `./technical/`
-- **Main README:** `../README.md`
+- **Type Annotations:** 100% coverage with Python 3.10+ syntax
+- **Documentation:** Google-style docstrings throughout
+- **Error Handling:** Custom exception hierarchy in `src/exceptions/`
+- **Testing:** Comprehensive test suite with coverage reporting
+- **Linting:** Ruff for formatting and linting
 
-### Getting Help
+### Architecture Principles
 
-- **FAQ:** `./FAQ.md`
-- **Contributing:** `./CONTRIBUTING.md`
-- **Issues:** GitHub Issues (when public)
+- **Template Method Pattern:** BaseETL orchestrates ETL phases
+- **Factory Pattern:** Settings management with singleton behavior
+- **State Pattern:** Watcher state management with JSON persistence
+- **Component Pattern:** Modular dashboard architecture
+- **Manager Pattern:** Centralized data handling
 
-### Key Files for Reference
+### Security Practices
 
-- **Configuration:** `pyproject.toml`, `.env.template`
-- **Entry Points:** `run_watchtower_dashboard.py`, `run_all_etl.sh`
-- **Base Classes:** `src/etl/base.py`, `src/watchers/base_watcher.py`
-- **Models:** `src/models/base.py`
-
----
-
-## 📝 Document Status
-
-### Generated Documentation (This Scan)
-
-| Document | Status | Last Updated |
-|----------|--------|--------------|
-| **bmm-index.md** (this file) | ✅ Complete | 2025-01-11 |
-| project-overview.md | ✅ Complete | 2025-01-11 |
-| data-models-main.md | ✅ Complete | 2025-01-11 |
-| source-tree-analysis.md | ✅ Complete | 2025-01-11 |
-
-### Existing Documentation
-
-| Document | Status | Notes |
-|----------|--------|-------|
-| Quickstart Guide | ✅ Complete | 2025-01-10 |
-| Watchers Guide | ✅ Complete | 2025-01-10 |
-| Architecture Overview | ✅ Complete | Previous |
-| ETL Development Guide | ✅ Complete | Previous |
-| Dashboard Development | ✅ Complete | Previous |
-| Deployment Guide | ✅ Complete | Previous |
-| Advanced Deployment | ✅ Complete | Previous |
-| Configuration Guide | ✅ Complete | Previous |
-| Contributing Guide | ✅ Complete | 2025-01-10 |
-| FAQ | ✅ Complete | 2025-01-10 |
+- **Environment Variables:** Secure configuration management
+- **Input Validation:** Pydantic model validation throughout
+- **Path Security:** Safe file path handling
+- **API Key Management:** Secure storage and environment-based access
 
 ---
 
-## 🎯 AI-Assisted Development Guide
-
-**For Claude Code and AI Tools:**
-
-1. **Start Here:** Read this index for project overview
-2. **Architecture:** See [Project Overview](./project-overview.md) and [Architecture Overview](./technical/ARCHITECTURE_OVERVIEW.md)
-3. **Data Models:** See [Data Models Reference](./data-models-main.md) for schema
-4. **Directory Structure:** See [Source Tree Analysis](./source-tree-analysis.md) for navigation
-5. **Specific Guides:** Use technical guides for ETL, Watchers, Dashboard development
-
-**When implementing features:**
-- Always extend appropriate base class (`BaseETL`, `TimestampedModel`, etc.)
-- Follow existing patterns (see architecture docs)
-- Use Pydantic for validation
-- Write tests (target ≥80% coverage)
-- Follow code quality standards (ruff, mypy)
-
-**When troubleshooting:**
-- Check logs in `logs/` directory
-- Use health endpoints (`/health`, `/metrics`)
-- Review ETL metrics in output JSON
-- Check watcher state in `data/watchers/{name}/state.json`
-
----
-
-**Last Updated:** 2025-01-11
-**Documentation Version:** 2.1
-**Primary Maintainer:** Claude Code (BMM Document-Project Workflow)
-**For:** AI-Assisted Development with Watchtower Platform
-
----
-
-**🧠 This index is optimized for AI retrieval and should be the first reference for any AI-assisted development work on the Watchtower project.**
+**Generated:** 2025-11-17 by BMM Document-Project Workflow (Exhaustive Scan)
+**Next Update:** Run `document-project` workflow again for latest changes
+**AI Integration:** Use this document as primary context for Claude Code and AI assistants

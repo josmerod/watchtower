@@ -1,0 +1,146 @@
+<story-context id="{bmad_folder}/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>6</storyId>
+    <title>Personalized AI Content Discovery</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\8-6-personalized-ai-content-discovery.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>hyper-personalized AI content discovery with learning path optimization</iWant>
+    <soThat>I can efficiently discover and learn about AI/ML topics tailored to my goals and skill level</soThat>
+    <tasks>- [ ] Create HybridRecommendationEngine framework (Foundation for personalized content discovery)
+  - [ ] Create `src/intelligence/recommendations/hybrid_engine.py` extending Story 8.1 infrastructure
+  - [ ] Implement collaborative filtering algorithms for user-similarity based recommendations
+  - [ ] Enhance content-based filtering with NLP-powered content analysis
+  - [ ] Add neural recommendation models using deep learning for pattern recognition
+  - [ ] Create ensemble method combining all three approaches for optimal accuracy
+
+- [ ] Implement learning path optimization system (AC: 1, 5)
+  - [ ] Create `src/intelligence/learning/path_optimizer.py` for course graph analysis
+  - [ ] Implement prerequisite mapping and dependency analysis algorithms
+  - [ ] Create LearningPathGenerator for optimized sequence generation
+  - [ ] Add difficulty progression assessment and skill gap analysis
+  - [ ] Implement adaptive path adjustment based on user progress and feedback
+
+- [ ] Create multi-source content integration service (AC: 2)
+  - [ ] Create `src/intelligence/content_sources/course_aggregator.py` for MOOC platforms
+  - [ ] Integrate course platforms: Coursera, edX, Udacity, LinkedIn Learning, Udemy
+  - [ ] Add YouTube technical channels integration for video content discovery
+  - [ ] Implement AI newsletter aggregation for blog posts and technical articles
+  - [ ] Create content deduplication and quality scoring across sources
+
+- [ ] Implement content quality scoring and NLP analysis (AC: 3)
+  - [ ] Create ContentQualityScorer in `src/intelligence/analytics/quality_scorer.py`
+  - [ ] Implement NLP analysis for content relevance and skill level assessment
+  - [ ] Add engagement metrics analysis and content effectiveness scoring
+  - [ ] Create learning path progression scoring for content sequencing
+  - [ ] Implement adaptive quality adjustment based on user feedback and success rates
+
+- [ ] Create AI Content Discovery dashboard tab (AC: 1, 4)
+  - [ ] Create `src/web/dashboard/components/ai_content_discovery_tab.py`
+  - [ ] Implement AIContentDiscoveryManager for personalized content loading
+  - [ ] Add "AI Content Discovery" tab to main dashboard navigation
+  - [ ] Create learning objective input interface with natural language processing
+  - [ ] Display personalized recommendations with quality scores and learning path positioning
+
+- [ ] Implement advanced user profiling and skill assessment (AC: 1, 3, 4)
+  - [ ] Extend user profiles from Story 8.1 with skill assessment and learning preferences
+  - [ ] Create SkillAssessmentEngine for evaluating current AI/ML knowledge level
+  - [ ] Implement LearningPreferenceAnalyzer for content type and format preferences
+  - [ ] Add goal tracking and progress monitoring for learning objectives
+  - [ ] Create adaptive user profile updates based on learning behavior and feedback
+
+- [ ] Add content recommendation display and interaction (AC: 2, 3)
+  - [ ] Create unified content card component supporting multiple content types
+  - [ ] Implement content filtering by type (papers, tutorials, courses, videos, blogs, code)
+  - [ ] Add quality indicators and relevance scoring visualization
+  - [ ] Create learning path visualization with prerequisite dependencies
+  - [ ] Implement content interaction tracking for preference learning
+
+- [ ] Implement learning sequence generation and updates (AC: 5, 6)
+  - [ ] Create LearningSequenceGenerator for prerequisite-aware content ordering
+  - [ ] Implement next step recommendations based on completed content and progress
+  - [ ] Add real-time content update notifications for matching learning paths
+  - [ ] Create content freshness scoring and temporal relevance assessment
+  - [ ] Implement learning path modification and re-optimization based on new content</tasks>
+  </story>
+
+  <acceptanceCriteria>1. **Given** my learning preferences and skill profile are established
+   **When** I access the "AI Content Discovery" tab
+   **Then** I see personalized content recommendations with: learning path suggestions, skill-appropriate content, progressive difficulty matching
+
+2. **And** recommendations include: research papers, tutorials, courses, videos, blog posts, code examples
+
+3. **And** content is scored by: relevance to my goals, skill level appropriateness, learning path progression, quality assessment
+
+4. **And** I can specify learning objectives: "Learn transformers", "Master computer vision", "Understand RL fundamentals"
+
+5. **And** the system generates optimized learning sequences with prerequisites and next steps
+
+6. **And** I receive updates for new content matching my learning path</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Hybrid Storage: SQLite for users/preferences, file-based JSON for data sources. Performance: Built-in Python tools (@lru_cache, difflib) before external dependencies" />
+      <doc path="docs/architecture.md" title="Architecture Document" section="Project Structure" snippet="src/intelligence/ - Intelligence features, src/intelligence/recommendations/ - Advanced recommendation systems" />
+      <doc path="docs/epics.md" title="Epic 8: Complete Intelligence Platform" section="Personalized AI Content Discovery" snippet="Hybrid recommendation engine with collaborative + content-based + neural approaches for hyper-personalized learning" />
+    </docs>
+    <code>
+      <code path="src/recommendations/recommendation_engine.py" kind="recommendation framework" symbol="RecommendationEngine" lines="31-50" reason="Existing recommendation infrastructure from Story 8.1 to extend with hybrid approach" />
+      <code path="src/intelligence/base_intelligence_etl.py" kind="base intelligence etl" symbol="BaseIntelligenceETL" lines="1-100" reason="Foundation from Story 8.5 for multi-source content aggregation" />
+      <code path="src/web/dashboard/components/recommendations_tab.py" kind="dashboard tab" symbol="RecommendationsManager" lines="25-50" reason="Existing tab component patterns and data loading approaches for AI content discovery" />
+      <code path="src/analytics/technology_adoption.py" kind="analytics framework" symbol="TechnologyAdoptionAnalyzer" lines="1-100" reason="Existing analytics patterns for learning progress tracking and trend analysis" />
+      <code path="src/web/dashboard/utils.py" kind="utility" symbol="get_data_path, parse_date_universal" lines="1-50" reason="Existing data loading utilities and time period handling" />
+    </code>
+    <dependencies>
+      <python version="3.10+">
+        <package name="dash" version="2.0+" scope="dashboard-framework" />
+        <package name="dash-bootstrap-components" version="1.0+" scope="ui-components" />
+        <package name="plotly" version="5.0+" scope="data-visualization" />
+        <package name="pandas" version="2.x" scope="data-processing" />
+        <package name="polars" version="0.20.x" scope="high-performance-operations" />
+        <package name="pydantic" version="2.11.5+" scope="data-validation" />
+        <package name="pytest" version="7.0+" scope="testing" />
+        <package name="scikit-learn" version="1.3+" scope="ml-models" />
+        <package name="tensorflow" version="2.15+" scope="neural-networks" />
+        <package name="nltk" version="3.8+" scope="nlp-processing" />
+        <package name="requests" version="2.31+" scope="api-integration" />
+        <package name="beautifulsoup4" version="4.0+" scope="web-scraping" />
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Extend Story 8.1 recommendation infrastructure with hybrid approach (collaborative + content-based + neural) for optimal accuracy</constraint>
+    <constraint type="integration">Leverage Story 8.5 BaseIntelligenceETL framework for multi-source content aggregation from MOOC platforms and AI newsletters</constraint>
+    <constraint type="learning-paths">Implement prerequisite mapping and course graph analysis for optimized learning sequences with adaptive path adjustment</constraint>
+    <constraint type="performance">Real-time personalization with intelligent caching for neural model predictions and user similarity calculations</constraint>
+    <constraint type="scalability">Framework designed to handle diverse content types (papers, tutorials, courses, videos, blogs, code) and large-scale user personalization</constraint>
+    <constraint type="testing">Maintain >80% test coverage with A/B testing framework for recommendation quality and learning effectiveness validation</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="HybridRecommendationEngine" kind="class" signature="class HybridRecommendationEngine: def generate_recommendations(self, user_profile: UserProfile, learning_objectives: List[str]) -> List[ContentRecommendation]; def ensemble_methods(self, collaborative_results: List, content_results: List, neural_results: List) -> List[ContentRecommendation]" path="src/intelligence/recommendations/hybrid_engine.py" />
+    <interface name="LearningPathOptimizer" kind="class" signature="class LearningPathOptimizer: def generate_optimized_path(self, learning_objective: str, user_skills: SkillProfile) -> LearningPath; def analyze_prerequisites(self, content_items: List[Dict]) -> PrerequisiteGraph" path="src/intelligence/learning/path_optimizer.py" />
+    <interface name="ContentQualityScorer" kind="class" signature="class ContentQualityScorer: def assess_content_quality(self, content: Dict, user_profile: UserProfile) -> QualityScore; def calculate_learning_relevance(self, content: Dict, learning_objectives: List[str]) -> RelevanceScore" path="src/intelligence/analytics/quality_scorer.py" />
+    <interface name="SkillAssessmentEngine" kind="class" signature="class SkillAssessmentEngine: def evaluate_current_skills(self, user_activity: List[Dict]) -> SkillProfile; def identify_skill_gaps(self, current_skills: SkillProfile, learning_objective: str) -> List[SkillGap]" path="src/intelligence/analytics/skill_assessor.py" />
+    <interface name="AIContentDiscoveryManager" kind="dashboard manager" signature="class AIContentDiscoveryManager: def load_personalized_content(self, user_id: str, filters: Dict) -> List[ContentRecommendation]; def process_learning_objectives(self, objectives: List[str]) -> ProcessedObjectives" path="src/web/dashboard/components/ai_content_discovery_tab.py" />
+  </interfaces>
+
+  <tests>
+    <standards>Follow existing pytest patterns with >80% coverage target. Include A/B testing framework for recommendation quality and learning effectiveness validation. Use existing patterns: test_hybrid_recommendation_engine.py, test_learning_path_optimizer.py, test_ai_content_discovery_tab.py with mocking for external APIs and ML model dependencies.</standards>
+    <locations>Tests/intelligence/ - Intelligence-specific tests including recommendation algorithms, learning path optimization, and content quality scoring. Tests/integration/ for multi-source content aggregation and dashboard component integration testing.</locations>
+    <ideas>
+      <idea ac="AC-1, AC-4">Test: Integration test for personalized content generation with learning objectives processing and skill-appropriate content matching</idea>
+      <idea ac="AC-2, AC-3">Test: Unit test for HybridRecommendationEngine ensemble methods combining collaborative, content-based, and neural approaches</idea>
+      <idea ac="AC-5">Test: Performance benchmark for LearningPathOptimizer prerequisite analysis and course graph processing</idea>
+      <idea ac="AC-6">Test: End-to-end test for real-time content updates and learning path re-optimization with new content discovery</idea>
+      <idea ac="Quality">Test: A/B testing framework for recommendation quality measurement and learning effectiveness validation</idea>
+    </ideas>
+  </tests>
+</story-context>

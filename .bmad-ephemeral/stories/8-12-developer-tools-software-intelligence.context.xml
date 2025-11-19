@@ -1,0 +1,148 @@
+<story-context id="{bmad_folder}/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>12</storyId>
+    <title>Developer Tools & Software Intelligence</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\8-12-developer-tools-software-intelligence.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>comprehensive developer tools intelligence with evaluation and productivity tracking</iWant>
+    <soThat>I can discover optimal tools and improve my development workflow</soThat>
+    <tasks>- [ ] Create DeveloperToolsIntelligenceETL service (Foundation for developer tools intelligence)
+  - [ ] Create `src/intelligence/devtools/developer_tools_intelligence_etl.py` extending BaseIntelligenceETL
+  - [ ] Integrate tool discovery platforms: Product Hunt API, GitHub Marketplace, AlternativeTo, StackShare
+  - [ ] Add software review platforms: G2, Capterra, Slack App Directory for comprehensive coverage
+  - [ ] Implement developer tool authority blogs: GitHub, GitLab, JetBrains, VS Code, Docker, Kubernetes
+  - [ ] Create tool data quality scoring and credibility assessment for review aggregation
+
+- [ ] Implement comprehensive tool evaluation framework (AC: 1, 2)
+  - [ ] Create ToolEvaluationEngine in `src/intelligence/devtools/tool_evaluation_engine.py`
+  - [ ] Implement feature analysis using product descriptions, documentation, and user reviews
+  - [ ] Add performance comparison using benchmarks, speed metrics, and resource utilization
+  - [ ] Create integration capabilities assessment using API compatibility and ecosystem integration
+  - [ ] Implement learning curve evaluation using documentation quality, community support, and complexity metrics
+
+- [ ] Develop personalized alternative recommendation system (AC: 3, 6)
+  - [ ] Create AlternativeRecommender in `src/intelligence/devtools/alternative_recommender.py`
+  - [ ] Implement tech stack-based filtering using user preferences from Story 5.5.1
+  - [ ] Add workflow preference matching using development patterns and tool usage analysis
+  - [ ] Create team size and budget constraint optimization for scalable recommendations
+  - [ ] Implement real-time alert system for new tools matching user stack and preferences
+
+- [ ] Create productivity tracking and usage analysis engine (AC: 4)
+  - [ ] Create ProductivityTracker in `src/intelligence/devtools/productivity_tracker.py`
+  - [ ] Implement tool adoption rate analysis using community engagement and download metrics
+  - [ ] Add usage pattern identification through workflow analysis and time tracking integration
+  - [ ] Create efficiency gains measurement using development velocity and quality metrics
+  - [ ] Implement workflow bottleneck detection using process analysis and time utilization
+
+- [ ] Implement workflow optimization and automation platform (AC: 5)
+  - [ ] Create WorkflowOptimizer in `src/intelligence/devtools/workflow_optimizer.py`
+  - [ ] Implement tool integration suggestions using API compatibility and workflow analysis
+  - [ ] Add automation opportunity identification using repetitive task detection and time savings
+  - [ ] Create process improvement recommendations using best practices and industry standards
+  - [ ] Implement workflow simulation and optimization testing with predictive analysis
+
+- [ ] Create Developer Tools Intelligence dashboard tab (AC: 1, 2, 6)
+  - [ ] Create `src/web/dashboard/components/developer_tools_intelligence_tab.py`
+  - [ ] Implement DeveloperToolsManager for data loading and intelligent caching
+  - [ ] Add "Developer Tools Intelligence" tab to main dashboard navigation
+  - [ ] Display tool evaluations with feature analysis and performance comparisons
+  - [ ] Implement personalized recommendations with real-time alert system integration
+
+- [ ] Add advanced tool analysis and comparison features (AC: 2, 3, 4)
+  - [ ] Create tool evaluation cards with comprehensive feature analysis and performance metrics
+  - [ ] Add alternative recommendation interface with tech stack and preference filtering
+  - [ ] Display productivity tracking results with usage patterns and efficiency gains
+  - [ ] Implement workflow optimization visualization with automation opportunities
+  - [ ] Create learning curve assessment with documentation quality and community support
+
+- [ ] Implement comprehensive workflow optimization and automation (AC: 4, 5, 6)
+  - [ ] Create productivity dashboard with adoption rates and bottleneck identification
+  - [ ] Add workflow optimization interface with integration suggestions and process improvements
+  - [ ] Display automation opportunities with time savings and implementation complexity
+  - [ ] Implement custom workflow builder with drag-and-drop tool integration planning
+  - [ ] Create productivity improvement tracking with ROI calculation and efficiency metrics</tasks>
+  </story>
+
+  <acceptanceCriteria>1. **Given** developer tools sources are configured (tool launch platforms, software reviews, developer tool blogs)
+   **When** I access the "Developer Tools" tab
+   **Then** I see: tool evaluations, alternative recommendations, productivity tracking, workflow optimization
+
+2. **And** tool evaluations include: feature analysis, performance comparison, integration capabilities, learning curve assessment
+
+3. **And** alternative recommendations consider: my tech stack, workflow preferences, team size, budget constraints
+
+4. **And** productivity tracking measures: tool adoption rates, usage patterns, efficiency gains, workflow bottlenecks
+
+5. **And** workflow optimization provides: tool integration suggestions, automation opportunities, process improvements
+
+6. **And** I receive alerts for: new tools matching my stack, major updates, productivity improvements</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Hybrid Storage: SQLite for users/preferences, file-based JSON for data sources. Performance: Built-in Python tools (@lru_cache, difflib) before external dependencies" />
+      <doc path="docs/architecture.md" title="Architecture Document" section="Project Structure" snippet="src/intelligence/ - Intelligence features, src/intelligence/devtools/ - Developer tools intelligence processing" />
+      <doc path="docs/epics.md" title="Epic 8: Complete Intelligence Platform" section="Developer Tools & Software Intelligence" snippet="Comprehensive developer tools intelligence with evaluation and productivity tracking" />
+    </docs>
+    <code>
+      <code path="src/intelligence/base_intelligence_etl.py" kind="base intelligence etl" symbol="BaseIntelligenceETL" lines="1-100" reason="Foundation from Story 8.5 for developer tools intelligence aggregation and processing" />
+      <code path="src/etl/base.py" kind="base etl framework" symbol="BaseETL" lines="1-100" reason="Existing ETL patterns for developer tools intelligence data processing" />
+      <code path="src/intelligence/architecture/pattern_recognizer.py" kind="architecture intelligence" symbol="PatternRecognizer" lines="1-100" reason="Story 8.7 foundation for technology stack analysis and integration assessment" />
+      <code path="src/web/dashboard/components/recommendations_tab.py" kind="dashboard tab" symbol="RecommendationsManager" lines="25-50" reason="Existing tab component patterns and Story 8.1 integration for tool recommendations" />
+      <code path="src/utils/github_utils.py" kind="github integration" symbol="GitHubUtils" lines="1-50" reason="Existing GitHub API integration for tool discovery and marketplace data" />
+    </code>
+    <dependencies>
+      <python version="3.10+">
+        <package name="dash" version="2.0+" scope="dashboard-framework" />
+        <package name="dash-bootstrap-components" version="1.0+" scope="ui-components" />
+        <package name="plotly" version="5.0+" scope="data-visualization" />
+        <package name="pandas" version="2.x" scope="data-processing" />
+        <package name="polars" version="0.20.x" scope="high-performance-operations" />
+        <package name="pydantic" version="2.11.5+" scope="data-validation" />
+        <package name="pytest" version="7.0+" scope="testing" />
+        <package name="scikit-learn" version="1.3+" scope="ml-models" />
+        <package name="requests" version="2.31+" scope="api-integration" />
+        <package name="beautifulsoup4" version="4.0+" scope="web-scraping" />
+        <package name="transformers" version="4.30+" scope="nlp-analysis" />
+        <package name="nltk" version="3.8+" scope="text-processing" />
+        <package name="PyGithub" version="2.0+" scope="github-api" />
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Leverage Story 8.5 BaseIntelligenceETL framework for developer tools intelligence aggregation (Product Hunt API, GitHub Marketplace, AlternativeTo)</constraint>
+    <constraint type="tool-evaluation">Comprehensive feature analysis using product descriptions and user reviews with performance comparison and benchmark testing</constraint>
+    <constraint type="alternative-recommendations">Tech stack-based filtering using Story 5.5.1 user preferences with workflow preference matching and budget optimization</constraint>
+    <constraint type="productivity-tracking">Tool adoption rate analysis using community engagement and usage pattern identification with efficiency gains measurement</constraint>
+    <constraint type="workflow-optimization">Automation opportunity identification using repetitive task detection and process improvement recommendations with best practices</constraint>
+    <constraint type="real-time-alerts">Personalized alert system for new tools matching user stack with workflow optimization suggestions and >85% test coverage</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="DeveloperToolsIntelligenceETL" kind="class" signature="class DeveloperToolsIntelligenceETL(BaseIntelligenceETL): def extract_product_hunt(self) -> List[Dict]; def extract_github_marketplace(self) -> List[Dict]; def extract_alternative_to(self) -> List[Dict]" path="src/intelligence/devtools/developer_tools_intelligence_etl.py" />
+    <interface name="ToolEvaluationEngine" kind="class" signature="class ToolEvaluationEngine: def analyze_features(self, tool_data: Dict) -> FeatureAnalysis; def compare_performance(self, tools: List[Dict]) -> PerformanceComparison; def assess_learning_curve(self, tool: Dict) -> LearningCurveAssessment" path="src/intelligence/devtools/tool_evaluation_engine.py" />
+    <interface name="AlternativeRecommender" kind="class" signature="class AlternativeRecommender: def recommend_by_tech_stack(self, user_preferences: Dict, tools: List[Dict]) -> List[AlternativeRecommendation]; def match_workflow_preferences(self, workflow_data: Dict, tools: List[Dict]) -> List[ToolMatch]; def optimize_for_constraints(self, requirements: Dict, options: List[Dict]) -> List[OptimizedRecommendation]" path="src/intelligence/devtools/alternative_recommender.py" />
+    <interface name="ProductivityTracker" kind="class" signature="class ProductivityTracker: def analyze_adoption_rates(self, tool_metrics: List[Dict]) -> AdoptionRateAnalysis; def identify_usage_patterns(self, workflow_data: List[Dict]) -> UsagePatterns; def measure_efficiency_gains(self, productivity_data: Dict) -> EfficiencyGains" path="src/intelligence/devtools/productivity_tracker.py" />
+    <interface name="WorkflowOptimizer" kind="class" signature="class WorkflowOptimizer: def suggest_integrations(self, current_stack: List[Dict], available_tools: List[Dict]) -> List[IntegrationSuggestion]; def identify_automation_opportunities(self, workflow: Dict) -> List[AutomationOpportunity]; def recommend_improvements(self, process_analysis: Dict) -> List[ProcessImprovement]" path="src/intelligence/devtools/workflow_optimizer.py" />
+    <interface name="DeveloperToolsManager" kind="dashboard manager" signature="class DeveloperToolsManager: def load_developer_tools_intelligence_data(self, filters: Dict) -> DeveloperToolsData; def generate_tool_recommendations(self, user_profile: Dict) -> List[ToolRecommendation]" path="src/web/dashboard/components/developer_tools_intelligence_tab.py" />
+  </interfaces>
+
+  <tests>
+    <standards>Follow existing pytest patterns with >85% coverage target. Include tool evaluation framework testing and productivity tracking validation. Use existing patterns: test_developer_tools_intelligence_etl.py, test_tool_evaluation_engine.py, test_alternative_recommender.py with mocking for external APIs and tool platform dependencies.</standards>
+    <locations>Tests/developer_tools_intelligence/ - Developer tools intelligence-specific tests including tool evaluation, alternative recommendations, productivity tracking, and workflow optimization. Tests/integration/ for tool platform aggregation and dashboard component integration testing.</locations>
+    <ideas>
+      <idea ac="AC-1, AC-2">Test: Unit test for ToolEvaluationEngine feature analysis accuracy and performance comparison reliability</idea>
+      <idea ac="AC-3, AC-6">Test: Integration test for AlternativeRecommender tech stack filtering and personalization effectiveness</idea>
+      <idea ac="AC-4">Test: Performance test for ProductivityTracker adoption rate analysis and efficiency gains measurement</idea>
+      <idea ac="AC-5">Test: Unit test for WorkflowOptimizer automation opportunity identification and process improvement recommendations</idea>
+      <idea ac="AC-6">Test: E2E test for DeveloperToolsManager personalized recommendations and real-time alert functionality</idea>
+    </ideas>
+  </tests>
+</story-context>

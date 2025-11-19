@@ -1,0 +1,135 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>2</storyId>
+    <title>alert-rule-configuration-ui</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\3-2-alert-rule-configuration-ui.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to create and manage notification rules</iWant>
+    <soThat>I only receive alerts for content I care about</soThat>
+    <tasks>1. Create Notifications settings page/modal, 2. Implement rule creation form fields, 3. Add notification channel selection, 4. Implement quiet hours configuration, 5. Add rule testing functionality, 6. Implement rule persistence and activation, 7. Create rules management list, 8. Create comprehensive test suite for UI components</tasks>
+  </story>
+
+  <acceptanceCriteria>1. Given I open the Notifications settings, When I click "Create Alert Rule", Then I can define: rule name, domains, sources, keywords, categories
+2. And I can choose notification channels (browser, email)
+3. And I can set quiet hours (no notifications during specified times)
+4. And I can test the rule against recent content
+5. When I save the rule, Then it becomes active immediately
+6. And I see a list of all my rules with edit/delete options</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <item>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown - Story 3.2 Alert Rule Configuration UI</title>
+        <section>Story 3.2: Alert Rule Configuration UI</section>
+        <snippet>As a user, I want to create and manage notification rules, So that I only receive alerts for content I care about.</snippet>
+      </item>
+      <item>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document - Dashboard Framework</title>
+        <section>Dash Callback Best Practices</section>
+        <snippet>Single callback pattern: One callback per output prevents conflicts. Use VideoManager pattern for centralized data handling with caching.</snippet>
+      </item>
+      <item>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document - Mobile Responsive Layout</title>
+        <section>UI Components and Bootstrap Integration</section>
+        <snippet>Use Bootstrap 5 dash-bootstrap-components for responsive design, accessible components, and familiar patterns.</snippet>
+      </item>
+      <item>
+        <path>CLAUDE.md</path>
+        <title>Project Documentation - Dashboard Callback Best Practices</title>
+        <section>Dashboard Development Guidelines</section>
+        <snippet>Single callback pattern prevents duplicate output conflicts. Use VideoManager class for centralized data handling and filtering.</snippet>
+      </item>
+    </docs>
+    <code>
+      <item>
+        <path>src/web/dashboard/components/videos_tab.py</path>
+        <kind>component</kind>
+        <symbol>VideoManager</symbol>
+        <lines>1-100</lines>
+        <reason>Reference pattern for implementing NotificationsManager class following established data management and filtering patterns</reason>
+      </item>
+      <item>
+        <path>src/web/dashboard/app.py</path>
+        <kind>application</kind>
+        <symbol>app.layout</symbol>
+        <lines>1-50</lines>
+        <reason>Reference for adding new notifications tab to existing dashboard layout and navigation structure</reason>
+      </item>
+      <item>
+        <path>src/web/dashboard/components/customize_tabs.py</path>
+        <kind>component</kind>
+        <symbol>TabPreferencesManager</symbol>
+        <lines>1-80</lines>
+        <reason>Reference pattern for form-based UI components with state management and validation</reason>
+      </item>
+      <item>
+        <path>src/alerts/models.py</path>
+        <kind>models</kind>
+        <symbol>AlertRule</symbol>
+        <lines>1-50</lines>
+        <reason>Pydantic model for form validation and rule persistence - already created in Story 3.1</reason>
+      </item>
+      <item>
+        <path>src/alerts/engine.py</path>
+        <kind>service</kind>
+        <symbol>AlertEngine</symbol>
+        <lines>1-100</lines>
+        <reason>Backend service for rule evaluation and reload functionality - integrate with UI for real-time rule management</reason>
+      </item>
+    </code>
+    <dependencies>
+      <ecosystem name="python">
+        <package name="dash" version="2.x">Dashboard framework with Bootstrap components</package>
+        <package name="dash-bootstrap-components" version="1.x">Bootstrap 5 components for responsive design</package>
+        <package name="plotly" version="5.x">Chart components for visual feedback</package>
+        <package name="pydantic" version="2.x">Model validation from Story 3.1 AlertRule model</package>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Follow single-callback pattern to prevent "Duplicate callback outputs" errors</constraint>
+    <constraint type="ui">Use Dash components and Bootstrap styling for consistency with existing dashboard tabs</constraint>
+    <constraint type="state">Implement NotificationsManager class following VideoManager pattern for data handling</constraint>
+    <constraint type="mobile">Mobile-responsive design using Bootstrap breakpoints and collapsible sections</constraint>
+    <constraint type="testing">Achieve >70% test coverage using pytest patterns in Tests/web/dashboard/ directory</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="NotificationsManager" kind="class">
+      <signature>class NotificationsManager: load_rules(), save_rules(), test_rule(), get_available_sources()</signature>
+      <path>src/web/dashboard/components/notifications_tab.py</path>
+    </interface>
+    <interface name="AlertRuleForm" kind="component">
+      <signature>dash.Form with inputs for rule_name, domains, sources, keywords, categories, channels, quiet_hours</signature>
+      <path>src/web/dashboard/components/rule_form.py</path>
+    </interface>
+    <interface name="AlertEngine.reload_rules" kind="method">
+      <signature>reload_rules() -> None</signature>
+      <path>src/alerts/engine.py</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Follow existing pytest patterns with >70% coverage target. Test files in Tests/web/dashboard/ with comprehensive coverage of form validation, Dash callback behavior, mobile responsiveness, and user interaction flows. Use fixtures for consistent test data and mocking for external dependencies.</standards>
+    <locations>Tests/web/dashboard/ (test_notifications_tab.py, test_rule_form.py, test_rules_list.py), Tests/integration/ for alert engine integration</locations>
+    <ideas>
+      <test idea="Test form validation for all rule fields (name, domains, sources, keywords, categories)" ac="1"/>
+      <test idea="Test quiet hours configuration with time range validation" ac="3"/>
+      <test idea="Test rule testing functionality against sample data" ac="4"/>
+      <test idea="Test rule persistence and immediate activation" ac="5"/>
+      <test idea="Test rules management list with edit/delete operations" ac="6"/>
+      <test idea="Test mobile responsiveness and accessibility" ac="1"/>
+    </ideas>
+  </tests>
+</story-context>

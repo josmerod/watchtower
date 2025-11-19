@@ -20,8 +20,10 @@ from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
 
 from src.config.settings import get_settings
+from src.data_quality.deduplication import DeduplicationEngine
 from src.exceptions.base import handle_exception
 from src.exceptions.etl import CheckpointError, ETLError
+from src.models.base import TimestampedModel
 from src.utils.logging import get_logger, get_performance_logger
 
 # Type variables for generic ETL
@@ -50,6 +52,11 @@ class ETLMetrics(BaseModel):
 
     # Story 1.1: Checkpoint status tracking
     checkpoint_status: str | None = None  # "resumed" | "new_run" | "checkpoint_saved" | "checkpoint_failed"
+
+    # Story 4.1: Deduplication metrics
+    duplicates_found: int = 0
+    duplicates_removed: int = 0
+    deduplication_time_seconds: float = 0.0
 
     def finish(self) -> None:
         self.end_time = datetime.utcnow()
@@ -130,6 +137,8 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         enable_checkpointing: bool = True,
         max_retries: int = 3,
         retry_delay: int = 5,
+        enable_deduplication: bool = True,
+        title_similarity_threshold: float = 0.8,
     ):
         self.name = name
         self.description = description or f"ETL process: {name}"
@@ -138,6 +147,8 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         self.enable_checkpointing = enable_checkpointing
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self.enable_deduplication = enable_deduplication
+        self.title_similarity_threshold = title_similarity_threshold
         self.logger = get_logger(f"ETL.{name}")
         self.perf_logger = get_performance_logger(f"ETL.{name}")
         self.metrics = ETLMetrics(start_time=datetime.utcnow())
@@ -145,6 +156,12 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         self.data_dir = Path(self.settings.project_root) / "data" / name
         self.checkpoint_dir = self.data_dir / "checkpoints"
         self.output_dir = self.data_dir / "output"
+
+        # Initialize deduplication engine
+        self.deduplication_engine = DeduplicationEngine(
+            title_similarity_threshold=self.title_similarity_threshold
+        ) if self.enable_deduplication else None
+
         self._ensure_directories()
 
     def _ensure_directories(self) -> None:
@@ -382,6 +399,75 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         except Exception as e:
             self.logger.warning(f"Retention purge failed: {e}")
 
+    def _apply_deduplication(self, data: List[OutputType]) -> List[OutputType]:
+        """Apply deduplication to transformed data.
+
+        Args:
+            data: List of transformed data items.
+
+        Returns:
+            List of deduplicated data items.
+        """
+        if not self.enable_deduplication or not self.deduplication_engine:
+            self.logger.debug("Deduplication disabled, returning original data")
+            return data
+
+        if not data:
+            self.logger.debug("No data to deduplicate")
+            return data
+
+        # Filter for items that inherit from TimestampedModel
+        timestamped_data = []
+        for item in data:
+            if isinstance(item, TimestampedModel):
+                timestamped_data.append(item)
+            else:
+                # For non-TimestampedModel items, just add them back without deduplication
+                timestamped_data.append(item)
+
+        # Only deduplicate TimestampedModel items
+        deduplicable_items = [item for item in timestamped_data if isinstance(item, TimestampedModel)]
+        non_deduplicable_items = [item for item in timestamped_data if not isinstance(item, TimestampedModel)]
+
+        if not deduplicable_items:
+            self.logger.debug("No deduplicable items found")
+            return data
+
+        # Apply deduplication
+        deduplication_start = datetime.utcnow()
+        try:
+            result = self.deduplication_engine.find_duplicates(deduplicable_items)
+
+            # Update metrics
+            deduplication_time = (datetime.utcnow() - deduplication_start).total_seconds()
+            self.metrics.duplicates_found = len(result.duplicate_groups)
+            self.metrics.duplicates_removed = result.duplicates_removed
+            self.metrics.deduplication_time_seconds = deduplication_time
+
+            self.logger.info(
+                f"Deduplication completed: {result.total_items} items -> "
+                f"{len(result.unique_items)} unique, {result.duplicates_removed} duplicates removed "
+                f"in {deduplication_time:.2f}s"
+            )
+
+            # Return unique items + non-deduplicable items
+            final_items = result.unique_items + non_deduplicable_items
+
+            # Update record count for transformed items
+            self.metrics.records_transformed = len(final_items)
+
+            return final_items
+
+        except Exception as e:
+            self.logger.error(f"Deduplication failed: {e}")
+            self.metrics.add_error_detail(
+                error_message=f"Deduplication failed: {str(e)}",
+                error_type=type(e).__name__,
+                context={"etl_name": self.name, "item_count": len(deduplicable_items)}
+            )
+            # Return original data if deduplication fails
+            return data
+
     def run(self) -> ETLMetrics:
         """Executes the complete ETL pipeline.
 
@@ -434,8 +520,11 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 self.logger.info("No data after transformation. Skipping load.")
                 return self.metrics
 
-            self._retry_operation("load", lambda: self.load(transformed))
-            self.metrics.records_loaded = len(transformed)
+            # Story 4.1: Apply deduplication after transformation
+            deduplicated = self._apply_deduplication(transformed)
+
+            self._retry_operation("load", lambda: self.load(deduplicated))
+            self.metrics.records_loaded = len(deduplicated)
             self.logger.info(f"Loaded {self.metrics.records_loaded} records")
 
             if self.enable_checkpointing and self.metrics.is_successful:
@@ -548,6 +637,50 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 agg_path.write_text(
                     json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8"
                 )
+
+                # Story 1.1: Save per-ETL metrics in data/metrics/{etl_name}/ pattern
+                etl_metrics_dir = metrics_dir / self.name
+                etl_metrics_dir.mkdir(parents=True, exist_ok=True)
+
+                # Create timestamped metrics file as specified in AC2
+                timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+                per_etl_metrics_file = etl_metrics_dir / f"{timestamp}_metrics.json"
+
+                # Store full metrics object with enhanced details
+                metrics_data = {
+                    "etl_name": self.name,
+                    "timestamp": timestamp,
+                    "start_time": self.metrics.start_time.isoformat(),
+                    "end_time": self.metrics.end_time.isoformat() if self.metrics.end_time else None,
+                    "duration_seconds": self.metrics.duration_seconds,
+                    "records_extracted": self.metrics.records_extracted,
+                    "records_transformed": self.metrics.records_transformed,
+                    "records_loaded": self.metrics.records_loaded,
+                    "records_failed": self.metrics.records_failed,
+                    "error_count": self.metrics.error_count,
+                    "warnings_count": self.metrics.warnings_count,
+                    "success_rate": self.metrics.success_rate,
+                    "is_successful": self.metrics.is_successful,
+                    # Enhanced tracking from Story 1.1
+                    "errors_detail": self.metrics.errors_detail,
+                    "checkpoint_status": self.metrics.checkpoint_status,
+                    "output_dir": str(self.output_dir),
+                    "story_1_1_enhanced": True
+                }
+
+                per_etl_metrics_file.write_text(
+                    json.dumps(metrics_data, ensure_ascii=False, indent=2, default=str),
+                    encoding="utf-8"
+                )
+
+                # Also update latest file for this ETL
+                latest_metrics_file = etl_metrics_dir / "latest_metrics.json"
+                latest_metrics_file.write_text(
+                    json.dumps(metrics_data, ensure_ascii=False, indent=2, default=str),
+                    encoding="utf-8"
+                )
+
+                self.logger.debug(f"Per-ETL metrics saved to {per_etl_metrics_file}")
             except Exception as e:
                 self.logger.warning(f"Failed to write ETL run summary: {e}")
 

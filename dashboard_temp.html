@@ -1,0 +1,752 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Watchtower Dashboard</title>
+        <meta name="description" content="Watchtower - Real-time Intelligence & Monitoring Platform">
+        <link rel="icon" type="image/svg+xml" href="/assets/watchtower_icon.svg">
+        <link rel="stylesheet" href="/assets/css/shortcuts.css">
+        <link rel="stylesheet" href="/assets/css/mobile_responsive.css">
+        <!-- Font Awesome for mobile navigation icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="/assets/style.css?m=1755219555.891719">
+<link rel="stylesheet" href="/assets/css/mobile_responsive.css?m=1763339775.8733027">
+<link rel="stylesheet" href="/assets/css/shortcuts.css?m=1763330247.1253362">
+    </head>
+    <body>
+        
+<div id="react-entry-point">
+    <div class="_dash-loading">
+        Loading...
+    </div>
+</div>
+
+        <footer>
+            <script id="_dash-config" type="application/json">{"url_base_pathname":null,"requests_pathname_prefix":"\u002f","ui":false,"props_check":false,"disable_version_check":false,"show_undo_redo":false,"suppress_callback_exceptions":true,"update_title":"Updating...","children_props":{"dash_core_components":{"Checklist":["options[].label"],"Clipboard":[],"ConfirmDialog":[],"ConfirmDialogProvider":[],"DatePickerRange":[],"DatePickerSingle":[],"Download":[],"Dropdown":["options[].label"],"Geolocation":[],"Graph":[],"Input":[],"Interval":[],"Link":[],"Loading":["custom_spinner"],"Location":[],"Markdown":[],"RadioItems":["options[].label"],"RangeSlider":[],"Slider":[],"Store":[],"Tab":[],"Tabs":[],"Textarea":[],"Tooltip":[],"Upload":[]},"dash_html_components":{"A":[],"Abbr":[],"Acronym":[],"Address":[],"Area":[],"Article":[],"Aside":[],"Audio":[],"B":[],"Base":[],"Basefont":[],"Bdi":[],"Bdo":[],"Big":[],"Blink":[],"Blockquote":[],"Br":[],"Button":[],"Canvas":[],"Caption":[],"Center":[],"Cite":[],"Code":[],"Col":[],"Colgroup":[],"Content":[],"Data":[],"Datalist":[],"Dd":[],"Del":[],"Details":[],"Dfn":[],"Dialog":[],"Div":[],"Dl":[],"Dt":[],"Em":[],"Embed":[],"Fieldset":[],"Figcaption":[],"Figure":[],"Font":[],"Footer":[],"Form":[],"Frame":[],"Frameset":[],"H1":[],"H2":[],"H3":[],"H4":[],"H5":[],"H6":[],"Header":[],"Hgroup":[],"Hr":[],"I":[],"Iframe":[],"Img":[],"Ins":[],"Kbd":[],"Keygen":[],"Label":[],"Legend":[],"Li":[],"Link":[],"Main":[],"MapEl":[],"Mark":[],"Marquee":[],"Meta":[],"Meter":[],"Nav":[],"Nobr":[],"Noscript":[],"ObjectEl":[],"Ol":[],"Optgroup":[],"Option":[],"Output":[],"P":[],"Param":[],"Picture":[],"Plaintext":[],"Pre":[],"Progress":[],"Q":[],"Rb":[],"Rp":[],"Rt":[],"Rtc":[],"Ruby":[],"S":[],"Samp":[],"Script":[],"Section":[],"Select":[],"Shadow":[],"Slot":[],"Small":[],"Source":[],"Spacer":[],"Span":[],"Strike":[],"Strong":[],"Sub":[],"Summary":[],"Sup":[],"Table":[],"Tbody":[],"Td":[],"Template":[],"Textarea":[],"Tfoot":[],"Th":[],"Thead":[],"Time":[],"Title":[],"Tr":[],"Track":[],"U":[],"Ul":[],"Var":[],"Video":[],"Wbr":[],"Xmp":[]},"dash_table":{"DataTable":[]},"dash_bootstrap_components":{"Accordion":[],"AccordionItem":["title"],"Alert":[],"Badge":[],"Breadcrumb":[],"Button":[],"ButtonGroup":[],"Card":[],"CardBody":[],"CardFooter":[],"CardGroup":[],"CardHeader":[],"CardImg":[],"CardImgOverlay":[],"CardLink":[],"Carousel":[],"Collapse":[],"DropdownMenu":["label"],"DropdownMenuItem":[],"Fade":[],"Form":[],"FormFeedback":[],"FormFloating":[],"FormText":[],"Label":[],"Checkbox":["label"],"Checklist":["options[].label"],"Input":[],"InputGroup":[],"InputGroupText":[],"RadioButton":["label"],"RadioItems":["options[].label"],"Select":[],"Switch":["label"],"Textarea":[],"Col":[],"Container":[],"Row":[],"Stack":[],"ListGroup":[],"ListGroupItem":[],"Modal":[],"ModalBody":[],"ModalFooter":[],"ModalHeader":[],"ModalTitle":[],"Nav":[],"NavItem":[],"NavLink":[],"Navbar":[],"NavbarBrand":[],"NavbarSimple":["brand"],"NavbarToggler":[],"Offcanvas":["title"],"Pagination":[],"Placeholder":[],"Popover":[],"PopoverBody":[],"PopoverHeader":[],"Progress":[],"Spinner":[],"Table":[],"Tab":[],"Tabs":[],"Toast":["header"],"Tooltip":[]}},"serve_locally":true,"dash_version":"3.0.4","python_version":"3.11.13 (main, Jun 12 2025, 12:41:34) [MSC v.1943 64 bit (AMD64)]","dash_version_url":"https:\u002f\u002fdash-version.plotly.com:8080\u002fcurrent_version","ddk_version":null,"plotly_version":"6.1.2"}</script>
+            <script src="/_dash-component-suites/dash/deps/polyfill@7.v3_0_4m1752697946.12.1.min.js"></script>
+<script src="/_dash-component-suites/dash/deps/react@18.v3_0_4m1752697947.3.1.min.js"></script>
+<script src="/_dash-component-suites/dash/deps/react-dom@18.v3_0_4m1752697947.3.1.min.js"></script>
+<script src="/_dash-component-suites/dash/deps/prop-types@15.v3_0_4m1752697946.8.1.min.js"></script>
+<script src="/assets/js/localStorage.js"></script>
+<script src="/assets/js/items_per_page.js"></script>
+<script src="/assets/js/mobile_navigation.js"></script>
+<script src="/assets/js/shortcuts.js"></script>
+<script src="/assets/js/dragdrop.js"></script>
+<script src="/assets/js/tab_preferences.js"></script>
+<script src="/assets/js/customize_tabs_dragdrop.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/_dash-component-suites/dash_bootstrap_components/_components/dash_bootstrap_components.v2_0_3m1752697932.min.js"></script>
+<script src="/assets/js/customize_tabs_dragdrop.js?m=1763330189.9023173"></script>
+<script src="/assets/js/dragdrop.js?m=1763326727.1450834"></script>
+<script src="/assets/js/items_per_page.js?m=1763338202.0230944"></script>
+<script src="/assets/js/localStorage.js?m=1763315453.4704623"></script>
+<script src="/assets/js/mobile_navigation.js?m=1763339567.2492852"></script>
+<script src="/assets/js/shortcuts.js?m=1763326657.3892376"></script>
+<script src="/assets/js/tab_preferences.js?m=1763341781.0198238"></script>
+<script src="/_dash-component-suites/dash/dash-renderer/build/dash_renderer.v3_0_4m1752697933.min.js"></script>
+<script src="/_dash-component-suites/dash/dcc/dash_core_components.v3_0_6m1752697945.js"></script>
+<script src="/_dash-component-suites/dash/dcc/dash_core_components-shared.v3_0_6m1752697945.js"></script>
+<script src="/_dash-component-suites/dash/html/dash_html_components.v3_0_2m1752697959.min.js"></script>
+<script src="/_dash-component-suites/dash/dash_table/bundle.v6_0_2m1752697942.js"></script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["73b1de8a746b1e3f6072f541ae9c377c4313a9674be6d2b5a88508800e456aea"] = 
+        function(trigger_id) {
+            // Load preset options from localStorage
+            try {
+                const storageKey = 'watchtower_filter_presets';
+                const stored = localStorage.getItem(storageKey);
+                const presets = stored ? JSON.parse(stored) : {};
+                const tabPresets = presets['arxiv_research'] || [];
+
+                return tabPresets.map(preset => ({
+                    label: preset.name,
+                    value: preset.name
+                }));
+            } catch (error) {
+                console.error('Error loading presets:', error);
+                return [];
+            }
+        }
+        ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["fd1fac698f52e66767703b1c04baa6349e5796daf76a47e69aae5fe2a42881ec"] = 
+        function(selected_preset, current_filters) {
+            if (!selected_preset || !current_filters) {
+                return window.dash_clientside.no_update;
+            }
+
+            try {
+                const storageKey = 'watchtower_filter_presets';
+                const stored = localStorage.getItem(storageKey);
+                const presets = stored ? JSON.parse(stored) : {};
+                const tabPresets = presets['arxiv_research'] || [];
+
+                const selectedPresetData = tabPresets.find(p => p.name === selected_preset);
+                if (selectedPresetData) {
+                    // Store selected preset data for the Python callback to use
+                    return selectedPresetData.filters;
+                }
+            } catch (error) {
+                console.error('Error applying preset:', error);
+            }
+
+            return window.dash_clientside.no_update;
+        }
+        ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["6a413ef6f294609d592fceea44b074826c73d2c52c612dd063cb14abd3e4920a"] = 
+        function(confirm_clicks, cancel_clicks, is_open, preset_name, current_filters) {
+            const ctx = window.dash_clientside.callback_context;
+
+            if (!ctx || !ctx.triggered) {
+                return window.dash_clientside.no_update;
+            }
+
+            const trigger_id = ctx.triggered[0]['prop_id'].split('.')[0];
+
+            if (trigger_id === 'arxiv-confirm-save-btn' && preset_name && current_filters) {
+                try {
+                    const storageKey = 'watchtower_filter_presets';
+                    const stored = localStorage.getItem(storageKey);
+                    const presets = stored ? JSON.parse(stored) : {};
+
+                    // Initialize tab if not exists
+                    if (!presets['arxiv_research']) {
+                        presets['arxiv_research'] = [];
+                    }
+
+                    // Check maximum presets limit
+                    if (presets['arxiv_research'].length >= 10) {
+                        alert('Maximum 10 presets allowed per tab');
+                        return false;
+                    }
+
+                    // Check for duplicate names
+                    const existingIndex = presets['arxiv_research'].findIndex(p => p.name === preset_name);
+                    if (existingIndex !== -1) {
+                        alert('Preset name already exists');
+                        return false;
+                    }
+
+                    // Add new preset
+                    const newPreset = {
+                        name: preset_name,
+                        filters: current_filters,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+
+                    presets['arxiv_research'].push(newPreset);
+                    localStorage.setItem(storageKey, JSON.stringify(presets));
+
+                    // Trigger preset dropdown refresh
+                    const presetSelector = document.getElementById('arxiv-preset-selector');
+                    if (presetSelector) {
+                        // Force dropdown update by triggering change event
+                        presetSelector.dispatchEvent(new Event('change'));
+                    }
+
+                    alert('Preset saved successfully!');
+                    return false; // Close modal
+                } catch (error) {
+                    console.error('Error saving preset:', error);
+                    alert('Error saving preset: ' + error.message);
+                    return is_open; // Keep modal open on error
+                }
+            }
+
+            if (trigger_id === 'arxiv-cancel-save-btn') {
+                return false; // Close modal
+            }
+
+            return is_open;
+        }
+        ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["797560675b889055241319bc46bb6a87de6ce5b9bfc754d7a360c315886636cc"] = 
+        function(selected_preset_name, selected_preset_data) {
+            if (!selected_preset_name || !selected_preset_data || !selected_preset_data.filters) {
+                return window.dash_clientside.no_update;
+            }
+
+            const filters = selected_preset_data.filters;
+
+            // Apply filters to the form inputs
+            if (filters.search !== undefined) {
+                const searchInput = document.getElementById('arxiv-search-input');
+                if (searchInput) {
+                    searchInput.value = filters.search;
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+
+            if (filters.category !== undefined) {
+                const categoryDropdown = document.getElementById('arxiv-category-dropdown');
+                if (categoryDropdown) {
+                    categoryDropdown.value = filters.category;
+                    categoryDropdown.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+
+            return window.dash_clientside.no_update;
+        }
+        ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["b610ccd56535837a8bbb3e14cb005ecdc0710fe37c776172bd6d695ef6d0e28e"] = 
+        function(n_clicks) {
+            const ctx = window.dash_clientside.callback_context;
+
+            if (!ctx || !ctx.triggered || n_clicks === null) {
+                return window.dash_clientside.no_update;
+            }
+
+            const trigger_id = ctx.triggered[0]['prop_id'].split('.')[0];
+
+            // Check if this is an "Add to Shortcuts" button click
+            if (trigger_id && trigger_id.startsWith('add-shortcut-arxiv-')) {
+                try {
+                    const button = document.getElementById(trigger_id);
+                    if (!button) {
+                        console.error('Button not found:', trigger_id);
+                        return window.dash_clientside.no_update;
+                    }
+
+                    const sourceName = button.getAttribute('data-source-name');
+                    const sourceDomain = button.getAttribute('data-source-domain');
+                    const sourceFilterStr = button.getAttribute('data-source-filter');
+
+                    if (!sourceName || !sourceDomain || !sourceFilterStr) {
+                        console.error('Missing shortcut data attributes');
+                        return window.dash_clientside.no_update;
+                    }
+
+                    let sourceFilter;
+                    try {
+                        sourceFilter = JSON.parse(sourceFilterStr);
+                    } catch (parseError) {
+                        console.error('Error parsing source filter:', parseError);
+                        return window.dash_clientside.no_update;
+                    }
+
+                    // Add shortcut using the ShortcutsManager
+                    if (window.shortcutsManager) {
+                        const result = window.shortcutsManager.addShortcut(sourceName, sourceDomain, sourceFilter);
+
+                        if (result) {
+                            // Show success message
+                            const successAlert = document.createElement('div');
+                            successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                            successAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+                            successAlert.innerHTML = `
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Success!</strong> "${sourceName}" added to shortcuts.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            `;
+                            document.body.appendChild(successAlert);
+
+                            // Auto-remove after 3 seconds
+                            setTimeout(() => {
+                                if (successAlert.parentNode) {
+                                    successAlert.parentNode.removeChild(successAlert);
+                                }
+                            }, 3000);
+
+                            // Trigger shortcuts sidebar refresh
+                            const trigger = document.getElementById('shortcuts-updates-trigger');
+                            if (trigger) {
+                                trigger.innerHTML = Date.now();
+                            }
+
+                            console.log('Shortcut added successfully:', result);
+                        } else {
+                            throw new Error('Failed to add shortcut');
+                        }
+                    } else {
+                        console.error('ShortcutsManager not available');
+                        alert('Shortcuts functionality not available. Please refresh the page.');
+                    }
+
+                } catch (error) {
+                    console.error('Error adding shortcut:', error);
+
+                    // Show error message
+                    const errorAlert = document.createElement('div');
+                    errorAlert.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+                    errorAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+                    errorAlert.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Error:</strong> ${error.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(errorAlert);
+
+                    // Auto-remove after 5 seconds
+                    setTimeout(() => {
+                        if (errorAlert.parentNode) {
+                            errorAlert.parentNode.removeChild(errorAlert);
+                        }
+                    }, 5000);
+                }
+            }
+
+            return window.dash_clientside.no_update;
+        }
+        ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["32c5dd6c4462c7cf7a3ec32ccbf3e021330e95634223040e763917fab8779515"] = 
+    function(n_clicks, is_open) {
+        return !is_open;
+    }
+    ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["043c03b093add5360b67e9d95fef0f03370864fa09ad2db1ebcc098d8117a783"] = 
+    function(trigger) {
+        try {
+            const shortcutsManager = window.shortcutsManager;
+            if (!shortcutsManager) {
+                console.error('ShortcutsManager not available');
+                return [];
+            }
+
+            const grouped = shortcutsManager.getShortcutsByDomain();
+            const stats = shortcutsManager.getStorageStats();
+
+            // Update stats badge
+            const statsElement = document.getElementById('shortcuts-stats-3973e68c');
+            if (statsElement) {
+                statsElement.textContent = stats.totalShortcuts;
+            }
+
+            return grouped;
+        } catch (error) {
+            console.error('Error loading shortcuts:', error);
+            return {};
+        }
+    }
+    ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["28514db42c02c475305b81dea5d5e8e93bce4250fc12dac33318d36132e8ef0b"] = 
+    function(clicks) {
+        if (clicks && clicks > 0) {
+            // This will be handled by the clientside click handler
+            return window.dash_clientside.no_update;
+        }
+        return window.dash_clientside.no_update;
+    }
+    ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["28514db42c02c475305b81dea5d5e8e93bce4250fc12dac33318d36132e8ef0b"] = 
+    function(clicks) {
+        if (clicks && clicks > 0) {
+            // This will be handled by the clientside click handler
+            return window.dash_clientside.no_update;
+        }
+        return window.dash_clientside.no_update;
+    }
+    ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["3f62a6befb6592ac8f0bd3666957ac3ba2c821584ebfdbd7319f3bd9ed163f29"] = 
+    function(n_clicks, is_open) {
+        // If opening the modal, trigger data loading
+        if (!is_open && n_clicks > 0) {
+            setTimeout(() => {
+                const trigger = document.getElementById('customize-tabs-trigger');
+                if (trigger) {
+                    trigger.innerHTML = Date.now().toString();
+                }
+            }, 100);
+        }
+        return !is_open;
+    }
+    ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["88454cfaa800a987caf9313f99f742e338c692a5ac42b6f3f8f53c78c75e8934"] = 
+    function(trigger) {
+        try {
+            const tabManager = window.tabPreferencesManager;
+            if (!tabManager) {
+                console.error('TabPreferencesManager not available');
+                return [];
+            }
+
+            const allTabs = tabManager.defaultTabs;
+            const visibility = tabManager.getVisibility();
+            const order = tabManager.getOrder();
+
+            // Update stats
+            const statsDiv = document.getElementById('customize-tabs-stats-cc4692b4');
+            if (statsDiv) {
+                const totalTabs = allTabs.length;
+                const visibleCount = tabManager.getVisibleTabCount();
+                statsDiv.innerHTML = `
+                    <strong>${visibleCount}</strong> of ${totalTabs} tabs visible
+                `;
+            }
+
+            // Generate tab items in order
+            const tabItems = allTabs.map((tab, index) => {
+                const isVisible = visibility[tab.id] || false;
+                const orderIndex = order.indexOf(tab.id);
+                return {
+                    tab_id: tab.id,
+                    tab_label: tab.label,
+                    tab_icon: tab.icon,
+                    is_visible: isVisible,
+                    index: orderIndex >= 0 ? orderIndex : 999
+                };
+            }).sort((a, b) => a.index - b.index);
+
+            return tabItems;
+
+        } catch (error) {
+            console.error('Error loading tabs for customization:', error);
+            return [];
+        }
+    }
+    ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["455a62b0226e89d11586dc42044ad1f6a6f5c5e6c2c305c23b524f2e23722fd0"] = 
+    function(save_clicks, cancel_clicks, reset_clicks, is_open, trigger) {
+        const ctx = window.dash_clientside.callback_context;
+
+        if (!ctx || !ctx.triggered) {
+            return window.dash_clientside.no_update;
+        }
+
+        const trigger_id = ctx.triggered[0]['prop_id'].split('.')[0];
+
+        if (trigger_id === 'save-tabs-btn-0bd24824') {
+            // Collect visibility settings
+            const visibility = {};
+            const tabItems = document.querySelectorAll('[id^="customize-tab-"]');
+
+            tabItems.forEach(item => {
+                const tabId = item.getAttribute('data-tab-id');
+                const switchElement = item.querySelector('input[type="checkbox"]');
+                const isVisible = switchElement ? switchElement.checked : false;
+                visibility[tabId] = isVisible;
+            });
+
+            // Get current order
+            const order = Array.from(document.querySelectorAll('[id^="customize-tab-"]'))
+                .map(item => item.getAttribute('data-tab-id'));
+
+            // Save preferences
+            try {
+                const tabManager = window.tabPreferencesManager;
+                const success = tabManager.savePreferences(visibility, order);
+
+                if (success) {
+                    // Show success message
+                    const successAlert = document.createElement('div');
+                    successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                    successAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+                    successAlert.innerHTML = `
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Success!</strong> Tab preferences saved.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(successAlert);
+
+                    // Auto-remove after 3 seconds
+                    setTimeout(() => {
+                        if (successAlert.parentNode) {
+                            successAlert.parentNode.removeChild(successAlert);
+                        }
+                    }, 3000);
+
+                    // Close modal
+                    return false;
+                } else {
+                    throw new Error('Failed to save tab preferences');
+                }
+            } catch (error) {
+                console.error('Error saving tab preferences:', error);
+
+                // Show error message
+                const errorAlert = document.createElement('div');
+                errorAlert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+                errorAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+                errorAlert.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> ${error.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(errorAlert);
+
+                setTimeout(() => {
+                    if (errorAlert.parentNode) {
+                        errorAlert.parentNode.removeChild(errorAlert);
+                    }
+                }, 5000);
+
+                return is_open; // Keep modal open on error
+            }
+
+        } else if (trigger_id === 'reset-tabs-btn-f8426283') {
+            // Confirm reset
+            const confirmed = confirm('Are you sure you want to reset all tabs to their default configuration?');
+
+            if (confirmed) {
+                try {
+                    const tabManager = window.tabPreferencesManager;
+                    const success = tabManager.resetToDefault();
+
+                    if (success) {
+                        // Reload tab display
+                        const trigger = document.getElementById('customize-tabs-trigger');
+                        if (trigger) {
+                            trigger.innerHTML = Date.now();
+                        }
+
+                        // Show success message
+                        const successAlert = document.createElement('div');
+                        successAlert.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+                        successAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+                        successAlert.innerHTML = `
+                            <i class="fas fa-undo me-2"></i>
+                            <strong>Reset!</strong> Tab preferences reset to defaults.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.body.appendChild(successAlert);
+
+                        setTimeout(() => {
+                            if (successAlert.parentNode) {
+                                successAlert.parentNode.removeChild(successAlert);
+                            }
+                        }, 3000);
+
+                        return false; // Keep modal open to see changes
+                    } else {
+                        throw new Error('Failed to reset tab preferences');
+                    }
+                } catch (error) {
+                    console.error('Error resetting tab preferences:', error);
+
+                    const errorAlert = document.createElement('div');
+                    errorAlert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+                    errorAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+                    errorAlert.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Error:</strong> ${error.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(errorAlert);
+
+                    setTimeout(() => {
+                        if (errorAlert.parentNode) {
+                            errorAlert.parentNode.removeChild(errorAlert);
+                        }
+                    }, 5000);
+
+                    return is_open;
+                }
+            } else {
+                return is_open; // User cancelled, keep modal open
+            }
+        } else if (trigger_id === 'cancel-tabs-btn-8eb8cbb0') {
+            return false; // Close modal
+        }
+
+        return is_open;
+    }
+    ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["b2bc107b6c0f920bab40eb605ec1acb6a1b7ef543b0f9070932f0fe4a02a240a"] = 
+        function(itemsPerPage) {
+            // Save preference to localStorage using ItemsPerPageManager
+            if (typeof window.itemsPerPageManager !== 'undefined') {
+                window.itemsPerPageManager.applyPreference(
+                    'videos',
+                    itemsPerPage,
+                    function(tab, value) {
+                        console.log(`Items per page updated for ${tab}: ${value}`);
+                        // Trigger a content refresh if needed
+                        if (typeof window.refreshTabContent === 'function') {
+                            window.refreshTabContent(tab, value);
+                        }
+                    }
+                );
+            }
+            return itemsPerPage;
+        }
+        ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["165409db762fbe94204741ce46e04e7dd4d081aa5c494afa3c77b531acf4033a"] = 
+        function(itemsPerPage) {
+            // Save preference to localStorage using ItemsPerPageManager
+            if (typeof window.itemsPerPageManager !== 'undefined') {
+                window.itemsPerPageManager.applyPreference(
+                    'arxiv',
+                    itemsPerPage,
+                    function(tab, value) {
+                        console.log(`Items per page updated for ${tab}: ${value}`);
+                        // Trigger a content refresh if needed
+                        if (typeof window.refreshTabContent === 'function') {
+                            window.refreshTabContent(tab, value);
+                        }
+                    }
+                );
+            }
+            return itemsPerPage;
+        }
+        ;
+})();
+</script>
+<script>
+(function() {
+    var clientside = window.dash_clientside = window.dash_clientside || {};
+    var ns = clientside["_dashprivate_clientside_funcs"] = clientside["_dashprivate_clientside_funcs"] || {};
+    ns["8483aa3691f87dca1af2089954ea62ece79ec0d4582359c1233acf9a4f73a5ef"] = 
+    function(n_clicks) {
+        try {
+            // Wait for the page to fully load and tab preferences to be available
+            setTimeout(() => {
+                applyTabPreferences();
+            }, 1000);
+
+            return window.dash_clientside.no_update;
+        } catch (error) {
+            console.error('Error in dynamic tab generation callback:', error);
+            return window.dash_clientside.no_update;
+        }
+    }
+
+    function applyTabPreferences() {
+        try {
+            // Initialize tab preferences if not available
+            if (!window.tabPreferencesManager) {
+                console.warn('TabPreferencesManager not available, will retry...');
+                setTimeout(applyTabPreferences, 1000);
+                return;
+            }
+
+            // Get visible tabs based on user preferences
+            const visibleTabs = window.tabPreferencesManager.getVisibleTabs();
+
+            if (!visibleTabs || visibleTabs.length === 0) {
+                console.warn('No visible tabs found, using default configuration');
+                return;
+            }
+
+            // Hide tabs that are not in the visible list
+            const allTabElements = document.querySelectorAll('#dashboard-tabs [tab_id]');
+            const visibleTabIds = new Set(visibleTabs.map(tab => tab.id));
+
+            allTabElements.forEach(tabElement => {
+                const tabId = tabElement.getAttribute('tab_id');
+                if (!visibleTabIds.has(tabId)) {
+                    tabElement.style.display = 'none';
+                } else {
+                    tabElement.style.display = '';
+                }
+            });
+
+            // Reorder tabs to match user preferences
+            const tabsContainer = document.querySelector('#dashboard-tabs .nav-tabs');
+            if (tabsContainer) {
+                const tabItems = Array.from(tabsContainer.children);
+
+                // Sort tab items according to user preference order
+                tabItems.sort((a, b) => {
+                    const aTabId = a.getAttribute('tab_id');
+                    const bTabId = b.getAttribute('tab_id');
+
+                    const aIndex = visibleTabs.findIndex(tab => tab.id === aTabId);
+                    const bIndex = visibleTabs.findIndex(tab => tab.id === bTabId);
+
+                    return aIndex - bIndex;
+                });
+
+                // Re-append sorted items to maintain order
+                tabItems.forEach(tabItem => {
+                    tabsContainer.appendChild(tabItem);
+                });
+            }
+
+            console.log('Tabs dynamically generated based on preferences:', visibleTabs.map(t => t.id));
+
+        } catch (error) {
+            console.error('Error applying tab preferences:', error);
+        }
+    }
+    ;
+})();
+</script>
+            <script id="_dash-renderer" type="application/javascript">var renderer = new DashRenderer();</script>
+        </footer>
+    </body>
+</html>

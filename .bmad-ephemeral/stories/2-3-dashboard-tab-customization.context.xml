@@ -1,0 +1,84 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>3</storyId>
+    <title>Dashboard Tab Customization</title>
+    <status>drafted</status>
+    <generatedAt>2025-01-16</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\2-3-dashboard-tab-customization.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to control which tabs are visible and their order</iWant>
+    <soThat>I only see domains I care about in my preferred sequence</soThat>
+    <tasks>- Store tab preferences in browser localStorage
+- Format: {tab_visibility: {videos: true, papers: true, ...}, tab_order: ["videos", "papers", ...]}
+- Dynamically generate tab bar based on preferences
+- Modal or offcanvas for customization UI
+- Default configuration includes all tabs in alphabetical order</tasks>
+  </story>
+
+  <acceptanceCriteria>- Given I open the dashboard, when I click "Customize Tabs" in settings, then I see a list of all available tabs with toggle switches
+- And I can hide/show tabs
+- And I can drag to reorder tabs
+- When I save my preferences, then only visible tabs appear in my preferred order
+- And preferences persist across sessions
+- And I can reset to default tab configuration</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Success Criteria" snippet="Primary Success Metrics include Extensibility Achievement - New data source integration takes <30 minutes from concept to dashboard. Daily Usage & Indispensability - You stop checking individual sources directly because Megalith has it all."/>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Dashboard Framework: Dash 2.x with Bootstrap components, UI Components: Bootstrap 5 with dash-bootstrap-components 1.x. Responsive design with fluid containers and mobile-ready layouts. Performance: Built-in Python tools (@lru_cache, difflib) before external dependencies."/>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 2.3: Dashboard Tab Customization" snippet="Store tab preferences in browser localStorage, Format: {tab_visibility: {videos: true, papers: true, ...}, tab_order: ["videos", "papers", ...]}, Dynamically generate tab bar based on preferences, Modal or offcanvas for customization UI"/>
+      <doc path=".bmad-ephemeral/stories/2-1-saved-filter-presets.context.xml" title="Story 2.1 Context" section="Dependencies" snippet="Uses localStorage API for client-side storage integration patterns that tab customization can build upon"/>
+      <doc path=".bmad-ephemeral/stories/2-2-personal-source-shortcuts.context.xml" title="Story 2.2 Context" section="Dependencies" snippet="Builds on localStorage patterns and Bootstrap modal/offcanvas components from shortcuts implementation"/>
+    </docs>
+    <code>
+      <artifact path="src/web/dashboard/app.py" kind="application" symbol="Tab Structure" lines="90-150" reason="Main tab bar generation that needs to be made dynamic based on user preferences"/>
+      <artifact path="src/web/dashboard/app.py" kind="application" symbol="Dashboard Tabs" lines="95-120" reason="dbc.Tabs component structure that needs to be dynamically generated with user-defined order and visibility"/>
+      <artifact path="src/web/dashboard/components/videos_tab.py" kind="component" symbol="Tab Registration" lines="1-50" reason="Tab component that needs to be registered for visibility controls in customization UI"/>
+      <artifact path="src/web/dashboard/components/arxiv_research_tab.py" kind="component" symbol="Tab Rendering" lines="189-220" reason="Example tab rendering function that will be affected by visibility and ordering preferences"/>
+      <artifact path="src/web/dashboard/components/courses_tab.py" kind="component" symbol="Tab Components" lines="1-50" reason="Collection of tab components that need to be included in customization interface"/>
+    </code>
+    <dependencies>
+      <ecosystem name="python" packages="dash>=2.0.0, dash-bootstrap-components>=1.0.0, dash-sortable>=0.1.0"/>
+      <ecosystem name="javascript" packages="localStorage API, HTML5 Drag & Drop API, SortableJS library, CSS transitions"/>
+      <ecosystem name="dev" packages="pytest>=7.0, playwright>=1.51.0, pytest-cov>=4.1.0"/>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="user-experience">Tab customization changes must apply immediately without page refresh when saved</constraint>
+    <constraint type="data-integrity">Corrupted localStorage tab preferences must fallback to default configuration</constraint>
+    <constraint type="accessibility">Tab customization UI must be fully keyboard accessible with proper ARIA labels</constraint>
+    <constraint type="ui-consistency">Drag-and-drop reordering must use consistent visual feedback and styling</constraint>
+    <constraint type="performance">Dynamic tab generation must not slow down initial dashboard load time</constraint>
+    <constraint type="mobile">Tab customization must work on mobile devices with appropriate UI adaptations</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="TabPreferencesManager" kind="JavaScript utility" signature="class TabPreferencesManager: savePreferences(visibility, order), loadPreferences(), resetToDefault()" path="src/web/dashboard/assets/js/tab_preferences.js"/>
+    <interface name="CustomizeTabsModal" kind="Dash component" signature="dbc.Modal(id='customize-tabs-modal', title='Customize Dashboard Tabs', size='lg')" path="src/web/dashboard/components/customize_tabs.py"/>
+    <interface name="TabVisibilityToggle" kind="Dash component" signature="dbc.Switch(id='tab-{tab_name}-visibility', label='{display_name}', value=True)" path="src/web/dashboard/components/customize_tabs.py"/>
+    <interface name="TabOrderContainer" kind="JavaScript component" signature="div.sortable-tabs-container with SortableJS integration" path="src/web/dashboard/assets/js/tab_reorder.js"/>
+    <interface name="DynamicTabGenerator" kind="Dash component" signature="def generate_tabs(preferences): return dbc.Tabs(children=[dynamic_tab_list])" path="src/web/dashboard/app.py"/>
+  </interfaces>
+  <tests>
+    <standards>UI testing for tab customization modal and drag-and-drop functionality. localStorage testing for preference persistence and recovery. Cross-browser testing for dynamic tab generation. Accessibility testing for keyboard navigation and screen reader compatibility.</standards>
+    <locations>
+      <location path="Tests/e2e/test_tab_customization.py"/>
+      <location path="Tests/ui/test_customize_modal.py"/>
+      <location path="Tests/integration/test_dynamic_tabs.py"/>
+      <location path="Tests/accessibility/test_tab_a11y.py"/>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.3.1">Test: Click "Customize Tabs" and verify modal shows all available tabs with correct toggle states</idea>
+      <idea ac="AC-2.3.2">Test: Hide tabs and save, then verify only visible tabs appear in main dashboard</idea>
+      <idea ac="AC-2.3.3">Test: Drag tabs to reorder, save preferences, and verify order persists after page refresh</idea>
+      <idea ac="AC-2.3.4">Test: Reset to default and verify all tabs return to alphabetical order with visibility restored</idea>
+      <idea ac="AC-2.3.5">Test: Test with minimum tabs visible (1-2) to ensure dashboard remains functional</idea>
+      <idea ac="accessibility">Test: Navigate customization modal using keyboard only, verify proper focus management and ARIA announcements</idea>
+    </ideas>
+  </tests>
+</story-context>

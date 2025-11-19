@@ -1,0 +1,76 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>1</storyId>
+    <title>Usage-Based Recommendations</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\8-1-usage-based-recommendations.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>content recommendations based on my reading patterns</iWant>
+    <soThat>I discover relevant content I might miss</soThat>
+    <tasks>1. Create UserActivityTracker service to monitor user interactions (AC: 1, 2)
+2. Develop RecommendationEngine with simple heuristic algorithms (AC: 2, 3)
+3. Integrate recommendations into dashboard UI components (AC: 1, 4, 5)
+4. **Testing** - Create comprehensive test suite for recommendation system
+5. **Documentation** - Add user guide for recommendation features</tasks>
+  </story>
+
+  <acceptanceCriteria>1. Given I've been using Megalith for >1 week, When I view any dashboard tab, Then I see a "Recommended for You" section
+2. And recommendations include: sources I read most, categories I engage with, similar content to what I've clicked
+3. And recommendations update daily based on last 30 days of activity
+4. And I can dismiss recommendations
+5. And I can provide feedback (helpful/not helpful)</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 8.1: Usage-Based Recommendations" snippet="Track user interactions: clicks, time spent, sources viewed. Store in data/users/{user_id}/activity_log.json. Simple recommendation algorithm: 1. Top 5 sources by click count, 2. Top 3 categories by engagement, 3. Content similar to recently clicked items (title similarity)"/>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Data Storage Patterns" snippet="File-based JSON storage for user activity and recommendations. Integration with existing dashboard component system. Performance: Must handle user activity logging without blocking dashboard rendering"/>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="Intelligence Features" snippet="Personalized content discovery engine that learns from user behavior patterns"/>
+    </docs>
+    <code>
+      <code path="src/alerts/models.py" kind="models" symbol="TimeRange, AlertRule, AlertEvent" lines="17-30" reason="Pydantic model patterns to follow for UserActivity and Recommendation models"/>
+      <code path="src/etl/base.py" kind="base" symbol="BaseETL" lines="1-30" reason="Existing patterns for JSON file storage, logging, and error handling"/>
+      <code path="src/web/dashboard/app.py" kind="app" symbol="dash application setup" lines="1-30" reason="Integration patterns for new recommendation components"/>
+      <code path="src/web/dashboard/components/deals_tab.py" kind="component" symbol="deal dashboard tab" lines="1-30" reason="Component structure and search/filtering patterns to reuse"/>
+    </code>
+    <dependencies>
+      <dependency ecosystem="python" packages="pydantic>=2.0" purpose="Data validation and models"/>
+      <dependency ecosystem="python" packages="dash, dash-bootstrap-components" purpose="UI components"/>
+      <dependency ecosystem="python" packages="pytest" purpose="Testing framework"/>
+      <dependency ecosystem="python" packages="schedule" purpose="Daily background job scheduling"/>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Must preserve &lt;30-minute source integration capability [Source: docs/architecture.md#Decision-Summary]</constraint>
+    <constraint type="storage">Use file-based JSON storage consistent with existing patterns [Source: docs/architecture.md#Data-Storage-Patterns]</constraint>
+    <constraint type="performance">Non-blocking background jobs to preserve dashboard performance</constraint>
+    <constraint type="privacy">Per-user data isolation with appropriate access controls</constraint>
+    <constraint type="testing">70%+ test coverage using pytest with fixtures and mocks</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="UserActivityTracker" kind="class" signature="track_interaction(user_id: str, action: str, content_id: str, metadata: dict)" path="src/recommendations/activity_tracker.py"/>
+    <interface name="RecommendationEngine" kind="class" signature="generate_recommendations(user_id: str) -> List[Recommendation]" path="src/recommendations/recommendation_engine.py"/>
+    <interface name="RecommendationsTab" kind="component" signature="render_recommendations_tab(user_id: str) -> html.Div" path="src/web/dashboard/components/recommendations_tab.py"/>
+    <interface name="ActivityEvent" kind="model" signature="ActivityEvent(user_id: str, action: str, content_id: str, timestamp: datetime, metadata: dict)" path="src/recommendations/models.py"/>
+  </interfaces>
+
+  <tests>
+    <standards>Follow existing pytest patterns with >70% coverage target. Test files in Tests/recommendations/ with comprehensive coverage of user activity tracking, recommendation algorithms, dashboard integration, and performance. Use mocking for external dependencies.</standards>
+    <locations>Tests/recommendations/test_activity_tracker.py, Tests/recommendations/test_recommendation_engine.py, Tests/recommendations/test_recommendations_tab.py</locations>
+    <ideas>
+      <test idea="Test UserActivityTracker accuracy with various interaction types" ac="1,2"/>
+      <test idea="Test recommendation algorithms produce expected top sources/categories" ac="2,3"/>
+      <test idea="Test dashboard component displays recommendations correctly" ac="1,4,5"/>
+      <test idea="Test dismiss functionality removes recommendations from display" ac="4"/>
+      <test idea="Test feedback mechanism stores and utilizes user feedback" ac="5"/>
+      <test idea="Test daily background job refresh without blocking" ac="3"/>
+    </ideas>
+  </tests>
+</story-context>

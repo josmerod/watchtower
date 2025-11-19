@@ -1,0 +1,81 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>3</storyId>
+    <title>Basic Full-Text Search</title>
+    <status>drafted</status>
+    <generatedAt>2025-01-16</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\1-3-basic-full-text-search.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to search across all content in current dashboard tab</iWant>
+    <soThat>I can quickly find specific articles, papers, or deals</soThat>
+    <tasks>- Add search input component to each tab layout
+- Implement client-side filtering using Dash callbacks
+- Use case-insensitive substring matching (no complex indexing needed)
+- Highlight matches using HTML `<mark>` tags
+- Search state persists within session per tab
+- Ensure search works with existing filter combinations</tasks>
+  </story>
+
+  <acceptanceCriteria>- Given I'm viewing any dashboard tab with content, when I type a search query in the search box, then results update in real-time (<1 second)
+- And search matches against: title, description, source name, tags/categories
+- And matching terms are highlighted in results
+- And I can clear search with one click
+- And search works within already-filtered results</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Success Criteria" snippet="Dashboard Performance target: Dashboard loads in <2 seconds with 1,500+ items. Page load times, interaction responsiveness. No waiting, instant domain switching."/>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Dashboard Framework: Dash 2.x with Bootstrap components, UI Components: Bootstrap 5 with dash-bootstrap-components 1.x, Performance: Built-in Python tools (@lru_cache, difflib) before external dependencies"/>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 1.3: Basic Full-Text Search" snippet="Add search input component to each tab layout, Implement client-side filtering using Dash callbacks, Use case-insensitive substring matching, Highlight matches using HTML `<mark>` tags"/>
+      <doc path=".bmad-ephemeral/stories/tech-spec-epic-1.md" title="Epic 1 Technical Specification" section="APIs and Interfaces" snippet="Search Component Interface - Dash callback signature with Input/Output for search filtering, Client-side only (no data sent to external services), Case-insensitive substring matching"/>
+    </docs>
+    <code>
+      <artifact path="src/web/dashboard/components/videos_tab.py" kind="component" symbol="VideoManager" lines="16-50" reason="Example of dashboard tab component with data loading and filtering patterns that search should integrate with"/>
+      <artifact path="src/web/dashboard/components/arxiv_research_tab.py" kind="component" symbol="ArXivTab" lines="1-50" reason="Existing tab component with data management and display patterns for search integration"/>
+      <artifact path="src/web/dashboard/components/deals_tab.py" kind="component" symbol="DealsTab" lines="1-50" reason="Example tab component where search functionality will be added"/>
+      <artifact path="src/web/dashboard/components/news_tab.py" kind="component" symbol="NewsTab" lines="1-50" reason="High-traffic tab component that will benefit from search functionality"/>
+      <artifact path="src/web/dashboard/components/courses_tab.py" kind="component" symbol="CoursesTab" lines="1-50" reason="Educational content tab where search will help users find specific courses"/>
+      <artifact path="src/web/dashboard/app.py" kind="application" symbol="Dashboard Tabs" lines="90-150" reason="Main tab structure where search components need to be integrated across all tabs"/>
+    </code>
+    <dependencies>
+      <ecosystem name="python" packages="dash>=2.0.0, dash-bootstrap-components>=1.0.0, pandas>=2.2.3"/>
+      <ecosystem name="dev" packages="playwright>=1.51.0, pytest>=7.0, pytest-cov>=4.1.0"/>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="performance">Search performance must handle 10,000+ items per tab with <1 second response time</constraint>
+    <constraint type="compatibility">Search must work within existing filter combinations (source, date range, category filters)</constraint>
+    <constraint type="architecture">Client-side only search (no server-side indexing) to maintain simplicity</constraint>
+    <constraint type="user-experience">Search state persists within session per tab, not across tabs</constraint>
+    <constraint type="ui-consistency">Search input components use Bootstrap styling consistent with existing dashboard theme</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="SearchInput" kind="Dash component" signature="dbc.Input(placeholder='Search...', id='tab-search-input', type='text')" path="src/web/dashboard/components/"/>
+    <interface name="SearchCallback" kind="Dash callback" signature="@app.callback(Output('filtered-content', 'data'), Input('search-input', 'value'), State('tab-content', 'data'))" path="src/web/dashboard/components/"/>
+    <interface name="highlight_matches" kind="function" signature="def highlight_matches(text: str, query: str) -> str: return re.sub(query, f'<mark>{query}</mark>', text, flags=re.IGNORECASE)" path="src/web/dashboard/components/"/>
+    <interface name="filter_content" kind="function" signature="def filter_content(search_query: str, content: List[Dict]) -> List[Dict]" path="src/web/dashboard/components/"/>
+  </interfaces>
+  <tests>
+    <standards>Search functionality tested using Playwright for UI interaction and real-time filtering. Performance testing verifies sub-second response times with 10K items. Cross-browser compatibility testing ensures consistent behavior across Chrome, Firefox, Safari.</standards>
+    <locations>
+      <location path="Tests/e2e/test_search_interaction.py"/>
+      <location path="Tests/performance/test_search_performance.py"/>
+      <location path="Tests/ui/test_search_highlighting.py"/>
+      <location path="Tests/integration/test_search_with_filters.py"/>
+    </locations>
+    <ideas>
+      <idea ac="AC-1.3.1">Test: Type search query in 4 tabs and verify real-time filtering updates results within 1 second</idea>
+      <idea ac="AC-1.3.2">Test: Search with sample data and verify matches are found in title, description, source name, and tags/categories</idea>
+      <idea ac="AC-1.3.3">Test: Verify HTML `<mark>` tags are applied correctly to highlight matching terms in results</idea>
+      <idea ac="AC-1.3.4">Test: Click clear search button and verify all content returns to unfiltered state and search input is emptied</idea>
+      <idea ac="AC-1.3.5">Test: Apply existing filters first (e.g., source filter), then search and verify search operates on pre-filtered results</idea>
+      <idea ac="performance">Test: Load 10,000 items and verify search performance remains under 1 second for various query lengths</idea>
+    </ideas>
+  </tests>
+</story-context>

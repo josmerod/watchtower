@@ -1,0 +1,113 @@
+<story-context id="{bmad_folder}/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>2</storyId>
+    <title>Simple Trend Indicators</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\8-2-simple-trend-indicators.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to see trending topics and increasing activity</iWant>
+    <soThat>I'm aware of emerging trends</soThat>
+    <tasks>- [ ] Create TrendAnalyzer service in `src/analytics/trends.py` (AC: 2, 3)
+  - [ ] Implement 7-day rolling window trend analysis
+  - [ ] Calculate item count increase per category
+  - [ ] Calculate category growth rates
+  - [ ] Analyze keyword frequency changes
+  - [ ] Apply >30% increase threshold for trending status
+
+- [ ] Create Pydantic models for trend data (AC: 1, 5)
+  - [ ] TrendIndicator model with trend_direction and percentage_change
+  - [ ] TrendAnalysis model with metrics and confidence intervals
+  - [ ] TrendBadge model for UI display information
+
+- [ ] Implement daily background trend calculation job (AC: 3)
+  - [ ] Create TrendScheduler for daily execution
+  - [ ] Store trend data in `data/analytics/trends/{date}_trends.json`
+  - [ ] Calculate trends for all content categories
+  - [ ] Apply trend detection algorithms
+
+- [ ] Integrate trend indicators into dashboard UI (AC: 1, 4, 5)
+  - [ ] Add "🔥 Trending" badges to content cards
+  - [ ] Add "Trending" filter option to each tab
+  - [ ] Display % change indicators on trending items
+  - [ ] Implement single-callback pattern for trend filtering
+
+- [ ] **Testing** - Create comprehensive test suite for trend system
+  - [ ] Unit tests for TrendAnalyzer algorithms
+  - [ ] Unit tests for trend calculation accuracy
+  - [ ] Integration tests for dashboard component display
+  - [ ] Performance tests for daily trend generation
+
+- [ ] **Documentation** - Add user guide for trend features
+  - [ ] Document how trends are calculated and displayed
+  - [ ] Explain filtering options and badge meanings
+  - [ ] Add troubleshooting guide for trend issues</tasks>
+  </story>
+
+  <acceptanceCriteria>1. **Given** content is being aggregated
+   **When** I view any dashboard tab
+   **Then** trending items are marked with "🔥 Trending" badge
+
+2. **And** trend calculation uses: item count increase, category growth, keyword frequency changes
+
+3. **And** trends are calculated over 7-day rolling window
+
+4. **And** I can filter to show only trending content
+
+5. **And** trend indicators show % change (e.g., "+40% this week")</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Hybrid Storage: SQLite for users/preferences, file-based JSON for data sources. Performance: Built-in Python tools (@lru_cache, difflib) before external dependencies" />
+      <doc path="docs/architecture.md" title="Architecture Document" section="Project Structure" snippet="src/analytics/ - Intelligence features (NEW - Epic 8), src/analytics/trends.py - Trend detection" />
+      <doc path="docs/epics.md" title="Epic 8: Complete Intelligence Platform" section="Simple Trend Indicators" snippet="Implement trend indicators with 7-day rolling window analysis and >30% increase threshold" />
+    </docs>
+    <code>
+      <code path="src/analytics/technology_adoption.py" kind="analytics module" symbol="TechnologyAdoptionAnalyzer" lines="1-100" reason="Existing analytics framework pattern for trend analysis" />
+      <code path="src/web/dashboard/components/github_trending_tab.py" kind="dashboard component" symbol="GitHubTrendingTab" lines="1-50" reason="Existing trend display patterns and data loading approaches" />
+      <code path="src/web/dashboard/components/filter_presets.py" kind="reusable component" symbol="FilterPresetsComponent" lines="15-80" reason="Single-callback pattern and localStorage integration for trend filtering" />
+      <code path="src/web/dashboard/utils.py" kind="utility" symbol="get_data_path, parse_date_universal" lines="1-50" reason="Existing data loading and date parsing utilities for trend data" />
+    </code>
+    <dependencies>
+      <python version="3.10+">
+        <package name="dash" version="2.0+" scope="dashboard-framework" />
+        <package name="dash-bootstrap-components" version="1.0+" scope="ui-components" />
+        <package name="pandas" version="2.x" scope="data-processing" />
+        <package name="polars" version="0.20.x" scope="high-performance-operations" />
+        <package name="pydantic" version="2.11.5+" scope="data-validation" />
+        <package name="pytest" version="7.0+" scope="testing" />
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+  <constraint type="architecture">File-based JSON storage for trend data to preserve existing patterns [Source: docs/architecture.md]</constraint>
+  <constraint type="performance">Must handle trend calculation without blocking dashboard rendering - use background jobs</constraint>
+  <constraint type="integration">Follow single-callback pattern for dashboard components to prevent duplicate output errors</constraint>
+  <constraint type="real-time">Daily background job for trend calculation with 7-day rolling window</constraint>
+  <constraint type="threshold">Apply >30% increase threshold for trending status detection</constraint>
+  <constraint type="testing">Maintain >70% test coverage with pytest patterns following established project standards</constraint>
+</constraints>
+  <interfaces>
+    <interface name="TrendAnalyzer" kind="class" signature="class TrendAnalyzer: def calculate_trends(self, data: List[Dict]) -> List[TrendIndicator]" path="src/analytics/trends.py" />
+    <interface name="TrendIndicator" kind="pydantic model" signature="class TrendIndicator(BaseModel): trend_direction: str, percentage_change: float, confidence: float" path="src/analytics/models.py" />
+    <interface name="TrendScheduler" kind="background job" signature="def run_daily_trend_analysis() -> None" path="utils/trend_scheduler.py" />
+    <interface name="dashboard component" kind="dash callback" signature="@app.callback(Output('trend-content', 'children'), [Input('trend-filter', 'value')])" path="src/web/dashboard/components/trend_filter.py" />
+  </interfaces>
+  <tests>
+    <standards>Follow existing pytest patterns with fixtures and mocks. Maintain >70% coverage target. Use existing testing patterns: test_trend_analyzer.py, test_trends_dashboard.py, test_scheduler.py with mocking for external dependencies.</standards>
+    <locations>Tests/analytics/ - Analytics-specific tests including trend algorithms, accuracy validation, and performance benchmarks. Tests/integration/ for dashboard component integration testing.</locations>
+    <ideas>
+      <idea ac="AC-1, AC-5">Test: Verify trend badges display correctly with proper % change indicators on dashboard components</idea>
+      <idea ac="AC-2">Test: Unit test TrendAnalyzer.calculate_trends() with mock data for 7-day rolling window accuracy</idea>
+      <idea ac="AC-3">Test: Integration test for TrendScheduler daily execution and JSON file output</idea>
+      <idea ac="AC-4">Test: End-to-end test for trend filtering functionality and user workflow</idea>
+      <idea ac="Performance">Test: Performance benchmark for trend calculation on large datasets (100K+ items)</idea>
+    </ideas>
+  </tests>
+</story-context>
