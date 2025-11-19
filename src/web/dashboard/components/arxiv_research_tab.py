@@ -220,6 +220,10 @@ def create_papers_table(df_subset):
                     style={"max-width": "250px"}
                 ),
                 html.Td(
+                    create_trend_badge(paper.to_dict(), trending_items),
+                    className="text-nowrap"
+                ),
+                html.Td(
                     shortcut_btn,
                     className="text-nowrap"
                 )
@@ -1003,6 +1007,48 @@ def register_arxiv_callbacks(app):
 
     # Register client-side callback for items-per-page preference saving
     register_items_per_page_callback("arxiv")
+
+    # Register trend filter callbacks (Story 8.2: Simple Trend Indicators)
+    @app.callback(
+        Output("arxiv-trend-filter-store", "data"),
+        Output("arxiv-trend-filter-btn", "children"),
+        Output("arxiv-trend-filter-btn", "color"),
+        Output("arxiv-trend-filter-btn", "style"),
+        Input("arxiv-trend-filter-btn", "n_clicks"),
+        State("arxiv-trend-filter-store", "data")
+    )
+    def toggle_trend_filter(n_clicks, current_filter):
+        """Toggle trend filter state and button appearance."""
+        if n_clicks is None:
+            # Initial load - check if we have trend data
+            trends_data = load_latest_trends()
+            trending_count = len(trends_data.get('trending_items', []))
+
+            if trending_count > 0:
+                # Show button if we have trend data
+                return current_filter, f"🔥 Trending ({trending_count})", "outline-info", {"display": "block", "fontSize": "0.85em"}
+            else:
+                # Hide button if no trend data
+                return current_filter, "🔥 Trending", "outline-info", {"display": "none"}
+
+        # Toggle filter state
+        show_trending = current_filter.get("show_trending_only", False)
+        new_filter = current_filter.copy()
+        new_filter["show_trending_only"] = not show_trending
+
+        # Update button text and color based on state
+        if new_filter["show_trending_only"]:
+            button_text = "🔥 All Content"
+            button_color = "info"
+            button_style = {"display": "block", "fontSize": "0.85em"}
+        else:
+            trends_data = load_latest_trends()
+            trending_count = len(trends_data.get('trending_items', []))
+            button_text = f"🔥 Trending ({trending_count})"
+            button_color = "outline-info"
+            button_style = {"display": "block", "fontSize": "0.85em"}
+
+        return new_filter, button_text, button_color, button_style
 
 # Load data when module is imported
 load_arxiv_data()
