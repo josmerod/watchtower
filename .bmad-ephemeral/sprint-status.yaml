@@ -132,10 +132,10 @@ development_status:
 
   # Epic 9: Platform Ecosystem & Integrations (6 stories, 4-6 weeks)
   epic-9: backlog
-  9-1-rest-api-foundation: backlog
-  9-2-webhook-support: backlog
-  9-3-slack-discord-integration: backlog
-  9-4-browser-extension-basic: backlog
-  9-5-api-documentation-developer-portal: backlog
-  9-6-email-digest-system: backlog
+  9-1-rest-api-foundation: drafted
+  9-2-webhook-support: drafted
+  9-3-slack-discord-integration: drafted
+  9-4-browser-extension-basic: drafted
+  9-5-api-documentation-developer-portal: drafted
+  9-6-email-digest-system: drafted
   epic-9-retrospective: optional

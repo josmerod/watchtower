@@ -322,7 +322,7 @@ class TrendAnalyzer:
         previous_keywords = self._extract_keywords(previous_content)
 
         trends = []
-        all_keywords = set(recent_keywords.keys()) | set(previous_keywords.keys())
+        all_keywords = dict(list(recent_keywords.items()) + list(previous_keywords.items()))
 
         # Focus on significant keywords (appearing multiple times)
         significant_keywords = {
@@ -639,7 +639,7 @@ class TrendAnalyzer:
 
             # Look for data files in the data directory
             data_path = get_data_path("analytics", "trends")
-            if data_path.exists():
+            if isinstance(data_path, Path) and data_path.exists():
                 # Load recent historical data files
                 for days_back in range(1, 30):  # Look back up to 30 days
                     file_date = current_date - timedelta(days=days_back)
