@@ -127,7 +127,10 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
         ]
 
         # Train or load classifier
-        model_path = self.classifier.models_dir / "model.pkl"
+        # Ensure models_dir is a Path object for proper path joining
+        from pathlib import Path
+        models_dir = Path(self.classifier.models_dir)
+        model_path = models_dir / "model.pkl"
         if not model_path.exists():
             self.logger.info("Training new classifier")
             self.classifier.train_classifier(
@@ -339,27 +342,39 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
         for paper in papers:
             cluster_id = paper.get("cluster_id")
             if cluster_id is not None:
+                # Ensure cluster_id is an integer for dictionary key
+                try:
+                    cluster_id = int(cluster_id)
+                except (ValueError, TypeError):
+                    self.logger.warning(f"Invalid cluster_id {cluster_id}, skipping")
+                    continue
                 cluster_counts[cluster_id] = cluster_counts.get(cluster_id, 0) + 1
 
         # Get cluster labels
         cluster_labels = {}
         for paper in papers:
             cluster_id = paper.get("cluster_id")
-            if cluster_id is not None and cluster_id not in cluster_labels:
-                cluster_labels[cluster_id] = paper.get(
-                    "cluster_label", f"Cluster {cluster_id}"
-                )
+            if cluster_id is not None:
+                try:
+                    cluster_id = int(cluster_id)
+                except (ValueError, TypeError):
+                    continue
+                if cluster_id not in cluster_labels:
+                    cluster_labels[cluster_id] = paper.get(
+                        "cluster_label", f"Cluster {cluster_id}"
+                    )
 
-        # Create statistics
+        # Create statistics with type safety
+        total_papers = len(papers)
         statistics = {
-            "total_papers": len(papers),
+            "total_papers": total_papers,
             "total_clusters": len(cluster_counts),
             "clusters": [
                 {
                     "id": cluster_id,
                     "label": cluster_labels.get(cluster_id, f"Cluster {cluster_id}"),
                     "paper_count": count,
-                    "percentage": round(count / len(papers) * 100, 2),
+                    "percentage": round(count / total_papers * 100, 2) if total_papers > 0 else 0.0,
                 }
                 for cluster_id, count in sorted(
                     cluster_counts.items(), key=lambda x: x[1], reverse=True

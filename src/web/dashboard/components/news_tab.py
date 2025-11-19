@@ -1,12 +1,25 @@
 import json
+import logging
 from datetime import datetime, timezone
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import Input, Output, State, html
 
 # Import shared utilities
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+
 from src.web.dashboard.utils import get_data_path, parse_date_universal
+from src.web.dashboard.search_utils import (
+    create_search_input,
+    filter_content,
+    get_common_searchable_fields,
+)
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # --- Data Loading ---
 
@@ -263,8 +276,7 @@ def format_article_date(article):
 
 
 def create_news_source_tab_content(source_keys, combined_name=None):
-    """Creates the content for a news tab as a table, potentially combining multiple sources.
-b as a table, potentially combining multiple sources.
+    """Creates the content for a news tab as a table with search functionality, potentially combining multiple sources.
 
     Sorts articles by date before limiting.
     """
@@ -272,8 +284,10 @@ b as a table, potentially combining multiple sources.
     if isinstance(source_keys, str):  # Single source key
         source_keys = [source_keys]
         source_display_name = NEWS_SOURCES_CONFIG[source_keys[0]]["name"]
+        tab_search_id = f"news-search-{source_keys[0]}"
     else:  # List of source keys (for combined tabs)
         source_display_name = combined_name or "Combined News"
+        tab_search_id = f"news-search-{'-'.join(source_keys)}"
 
     # Load fresh data each time
     all_news_data = get_all_news_data()
@@ -304,9 +318,14 @@ b as a table, potentially combining multiple sources.
 
     all_articles_for_tab.sort(key=get_sortable_date, reverse=True)
 
-    articles_to_display = all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]
+    # Store all articles in a hidden div for search filtering
+    articles_data = html.Div(
+        all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE],
+        id=f"{tab_search_id}-data",
+        style={"display": "none"}
+    )
 
-    if not articles_to_display:
+    if not all_articles_for_tab:
         return dbc.Alert(
             f"No news items available for {source_display_name}.", color="info"
         )
@@ -318,7 +337,7 @@ b as a table, potentially combining multiple sources.
 
     # Create table body with robust field fallbacks for heterogeneous sources
     table_body_rows = []
-    for article in articles_to_display:
+    for article in all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]:
         # Title fallbacks: common across Product Hunt/GitHub Trends/others
         title = (
             article.get("title")
@@ -361,10 +380,165 @@ b as a table, potentially combining multiple sources.
         className="table-responsive mb-0",  # Remove default bottom margin if wrapped in Div with padding
     )
 
-    # Return the table wrapped in a Div for consistent styling (e.g. maxHeight, overflow)
-    return html.Div(
-        table, style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"}
-    )
+    # Return search input and table container
+    return html.Div([
+        # Search input
+        create_search_input(
+            input_id=tab_search_id,
+            placeholder=f"Search {source_display_name}...",
+            clear_button=True
+        ),
+
+        # Hidden data storage for search filtering
+        articles_data,
+
+        # Container for filtered results
+        html.Div(
+            table,
+            id=f"{tab_search_id}-results",
+            style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"}
+        ),
+    ])
+
+
+def register_news_search_callbacks(app):
+    """Register search callbacks for all news tabs."""
+    # Get all unique search IDs from the tab definitions
+    search_ids = [
+        "news-search-techcrunch",
+        "news-search-venturebeat",
+        "news-search-freecodecamp",
+        "news-search-google_ai_blog",
+        "news-search-lobsters",
+        "news-search-arstechnica",
+        "news-search-futuretools-bensbites",
+        "news-search-hackernews",
+        "news-search-medium_genai",
+        "news-search-kdnuggets",
+        "news-search-meneame_general",
+        "news-search-meneame_tecnologia",
+        "news-search-indiehackers",
+        "news-search-kagi_world",
+        "news-search-kagi_usa",
+        "news-search-kagi_business",
+        "news-search-kagi_science",
+        "news-search-kagi_gaming",
+        "news-search-kagi_ai",
+        "news-search-kagi_europe",
+        "news-search-kagi_spain"
+    ]
+
+    for search_id in search_ids:
+        @app.callback(
+            Output(f"{search_id}-results", "children"),
+            Input(search_id, "value"),
+            State(f"{search_id}-data", "children"),
+            prevent_initial_call=True
+        )
+        def update_news_search(search_term, articles_data, current_search_id=search_id):
+            """Update news display based on search term."""
+            try:
+                # Convert articles data back to list if needed
+                if articles_data is None:
+                    return html.Div("No data available")
+
+                # Get searchable fields for news content
+                searchable_fields = get_common_searchable_fields('news')
+
+                # Filter articles based on search term
+                filtered_articles = filter_content(search_term, articles_data, searchable_fields)
+
+                if not filtered_articles:
+                    return dbc.Alert(
+                        f"No articles found matching '{search_term}'",
+                        color="info"
+                    )
+
+                # Create table for filtered results
+                table_header = [
+                    html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")]))
+                ]
+
+                table_body_rows = []
+                for article in filtered_articles:
+                    # Title fallbacks: common across news sources
+                    title = (
+                        article.get("title")
+                        or article.get("name")
+                        or article.get("full_name")
+                        or "No Title"
+                    )
+                    # URL fallbacks
+                    url = (
+                        article.get("url")
+                        or article.get("link")
+                        or article.get("html_url")
+                        or article.get("website")
+                    )
+                    # Use the 'source_display_name' if available
+                    source_for_display = article.get("source_display_name", "Unknown")
+                    date_display = format_article_date(article)
+
+                    table_body_rows.append(
+                        html.Tr(
+                            [
+                                html.Td(
+                                    html.A(
+                                        html.Div(title, dangerously_allow_html=True),
+                                        href=url,
+                                        target="_blank"
+                                    ) if url else html.Div(title, dangerously_allow_html=True)
+                                ),
+                                html.Td(source_for_display),
+                                html.Td(date_display),
+                            ]
+                        )
+                    )
+
+                table_body = [html.Tbody(table_body_rows)]
+
+                # Combine header and body into a dbc.Table
+                table = dbc.Table(
+                    table_header + table_body,
+                    bordered=True,
+                    hover=True,
+                    responsive=True,
+                    striped=True,
+                    size="sm",
+                    color="dark",
+                    className="table-responsive mb-0",
+                )
+
+                return html.Div(
+                    [
+                        dbc.Alert(
+                            f"📰 Found {len(filtered_articles)} articles matching '{search_term}'",
+                            color="success",
+                            className="mb-3",
+                        ),
+                        table
+                    ],
+                    style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"}
+                )
+
+            except Exception as e:
+                logger.error(f"Error in news search callback for {current_search_id}: {e}")
+                return dbc.Alert(
+                    f"Error searching articles: {e}",
+                    color="danger"
+                )
+
+        # Clear search callback
+        @app.callback(
+            Output(search_id, "value", allow_duplicate=True),
+            Input(f"{search_id}-clear", "n_clicks"),
+            prevent_initial_call=True
+        )
+        def clear_news_search(n_clicks):
+            """Clear search input."""
+            if n_clicks:
+                return ""
+            return dash.no_update
 
 
 # Main function to render the news tab

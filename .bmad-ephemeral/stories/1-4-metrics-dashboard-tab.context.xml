@@ -1,0 +1,83 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>4</storyId>
+    <title>Metrics Dashboard Tab</title>
+    <status>drafted</status>
+    <generatedAt>2025-01-16</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\1-4-metrics-dashboard-tab.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer/operator</asA>
+    <iWant>a dashboard tab showing ETL metrics and system health</iWant>
+    <soThat>I can visualize system performance and identify issues</soThat>
+    <tasks>- Create new tab src/web/dashboard/components/metrics_tab.py
+- Use dash-bootstrap-components Table for metrics display
+- Use Plotly for time-series charts
+- Load data from data/metrics/ directory
+- Implement MetricsManager class following VideoManager pattern
+- Add single callback for source selection and error log drill-down</tasks>
+  </story>
+
+  <acceptanceCriteria>- Given metrics data exists from Story 1.1, when I navigate to the "Metrics" dashboard tab, then I see a table of all ETL sources with: name, last run time, items processed, success rate (%), avg duration
+- And I see a chart showing ETL run times over the last 7 days
+- And I see error count per source (last 24 hours)
+- And failed ETLs are highlighted in red
+- And I can click a source to see detailed error logs</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Success Criteria" snippet="Dashboard Performance target: Dashboard loads in <2 seconds with 1,500+ items. Page load times, interaction responsiveness. No waiting, instant domain switching."/>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Data Processing: Pandas 2.x, Polars 0.20.x. High-performance data operations, existing patterns. Performance: Built-in Python tools (@lru_cache, difflib) before external dependencies."/>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 1.4: Metrics Dashboard Tab" snippet="Create new tab src/web/dashboard/components/metrics_tab.py, Use dash-bootstrap-components Table for metrics display, Use Plotly for time-series charts, Implement MetricsManager class following VideoManager pattern"/>
+      <doc path=".bmad-ephemeral/stories/tech-spec-epic-1.md" title="Epic 1 Technical Specification" section="Services and Modules" snippet="MetricsManager class for loading and filtering metrics in dashboard, MetricsTab component for visualizing ETL performance with interactive Plotly charts"/>
+      <doc path=".bmad-ephemeral/stories/1-1-enhanced-metrics-collection.context.xml" title="Story 1.1 Context" section="Dependencies" snippet="Prerequisite: Story 1.1 (needs metrics data) - Enhanced metrics collection infrastructure"/>
+      <doc path=".bmad-ephemeral/stories/1-2-health-check-api-endpoints.context.xml" title="Story 1.2 Context" section="Dependencies" snippet="Prerequisite: Story 1.2 (health calculation logic) - Health Check API Endpoints"/>
+    </docs>
+    <code>
+      <artifact path="src/web/dashboard/components/videos_tab.py" kind="component" symbol="VideoManager" lines="16-50" reason="Data management pattern that MetricsManager should follow for loading and processing metrics data"/>
+      <artifact path="src/web/dashboard/components/crypto_tab.py" kind="component" symbol="Plotly Charts" lines="8-11" reason="Example of Plotly integration for time-series visualization and charts that metrics tab should use"/>
+      <artifact path="src/web/dashboard/components/deals_tab.py" kind="component" symbol="Data Tables" lines="1-50" reason="Example of data table rendering patterns for displaying metrics in tabular format"/>
+      <artifact path="src/etl/base.py" kind="framework" symbol="ETLMetrics" lines="32-65" reason="Data model structure that metrics tab will read and visualize from stored metrics files"/>
+      <artifact path="src/web/dashboard/app.py" kind="application" symbol="Dashboard Tabs" lines="90-150" reason="Main tab structure where new metrics tab needs to be registered and integrated"/>
+    </code>
+    <dependencies>
+      <ecosystem name="python" packages="dash>=2.0.0, dash-bootstrap-components>=1.0.0, plotly>=5.0.0, pandas>=2.2.3, python-dateutil>=2.9.0"/>
+      <ecosystem name="dev" packages="pytest>=7.0, playwright>=1.51.0, pytest-cov>=4.1.0"/>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="performance">Metrics tab initial load time must be <2 seconds with 7 days of metrics data</constraint>
+    <constraint type="ui-consistency">Use single callback pattern to prevent "Duplicate callback outputs" errors following existing dashboard patterns</constraint>
+    <constraint type="data-integrity">Handle missing or corrupted metrics files gracefully without breaking tab functionality</constraint>
+    <constraint type="visual-design">Use Bootstrap styling consistent with existing dashboard theme and color schemes</constraint>
+    <constraint type="interactivity">Enable click-to-drill-down functionality for error log viewing without page navigation</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="MetricsManager" kind="class" signature="class MetricsManager: def load_data(): def get_error_counts(): def get_metrics_summary():" path="src/web/dashboard/components/metrics_tab.py"/>
+    <interface name="MetricsTab" kind="component" signature="def render_metrics_tab(): def register_metrics_callbacks():" path="src/web/dashboard/components/metrics_tab.py"/>
+    <interface name="TimeSeriesChart" kind="Plotly component" signature="plotly.graph_objects.Figure with go.Scatter for ETL duration trends" path="src/web/dashboard/components/metrics_tab.py"/>
+    <interface name="MetricsTable" kind="Dash component" signature="dash_table.DataTable with columns: source, last_run, items_processed, success_rate, avg_duration" path="src/web/dashboard/components/metrics_tab.py"/>
+    <interface name="SourceSelectionCallback" kind="Dash callback" signature="@app.callback(Output('error-details', 'children'), Input('metrics-table', 'active_row'))" path="src/web/dashboard/components/metrics_tab.py"/>
+  </interfaces>
+  <tests>
+    <standards>Dashboard component testing using pytest with mocking of metrics data files. Plotly chart rendering tested with expected data structures. UI testing using Playwright for table interactions and error log drill-down functionality.</standards>
+    <locations>
+      <location path="Tests/ui/test_metrics_tab.py"/>
+      <location path="Tests/integration/test_metrics_dashboard.py"/>
+      <location path="Tests/e2e/test_metrics_error_drilldown.py"/>
+      <location path="Tests/performance/test_metrics_load_time.py"/>
+    </locations>
+    <ideas>
+      <idea ac="AC-1.4.1">Test: Navigate to metrics tab and verify table contains all expected columns (name, last run time, items processed, success rate %, avg duration)</idea>
+      <idea ac="AC-1.4.2">Test: Verify 7-day time-series chart renders with ETL duration data and interactive tooltips</idea>
+      <idea ac="AC-1.4.3">Test: Check error count accuracy by comparing displayed values with actual metrics file data</idea>
+      <idea ac="AC-1.4.4">Test: Create metrics with success_rate <0.95 and verify failed ETLs are highlighted in red</idea>
+      <idea ac="AC-1.4.5">Test: Click table row and verify detailed error logs are displayed in expandable section</idea>
+      <idea ac="performance">Test: Load metrics tab with 7 days of data and verify load time <2 seconds</idea>
+    </ideas>
+  </tests>
+</story-context>

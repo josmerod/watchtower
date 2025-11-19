@@ -62,6 +62,17 @@ class TimestampedModel(BaseModel):
         default=None, description="Last update timestamp"
     )
 
+    # Deduplication fields
+    duplicate_group_id: str | None = Field(
+        default=None, description="ID of duplicate group if item is a duplicate"
+    )
+    is_duplicate: bool = Field(
+        default=False, description="Whether this item is marked as a duplicate"
+    )
+    quality_score: float | None = Field(
+        default=None, description="Quality score (0.0-100.0) for prioritization"
+    )
+
     @field_validator("updated_at", mode="before")
     @classmethod
     def set_updated_at(cls, v: datetime | None) -> datetime:

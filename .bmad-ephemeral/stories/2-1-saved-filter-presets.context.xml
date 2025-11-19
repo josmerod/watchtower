@@ -1,0 +1,83 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>1</storyId>
+    <title>Saved Filter Presets</title>
+    <status>drafted</status>
+    <generatedAt>2025-01-16</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\2-1-saved-filter-presets.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to save my frequently-used filter combinations as named presets</iWant>
+    <soThat>I can quickly apply complex filters without re-configuring them each time</soThat>
+    <tasks>- Store presets in browser localStorage as JSON per tab
+- Format: {tab_name: [{name: "preset1", filters: {...}}, ...]}
+- Add preset dropdown to each tab's filter section
+- Use Dash callbacks to apply preset filters
+- Implement save, update, and delete preset functionality
+- Enforce maximum 10 presets per tab</tasks>
+  </story>
+
+  <acceptanceCriteria>- Given I've applied filters on any dashboard tab (source, date range, category), when I click "Save Filter Preset", then I'm prompted to name the preset
+- And the preset is saved to browser localStorage per tab
+- When I return to the tab, then I see my saved presets in a dropdown
+- When I select a preset, then all filters are applied instantly (<300ms)
+- And I can update or delete existing presets</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Success Criteria" snippet="Primary Success Metrics include Daily Usage & Indispensability - You stop checking individual sources (HackerNews, Reddit, ArXiv, etc.) directly because Megalith has it all. Extensibility Achievement - New data source integration takes < 30 minutes from concept to dashboard."/>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Dashboard Framework: Dash 2.x with Bootstrap components, UI Components: Bootstrap 5 with dash-bootstrap-components 1.x. Performance: Built-in Python tools (@lru_cache, difflib) before external dependencies."/>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Epic 2: Personalized Intelligence Hub" snippet="Epic Goal: Transform dashboard from 'one-size-fits-all' to 'tailored for you' - enable each user to customize their Megalith experience. Story 2.1: Store presets in browser localStorage as JSON per tab, Format: {tab_name: [{name: 'preset1', filters: {...}}, ...]}"/>
+      <doc path=".bmad-ephemeral/stories/tech-spec-epic-1.md" title="Epic 1 Technical Specification" section="Data Models and Contracts" snippet="Search Component Interface - Dash callback signature with Input/Output for search filtering, highlighting matches using <mark> tags, search operates on pre-filtered results when combined with existing filters."/>
+    </docs>
+    <code>
+      <artifact path="src/web/dashboard/components/arxiv_research_tab.py" kind="component" symbol="Filter Controls" lines="240-250" reason="Existing filter implementation with search input and dropdown that preset functionality should integrate with"/>
+      <artifact path="src/web/dashboard/components/courses_tab.py" kind="component" symbol="Filter Patterns" lines="1-50" reason="Example of tab component with filter controls that will benefit from preset functionality"/>
+      <artifact path="src/web/dashboard/components/news_tab.py" kind="component" symbol="Filter Implementation" lines="1-50" reason="News tab with source and category filtering patterns for preset integration"/>
+      <artifact path="src/web/dashboard/components/deals_tab.py" kind="component" symbol="Date Range Filters" lines="1-50" reason="Deal filtering implementation that preset system should support including date ranges"/>
+      <artifact path="src/web/dashboard/app.py" kind="application" symbol="Dashboard Layout" lines="58-100" reason="Main application structure where localStorage-based preset storage needs to be integrated"/>
+    </code>
+    <dependencies>
+      <ecosystem name="python" packages="dash>=2.0.0, dash-bootstrap-components>=1.0.0, pandas>=2.2.3"/>
+      <ecosystem name="javascript" packages="localStorage API, JavaScript JSON serialization, Browser storage events"/>
+      <ecosystem name="dev" packages="pytest>=7.0, playwright>=1.51.0, pytest-cov>=4.1.0"/>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="storage">Store presets in browser localStorage with maximum 10 presets per tab to prevent storage bloat</constraint>
+    <constraint type="performance">Preset application must be instant (<300ms) to provide responsive user experience</constraint>
+    <constraint type="user-experience">Preset names must be unique per tab, validation for duplicate names and invalid characters</constraint>
+    <constraint type="compatibility">Must work across all modern browsers (Chrome, Firefox, Safari, Edge) with localStorage support</constraint>
+    <constraint type="data-integrity">Gracefully handle corrupted localStorage data and provide reset functionality</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="LocalStorageManager" kind="JavaScript utility" signature="class LocalStorageManager: savePreset(tab, name, filters), loadPresets(tab), deletePreset(tab, name)" path="src/web/dashboard/assets/js/localStorage.js"/>
+    <interface name="FilterPresetsComponent" kind="Dash component" signature="dbc.Select(id='preset-selector', options=[]), dbc.Button('Save Preset', id='save-preset-btn')" path="src/web/dashboard/components/"/>
+    <interface name="PresetSaveModal" kind="Dash component" signature="dbc.Modal([dbc.Input(id='preset-name-input')])" path="src/web/dashboard/components/"/>
+    <interface name="ApplyPresetCallback" kind="Dash callback" signature="@app.callback(Output('filters', 'value'), Input('preset-selector', 'value'))" path="src/web/dashboard/components/"/>
+    <interface name="SavePresetCallback" kind="Dash callback" signature="@app.callback(Output('preset-feedback', 'children'), Input('save-preset-btn', 'n_clicks'), State('active-filters', 'data'))" path="src/web/dashboard/components/"/>
+  </interfaces>
+  <tests>
+    <standards>Client-side storage testing using Playwright to verify localStorage functionality. UI testing for preset creation, application, and deletion workflows. Cross-browser compatibility testing to ensure consistent localStorage behavior. Performance testing to verify <300ms preset application time.</standards>
+    <locations>
+      <location path="Tests/e2e/test_filter_presets.py"/>
+      <location path="Tests/ui/test_localstorage_integration.py"/>
+      <location path="Tests/performance/test_preset_application.py"/>
+      <location path="Tests/cross_browser/test_presets.py"/>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.1.1">Test: Apply filters (source, date range, category), click "Save Filter Preset", enter preset name, and verify preset is saved to localStorage</idea>
+      <idea ac="AC-2.1.2">Test: Refresh page, navigate to same tab, and verify saved presets appear in dropdown selector</idea>
+      <idea ac="AC-2.1.3">Test: Select preset from dropdown and verify all filters are applied instantly with correct values</idea>
+      <idea ac="AC-2.1.4">Test: Apply filters, save preset with duplicate name, and verify error handling or overwrite prompt</idea>
+      <idea ac="AC-2.1.5">Test: Select existing preset, modify filters, and verify update functionality works correctly</idea>
+      <idea ac="performance">Test: Measure time from preset selection to filter application to ensure <300ms response time</idea>
+      <idea ac="storage">Test: Corrupt localStorage data and verify graceful recovery with default state</idea>
+    </ideas>
+  </tests>
+</story-context>

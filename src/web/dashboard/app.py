@@ -2,7 +2,7 @@ from datetime import datetime
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import Input, Output, html  # Added Input, Output for Tabs and callback
+from dash import Input, Output, html, dcc, clientside_callback, ALL  # Added Input, Output, dcc, clientside_callback, ALL for Tabs and callback
 from flask import jsonify
 
 from src.web.dashboard.components.anime_tab import (
@@ -16,6 +16,10 @@ from src.web.dashboard.components.arxiv_research_tab import (
 from src.web.dashboard.components.courses_tab import (
     register_courses_callbacks,
     render_courses_tab,
+)
+from src.web.dashboard.components.deals_tab import (
+    register_deals_search_callbacks,
+    render_deals_tab,
 )
 from src.web.dashboard.components.fourchan_tab import (
     register_fourchan_callbacks,
@@ -31,7 +35,18 @@ from src.web.dashboard.components.intelligence_tab import (
 from src.web.dashboard.components.knowledge_garden_tab import (
     render_knowledge_garden_tab,
 )
-from src.web.dashboard.components.news_tab import render_news_tab
+from src.web.dashboard.components.metrics_tab import (
+    register_metrics_callbacks,
+    render_metrics_tab,
+)
+from src.web.dashboard.components.news_tab import (
+    register_news_search_callbacks,
+    render_news_tab,
+)
+from src.web.dashboard.components.notifications_tab import (
+    register_notifications_callbacks,
+    render_notifications_tab,
+)
 from src.web.dashboard.components.scavenging_tab import (
     register_scavenging_callbacks,
     render_scavenging_tab,
@@ -53,12 +68,28 @@ from src.web.dashboard.components.videos_tab import (
     register_video_callbacks,
     render_videos_tab,
 )
-from src.web.dashboard.components.deals_tab import render_deals_tab
+from src.web.dashboard.health_monitor import HealthMonitor
+from src.web.dashboard.components.shortcuts_sidebar import shortcuts_sidebar
+from src.web.dashboard.components.customize_tabs import customize_tabs
+
+# Include localStorage script for filter presets and shortcuts functionality
+external_scripts = [
+    "/assets/js/localStorage.js",
+    "/assets/js/items_per_page.js",
+    "/assets/js/mobile_navigation.js",
+    "/assets/js/shortcuts.js",
+    "/assets/js/dragdrop.js",
+    "/assets/js/tab_preferences.js",
+    "/assets/js/customize_tabs_dragdrop.js",
+    "https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js",
+    "https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
+]
 
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(
     __name__,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
+    external_scripts=external_scripts,
     suppress_callback_exceptions=True,
 )
 
@@ -74,6 +105,10 @@ app.index_string = """
         <title>Watchtower Dashboard</title>
         <meta name="description" content="Watchtower - Real-time Intelligence & Monitoring Platform">
         <link rel="icon" type="image/svg+xml" href="/assets/watchtower_icon.svg">
+        <link rel="stylesheet" href="/assets/css/shortcuts.css">
+        <link rel="stylesheet" href="/assets/css/mobile_responsive.css">
+        <!-- Font Awesome for mobile navigation icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         {%css%}
     </head>
     <body>
@@ -90,12 +125,46 @@ app.index_string = """
 # Main layout with Tabs
 app.layout = dbc.Container(
     [
-        dbc.Row(dbc.Col(html.H1("Watchtower Dashboard", className="text-center my-4"))),
+        # Skip to content link for accessibility
+        html.A("Skip to main content", href="#dashboard-content", className="skip-to-content"),
+
+        # Header with mobile-responsive layout
+        dbc.Row([
+            dbc.Col([
+                html.Div([
+                    html.H1("Watchtower Dashboard", className="dashboard-header-title mb-0"),
+                ], className="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-center"),
+            ], width=12),
+        ], className="dashboard-header mb-4"),
+
+        # Header buttons container
+        html.Div([
+            shortcuts_sidebar.create_toggle_button(),
+            customize_tabs.create_toggle_button(),
+        ], className="header-buttons d-flex justify-content-end gap-2 mb-3 desktop-only"),
+
+        # Add shortcuts sidebar (hidden by default)
+        shortcuts_sidebar.create_sidebar(),
+
+        # Add customize tabs modal with required components (hidden by default)
+        customize_tabs.create_modal(),
+
+        # Hidden components required for customize tabs functionality
+        html.Div(id="customize-tabs-trigger", style={"display": "none"}),
+        dcc.Store(id="customize-tabs-data-store", data={}),
+
+        # Mobile navigation will be inserted here by JavaScript
+
+        # Dashboard content area
+        html.Div(id="dashboard-content", className="dashboard-content"),
+
+        # Navigation tabs
         dbc.Row(
             dbc.Col(
                 dbc.Tabs(
                     id="dashboard-tabs",
                     active_tab="tab-shortcuts",  # Set a default active tab
+                    className="desktop-nav-tabs",
                     children=[
                         dbc.Tab(
                             label="Shortcuts",
@@ -106,6 +175,11 @@ app.layout = dbc.Container(
                             label="News",
                             tab_id="tab-news",
                             children=[render_news_tab()],
+                        ),
+                        dbc.Tab(
+                            label="🔔 Notifications",
+                            tab_id="tab-notifications",
+                            children=[render_notifications_tab()],
                         ),
                         dbc.Tab(
                             label="🌱 Knowledge Garden",
@@ -177,84 +251,93 @@ app.layout = dbc.Container(
                             tab_id="tab-deals",
                             children=[render_deals_tab()],
                         ),
+                        dbc.Tab(
+                            label="📊 Metrics",
+                            tab_id="tab-metrics",
+                            children=[render_metrics_tab()],
+                        ),
                     ],
                 )
             )
         ),
         # Dynamic tab content container
         dbc.Row(dbc.Col(html.Div(id="tab-content", className="mt-3"))),
+
+        # Hidden trigger for dynamic tab generation
+        html.Div([
+            html.Button("Refresh Tabs", id="dynamic-tab-trigger-0", n_clicks=0, style={"display": "none"}),
+        ], id="dynamic-tab-trigger-container", style={"display": "none"}),
     ],
     fluid=True,
 )
 
-# Expose basic health/metrics endpoints
+# Expose enhanced health/metrics endpoints
 server = app.server
+
+# Initialize health monitor
+health_monitor = HealthMonitor()
 
 
 @server.route("/health")
-def health() -> str:
-    """Health endpoint for uptime checks."""
-    return jsonify(
-        {"status": "ok", "time_utc": datetime.utcnow().isoformat(timespec="seconds")}
-    )
+def health():
+    """Enhanced health endpoint with status calculation and caching."""
+    try:
+        # Try to get cached response first
+        cached_response = health_monitor.get_cached_response("health")
+        if cached_response:
+            return jsonify(cached_response)
+
+        # Calculate health status
+        health_status = health_monitor.calculate_overall_health()
+
+        # Convert to dict for JSON response
+        response_data = health_status.model_dump()
+
+        # Cache for 5 minutes
+        health_monitor.set_cached_response("health", response_data, ttl_minutes=5)
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        # Fallback response on error
+        return jsonify({
+            "status": "down",
+            "timestamp": datetime.utcnow().isoformat(),
+            "version": "1.0.0",
+            "error": str(e)
+        }), 500
 
 
 @server.route("/metrics")
-def metrics() -> str:
-    """Lightweight metrics summary for latest datasets used by the dashboard."""
-    import json
-    import os
-    from pathlib import Path
+def metrics():
+    """Enhanced metrics endpoint with comprehensive ETL metrics and caching."""
+    try:
+        # Try to get cached response first
+        cached_response = health_monitor.get_cached_response("metrics")
+        if cached_response:
+            return jsonify(cached_response)
 
-    base = Path("data")
-    files = {
-        "product_hunt": base / "product_hunt" / "product_hunt_latest.json",
-        "github_trends": base / "github_trends" / "github_trends_latest.json",
-        "arxiv_papers": base / "arxiv" / "arxiv_papers_latest.json",
-        "free_games": base / "giveaways" / "free_games_latest.json",
-        "bundle_deals": base / "deals" / "bundle_deals.json",
-        "music_deals": base / "deals" / "music_deals.json",
-        "bargain_deals": base / "deals" / "bargain_deals.json",
-        "educational_deals": base / "deals" / "educational_deals.json",
-        "book_deals": base / "deals" / "book_deals.json",
-        "software_deals": base / "deals" / "software_deals.json",
-        "travel_deals": base / "deals" / "travel_deals.json",
-        "crypto_finance_deals": base / "deals" / "crypto_finance_deals.json",
-        "fashion_retail_deals": base / "deals" / "fashion_retail_deals.json",
-        "health_fitness_deals": base / "deals" / "health_fitness_deals.json",
-        "hardware_tech_deals": base / "deals" / "hardware_tech_deals.json",
-    }
+        # Generate comprehensive metrics summary
+        metrics_summary = health_monitor.generate_metrics_summary()
 
-    summary = {"generated_at": datetime.utcnow().isoformat(timespec="seconds")}
-    for key, path in files.items():
-        try:
-            count = 0
-            mtime = None
-            if path.exists():
-                try:
-                    with path.open("r", encoding="utf-8") as f:
-                        data = json.load(f)
-                    if isinstance(data, list):
-                        count = len(data)
-                    elif isinstance(data, dict):
-                        # Fallback: try common list fields
-                        for field in ("items", "articles", "results"):
-                            if field in data and isinstance(data[field], list):
-                                count = len(data[field])
-                                break
-                except Exception:
-                    count = -1  # denote read error
-                try:
-                    mtime = datetime.utcfromtimestamp(os.path.getmtime(path)).isoformat(
-                        timespec="seconds"
-                    )
-                except Exception:
-                    mtime = None
-            summary[key] = {"exists": path.exists(), "count": count, "modified": mtime}
-        except Exception:
-            summary[key] = {"exists": False, "count": -1, "modified": None}
+        # Convert to dict for JSON response
+        response_data = metrics_summary.model_dump()
 
-    return jsonify(summary)
+        # Cache for 5 minutes
+        health_monitor.set_cached_response("metrics", response_data, ttl_minutes=5)
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        # Fallback response on error
+        return jsonify({
+            "generated_at": datetime.utcnow().isoformat(),
+            "error": str(e),
+            "total_sources": 0,
+            "total_items": 0,
+            "last_etl_run_times": {},
+            "error_rates_per_source": {}
+        }), 500
 
 
 # Register callbacks for the main app
@@ -285,6 +368,93 @@ register_valencia_events_callbacks(app)
 register_spanish_aid_callbacks(app)
 register_arxiv_callbacks(app)
 register_intelligence_callbacks(app)
+register_news_search_callbacks(app)
+register_deals_search_callbacks(app)
+register_metrics_callbacks(app)
+register_notifications_callbacks(app)
+
+
+# Clientside callback to dynamically generate tabs based on user preferences
+
+clientside_callback(
+    """
+    function(n_clicks) {
+        try {
+            // Wait for the page to fully load and tab preferences to be available
+            setTimeout(() => {
+                applyTabPreferences();
+            }, 1000);
+
+            return window.dash_clientside.no_update;
+        } catch (error) {
+            console.error('Error in dynamic tab generation callback:', error);
+            return window.dash_clientside.no_update;
+        }
+    }
+
+    function applyTabPreferences() {
+        try {
+            // Initialize tab preferences if not available
+            if (!window.tabPreferencesManager) {
+                console.warn('TabPreferencesManager not available, will retry...');
+                setTimeout(applyTabPreferences, 1000);
+                return;
+            }
+
+            // Get visible tabs based on user preferences
+            const visibleTabs = window.tabPreferencesManager.getVisibleTabs();
+
+            if (!visibleTabs || visibleTabs.length === 0) {
+                console.warn('No visible tabs found, using default configuration');
+                return;
+            }
+
+            // Hide tabs that are not in the visible list
+            const allTabElements = document.querySelectorAll('#dashboard-tabs [tab_id]');
+            const visibleTabIds = new Set(visibleTabs.map(tab => tab.id));
+
+            allTabElements.forEach(tabElement => {
+                const tabId = tabElement.getAttribute('tab_id');
+                if (!visibleTabIds.has(tabId)) {
+                    tabElement.style.display = 'none';
+                } else {
+                    tabElement.style.display = '';
+                }
+            });
+
+            // Reorder tabs to match user preferences
+            const tabsContainer = document.querySelector('#dashboard-tabs .nav-tabs');
+            if (tabsContainer) {
+                const tabItems = Array.from(tabsContainer.children);
+
+                // Sort tab items according to user preference order
+                tabItems.sort((a, b) => {
+                    const aTabId = a.getAttribute('tab_id');
+                    const bTabId = b.getAttribute('tab_id');
+
+                    const aIndex = visibleTabs.findIndex(tab => tab.id === aTabId);
+                    const bIndex = visibleTabs.findIndex(tab => tab.id === bTabId);
+
+                    return aIndex - bIndex;
+                });
+
+                // Re-append sorted items to maintain order
+                tabItems.forEach(tabItem => {
+                    tabsContainer.appendChild(tabItem);
+                });
+            }
+
+            console.log('Tabs dynamically generated based on preferences:', visibleTabs.map(t => t.id));
+
+        } catch (error) {
+            console.error('Error applying tab preferences:', error);
+        }
+    }
+    """,
+    Output("dynamic-tab-trigger-container", "children"),  # Dummy output
+    Input("dynamic-tab-trigger-0", "n_clicks"),
+    prevent_initial_call=False,  # Run on page load to apply saved preferences
+)
 
 
 if __name__ == "__main__":

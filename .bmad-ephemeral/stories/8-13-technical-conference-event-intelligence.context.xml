@@ -1,0 +1,149 @@
+<story-context id="{bmad_folder}/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>13</storyId>
+    <title>Technical Conference & Event Intelligence</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\8-13-technical-conference-event-intelligence.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>comprehensive technical event intelligence with content quality prediction and networking opportunities</iWant>
+    <soThat>I can identify the most valuable conferences and optimize my event participation</soThat>
+    <tasks>- [ ] Create EventIntelligenceETL service (Foundation for technical conference and event intelligence)
+  - [ ] Create `src/intelligence/events/event_intelligence_etl.py` extending BaseIntelligenceETL
+  - [ ] Integrate event discovery platforms: Dev.events API, Confs.tech, ConferenceIndex.org, 10Times
+  - [ ] Add major conference series: QCon, DeveloperWeek, AWS re:Invent, Google I/O, Microsoft Build, Apple WWDC
+  - [ ] Implement local and virtual events: Eventbrite Tech, Meetup Tech Groups, Papercall.io CFP opportunities
+  - [ ] Create event data quality scoring and credibility assessment for multi-source aggregation
+
+- [ ] Implement comprehensive content quality prediction engine (AC: 1, 3)
+  - [ ] Create ContentQualityPredictor in `src/intelligence/events/content_quality_predictor.py`
+  - [ ] Implement speaker expertise analysis using professional profiles, publication history, and speaking experience
+  - [ ] Add topic relevance assessment using user interests from Story 5.5.1 and career goal alignment
+  - [ ] Create historical ratings analysis using community feedback and attendee satisfaction metrics
+  - [ ] Implement agenda quality scoring using topic depth, session variety, and learning outcome assessment
+
+- [ ] Develop networking opportunity identification system (AC: 4, 6)
+  - [ ] Create NetworkingOpportunityIdentifier in `src/intelligence/events/networking_identifier.py`
+  - [ ] Implement attendee analysis using professional profiles, company affiliations, and industry connections
+  - [ ] Add potential collaborator identification using skill complementarity and project alignment
+  - [ ] Create industry influencer detection using social media impact, thought leadership, and expertise recognition
+  - [ ] Implement career opportunity analysis using job market insights, skill requirements, and networking potential
+
+- [ ] Create scheduling optimization and travel logistics platform (AC: 5)
+  - [ ] Create SchedulingOptimizer in `src/intelligence/events/scheduling_optimizer.py`
+  - [ ] Implement travel logistics analysis using distance, cost, and accommodation considerations
+  - [ ] Add content conflict resolution using session importance and learning priority optimization
+  - [ ] Create networking potential assessment using attendee overlap and collaboration opportunity scoring
+  - [ ] Implement cost-benefit analysis using registration fees, travel costs, and career advancement ROI
+
+- [ ] Implement personalized event discovery and recommendation system (AC: 2, 6)
+  - [ ] Create EventDiscoveryEngine in `src/intelligence/events/event_discovery_engine.py`
+  - [ ] Implement comprehensive event aggregation using Story 8.1 recommendation infrastructure
+  - [ ] Add filtering by technology stack, location preferences, and budget constraints
+  - [ ] Create personalized recommendation algorithms using user interests and skill development goals
+  - [ ] Implement event type classification with conferences, meetups, webinars, and workshops categorization
+
+- [ ] Create Technical Conference & Event Intelligence dashboard tab (AC: 1, 2, 6)
+  - [ ] Create `src/web/dashboard/components/event_intelligence_tab.py`
+  - [ ] Implement EventIntelligenceManager for data loading and intelligent caching
+  - [ ] Add "Event Intelligence" tab to main dashboard navigation
+  - [ ] Display event discovery with filtering by technology, location, cost, and event type
+  - [ ] Implement personalized recommendations with content quality predictions and networking opportunities
+
+- [ ] Add advanced event analysis and content quality features (AC: 2, 3, 4)
+  - [ ] Create event profile cards with content quality predictions and speaker expertise analysis
+  - [ ] Add networking opportunity interface with attendee analysis and collaborator identification
+  - [ ] Display content quality predictions with speaker expertise and topic relevance scoring
+  - [ ] Implement event comparison tools with side-by-side analysis and recommendation ranking
+  - [ ] Create CFP opportunity tracking with speaker application recommendations and success probability
+
+- [ ] Implement comprehensive scheduling optimization and calendar integration (AC: 5, 6)
+  - [ ] Create scheduling optimization dashboard with travel logistics and cost-benefit analysis
+  - [ ] Add calendar system integration with automated event scheduling and conflict resolution
+  - [ ] Display networking potential visualization with attendee overlap and collaboration opportunities
+  - [ ] Implement travel planning integration with accommodation recommendations and booking assistance
+  - [ ] Create personalized event itinerary with session recommendations and networking meetings</tasks>
+  </story>
+
+  <acceptanceCriteria>1. **Given** event intelligence sources are configured (conference websites, meetup platforms, webinar listings)
+   **When** I access the "Event Intelligence" tab
+   **Then** I see: event discovery, content quality prediction, networking opportunities, scheduling optimization
+
+2. **And** event discovery includes: conferences, meetups, webinars, workshops with filtering by technology, location, cost
+
+3. **And** content quality prediction uses: speaker expertise, topic relevance, historical ratings, agenda analysis
+
+4. **And** networking opportunities identify: relevant attendees, potential collaborators, industry influencers, career opportunities
+
+5. **And** scheduling optimization considers: travel logistics, content conflicts, networking potential, cost-benefit analysis
+
+6. **And** I receive personalized recommendations based on my interests, skills, and career goals</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Hybrid Storage: SQLite for users/preferences, file-based JSON for data sources. Performance: Built-in Python tools (@lru_cache, difflib) before external dependencies" />
+      <doc path="docs/architecture.md" title="Architecture Document" section="Project Structure" snippet="src/intelligence/ - Intelligence features, src/intelligence/events/ - Technical conference and event intelligence processing" />
+      <doc path="docs/epics.md" title="Epic 8: Complete Intelligence Platform" section="Technical Conference & Event Intelligence" snippet="Comprehensive technical event intelligence with content quality prediction and networking opportunities" />
+    </docs>
+    <code>
+      <code path="src/intelligence/base_intelligence_etl.py" kind="base intelligence etl" symbol="BaseIntelligenceETL" lines="1-100" reason="Foundation from Story 8.5 for technical conference and event intelligence aggregation" />
+      <code path="src/etl/base.py" kind="base etl framework" symbol="BaseETL" lines="1-100" reason="Existing ETL patterns for event intelligence data processing" />
+      <code path="src/recommendations/models.py" kind="recommendation system" symbol="RecommendationEngine" lines="1-100" reason="Story 8.1 foundation for personalized event recommendation infrastructure" />
+      <code path="src/web/dashboard/components/recommendations_tab.py" kind="dashboard tab" symbol="RecommendationsManager" lines="25-50" reason="Existing tab component patterns and Story 5.5.1 integration for event recommendations" />
+      <code path="src/web/dashboard/utils.py" kind="utility" symbol="get_data_path, parse_date_universal" lines="1-50" reason="Existing data loading utilities and time period handling for event scheduling" />
+    </code>
+    <dependencies>
+      <python version="3.10+">
+        <package name="dash" version="2.0+" scope="dashboard-framework" />
+        <package name="dash-bootstrap-components" version="1.0+" scope="ui-components" />
+        <package name="plotly" version="5.0+" scope="data-visualization" />
+        <package name="pandas" version="2.x" scope="data-processing" />
+        <package name="polars" version="0.20.x" scope="high-performance-operations" />
+        <package name="pydantic" version="2.11.5+" scope="data-validation" />
+        <package name="pytest" version="7.0+" scope="testing" />
+        <package name="scikit-learn" version="1.3+" scope="ml-models" />
+        <package name="requests" version="2.31+" scope="api-integration" />
+        <package name="beautifulsoup4" version="4.0+" scope="web-scraping" />
+        <package name="transformers" version="4.30+" scope="nlp-analysis" />
+        <package name="nltk" version="3.8+" scope="text-processing" />
+        <package name="geopy" version="2.3+" scope="location-analysis" />
+        <package name="geopandas" version="0.14+" scope="geographic-analysis" />
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Leverage Story 8.5 BaseIntelligenceETL framework for technical conference and event intelligence aggregation (Dev.events API, Confs.tech, major conference series)</constraint>
+    <constraint type="content-quality">Speaker expertise analysis using professional profiles and publication history with topic relevance assessment using Story 5.5.1 user interests</constraint>
+    <constraint type="networking-opportunities">Attendee analysis using professional profiles and company affiliations with industry influencer detection and career opportunity analysis</constraint>
+    <constraint type="scheduling-optimization">Travel logistics analysis using distance and cost considerations with content conflict resolution and cost-benefit ROI analysis</constraint>
+    <constraint type="event-discovery">Personalized recommendation algorithms using Story 8.1 infrastructure with technology stack filtering and budget constraints</constraint>
+    <constraint type="calendar-integration">Automated event scheduling with conflict resolution and personalized itinerary creation with >85% test coverage</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="EventIntelligenceETL" kind="class" signature="class EventIntelligenceETL(BaseIntelligenceETL): def extract_dev_events(self) -> List[Dict]; def extract_confs_tech(self) -> List[Dict]; def extract_major_conferences(self) -> List[Dict]" path="src/intelligence/events/event_intelligence_etl.py" />
+    <interface name="ContentQualityPredictor" kind="class" signature="class ContentQualityPredictor: def analyze_speaker_expertise(self, speaker_data: Dict) -> SpeakerExpertise; def assess_topic_relevance(self, event: Dict, user_profile: Dict) -> TopicRelevance; def predict_agenda_quality(self, agenda: List[Dict]) -> AgendaQuality" path="src/intelligence/events/content_quality_predictor.py" />
+    <interface name="NetworkingOpportunityIdentifier" kind="class" signature="class NetworkingOpportunityIdentifier: def analyze_attendees(self, event: Dict) -> AttendeeAnalysis; def identify_collaborators(self, attendees: List[Dict], user_profile: Dict) -> List[CollaborationOpportunity]; def detect_influencers(self, attendees: List[Dict]) -> List[IndustryInfluencer]" path="src/intelligence/events/networking_identifier.py" />
+    <interface name="SchedulingOptimizer" kind="class" signature="class SchedulingOptimizer: def analyze_travel_logistics(self, events: List[Dict], user_location: str) -> TravelLogistics; def resolve_conflicts(self, schedule: List[Dict]) -> ConflictResolution; def calculate_cost_benefit(self, event: Dict, user_profile: Dict) -> CostBenefitAnalysis" path="src/intelligence/events/scheduling_optimizer.py" />
+    <interface name="EventDiscoveryEngine" kind="class" signature="class EventDiscoveryEngine: def discover_events(self, filters: Dict) -> List[Event]; def classify_events(self, events: List[Dict]) -> EventClassification; def generate_recommendations(self, user_profile: Dict, events: List[Dict]) -> List[EventRecommendation]" path="src/intelligence/events/event_discovery_engine.py" />
+    <interface name="EventIntelligenceManager" kind="dashboard manager" signature="class EventIntelligenceManager: def load_event_intelligence_data(self, filters: Dict) -> EventIntelligenceData; def generate_personalized_recommendations(self, user_profile: Dict) -> List[EventRecommendation]" path="src/web/dashboard/components/event_intelligence_tab.py" />
+  </interfaces>
+
+  <tests>
+    <standards>Follow existing pytest patterns with >85% coverage target. Include content quality prediction testing and networking opportunity identification validation. Use existing patterns: test_event_intelligence_etl.py, test_content_quality_predictor.py, test_networking_identifier.py with mocking for external APIs and event platform dependencies.</standards>
+    <locations>Tests/event_intelligence/ - Technical conference and event intelligence-specific tests including content quality prediction, networking analysis, scheduling optimization, and personalized recommendations. Tests/integration/ for event platform aggregation and dashboard component integration testing.</locations>
+    <ideas>
+      <idea ac="AC-1, AC-3">Test: Unit test for ContentQualityPredictor speaker expertise analysis and topic relevance assessment accuracy</idea>
+      <idea ac="AC-2, AC-6">Test: Integration test for EventDiscoveryEngine personalized recommendations and event classification effectiveness</idea>
+      <idea ac="AC-4">Test: Performance test for NetworkingOpportunityIdentifier attendee analysis and collaborator identification</idea>
+      <idea ac="AC-5">Test: Unit test for SchedulingOptimizer travel logistics analysis and conflict resolution capabilities</idea>
+      <idea ac="AC-6">Test: E2E test for EventIntelligenceManager personalized recommendations and calendar integration functionality</idea>
+    </ideas>
+  </tests>
+</story-context>

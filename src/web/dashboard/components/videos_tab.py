@@ -5,9 +5,14 @@ from pathlib import Path
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, dcc, html
+from dash import Input, Output, dcc, html, clientside_callback
 
 from src.web.dashboard.utils import get_data_path
+from src.web.dashboard.components.items_per_page_selector import (
+    create_items_per_page_selector,
+    register_items_per_page_callback,
+    load_initial_preference,
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -257,11 +262,11 @@ def create_video_card(video):
     )
 
 
-def get_initial_video_display():
+def get_initial_video_display(limit=48):
     """Get initial video display with all channels."""
     try:
-        # Get 48 videos to display from all channels
-        videos = video_manager.get_videos(channel="all", limit=48)
+        # Get videos to display from all channels with specified limit
+        videos = video_manager.get_videos(channel="all", limit=limit)
         if not videos:
             return [dbc.Alert("No videos found", color="warning")]
 
@@ -365,7 +370,7 @@ def render_videos_tab():
                             ),
                         ],
                         width=12,
-                        md=4,
+                        md=3,
                     ),
                     dbc.Col(
                         [
@@ -378,7 +383,7 @@ def render_videos_tab():
                             ),
                         ],
                         width=12,
-                        md=4,
+                        md=3,
                     ),
                     dbc.Col(
                         [
@@ -397,8 +402,9 @@ def render_videos_tab():
                             ),
                         ],
                         width=12,
-                        md=4,
+                        md=3,
                     ),
+                    create_items_per_page_selector("videos", default_value=48),
                 ],
                 className="mb-3",
             ),
@@ -412,6 +418,8 @@ def render_videos_tab():
             html.Div(
                 id="videos-pagination", className="d-flex justify-content-center mt-3"
             ),
+            # Script to initialize items-per-page selector from localStorage
+            html.Script(load_initial_preference("videos")),
         ]
     )
 
@@ -422,16 +430,20 @@ def register_video_callbacks(app):
     @app.callback(
         Output("videos-container", "children"),
         Input("video-channel-dropdown-new", "value"),
+        Input("videos-items-per-page-select", "value"),
         prevent_initial_call=True,
     )
-    def update_videos_on_channel_change(selected_channel):
-        """Update videos when channel selection changes."""
+    def update_videos_on_channel_change(selected_channel, items_per_page):
+        """Update videos when channel selection or items-per-page changes."""
         try:
             if selected_channel is None:
                 selected_channel = "all"
 
-            # Get videos for selected channel
-            videos = video_manager.get_videos(channel=selected_channel, limit=200)
+            if items_per_page is None:
+                items_per_page = 48  # Default fallback
+
+            # Get videos for selected channel with items-per-page limit
+            videos = video_manager.get_videos(channel=selected_channel, limit=items_per_page)
 
             if not videos:
                 return [
@@ -459,6 +471,9 @@ def register_video_callbacks(app):
 
         except Exception as e:
             return [dbc.Alert(f"Error loading videos: {e}", color="danger")]
+
+    # Register client-side callback for items-per-page preference saving
+    register_items_per_page_callback("videos")
 
 
 # Load data when module is imported

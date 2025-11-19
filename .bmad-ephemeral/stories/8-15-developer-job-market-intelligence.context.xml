@@ -1,0 +1,150 @@
+<story-context id="{bmad_folder}/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>15</storyId>
+    <title>Developer Job Market Intelligence</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\8-15-developer-job-market-intelligence.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer/job seeker</asA>
+    <iWant>comprehensive job market intelligence with salary insights and career path recommendations</iWant>
+    <soThat>I can make informed career decisions and optimize my job search strategy</soThat>
+    <tasks>- [ ] Create JobMarketIntelligenceETL service (Foundation for developer job market intelligence)
+  - [ ] Create `src/intelligence/jobmarket/job_market_intelligence_etl.py` extending BaseIntelligenceETL
+  - [ ] Integrate job market platforms: LinkedIn Jobs API, Glassdoor API, Indeed API, Stack Overflow Jobs
+  - [ ] Add startup job platforms: AngelList Jobs API, Hired API, Dice RSS feed for tech jobs
+  - [ ] Implement remote work intelligence: Remote OK API, We Work Remotely, Arc.dev, PowerToFly
+  - [ ] Create salary and market data integration: Levels.fyi, Payscale API, Salary.com, Stack Overflow Survey
+
+- [ ] Implement comprehensive market trend analysis engine (AC: 1, 2)
+  - [ ] Create MarketTrendAnalyzer in `src/intelligence/jobmarket/market_trend_analyzer.py`
+  - [ ] Implement demand trend analysis using hiring data, job posting volume, and market saturation
+  - [ ] Add geographic variation analysis using regional job markets, cost of living, and remote work trends
+  - [ ] Create industry growth rate assessment using sector expansion, investment patterns, and hiring velocity
+  - [ ] Implement company hiring pattern analysis using recruitment cycles, skill requirements, and growth indicators
+
+- [ ] Develop advanced skill demand tracking and analysis system (AC: 3, 6)
+  - [ ] Create SkillDemandTracker in `src/intelligence/jobmarket/skill_demand_tracker.py`
+  - [ ] Implement trending technology identification using job posting frequency, skill premium analysis
+  - [ ] Add declining skill detection using demand reduction, obsolescence risk, and replacement patterns
+  - [ ] Create skill premium calculation using salary differentials, market demand, and scarcity metrics
+  - [ ] Implement learning ROI analysis using career advancement potential and skill investment returns
+
+- [ ] Create salary intelligence and compensation analysis platform (AC: 4)
+  - [ ] Create SalaryIntelligenceEngine in `src/intelligence/jobmarket/salary_intelligence_engine.py`
+  - [ ] Implement market rate analysis using compensation data, experience levels, and geographic adjustments
+  - [ ] Add negotiation insights using market positioning, skill premiums, and competitive advantage
+  - [ ] Create compensation trend tracking using salary evolution, inflation adjustment, and market corrections
+  - [ ] Implement benefits analysis using total compensation packages, equity structures, and perk valuation
+
+- [ ] Implement career path recommendation and modeling system (AC: 5, 6)
+  - [ ] Create CareerPathRecommender in `src/intelligence/jobmarket/career_path_recommender.py`
+  - [ ] Implement user skills analysis using Story 8.14 skill assessment and current competency evaluation
+  - [ ] Add market demand matching using job market requirements, industry growth, and opportunity identification
+  - [ ] Create growth potential assessment using career progression patterns, skill development paths, and advancement rates
+  - [ ] Implement personalized career path modeling with alternative routes and optimization strategies
+
+- [ ] Create Developer Job Market Intelligence dashboard tab (AC: 1, 2, 6)
+  - [ ] Create `src/web/dashboard/components/job_market_intelligence_tab.py`
+  - [ ] Implement JobMarketManager for data loading and intelligent caching
+  - [ ] Add "Job Market Intelligence" tab to main dashboard navigation
+  - [ ] Display market trend analysis with demand trends, geographic variations, and industry growth
+  - [ ] Implement skill demand tracking with trending technologies and career opportunity alerts
+
+- [ ] Add advanced job market analysis and career intelligence features (AC: 2, 3, 4)
+  - [ ] Create market trend visualization with geographic heat maps and industry growth projections
+  - [ ] Add skill demand dashboard with trending technologies, skill premiums, and learning ROI analysis
+  - [ ] Display salary intelligence interface with market rates, negotiation insights, and compensation trends
+  - [ ] Implement job market comparison tools for regional, industry, and role-based analysis
+  - [ ] Create custom market reports with personalized insights and actionable recommendations
+
+- [ ] Implement comprehensive career development and opportunity system (AC: 4, 5, 6)
+  - [ ] Create career path visualization with progression mapping and skill development requirements
+  - [ ] Add salary optimization tools with negotiation strategies and compensation analysis
+  - [ ] Display skill gap identification with learning recommendations and market opportunity alignment
+  - [ ] Implement job opening alerts with personalized matching and application workflow integration
+  - [ ] Create career planning interface with goal setting, progress tracking, and market alignment</tasks>
+  </story>
+
+  <acceptanceCriteria>1. **Given** job market sources are configured (LinkedIn, remote job boards, tech company career pages)
+   **When** I access the "Job Market Intelligence" tab
+   **Then** I see: market trend analysis, skill demand tracking, salary intelligence, career path recommendations
+
+2. **And** market analysis includes: demand trends, geographic variations, industry growth rates, company hiring patterns
+
+3. **And** skill demand tracking identifies: trending technologies, declining skills, skill premiums, learning ROI
+
+4. **And** salary intelligence provides: market rates, negotiation insights, compensation trends, benefits analysis
+
+5. **And** career path recommendations consider: my skills, market demand, growth potential, industry trends
+
+6. **And** I receive alerts for: relevant job openings, skill gaps, market opportunities</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Hybrid Storage: SQLite for users/preferences, file-based JSON for data sources. Performance: Built-in Python tools (@lru_cache, difflib) before external dependencies" />
+      <doc path="docs/architecture.md" title="Architecture Document" section="Project Structure" snippet="src/intelligence/ - Intelligence features, src/intelligence/jobmarket/ - Job market intelligence processing" />
+      <doc path="docs/epics.md" title="Epic 8: Complete Intelligence Platform" section="Developer Job Market Intelligence" snippet="Comprehensive job market intelligence with salary insights and career path recommendations" />
+    </docs>
+    <code>
+      <code path="src/intelligence/base_intelligence_etl.py" kind="base intelligence etl" symbol="BaseIntelligenceETL" lines="1-100" reason="Foundation from Story 8.5 for developer job market intelligence aggregation" />
+      <code path="src/etl/base.py" kind="base etl framework" symbol="BaseETL" lines="1-100" reason="Existing ETL patterns for job market intelligence data processing" />
+      <code path="src/intelligence/coding_challenges/skill_assessment_engine.py" kind="skill assessment" symbol="SkillAssessmentEngine" lines="1-100" reason="Story 8.14 foundation for user skills analysis and competency evaluation" />
+      <code path="src/web/dashboard/components/recommendations_tab.py" kind="dashboard tab" symbol="RecommendationsManager" lines="25-50" reason="Existing tab component patterns and Story 5.5.1 integration for job recommendations" />
+      <code path="src/web/dashboard/utils.py" kind="utility" symbol="get_data_path, parse_date_universal" lines="1-50" reason="Existing data loading utilities and time period handling for market trend analysis" />
+    </code>
+    <dependencies>
+      <python version="3.10+">
+        <package name="dash" version="2.0+" scope="dashboard-framework" />
+        <package name="dash-bootstrap-components" version="1.0+" scope="ui-components" />
+        <package name="plotly" version="5.0+" scope="data-visualization" />
+        <package name="pandas" version="2.x" scope="data-processing" />
+        <package name="polars" version="0.20.x" scope="high-performance-operations" />
+        <package name="pydantic" version="2.11.5+" scope="data-validation" />
+        <package name="pytest" version="7.0+" scope="testing" />
+        <package name="scikit-learn" version="1.3+" scope="ml-models" />
+        <package name="requests" version="2.31+" scope="api-integration" />
+        <package name="beautifulsoup4" version="4.0+" scope="web-scraping" />
+        <package name="transformers" version="4.30+" scope="nlp-analysis" />
+        <package name="nltk" version="3.8+" scope="text-processing" />
+        <package name="geopy" version="2.3+" scope="location-analysis" />
+        <package name="geopandas" version="0.14+" scope="geographic-analysis" />
+        <package name="statsmodels" version="0.14+" scope="statistical-analysis" />
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Leverage Story 8.5 BaseIntelligenceETL framework for job market intelligence aggregation (LinkedIn Jobs API, Glassdoor API, Indeed API)</constraint>
+    <constraint type="market-trends">Demand trend analysis using hiring data and job posting volume with geographic variation analysis using cost of living and remote work trends</constraint>
+    <constraint type="skill-demand">Trending technology identification using job posting frequency with skill premium calculation and declining skill detection using obsolescence risk</constraint>
+    <constraint type="salary-intelligence">Market rate analysis using compensation data with negotiation insights using market positioning and competitive advantage</constraint>
+    <constraint type="career-pathing">User skills analysis using Story 8.14 skill assessment with market demand matching using industry growth and opportunity identification</constraint>
+    <constraint type="job-alerts">Personalized job opening alerts with skill gap identification and learning recommendations with >85% test coverage</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="JobMarketIntelligenceETL" kind="class" signature="class JobMarketIntelligenceETL(BaseIntelligenceETL): def extract_linkedin_jobs(self) -> List[Dict]; def extract_glassdoor(self) -> List[Dict]; def extract_indeed(self) -> List[Dict]" path="src/intelligence/jobmarket/job_market_intelligence_etl.py" />
+    <interface name="MarketTrendAnalyzer" kind="class" signature="class MarketTrendAnalyzer: def analyze_demand_trends(self, job_data: List[Dict]) -> DemandTrends; def assess_geographic_variations(self, regional_data: List[Dict]) -> GeographicVariations; def evaluate_industry_growth(self, sector_data: List[Dict]) -> IndustryGrowth" path="src/intelligence/jobmarket/market_trend_analyzer.py" />
+    <interface name="SkillDemandTracker" kind="class" signature="class SkillDemandTracker: def identify_trending_technologies(self, job_postings: List[Dict]) -> List[TrendingTechnology]; def calculate_skill_premiums(self, salary_data: List[Dict], skill_data: List[Dict]) -> SkillPremiums; def analyze_learning_roi(self, skill_investment: Dict, career_outcome: Dict) -> LearningROI" path="src/intelligence/jobmarket/skill_demand_tracker.py" />
+    <interface name="SalaryIntelligenceEngine" kind="class" signature="class SalaryIntelligenceEngine: def analyze_market_rates(self, compensation_data: List[Dict]) -> MarketRates; def provide_negotiation_insights(self, candidate_profile: Dict, offer_data: Dict) -> NegotiationInsights; def track_compensation_trends(self, historical_data: List[Dict]) -> CompensationTrends" path="src/intelligence/jobmarket/salary_intelligence_engine.py" />
+    <interface name="CareerPathRecommender" kind="class" signature="class CareerPathRecommender: def analyze_user_skills(self, skill_data: Dict) -> UserSkillsAnalysis; def match_market_demand(self, user_skills: List[str], job_market: List[Dict]) -> MarketDemandMatch; def model_career_paths(self, user_profile: Dict, market_data: List[Dict]) -> List[CareerPath]" path="src/intelligence/jobmarket/career_path_recommender.py" />
+    <interface name="JobMarketManager" kind="dashboard manager" signature="class JobMarketManager: def load_job_market_intelligence_data(self, filters: Dict) -> JobMarketIntelligenceData; def generate_career_recommendations(self, user_profile: Dict) -> List[CareerRecommendation]" path="src/web/dashboard/components/job_market_intelligence_tab.py" />
+  </interfaces>
+
+  <tests>
+    <standards>Follow existing pytest patterns with >85% coverage target. Include market trend analysis testing and salary intelligence validation. Use existing patterns: test_job_market_intelligence_etl.py, test_market_trend_analyzer.py, test_skill_demand_tracker.py with mocking for external APIs and job platform dependencies.</standards>
+    <locations>Tests/job_market_intelligence/ - Developer job market intelligence-specific tests including market trends, skill demand, salary intelligence, and career path recommendations. Tests/integration/ for job platform aggregation and dashboard component integration testing.</locations>
+    <ideas>
+      <idea ac="AC-1, AC-2">Test: Unit test for MarketTrendAnalyzer demand trend analysis and geographic variation detection accuracy</idea>
+      <idea ac="AC-3">Test: Integration test for SkillDemandTracker trending technology identification and skill premium calculation</idea>
+      <idea ac="AC-4">Test: Performance test for SalaryIntelligenceEngine market rate analysis and negotiation insights effectiveness</idea>
+      <idea ac="AC-5">Test: Unit test for CareerPathRecommender user skills analysis and market demand matching</idea>
+      <idea ac="AC-6">Test: E2E test for JobMarketManager personalized career recommendations and job opportunity alerts</idea>
+    </ideas>
+  </tests>
+</story-context>

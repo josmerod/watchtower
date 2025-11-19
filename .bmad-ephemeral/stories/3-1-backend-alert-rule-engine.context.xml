@@ -1,0 +1,118 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>1</storyId>
+    <title>backend-alert-rule-engine</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\3-1-backend-alert-rule-engine.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>system</asA>
+    <iWant>a rule engine to evaluate content and trigger alerts</iWant>
+    <soThat>users receive notifications for content matching their criteria</soThat>
+    <tasks>1. Create AlertRule Pydantic model with conditions, 2. Create AlertEngine class in src/alerts/engine.py, 3. Integrate with BaseWatcher to trigger evaluations, 4. Store alert events as JSON with timestamp, content_id, rule_id, 5. Implement deduplication logic (content hash + time window), 6. Create comprehensive test suite for AlertEngine</tasks>
+  </story>
+
+  <acceptanceCriteria>1. Given new content is detected by watchers, When the alert engine evaluates the content, Then it checks against all active user alert rules
+2. And rules support conditions: source_match, keyword_match, category_match, price_threshold
+3. And matching content generates alert events
+4. And alert events are stored in data/alerts/{user_id}/events/
+5. And duplicate alerts within 1 hour are suppressed</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <item>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown - Story 3.1 Backend Alert Rule Engine</title>
+        <section>Story 3.1: Backend Alert Rule Engine</section>
+        <snippet>Story 3.1 establishes the foundational backend alert rule engine that will evaluate content from the existing BaseWatcher system and trigger alerts when content matches user-defined criteria.</snippet>
+      </item>
+      <item>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Growth Features - Notification System</section>
+        <snippet>Notification system for real-time alerts for high-value content (time-sensitive deals, breaking news) to achieve zero missed opportunities success criteria.</snippet>
+      </item>
+      <item>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document - Epic to Architecture Mapping</title>
+        <section>Epic 3: Notifications Architecture</section>
+        <snippet>Epic 3 uses src/alerts/ directory, data/alerts/{user_id}/ storage patterns, Telegram Bot API for notifications, and BaseWatcher system integration.</snippet>
+      </item>
+      <item>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document - Decision Summary</title>
+        <section>Technology Choices</section>
+        <snippet>BaseWatcher pattern for state persistence, Pydantic models for type safety, JSON file storage for performance, and Flask-Login for authentication.</snippet>
+      </item>
+    </docs>
+    <code>
+      <item>
+        <path>src/watchers/base_watcher.py</path>
+        <kind>framework</kind>
+        <symbol>BaseWatcher</symbol>
+        <lines>1-50</lines>
+        <reason>Existing base class for watchers that needs alert engine integration via callback mechanism</reason>
+      </item>
+      <item>
+        <path>src/etl/base.py</path>
+        <kind>framework</kind>
+        <symbol>BaseETL</symbol>
+        <lines>1-100</lines>
+        <reason>Reference pattern for template method implementation, metrics collection, and Pydantic usage</reason>
+      </item>
+      <item>
+        <path>src/config/settings.py</path>
+        <kind>configuration</kind>
+        <symbol>Settings</symbol>
+        <lines>1-50</lines>
+        <reason>Configuration system pattern for alert engine settings and Pydantic model integration</reason>
+      </item>
+    </code>
+    <dependencies>
+      <ecosystem name="python">
+        <package name="pydantic" version="2.x">Type-safe data validation and models</package>
+        <package name="pytest" version="8.x">Testing framework for comprehensive test suite</package>
+        <package name="flask-login" version="0.6.x">Authentication system (for future Epic 5)</package>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Must integrate with existing BaseWatcher framework without breaking existing 50+ ETL pipelines</constraint>
+    <constraint type="storage">Use file-based JSON storage for alert events in data/alerts/{user_id}/events/ directory</constraint>
+    <constraint type="performance">Alert evaluation must not block watcher processing - implement async evaluation</constraint>
+    <constraint type="patterns">Follow existing Pydantic model patterns for type safety and validation</constraint>
+    <constraint type="testing">Achieve >70% test coverage using pytest patterns established in project</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="AlertEngine.evaluate_content" kind="function">
+      <signature>evaluate_content(content: dict, rules: List[AlertRule]) -> List[AlertEvent]</signature>
+      <path>src/alerts/engine.py</path>
+    </interface>
+    <interface name="BaseWatcher.on_new_content" kind="callback">
+      <signature>on_new_content(content: dict) -> None</signature>
+      <path>src/watchers/base_watcher.py</path>
+    </interface>
+    <interface name="AlertRule" kind="pydantic-model">
+      <signature>class AlertRule(BaseModel): conditions: Dict[str, Any], active: bool, quiet_hours: Optional[TimeRange]</signature>
+      <path>src/alerts/models.py</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Follow existing pytest patterns with >70% coverage target. Test files in Tests/alerts/ with comprehensive coverage of rule evaluation logic, deduplication behavior, BaseWatcher integration, and performance under load. Use mocking for external dependencies and fixtures for consistent test data.</standards>
+    <locations>Tests/alerts/ (test_alert_engine.py, test_models.py), Tests/integration/ for BaseWatcher integration tests</locations>
+    <ideas>
+      <test idea="Test rule evaluation for each condition type (source_match, keyword_match, category_match, price_threshold)" ac="2"/>
+      <test idea="Test deduplication logic with 1-hour window using content hashing" ac="5"/>
+      <test idea="Test async evaluation doesn't block BaseWatcher processing" ac="1"/>
+      <test idea="Test JSON file storage structure and naming conventions" ac="4"/>
+      <test idea="Performance test with multiple rules and content items" ac="1,3"/>
+    </ideas>
+  </tests>
+</story-context>

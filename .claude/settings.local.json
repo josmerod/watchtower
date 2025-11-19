@@ -73,12 +73,33 @@
       "WebSearch",
       "Bash(cat:*)",
       "Bash(\"C:\\Users\\josem\\watchtower\\docs\\epics.md\")",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(if not exist \"C:\\Users\\josem\\watchtower\\.bmad-ephemeral\\stories\" mkdir \"C:\\Users\\josem\\watchtower\\.bmad-ephemeral\\stories\")",
+      "Bash(\"C:\\Users\\josem\\watchtower\\.bmad-ephemeral\\stories\\tech-spec-epic-1.md\")",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(NUL)",
+      "Bash(if not exist \"data\\metrics\" mkdir \"data\\metrics\")",
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_handle_dialog",
+      "Bash(nul:*)",
+      "mcp__Bright_Data__search_engine",
+      "mcp__Bright_Data__scrape_as_markdown",
+      "Bash(tasklist:*)",
+      "mcp__Bright_Data__search_engine_batch",
+      "mcp__playwright__browser_resize",
+      "Bash(move:*)",
+      "Bash(dashboard_temp.html)",
+      "Bash(if not exist \"data\\deals\" mkdir \"data\\deals\")",
+      "SlashCommand(/bmad:bmm:workflows:create-story)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
       "C:\\c\\Users\\josem"
     ]
-  }
+  },
+  "outputStyle": "default"
 }

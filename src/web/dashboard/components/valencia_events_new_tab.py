@@ -223,6 +223,19 @@ def render_valencia_events_tab() -> html.Div:
                 className="p-4",
             )
 
+        # Filter data for different views
+        tech_events_data = [
+            e for e in events_data
+            if "tech" in e.get("category", "").lower()
+            or "tecnología" in e.get("category", "").lower()
+        ]
+
+        upcoming_events_data = [
+            e for e in events_data
+            if e.get("start_date")
+            and _is_upcoming_event(e.get("start_date", ""), datetime.now() + timedelta(days=30))
+        ]
+
         # Statistics
         total_events = len(events_data)
         categories = set(event.get("category", "General") for event in events_data)
@@ -306,22 +319,7 @@ def render_valencia_events_tab() -> html.Div:
             className="mb-4",
         )
 
-        # Filter data for different views
-        if events_data:
-            tech_events_data = [
-                e for e in events_data
-                if "tech" in e.get("category", "").lower()
-                or "tecnología" in e.get("category", "").lower()
-            ]
-
-            upcoming_events_data = [
-                e for e in events_data
-                if e.get("start_date")
-                and self._is_upcoming_event(e.get("start_date", ""), datetime.now() + timedelta(days=30))
-            ]
-        else:
-            tech_events_data = []
-            upcoming_events_data = []
+        # Filter data for different views - already done above
 
         # Create subtabs
         subtabs = dbc.Tabs(

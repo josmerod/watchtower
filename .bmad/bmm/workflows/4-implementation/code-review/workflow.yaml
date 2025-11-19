@@ -22,6 +22,28 @@ validation: "{installed_path}/checklist.md"
 # This is an action workflow (no output template document)
 template: false
 
+# Enhanced Process Quality Gates (Sprint Change Proposal - Nov 18, 2025)
+enhanced_completion_criteria:
+  timing_sla:
+    review_start: "< 24 hours from story submission"
+    review_complete: "< 48 hours from review start"
+    feedback_response: "< 24 hours from feedback"
+
+  quality_gates:
+    technical_validation: "All technical ACs verified"
+    process_validation: "Process timing compliance documented"
+    completion_metrics: "Review cycle time recorded for improvement"
+
+  escalation_path:
+    blocked_stories: "Auto-escalate to SM after 48 hours in review"
+    process_violations: "Document and address systematic delays"
+
+# Process Quality Tracking
+process_metrics:
+  track_review_timing: true
+  log_process_violations: true
+  generate_completion_report: true
+
 # Variables (can be provided by caller)
 variables:
   story_path: "{ephemeral_files}/stories" # Optional: Explicit path to story file. If not provided, finds first story with status "review"

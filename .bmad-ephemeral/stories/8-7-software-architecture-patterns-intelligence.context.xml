@@ -1,0 +1,153 @@
+<story-context id="{bmad_folder}/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>7</storyId>
+    <title>Software Architecture Patterns Intelligence</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\josem\watchtower\.bmad-ephemeral\stories\8-7-software-architecture-patterns-intelligence.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>software architect/developer</asA>
+    <iWant>comprehensive architecture pattern intelligence with anti-pattern detection and technology recommendations</iWant>
+    <soThat>I can make informed architectural decisions and avoid common pitfalls</soThat>
+    <tasks>- [ ] Create ArchitectureIntelligenceETL service (Foundation for architecture intelligence)
+  - [ ] Create `src/intelligence/architecture/architecture_etl.py` extending BaseIntelligenceETL
+  - [ ] Integrate architecture authority sources: Martin Fowler, InfoQ, AWS/GCP/Azure architecture blogs
+  - [ ] Add Medium publications and community sources for diverse perspectives
+  - [ ] Implement GitHub pattern repositories and Stack Overflow architecture Q&A
+  - [ ] Create architecture content deduplication and quality scoring
+
+- [ ] Implement pattern recognition and analysis system (AC: 1, 2, 3)
+  - [ ] Create PatternRecognizer in `src/intelligence/architecture/pattern_recognizer.py`
+  - [ ] Implement NLP analysis for architectural style identification and categorization
+  - [ ] Add graph analysis for architectural pattern relationships and dependencies
+  - [ ] Create domain complexity assessment algorithms for team size and scalability analysis
+  - [ ] Implement pattern recommendation engine based on user tech stack and requirements
+
+- [ ] Develop anti-pattern detection system (AC: 4)
+  - [ ] Create AntiPatternDetector in `src/intelligence/architecture/anti_pattern_detector.py`
+  - [ ] Implement code analysis capabilities for architecture problem identification
+  - [ ] Add pattern matching algorithms for common architectural anti-patterns
+  - [ ] Create remediation recommendation engine with migration strategies
+  - [ ] Implement architecture health scoring and risk assessment
+
+- [ ] Create technology stack compatibility and analysis system (AC: 5)
+  - [ ] Create TechStackAnalyzer in `src/intelligence/architecture/tech_stack_analyzer.py`
+  - [ ] Implement technology compatibility matrix and assessment algorithms
+  - [ ] Add performance implication analysis for different architectural patterns
+  - [ ] Create cost analysis models for architecture decisions and technology choices
+  - [ ] Implement migration complexity assessment and transition planning
+
+- [ ] Create Architecture Intelligence dashboard tab (AC: 1, 2, 3)
+  - [ ] Create `src/web/dashboard/components/architecture_intelligence_tab.py`
+  - [ ] Implement ArchitectureManager for data loading and intelligent caching
+  - [ ] Add "Architecture Intelligence" tab to main dashboard navigation
+  - [ ] Display recommended patterns with style categorization and complexity ratings
+  - [ ] Show anti-pattern alerts with severity assessment and remediation guidance
+
+- [ ] Implement advanced architecture pattern display and filtering (AC: 2, 3)
+  - [ ] Create architecture pattern cards with implementation guidance and best practices
+  - [ ] Add filtering by architectural style, domain complexity, team size, scalability requirements
+  - [ ] Display real-world examples and technology compatibility information
+  - [ ] Create pattern comparison tools for architectural decision support
+  - [ ] Implement pattern bookmarking and favoriting for personal reference
+
+- [ ] Add anti-pattern visualization and remediation interface (AC: 4)
+  - [ ] Create anti-pattern alert system with severity indicators and impact assessment
+  - [ ] Display remediation recommendations with step-by-step migration strategies
+  - [ ] Implement architecture health visualization with trend analysis
+  - [ ] Create before/after architecture comparison tools for improvement tracking
+  - [ ] Add anti-pattern documentation with examples and prevention strategies
+
+- [ ] Implement technology stack analysis and recommendations (AC: 5)
+  - [ ] Create technology stack compatibility dashboard with visual assessment tools
+  - [ ] Display performance implications analysis with benchmarking data
+  - [ ] Show cost analysis with ROI calculations for architecture decisions
+  - [ ] Implement migration complexity visualization with timeline and resource estimates
+  - [ ] Add technology trend analysis and future-proofing recommendations
+
+- [ ] Add real-time alerts and pattern monitoring (AC: 6)
+  - [ ] Create PatternAlertService for new architectural pattern detection and notification
+  - [ ] Implement relevance scoring algorithms for user-specific tech stack matching
+  - [ ] Add alert frequency controls and personalization settings
+  - [ ] Create pattern evolution tracking with trend analysis and emerging pattern identification
+  - [ ] Implement alert history and management interface for pattern discovery</tasks>
+  </story>
+
+  <acceptanceCriteria>1. **Given** architecture intelligence sources are configured (architecture blogs, GitHub patterns, conference talks)
+   **When** I view the "Architecture Intelligence" tab
+   **Then** I see: recommended architecture patterns for my stack, anti-pattern alerts, technology stack analysis
+
+2. **And** patterns are categorized by: architectural style (microservices, event-driven, serverless), domain complexity, team size, scalability requirements
+
+3. **And** each pattern includes: implementation guidance, best practices, common pitfalls, real-world examples, technology compatibility
+
+4. **And** anti-pattern detection shows: potential issues in current architectures, remediation recommendations, migration strategies
+
+5. **And** technology stack analysis provides: compatibility assessment, performance implications, cost analysis, migration complexity
+
+6. **And** I receive alerts for new architectural patterns relevant to my stack</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture Document" section="Decision Summary" snippet="Technology choices: Pydantic, intelligent caching, background jobs. Architecture patterns with component-based design" />
+      <doc path="docs/architecture.md" title="Architecture Document" section="Project Structure" snippet="src/intelligence/ - Intelligence features, src/intelligence/architecture/ - Architecture intelligence processing" />
+      <doc path="docs/epics.md" title="Epic 8: Complete Intelligence Platform" section="Software Architecture Patterns Intelligence" snippet="Architecture pattern recognition, anti-pattern detection, and technology stack analysis with ML-powered recommendations" />
+    </docs>
+    <code>
+      <code path="src/intelligence/base_intelligence_etl.py" kind="base intelligence etl" symbol="BaseIntelligenceETL" lines="1-100" reason="Foundation from Story 8.5 for architecture content aggregation and processing" />
+      <code path="src/etl/base.py" kind="base etl framework" symbol="BaseETL" lines="1-100" reason="Existing ETL patterns for architecture intelligence data processing" />
+      <code path="src/web/dashboard/components/recommendations_tab.py" kind="dashboard tab" symbol="RecommendationsManager" lines="25-50" reason="Existing tab component patterns and data loading approaches for architecture intelligence" />
+      <code path="src/analytics/technology_adoption.py" kind="analytics framework" symbol="TechnologyAdoptionAnalyzer" lines="1-100" reason="Existing analytics patterns for architecture trend analysis and technology assessment" />
+      <code path="src/web/dashboard/utils.py" kind="utility" symbol="get_data_path, parse_date_universal" lines="1-50" reason="Existing data loading utilities and time period handling" />
+    </code>
+    <dependencies>
+      <python version="3.10+">
+        <package name="dash" version="2.0+" scope="dashboard-framework" />
+        <package name="dash-bootstrap-components" version="1.0+" scope="ui-components" />
+        <package name="plotly" version="5.0+" scope="data-visualization" />
+        <package name="pandas" version="2.x" scope="data-processing" />
+        <package name="polars" version="0.20.x" scope="high-performance-operations" />
+        <package name="pydantic" version="2.11.5+" scope="data-validation" />
+        <package name="pytest" version="7.0+" scope="testing" />
+        <package name="networkx" version="3.2+" scope="graph-analysis" />
+        <package name="scikit-learn" version="1.3+" scope="ml-models" />
+        <package name="nltk" version="3.8+" scope="nlp-processing" />
+        <package name="requests" version="2.31+" scope="api-integration" />
+        <package name="beautifulsoup4" version="4.0+" scope="web-scraping" />
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Leverage Story 8.5 BaseIntelligenceETL framework for architecture authority source aggregation (Martin Fowler, InfoQ, AWS/GCP/Azure blogs)</constraint>
+    <constraint type="pattern-recognition">Implement NLP analysis for architectural style identification and graph analysis for pattern relationships and dependencies</constraint>
+    <constraint type="anti-patterns">Create comprehensive anti-pattern detection system with remediation recommendations and migration strategies</constraint>
+    <constraint type="technology-analysis">Implement technology compatibility matrix, performance implication analysis, and cost analysis models for architecture decisions</constraint>
+    <constraint type="real-time">Real-time pattern monitoring with intelligent caching for graph analysis and pattern recognition algorithms</constraint>
+    <constraint type="testing">Maintain >80% test coverage with architecture validation tests for technology compatibility and migration strategies</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="ArchitectureIntelligenceETL" kind="class" signature="class ArchitectureIntelligenceETL(BaseIntelligenceETL): def extract_martin_fowler_patterns(self) -> List[Dict]; def extract_infoq_articles(self) -> List[Dict]; def extract_cloud_provider_architecture(self) -> List[Dict]" path="src/intelligence/architecture/architecture_etl.py" />
+    <interface name="PatternRecognizer" kind="class" signature="class PatternRecognizer: def identify_architectural_style(self, content: Dict) -> ArchitecturalStyle; def analyze_pattern_relationships(self, patterns: List[Dict]) -> PatternGraph; def assess_domain_complexity(self, pattern: Dict) -> ComplexityScore" path="src/intelligence/architecture/pattern_recognizer.py" />
+    <interface name="AntiPatternDetector" kind="class" signature="class AntiPatternDetector: def detect_anti_patterns(self, architecture_data: Dict) -> List[AntiPattern]; def generate_remediation_recommendations(self, anti_pattern: AntiPattern) -> RemediationPlan; def assess_migration_complexity(self, anti_pattern: AntiPattern) -> MigrationComplexity" path="src/intelligence/architecture/anti_pattern_detector.py" />
+    <interface name="TechStackAnalyzer" kind="class" signature="class TechStackAnalyzer: def analyze_compatibility(self, tech_stack: List[str], pattern: Dict) -> CompatibilityScore; def assess_performance_implications(self, architecture_choice: Dict) -> PerformanceAnalysis; def calculate_migration_cost(self, from_arch: Dict, to_arch: Dict) -> CostAnalysis" path="src/intelligence/architecture/tech_stack_analyzer.py" />
+    <interface name="ArchitectureManager" kind="dashboard manager" signature="class ArchitectureManager: def load_architecture_intelligence_data(self, filters: Dict) -> List[ArchitecturePattern]; def generate_anti_pattern_alerts(self, user_architecture: Dict) -> List[AntiPatternAlert]" path="src/web/dashboard/components/architecture_intelligence_tab.py" />
+  </interfaces>
+
+  <tests>
+    <standards>Follow existing pytest patterns with >80% coverage target. Include architecture validation tests for technology compatibility and migration strategies. Use existing patterns: test_architecture_intelligence_etl.py, test_pattern_recognizer.py, test_anti_pattern_detector.py with mocking for external APIs and ML model dependencies.</standards>
+    <locations>Tests/intelligence/ - Intelligence-specific tests including pattern recognition algorithms, anti-pattern detection, and technology stack analysis. Tests/integration/ for multi-source architecture content aggregation and dashboard component integration testing.</locations>
+    <ideas>
+      <idea ac="AC-1, AC-2, AC-3">Test: Integration test for PatternRecognizer NLP analysis and architectural style categorization accuracy</idea>
+      <idea ac="AC-4">Test: Unit test for AntiPatternDetector code analysis capabilities and remediation recommendation generation</idea>
+      <idea ac="AC-5">Test: Performance benchmark for TechStackAnalyzer compatibility matrix calculations and cost analysis models</idea>
+      <idea ac="AC-6">Test: End-to-end test for PatternAlertService real-time monitoring and user-specific tech stack matching</idea>
+      <idea ac="Architecture">Test: Architecture validation test for technology compatibility assessment and migration strategy effectiveness</idea>
+    </ideas>
+  </tests>
+</story-context>
