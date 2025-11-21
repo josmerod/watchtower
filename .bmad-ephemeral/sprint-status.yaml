@@ -110,7 +110,7 @@ development_status:
   epic-8: backlog
   # Tier 1: Simple Intelligence Features (Weeks 1-2)
   8-1-usage-based-recommendations: review
-  8-2-simple-trend-indicators: ready-for-dev
+  8-2-simple-trend-indicators: review
   8-3-related-content-suggestions: ready-for-dev
   8-4-content-insights-dashboard: ready-for-dev
   # Tier 2: AI & Developer Resources Intelligence Platform (Weeks 3-8)

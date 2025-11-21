@@ -36,49 +36,28 @@ run_etl() {
 
 # Run all ETL scripts in parallel and store their PIDs using UV
 pids=()
-# Games ETL
-run_etl "src/etl/games/games_get_deals.py" && pids+=($!)
-run_etl "src/etl/games/games_get_humblebundles.py" && pids+=($!)
-run_etl "src/etl/games/games_get_itchio_trending.py" && pids+=($!)
-run_etl "src/etl/games/games_get_new_releases.py" && pids+=($!)
-run_etl "src/etl/games/games_get_epic_free.py" && pids+=($!)
-run_etl "src/etl/games/enhanced_free_games_etl.py" && pids+=($!)
-run_etl "src/etl/games/games_get_metacritic_rss.py" && pids+=($!)
-run_etl "src/etl/news/news_get_ycombinator.py" && pids+=($!)
-run_etl "src/etl/news/news_get_futuretools.py" && pids+=($!)
-run_etl "src/etl/news/news_get_genai_medium.py" && pids+=($!)
-run_etl "src/etl/news/news_get_kdnuggets.py" && pids+=($!)
-run_etl "src/etl/news/news_get_bensbites.py" && pids+=($!)
-run_etl "src/etl/news/news_get_planesvalencia.py" && pids+=($!)
-run_etl "src/etl/news/news_get_gooddevs.py" && pids+=($!)
-run_etl "src/etl/news/news_get_podcasts.py" && pids+=($!)
-run_etl "src/etl/goldigging/goldigging_youtube_posts.py" && pids+=($!)
-run_etl "src/watchers/ms_skills_watcher.py" && pids+=($!)
-run_etl "src/etl/goldigging/goldigging_coursera_courses.py" && pids+=($!)
-run_etl "src/etl/goldigging/goldigging_pluralsight_courses.py" && pids+=($!)
-run_etl "src/etl/goldigging/goldigging_scavenging_etl.py" && pids+=($!)
-run_etl "src/etl/news/reddit_unified_etl.py" && pids+=($!)
-run_etl "src/etl/giveaways/reddit_giveaways_etl.py" && pids+=($!)
-run_etl "src/etl/news/news_get_media_rss.py" && pids+=($!)
-run_etl "src/etl/news/news_get_meneame.py" && pids+=($!)
-run_etl "src/etl/anime/mal_etl.py" && pids+=($!)
-run_etl "src/etl/news/news_get_newsapi.py" && pids+=($!)
 
-# NEW MODULES - Developer Communities & Innovation Tracking
+# News ETL
+run_etl "src/etl/news/news_get_ycombinator.py"
+run_etl "src/etl/news/news_get_futuretools.py"
+run_etl "src/etl/news/news_get_genai_medium.py"
+run_etl "src/etl/news/news_get_kdnuggets.py"
+run_etl "src/etl/news/news_get_bensbites.py"
+run_etl "src/etl/news/news_get_planesvalencia.py"
+run_etl "src/etl/news/valencia_events_etl.py" # Added from .bat
+run_etl "src/etl/news/news_get_gooddevs.py"
+run_etl "src/etl/news/news_get_podcasts.py"
+run_etl "src/etl/news/news_get_newsapi.py"
 run_etl "src/etl/news/news_get_producthunt.py"
 run_etl "src/etl/news/news_get_indiehackers.py"
 run_etl "src/etl/news/news_get_gittrends.py"
 run_etl "src/etl/github/github_trending_rss_etl.py"
-
-# LATEST NEW MODULES - Community & Developer Intelligence
 run_etl "src/etl/news/news_get_hackernews_ask.py"
 run_etl "src/etl/news/news_get_stackoverflow_trends.py"
-run_etl "src/etl/news/news_get_home_server_trends.py"
-
-# KAGI RSS FEEDS
+run_etl "src/etl/news/news_get_home_server_trends.py" # Added from .bat (was in .sh but not grouped)
+run_etl "src/etl/news/news_get_media_rss.py"
+run_etl "src/etl/news/news_get_meneame.py"
 run_etl "src/etl/news/news_get_kagi.py"
-
-# DEV.TO RSS FEEDS
 run_etl "src/etl/news/news_get_devto.py"
 run_etl "src/etl/news/news_get_techcrunch.py"
 run_etl "src/etl/news/news_get_venturebeat.py"
@@ -87,29 +66,40 @@ run_etl "src/etl/news/news_get_google_ai_blog.py"
 run_etl "src/etl/news/news_get_lobsters.py"
 run_etl "src/etl/news/news_get_arstechnica.py"
 
+# Reddit ETL
+run_etl "src/etl/news/reddit_unified_etl.py"
+run_etl "src/etl/giveaways/reddit_giveaways_etl.py"
 
-# NEW MINING TOOLS
-run_etl "src/miners/crypto_sentiment_miner.py"
-
-# GUMROAD SCRAPER
-run_etl "src/etl/goldigging/gumroad_scraper_etl.py"
-
-# VIAJEROS PIRATAS SCRAPER
-run_etl "src/etl/goldigging/viajeros_piratas_etl.py"
-
-# SPANISH PUBLIC AID SCRAPER
-run_etl "src/etl/spanish_public_aid/spanish_public_aid_etl.py"
-
-# 4CHAN GENERALS SCRAPER
-run_etl "src/etl/fourchan/fourchan_generals_etl.py"
-
-# Deals community feeds
+# Deals ETL
+run_etl "src/etl/deals/run_all_deals.py" # Added from .bat
 run_etl "src/etl/deals/slickdeals_etl.py"
 run_etl "src/etl/deals/woot_etl.py"
 run_etl "src/etl/deals/isthereanydeal_rss_etl.py"
 
+# Goldigging ETL
+run_etl "src/etl/goldigging/goldigging_coursera_courses.py"
+run_etl "src/etl/goldigging/goldigging_pluralsight_courses.py"
+run_etl "src/etl/goldigging/goldigging_youtube_posts.py"
+run_etl "src/etl/goldigging/goldigging_scavenging_etl.py"
+run_etl "src/etl/goldigging/goldigging_deeplearningai_courses.py" # Added from .bat
+run_etl "src/etl/goldigging/gumroad_scraper_etl.py"
+
+# Arxiv ETL
+run_etl "src/etl/arxiv/arxiv_etl.py" # Added from .bat
+
+# Anime ETL
+run_etl "src/etl/anime/mal_etl.py"
+
 # AI Platforms
 run_etl "src/etl/ai_platforms/papers_with_code_etl.py"
+run_etl "src/etl/ai_platforms/replicate_models_etl.py"
+run_etl "src/etl/ai_platforms/replicate_explore_playwright_etl.py"
+
+# Watchers
+run_etl "src/watchers/ms_skills_watcher.py"
+
+# Youtube ETL
+run_etl "src/etl/youtube_shorts_ocr_etl.py" # Added from .bat
 
 # Courses
 run_etl "src/etl/courses/khan_academy_etl.py"
@@ -118,14 +108,33 @@ run_etl "src/etl/courses/khan_academy_etl.py"
 run_etl "src/etl/intelligence/sec_edgar_rss.py"
 run_etl "src/etl/intelligence/who_outbreaks_rss.py"
 
-# Additional games
+# Games ETL
+run_etl "src/etl/games/games_get_deals.py"
+run_etl "src/etl/games/games_get_humblebundles.py"
+run_etl "src/etl/games/games_get_new_releases.py"
+run_etl "src/etl/games/games_get_itchio_trending.py"
+run_etl "src/etl/games/games_get_epic_free.py"
+run_etl "src/etl/games/enhanced_free_games_etl.py"
 run_etl "src/etl/games/games_get_gog_rss.py"
 run_etl "src/etl/games/games_get_isthereanydeal_api.py"
-run_etl "src/etl/entertainment/trakt_trending_etl.py"
-run_etl "src/etl/ai_platforms/replicate_models_etl.py"
-run_etl "src/etl/entertainment/spotify_browse_etl.py"
-run_etl "src/etl/ai_platforms/replicate_explore_playwright_etl.py"
+run_etl "src/etl/games/games_get_metacritic_rss.py"
 run_etl "src/etl/games/games_get_giantbomb.py"
+
+# Entertainment ETL
+run_etl "src/etl/entertainment/trakt_trending_etl.py"
+run_etl "src/etl/entertainment/spotify_browse_etl.py"
+
+# Spanish Public Aid ETL
+run_etl "src/etl/spanish_public_aid/spanish_public_aid_etl.py"
+
+# 4chan Generals ETL
+run_etl "src/etl/fourchan/fourchan_generals_etl.py"
+
+# Miners
+run_etl "src/miners/crypto_sentiment_miner.py"
+
+# Viajeros Piratas Scraper
+run_etl "src/etl/goldigging/viajeros_piratas_etl.py"
 
 
 echo "All ETL processes started in parallel using UV"
@@ -197,3 +206,5 @@ echo "- data/spanish_public_aid/"
 echo "- data/reddit_unified/"
 echo "- data/giveaways/"
 echo "- data/4chan_generals/"
+echo "- data/arxiv/" # Added from .bat
+echo "- data/youtube_shorts_ocr/" # Added from .bat

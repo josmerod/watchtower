@@ -318,6 +318,8 @@ class DeduplicationEngine:
     def _find_duplicates_by_title(self, items: list[TimestampedModel]) -> list[list[TimestampedModel]]:
         """Find duplicates based on title similarity.
 
+        Optimized using sorting and windowing to avoid O(N^2) complexity.
+        
         Args:
             items: List of items to check for duplicates.
 
@@ -325,38 +327,74 @@ class DeduplicationEngine:
             List of duplicate groups found by title similarity.
         """
         duplicate_groups = []
-        processed_indices = set()
-
-        for i, item1 in enumerate(items):
-            if i in processed_indices:
+        processed_ids = set()
+        
+        # Filter items with titles and pre-calculate normalized titles
+        valid_items = []
+        normalized_titles = {}
+        
+        for item in items:
+            title = getattr(item, 'title', '')
+            if title:
+                valid_items.append(item)
+                item_id = getattr(item, 'id', str(item))
+                normalized_titles[item_id] = self._normalize_text(title)
+        
+        # Sort items by normalized title to bring similar items close together
+        valid_items.sort(key=lambda x: normalized_titles[getattr(x, 'id', str(x))])
+        
+        # Comparison window size - items further apart than this are unlikely to be duplicates
+        # unless the dataset is extremely dense with very similar titles
+        WINDOW_SIZE = 25
+        
+        for i in range(len(valid_items)):
+            item1 = valid_items[i]
+            item1_id = getattr(item1, 'id', str(item1))
+            
+            if item1_id in processed_ids:
                 continue
-
+                
             title1 = getattr(item1, 'title', '')
-            if not title1:
-                continue
-
+            norm_title1 = normalized_titles[item1_id]
             current_group = [item1]
-
-            for j, item2 in enumerate(items[i+1:], i+1):
-                if j in processed_indices:
+            
+            # Check only items within the window
+            for j in range(i + 1, min(i + WINDOW_SIZE + 1, len(valid_items))):
+                item2 = valid_items[j]
+                item2_id = getattr(item2, 'id', str(item2))
+                
+                if item2_id in processed_ids:
                     continue
-
+                    
                 title2 = getattr(item2, 'title', '')
-                if not title2:
+                norm_title2 = normalized_titles[item2_id]
+                
+                # Optimization: Check length difference first on NORMALIZED titles
+                # If lengths differ significantly, ratio cannot be high
+                len1, len2 = len(norm_title1), len(norm_title2)
+                if abs(len1 - len2) / max(len1, len2) > (1 - self.title_similarity_threshold):
                     continue
-
-                similarity = self._calculate_title_similarity(title1, title2)
+                
+                # Optimization: Use quick_ratio first (O(N)) before full ratio (expensive)
+                matcher = SequenceMatcher(None, norm_title1, norm_title2)
+                if matcher.real_quick_ratio() < self.title_similarity_threshold:
+                    continue
+                if matcher.quick_ratio() < self.title_similarity_threshold:
+                    continue
+                
+                # Use SequenceMatcher directly on pre-normalized titles
+                similarity = matcher.ratio()
                 self.stats["total_comparisons"] += 1
-
+                
                 if similarity >= self.title_similarity_threshold:
                     current_group.append(item2)
-                    processed_indices.add(j)
+                    processed_ids.add(item2_id)
                     self.stats["title_similarity_matches"] += 1
-
+            
             if len(current_group) > 1:
                 duplicate_groups.append(current_group)
-                processed_indices.add(i)
-
+                processed_ids.add(item1_id)
+                
         return duplicate_groups
 
     def _find_duplicates_by_content_hash(self, items: list[TimestampedModel]) -> list[list[TimestampedModel]]:
@@ -502,7 +540,10 @@ class DeduplicationEngine:
         # Calculate quality scores for all items
         scored_items = []
         for item in items:
-            quality_score = self._calculate_quality_score(item)
+            if getattr(item, 'quality_score', None) is not None:
+                quality_score = item.quality_score
+            else:
+                quality_score = self._calculate_quality_score(item)
             scored_items.append((quality_score, item))
 
         # Sort by quality score (descending) and return the highest
@@ -634,7 +675,8 @@ class DeduplicationEngine:
             else:
                 # Find the primary item from duplicate groups and add to unique items
                 for group in duplicate_groups:
-                    if getattr(item, 'id', str(item)) == getattr(group.primary_item, 'id', str(group.primary_item)):
+                    primary_item_id = group.primary_item.get('id') if isinstance(group.primary_item, dict) else getattr(group.primary_item, 'id', str(group.primary_item))
+                    if getattr(item, 'id', str(item)) == primary_item_id:
                         unique_items.append(item)
                         break
 

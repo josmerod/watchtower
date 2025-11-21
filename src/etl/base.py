@@ -8,6 +8,13 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
+import os
+import certifi
+
+# Set SSL certificate file globally for the ETL process
+os.environ["SSL_CERT_FILE"] = certifi.where()
+os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+
 from typing import (
     Any,
     Generic,

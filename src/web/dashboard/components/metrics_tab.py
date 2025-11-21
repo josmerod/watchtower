@@ -27,7 +27,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Constants
-METRICS_DATA_PATH = get_data_path("metrics")
+# Constants
+DATA_DIR = get_data_path("")  # Root data directory
 
 
 class MetricsManager:
@@ -47,15 +48,15 @@ class MetricsManager:
         logger.info("Loading metrics data...")
         self.metrics_data = []
 
-        metrics_path = Path(METRICS_DATA_PATH)
-        if not metrics_path.exists():
-            logger.warning(f"Metrics directory not found: {metrics_path}")
-            self.loaded = True
-            return
-
         try:
-            # Find all metrics JSON files
-            for metrics_file in metrics_path.glob("*.json"):
+            # Find all run summary JSON files in any output directory
+            # Pattern: data/*/output/run_summary_*.json
+            root_path = Path(DATA_DIR)
+            logger.info(f"Searching for metrics in: {root_path}")
+            files = list(root_path.glob("**/output/run_summary_*.json"))
+            logger.info(f"Found {len(files)} metrics files")
+            
+            for metrics_file in files:
                 try:
                     with open(metrics_file, encoding="utf-8") as f:
                         data = json.load(f)
@@ -66,8 +67,13 @@ class MetricsManager:
                             processed_metric = self._process_metric_record(metric)
                             if processed_metric:
                                 self.metrics_data.append(processed_metric)
+                    elif isinstance(data, dict):
+                        # Handle single metric record (new format)
+                        processed_metric = self._process_metric_record(data)
+                        if processed_metric:
+                            self.metrics_data.append(processed_metric)
 
-                        logger.info(f"Loaded {len(data)} metrics from {metrics_file.name}")
+                        logger.info(f"Loaded metric from {metrics_file.name}")
 
                 except Exception as e:
                     logger.error(f"Error loading metrics from {metrics_file}: {e}")
@@ -96,14 +102,14 @@ class MetricsManager:
 
             # Required fields for display
             processed = {
-                "name": metric.get("name", "Unknown ETL"),
-                "last_run_time": self._parse_datetime(metric.get("last_run_time")),
-                "items_processed": metric.get("items_processed", 0),
+                "name": metric.get("etl_name", metric.get("name", "Unknown ETL")),
+                "last_run_time": self._parse_datetime(metric.get("end_time", metric.get("last_run_time"))),
+                "items_processed": metric.get("records_loaded", metric.get("items_processed", 0)),
                 "success_count": metric.get("success_count", 0),
                 "error_count": metric.get("error_count", 0),
-                "avg_duration": metric.get("avg_duration", 0.0),
-                "total_duration": metric.get("total_duration", 0.0),
-                "error_details": metric.get("error_details", []),
+                "avg_duration": metric.get("duration_seconds", metric.get("avg_duration", 0.0)),
+                "total_duration": metric.get("duration_seconds", metric.get("total_duration", 0.0)),
+                "error_details": metric.get("errors_detail", metric.get("error_details", [])),
                 "status": metric.get("status", "unknown"),
                 "start_time": self._parse_datetime(metric.get("start_time")),
                 "end_time": self._parse_datetime(metric.get("end_time")),
@@ -135,7 +141,7 @@ class MetricsManager:
                 # Try other formats or timestamp
                 if isinstance(date_str, (int, float)):
                     return datetime.fromtimestamp(date_str, tz=timezone.utc)
-                return datetime.strptime(str(date_str), "%Y-%m-%d %H:%M:%S")
+                return datetime.strptime(str(date_str), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
         except Exception as e:
             logger.warning(f"Error parsing datetime '{date_str}': {e}")
             return None

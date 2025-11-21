@@ -17,6 +17,10 @@ import os
 import time
 from datetime import datetime, timezone
 from typing import Any
+import urllib3
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 import requests
 from bs4 import BeautifulSoup
@@ -275,7 +279,7 @@ def scrape_daily_products(
         List of product dictionaries
     """
     try:
-        response = session.get(base_url, timeout=30)
+        response = session.get(base_url, timeout=30, verify=False)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.content, "html.parser")
@@ -470,7 +474,7 @@ def scrape_topic_products(
     """
     try:
         topic_url = f"{base_url}/topics/{topic}"
-        response = session.get(topic_url, timeout=30)
+        response = session.get(topic_url, timeout=30, verify=False)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.content, "html.parser")

@@ -335,9 +335,17 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")]))
     ]
 
+    # Load trend data
+    from src.web.dashboard.trend_utils import get_trending_items_map, render_trend_badge, is_item_trending
+    trending_map = get_trending_items_map()
+
     # Create table body with robust field fallbacks for heterogeneous sources
     table_body_rows = []
     for article in all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]:
+        # Check trend status
+        is_trending = is_item_trending(article, trending_map)
+        trend_badge = render_trend_badge(trending_map.get(f"category:{article.get('source')}") or trending_map.get(article.get('id'))) if is_trending else None
+
         # Title fallbacks: common across Product Hunt/GitHub Trends/others
         title = (
             article.get("title")
@@ -356,13 +364,22 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         source_for_display = article.get("source_display_name", source_display_name)
         date_display = format_article_date(article)
 
+        # Add trending class for filtering
+        row_class = "trending-item" if is_trending else ""
+
         table_body_rows.append(
             html.Tr(
                 [
-                    html.Td(html.A(title, href=url, target="_blank") if url else title),
+                    html.Td([
+                        html.A(title, href=url, target="_blank") if url else title,
+                        trend_badge
+                    ]),
                     html.Td(source_for_display),
                     html.Td(date_display),
-                ]
+                    # Hidden cell for trend filtering
+                    html.Td(str(is_trending).lower(), style={"display": "none"}, className="is-trending-data") 
+                ],
+                className=row_class
             )
         )
 
@@ -379,15 +396,26 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         color="dark",
         className="table-responsive mb-0",  # Remove default bottom margin if wrapped in Div with padding
     )
+    
+    from src.web.dashboard.components.trend_filter import render_trend_filter
 
     # Return search input and table container
     return html.Div([
-        # Search input
-        create_search_input(
-            input_id=tab_search_id,
-            placeholder=f"Search {source_display_name}...",
-            clear_button=True
-        ),
+        dbc.Row([
+            dbc.Col(
+                # Search input
+                create_search_input(
+                    input_id=tab_search_id,
+                    placeholder=f"Search {source_display_name}...",
+                    clear_button=True
+                ),
+                width=True
+            ),
+            dbc.Col(
+                render_trend_filter(f"{tab_search_id}-trend-filter"),
+                width="auto"
+            )
+        ], className="mb-3 align-items-center"),
 
         # Hidden data storage for search filtering
         articles_data,
@@ -431,12 +459,13 @@ def register_news_search_callbacks(app):
     for search_id in search_ids:
         @app.callback(
             Output(f"{search_id}-results", "children"),
-            Input(search_id, "value"),
+            [Input(search_id, "value"),
+             Input(f"{search_id}-trend-filter", "value")],
             State(f"{search_id}-data", "children"),
             prevent_initial_call=True
         )
-        def update_news_search(search_term, articles_data, current_search_id=search_id):
-            """Update news display based on search term."""
+        def update_news_search(search_term, show_trending, articles_data, current_search_id=search_id):
+            """Update news display based on search term and trend filter."""
             try:
                 # Convert articles data back to list if needed
                 if articles_data is None:
@@ -448,19 +477,39 @@ def register_news_search_callbacks(app):
                 # Filter articles based on search term
                 filtered_articles = filter_content(search_term, articles_data, searchable_fields)
 
+                # Filter by trending if enabled
+                if show_trending:
+                    # We need to re-check trending status or use the hidden data
+                    # Since we don't have the hidden data easily accessible here without parsing HTML,
+                    # we'll re-use the utility. Ideally, we should store this in the data store.
+                    from src.web.dashboard.trend_utils import get_trending_items_map, is_item_trending
+                    trending_map = get_trending_items_map()
+                    filtered_articles = [
+                        a for a in filtered_articles 
+                        if is_item_trending(a, trending_map)
+                    ]
+
                 if not filtered_articles:
-                    return dbc.Alert(
-                        f"No articles found matching '{search_term}'",
-                        color="info"
-                    )
+                    msg = f"No articles found matching '{search_term}'" if search_term else "No articles found"
+                    if show_trending:
+                        msg += " (filtered by trending)"
+                    return dbc.Alert(msg, color="info")
 
                 # Create table for filtered results
                 table_header = [
                     html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")]))
                 ]
+                
+                # Load trend data for rendering badges
+                from src.web.dashboard.trend_utils import get_trending_items_map, render_trend_badge, is_item_trending
+                trending_map = get_trending_items_map()
 
                 table_body_rows = []
                 for article in filtered_articles:
+                    # Check trend status
+                    is_trending = is_item_trending(article, trending_map)
+                    trend_badge = render_trend_badge(trending_map.get(f"category:{article.get('source')}") or trending_map.get(article.get('id'))) if is_trending else None
+                    
                     # Title fallbacks: common across news sources
                     title = (
                         article.get("title")
@@ -478,20 +527,27 @@ def register_news_search_callbacks(app):
                     # Use the 'source_display_name' if available
                     source_for_display = article.get("source_display_name", "Unknown")
                     date_display = format_article_date(article)
+                    
+                    # Add trending class
+                    row_class = "trending-item" if is_trending else ""
 
                     table_body_rows.append(
                         html.Tr(
                             [
                                 html.Td(
-                                    html.A(
-                                        html.Div(title, dangerously_allow_html=True),
-                                        href=url,
-                                        target="_blank"
-                                    ) if url else html.Div(title, dangerously_allow_html=True)
+                                    [
+                                        html.A(
+                                            title,
+                                            href=url,
+                                            target="_blank"
+                                        ) if url else title,
+                                        trend_badge
+                                    ]
                                 ),
                                 html.Td(source_for_display),
                                 html.Td(date_display),
-                            ]
+                            ],
+                            className=row_class
                         )
                     )
 
@@ -512,7 +568,7 @@ def register_news_search_callbacks(app):
                 return html.Div(
                     [
                         dbc.Alert(
-                            f"📰 Found {len(filtered_articles)} articles matching '{search_term}'",
+                            f"📰 Found {len(filtered_articles)} articles matching '{search_term}'" + (" (Trending)" if show_trending else ""),
                             color="success",
                             className="mb-3",
                         ),
