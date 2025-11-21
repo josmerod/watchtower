@@ -173,39 +173,55 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             # Wait for the page to load
             await page.wait_for_load_state("networkidle", timeout=self.wait_timeout)
 
-            # Wait for deal elements to be present
-            await page.wait_for_selector(
-                "article, .deal, .offer, .post", timeout=self.wait_timeout
-            )
-
-            # Save debug HTML for first page
+            # Save debug HTML for first page (moved before selector wait)
             if page_num == 1:
-                debug_content = await page.content()
-                debug_file = self.output_dir / "debug_viajeros_piratas.html"
-                with open(debug_file, "w", encoding="utf-8") as f:
-                    f.write(debug_content)
-                self.logger.info(f"Saved debug HTML to {debug_file}")
+                try:
+                    debug_content = await page.content()
+                    debug_file = self.output_dir / "debug_viajeros_piratas.html"
+                    with open(debug_file, "w", encoding="utf-8") as f:
+                        f.write(debug_content)
+                    self.logger.info(f"Saved debug HTML to {debug_file}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to save debug HTML: {e}")
+
+            # Wait for deal elements to be present
+            try:
+                await page.wait_for_selector(
+                    "article, .deal, .offer, .post", timeout=self.wait_timeout
+                )
+            except Exception as e:
+                self.logger.warning(f"Timeout waiting for selectors: {e}")
+                # Continue to try parsing anyway, as content might be there just not matching selectors exactly
 
             # Try multiple selectors to find deal elements
             deal_selectors = [
+                "a[href*='/vacaciones/']",
+                "a[href*='/hoteles/']",
+                "a[href*='/vuelos/']",
+                "a[href*='/cruceros/']",
+                "a[href*='/viajes/']",
                 "article",
                 ".deal",
-                ".offer",
-                ".post",
-                "[class*='deal']",
-                "[class*='offer']",
-                "[class*='post']",
             ]
 
             deal_elements = []
             for selector in deal_selectors:
                 elements = await page.query_selector_all(selector)
                 if elements:
-                    deal_elements = elements
-                    self.logger.info(
-                        f"Found {len(elements)} elements with selector: {selector}"
-                    )
-                    break
+                    # Filter out small elements or duplicates if needed
+                    valid_elements = []
+                    for el in elements:
+                        # Ensure it's a deal card (has significant text)
+                        text = await el.inner_text()
+                        if len(text) > 20:
+                            valid_elements.append(el)
+                    
+                    if valid_elements:
+                        deal_elements = valid_elements
+                        self.logger.info(
+                            f"Found {len(valid_elements)} elements with selector: {selector}"
+                        )
+                        break
 
             if not deal_elements:
                 self.logger.warning(f"No deal elements found on page {page_num}")
@@ -242,27 +258,33 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             if not text_content or len(text_content.strip()) < 20:
                 return None
 
-            # Extract title (usually the first line or in a heading)
-            title_selectors = [
-                "h1",
-                "h2",
-                "h3",
-                "h4",
-                ".title",
-                ".heading",
-                "[class*='title']",
-            ]
+            # Extract title
+            # Try to find the title element specifically
             title = ""
-            for selector in title_selectors:
-                title_element = await element.query_selector(selector)
-                if title_element:
-                    title = (await title_element.inner_text()).strip()
-                    break
-
-            if not title:
-                # Fallback: use first line as title
-                lines = text_content.split("\n")
-                title = lines[0].strip() if lines else "Deal"
+            
+            # Strategy 1: Look for specific classes (if known/stable)
+            # Strategy 2: Look for the largest text or specific structure
+            
+            # Try to find title by excluding price and time
+            lines = text_content.split("\n")
+            clean_lines = [l.strip() for l in lines if l.strip()]
+            
+            # Usually title is the first or second meaningful line
+            # Skip "Vacaciones", "Hoteles" etc if they appear first
+            categories = ["Vacaciones", "Hoteles", "Vuelos", "Cruceros", "Viajes"]
+            
+            for line in clean_lines:
+                if line in categories:
+                    continue
+                if "Desde" in line or "€" in line:
+                    continue
+                if "hace" in line:
+                    continue
+                title = line
+                break
+            
+            if not title and clean_lines:
+                title = clean_lines[0]
 
             # Extract price information
             price_text = ""
@@ -275,36 +297,36 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
 
             if not price_text:
                 # Search for price patterns in text
-                price_match = re.search(r"desde\s+(\d+€)", text_content, re.IGNORECASE)
+                # Look for "Desde X€" or just "X€"
+                price_match = re.search(r"(?:Desde\s+)?(\d+(?:[.,]\d+)?\s*€)", text_content, re.IGNORECASE)
                 if price_match:
-                    price_text = price_match.group(0)
+                    price_text = price_match.group(1)
 
             # Extract time information
             time_text = ""
-            time_selectors = [".time", ".date", "[class*='time']", "[class*='date']"]
-            for selector in time_selectors:
-                time_element = await element.query_selector(selector)
-                if time_element:
-                    time_text = (await time_element.inner_text()).strip()
-                    break
-
-            if not time_text:
-                # Search for time patterns in text
-                time_match = re.search(
-                    r"hace\s+\d+\s+\w+|\d{1,2}/\d{1,2}/\d{4}",
-                    text_content,
-                    re.IGNORECASE,
-                )
-                if time_match:
-                    time_text = time_match.group(0)
+            # Search for time patterns in text
+            time_match = re.search(
+                r"hace\s+\d+\s+\w+|\d{1,2}/\d{1,2}/\d{4}",
+                text_content,
+                re.IGNORECASE,
+            )
+            if time_match:
+                time_text = time_match.group(0)
 
             # Extract link
-            link_element = await element.query_selector("a")
             link = ""
-            if link_element:
-                href = await link_element.get_attribute("href")
+            # If the element itself is an 'a' tag
+            tag_name = await element.evaluate("el => el.tagName")
+            if tag_name == "A":
+                href = await element.get_attribute("href")
                 if href:
                     link = urljoin(self.base_url, href)
+            else:
+                link_element = await element.query_selector("a")
+                if link_element:
+                    href = await link_element.get_attribute("href")
+                    if href:
+                        link = urljoin(self.base_url, href)
 
             # Generate unique ID
             deal_id = f"vp_{page_num}_{position}"

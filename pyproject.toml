@@ -139,7 +139,7 @@ Documentation = "https://github.com/yourusername/watchtower/blob/main/README.md"
 
 [project.scripts]
 watchtower-dashboard = "run_watchtower_dashboard:main"
-watchtower-legacy = "src.web.fullstreamlit.app:main"
+
 watchtower-etl = "src.etl.base:run_etl_cli"
 watchtower-watcher = "src.watchers.base_watcher:run_watcher_cli"
 
@@ -214,6 +214,10 @@ addopts = "-v --tb=short --strict-config --strict-markers"
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+]
+markers = [
+    "e2e: End-to-end tests",
+    "slow: Slow running tests",
 ]
 
 [tool.coverage.run]

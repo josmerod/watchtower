@@ -281,3 +281,108 @@ def ensure_directories(directories: List[str]) -> None:
         ensure_directories(['data/games', 'logs'])
     """
     get_file_system_manager().ensure_directories(directories)
+
+
+def ensure_directory(directory: Union[str, Path], mode: int = 0o755) -> DirectoryInfo:
+    """Ensure directory exists, creating it if necessary.
+
+    Args:
+        directory: Directory path.
+        mode: Directory permissions.
+
+    Returns:
+        DirectoryInfo object.
+    """
+    return get_file_system_manager().ensure_directory(directory, mode)
+
+
+def read_json_file(file_path: Union[str, Path]):
+    """Read JSON file.
+
+    Args:
+        file_path: Path to JSON file.
+
+    Returns:
+        Parsed JSON data.
+    """
+    import json
+    path = Path(file_path)
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def write_json_file(file_path: Union[str, Path], data, indent: Optional[int] = None) -> None:
+    """Write data to JSON file.
+
+    Args:
+        file_path: Path to JSON file.
+        data: Data to write.
+        indent: Indentation level.
+    """
+    import json
+    path = Path(file_path)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=indent, ensure_ascii=False)
+
+
+def backup_file(file_path: Union[str, Path]) -> Path:
+    """Create a backup of a file.
+
+    Args:
+        file_path: Path to file to backup.
+
+    Returns:
+        Path to backup file.
+    """
+    import datetime
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+    
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = path.with_name(f"{path.stem}_{timestamp}_backup{path.suffix}")
+    shutil.copy2(path, backup_path)
+    return backup_path
+
+
+def get_file_size(file_path: Union[str, Path]) -> int:
+    """Get file size in bytes.
+
+    Args:
+        file_path: Path to file.
+
+    Returns:
+        File size in bytes, or 0 if file doesn't exist.
+    """
+    path = Path(file_path)
+    if not path.exists():
+        return 0
+    return path.stat().st_size
+
+
+def clean_filename(filename: str) -> str:
+    """Clean filename by removing invalid characters.
+
+    Args:
+        filename: Original filename.
+
+    Returns:
+        Cleaned filename.
+    """
+    import re
+    # Remove invalid chars: < > : " / \ | ? *
+    cleaned = re.sub(r'[<>:"/\\|?*]', '', filename)
+    return cleaned
+
+
+def batch_process_files(files: List[Union[str, Path]], process_func):
+    """Process a batch of files.
+
+    Args:
+        files: List of files to process.
+        process_func: Function to apply to each file.
+
+    Returns:
+        List of results.
+    """
+    return [process_func(Path(f)) for f in files]

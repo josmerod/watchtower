@@ -18,12 +18,12 @@ from src.web.dashboard.components.items_per_page_selector import (
     register_items_per_page_callback,
     load_initial_preference,
 )
-from src.web.dashboard.components.trend_filter import (
-    create_trend_filter_component,
+from src.web.dashboard.components.trend_filter import render_trend_filter
+from src.web.dashboard.trend_utils import (
     load_latest_trends,
     get_trending_items_map,
-    create_trend_badge,
-    get_trend_filtered_content,
+    render_trend_badge,
+    is_item_trending,
 )
 
 # Configure logging
@@ -220,7 +220,7 @@ def create_papers_table(df_subset):
                     style={"max-width": "250px"}
                 ),
                 html.Td(
-                    create_trend_badge(paper.to_dict(), trending_items),
+                    render_trend_badge(trending_items.get(f"category:{paper.get('source')}") or trending_items.get(paper.get('id'))) if is_item_trending(paper.to_dict(), trending_items) else None,
                     className="text-nowrap"
                 ),
                 html.Td(
@@ -396,7 +396,7 @@ def render_arxiv_research_tab():
                 )
             ], md=2),
             dbc.Col([
-                create_trend_filter_component("arxiv")
+                render_trend_filter("arxiv-trend-filter")
             ], md=2),
             dbc.Col([
                 dbc.Button(
@@ -585,14 +585,14 @@ def register_arxiv_callbacks(app):
             # Apply trend filtering (Story 8.2: Simple Trend Indicators)
             if trend_filter_store and trend_filter_store.get("show_trending_only", False):
                 try:
-                    trends_data = load_latest_trends()
-                    trending_items = get_trending_items_map(trends_data)
+                    trending_items_map = get_trending_items_map()
 
                     # Convert DataFrame to list for trend filtering
                     filtered_list = df_filtered.to_dict('records')
-                    trend_filtered_list = get_trend_filtered_content(
-                        filtered_list, trend_filter_store, trending_items
-                    )
+                    trend_filtered_list = [
+                        item for item in filtered_list
+                        if is_item_trending(item, trending_items_map)
+                    ]
 
                     if trend_filtered_list:
                         df_filtered = pd.DataFrame(trend_filtered_list)

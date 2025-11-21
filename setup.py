@@ -66,7 +66,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "watchtower-app=src.web.fullstreamlit.app:main",
+            "watchtower-dashboard=src.web.dashboard.app:main",
             "watchtower-etl=src.etl.base:run_etl_cli",
             "watchtower-watcher=src.watchers.base_watcher:run_watcher_cli",
         ],
@@ -74,8 +74,6 @@ setup(
     include_package_data=True,
     package_data={
         "watchtower": [
-            "web/fullstreamlit/styles/*.css",
-            "web/fullstreamlit/assets/*",
             "config/*.json",
             "config/*.yaml",
         ],
@@ -87,4 +85,4 @@ setup(
         "Source": "https://github.com/yourusername/watchtower",
         "Documentation": "https://github.com/yourusername/watchtower/docs",
     },
-) 
+)

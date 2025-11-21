@@ -16,6 +16,10 @@ import json
 import re
 from datetime import datetime
 from typing import Any, List
+import urllib3
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 import feedparser
 import requests
@@ -184,7 +188,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
         try:
             # Fetch RSS feed
             self.logger.debug(f"Fetching RSS feed: {feed.url}")
-            response = self.session.get(feed.url, timeout=30)
+            response = self.session.get(feed.url, timeout=30, verify=False)
             response.raise_for_status()
 
             # Parse RSS feed
@@ -435,11 +439,28 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
             self.logger.warning(f"Error extracting description from HTML: {e}")
             return None
 
-    def load(self, repositories: List[GitHubRepositoryModel]) -> None:
-        """Load repository data to files."""
+    def load(self, repositories: List[GitHubRepositoryModel] | List[dict]) -> None:
+        """Load data into JSON files.
+
+        Args:
+            repositories: List of GitHubRepositoryModel objects or dicts
+        """
         if not repositories:
-            self.logger.warning("No repositories to save")
+            self.logger.warning("No data to load")
             return
+
+        # Convert dicts back to models if necessary
+        models = []
+        for repo in repositories:
+            if isinstance(repo, dict):
+                try:
+                    models.append(GitHubRepositoryModel(**repo))
+                except Exception as e:
+                    self.logger.error(f"Failed to convert dict to model: {e}")
+            else:
+                models.append(repo)
+        
+        repositories = models
 
         # Create output directory
         output_dir = self.output_dir / "github_trending"

@@ -19,6 +19,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 import requests
+import urllib3
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Add the project root to the path
 sys.path.insert(
@@ -81,7 +85,7 @@ class RedditGiveawaysETL(BaseETL):
                 url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit=25"
                 headers = {"User-Agent": "Watchtower/1.0 (Educational Research Bot)"}
 
-                response = requests.get(url, headers=headers, timeout=30)
+                response = requests.get(url, headers=headers, timeout=30, verify=False)
                 response.raise_for_status()
 
                 data = response.json()
