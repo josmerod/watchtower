@@ -127,21 +127,28 @@ class MetricsManager:
         except Exception as e:
             logger.warning(f"Error processing metric record: {e}")
             return None
-
     def _parse_datetime(self, date_str):
         """Parse datetime string with multiple format support."""
         if not date_str:
             return None
 
         try:
+            dt = None
             # Try parsing ISO format first
             if isinstance(date_str, str) and 'T' in date_str:
-                return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
             else:
                 # Try other formats or timestamp
                 if isinstance(date_str, (int, float)):
-                    return datetime.fromtimestamp(date_str, tz=timezone.utc)
-                return datetime.strptime(str(date_str), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                    dt = datetime.fromtimestamp(date_str, tz=timezone.utc)
+                else:
+                    dt = datetime.strptime(str(date_str), "%Y-%m-%d %H:%M:%S")
+            
+            # Ensure timezone awareness
+            if dt and dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+            
         except Exception as e:
             logger.warning(f"Error parsing datetime '{date_str}': {e}")
             return None

@@ -32,6 +32,15 @@ from src.web.dashboard.components.intelligence_tab import (
     register_intelligence_callbacks,
     render_intelligence_tab,
 )
+from src.web.dashboard.components.ai_research_tab import render_ai_research_tab
+from src.web.dashboard.components.personalization_tab import (
+    render_personalization_tab,
+    register_personalization_callbacks
+)
+from src.web.dashboard.components.architecture_intelligence_tab import (
+    render_architecture_intelligence_tab,
+    register_architecture_callbacks
+)
 from src.web.dashboard.components.knowledge_garden_tab import (
     render_knowledge_garden_tab,
 )
@@ -95,6 +104,10 @@ app = dash.Dash(
 
 # Set app title for browser tab and configure metadata
 app.title = "Watchtower Dashboard"
+
+# Register callbacks for components that need them
+register_personalization_callbacks(app)
+register_architecture_callbacks(app)
 
 # Add meta tags for better branding
 app.index_string = """
@@ -205,6 +218,21 @@ app.layout = dbc.Container(
                             label="Intelligence",
                             tab_id="tab-intelligence",
                             children=[render_intelligence_tab()],
+                        ),
+                        dbc.Tab(
+                            label="AI Research Intelligence",
+                            tab_id="tab-ai-research",
+                            children=[render_ai_research_tab()],
+                        ),
+                        dbc.Tab(
+                            label="🎯 My AI Learning",
+                            tab_id="tab-personalization",
+                            children=[render_personalization_tab()],
+                        ),
+                        dbc.Tab(
+                            label="🏗️ Architecture",
+                            tab_id="tab-architecture",
+                            children=[render_architecture_intelligence_tab()],
                         ),
                         dbc.Tab(
                             label="Courses",
