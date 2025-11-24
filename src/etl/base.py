@@ -458,7 +458,19 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             )
 
             # Return unique items + non-deduplicable items
-            final_items = result.unique_items + non_deduplicable_items
+            unique_items = result.unique_items
+
+            # Convert unique_items back to models if they are dicts and we have a model class
+            # DeduplicationEngine returns dicts, but we need to maintain the original model type
+            if deduplicable_items and unique_items and isinstance(unique_items[0], dict):
+                model_class = type(deduplicable_items[0])
+                try:
+                    unique_items = [model_class(**item) for item in unique_items]
+                except Exception as e:
+                    self.logger.warning(f"Failed to convert deduplicated items back to model {model_class.__name__}: {e}")
+                    # Fallback to returning dicts if conversion fails, though this might cause downstream issues
+            
+            final_items = unique_items + non_deduplicable_items
 
             # Update record count for transformed items
             self.metrics.records_transformed = len(final_items)
