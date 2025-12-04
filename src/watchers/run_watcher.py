@@ -6,7 +6,6 @@ at specified intervals.
 """
 
 import argparse
-from typing import List, Optional
 
 # Add the project root to the path to ensure imports work correctly
 from src.utils.logging import get_logger
@@ -16,9 +15,8 @@ from src.watchers.ms_skills_watcher import MSAppliedSkillsWatcher
 logger = get_logger("WatcherRunner")
 
 
-def list_available_watchers() -> List[str]:
-    """
-    List all available watchers in the system.
+def list_available_watchers() -> list[str]:
+    """List all available watchers in the system.
 
     Returns:
         List[str]: List of watcher names
@@ -27,8 +25,7 @@ def list_available_watchers() -> List[str]:
 
 
 def get_watcher_instance(watcher_name: str, check_interval: int = 3600):
-    """
-    Get an instance of the specified watcher.
+    """Get an instance of the specified watcher.
 
     Args:
         watcher_name (str): Name of the watcher to instantiate
@@ -47,11 +44,10 @@ def get_watcher_instance(watcher_name: str, check_interval: int = 3600):
 def run_watcher(
     watcher_name: str,
     continuous: bool,
-    max_runs: Optional[int] = None,
+    max_runs: int | None = None,
     check_interval: int = 3600,
 ):
-    """
-    Run a specific watcher.
+    """Run a specific watcher.
 
     Args:
         watcher_name (str): Name of the watcher to run

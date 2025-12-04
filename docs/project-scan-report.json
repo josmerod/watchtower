@@ -8,14 +8,6 @@
   "scan_level": "exhaustive",
   "project_root": "C:/Users/josem/watchtower",
   "output_folder": "C:/Users/josem/watchtower/docs",
-  "completed_steps": [
-    {
-      "step": "step_1",
-      "status": "completed",
-      "timestamp": "2025-11-17T13:50:00Z",
-      "summary": "Classified as monolith with 1 part (data platform)"
-    }
-  ],
   "current_step": "completed",
   "findings": {
     "project_classification": "Monolith - Data Processing & ETL Platform with Python 3.10+",
@@ -86,6 +78,9 @@
       "summary": "Supporting docs complete (all integrated in overview)"
     }
   ],
-  "outputs_generated": ["project-scan-report.json", "bmm-index.md"],
+  "outputs_generated": [
+    "project-scan-report.json",
+    "bmm-index.md"
+  ],
   "resume_instructions": "Workflow completed successfully. All documentation generated."
 }

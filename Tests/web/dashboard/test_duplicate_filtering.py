@@ -7,12 +7,12 @@ from pathlib import Path
 import pytest
 
 from src.web.dashboard.deduplication_utils import (
+    create_show_duplicates_button,
+    enhance_item_with_duplicate_info,
     filter_duplicates,
     get_duplicate_groups,
     get_duplicate_summary,
-    create_show_duplicates_button,
     load_and_filter_data,
-    enhance_item_with_duplicate_info,
 )
 
 
@@ -74,10 +74,30 @@ class TestDuplicateFiltering:
     def test_get_duplicate_groups(self):
         """Test grouping items by duplicate_group_id."""
         data = [
-            {"id": 1, "title": "Item 1", "duplicate_group_id": "group1", "is_duplicate": False},
-            {"id": 2, "title": "Item 2", "duplicate_group_id": "group1", "is_duplicate": True},
-            {"id": 3, "title": "Item 3", "duplicate_group_id": "group2", "is_duplicate": True},
-            {"id": 4, "title": "Item 4", "duplicate_group_id": "group2", "is_duplicate": False},
+            {
+                "id": 1,
+                "title": "Item 1",
+                "duplicate_group_id": "group1",
+                "is_duplicate": False,
+            },
+            {
+                "id": 2,
+                "title": "Item 2",
+                "duplicate_group_id": "group1",
+                "is_duplicate": True,
+            },
+            {
+                "id": 3,
+                "title": "Item 3",
+                "duplicate_group_id": "group2",
+                "is_duplicate": True,
+            },
+            {
+                "id": 4,
+                "title": "Item 4",
+                "duplicate_group_id": "group2",
+                "is_duplicate": False,
+            },
             {"id": 5, "title": "Item 5"},  # No group
         ]
 
@@ -113,11 +133,36 @@ class TestDuplicateFiltering:
     def test_get_duplicate_summary(self):
         """Test getting duplicate summary statistics."""
         data = [
-            {"id": 1, "title": "Item 1", "is_duplicate": False, "duplicate_group_id": None},
-            {"id": 2, "title": "Item 2", "is_duplicate": True, "duplicate_group_id": "group1"},
-            {"id": 3, "title": "Item 3", "is_duplicate": True, "duplicate_group_id": "group1"},
-            {"id": 4, "title": "Item 4", "is_duplicate": True, "duplicate_group_id": "group2"},
-            {"id": 5, "title": "Item 5", "is_duplicate": False, "duplicate_group_id": None},
+            {
+                "id": 1,
+                "title": "Item 1",
+                "is_duplicate": False,
+                "duplicate_group_id": None,
+            },
+            {
+                "id": 2,
+                "title": "Item 2",
+                "is_duplicate": True,
+                "duplicate_group_id": "group1",
+            },
+            {
+                "id": 3,
+                "title": "Item 3",
+                "is_duplicate": True,
+                "duplicate_group_id": "group1",
+            },
+            {
+                "id": 4,
+                "title": "Item 4",
+                "is_duplicate": True,
+                "duplicate_group_id": "group2",
+            },
+            {
+                "id": 5,
+                "title": "Item 5",
+                "is_duplicate": False,
+                "duplicate_group_id": None,
+            },
         ]
 
         summary = get_duplicate_summary(data)
@@ -171,12 +216,7 @@ class TestDuplicateFiltering:
         """Test creating button with custom text."""
         data = []
 
-        button = create_show_duplicates_button(
-            "test-button",
-            data,
-            False,
-            button_text="Custom Button Text"
-        )
+        button = create_show_duplicates_button("test-button", data, False, button_text="Custom Button Text")
 
         # Should use custom text
         assert button.children == "Custom Button Text"
@@ -199,7 +239,7 @@ class TestDuplicateFiltering:
             {"id": 3, "title": "Item 3", "is_duplicate": False},
         ]
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(test_data, f)
             temp_file = f.name
 
@@ -224,12 +264,9 @@ class TestDuplicateFiltering:
     def test_load_and_filter_data_with_max_items(self):
         """Test loading data with max_items limit."""
         # Create temporary file with many items
-        test_data = [
-            {"id": i, "title": f"Item {i}", "is_duplicate": i % 3 == 0}
-            for i in range(10)
-        ]
+        test_data = [{"id": i, "title": f"Item {i}", "is_duplicate": i % 3 == 0} for i in range(10)]
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(test_data, f)
             temp_file = f.name
 
@@ -248,7 +285,7 @@ class TestDuplicateFiltering:
         """Test loading data when file contains single object instead of array."""
         single_object = {"id": 1, "title": "Single Item", "is_duplicate": False}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(single_object, f)
             temp_file = f.name
 
@@ -270,7 +307,7 @@ class TestDuplicateFiltering:
             "title": "Test Item",
             "is_duplicate": True,
             "duplicate_group_id": "group1",
-            "quality_score": 85.5
+            "quality_score": 85.5,
         }
 
         enhanced = enhance_item_with_duplicate_info(item)
@@ -293,7 +330,7 @@ class TestDuplicateFiltering:
             "title": "Test Item",
             "is_duplicate": False,
             "duplicate_group_id": "group1",
-            "quality_score": 90.0
+            "quality_score": 90.0,
         }
 
         enhanced = enhance_item_with_duplicate_info(item)
@@ -304,10 +341,7 @@ class TestDuplicateFiltering:
 
     def test_enhance_item_no_duplicate_info(self):
         """Test enhancing item without duplicate information."""
-        item = {
-            "id": 1,
-            "title": "Test Item"
-        }
+        item = {"id": 1, "title": "Test Item"}
 
         enhanced = enhance_item_with_duplicate_info(item)
 
@@ -317,11 +351,7 @@ class TestDuplicateFiltering:
 
     def test_enhance_item_no_quality_score(self):
         """Test enhancing item without quality score."""
-        item = {
-            "id": 1,
-            "title": "Test Item",
-            "is_duplicate": False
-        }
+        item = {"id": 1, "title": "Test Item", "is_duplicate": False}
 
         enhanced = enhance_item_with_duplicate_info(item)
 
@@ -330,11 +360,7 @@ class TestDuplicateFiltering:
 
     def test_enhance_item_with_quality_score(self):
         """Test enhancing item with quality score."""
-        item = {
-            "id": 1,
-            "title": "Test Item",
-            "quality_score": 75.3
-        }
+        item = {"id": 1, "title": "Test Item", "quality_score": 75.3}
 
         enhanced = enhance_item_with_duplicate_info(item)
 

@@ -19,8 +19,7 @@ ITC_URL = "https://itch.io/games/top-sellers"  # Changed to use top sellers page
 
 
 def get_itchio_trending() -> None:
-    """
-    Fetches trending games from itch.io and saves them as JSON and CSV.
+    """Fetches trending games from itch.io and saves them as JSON and CSV.
 
     Extracted values:
     - title: game title
@@ -31,9 +30,7 @@ def get_itchio_trending() -> None:
     """
     logger.info("Fetching itch.io trending games")
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
 
     try:
         response = requests.get(ITC_URL, headers=headers, timeout=30)
@@ -70,21 +67,13 @@ def get_itchio_trending() -> None:
     for item in game_items[:20]:  # Limit to top 20 games
         try:
             # Extract game information
-            title_elem = item.find("div", class_="game_title") or item.find(
-                "div", class_="title"
-            )
+            title_elem = item.find("div", class_="game_title") or item.find("div", class_="title")
             title = title_elem.get_text(strip=True) if title_elem else "Unknown Title"
 
-            author_elem = item.find("div", class_="game_author") or item.find(
-                "div", class_="game_author_name"
-            )
-            author = (
-                author_elem.get_text(strip=True) if author_elem else "Unknown Author"
-            )
+            author_elem = item.find("div", class_="game_author") or item.find("div", class_="game_author_name")
+            author = author_elem.get_text(strip=True) if author_elem else "Unknown Author"
 
-            price_elem = item.find("div", class_="price_value") or item.find(
-                "span", class_="price"
-            )
+            price_elem = item.find("div", class_="price_value") or item.find("span", class_="price")
             price = price_elem.get_text(strip=True) if price_elem else "Free"
 
             # Get the link
@@ -124,9 +113,7 @@ def get_itchio_trending() -> None:
             with open(csv_path, "w") as f:
                 f.write("title|author|price|link|fetched_at\n")  # Header only
 
-            logger.info(
-                f"Empty itch.io trending files created at {json_path} and {csv_path}"
-            )
+            logger.info(f"Empty itch.io trending files created at {json_path} and {csv_path}")
         except Exception as e:
             logger.error(f"Error creating empty itch.io trending files: {e}")
         return

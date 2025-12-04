@@ -1,15 +1,13 @@
-"""
-Items Per Page Selector Component
+"""Items Per Page Selector Component
 Reusable component for selecting items per page in dashboard tabs
 """
 
 import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, clientside_callback
+from dash import Input, Output, clientside_callback, dcc, html
 
 
 def create_items_per_page_selector(tab_name, default_value=48):
-    """
-    Create an items-per-page selector component for a specific tab
+    """Create an items-per-page selector component for a specific tab
 
     Args:
         tab_name (str): The name of the tab (e.g., 'videos', 'arxiv')
@@ -47,8 +45,7 @@ def create_items_per_page_selector(tab_name, default_value=48):
 
 
 def register_items_per_page_callback(tab_name):
-    """
-    Register a clientside callback for items-per-page preference saving
+    """Register a clientside callback for items-per-page preference saving
 
     Args:
         tab_name (str): The name of the tab
@@ -84,8 +81,7 @@ def register_items_per_page_callback(tab_name):
 
 
 def load_initial_preference(tab_name):
-    """
-    Generate JavaScript to load initial preference from localStorage
+    """Generate JavaScript to load initial preference from localStorage
 
     Args:
         tab_name (str): The name of the tab
@@ -107,8 +103,7 @@ def load_initial_preference(tab_name):
 
 
 def create_items_per_page_script(tab_names):
-    """
-    Create a script to initialize all items-per-page selectors
+    """Create a script to initialize all items-per-page selectors
 
     Args:
         tab_names (list): List of tab names to initialize

@@ -16,7 +16,7 @@ __email__ = "team@watchtower.dev"
 # from src.utils.logging import get_logger
 # from src.utils.file_system import ensure_directories, get_project_root
 
-__all__ = [
+__all__: list[str] = [
     # "BaseWatcher",
     # "get_logger",
     # "ensure_directories",

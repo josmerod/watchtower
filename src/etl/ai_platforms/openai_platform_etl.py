@@ -49,9 +49,7 @@ class OpenAIPlatformETL(BaseETL):
         }
 
         # Headers for web scraping
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
+        self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
 
         # Model tracking
         self.known_models = set()
@@ -111,9 +109,7 @@ class OpenAIPlatformETL(BaseETL):
                     "model_id": model_info.get("id", ""),
                     "model_name": model_info.get("name", ""),
                     "model_type": self._determine_model_type(model_info),
-                    "release_date": model_info.get(
-                        "release_date", datetime.utcnow().isoformat()
-                    ),
+                    "release_date": model_info.get("release_date", datetime.utcnow().isoformat()),
                     "capabilities": model_info.get("capabilities", []),
                     "context_length": model_info.get("context_length"),
                     "pricing_input": model_info.get("pricing_input"),
@@ -191,9 +187,7 @@ class OpenAIPlatformETL(BaseETL):
         pricing_data = []
 
         try:
-            response = requests.get(
-                self.endpoints["pricing_page"], headers=self.headers, timeout=30
-            )
+            response = requests.get(self.endpoints["pricing_page"], headers=self.headers, timeout=30)
             response.raise_for_status()
 
             soup = BeautifulSoup(response.content, "html.parser")
@@ -245,9 +239,7 @@ class OpenAIPlatformETL(BaseETL):
         blog_data = []
 
         try:
-            response = requests.get(
-                self.endpoints["blog"], headers=self.headers, timeout=30
-            )
+            response = requests.get(self.endpoints["blog"], headers=self.headers, timeout=30)
             response.raise_for_status()
 
             soup = BeautifulSoup(response.content, "html.parser")
@@ -262,9 +254,7 @@ class OpenAIPlatformETL(BaseETL):
                     "update_type": "announcement",
                     "title": post.get("title", ""),
                     "description": post.get("excerpt", ""),
-                    "announcement_date": post.get(
-                        "date", datetime.utcnow().isoformat()
-                    ),
+                    "announcement_date": post.get("date", datetime.utcnow().isoformat()),
                     "impact_level": self._assess_announcement_impact(post),
                     "source_url": post.get("url", ""),
                     "tags": post.get("tags", []),
@@ -535,9 +525,7 @@ class OpenAIPlatformETL(BaseETL):
             "value_proposition": self._assess_value_proposition(record),
         }
 
-    def _analyze_pricing_competitiveness(
-        self, record: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _analyze_pricing_competitiveness(self, record: dict[str, Any]) -> dict[str, Any]:
         """Analyze pricing competitiveness."""
         return {
             "market_position": "premium",
@@ -576,12 +564,8 @@ class OpenAIPlatformETL(BaseETL):
         positive_indicators = ["new", "improved", "better", "enhanced", "faster"]
         negative_indicators = ["deprecated", "removed", "discontinued", "limited"]
 
-        positive_count = sum(
-            1 for indicator in positive_indicators if indicator in title
-        )
-        negative_count = sum(
-            1 for indicator in negative_indicators if indicator in title
-        )
+        positive_count = sum(1 for indicator in positive_indicators if indicator in title)
+        negative_count = sum(1 for indicator in negative_indicators if indicator in title)
 
         if positive_count > negative_count:
             sentiment = "positive"
@@ -702,19 +686,15 @@ class OpenAIPlatformETL(BaseETL):
             # Save latest data
             with open(latest_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, default=str)
-            self.logger.info(
-                f"Successfully updated latest OpenAI data at {latest_file}"
-            )
+            self.logger.info(f"Successfully updated latest OpenAI data at {latest_file}")
 
             self.metrics.records_loaded = len(data)
 
             # Generate OpenAI-specific summary
             self._generate_openai_summary(data, timestamp)
 
-        except (IOError, OSError) as e:
-            self.logger.error(
-                f"Failed to save OpenAI data to {output_file} or {latest_file}: {e}"
-            )
+        except OSError as e:
+            self.logger.error(f"Failed to save OpenAI data to {output_file} or {latest_file}: {e}")
             raise LoadError(
                 f"Failed to save OpenAI data: {e}",
                 destination=str(output_file),
@@ -732,23 +712,15 @@ class OpenAIPlatformETL(BaseETL):
                 destination_type="file",
             ) from e
 
-    def _generate_openai_summary(
-        self, data: list[dict[str, Any]], timestamp: str
-    ) -> None:
+    def _generate_openai_summary(self, data: list[dict[str, Any]], timestamp: str) -> None:
         """Generate OpenAI-specific summary report."""
         summary = {
             "platform": "openai",
             "report_timestamp": timestamp,
             "total_records": len(data),
-            "models_tracked": len(
-                [d for d in data if d.get("data_type") == "model_release"]
-            ),
-            "announcements": len(
-                [d for d in data if d.get("data_type") == "platform_update"]
-            ),
-            "status_checks": len(
-                [d for d in data if d.get("data_type") == "platform_status"]
-            ),
+            "models_tracked": len([d for d in data if d.get("data_type") == "model_release"]),
+            "announcements": len([d for d in data if d.get("data_type") == "platform_update"]),
+            "status_checks": len([d for d in data if d.get("data_type") == "platform_status"]),
             "key_insights": self._generate_openai_insights(data),
             "recommendations": self._generate_openai_recommendations(data),
         }
@@ -765,13 +737,9 @@ class OpenAIPlatformETL(BaseETL):
         if models:
             insights.append(f"Monitoring {len(models)} OpenAI models")
 
-            high_score_models = [
-                m for m in models if m.get("intelligence_score", 0) > 0.8
-            ]
+            high_score_models = [m for m in models if m.get("intelligence_score", 0) > 0.8]
             if high_score_models:
-                insights.append(
-                    f"{len(high_score_models)} models show high market potential"
-                )
+                insights.append(f"{len(high_score_models)} models show high market potential")
 
         status_data = [d for d in data if d.get("data_type") == "platform_status"]
         if status_data:
@@ -789,15 +757,11 @@ class OpenAIPlatformETL(BaseETL):
         for model in models:
             if model.get("intelligence_score", 0) > 0.9:
                 model_name = model.get("model_name", "Unknown")
-                recommendations.append(
-                    f"Consider adopting {model_name} for high-impact applications"
-                )
+                recommendations.append(f"Consider adopting {model_name} for high-impact applications")
 
         announcements = [d for d in data if d.get("data_type") == "platform_update"]
         high_impact = [a for a in announcements if a.get("impact_level") == "high"]
         if high_impact:
-            recommendations.append(
-                "Review high-impact platform updates for business implications"
-            )
+            recommendations.append("Review high-impact platform updates for business implications")
 
         return recommendations

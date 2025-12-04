@@ -6,43 +6,45 @@ import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from utils.recommendation_scheduler import (
     RecommendationScheduler,
     get_recommendation_scheduler,
+    get_scheduler_status,
+    schedule_user_recommendations,
     start_recommendation_scheduler,
     stop_recommendation_scheduler,
-    schedule_user_recommendations,
-    get_scheduler_status,
 )
 
 
 class TestRecommendationScheduler:
     """Test suite for RecommendationScheduler functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_data_dir(self):
         """Create a temporary directory for test data."""
         with tempfile.TemporaryDirectory() as temp_dir:
             yield Path(temp_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def scheduler(self, temp_data_dir):
         """Create a RecommendationScheduler instance for testing."""
-        with patch('utils.recommendation_scheduler.UserActivityTracker') as mock_tracker, \
-             patch('utils.recommendation_scheduler.RecommendationEngine') as mock_engine:
-
+        with (
+            patch("utils.recommendation_scheduler.UserActivityTracker") as mock_tracker,
+            patch("utils.recommendation_scheduler.RecommendationEngine") as mock_engine,
+        ):
             scheduler = RecommendationScheduler()
             return scheduler
 
     def test_init(self):
         """Test scheduler initialization."""
-        with patch('utils.recommendation_scheduler.UserActivityTracker') as mock_tracker, \
-             patch('utils.recommendation_scheduler.RecommendationEngine') as mock_engine:
-
+        with (
+            patch("utils.recommendation_scheduler.UserActivityTracker") as mock_tracker,
+            patch("utils.recommendation_scheduler.RecommendationEngine") as mock_engine,
+        ):
             scheduler = RecommendationScheduler()
 
             assert scheduler._running is False
@@ -236,6 +238,7 @@ class TestRecommendationScheduler:
 
     def test_scheduler_loop_handles_errors(self, scheduler):
         """Test that the scheduler loop handles errors gracefully."""
+
         # Mock exception for one user
         def generate_side_effect(user_id):
             if user_id == "error_user":
@@ -267,14 +270,14 @@ class TestGlobalSchedulerFunctions:
 
     def test_get_recommendation_scheduler_singleton(self):
         """Test that get_recommendation_scheduler returns the same instance."""
-        with patch('utils.recommendation_scheduler._scheduler', None):
+        with patch("utils.recommendation_scheduler._scheduler", None):
             scheduler1 = get_recommendation_scheduler()
             scheduler2 = get_recommendation_scheduler()
             assert scheduler1 is scheduler2
 
     def test_start_recommendation_scheduler(self):
         """Test starting the global scheduler."""
-        with patch('utils.recommendation_scheduler.get_recommendation_scheduler') as mock_get_scheduler:
+        with patch("utils.recommendation_scheduler.get_recommendation_scheduler") as mock_get_scheduler:
             mock_scheduler = MagicMock()
             mock_get_scheduler.return_value = mock_scheduler
 
@@ -284,7 +287,7 @@ class TestGlobalSchedulerFunctions:
 
     def test_stop_recommendation_scheduler(self):
         """Test stopping the global scheduler."""
-        with patch('utils.recommendation_scheduler._scheduler') as mock_scheduler:
+        with patch("utils.recommendation_scheduler._scheduler") as mock_scheduler:
             stop_recommendation_scheduler()
 
             mock_scheduler.stop.assert_called_once()
@@ -292,7 +295,7 @@ class TestGlobalSchedulerFunctions:
 
     def test_schedule_user_recommendations(self):
         """Test scheduling recommendations for a user via global function."""
-        with patch('utils.recommendation_scheduler.get_recommendation_scheduler') as mock_get_scheduler:
+        with patch("utils.recommendation_scheduler.get_recommendation_scheduler") as mock_get_scheduler:
             mock_scheduler = MagicMock()
             mock_get_scheduler.return_value = mock_scheduler
 
@@ -302,7 +305,7 @@ class TestGlobalSchedulerFunctions:
 
     def test_get_scheduler_status(self):
         """Test getting scheduler status via global function."""
-        with patch('utils.recommendation_scheduler.get_recommendation_scheduler') as mock_get_scheduler:
+        with patch("utils.recommendation_scheduler.get_recommendation_scheduler") as mock_get_scheduler:
             mock_scheduler = MagicMock()
             mock_scheduler.get_scheduler_status.return_value = {"running": True}
             mock_get_scheduler.return_value = mock_scheduler
@@ -316,7 +319,7 @@ class TestGlobalSchedulerFunctions:
 class TestSchedulerIntegration:
     """Integration tests for the scheduler with real components."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_data_dir(self):
         """Create a temporary directory for test data."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -325,8 +328,8 @@ class TestSchedulerIntegration:
     def test_end_to_end_scheduler_workflow(self, temp_data_dir):
         """Test end-to-end scheduler workflow with real components."""
         from src.recommendations.activity_tracker import UserActivityTracker
+        from src.recommendations.models import ActivityType
         from src.recommendations.recommendation_engine import RecommendationEngine
-        from src.recommendations.models import ActivityEvent, ActivityType
 
         # Create real components
         activity_tracker = UserActivityTracker(data_dir=temp_data_dir)
@@ -369,8 +372,8 @@ class TestSchedulerIntegration:
     def test_scheduler_with_multiple_users(self, temp_data_dir):
         """Test scheduler handling multiple users."""
         from src.recommendations.activity_tracker import UserActivityTracker
+        from src.recommendations.models import ActivityType
         from src.recommendations.recommendation_engine import RecommendationEngine
-        from src.recommendations.models import ActivityEvent, ActivityType
 
         # Create real components
         activity_tracker = UserActivityTracker(data_dir=temp_data_dir)

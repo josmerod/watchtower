@@ -113,9 +113,7 @@ class RateLimitError(ScrapingError):
 
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_RATE_LIMIT_ERROR")
-        kwargs["user_message"] = (
-            f"Rate limit exceeded. Please try again in {retry_after or 'a few'} seconds."
-        )
+        kwargs["user_message"] = f"Rate limit exceeded. Please try again in {retry_after or 'a few'} seconds."
 
         super().__init__(message, **kwargs)
 
@@ -142,8 +140,6 @@ class TimeoutError(ScrapingError):
 
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_TIMEOUT_ERROR")
-        kwargs["user_message"] = (
-            "Request timed out. Please check your connection and try again."
-        )
+        kwargs["user_message"] = "Request timed out. Please check your connection and try again."
 
         super().__init__(message, **kwargs)

@@ -8,7 +8,6 @@ optionally update the watcher's state file.
 import argparse
 import json
 import os
-from typing import List, Optional
 
 from src.utils.file_system import get_project_root
 
@@ -18,37 +17,33 @@ from src.utils.logging import get_logger
 logger = get_logger("MSSkillsUpdater")
 
 
-def get_current_skills() -> List[str]:
-    """
-    Get the current list of Microsoft Applied Skills from the state file.
+def get_current_skills() -> list[str]:
+    """Get the current list of Microsoft Applied Skills from the state file.
 
     Returns:
         List[str]: List of skill names
     """
     project_root = get_project_root()
-    state_file = os.path.join(
-        project_root, "data/watchers/ms_applied_skills/state.json"
-    )
+    state_file = os.path.join(project_root, "data/watchers/ms_applied_skills/state.json")
 
     if not os.path.exists(state_file):
         logger.warning(f"State file not found: {state_file}")
         return []
 
     try:
-        with open(state_file, "r") as f:
+        with open(state_file) as f:
             state = json.load(f)
 
         skills = state.get("last_value", {}).get("skills", [])
         logger.info(f"Loaded {len(skills)} skills from state file")
         return skills
     except Exception as e:
-        logger.error(f"Error loading skills from state file: {str(e)}")
+        logger.error(f"Error loading skills from state file: {e!s}")
         return []
 
 
-def update_skills_in_watcher(skills: List[str]):
-    """
-    Update the KNOWN_SKILLS list in the ms_skills_watcher.py file.
+def update_skills_in_watcher(skills: list[str]):
+    """Update the KNOWN_SKILLS list in the ms_skills_watcher.py file.
 
     Args:
         skills (List[str]): Updated list of skills
@@ -57,7 +52,7 @@ def update_skills_in_watcher(skills: List[str]):
         project_root = get_project_root()
         watcher_file = os.path.join(project_root, "src/watchers/ms_skills_watcher.py")
 
-        with open(watcher_file, "r") as f:
+        with open(watcher_file) as f:
             content = f.read()
 
         # Find the KNOWN_SKILLS list
@@ -87,16 +82,13 @@ def update_skills_in_watcher(skills: List[str]):
         with open(watcher_file, "w") as f:
             f.write(new_content)
 
-        logger.info(
-            f"Updated KNOWN_SKILLS list in {watcher_file} with {len(skills)} skills"
-        )
+        logger.info(f"Updated KNOWN_SKILLS list in {watcher_file} with {len(skills)} skills")
     except Exception as e:
-        logger.error(f"Error updating watcher file: {str(e)}")
+        logger.error(f"Error updating watcher file: {e!s}")
 
 
-def update_state_file(skills: List[str], count: Optional[int] = None):
-    """
-    Update the state file with the new skills list.
+def update_state_file(skills: list[str], count: int | None = None):
+    """Update the state file with the new skills list.
 
     Args:
         skills (List[str]): Updated list of skills
@@ -104,15 +96,13 @@ def update_state_file(skills: List[str], count: Optional[int] = None):
     """
     try:
         project_root = get_project_root()
-        state_file = os.path.join(
-            project_root, "data/watchers/ms_applied_skills/state.json"
-        )
+        state_file = os.path.join(project_root, "data/watchers/ms_applied_skills/state.json")
 
         if not os.path.exists(state_file):
             logger.warning(f"State file not found: {state_file}")
             return
 
-        with open(state_file, "r") as f:
+        with open(state_file) as f:
             state = json.load(f)
 
         # Update the skills list
@@ -126,12 +116,11 @@ def update_state_file(skills: List[str], count: Optional[int] = None):
 
         logger.info(f"Updated state file with {len(skills)} skills")
     except Exception as e:
-        logger.error(f"Error updating state file: {str(e)}")
+        logger.error(f"Error updating state file: {e!s}")
 
 
-def add_skills(new_skills: List[str], update_state: bool = True):
-    """
-    Add new skills to the list.
+def add_skills(new_skills: list[str], update_state: bool = True):
+    """Add new skills to the list.
 
     Args:
         new_skills (List[str]): New skills to add
@@ -161,18 +150,15 @@ def add_skills(new_skills: List[str], update_state: bool = True):
         update_state_file(updated_skills)
 
 
-def remove_skills(skills_to_remove: List[str], update_state: bool = True):
-    """
-    Remove skills from the list.
+def remove_skills(skills_to_remove: list[str], update_state: bool = True):
+    """Remove skills from the list.
 
     Args:
         skills_to_remove (List[str]): Skills to remove
         update_state (bool): Whether to update the state file
     """
     current_skills = get_current_skills()
-    updated_skills = [
-        skill for skill in current_skills if skill not in skills_to_remove
-    ]
+    updated_skills = [skill for skill in current_skills if skill not in skills_to_remove]
 
     removed_skills = [skill for skill in skills_to_remove if skill in current_skills]
 

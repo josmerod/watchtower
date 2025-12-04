@@ -2,10 +2,15 @@
 
 from datetime import datetime, timezone
 
-from src.models.user_profile_model import UserProfile, SkillLevel, ResearchDomain, LearningGoal
-from src.models.ai_research_model import AIResearchPaper, ImplementationComplexity
 from src.data_quality.user_profile_manager import UserProfileManager
 from src.intelligence.recommendation_engine import ContentBasedRecommendationEngine
+from src.models.ai_research_model import AIResearchPaper, ImplementationComplexity
+from src.models.user_profile_model import (
+    LearningGoal,
+    ResearchDomain,
+    SkillLevel,
+    UserProfile,
+)
 
 print("=" * 70)
 print("Testing Personalized AI Content Discovery (Story 8.6)")
@@ -27,9 +32,9 @@ test_profile = UserProfile(
             goal_name="Learn Vision Transformers",
             target_domain=ResearchDomain.CV,
             target_skill_level=SkillLevel.ADVANCED,
-            keywords=["vision", "transformer", "vit", "attention"]
+            keywords=["vision", "transformer", "vit", "attention"],
         )
-    ]
+    ],
 )
 
 # Save profile
@@ -54,7 +59,7 @@ test_papers = [
         industry_impact="High Potential",
         industry_impact_score=85.0,
         implementation_probability=75.0,
-        complexity_score=50.0
+        complexity_score=50.0,
     ),
     AIResearchPaper(
         id="paper_2",
@@ -71,7 +76,7 @@ test_papers = [
         industry_impact="Moderate Interest",
         industry_impact_score=60.0,
         implementation_probability=55.0,
-        complexity_score=50.0
+        complexity_score=50.0,
     ),
     AIResearchPaper(
         id="paper_3",
@@ -88,7 +93,7 @@ test_papers = [
         industry_impact="Research Only",
         industry_impact_score=30.0,
         implementation_probability=20.0,
-        complexity_score=95.0
+        complexity_score=95.0,
     ),
 ]
 
@@ -96,11 +101,7 @@ print(f"   ✓ Created {len(test_papers)} test papers")
 
 # Generate recommendations
 print("\n3. Generating personalized recommendations...")
-recommendations = recommendation_engine.recommend_papers(
-    test_profile,
-    test_papers,
-    top_n=10
-)
+recommendations = recommendation_engine.recommend_papers(test_profile, test_papers, top_n=10)
 
 print(f"   ✓ Generated {len(recommendations)} recommendations\n")
 
@@ -121,7 +122,7 @@ else:
 if recommendations[-1][0].id == "paper_3":
     print("   ✅ PASS: Poorest match (Theoretical + Very High complexity) ranked last")
 else:
-    print(f"   ❌ FAIL: Expected paper_3 at last position")
+    print("   ❌ FAIL: Expected paper_3 at last position")
 
 # Test profile management
 print("\n6. Testing profile management...")

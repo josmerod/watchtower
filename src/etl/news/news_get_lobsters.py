@@ -10,13 +10,12 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("LobstersETL")
 
@@ -36,9 +35,9 @@ def _parse_date(date_str: str | None) -> str | None:
             return date_str
 
 
-def fetch_lobsters() -> List[Dict[str, Any]]:
+def fetch_lobsters() -> list[dict[str, Any]]:
     logger.info(f"Fetching Lobsters RSS: {FEED_URL}")
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(FEED_URL)
     except Exception as e:
@@ -72,7 +71,7 @@ def fetch_lobsters() -> List[Dict[str, Any]]:
     return entries
 
 
-def save_lobsters(entries: List[Dict[str, Any]]) -> None:
+def save_lobsters(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No Lobsters entries to save")
         return
@@ -95,7 +94,7 @@ def save_lobsters(entries: List[Dict[str, Any]]) -> None:
     if entries:
         import csv
 
-        flat: List[Dict[str, Any]] = []
+        flat: list[dict[str, Any]] = []
         for e in entries:
             r = e.copy()
             if isinstance(r.get("categories"), list):
@@ -121,4 +120,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

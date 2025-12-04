@@ -1,8 +1,13 @@
 """Test script to verify AI Research alerts."""
 
 from datetime import datetime, timezone
-from src.models.ai_research_model import AIResearchPaper, ResearchDomain, ImplementationComplexity
+
 from src.alerts.engine import AlertEngine
+from src.models.ai_research_model import (
+    AIResearchPaper,
+    ImplementationComplexity,
+    ResearchDomain,
+)
 
 # Create a high-potential paper (should trigger alert)
 high_potential_paper = AIResearchPaper(
@@ -20,7 +25,7 @@ high_potential_paper = AIResearchPaper(
     industry_impact="High Potential",  # This should trigger the alert
     implementation_probability=85.0,
     industry_impact_score=85.0,
-    complexity_score=50.0
+    complexity_score=50.0,
 )
 
 # Create a low-potential paper (should NOT trigger alert)
@@ -39,7 +44,7 @@ low_potential_paper = AIResearchPaper(
     industry_impact="Research Only",  # Should NOT trigger
     implementation_probability=15.0,
     industry_impact_score=15.0,
-    complexity_score=85.0
+    complexity_score=85.0,
 )
 
 # Initialize Alert Engine
@@ -54,9 +59,9 @@ print(f"   Title: {high_potential_paper.title}")
 print(f"   Impact: {high_potential_paper.industry_impact}")
 print(f"   Trend Score: {high_potential_paper.trend_score}")
 
-content_1 = high_potential_paper.model_dump(mode='json')
-content_1['source'] = 'ai_research'
-content_1['description'] = f"{high_potential_paper.abstract} [Impact: {high_potential_paper.industry_impact}]"
+content_1 = high_potential_paper.model_dump(mode="json")
+content_1["source"] = "ai_research"
+content_1["description"] = f"{high_potential_paper.abstract} [Impact: {high_potential_paper.industry_impact}]"
 
 events_1 = alert_engine.evaluate_content(content_1, user_id="admin")
 print(f"   → Alerts Generated: {len(events_1)}")
@@ -70,9 +75,9 @@ print(f"   Title: {low_potential_paper.title}")
 print(f"   Impact: {low_potential_paper.industry_impact}")
 print(f"   Trend Score: {low_potential_paper.trend_score}")
 
-content_2 = low_potential_paper.model_dump(mode='json')
-content_2['source'] = 'ai_research'
-content_2['description'] = f"{low_potential_paper.abstract} [Impact: {low_potential_paper.industry_impact}]"
+content_2 = low_potential_paper.model_dump(mode="json")
+content_2["source"] = "ai_research"
+content_2["description"] = f"{low_potential_paper.abstract} [Impact: {low_potential_paper.industry_impact}]"
 
 events_2 = alert_engine.evaluate_content(content_2, user_id="admin")
 print(f"   → Alerts Generated: {len(events_2)}")

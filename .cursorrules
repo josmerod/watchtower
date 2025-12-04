@@ -65,7 +65,7 @@
 External Sources → Watchers → ETL Pipelines → JSON/CSV Storage → Dash Dashboard
      ↓                ↓            ↓              ↓                  ↓
 - ArXiv RSS       - Monitor    - Extract      - File-based      - Tab Components
-- Course APIs     - Parse      - Transform    - Event logs      - Data Managers  
+- Course APIs     - Parse      - Transform    - Event logs      - Data Managers
 - News Feeds      - Store      - Classify     - Checkpoints     - Interactive UI
 - Game APIs       - Detect     - Validate     - Metrics         - Bootstrap Cards
 - AI Platforms    - Events     - Load         - Health APIs     - Real-time Updates
@@ -204,7 +204,7 @@ src/
 - **Entertainment ETL**: Cinema listings, anime schedules, media trends
 - **Deals ETL**: Aggregate deals across categories (software, books, health, travel)
 - **Watcher Development**: Implement state persistence, event logging, change detection
-- **Dash Components**: 
+- **Dash Components**:
   - Use data manager classes for loading and filtering
   - Implement single callback per output to prevent conflicts
   - Use Bootstrap components with dbc styling
@@ -215,7 +215,7 @@ src/
 ## Technology Adoption Guidelines
 - **Package Management**: UV as primary tool for all operations
 - **Primary Data Processing**: pandas for most operations, polars for specific performance needs
-- **Web Scraping**: requests + BeautifulSoup for simple scraping, Playwright for complex sites  
+- **Web Scraping**: requests + BeautifulSoup for simple scraping, Playwright for complex sites
 - **Configuration**: Pydantic Settings with environment variable support
 - **Storage**: JSON files for structured data, CSV for exports and analysis
 - **Dashboard Framework**: Dash with Bootstrap components (primary), Streamlit (legacy)

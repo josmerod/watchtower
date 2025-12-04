@@ -7,7 +7,7 @@ echo "=========================================="
 echo ""
 
 # Change to the project root directory
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 # Verify we're in the right directory
 if [ ! -f "pyproject.toml" ]; then
@@ -23,14 +23,16 @@ if ! command -v uv &> /dev/null; then
     echo "ERROR: UV not found. Installing UV..."
     echo ""
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    
+
     # Source the shell profile to get UV in PATH
     if [ -f "$HOME/.bashrc" ]; then
+        # shellcheck disable=SC1091
         source "$HOME/.bashrc"
     elif [ -f "$HOME/.zshrc" ]; then
+        # shellcheck disable=SC1091
         source "$HOME/.zshrc"
     fi
-    
+
     # Check if UV is now available
     if ! command -v uv &> /dev/null; then
         echo ""
@@ -128,7 +130,7 @@ RETRY_COUNT=0
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     RETRY_COUNT=$((RETRY_COUNT + 1))
     echo "Attempt $RETRY_COUNT of $MAX_RETRIES"
-    
+
     if uv sync --all-extras --reinstall; then
         break
     else

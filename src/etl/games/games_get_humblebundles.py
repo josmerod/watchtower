@@ -47,9 +47,7 @@ class HumbleBundleScraper:
             viewport={"width": 1920, "height": 1080},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
         )
-        await context.add_init_script(
-            "() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }"
-        )
+        await context.add_init_script("() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }")
         return browser, context
 
     async def _navigate_and_debug_page(self, page, url: str, bundle_type: str):
@@ -59,23 +57,16 @@ class HumbleBundleScraper:
         await page.wait_for_timeout(8000)  # Wait longer for JS to load
 
         content = await page.content()
-        debug_html_path = os.path.join(
-            self.debug_dir, f"humble_{bundle_type}_page.html"
-        )
-        debug_screenshot_path = os.path.join(
-            self.debug_dir, f"humble_{bundle_type}_page.png"
-        )
+        debug_html_path = os.path.join(self.debug_dir, f"humble_{bundle_type}_page.html")
+        debug_screenshot_path = os.path.join(self.debug_dir, f"humble_{bundle_type}_page.png")
         with open(debug_html_path, "w", encoding="utf-8") as f:
             f.write(content)
         await page.screenshot(path=debug_screenshot_path)
-        logger.info(
-            f"Saved debug info to {debug_html_path} and {debug_screenshot_path}"
-        )
+        logger.info(f"Saved debug info to {debug_html_path} and {debug_screenshot_path}")
         return content
 
     def _extract_bundles_with_bs(self, soup, bundle_type: str, all_bundles: list):
         """Extracts bundle elements from HTML content using BeautifulSoup."""
-
         bundle_elements = []
         selectors = [
             "div.tile, div.mosaic-tile",
@@ -87,15 +78,11 @@ class HumbleBundleScraper:
         for selector in selectors:
             elements = soup.select(selector)
             if elements:
-                logger.info(
-                    f"Found {len(elements)} bundle elements with selector '{selector}'"
-                )
+                logger.info(f"Found {len(elements)} bundle elements with selector '{selector}'")
                 bundle_elements.extend(elements)
 
         if not bundle_elements:
-            logger.info(
-                f"No bundle elements found with selectors for {bundle_type}, trying direct link detection"
-            )
+            logger.info(f"No bundle elements found with selectors for {bundle_type}, trying direct link detection")
             link_patterns = [f"a[href*='/{bundle_type}/']", "a[href*='/bundle/']"]
             for pattern in link_patterns:
                 link_elements = soup.select(pattern)
@@ -114,37 +101,24 @@ class HumbleBundleScraper:
                         ]
                     ):
                         text = link.text.strip()
-                        if (
-                            text
-                            and len(text) > 3
-                            and text.lower()
-                            not in ["bundles", "games", "books", "software"]
-                        ):
+                        if text and len(text) > 3 and text.lower() not in ["bundles", "games", "books", "software"]:
                             filtered_links.append(link)
                 if filtered_links:
-                    logger.info(
-                        f"Found {len(filtered_links)} potential bundle links with pattern {pattern}"
-                    )
+                    logger.info(f"Found {len(filtered_links)} potential bundle links with pattern {pattern}")
                     bundle_elements.extend(filtered_links)
 
         bundles_found_bs = 0
         for element in bundle_elements:
             bundle_info = self._extract_bundle_info(element, bundle_type)
-            if bundle_info and not any(
-                b["link"] == bundle_info["link"] for b in all_bundles
-            ):
+            if bundle_info and not any(b["link"] == bundle_info["link"] for b in all_bundles):
                 all_bundles.append(bundle_info)
                 bundles_found_bs += 1
-        logger.info(
-            f"Extracted {bundles_found_bs} bundle(s) from {bundle_type} page via BeautifulSoup"
-        )
+        logger.info(f"Extracted {bundles_found_bs} bundle(s) from {bundle_type} page via BeautifulSoup")
         return bundles_found_bs
 
     async def _extract_bundles_from_js(self, page, bundle_type: str, all_bundles: list):
         """Extracts bundle data embedded in JavaScript variables on the page."""
-        logger.info(
-            f"Attempting to extract bundle data from JavaScript for {bundle_type}"
-        )
+        logger.info(f"Attempting to extract bundle data from JavaScript for {bundle_type}")
         js_bundles_data = await page.evaluate(
             r"""
             () => {
@@ -197,9 +171,7 @@ class HumbleBundleScraper:
         )
 
         if js_bundles_data:
-            debug_js_path = os.path.join(
-                self.debug_dir, f"humble_{bundle_type}_js_data.json"
-            )
+            debug_js_path = os.path.join(self.debug_dir, f"humble_{bundle_type}_js_data.json")
             with open(debug_js_path, "w", encoding="utf-8") as f:
                 json.dump(js_bundles_data, f, indent=2)
 
@@ -215,11 +187,7 @@ class HumbleBundleScraper:
                             bundle_url_data.get("title"),
                             bundle_url_data.get("price", "Pay what you want"),
                         )
-                        if (
-                            url
-                            and title
-                            and not any(b["link"] == url for b in all_bundles)
-                        ):
+                        if url and title and not any(b["link"] == url for b in all_bundles):
                             detected_type = self._determine_bundle_type(url)
                             if title == "Pay What You Want" or len(title) < 5:
                                 title = self._extract_title_from_url(url)
@@ -230,44 +198,26 @@ class HumbleBundleScraper:
                                     "price": price,
                                     "games": [],
                                     "type": detected_type,
-                                    "end_date": (
-                                        datetime.now(timezone.utc) + timedelta(days=14)
-                                    ).isoformat(),
+                                    "end_date": (datetime.now(timezone.utc) + timedelta(days=14)).isoformat(),
                                 }
                             )
                 elif isinstance(data, list):
                     for bundle_item in data:
                         if not isinstance(bundle_item, dict):
                             continue
-                        bundle_info = self._extract_bundle_from_js_object(
-                            bundle_item, bundle_type
-                        )
-                        if bundle_info and not any(
-                            b["link"] == bundle_info["link"] for b in all_bundles
-                        ):
+                        bundle_info = self._extract_bundle_from_js_object(bundle_item, bundle_type)
+                        if bundle_info and not any(b["link"] == bundle_info["link"] for b in all_bundles):
                             all_bundles.append(bundle_info)
-                elif (
-                    isinstance(data, dict)
-                    and "bundles" in data
-                    and isinstance(data["bundles"], list)
-                ):
+                elif isinstance(data, dict) and "bundles" in data and isinstance(data["bundles"], list):
                     for bundle_item in data["bundles"]:
                         if not isinstance(bundle_item, dict):
                             continue
-                        bundle_info = self._extract_bundle_from_js_object(
-                            bundle_item, bundle_type
-                        )
-                        if bundle_info and not any(
-                            b["link"] == bundle_info["link"] for b in all_bundles
-                        ):
+                        bundle_info = self._extract_bundle_from_js_object(bundle_item, bundle_type)
+                        if bundle_info and not any(b["link"] == bundle_info["link"] for b in all_bundles):
                             all_bundles.append(bundle_info)
-        logger.info(
-            f"Processed JS data for {bundle_type}, current total bundles: {len(all_bundles)}"
-        )
+        logger.info(f"Processed JS data for {bundle_type}, current total bundles: {len(all_bundles)}")
 
-    async def _process_single_bundle_url(
-        self, page, url: str, bundle_type: str, all_bundles: list
-    ):
+    async def _process_single_bundle_url(self, page, url: str, bundle_type: str, all_bundles: list):
         """Processes a single Humble Bundle URL (games, books, etc.) to find bundles."""
         from bs4 import BeautifulSoup
 
@@ -275,13 +225,9 @@ class HumbleBundleScraper:
             content = await self._navigate_and_debug_page(page, url, bundle_type)
             soup = BeautifulSoup(content, "html.parser")
 
-            bundles_found_bs = self._extract_bundles_with_bs(
-                soup, bundle_type, all_bundles
-            )
+            bundles_found_bs = self._extract_bundles_with_bs(soup, bundle_type, all_bundles)
 
-            if (
-                bundles_found_bs == 0 or bundle_type == "all"
-            ):  # "all" type might have more JS data
+            if bundles_found_bs == 0 or bundle_type == "all":  # "all" type might have more JS data
                 await self._extract_bundles_from_js(page, bundle_type, all_bundles)
         except Exception as e:
             logger.error(f"Error scraping {bundle_type} bundles from {url}: {e}")
@@ -316,16 +262,12 @@ class HumbleBundleScraper:
                 await page.wait_for_timeout(3000)  # Allow cookies to settle
 
                 for url, bundle_type in bundle_sources:
-                    await self._process_single_bundle_url(
-                        page, url, bundle_type, all_bundles
-                    )
+                    await self._process_single_bundle_url(page, url, bundle_type, all_bundles)
 
             self._post_process_bundles(all_bundles)
 
         except Exception as e:
-            logger.error(
-                f"Error in scrape_bundles main try-block: {e!s}", exc_info=True
-            )
+            logger.error(f"Error in scrape_bundles main try-block: {e!s}", exc_info=True)
         finally:
             if page:
                 await page.close()
@@ -342,9 +284,7 @@ class HumbleBundleScraper:
                     "link": "https://www.humblebundle.com/",
                     "end_date": datetime.now(timezone.utc).isoformat(),
                     "price": "Unknown",
-                    "games": [
-                        "Scraping Failed - Check https://www.humblebundle.com/ directly"
-                    ],
+                    "games": ["Scraping Failed - Check https://www.humblebundle.com/ directly"],
                     "type": "error",
                     "note": "Automatic scraping failed. Please visit the Humble Bundle website to see current bundles.",
                 }
@@ -481,15 +421,11 @@ class HumbleBundleScraper:
                     return None
 
             # Ensure link is related to bundles
-            if not any(
-                x in link for x in ["/games/", "/books/", "/software/", "/bundle/"]
-            ):
+            if not any(x in link for x in ["/games/", "/books/", "/software/", "/bundle/"]):
                 return None
 
             # Avoid store and homepage links
-            if any(
-                x in link for x in ["/store/", "/choice/", "/membership/", "/blog/"]
-            ):
+            if any(x in link for x in ["/store/", "/choice/", "/membership/", "/blog/"]):
                 return None
 
             # Extract title with multiple selectors and priority
@@ -512,9 +448,7 @@ class HumbleBundleScraper:
 
             # If not found, try broader selectors
             if not title:
-                title_elem = element.select_one(
-                    "h1, h2, h3, h4, .title, .heading, strong"
-                )
+                title_elem = element.select_one("h1, h2, h3, h4, .title, .heading, strong")
                 if title_elem:
                     title = title_elem.text.strip()
 
@@ -526,11 +460,7 @@ class HumbleBundleScraper:
                     title = title.split("\n")[0].strip()
 
             # If title contains price-like text, it's probably not the real title
-            if (
-                not title
-                or len(title) < 3
-                or title.lower() in ["pay what you want", "from", "bundle"]
-            ):
+            if not title or len(title) < 3 or title.lower() in ["pay what you want", "from", "bundle"]:
                 # Extract title from URL as fallback
                 title = self._extract_title_from_url(link)
 
@@ -566,9 +496,7 @@ class HumbleBundleScraper:
             logger.debug(f"Failed to extract bundle info: {e!s}")
             return None
 
-    def _extract_bundle_from_js_object(
-        self, bundle: dict[str, Any], bundle_type: str
-    ) -> dict[str, Any] | None:
+    def _extract_bundle_from_js_object(self, bundle: dict[str, Any], bundle_type: str) -> dict[str, Any] | None:
         """Extract bundle information from a JavaScript object.
 
         Args:
@@ -596,9 +524,7 @@ class HumbleBundleScraper:
                     break
 
             # If no title found or title looks like a machine name, try to extract from URL/machine_name
-            if not title or (
-                title and (len(title) < 5 or "_" in title or title.islower())
-            ):
+            if not title or (title and (len(title) < 5 or "_" in title or title.islower())):
                 # Try to get a better title from the machine_name or URL
                 machine_name = None
                 for key in ["machine_name", "url", "urlName", "slug"]:
@@ -641,9 +567,7 @@ class HumbleBundleScraper:
                                     else:
                                         actual_type = "games"
 
-                            link = (
-                                f"https://www.humblebundle.com/{actual_type}/{url_val}"
-                            )
+                            link = f"https://www.humblebundle.com/{actual_type}/{url_val}"
                         break
 
             if not link:
@@ -662,14 +586,10 @@ class HumbleBundleScraper:
                     try:
                         # Handle different date formats
                         date_val = bundle[key]
-                        if isinstance(date_val, int) or (
-                            isinstance(date_val, str) and date_val.isdigit()
-                        ):
+                        if isinstance(date_val, int) or (isinstance(date_val, str) and date_val.isdigit()):
                             # Unix timestamp
                             end_ts = int(date_val)
-                            end_date = datetime.fromtimestamp(
-                                end_ts, tz=timezone.utc
-                            ).isoformat()
+                            end_date = datetime.fromtimestamp(end_ts, tz=timezone.utc).isoformat()
                         elif isinstance(date_val, str):
                             # ISO format string
                             end_date = datetime.fromisoformat(date_val).isoformat()
@@ -715,11 +635,7 @@ class HumbleBundleScraper:
             # Check for tiers with games
             if "tiers" in bundle and isinstance(bundle["tiers"], list):
                 for tier in bundle["tiers"]:
-                    if (
-                        isinstance(tier, dict)
-                        and "items" in tier
-                        and isinstance(tier["items"], list)
-                    ):
+                    if isinstance(tier, dict) and "items" in tier and isinstance(tier["items"], list):
                         for item in tier["items"]:
                             if isinstance(item, dict):
                                 for name_key in [
@@ -802,9 +718,7 @@ def get_humblebundle_data() -> list[dict[str, Any]]:
                 "link": "https://www.humblebundle.com/",
                 "end_date": datetime.now(timezone.utc).isoformat(),
                 "price": "Unknown",
-                "games": [
-                    "Scraping Failed - Check https://www.humblebundle.com/ directly"
-                ],
+                "games": ["Scraping Failed - Check https://www.humblebundle.com/ directly"],
                 "type": "error",
                 "note": "Automatic scraping failed. Please visit the Humble Bundle website to see current bundles.",
             }

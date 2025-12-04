@@ -9,7 +9,7 @@ import os
 import shutil
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 import requests
@@ -63,12 +63,10 @@ SUBREDDITS_CONFIG = {
 }
 
 
-def fetch_subreddit_rss(subreddit: str) -> List[Dict[str, Any]]:
+def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
     """Fetch posts from subreddit RSS feed."""
     rss_url = f"https://www.reddit.com/r/{subreddit}/.rss"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
 
     try:
         response = requests.get(rss_url, headers=headers, timeout=10)
@@ -88,11 +86,7 @@ def fetch_subreddit_rss(subreddit: str) -> List[Dict[str, Any]]:
             }
 
             # Parse RSS date
-            if (
-                post["published"]
-                and hasattr(entry, "published_parsed")
-                and entry.published_parsed
-            ):
+            if post["published"] and hasattr(entry, "published_parsed") and entry.published_parsed:
                 try:
                     time_tuple = entry.published_parsed
                     if isinstance(time_tuple, time.struct_time):
@@ -117,7 +111,7 @@ def fetch_subreddit_rss(subreddit: str) -> List[Dict[str, Any]]:
         return []
 
 
-def fetch_subreddit_json(subreddit: str, limit: int = 25) -> List[Dict[str, Any]]:
+def fetch_subreddit_json(subreddit: str, limit: int = 25) -> list[dict[str, Any]]:
     """Fetch posts from subreddit JSON endpoint."""
     json_url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
     headers = {"User-Agent": "watchtower-bot/1.0"}
@@ -134,9 +128,7 @@ def fetch_subreddit_json(subreddit: str, limit: int = 25) -> List[Dict[str, Any]
                 "subreddit": subreddit,
                 "title": post_data.get("title", "No title"),
                 "url": post_data.get("url", ""),
-                "published": datetime.fromtimestamp(
-                    post_data.get("created_utc", 0), tz=timezone.utc
-                ).isoformat(),
+                "published": datetime.fromtimestamp(post_data.get("created_utc", 0), tz=timezone.utc).isoformat(),
                 "score": post_data.get("score", 0),
                 "num_comments": post_data.get("num_comments", 0),
                 "author": post_data.get("author", "Anonymous"),
@@ -153,7 +145,7 @@ def fetch_subreddit_json(subreddit: str, limit: int = 25) -> List[Dict[str, Any]
         return []
 
 
-def fetch_all_subreddits() -> Dict[str, List[Dict[str, Any]]]:
+def fetch_all_subreddits() -> dict[str, list[dict[str, Any]]]:
     """Fetch posts from all configured subreddits."""
     all_posts = {}
 
@@ -180,7 +172,7 @@ def fetch_all_subreddits() -> Dict[str, List[Dict[str, Any]]]:
     return all_posts
 
 
-def save_reddit_data(all_posts: Dict[str, List[Dict[str, Any]]]) -> None:
+def save_reddit_data(all_posts: dict[str, list[dict[str, Any]]]) -> None:
     """Save Reddit data to organized JSON files."""
     project_root = get_project_root()
     output_dir = os.path.join(project_root, "data/reddit_unified")

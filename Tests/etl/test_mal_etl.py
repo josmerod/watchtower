@@ -1,37 +1,36 @@
-import unittest
-from unittest.mock import patch, MagicMock, call
-import os
 import json
+import os
 import pathlib
-import shutil # For rmtree
-from datetime import datetime
-import requests # <--- Import requests
+import shutil  # For rmtree
 
 # Ensure src path is available for imports
-import sys
+import unittest
+from datetime import datetime
+from unittest.mock import MagicMock, call, patch
+
+import requests  # <--- Import requests
+
 # Assuming the script is run from the project root or Tests/
 # Adjust if your test runner has a different CWD
 project_root = pathlib.Path(__file__).resolve().parent.parent.parent
-from src.etl.anime.mal_etl import MalETL, FIELDS_TO_REQUEST, API_BASE_URL
+from src.etl.anime.mal_etl import API_BASE_URL, FIELDS_TO_REQUEST, MalETL
 from src.models.anime import AnimeItem
+
 
 # Removed class decorator @patch('src.etl.anime.mal_etl.load_dotenv')
 class TestMalETL(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         # This is run once for the entire class
-        cls.original_output_dir = MalETL.output_dir if hasattr(MalETL, 'output_dir') else None
-
+        cls.original_output_dir = MalETL.output_dir if hasattr(MalETL, "output_dir") else None
 
     @classmethod
     def tearDownClass(cls):
         # Restore original output_dir if it was changed
-        if cls.original_output_dir and hasattr(MalETL, 'output_dir'):
-             MalETL.output_dir = cls.original_output_dir
+        if cls.original_output_dir and hasattr(MalETL, "output_dir"):
+            MalETL.output_dir = cls.original_output_dir
 
-
-    def setUp(self): # Original signature
+    def setUp(self):  # Original signature
         """Set up for each test method."""
         # Start patch for load_dotenv manually
 
@@ -45,35 +44,13 @@ class TestMalETL(unittest.TestCase):
         self.etl.output_dir = self.test_output_dir
 
         # Sample API responses
-        self.sample_anime_node_1 = {
+        self.sample_anime_node_1 = {}
+        self.sample_anime_node_2 = {}
 
-
-
-        }
-        self.sample_anime_node_2 = {
-
-
-
-        }
-
-
-
-        }
-
-        self.seasonal_response = {
-
-
-        }
-        self.popular_response = {
-
-
-        }
-        self.favorite_response = {
-
-
-        }
+        self.seasonal_response = {}
+        self.popular_response = {}
+        self.favorite_response = {}
         self.empty_response = {"data": [], "paging": {}}
-
 
     def tearDown(self):
         """Clean up after each test method."""
@@ -87,7 +64,7 @@ class TestMalETL(unittest.TestCase):
         if self.test_output_dir.exists():
             shutil.rmtree(self.test_output_dir)
 
-    def test_initialization_success(self): # Removed mock_load_dotenv_arg
+    def test_initialization_success(self):  # Removed mock_load_dotenv_arg
         """Test successful initialization of MalETL."""
         self.assertIsNotNone(self.etl)
         self.assertEqual(self.etl.client_id, self.test_client_id)
@@ -96,8 +73,7 @@ class TestMalETL(unittest.TestCase):
         # The module-level load_dotenv in mal_etl.py has already run with the original by this point.
         # The purpose of this mock here is to prevent .env loading during test execution itself.
 
-
-    def test_initialization_no_client_id(self): # Removed mock_load_dotenv_arg
+    def test_initialization_no_client_id(self):  # Removed mock_load_dotenv_arg
         """Test MalETL initialization fails if MAL_CLIENT_ID is not set."""
         del os.environ["MAL_CLIENT_ID"]
         with self.assertRaises(ValueError) as context:
@@ -105,9 +81,8 @@ class TestMalETL(unittest.TestCase):
         self.assertIn("MAL_CLIENT_ID environment variable not set", str(context.exception))
         os.environ["MAL_CLIENT_ID"] = self.test_client_id
 
-
-    @patch('src.etl.anime.mal_etl.requests.get')
-    def test_make_request_success(self, mock_requests_get): # Removed mock_load_dotenv
+    @patch("src.etl.anime.mal_etl.requests.get")
+    def test_make_request_success(self, mock_requests_get):  # Removed mock_load_dotenv
         """Test successful API request."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -119,16 +94,11 @@ class TestMalETL(unittest.TestCase):
         result = self.etl._make_request(endpoint, params)
 
         expected_url = f"{API_BASE_URL}{endpoint}"
-        mock_requests_get.assert_called_once_with(
-            expected_url,
-            headers={"X-MAL-CLIENT-ID": self.test_client_id, "User-Agent": "WatchtowerMALETL/1.0"},
-            params=params,
-            timeout=30
-        )
+        mock_requests_get.assert_called_once_with(expected_url, headers={"X-MAL-CLIENT-ID": self.test_client_id, "User-Agent": "WatchtowerMALETL/1.0"}, params=params, timeout=30)
         self.assertEqual(result, {"data": "success"})
 
-    @patch('src.etl.anime.mal_etl.requests.get')
-    def test_make_request_http_error(self, mock_requests_get): # Removed mock_load_dotenv
+    @patch("src.etl.anime.mal_etl.requests.get")
+    def test_make_request_http_error(self, mock_requests_get):  # Removed mock_load_dotenv
         """Test API request failure due to HTTP error."""
         mock_response = MagicMock()
         mock_response.status_code = 404
@@ -141,29 +111,24 @@ class TestMalETL(unittest.TestCase):
         mock_response.raise_for_status.side_effect = http_error
         mock_requests_get.return_value = mock_response
 
-        with patch('src.etl.anime.mal_etl.logger.error') as mock_logger_error:
+        with patch("src.etl.anime.mal_etl.logger.error") as mock_logger_error:
             result = self.etl._make_request("/some_endpoint")
             self.assertIsNone(result)
             mock_logger_error.assert_called()
 
-    @patch('src.etl.anime.mal_etl.requests.get')
-    def test_make_request_connection_error(self, mock_requests_get): # Removed mock_load_dotenv
+    @patch("src.etl.anime.mal_etl.requests.get")
+    def test_make_request_connection_error(self, mock_requests_get):  # Removed mock_load_dotenv
         """Test API request failure due to connection error."""
         mock_requests_get.side_effect = requests.exceptions.ConnectionError("Connection failed")
 
-        with patch('src.etl.anime.mal_etl.logger.error') as mock_logger_error:
+        with patch("src.etl.anime.mal_etl.logger.error") as mock_logger_error:
             result = self.etl._make_request("/another_endpoint")
             self.assertIsNone(result)
             mock_logger_error.assert_called()
 
-
-    def test_transform_data(self): # Removed mock_load_dotenv
+    def test_transform_data(self):  # Removed mock_load_dotenv
         """Test transformation of raw API data to AnimeItem models."""
-        raw_data_input = {
-
-
-
-        }
+        raw_data_input = {}
 
         transformed_output = self.etl.transform(raw_data_input)
 
@@ -182,46 +147,37 @@ class TestMalETL(unittest.TestCase):
 
         self.assertEqual(len(transformed_output["favorite"]), 0)
 
-    def test_transform_data_malformed_node(self): # Removed mock_load_dotenv
+    def test_transform_data_malformed_node(self):  # Removed mock_load_dotenv
         """Test transformation with some items having malformed/missing node data."""
-        malformed_seasonal_response = {
-
-                {"node": self.sample_anime_node_1},
-                {"node": None},
-                {}
-            ],
-
-        }
+        malformed_seasonal_response = {"data": [{"node": self.sample_anime_node_1}, {"node": None}, {}], "paging": {}}
         raw_data_input = {"seasonal": malformed_seasonal_response}
 
         transformed_output = self.etl.transform(raw_data_input)
         self.assertEqual(len(transformed_output["seasonal"]), 1)
         self.assertEqual(transformed_output["seasonal"][0].id, self.sample_anime_node_1["id"])
 
-
-    @patch.object(MalETL, '_make_request')
-    def test_extract_transform_load_flow(self, mock_make_request): # Removed mock_load_dotenv
-
-        mock_make_request.side_effect = [
-            self.seasonal_response,
-            self.popular_response,
-            self.favorite_response
-        ]
+    @patch.object(MalETL, "_make_request")
+    def test_extract_transform_load_flow(self, mock_make_request):  # Removed mock_load_dotenv
+        mock_make_request.side_effect = [self.seasonal_response, self.popular_response, self.favorite_response]
 
         self.etl.run()
 
         now = datetime.now()
         current_year = now.year
         month = now.month
-        if 1 <= month <= 3: current_season = "winter"
-        elif 4 <= month <= 6: current_season = "spring"
-        elif 7 <= month <= 9: current_season = "summer"
-        else: current_season = "fall"
+        if 1 <= month <= 3:
+            current_season = "winter"
+        elif 4 <= month <= 6:
+            current_season = "spring"
+        elif 7 <= month <= 9:
+            current_season = "summer"
+        else:
+            current_season = "fall"
 
         expected_calls = [
-            call(f"/anime/season/{current_year}/{current_season}",
-            call("/anime/ranking",
-            call("/anime/ranking",
+            call(f"/anime/season/{current_year}/{current_season}", params=FIELDS_TO_REQUEST),
+            call("/anime/ranking", params={**FIELDS_TO_REQUEST, "ranking_type": "all", "limit": 10}),
+            call("/anime/ranking", params={**FIELDS_TO_REQUEST, "ranking_type": "favorite", "limit": 10}),
         ]
         mock_make_request.assert_has_calls(expected_calls, any_order=False)
         self.assertEqual(mock_make_request.call_count, 3)
@@ -234,24 +190,19 @@ class TestMalETL(unittest.TestCase):
         self.assertTrue(popular_file.exists())
         self.assertTrue(favorite_file.exists())
 
-        with open(seasonal_file, 'r') as f:
+        with open(seasonal_file) as f:
             data = json.load(f)
         self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]['title'], self.sample_anime_node_1['title'])
-        self.assertEqual(data[0]['id'], self.sample_anime_node_1['id'])
-        self.assertEqual(data[0]['mean'], self.sample_anime_node_1['mean'])
-        self.assertIn('main_picture', data[0])
-        self.assertEqual(data[0]['main_picture']['large'], self.sample_anime_node_1['main_picture']['large'])
+        self.assertEqual(data[0]["title"], self.sample_anime_node_1["title"])
+        self.assertEqual(data[0]["id"], self.sample_anime_node_1["id"])
+        self.assertEqual(data[0]["mean"], self.sample_anime_node_1["mean"])
+        self.assertIn("main_picture", data[0])
+        self.assertEqual(data[0]["main_picture"]["large"], self.sample_anime_node_1["main_picture"]["large"])
 
-
-    @patch.object(MalETL, '_make_request')
-    def test_run_with_one_api_failure(self, mock_make_request): # Removed mock_load_dotenv
+    @patch.object(MalETL, "_make_request")
+    def test_run_with_one_api_failure(self, mock_make_request):  # Removed mock_load_dotenv
         """Test ETL run when one of the API calls fails."""
-        mock_make_request.side_effect = [
-            self.seasonal_response,
-            None,
-            self.favorite_response
-        ]
+        mock_make_request.side_effect = [self.seasonal_response, None, self.favorite_response]
 
         self.etl.run()
 
@@ -263,15 +214,15 @@ class TestMalETL(unittest.TestCase):
         self.assertTrue(favorite_file.exists())
 
         if popular_file.exists():
-            with open(popular_file, 'r') as f:
+            with open(popular_file) as f:
                 popular_data = json.load(f)
             self.assertEqual(len(popular_data), 0)
 
-        with open(seasonal_file, 'r') as f:
+        with open(seasonal_file) as f:
             data = json.load(f)
         self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]['id'], self.sample_anime_node_1['id'])
+        self.assertEqual(data[0]["id"], self.sample_anime_node_1["id"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

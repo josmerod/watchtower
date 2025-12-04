@@ -15,12 +15,10 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -64,7 +62,7 @@ class EducationalDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract educational deals from multiple sources."""
         logger.info("Starting educational deals extraction...")
 
@@ -77,7 +75,7 @@ class EducationalDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} educational deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _get_curated_educational_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_educational_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of educational deals and free sources."""
         curated = [
             {
@@ -361,7 +359,7 @@ class EducationalDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated educational deals")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform educational deals data."""
         logger.info("Starting educational deals transformation...")
 
@@ -414,14 +412,12 @@ class EducationalDealsETL(BaseETL):
                 continue
 
         # Sort by educational score and savings
-        transformed_deals.sort(
-            key=lambda x: (x["educational_score"], x["savings"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["educational_score"], x["savings"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} educational deals")
         return transformed_deals
 
-    def _calculate_educational_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_educational_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate educational value score for ranking deals."""
         score = 0.0
 
@@ -476,10 +472,7 @@ class EducationalDealsETL(BaseETL):
 
         # Subject area bonus for high-demand skills
         subject = deal.get("subject_area", "").lower()
-        if any(
-            keyword in subject
-            for keyword in ["programming", "computer_science", "data"]
-        ):
+        if any(keyword in subject for keyword in ["programming", "computer_science", "data"]):
             score += 1.5
         elif any(keyword in subject for keyword in ["business", "digital_marketing"]):
             score += 1.0
@@ -495,7 +488,7 @@ class EducationalDealsETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_educational_quality_tier(self, deal: Dict[str, Any]) -> str:
+    def _determine_educational_quality_tier(self, deal: dict[str, Any]) -> str:
         """Determine quality tier of the educational content."""
         platform = deal.get("platform", "").lower()
         instructor_rating = deal.get("instructor_rating", 0)
@@ -506,18 +499,11 @@ class EducationalDealsETL(BaseETL):
             return "elite"
 
         # Premium tier indicators
-        if instructor_rating >= 4.7 and certification:
-            return "premium"
-        elif (
-            any(name in platform for name in ["coursera", "edx"])
-            and instructor_rating >= 4.5
-        ):
+        if instructor_rating >= 4.7 and certification or (any(name in platform for name in ["coursera", "edx"]) and instructor_rating >= 4.5):
             return "premium"
 
         # High tier indicators
-        if instructor_rating >= 4.5 or certification:
-            return "high"
-        elif any(name in platform for name in ["khan academy", "freecodecamp"]):
+        if instructor_rating >= 4.5 or certification or any(name in platform for name in ["khan academy", "freecodecamp"]):
             return "high"
 
         # Standard tier
@@ -526,7 +512,7 @@ class EducationalDealsETL(BaseETL):
 
         return "basic"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed educational deals data to files."""
         try:
             # Ensure output directory exists
@@ -546,9 +532,7 @@ class EducationalDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} educational deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} educational deals to {output_dir}")
             return True
 
         except Exception as e:

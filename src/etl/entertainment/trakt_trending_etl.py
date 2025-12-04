@@ -9,13 +9,12 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("TraktTrendingETL")
 
@@ -25,13 +24,13 @@ ENV_KEY = "TRAKT_CLIENT_ID"
 SECRETS_FILE = "trakt.json"
 
 
-def fetch_trending(kind: str = "movies", limit: int = 50) -> List[Dict[str, Any]]:
+def fetch_trending(kind: str = "movies", limit: int = 50) -> list[dict[str, Any]]:
     client_id = os.getenv(ENV_KEY)
     if not client_id:
         # Fallback to secrets file
         try:
             secrets_path = os.path.join(get_project_root(), "secrets", SECRETS_FILE)
-            with open(secrets_path, "r", encoding="utf-8") as f:
+            with open(secrets_path, encoding="utf-8") as f:
                 data = json.load(f)
             client_id = data.get("client_id")
         except Exception:
@@ -40,7 +39,7 @@ def fetch_trending(kind: str = "movies", limit: int = 50) -> List[Dict[str, Any]
         if not client_id:
             try:
                 env_path = os.path.join(get_project_root(), ".env")
-                with open(env_path, "r", encoding="utf-8") as f:
+                with open(env_path, encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
                         if not line or line.startswith("#"):
@@ -73,7 +72,7 @@ def fetch_trending(kind: str = "movies", limit: int = 50) -> List[Dict[str, Any]
         logger.error(f"Failed to fetch Trakt trending: {e}")
         return []
 
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for it in data or []:
         try:
             entry = it.get("movie") or it.get("show") or {}
@@ -94,7 +93,7 @@ def fetch_trending(kind: str = "movies", limit: int = 50) -> List[Dict[str, Any]
     return items
 
 
-def save_trakt(kind: str, items: List[Dict[str, Any]]) -> None:
+def save_trakt(kind: str, items: list[dict[str, Any]]) -> None:
     if not items:
         logger.info("No Trakt items to save")
         return
@@ -123,4 +122,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

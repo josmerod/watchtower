@@ -54,7 +54,7 @@
     "description": "Solutions Architecture",
     "channels": [
       "GoCloudArchitects",
-      "markrichards5014"      
+      "markrichards5014"
     ]
   },
   "aa-gen-ai": {
@@ -323,4 +323,4 @@
       "FailedNormal"
     ]
   }
-} 
+}

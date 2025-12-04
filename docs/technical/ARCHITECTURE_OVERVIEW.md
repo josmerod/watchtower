@@ -14,7 +14,7 @@ graph TB
         F[Game APIs] --> D
         G[Course APIs] --> D
     end
-    
+
     subgraph "Processing Layer"
         D --> H[BaseETL Template]
         H --> I[Extract Phase]
@@ -24,20 +24,20 @@ graph TB
         L --> N[Event Logging]
         L --> O[State Management]
     end
-    
+
     subgraph "Storage Layer"
         P[JSON Files]
         Q[Checkpoints]
         R[Event Logs]
         S[Metrics]
     end
-    
+
     subgraph "Presentation Layer"
         T[Dash Dashboard]
         U[Health APIs]
         V[Streamlit Legacy]
     end
-    
+
     K --> P
     M --> R
     H --> Q
@@ -56,7 +56,7 @@ The `BaseETL` class implements a template method pattern that standardizes the E
 class BaseETL(ABC, Generic[InputType, OutputType]):
     def run(self) -> ETLMetrics:
         extracted = self.extract()      # Customizable
-        transformed = self.transform(extracted)  # Customizable  
+        transformed = self.transform(extracted)  # Customizable
         self.load(transformed)          # Customizable
         return self.metrics
 ```
@@ -72,7 +72,7 @@ Watchers implement an event-driven pattern for continuous monitoring:
 JSON files provide optimal performance for read-heavy dashboard operations:
 
 - **Fast Read Access**: No database overhead for dashboard queries
-- **Timestamped Archives**: Historical data preservation with automatic cleanup  
+- **Timestamped Archives**: Historical data preservation with automatic cleanup
 - **Latest File Pattern**: Always-current `*_latest.json` files for dashboards
 - **Cross-platform Compatibility**: Works identically on Windows/Linux/MacOS
 
@@ -111,7 +111,7 @@ class CustomWatcher(BaseWatcher):
     def extract_value(self, content: str) -> Any:
         # Extract the value to monitor
         return parsed_value
-    
+
     def has_changed(self, old_value: Any, new_value: Any) -> bool:
         # Determine if change is significant
         return significant_change_detected
@@ -148,7 +148,7 @@ Centralized configuration using Pydantic Settings:
 ```python
 Settings
 ├── DatabaseConfig
-├── LoggingConfig  
+├── LoggingConfig
 ├── ETLConfig
 ├── ScrapingConfig
 ├── APIConfig

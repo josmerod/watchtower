@@ -1,29 +1,27 @@
 #!/usr/bin/env python3
-"""
-Comprehensive unit tests for Games ETL scripts.
+"""Comprehensive unit tests for Games ETL scripts.
 Tests data quality, ETL functionality, and error handling.
 """
 
-import unittest
+import json
 import os
+import shutil
 import sys
 import tempfile
-import shutil
-import json
+import unittest
+from datetime import datetime, timedelta
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
-from unittest.mock import patch, MagicMock, mock_open
-from datetime import datetime, timezone, timedelta
-import feedparser
 
 # Add project root to sys.path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.etl.games.games_get_deals import get_deals, get_bundles, get_giveaways
+from src.etl.games.games_get_deals import get_bundles, get_deals, get_giveaways
 from src.etl.games.games_get_itchio_trending import get_itchio_trending
 from src.etl.games.games_get_new_releases import get_new_releases
-from src.utils.logging import get_logger
 
 
 class TestGamesETLComprehensive(unittest.TestCase):
@@ -77,7 +75,7 @@ class TestGamesETLComprehensive(unittest.TestCase):
             self.assertTrue(os.path.exists(deals_csv))
 
             # Validate JSON data quality
-            with open(deals_json, "r") as f:
+            with open(deals_json) as f:
                 data = json.load(f)
 
             self.assertEqual(len(data), 1)
@@ -111,7 +109,7 @@ class TestGamesETLComprehensive(unittest.TestCase):
             deals_json = os.path.join(self.data_dir, "deals.json")
             self.assertTrue(os.path.exists(deals_json))
 
-            with open(deals_json, "r") as f:
+            with open(deals_json) as f:
                 data = json.load(f)
 
             self.assertEqual(len(data), 0)
@@ -144,7 +142,7 @@ class TestGamesETLComprehensive(unittest.TestCase):
             self.assertTrue(os.path.exists(bundles_json))
 
             # Validate data quality
-            with open(bundles_json, "r") as f:
+            with open(bundles_json) as f:
                 data = json.load(f)
 
             self.assertEqual(len(data), 1)
@@ -184,13 +182,13 @@ class TestGamesETLComprehensive(unittest.TestCase):
             self.assertTrue(os.path.exists(giveaways_csv))
 
             # Validate empty structure
-            with open(giveaways_json, "r") as f:
+            with open(giveaways_json) as f:
                 data = json.load(f)
 
             self.assertEqual(data, [])
 
             # Check CSV has header
-            with open(giveaways_csv, "r") as f:
+            with open(giveaways_csv) as f:
                 content = f.read()
 
             self.assertIn("title|link|published|expires", content)
@@ -220,7 +218,7 @@ class TestGamesETLComprehensive(unittest.TestCase):
             self.assertTrue(os.path.exists(giveaways_json))
 
             # Validate data structure
-            with open(giveaways_json, "r") as f:
+            with open(giveaways_json) as f:
                 data = json.load(f)
 
             self.assertEqual(len(data), 1)
@@ -261,7 +259,7 @@ class TestGamesETLComprehensive(unittest.TestCase):
             self.assertTrue(os.path.exists(trending_csv))
 
             # Validate data structure
-            with open(trending_json, "r") as f:
+            with open(trending_json) as f:
                 data = json.load(f)
 
             self.assertGreater(len(data), 0)
@@ -284,7 +282,7 @@ class TestGamesETLComprehensive(unittest.TestCase):
             trending_json = os.path.join(self.data_dir, "itchio_trending.json")
             self.assertTrue(os.path.exists(trending_json))
 
-            with open(trending_json, "r") as f:
+            with open(trending_json) as f:
                 data = json.load(f)
 
             self.assertEqual(data, [])
@@ -302,13 +300,13 @@ class TestGamesETLComprehensive(unittest.TestCase):
         self.assertTrue(os.path.exists(releases_csv))
 
         # Validate empty structure
-        with open(releases_json, "r") as f:
+        with open(releases_json) as f:
             data = json.load(f)
 
         self.assertEqual(data, [])
 
         # Check CSV has header
-        with open(releases_csv, "r") as f:
+        with open(releases_csv) as f:
             content = f.read()
 
         self.assertIn(
@@ -347,7 +345,7 @@ class TestGamesETLComprehensive(unittest.TestCase):
                 self.assertTrue(os.path.exists(releases_json))
 
                 # Validate data structure
-                with open(releases_json, "r") as f:
+                with open(releases_json) as f:
                     data = json.load(f)
 
                 self.assertEqual(len(data), 1)
@@ -450,9 +448,7 @@ class TestGamesDataQuality(unittest.TestCase):
         # Validate discount calculation consistency
         for _, row in df.iterrows():
             if row["regular_price"] > 0:
-                expected_discount = round(
-                    (1 - row["current_price"] / row["regular_price"]) * 100
-                )
+                expected_discount = round((1 - row["current_price"] / row["regular_price"]) * 100)
                 actual_discount = row["discount_percent"]
                 self.assertAlmostEqual(
                     expected_discount,
@@ -478,7 +474,7 @@ class TestGamesDataQuality(unittest.TestCase):
                 json.dump([], f)
 
             # Validate empty structure
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 data = json.load(f)
 
             self.assertIsInstance(data, list, f"{filename} should contain a list")
@@ -508,7 +504,6 @@ class TestGamesETLIntegration(unittest.TestCase):
         """Test the complete games ETL pipeline"""
         # Mock all external dependencies
         with patch("requests.get") as mock_get, patch("feedparser.parse") as mock_parse:
-
             # Mock deals response
             mock_get.return_value.json.return_value = {
                 "data": {
@@ -555,14 +550,10 @@ class TestGamesETLIntegration(unittest.TestCase):
 
             for filename in expected_files:
                 filepath = os.path.join(self.data_dir, filename)
-                self.assertTrue(
-                    os.path.exists(filepath), f"File not created: {filename}"
-                )
+                self.assertTrue(os.path.exists(filepath), f"File not created: {filename}")
 
                 # Verify files are not empty (size > 0)
-                self.assertGreater(
-                    os.path.getsize(filepath), 0, f"File is empty: {filename}"
-                )
+                self.assertGreater(os.path.getsize(filepath), 0, f"File is empty: {filename}")
 
     def test_concurrent_etl_execution(self):
         """Test ETL scripts can run concurrently without conflicts"""
@@ -580,7 +571,6 @@ class TestGamesETLIntegration(unittest.TestCase):
 
         # Mock external dependencies
         with patch("requests.get") as mock_get, patch("feedparser.parse") as mock_parse:
-
             mock_get.return_value.json.return_value = {"data": {"list": []}}
             mock_get.return_value.status_code = 200
             mock_get.return_value.text = "<html></html>"
@@ -593,18 +583,10 @@ class TestGamesETLIntegration(unittest.TestCase):
             # Create threads for each ETL function
             threads = [
                 threading.Thread(target=run_etl_function, args=("deals", get_deals)),
-                threading.Thread(
-                    target=run_etl_function, args=("bundles", get_bundles)
-                ),
-                threading.Thread(
-                    target=run_etl_function, args=("giveaways", get_giveaways)
-                ),
-                threading.Thread(
-                    target=run_etl_function, args=("trending", get_itchio_trending)
-                ),
-                threading.Thread(
-                    target=run_etl_function, args=("releases", get_new_releases)
-                ),
+                threading.Thread(target=run_etl_function, args=("bundles", get_bundles)),
+                threading.Thread(target=run_etl_function, args=("giveaways", get_giveaways)),
+                threading.Thread(target=run_etl_function, args=("trending", get_itchio_trending)),
+                threading.Thread(target=run_etl_function, args=("releases", get_new_releases)),
             ]
 
             # Start all threads

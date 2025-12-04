@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime, time
 from enum import Enum
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, validator
 
@@ -19,12 +19,12 @@ class TimeRange(BaseModel):
 
     start_time: time = Field(..., description="Start time for quiet hours")
     end_time: time = Field(..., description="End time for quiet hours")
-    days_of_week: List[int] = Field(
+    days_of_week: list[int] = Field(
         default=[0, 1, 2, 3, 4, 5, 6],  # All days by default
-        description="Days of week (0=Monday, 6=Sunday)"
+        description="Days of week (0=Monday, 6=Sunday)",
     )
 
-    @validator('days_of_week')
+    @validator("days_of_week")
     def validate_days(cls, v):
         """Validate days of week are within valid range."""
         if any(day < 0 or day > 6 for day in v):
@@ -34,6 +34,7 @@ class TimeRange(BaseModel):
 
 class NotificationChannel(str, Enum):
     """Available notification channels."""
+
     BROWSER = "browser"
     EMAIL = "email"
     TELEGRAM = "telegram"
@@ -48,6 +49,7 @@ class AlertCondition(BaseModel):
 
     class Config:
         """Pydantic configuration."""
+
         extra = "forbid"  # Prevent additional fields
 
 
@@ -88,32 +90,29 @@ class PriceThresholdCondition(AlertCondition):
 class AlertRule(BaseModel):
     """Alert rule definition model."""
 
-    id: Optional[str] = None
+    id: str | None = None
     name: str = Field(..., min_length=1, max_length=100, description="Human-readable rule name")
-    description: Optional[str] = Field(None, max_length=500, description="Rule description")
+    description: str | None = Field(None, max_length=500, description="Rule description")
     user_id: str = Field(..., description="User who owns this rule")
 
     # Rule conditions
-    conditions: List[AlertCondition] = Field(
-        default_factory=list,
-        description="List of conditions that must be met"
-    )
+    conditions: list[AlertCondition] = Field(default_factory=list, description="List of conditions that must be met")
 
     # Rule configuration
     active: bool = Field(default=True, description="Whether this rule is currently active")
-    quiet_hours: Optional[TimeRange] = Field(None, description="Quiet hours when rule doesn't trigger")
-    notification_channels: List[NotificationChannel] = Field(
+    quiet_hours: TimeRange | None = Field(None, description="Quiet hours when rule doesn't trigger")
+    notification_channels: list[NotificationChannel] = Field(
         default=[NotificationChannel.BROWSER],
-        description="Channels to send notifications through"
+        description="Channels to send notifications through",
     )
 
     # Rule metadata
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    last_triggered: Optional[datetime] = None
+    last_triggered: datetime | None = None
     trigger_count: int = Field(default=0)
 
-    @validator('conditions')
+    @validator("conditions")
     def validate_conditions(cls, v):
         """Validate that at least one condition is provided."""
         if not v:
@@ -123,7 +122,7 @@ class AlertRule(BaseModel):
     # Note: Quiet hours validation is handled in the matches_content method
     # to properly handle overnight time ranges like 22:00 to 06:00
 
-    def matches_content(self, content: Dict[str, Any]) -> bool:
+    def matches_content(self, content: dict[str, Any]) -> bool:
         """Check if this rule matches the given content.
 
         Args:
@@ -170,7 +169,7 @@ class AlertRule(BaseModel):
         else:
             return start <= current_time <= end
 
-    def _evaluate_condition(self, condition: AlertCondition, content: Dict[str, Any]) -> bool:
+    def _evaluate_condition(self, condition: AlertCondition, content: dict[str, Any]) -> bool:
         """Evaluate a single condition against content."""
         if condition.condition_type == "source_match":
             return self._evaluate_source_match(condition, content)
@@ -183,7 +182,7 @@ class AlertRule(BaseModel):
         else:
             return False
 
-    def _evaluate_source_match(self, condition: AlertCondition, content: Dict[str, Any]) -> bool:
+    def _evaluate_source_match(self, condition: AlertCondition, content: dict[str, Any]) -> bool:
         """Evaluate source match condition."""
         source = content.get("source", "")
         value = str(condition.value).lower()
@@ -200,7 +199,7 @@ class AlertRule(BaseModel):
         else:
             return source_lower == value
 
-    def _evaluate_keyword_match(self, condition: AlertCondition, content: Dict[str, Any]) -> bool:
+    def _evaluate_keyword_match(self, condition: AlertCondition, content: dict[str, Any]) -> bool:
         """Evaluate keyword match condition."""
         # Search in title, description, and content fields
         searchable_fields = [
@@ -229,7 +228,7 @@ class AlertRule(BaseModel):
         else:
             return keyword in combined_text
 
-    def _evaluate_category_match(self, condition: AlertCondition, content: Dict[str, Any]) -> bool:
+    def _evaluate_category_match(self, condition: AlertCondition, content: dict[str, Any]) -> bool:
         """Evaluate category match condition."""
         content_categories = content.get("categories", [])
         if not isinstance(content_categories, list):
@@ -244,7 +243,7 @@ class AlertRule(BaseModel):
         else:
             return target_category in content_categories
 
-    def _evaluate_price_threshold(self, condition: AlertCondition, content: Dict[str, Any]) -> bool:
+    def _evaluate_price_threshold(self, condition: AlertCondition, content: dict[str, Any]) -> bool:
         """Evaluate price threshold condition."""
         price = content.get("price")
         if price is None:
@@ -273,33 +272,31 @@ class AlertRule(BaseModel):
 class AlertEvent(BaseModel):
     """Model for storing alert events."""
 
-    id: Optional[str] = None
+    id: str | None = None
     rule_id: str = Field(..., description="ID of the rule that triggered this alert")
     rule_name: str = Field(..., description="Name of the rule that triggered this alert")
     user_id: str = Field(..., description="User who should receive this alert")
 
     # Content information
     content_id: str = Field(..., description="Unique identifier for the content")
-    content: Dict[str, Any] = Field(..., description="The content that triggered the alert")
+    content: dict[str, Any] = Field(..., description="The content that triggered the alert")
     content_hash: str = Field(..., description="Hash of content for deduplication")
 
     # Event metadata
     triggered_at: datetime = Field(default_factory=datetime.now)
     severity: str = Field(default="info", description="Alert severity level")
-    message: Optional[str] = Field(None, description="Alert message")
+    message: str | None = Field(None, description="Alert message")
 
     # Processing status
     processed: bool = Field(default=False, description="Whether alert has been processed/ sent")
-    sent_via: List[NotificationChannel] = Field(
-        default_factory=list,
-        description="Channels this alert was sent through"
-    )
+    sent_via: list[NotificationChannel] = Field(default_factory=list, description="Channels this alert was sent through")
 
     class Config:
         """Pydantic configuration."""
+
         extra = "forbid"  # Prevent additional fields
 
-    def mark_processed(self, channels: List[NotificationChannel]) -> None:
+    def mark_processed(self, channels: list[NotificationChannel]) -> None:
         """Mark alert as processed and record channels used."""
         self.processed = True
         self.sent_via = channels

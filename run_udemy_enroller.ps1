@@ -33,11 +33,11 @@ function Write-Log {
 # Function to clean up old log files
 function Cleanup-LogFiles {
     param([int]$DaysToKeep = 30)
-    
+
     try {
         $CutoffDate = (Get-Date).AddDays(-$DaysToKeep)
-        Get-ChildItem -Path $LogDir -Filter "udemy_enroller_*.log" | 
-            Where-Object { $_.CreationTime -lt $CutoffDate } | 
+        Get-ChildItem -Path $LogDir -Filter "udemy_enroller_*.log" |
+            Where-Object { $_.CreationTime -lt $CutoffDate } |
             Remove-Item -Force
         Write-Log "Cleaned up log files older than $DaysToKeep days"
     } catch {
@@ -70,7 +70,7 @@ function Start-EnrollmentProcess {
         [string]$ConfigFilePath,
         [switch]$DryRun
     )
-    
+
     $Arguments = @(
         "run",
         "src/miners/udemy-universal/unified_cli.py",
@@ -78,21 +78,21 @@ function Start-EnrollmentProcess {
         "--automated",
         "--config-file", $ConfigFilePath
     )
-    
+
     if ($DryRun) {
         $Arguments += "--dry-run"
     }
-    
+
     if ($Verbose) {
         $Arguments += "--verbose"
     }
-    
+
     Write-Log "Starting course enrollment with command: uv $($Arguments -join ' ')"
-    
+
     try {
         # Redirect both stdout and stderr to log file
         $Process = Start-Process -FilePath "uv" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru -RedirectStandardOutput $LogFile -RedirectStandardError $LogFile
-        
+
         return $Process.ExitCode
     } catch {
         Write-Log "Failed to start enrollment process: $($_.Exception.Message)" "ERROR"
@@ -106,41 +106,41 @@ try {
     Write-Log "Watchtower Udemy Course Enroller"
     Write-Log "Started: $(Get-Date)"
     Write-Log "========================================"
-    
+
     # Set working directory
     Set-Location $ScriptDir
     Write-Log "Working directory: $(Get-Location)"
-    
+
     # Set environment variables
     $env:PYTHONPATH = Join-Path $ScriptDir "src"
     $env:UDEMY_LOG_DIR = $LogDir
     $env:UDEMY_CONFIG_DIR = $ConfigDir
-    
+
     # Create logs directory
     if (-not (Test-Path $LogDir)) {
         New-Item -Path $LogDir -ItemType Directory -Force | Out-Null
         Write-Log "Created logs directory: $LogDir"
     }
-    
+
     # Initialize log file
     Write-Log "Log file: $LogFile"
-    
+
     # Check UV availability
     if (-not (Test-UVAvailability)) {
         throw "UV package manager is not available"
     }
-    
+
     # Build config file path
     $ConfigPath = Join-Path $ConfigDir $ConfigFile
     if (-not (Test-Path $ConfigPath)) {
         throw "Configuration file not found: $ConfigPath"
     }
-    
+
     Write-Log "Using configuration file: $ConfigPath"
-    
+
     # Run enrollment process
     $ExitCode = Start-EnrollmentProcess -ConfigFilePath $ConfigPath -DryRun:$DryRun
-    
+
     # Process results
     if ($ExitCode -eq 0) {
         Write-Log "========================================"
@@ -148,7 +148,7 @@ try {
         Write-Log "Exit code: $ExitCode"
         Write-Log "Completed: $(Get-Date)"
         Write-Log "========================================"
-        
+
         # Display log summary
         Write-Log ""
         Write-Log "Last 10 lines of enrollment log:"
@@ -157,14 +157,14 @@ try {
             Get-Content $LogFile | Select-Object -Last 10 | ForEach-Object { Write-Log $_ }
         }
         Write-Log "----------------------------------------"
-        
+
     } else {
         Write-Log "========================================"
         Write-Log "ERROR: Course enrollment failed!"
         Write-Log "Exit code: $ExitCode"
         Write-Log "Failed: $(Get-Date)"
         Write-Log "========================================"
-        
+
         # Display error log
         Write-Log ""
         Write-Log "Last 20 lines of enrollment log for error diagnosis:"
@@ -174,22 +174,22 @@ try {
         }
         Write-Log "----------------------------------------"
     }
-    
+
     # Clean up old logs
     Cleanup-LogFiles -DaysToKeep 30
-    
+
     Write-Log "Process completed with exit code: $ExitCode"
     Write-Log "End time: $(Get-Date)"
-    
+
     exit $ExitCode
-    
+
 } catch {
     Write-Log "FATAL ERROR: $($_.Exception.Message)" "ERROR"
     Write-Log "Stack trace: $($_.Exception.StackTrace)" "ERROR"
     Write-Log "Script failed at: $(Get-Date)" "ERROR"
-    
+
     # Clean up old logs even on error
     Cleanup-LogFiles -DaysToKeep 30
-    
+
     exit 1
-} 
+}

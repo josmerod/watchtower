@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 from src.etl.base import BaseETL
 from src.utils.logging import get_logger
@@ -41,9 +41,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
             "libraries": "https://example.com/api/libraries",
         }
 
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
+        self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
         # ADHD-friendly criteria
         self.sensory_criteria = {
@@ -88,7 +86,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
             "bookstores": {"base_score": 8, "noise_tolerance": 1, "fidget_friendly": 6},
         }
 
-    def extract(self) -> List[Dict[str, Any]]:
+    def extract(self) -> list[dict[str, Any]]:
         """Extract location data for ADHD-friendly analysis."""
         self.logger.info("Starting ADHD-friendly location data extraction 🧠")
         extracted_data = []
@@ -112,9 +110,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
                 extracted_data.extend(intelligence_data)
                 self.metrics.records_extracted += len(intelligence_data)
 
-            self.logger.info(
-                f"Extracted {len(extracted_data)} ADHD-friendly location records 🌟"
-            )
+            self.logger.info(f"Extracted {len(extracted_data)} ADHD-friendly location records 🌟")
 
         except Exception as e:
             self.logger.error(f"Failed to extract ADHD location data: {e}")
@@ -122,7 +118,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         return extracted_data
 
-    def _extract_locations(self) -> List[Dict[str, Any]]:
+    def _extract_locations(self) -> list[dict[str, Any]]:
         """Extract location data (mock implementation)."""
         locations_data = []
 
@@ -213,7 +209,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
         locations_data.extend(mock_locations)
         return locations_data
 
-    def _extract_neurodivergent_reviews(self) -> List[Dict[str, Any]]:
+    def _extract_neurodivergent_reviews(self) -> list[dict[str, Any]]:
         """Extract crowdsourced neurodivergent-friendly reviews."""
         reviews_data = []
 
@@ -278,7 +274,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
         reviews_data.extend(mock_reviews)
         return reviews_data
 
-    def _generate_location_intelligence(self) -> List[Dict[str, Any]]:
+    def _generate_location_intelligence(self) -> list[dict[str, Any]]:
         """Generate location intelligence and recommendations."""
         intelligence_data = []
 
@@ -332,7 +328,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
         intelligence_data.append(daily_intelligence)
         return intelligence_data
 
-    def transform(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Transform location data with ADHD-friendly analysis."""
         self.logger.info(f"Transforming {len(data)} ADHD location records 🔧")
         transformed_data = []
@@ -343,19 +339,13 @@ class ADHDFriendlyLocationsETL(BaseETL):
                     # Add ADHD-friendly analysis
                     transformed_record = {
                         **record,
-                        "adhd_friendliness_score": self._calculate_adhd_friendliness(
-                            record
-                        ),
+                        "adhd_friendliness_score": self._calculate_adhd_friendliness(record),
                         "sensory_assessment": self._assess_sensory_environment(record),
                         "focus_potential": self._assess_focus_potential(record),
-                        "overstimulation_risk": self._assess_overstimulation_risk(
-                            record
-                        ),
+                        "overstimulation_risk": self._assess_overstimulation_risk(record),
                         "recommended_activities": self._recommend_activities(record),
                         "optimal_visit_times": self._suggest_optimal_times(record),
-                        "neurodivergent_accommodations": self._identify_accommodations(
-                            record
-                        ),
+                        "neurodivergent_accommodations": self._identify_accommodations(record),
                         "escape_route_rating": self._assess_escape_routes(record),
                     }
                 elif record.get("data_type") == "neurodivergent_review":
@@ -363,12 +353,8 @@ class ADHDFriendlyLocationsETL(BaseETL):
                     transformed_record = {
                         **record,
                         "review_reliability": self._assess_review_reliability(record),
-                        "sensitivity_indicators": self._extract_sensitivity_indicators(
-                            record
-                        ),
-                        "accommodation_suggestions": self._extract_accommodation_suggestions(
-                            record
-                        ),
+                        "sensitivity_indicators": self._extract_sensitivity_indicators(record),
+                        "accommodation_suggestions": self._extract_accommodation_suggestions(record),
                     }
                 else:
                     transformed_record = record
@@ -382,7 +368,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         return transformed_data
 
-    def _calculate_adhd_friendliness(self, record: Dict[str, Any]) -> float:
+    def _calculate_adhd_friendliness(self, record: dict[str, Any]) -> float:
         """Calculate overall ADHD-friendliness score."""
         score = 5.0  # Base score
 
@@ -419,9 +405,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
             "comfortable_seating",
             "private_study_rooms",
         ]
-        amenity_bonus = sum(
-            0.5 for amenity in amenities if amenity in beneficial_amenities
-        )
+        amenity_bonus = sum(0.5 for amenity in amenities if amenity in beneficial_amenities)
         score += amenity_bonus
 
         # Fidget friendliness
@@ -430,38 +414,28 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         return max(0.0, min(10.0, score))
 
-    def _assess_sensory_environment(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_sensory_environment(self, record: dict[str, Any]) -> dict[str, Any]:
         """Assess sensory environment characteristics."""
         return {
             "noise_analysis": {
                 "level": record.get("noise_level", "unknown"),
-                "predictability": (
-                    "high" if record.get("type") == "library" else "medium"
-                ),
+                "predictability": ("high" if record.get("type") == "library" else "medium"),
                 "controllability": "low",
             },
             "lighting_analysis": {
                 "type": record.get("lighting_type", "unknown"),
-                "quality": (
-                    "excellent"
-                    if "natural_light" in record.get("amenities", [])
-                    else "good"
-                ),
+                "quality": ("excellent" if "natural_light" in record.get("amenities", []) else "good"),
                 "adjustability": "low",
             },
             "spatial_characteristics": {
                 "crowding_level": record.get("crowd_density", "unknown"),
-                "layout_complexity": (
-                    "simple"
-                    if record.get("type") in ["library", "park"]
-                    else "moderate"
-                ),
+                "layout_complexity": ("simple" if record.get("type") in ["library", "park"] else "moderate"),
                 "escape_route_accessibility": "high",
             },
             "overall_sensory_load": self._calculate_sensory_load(record),
         }
 
-    def _calculate_sensory_load(self, record: Dict[str, Any]) -> str:
+    def _calculate_sensory_load(self, record: dict[str, Any]) -> str:
         """Calculate overall sensory load."""
         noise_weights = {
             "silent": 0,
@@ -492,7 +466,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
         else:
             return "overwhelming"
 
-    def _assess_focus_potential(self, record: Dict[str, Any]) -> Dict[str, str]:
+    def _assess_focus_potential(self, record: dict[str, Any]) -> dict[str, str]:
         """Assess focus potential for different types of work."""
         location_type = record.get("type", "")
         sensory_load = self._calculate_sensory_load(record)
@@ -537,7 +511,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         return base_ratings
 
-    def _assess_overstimulation_risk(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_overstimulation_risk(self, record: dict[str, Any]) -> dict[str, Any]:
         """Assess overstimulation risk factors."""
         risk_factors = []
 
@@ -571,7 +545,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
             ],
         }
 
-    def _suggest_mitigation_strategies(self, risk_factors: List[str]) -> List[str]:
+    def _suggest_mitigation_strategies(self, risk_factors: list[str]) -> list[str]:
         """Suggest strategies to mitigate overstimulation risks."""
         strategies = []
 
@@ -603,7 +577,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         return list(set(strategies))  # Remove duplicates
 
-    def _recommend_activities(self, record: Dict[str, Any]) -> List[str]:
+    def _recommend_activities(self, record: dict[str, Any]) -> list[str]:
         """Recommend suitable activities for this location."""
         location_type = record.get("type", "")
         adhd_score = self._calculate_adhd_friendliness(record)
@@ -646,7 +620,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         return base_activities
 
-    def _suggest_optimal_times(self, record: Dict[str, Any]) -> Dict[str, str]:
+    def _suggest_optimal_times(self, record: dict[str, Any]) -> dict[str, str]:
         """Suggest optimal visit times for ADHD individuals."""
         location_type = record.get("type", "")
 
@@ -682,7 +656,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
             },
         )
 
-    def _identify_accommodations(self, record: Dict[str, Any]) -> List[str]:
+    def _identify_accommodations(self, record: dict[str, Any]) -> list[str]:
         """Identify available neurodivergent accommodations."""
         accommodations = []
 
@@ -708,9 +682,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         # Type-specific accommodations
         if location_type == "library":
-            accommodations.extend(
-                ["study_carrels", "book_browsing", "research_assistance"]
-            )
+            accommodations.extend(["study_carrels", "book_browsing", "research_assistance"])
         elif location_type == "coffee_shop":
             accommodations.extend(
                 [
@@ -720,13 +692,11 @@ class ADHDFriendlyLocationsETL(BaseETL):
                 ]
             )
         elif location_type == "park":
-            accommodations.extend(
-                ["nature_access", "movement_friendly", "sensory_regulation"]
-            )
+            accommodations.extend(["nature_access", "movement_friendly", "sensory_regulation"])
 
         return accommodations
 
-    def _assess_escape_routes(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_escape_routes(self, record: dict[str, Any]) -> dict[str, Any]:
         """Assess ease of leaving when overwhelmed."""
         location_type = record.get("type", "")
 
@@ -773,7 +743,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
             ],
         }
 
-    def _suggest_exit_strategies(self, location_type: str) -> List[str]:
+    def _suggest_exit_strategies(self, location_type: str) -> list[str]:
         """Suggest discrete exit strategies."""
         strategies = {
             "library": ["bathroom_break", "book_return", "quiet_exit"],
@@ -782,11 +752,9 @@ class ADHDFriendlyLocationsETL(BaseETL):
             "park": ["natural_end_of_walk", "weather_excuse", "immediate_departure"],
         }
 
-        return strategies.get(
-            location_type, ["polite_excuse", "bathroom_break", "quiet_exit"]
-        )
+        return strategies.get(location_type, ["polite_excuse", "bathroom_break", "quiet_exit"])
 
-    def _assess_review_reliability(self, record: Dict[str, Any]) -> float:
+    def _assess_review_reliability(self, record: dict[str, Any]) -> float:
         """Assess reliability of neurodivergent review."""
         score = 5.0
 
@@ -798,10 +766,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
             score += 1.0
 
         # Specific sensory details increase reliability
-        if any(
-            term in review_text.lower()
-            for term in ["noise", "light", "crowd", "sensory"]
-        ):
+        if any(term in review_text.lower() for term in ["noise", "light", "crowd", "sensory"]):
             score += 1.5
 
         # Recent review is more reliable
@@ -810,7 +775,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         return min(10.0, score)
 
-    def _extract_sensitivity_indicators(self, record: Dict[str, Any]) -> List[str]:
+    def _extract_sensitivity_indicators(self, record: dict[str, Any]) -> list[str]:
         """Extract sensitivity indicators from review."""
         indicators = []
         review_text = record.get("review_text", "").lower()
@@ -828,7 +793,7 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         return indicators
 
-    def _extract_accommodation_suggestions(self, record: Dict[str, Any]) -> List[str]:
+    def _extract_accommodation_suggestions(self, record: dict[str, Any]) -> list[str]:
         """Extract accommodation suggestions from review."""
         suggestions = []
         review_text = record.get("review_text", "").lower()
@@ -849,15 +814,12 @@ class ADHDFriendlyLocationsETL(BaseETL):
 
         return suggestions
 
-    def load(self, data: List[Dict[str, Any]]) -> None:
+    def load(self, data: list[dict[str, Any]]) -> None:
         """Load ADHD-friendly location data to storage."""
         self.logger.info(f"Loading {len(data)} ADHD-friendly location records 💾")
 
         # Save complete data
-        output_file = (
-            self.output_dir
-            / f"adhd_friendly_locations_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+        output_file = self.output_dir / f"adhd_friendly_locations_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
 
         try:
             with open(output_file, "w", encoding="utf-8") as f:
@@ -877,14 +839,8 @@ class ADHDFriendlyLocationsETL(BaseETL):
             # Log useful statistics
             locations = [d for d in data if d.get("data_type") == "location"]
             reviews = [d for d in data if d.get("data_type") == "neurodivergent_review"]
-            highly_recommended = [
-                l for l in locations if l.get("adhd_friendliness_score", 0) >= 8
-            ]
-            low_overstimulation = [
-                l
-                for l in locations
-                if l.get("overstimulation_risk", {}).get("risk_level") == "low"
-            ]
+            highly_recommended = [l for l in locations if l.get("adhd_friendliness_score", 0) >= 8]
+            low_overstimulation = [l for l in locations if l.get("overstimulation_risk", {}).get("risk_level") == "low"]
 
             self.logger.info(
                 f"Summary: {len(locations)} locations analyzed, {len(reviews)} community reviews, {len(highly_recommended)} highly ADHD-friendly, {len(low_overstimulation)} low overstimulation risk 🧠✨"
@@ -894,35 +850,21 @@ class ADHDFriendlyLocationsETL(BaseETL):
             self.logger.error(f"Failed to save ADHD location data: {e}")
             raise
 
-    def _create_specialized_datasets(self, data: List[Dict[str, Any]]) -> None:
+    def _create_specialized_datasets(self, data: list[dict[str, Any]]) -> None:
         """Create specialized datasets for different needs."""
         locations = [d for d in data if d.get("data_type") == "location"]
 
         # High ADHD-friendliness locations
-        highly_adhd_friendly = [
-            l for l in locations if l.get("adhd_friendliness_score", 0) >= 8
-        ]
+        highly_adhd_friendly = [l for l in locations if l.get("adhd_friendliness_score", 0) >= 8]
 
         # Low sensory load locations
-        low_sensory_load = [
-            l
-            for l in locations
-            if l.get("sensory_assessment", {}).get("overall_sensory_load") == "low"
-        ]
+        low_sensory_load = [l for l in locations if l.get("sensory_assessment", {}).get("overall_sensory_load") == "low"]
 
         # Hyperfocus-friendly locations
-        hyperfocus_friendly = [
-            l
-            for l in locations
-            if "hyperfocus_sessions" in l.get("recommended_activities", [])
-        ]
+        hyperfocus_friendly = [l for l in locations if "hyperfocus_sessions" in l.get("recommended_activities", [])]
 
         # Emergency escape-friendly locations
-        easy_escape = [
-            l
-            for l in locations
-            if l.get("escape_route_rating", {}).get("ease") in ["easy", "very_easy"]
-        ]
+        easy_escape = [l for l in locations if l.get("escape_route_rating", {}).get("ease") in ["easy", "very_easy"]]
 
         # Save specialized datasets
         datasets = {

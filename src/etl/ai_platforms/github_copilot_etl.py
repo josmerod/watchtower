@@ -37,9 +37,7 @@ class GitHubCopilotETL(BaseETL):
             "enterprise": "https://github.com/enterprise",
         }
 
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
+        self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
     def extract(self) -> list[dict[str, Any]]:
         """Extract data from GitHub Copilot platform."""
@@ -146,13 +144,9 @@ class GitHubCopilotETL(BaseETL):
                 # Add GitHub Copilot specific intelligence
                 transformed_record = {
                     **record,
-                    "developer_productivity_impact": self._assess_productivity_impact(
-                        record
-                    ),
+                    "developer_productivity_impact": self._assess_productivity_impact(record),
                     "market_position": self._assess_market_position(record),
-                    "competitive_advantages": self._identify_competitive_advantages(
-                        record
-                    ),
+                    "competitive_advantages": self._identify_competitive_advantages(record),
                 }
 
                 transformed_data.append(transformed_record)
@@ -230,16 +224,12 @@ class GitHubCopilotETL(BaseETL):
             # Save latest data
             with open(latest_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, default=str)
-            self.logger.info(
-                f"Successfully updated latest GitHub Copilot data at {latest_file}"
-            )
+            self.logger.info(f"Successfully updated latest GitHub Copilot data at {latest_file}")
 
             self.metrics.records_loaded = len(data)
 
-        except (IOError, OSError) as e:
-            self.logger.error(
-                f"Failed to save GitHub Copilot data to {output_file} or {latest_file}: {e}"
-            )
+        except OSError as e:
+            self.logger.error(f"Failed to save GitHub Copilot data to {output_file} or {latest_file}: {e}")
             raise LoadError(
                 f"Failed to save GitHub Copilot data: {e}",
                 destination=str(output_file),

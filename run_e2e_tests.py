@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-"""
-E2E Test Runner for Watchtower Recommendations
+"""E2E Test Runner for Watchtower Recommendations
 
 This script runs Playwright E2E tests for the recommendations functionality.
 It handles setup, test execution, and reporting.
 """
 
-import os
-import sys
-import subprocess
-import time
 import argparse
+import os
+import subprocess
+import sys
+import time
 from pathlib import Path
-from typing import List, Optional
 
 # Add project root to path
 project_root = Path(__file__).parent
@@ -23,6 +21,7 @@ def check_dashboard_running(url: str = "http://localhost:7777") -> bool:
     """Check if the dashboard is running and accessible."""
     try:
         import requests
+
         response = requests.get(url, timeout=5)
         return response.status_code < 500
     except Exception:
@@ -105,7 +104,7 @@ def run_playwright_tests(
         "-v",
         f"--browser={browser}",
         f"--retries={retries}",
-        f"--timeout=30000",
+        "--timeout=30000",
     ]
 
     if headed:
@@ -117,13 +116,15 @@ def run_playwright_tests(
         cmd.append(f"--slowmo={slowmo}")
 
     # Add output options
-    cmd.extend([
-        "--html=test-results/html-report/index.html",
-        "--self-contained-html",
-        "--screenshot=only-on-failure",
-        "--video=retain-on-failure",
-        "--tracing=retain-on-failure",
-    ])
+    cmd.extend(
+        [
+            "--html=test-results/html-report/index.html",
+            "--self-contained-html",
+            "--screenshot=only-on-failure",
+            "--video=retain-on-failure",
+            "--tracing=retain-on-failure",
+        ]
+    )
 
     # Set environment for Playwright
     env = os.environ.copy()

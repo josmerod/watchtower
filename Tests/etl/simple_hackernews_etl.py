@@ -6,106 +6,74 @@ from pathlib import Path
 # Add project root to Python path
 project_root = Path(__file__).parent.parent.parent
 try:
-    import asyncio
-    import json
     import time
-    from datetime import datetime
-    from typing import Dict, List, Any
-    
-    import aiohttp
+    from typing import Any
+
     import feedparser
-    
+
     from config.settings import get_settings
     from utils.logging import get_logger
 
     class SimpleHackerNewsETL:
-
         def __init__(self):
             self.settings = get_settings()
             self.logger = get_logger("simple_hn_etl")
             self.rss_url = "https://hnrss.org/frontpage"
-            
-        def extract(self) -> List[Dict[str, Any]]:
+
+        def extract(self) -> list[dict[str, Any]]:
             """Extract data from HackerNews RSS feed."""
             self.logger.info(f"Extracting data from {self.rss_url}")
-            
+
             feed = feedparser.parse(self.rss_url)
-            
+
             if not feed.entries:
                 raise Exception("No entries found in RSS feed")
-            
+
             articles = []
             for entry in feed.entries[:10]:  # Limit to 10 for testing
-                article = {
-
-
-
-
-
-                }
+                article = {}
                 articles.append(article)
-            
+
             return articles
-        
-        def transform(self, articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+        def transform(self, articles: list[dict[str, Any]]) -> list[dict[str, Any]]:
             """Transform the extracted articles."""
             self.logger.info("Transforming articles")
-            
+
             transformed = []
             for article in articles:
                 # Simple transformations
-                transformed_article = {
-
-
-
-
-
-
-                }
+                transformed_article = {}
                 transformed.append(transformed_article)
-            
+
             return transformed
-        
-        def load(self, articles: List[Dict[str, Any]]) -> None:
+
+        def load(self, articles: list[dict[str, Any]]) -> None:
             """Load articles to JSON file."""
             self.logger.info("Loading articles to file")
-            
+
             # Ensure output directory exists
             output_dir = Path(self.settings.data_dir) / "simple_hackernews_etl" / "output"
-            output_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Save as JSON
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            json_file = output_dir / f"hackernews_{timestamp}.json"
-            
-            with open(json_file, 'w', encoding='utf-8') as f:
-            
-            print(f"Output saved to: {json_file}")
-        
-        def run(self) -> bool:
-            """Run the ETL process."""
-            start_time = time.time()
-            
             try:
                 print("Starting Simple HackerNews ETL...")
-                
+
                 # Extract
                 articles = self.extract()
                 print(f"Extracted: {len(articles)} articles")
-                
+
                 # Transform
                 transformed = self.transform(articles)
                 print(f"Transformed: {len(transformed)} articles")
-                
+
                 # Load
                 self.load(transformed)
                 print(f"Loaded: {len(transformed)} articles")
-                
+
                 duration = time.time() - start_time
                 print(f"ETL completed in {duration:.2f} seconds")
-                
+
                 return True
-                
+
             except Exception as e:
                 self.logger.error(f"ETL failed: {e}")
                 print(f"ETL failed: {e}")
@@ -115,7 +83,7 @@ try:
         """Main function."""
         etl = SimpleHackerNewsETL()
         success = etl.run()
-        
+
         if success:
             print("Simple HackerNews ETL test PASSED")
         else:
@@ -128,5 +96,6 @@ try:
 except Exception as e:
     print(f"Import error: {e}")
     import traceback
+
     traceback.print_exc()
-    sys.exit(1) 
+    sys.exit(1)

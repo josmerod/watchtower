@@ -1,5 +1,4 @@
-"""
-E-commerce Dashboard Tab
+"""E-commerce Dashboard Tab
 Gumroad products, travel deals, and commercial opportunities
 """
 
@@ -43,15 +42,11 @@ def load_ecommerce_data(file_path):
             logger.warning(f"E-commerce data file not found: {file_path}")
             return []
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
 
         if isinstance(data, list):
-            return [
-                process_ecommerce_item(item)
-                for item in data
-                if process_ecommerce_item(item)
-            ]
+            return [process_ecommerce_item(item) for item in data if process_ecommerce_item(item)]
         elif isinstance(data, dict):
             processed_item = process_ecommerce_item(data)
             return [processed_item] if processed_item else []
@@ -75,31 +70,19 @@ def process_ecommerce_item(item):
             discount = ((original_price - price) / original_price) * 100
 
         return {
-            "title": item.get(
-                "title", item.get("name", item.get("product_name", "Unknown Product"))
-            ),
-            "description": item.get(
-                "description", item.get("summary", "No description available")
-            ),
+            "title": item.get("title", item.get("name", item.get("product_name", "Unknown Product"))),
+            "description": item.get("description", item.get("summary", "No description available")),
             "price": float(price) if price else 0,
             "original_price": float(original_price) if original_price else 0,
             "discount": discount,
             "category": item.get("category", item.get("type", "General")),
-            "seller": item.get(
-                "seller", item.get("author", item.get("vendor", "Unknown"))
-            ),
+            "seller": item.get("seller", item.get("author", item.get("vendor", "Unknown"))),
             "rating": float(item.get("rating", 0)) if item.get("rating") else 0,
-            "sales": (
-                int(item.get("sales", item.get("purchases", 0)))
-                if item.get("sales") or item.get("purchases")
-                else 0
-            ),
+            "sales": (int(item.get("sales", item.get("purchases", 0))) if item.get("sales") or item.get("purchases") else 0),
             "url": item.get("url", item.get("link", "#")),
             "image": item.get("image", item.get("thumbnail", "")),
             "tags": item.get("tags", item.get("keywords", [])),
-            "release_date": parse_date_universal(
-                item.get("release_date", item.get("created_at", item.get("date")))
-            ),
+            "release_date": parse_date_universal(item.get("release_date", item.get("created_at", item.get("date")))),
             "raw_data": item,
         }
     except Exception as e:
@@ -132,18 +115,8 @@ def create_ecommerce_summary_cards():
         item_count = len(data)
 
         # Calculate metrics
-        avg_price = (
-            sum(item["price"] for item in data if item["price"] > 0)
-            / len([item for item in data if item["price"] > 0])
-            if any(item["price"] > 0 for item in data)
-            else 0
-        )
-        avg_rating = (
-            sum(item["rating"] for item in data if item["rating"] > 0)
-            / len([item for item in data if item["rating"] > 0])
-            if any(item["rating"] > 0 for item in data)
-            else 0
-        )
+        avg_price = sum(item["price"] for item in data if item["price"] > 0) / len([item for item in data if item["price"] > 0]) if any(item["price"] > 0 for item in data) else 0
+        avg_rating = sum(item["rating"] for item in data if item["rating"] > 0) / len([item for item in data if item["rating"] > 0]) if any(item["rating"] > 0 for item in data) else 0
         total_sales = sum(item["sales"] for item in data if item["sales"] > 0)
 
         card = dbc.Card(
@@ -166,9 +139,7 @@ def create_ecommerce_summary_cards():
                 ),
                 dbc.CardBody(
                     [
-                        html.P(
-                            config["description"], className="small text-muted mb-2"
-                        ),
+                        html.P(config["description"], className="small text-muted mb-2"),
                         html.Div(
                             [
                                 html.Strong("Category: "),
@@ -227,9 +198,7 @@ def create_ecommerce_summary_cards():
 def create_ecommerce_table(source_id, items):
     """Create table for e-commerce items"""
     if not items:
-        return dbc.Alert(
-            "No e-commerce items available.", color="info", className="text-center"
-        )
+        return dbc.Alert("No e-commerce items available.", color="info", className="text-center")
 
     # Sort by rating and sales
     sorted_items = sorted(items, key=lambda x: (x["rating"], x["sales"]), reverse=True)
@@ -247,20 +216,14 @@ def create_ecommerce_table(source_id, items):
             tags_str += f" +{len(item['tags']) - 3} more"
 
         row = {
-            "Title": (
-                item["title"][:60] + "..." if len(item["title"]) > 60 else item["title"]
-            ),
+            "Title": (item["title"][:60] + "..." if len(item["title"]) > 60 else item["title"]),
             "Category": item["category"],
             "Seller": item["seller"],
             "Price": price_str,
             "Rating": f"{item['rating']:.1f}/5" if item["rating"] > 0 else "N/A",
             "Sales": f"{item['sales']:,}" if item["sales"] > 0 else "N/A",
             "Tags": tags_str,
-            "Description": (
-                item["description"][:100] + "..."
-                if len(item["description"]) > 100
-                else item["description"]
-            ),
+            "Description": (item["description"][:100] + "..." if len(item["description"]) > 100 else item["description"]),
             "URL": item["url"],
         }
         df_data.append(row)
@@ -323,13 +286,8 @@ def create_ecommerce_table(source_id, items):
 def render_ecommerce_tab():
     """Main render function for E-commerce tab"""
     total_items = len(ALL_ECOMMERCE)
-    total_categories = len(set(item["category"] for item in ALL_ECOMMERCE))
-    avg_price = (
-        sum(item["price"] for item in ALL_ECOMMERCE if item["price"] > 0)
-        / len([item for item in ALL_ECOMMERCE if item["price"] > 0])
-        if any(item["price"] > 0 for item in ALL_ECOMMERCE)
-        else 0
-    )
+    total_categories = len({item["category"] for item in ALL_ECOMMERCE})
+    avg_price = sum(item["price"] for item in ALL_ECOMMERCE if item["price"] > 0) / len([item for item in ALL_ECOMMERCE if item["price"] > 0]) if any(item["price"] > 0 for item in ALL_ECOMMERCE) else 0
     free_items = len([item for item in ALL_ECOMMERCE if item["price"] == 0])
 
     return html.Div(
@@ -448,7 +406,7 @@ def render_ecommerce_tab():
 
 def register_ecommerce_callbacks(app):
     """Register callbacks for E-commerce tab"""
-    for source_id in ECOMMERCE_SOURCES_CONFIG.keys():
+    for source_id in ECOMMERCE_SOURCES_CONFIG:
 
         @callback(
             Output("ecommerce-data-display", "children"),

@@ -6,40 +6,40 @@ import json
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
 from src.recommendations.activity_tracker import UserActivityTracker
-from src.recommendations.recommendation_engine import RecommendationEngine
 from src.recommendations.models import (
     ActivityEvent,
     ActivityType,
     RecommendationType,
     UserActivityProfile,
 )
+from src.recommendations.recommendation_engine import RecommendationEngine
 
 
 class TestRecommendationEngine:
     """Test suite for RecommendationEngine functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_data_dir(self):
         """Create a temporary directory for test data."""
         with tempfile.TemporaryDirectory() as temp_dir:
             yield Path(temp_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def activity_tracker(self, temp_data_dir):
         """Create a UserActivityTracker instance for testing."""
         return UserActivityTracker(data_dir=temp_data_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def recommendation_engine(self, activity_tracker, temp_data_dir):
         """Create a RecommendationEngine instance for testing."""
         return RecommendationEngine(activity_tracker=activity_tracker, data_dir=temp_data_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_activities(self):
         """Create sample activity events for testing."""
         base_time = datetime.now() - timedelta(days=1)
@@ -76,7 +76,7 @@ class TestRecommendationEngine:
             ),
         ]
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_content_data(self):
         """Create mock content data for testing content finding functions."""
         return [
@@ -120,7 +120,7 @@ class TestRecommendationEngine:
     def test_generate_recommendations_no_activities(self, recommendation_engine):
         """Test recommendation generation when user has no activities."""
         # Mock profile to return insufficient activities
-        with patch.object(recommendation_engine.activity_tracker, 'get_user_profile') as mock_profile:
+        with patch.object(recommendation_engine.activity_tracker, "get_user_profile") as mock_profile:
             mock_profile.return_value = None
             recommendations = recommendation_engine.generate_recommendations("test_user")
             assert recommendations is None
@@ -136,12 +136,33 @@ class TestRecommendationEngine:
         )
 
         # Setup mocks
-        with patch.object(recommendation_engine.activity_tracker, 'get_user_profile', return_value=profile), \
-             patch.object(recommendation_engine.activity_tracker, 'load_user_activities', return_value=sample_activities), \
-             patch.object(recommendation_engine, '_find_recent_content_by_type', return_value=mock_content_data), \
-             patch.object(recommendation_engine, '_find_recent_content_by_category', return_value=mock_content_data), \
-             patch.object(recommendation_engine, '_find_similar_content', return_value=mock_content_data):
-
+        with (
+            patch.object(
+                recommendation_engine.activity_tracker,
+                "get_user_profile",
+                return_value=profile,
+            ),
+            patch.object(
+                recommendation_engine.activity_tracker,
+                "load_user_activities",
+                return_value=sample_activities,
+            ),
+            patch.object(
+                recommendation_engine,
+                "_find_recent_content_by_type",
+                return_value=mock_content_data,
+            ),
+            patch.object(
+                recommendation_engine,
+                "_find_recent_content_by_category",
+                return_value=mock_content_data,
+            ),
+            patch.object(
+                recommendation_engine,
+                "_find_similar_content",
+                return_value=mock_content_data,
+            ),
+        ):
             recommendations = recommendation_engine.generate_recommendations("test_user")
 
             assert recommendations is not None
@@ -157,6 +178,7 @@ class TestRecommendationEngine:
         )
 
         from src.recommendations.models import UserRecommendations
+
         recommendations = UserRecommendations(user_id="test_user")
 
         mock_content = [
@@ -164,7 +186,11 @@ class TestRecommendationEngine:
             {"id": "paper_2", "title": "AI Paper", "type": "arxiv_paper"},
         ]
 
-        with patch.object(recommendation_engine, '_find_recent_content_by_type', return_value=mock_content):
+        with patch.object(
+            recommendation_engine,
+            "_find_recent_content_by_type",
+            return_value=mock_content,
+        ):
             recommendation_engine._generate_top_source_recommendations("test_user", profile, recommendations)
 
             # Should have recommendations for top sources
@@ -185,6 +211,7 @@ class TestRecommendationEngine:
         )
 
         from src.recommendations.models import UserRecommendations
+
         recommendations = UserRecommendations(user_id="test_user")
 
         mock_content = [
@@ -192,7 +219,11 @@ class TestRecommendationEngine:
             {"id": "content_2", "title": "Tech Content", "type": "news_article"},
         ]
 
-        with patch.object(recommendation_engine, '_find_recent_content_by_category', return_value=mock_content):
+        with patch.object(
+            recommendation_engine,
+            "_find_recent_content_by_category",
+            return_value=mock_content,
+        ):
             recommendation_engine._generate_top_category_recommendations("test_user", profile, recommendations)
 
             # Should have recommendations for top categories
@@ -207,14 +238,29 @@ class TestRecommendationEngine:
     def test_generate_similar_content_recommendations(self, recommendation_engine, sample_activities):
         """Test generation of similar content recommendations."""
         from src.recommendations.models import UserRecommendations
+
         recommendations = UserRecommendations(user_id="test_user")
 
         mock_similar_content = [
-            {"id": "similar_1", "title": "Deep Learning Guide", "type": "arxiv_paper", "similarity_score": 0.8},
-            {"id": "similar_2", "title": "ML Tutorial", "type": "arxiv_paper", "similarity_score": 0.6},
+            {
+                "id": "similar_1",
+                "title": "Deep Learning Advances Guide",
+                "type": "arxiv_paper",
+                "similarity_score": 0.8,
+            },
+            {
+                "id": "similar_2",
+                "title": "ML Tutorial",
+                "type": "arxiv_paper",
+                "similarity_score": 0.6,
+            },
         ]
 
-        with patch.object(recommendation_engine, '_find_similar_content', return_value=mock_similar_content):
+        with patch.object(
+            recommendation_engine,
+            "_find_similar_content",
+            return_value=mock_similar_content,
+        ):
             recommendation_engine._generate_similar_content_recommendations("test_user", sample_activities, recommendations)
 
             # Should have similar content recommendations
@@ -230,20 +276,28 @@ class TestRecommendationEngine:
     def test_find_recent_content_by_type_arxiv(self, recommendation_engine, temp_data_dir):
         """Test finding recent ArXiv content."""
         # Create mock ArXiv data file
-        arxiv_dir = temp_data_dir / "arxiv"
+        arxiv_dir = temp_data_dir / "data" / "arxiv"
         arxiv_dir.mkdir(parents=True)
         arxiv_file = arxiv_dir / "latest.json"
 
         mock_data = [
-            {"id": "paper_1", "title": "Machine Learning Paper", "abstract": "Test abstract"},
-            {"id": "paper_2", "title": "Deep Learning Paper", "abstract": "Another test"},
+            {
+                "id": "paper_1",
+                "title": "Machine Learning Paper",
+                "abstract": "Test abstract",
+            },
+            {
+                "id": "paper_2",
+                "title": "Deep Learning Paper",
+                "abstract": "Another test",
+            },
         ]
 
-        with open(arxiv_file, 'w') as f:
+        with open(arxiv_file, "w") as f:
             json.dump(mock_data, f)
 
         # Mock settings to point to our temp directory
-        with patch.object(recommendation_engine.settings, 'project_root', str(temp_data_dir)):
+        with patch.object(recommendation_engine.settings, "project_root", str(temp_data_dir)):
             content = recommendation_engine._find_recent_content_by_type("arxiv_paper", limit=2)
 
             assert len(content) == 2
@@ -254,7 +308,7 @@ class TestRecommendationEngine:
     def test_find_recent_content_by_type_news(self, recommendation_engine, temp_data_dir):
         """Test finding recent news content."""
         # Create mock news data file
-        news_dir = temp_data_dir / "news"
+        news_dir = temp_data_dir / "data" / "news"
         news_dir.mkdir(parents=True)
         news_file = news_dir / "latest.json"
 
@@ -263,11 +317,11 @@ class TestRecommendationEngine:
             {"id": "news_2", "title": "AI News Update", "url": "http://example2.com"},
         ]
 
-        with open(news_file, 'w') as f:
+        with open(news_file, "w") as f:
             json.dump(mock_data, f)
 
         # Mock settings to point to our temp directory
-        with patch.object(recommendation_engine.settings, 'project_root', str(temp_data_dir)):
+        with patch.object(recommendation_engine.settings, "project_root", str(temp_data_dir)):
             content = recommendation_engine._find_recent_content_by_type("news_article", limit=2)
 
             assert len(content) == 2
@@ -296,12 +350,24 @@ class TestRecommendationEngine:
     def test_find_similar_content(self, recommendation_engine):
         """Test finding similar content based on title."""
         mock_content = [
-            {"id": "content_1", "title": "Machine Learning Fundamentals", "type": "arxiv_paper"},
-            {"id": "content_2", "title": "Deep Learning Advances", "type": "arxiv_paper"},
+            {
+                "id": "content_1",
+                "title": "Machine Learning Fundamentals",
+                "type": "arxiv_paper",
+            },
+            {
+                "id": "content_2",
+                "title": "Deep Learning Advances",
+                "type": "arxiv_paper",
+            },
             {"id": "content_3", "title": "Cooking Recipe Book", "type": "book"},
         ]
 
-        with patch.object(recommendation_engine, '_find_recent_content_by_type', return_value=mock_content):
+        with patch.object(
+            recommendation_engine,
+            "_find_recent_content_by_type",
+            return_value=mock_content,
+        ):
             similar = recommendation_engine._find_similar_content("Machine Learning Tutorial", "arxiv_paper")
 
             # Should return content with similar titles
@@ -322,7 +388,7 @@ class TestRecommendationEngine:
         assert id2 != id3
 
         # IDs should be valid hex strings
-        assert all(c in '0123456789abcdef' for c in id1)
+        assert all(c in "0123456789abcdef" for c in id1)
         assert len(id1) == 16
 
     def test_save_and_load_user_recommendations(self, recommendation_engine):
@@ -430,3 +496,31 @@ class TestRecommendationEngine:
         """Test dismissing non-existent recommendation."""
         success = recommendation_engine.dismiss_recommendation("test_user", "nonexistent")
         assert success is False
+
+    def test_get_related_content(self, recommendation_engine):
+        """Test getting related content."""
+        mock_similar_content = [
+            {
+                "id": "similar_1",
+                "title": "Deep Learning Guide",
+                "type": "arxiv_paper",
+                "similarity_score": 0.8,
+            },
+            {
+                "id": "similar_2",
+                "title": "ML Tutorial",
+                "type": "arxiv_paper",
+                "similarity_score": 0.6,
+            },
+        ]
+
+        with patch.object(
+            recommendation_engine,
+            "_find_similar_content",
+            return_value=mock_similar_content,
+        ):
+            related = recommendation_engine.get_related_content("Deep Learning", "arxiv_paper")
+
+            assert len(related) == 2
+            assert related[0]["id"] == "similar_1"
+            assert related[1]["id"] == "similar_2"

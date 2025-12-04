@@ -1,9 +1,6 @@
 """Tests for BaseETL deduplication integration."""
 
 import json
-import tempfile
-from pathlib import Path
-from typing import List
 
 import pytest
 
@@ -24,19 +21,19 @@ class TestContentModel(TimestampedModel):
 class TestDeduplicationETL(BaseETL[dict, TestContentModel]):
     """Test ETL class for deduplication integration."""
 
-    def __init__(self, test_data: List[dict], **kwargs):
+    def __init__(self, test_data: list[dict], **kwargs):
         super().__init__("test_deduplication_etl", **kwargs)
         self.test_data = test_data
 
-    def extract(self) -> List[dict]:
+    def extract(self) -> list[dict]:
         """Extract test data."""
         return self.test_data
 
-    def transform(self, data: List[dict]) -> List[TestContentModel]:
+    def transform(self, data: list[dict]) -> list[TestContentModel]:
         """Transform data into models."""
         return [TestContentModel(**item) for item in data]
 
-    def load(self, data: List[TestContentModel]) -> None:
+    def load(self, data: list[TestContentModel]) -> None:
         """Load data to file (mock)."""
         # Convert to dict format for saving
         data_dict = [item.model_dump() for item in data]
@@ -47,9 +44,9 @@ class TestDeduplicationETL(BaseETL[dict, TestContentModel]):
             "metadata": {
                 "total_items": len(data),
                 "deduplication_enabled": self.enable_deduplication,
-                "etl_name": self.name
+                "etl_name": self.name,
             },
-            "items": data_dict
+            "items": data_dict,
         }
 
         output_file.write_text(json.dumps(output_data, indent=2, default=str), encoding="utf-8")
@@ -121,8 +118,16 @@ class TestBaseETLDeduplication:
             {"title": "Similar Title 1", "source": "arxiv"},
             {"title": "Similar Title 2", "source": "github"},  # Similar
             {"title": "Unique Title", "source": "techcrunch"},
-            {"title": "Same Content", "description": "Same description", "url": "https://example.com"},
-            {"title": "Same Content 2", "description": "Same description", "url": "https://example.com/different"},
+            {
+                "title": "Same Content",
+                "description": "Same description",
+                "url": "https://example.com",
+            },
+            {
+                "title": "Same Content 2",
+                "description": "Same description",
+                "url": "https://example.com/different",
+            },
         ]
 
         etl = TestDeduplicationETL(test_data=test_data)
@@ -172,8 +177,16 @@ class TestBaseETLDeduplication:
             {"title": "Machine Learning in Healthcare", "source": "arxiv"},
             {"title": "Machine Learning for Healthcare", "source": "github"},  # Similar
             {"title": "Quantum Computing Basics", "source": "techcrunch"},
-            {"title": "AI Research", "description": "Research content", "url": "https://example.com"},
-            {"title": "AI Study", "description": "Research content", "url": "https://example.com"},
+            {
+                "title": "AI Research",
+                "description": "Research content",
+                "url": "https://example.com",
+            },
+            {
+                "title": "AI Study",
+                "description": "Research content",
+                "url": "https://example.com",
+            },
         ]
 
         etl = TestDeduplicationETL(test_data=test_data, enable_deduplication=True)
@@ -276,10 +289,13 @@ class TestBaseETLDeduplication:
         # Create enough data to measure meaningful performance
         test_data = [{"title": f"Item {i}"} for i in range(100)]
         # Add some duplicates
-        test_data.extend([
-            {"title": "Duplicate Item"},
-            {"title": "Duplicate Item Variant"},
-        ] * 10)
+        test_data.extend(
+            [
+                {"title": "Duplicate Item"},
+                {"title": "Duplicate Item Variant"},
+            ]
+            * 10
+        )
 
         etl = TestDeduplicationETL(test_data=test_data)
 

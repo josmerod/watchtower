@@ -1,13 +1,10 @@
-"""
-Unit Tests for Tab Preferences Manager
+"""Unit Tests for Tab Preferences Manager
 Tests the localStorage-based tab preferences functionality
 """
 
-import pytest
 import json
-import tempfile
-import os
-from unittest.mock import Mock, patch
+
+import pytest
 
 
 class TestTabPreferencesManager:
@@ -15,28 +12,107 @@ class TestTabPreferencesManager:
 
     def test_default_tabs_configuration(self):
         """Test that default tabs are properly configured"""
-
         # This would test the JavaScript TabPreferencesManager
         # Since we can't directly test JavaScript in Python unit tests,
         # we'll test the expected structure and validate the configuration
 
         expected_tabs = [
-            {"id": "tab-shortcuts", "label": "Shortcuts", "icon": "fa-star", "default_visible": True},
-            {"id": "tab-news", "label": "News", "icon": "fa-newspaper", "default_visible": True},
-            {"id": "tab-knowledge-garden", "label": "🌱 Knowledge Garden", "icon": "fa-seedling", "default_visible": True},
-            {"id": "tab-github-trending", "label": "GitHub Trending", "icon": "fa-github", "default_visible": True},
-            {"id": "tab-videos", "label": "Videos", "icon": "fa-video", "default_visible": True},
-            {"id": "tab-games", "label": "Games", "icon": "fa-gamepad", "default_visible": True},
-            {"id": "tab-intelligence", "label": "Intelligence", "icon": "fa-brain", "default_visible": True},
-            {"id": "tab-courses", "label": "Courses", "icon": "fa-graduation-cap", "default_visible": True},
-            {"id": "tab-anime", "label": "Anime", "icon": "fa-play-circle", "default_visible": True},
-            {"id": "tab-fourchan", "label": "4chan", "icon": "fa-comment-dots", "default_visible": True},
-            {"id": "tab-scavenging", "label": "Scavenging", "icon": "fa-search", "default_visible": True},
-            {"id": "tab-valencia-events", "label": "Valencia Events", "icon": "fa-calendar", "default_visible": True},
-            {"id": "tab-spanish-aid", "label": "🏛️ Ayudas Públicas", "icon": "fa-building", "default_visible": True},
-            {"id": "tab-arxiv-research", "label": "📄 ArXiv Research", "icon": "fa-graduation-cap", "default_visible": True},
-            {"id": "tab-deals", "label": "💰 Deals & Offers", "icon": "fa-tags", "default_visible": True},
-            {"id": "tab-metrics", "label": "📊 Metrics", "icon": "fa-chart-bar", "default_visible": True}
+            {
+                "id": "tab-shortcuts",
+                "label": "Shortcuts",
+                "icon": "fa-star",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-news",
+                "label": "News",
+                "icon": "fa-newspaper",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-knowledge-garden",
+                "label": "🌱 Knowledge Garden",
+                "icon": "fa-seedling",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-github-trending",
+                "label": "GitHub Trending",
+                "icon": "fa-github",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-videos",
+                "label": "Videos",
+                "icon": "fa-video",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-games",
+                "label": "Games",
+                "icon": "fa-gamepad",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-intelligence",
+                "label": "Intelligence",
+                "icon": "fa-brain",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-courses",
+                "label": "Courses",
+                "icon": "fa-graduation-cap",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-anime",
+                "label": "Anime",
+                "icon": "fa-play-circle",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-fourchan",
+                "label": "4chan",
+                "icon": "fa-comment-dots",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-scavenging",
+                "label": "Scavenging",
+                "icon": "fa-search",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-valencia-events",
+                "label": "Valencia Events",
+                "icon": "fa-calendar",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-spanish-aid",
+                "label": "🏛️ Ayudas Públicas",
+                "icon": "fa-building",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-arxiv-research",
+                "label": "📄 ArXiv Research",
+                "icon": "fa-graduation-cap",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-deals",
+                "label": "💰 Deals & Offers",
+                "icon": "fa-tags",
+                "default_visible": True,
+            },
+            {
+                "id": "tab-metrics",
+                "label": "📊 Metrics",
+                "icon": "fa-chart-bar",
+                "default_visible": True,
+            },
         ]
 
         # Verify all expected tabs are present
@@ -53,7 +129,6 @@ class TestTabPreferencesManager:
 
     def test_tab_preferences_storage_format(self):
         """Test the expected storage format for tab preferences"""
-
         # Expected storage format
         expected_format = {
             "tab_visibility": {
@@ -67,7 +142,7 @@ class TestTabPreferencesManager:
                 "tab-news",
                 "tab-videos",
                 # ... other tabs in custom order
-            ]
+            ],
         }
 
         # Verify structure
@@ -89,15 +164,14 @@ class TestTabPreferencesManager:
 
     def test_tab_preferences_validation(self):
         """Test validation of tab preferences data"""
-
         # Valid preferences
         valid_preferences = {
             "tab_visibility": {
                 "tab-shortcuts": True,
                 "tab-news": False,
-                "tab-videos": True
+                "tab-videos": True,
             },
-            "tab_order": ["tab-shortcuts", "tab-videos", "tab-news"]
+            "tab_order": ["tab-shortcuts", "tab-videos", "tab-news"],
         }
 
         # Test validation function (would be implemented in JavaScript)
@@ -135,7 +209,13 @@ class TestTabPreferencesManager:
 
             return {"isValid": len(errors) == 0, "errors": errors}
 
-        all_tab_ids = ["tab-shortcuts", "tab-news", "tab-videos", "tab-games", "tab-courses"]
+        all_tab_ids = [
+            "tab-shortcuts",
+            "tab-news",
+            "tab-videos",
+            "tab-games",
+            "tab-courses",
+        ]
 
         # Test valid preferences
         result = validate_preferences(valid_preferences, all_tab_ids)
@@ -151,7 +231,7 @@ class TestTabPreferencesManager:
         # Test invalid preferences - unknown tab
         invalid_prefs = {
             "tab_visibility": {"unknown-tab": True},
-            "tab_order": ["tab-shortcuts"]
+            "tab_order": ["tab-shortcuts"],
         }
         result = validate_preferences(invalid_prefs, all_tab_ids)
         assert result["isValid"] is False
@@ -172,15 +252,12 @@ class TestTabPreferencesManager:
                 if tab["default_visible"]:
                     order.append(tab["id"])
 
-            return {
-                "tab_visibility": visibility,
-                "tab_order": order
-            }
+            return {"tab_visibility": visibility, "tab_order": order}
 
         default_tabs = [
             {"id": "tab-news", "label": "News", "default_visible": True},
             {"id": "tab-games", "label": "Games", "default_visible": True},
-            {"id": "tab-videos", "label": "Videos", "default_visible": False}
+            {"id": "tab-videos", "label": "Videos", "default_visible": False},
         ]
 
         default_prefs = generate_default_preferences(default_tabs)
@@ -210,16 +287,13 @@ class TestTabPreferencesManager:
             order = preferences["tab_order"]
 
             # Filter to only visible tabs and sort by order
-            return [
-                tab for tab in all_tabs
-                if visibility.get(tab["id"], False) and tab["id"] in order
-            ]
+            return [tab for tab in all_tabs if visibility.get(tab["id"], False) and tab["id"] in order]
 
         all_tabs = [
             {"id": "tab-news", "label": "News"},
             {"id": "tab-games", "label": "Games"},
             {"id": "tab-videos", "label": "Videos"},
-            {"id": "tab-courses", "label": "Courses"}
+            {"id": "tab-courses", "label": "Courses"},
         ]
 
         preferences = {
@@ -227,9 +301,9 @@ class TestTabPreferencesManager:
                 "tab-news": True,
                 "tab-games": True,
                 "tab-videos": False,
-                "tab-courses": True
+                "tab-courses": True,
             },
-            "tab_order": ["tab-games", "tab-news", "tab-courses", "tab-videos"]
+            "tab_order": ["tab-games", "tab-news", "tab-courses", "tab-videos"],
         }
 
         visible_tabs = get_visible_tabs(all_tabs, preferences)
@@ -270,7 +344,7 @@ class TestTabPreferencesManager:
 
         current_prefs = {
             "tab_visibility": {"tab-news": True, "tab-games": True},
-            "tab_order": ["tab-news", "tab-games"]
+            "tab_order": ["tab-news", "tab-games"],
         }
 
         all_tab_ids = ["tab-news", "tab-games", "tab-videos"]
@@ -294,7 +368,6 @@ class TestTabPreferencesManager:
 
     def test_storage_operations(self):
         """Test localStorage-like operations"""
-
         # Simulate localStorage
         storage = {}
         storage_key = "test_tab_preferences"
@@ -316,7 +389,7 @@ class TestTabPreferencesManager:
         # Test saving and retrieving preferences
         test_prefs = {
             "tab_visibility": {"tab-news": True, "tab-games": False},
-            "tab_order": ["tab-news"]
+            "tab_order": ["tab-news"],
         }
 
         # Save preferences
@@ -344,7 +417,7 @@ class TestTabPreferencesManager:
             return {
                 "version": "1.0",
                 "exported_at": "2025-01-16T10:00:00Z",
-                "preferences": preferences
+                "preferences": preferences,
             }
 
         def import_preferences(export_data, all_tab_ids):
@@ -362,10 +435,7 @@ class TestTabPreferencesManager:
 
             return prefs
 
-        test_prefs = {
-            "tab_visibility": {"tab-news": True},
-            "tab_order": ["tab-news"]
-        }
+        test_prefs = {"tab_visibility": {"tab-news": True}, "tab_order": ["tab-news"]}
 
         # Test export
         exported = export_preferences(test_prefs)
@@ -398,7 +468,7 @@ class TestTabPreferencesManager:
                 "total_tabs": total_count,
                 "visible_tabs": visible_count,
                 "hidden_tabs": total_count - visible_count,
-                "visibility_percentage": round((visible_count / total_count) * 100, 1) if total_count > 0 else 0
+                "visibility_percentage": (round((visible_count / total_count) * 100, 1) if total_count > 0 else 0),
             }
 
         all_tabs = ["tab-news", "tab-games", "tab-videos", "tab-courses"]
@@ -407,7 +477,7 @@ class TestTabPreferencesManager:
                 "tab-news": True,
                 "tab-games": True,
                 "tab-videos": False,
-                "tab-courses": True
+                "tab-courses": True,
             }
         }
 

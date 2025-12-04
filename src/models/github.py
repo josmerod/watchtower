@@ -21,14 +21,14 @@ class TrendingPeriod(str, Enum):
 
 class RepositoryLanguage(str, Enum):
     """Enum for supported programming languages.
-    
+
     This enum supports all major programming languages that GitHub tracks.
     Values are normalized to lowercase with hyphens for consistency.
     """
 
     # Special categories
     ALL = "all"
-    
+
     # Major programming languages
     PYTHON = "python"
     JAVASCRIPT = "javascript"
@@ -55,21 +55,21 @@ class RepositoryLanguage(str, Enum):
     ERLANG = "erlang"
     F_SHARP = "fsharp"
     OBJECTIVE_C = "objective-c"
-    
-    # Web technologies  
+
+    # Web technologies
     HTML = "html"
     CSS = "css"
     SCSS = "scss"
     SASS = "sass"
     LESS = "less"
     VUE = "vue"
-    
+
     # Shell and scripting
     SHELL = "shell"
     BASH = "bash"
     POWERSHELL = "powershell"
     BATCH = "batchfile"
-    
+
     # Data and config languages
     SQL = "sql"
     JSON = "json"
@@ -77,7 +77,7 @@ class RepositoryLanguage(str, Enum):
     XML = "xml"
     TOML = "toml"
     INI = "ini"
-    
+
     # Specialized languages
     JUPYTER_NOTEBOOK = "jupyter-notebook"
     CUDA = "cuda"
@@ -85,17 +85,17 @@ class RepositoryLanguage(str, Enum):
     DOCKERFILE = "dockerfile"
     MAKEFILE = "makefile"
     CMAKE = "cmake"
-    
+
     # Assembly and low-level
     ASSEMBLY = "assembly"
     WEBASSEMBLY = "webassembly"
-    
+
     # Functional languages
     LISP = "lisp"
     SCHEME = "scheme"
     ML = "ml"
     OCAML = "ocaml"
-    
+
     # Other notable languages
     FORTRAN = "fortran"
     COBOL = "cobol"
@@ -104,20 +104,20 @@ class RepositoryLanguage(str, Enum):
     DELPHI = "delphi"
     VERILOG = "verilog"
     VHDL = "vhdl"
-    
+
     @classmethod
-    def from_github_language(cls, language: str | None) -> 'RepositoryLanguage':
+    def from_github_language(cls, language: str | None) -> RepositoryLanguage:
         """Convert GitHub language string to RepositoryLanguage enum.
-        
+
         Handles case-insensitive matching and common variations.
         Returns ALL if language is None or not recognized.
         """
         if not language:
             return cls.ALL
-            
+
         # Normalize the language string
         normalized = language.lower().strip()
-        
+
         # Direct mapping for common GitHub language variations
         language_map = {
             # Case variations
@@ -150,7 +150,6 @@ class RepositoryLanguage(str, Enum):
             "fsharp": cls.F_SHARP,
             "objective-c": cls.OBJECTIVE_C,
             "objc": cls.OBJECTIVE_C,
-            
             # Web technologies
             "html": cls.HTML,
             "css": cls.CSS,
@@ -158,14 +157,12 @@ class RepositoryLanguage(str, Enum):
             "sass": cls.SASS,
             "less": cls.LESS,
             "vue": cls.VUE,
-            
             # Shell and scripting
             "shell": cls.SHELL,
             "bash": cls.BASH,
             "powershell": cls.POWERSHELL,
             "batchfile": cls.BATCH,
             "batch": cls.BATCH,
-            
             # Data and config
             "sql": cls.SQL,
             "json": cls.JSON,
@@ -174,7 +171,6 @@ class RepositoryLanguage(str, Enum):
             "xml": cls.XML,
             "toml": cls.TOML,
             "ini": cls.INI,
-            
             # Specialized
             "jupyter notebook": cls.JUPYTER_NOTEBOOK,
             "jupyter-notebook": cls.JUPYTER_NOTEBOOK,
@@ -184,12 +180,10 @@ class RepositoryLanguage(str, Enum):
             "dockerfile": cls.DOCKERFILE,
             "makefile": cls.MAKEFILE,
             "cmake": cls.CMAKE,
-            
             # Assembly
             "assembly": cls.ASSEMBLY,
             "webassembly": cls.WEBASSEMBLY,
             "wasm": cls.WEBASSEMBLY,
-            
             # Others
             "fortran": cls.FORTRAN,
             "cobol": cls.COBOL,
@@ -199,17 +193,17 @@ class RepositoryLanguage(str, Enum):
             "verilog": cls.VERILOG,
             "vhdl": cls.VHDL,
         }
-        
+
         # Try to find a match
         mapped_language = language_map.get(normalized)
         if mapped_language:
             return mapped_language
-            
+
         # If no exact match, try to find enum member by value matching
         for member in cls:
             if member.value.lower() == normalized:
                 return member
-                
+
         # If still no match, return ALL (most permissive)
         return cls.ALL
 
@@ -234,9 +228,7 @@ class GitHubRepositoryModel(TimestampedModel):
     html_url: str = Field(description="Repository URL")
 
     # Repository metadata
-    language: str | None = Field(
-        default=None, description="Primary programming language"
-    )
+    language: str | None = Field(default=None, description="Primary programming language")
     stars_count: int = Field(default=0, description="Number of stars")
     forks_count: int = Field(default=0, description="Number of forks")
     watchers_count: int = Field(default=0, description="Number of watchers")
@@ -244,9 +236,7 @@ class GitHubRepositoryModel(TimestampedModel):
 
     # Repository settings
     default_branch: str | None = Field(default=None, description="Default branch name")
-    topics: list[str] = Field(
-        default_factory=list, description="Repository topics/tags"
-    )
+    topics: list[str] = Field(default_factory=list, description="Repository topics/tags")
     license_name: str | None = Field(default=None, description="License name")
     size: int = Field(default=0, description="Repository size in KB")
 
@@ -254,47 +244,29 @@ class GitHubRepositoryModel(TimestampedModel):
     archived: bool = Field(default=False, description="Whether repository is archived")
     disabled: bool = Field(default=False, description="Whether repository is disabled")
     has_wiki: bool = Field(default=False, description="Whether repository has wiki")
-    has_pages: bool = Field(
-        default=False, description="Whether repository has GitHub Pages"
-    )
-    has_downloads: bool = Field(
-        default=False, description="Whether repository has downloads"
-    )
+    has_pages: bool = Field(default=False, description="Whether repository has GitHub Pages")
+    has_downloads: bool = Field(default=False, description="Whether repository has downloads")
 
     # Owner information
-    owner: GitHubRepositoryOwner | None = Field(
-        default=None, description="Repository owner"
-    )
+    owner: GitHubRepositoryOwner | None = Field(default=None, description="Repository owner")
 
     # Timestamps
-    repository_created_at: datetime | None = Field(
-        default=None, description="Repository creation date"
-    )
-    repository_updated_at: datetime | None = Field(
-        default=None, description="Repository last update date"
-    )
+    repository_created_at: datetime | None = Field(default=None, description="Repository creation date")
+    repository_updated_at: datetime | None = Field(default=None, description="Repository last update date")
     pushed_at: datetime | None = Field(default=None, description="Last push date")
 
     # Trending context
-    trending_period: TrendingPeriod = Field(
-        description="Trending period (daily/weekly/monthly)"
-    )
+    trending_period: TrendingPeriod = Field(description="Trending period (daily/weekly/monthly)")
     trending_language: RepositoryLanguage = Field(description="Language filter applied")
 
     # RSS feed metadata
     rss_title: str | None = Field(default=None, description="RSS feed entry title")
     rss_link: str | None = Field(default=None, description="RSS feed entry link")
-    rss_published: datetime | None = Field(
-        default=None, description="RSS entry publication date"
-    )
-    rss_summary: str | None = Field(
-        default=None, description="RSS entry summary/description"
-    )
+    rss_published: datetime | None = Field(default=None, description="RSS entry publication date")
+    rss_summary: str | None = Field(default=None, description="RSS entry summary/description")
 
     # Source tracking
-    source: str = Field(
-        default="github_trending_rss", description="Data source identifier"
-    )
+    source: str = Field(default="github_trending_rss", description="Data source identifier")
     source_url: str | None = Field(default=None, description="Original RSS feed URL")
 
     @field_validator("topics", mode="before")
@@ -312,7 +284,7 @@ class GitHubRepositoryModel(TimestampedModel):
     @classmethod
     def parse_trending_language(cls, v: Any) -> RepositoryLanguage:
         """Parse trending language from GitHub API response.
-        
+
         Handles case-insensitive matching and converts GitHub language names
         to our normalized enum values.
         """
@@ -396,20 +368,10 @@ class GitHubRepositoryModel(TimestampedModel):
             "trending_category": self.get_trending_display_name(),
             "trending_period": self.trending_period,
             "trending_language": self.trending_language,
-            "created_at": (
-                self.repository_created_at.isoformat()
-                if self.repository_created_at
-                else None
-            ),
-            "updated_at": (
-                self.repository_updated_at.isoformat()
-                if self.repository_updated_at
-                else None
-            ),
+            "created_at": (self.repository_created_at.isoformat() if self.repository_created_at else None),
+            "updated_at": (self.repository_updated_at.isoformat() if self.repository_updated_at else None),
             "fetched_at": self.created_at.isoformat(),
-            "rss_published": (
-                self.rss_published.isoformat() if self.rss_published else None
-            ),
+            "rss_published": (self.rss_published.isoformat() if self.rss_published else None),
         }
 
 

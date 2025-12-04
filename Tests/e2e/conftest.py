@@ -4,11 +4,11 @@ import os
 import sys
 import tempfile
 import time
+from collections.abc import Generator
 from pathlib import Path
-from typing import Dict, Generator
 
 import pytest
-from playwright.sync_api import Page, BrowserContext, Browser
+from playwright.sync_api import Page
 
 # Add src to Python path for imports
 project_root = Path(__file__).parent.parent.parent
@@ -27,7 +27,7 @@ def temp_dir() -> Generator[Path, None, None]:
 
 
 @pytest.fixture(scope="session")
-def browser_context_args(browser_context_args: Dict) -> Dict:
+def browser_context_args(browser_context_args: dict) -> dict:
     """Configure browser context arguments."""
     return {
         **browser_context_args,
@@ -39,7 +39,7 @@ def browser_context_args(browser_context_args: Dict) -> Dict:
     }
 
 
-@pytest.fixture
+@pytest.fixture()
 def page(page: Page) -> Generator[Page, None, None]:
     """Configure page with custom settings."""
     # Set default timeout
@@ -91,18 +91,20 @@ def before_each(page: Page) -> None:
     page.evaluate("() => sessionStorage.clear()")
 
     # Set up test user session if needed
-    page.context.add_cookies([
-        {
-            "name": "test_user_id",
-            "value": "e2e_test_user",
-            "domain": "localhost",
-            "path": "/",
-        }
-    ])
+    page.context.add_cookies(
+        [
+            {
+                "name": "test_user_id",
+                "value": "e2e_test_user",
+                "domain": "localhost",
+                "path": "/",
+            }
+        ]
+    )
 
 
 @pytest.fixture(scope="function")
-def authenticated_page(page: Page) -> Generator[Page, None, None]:
+def authenticated_page(page: Page) -> Page:
     """Provide an authenticated page for tests."""
     # Mock authentication if your app requires it
     page.goto(f"{BASE_URL}/login")
@@ -115,18 +117,21 @@ def authenticated_page(page: Page) -> Generator[Page, None, None]:
     # Wait for authentication to complete
     # page.wait_for_url(f"{BASE_URL}/dashboard")
 
-    yield page
+    return page
 
 
-@pytest.fixture
-def dashboard_page(page: Page) -> Generator[Page, None, None]:
+@pytest.fixture()
+def dashboard_page(page: Page) -> Page:
     """Navigate to the dashboard page."""
     try:
         page.goto(BASE_URL)
         page.wait_for_load_state("networkidle")
 
         # Wait for main dashboard container to be visible
-        page.wait_for_selector("[data-testid='dashboard-container'], .dashboard-container, .container", timeout=10000)
+        page.wait_for_selector(
+            "[data-testid='dashboard-container'], .dashboard-container, .container",
+            timeout=10000,
+        )
 
     except Exception as e:
         print(f"Failed to load dashboard: {e}")
@@ -134,11 +139,11 @@ def dashboard_page(page: Page) -> Generator[Page, None, None]:
         page.screenshot(path=f"test-results/screenshots/dashboard-load-error-{int(time.time())}.png")
         raise
 
-    yield page
+    return page
 
 
-@pytest.fixture
-def recommendations_page(page: Page) -> Generator[Page, None, None]:
+@pytest.fixture()
+def recommendations_page(page: Page) -> Page:
     """Navigate directly to the recommendations tab."""
     # First load the dashboard
     page.goto(BASE_URL)
@@ -167,7 +172,7 @@ def recommendations_page(page: Page) -> Generator[Page, None, None]:
     # Wait for recommendations content to load
     page.wait_for_timeout(2000)
 
-    yield page
+    return page
 
 
 def pytest_addoption(parser):
@@ -214,7 +219,7 @@ def get_dashboard_url(pytestconfig):
     return pytestconfig.getoption("--dashboard_url") or BASE_URL
 
 
-@pytest.fixture
+@pytest.fixture()
 def video_enabled(pytestconfig):
     """Determine if video recording should be enabled."""
     return not pytestconfig.getoption("--headed")

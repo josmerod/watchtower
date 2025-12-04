@@ -8,23 +8,23 @@ import logging
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, State, dcc, html, clientside_callback
+from dash import Input, Output, State, dcc, html
 
-
-# Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path
 from src.web.dashboard.components.items_per_page_selector import (
     create_items_per_page_selector,
-    register_items_per_page_callback,
     load_initial_preference,
+    register_items_per_page_callback,
 )
 from src.web.dashboard.components.trend_filter import render_trend_filter
 from src.web.dashboard.trend_utils import (
-    load_latest_trends,
     get_trending_items_map,
-    render_trend_badge,
     is_item_trending,
+    load_latest_trends,
+    render_trend_badge,
 )
+
+# Import shared utilities
+from src.web.dashboard.utils import file_exists, get_data_path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -59,6 +59,7 @@ ALL_ARXIV_DATA = pd.DataFrame()
 ARXIV_DATA_LOADED = False
 DEFAULT_PAGE_SIZE = 24
 
+
 def load_arxiv_data():
     """Load ArXiv papers data from JSON file"""
     global ALL_ARXIV_DATA, ARXIV_DATA_LOADED
@@ -70,7 +71,7 @@ def load_arxiv_data():
         return
 
     try:
-        with open(ARXIV_DATA_PATH, encoding='utf-8') as f:
+        with open(ARXIV_DATA_PATH, encoding="utf-8") as f:
             data = json.load(f)
 
         if not data:
@@ -82,29 +83,22 @@ def load_arxiv_data():
         df = pd.DataFrame(data)
 
         # Process data for better display
-        df['display_title'] = df['title'].str.replace('\n', ' ').str.strip()
-        df['display_summary'] = df['summary'].str.replace('\n', ' ').str.strip()
-        df['summary_preview'] = df['display_summary'].apply(
-            lambda x: x[:200] + "..." if len(str(x)) > 200 else x
-        )
+        df["display_title"] = df["title"].str.replace("\n", " ").str.strip()
+        df["display_summary"] = df["summary"].str.replace("\n", " ").str.strip()
+        df["summary_preview"] = df["display_summary"].apply(lambda x: x[:200] + "..." if len(str(x)) > 200 else x)
 
         # Process authors
-        df['authors_display'] = df['authors'].apply(
-            lambda x: ', '.join(x[:3]) + (f' +{len(x)-3} more' if len(x) > 3 else '')
-            if isinstance(x, list) else str(x)
-        )
+        df["authors_display"] = df["authors"].apply(lambda x: (", ".join(x[:3]) + (f" +{len(x)-3} more" if len(x) > 3 else "") if isinstance(x, list) else str(x)))
 
         # Process categories
-        df['primary_category_display'] = df['categories'].apply(
-            lambda x: ARXIV_CATEGORY_MAPPING.get(x[0], x[0]) if isinstance(x, list) and x else 'Unknown'
-        )
+        df["primary_category_display"] = df["categories"].apply(lambda x: (ARXIV_CATEGORY_MAPPING.get(x[0], x[0]) if isinstance(x, list) and x else "Unknown"))
 
         # Process publication date
-        df['published_date'] = pd.to_datetime(df['published'], errors='coerce')
-        df['published_display'] = df['published_date'].dt.strftime('%Y-%m-%d')
+        df["published_date"] = pd.to_datetime(df["published"], errors="coerce")
+        df["published_display"] = df["published_date"].dt.strftime("%Y-%m-%d")
 
         # Sort by publication date (newest first)
-        df = df.sort_values('published_date', ascending=False, na_position='last')
+        df = df.sort_values("published_date", ascending=False, na_position="last")
 
         ALL_ARXIV_DATA = df
         ARXIV_DATA_LOADED = True
@@ -115,11 +109,13 @@ def load_arxiv_data():
         ALL_ARXIV_DATA = pd.DataFrame()
         ARXIV_DATA_LOADED = True
 
+
 def format_date_display(date_str):
     """Format date for display"""
     if pd.isna(date_str) or not date_str:
         return "N/A"
     return date_str
+
 
 def create_papers_table(df_subset):
     """Create a table displaying ArXiv papers"""
@@ -128,15 +124,17 @@ def create_papers_table(df_subset):
 
     table_header = [
         html.Thead(
-            html.Tr([
-                html.Th("Title"),
-                html.Th("Authors"),
-                html.Th("Category"),
-                html.Th("Published"),
-                html.Th("Summary"),
-                html.Th("Trend"),
-                html.Th("Actions"),
-            ])
+            html.Tr(
+                [
+                    html.Th("Title"),
+                    html.Th("Authors"),
+                    html.Th("Category"),
+                    html.Th("Published"),
+                    html.Th("Summary"),
+                    html.Th("Trend"),
+                    html.Th("Actions"),
+                ]
+            )
         )
     ]
 
@@ -153,81 +151,78 @@ def create_papers_table(df_subset):
     for _, paper in df_subset.iterrows():
         # Create clickable title with ArXiv link
         title_link = html.A(
-            paper.get('display_title', 'Unknown Title'),
-            href=paper.get('link', '#'),
+            paper.get("display_title", "Unknown Title"),
+            href=paper.get("link", "#"),
             target="_blank",
-            className="text-decoration-none"
+            className="text-decoration-none",
         )
 
         # Add GitHub link if available
         title_cell_content = [title_link]
-        if paper.get('github_html_url'):
+        if paper.get("github_html_url"):
             github_link = html.A(
                 html.I(className="fab fa-github ms-2"),
-                href=paper['github_html_url'],
+                href=paper["github_html_url"],
                 target="_blank",
                 title="View GitHub Repository",
-                className="text-muted"
+                className="text-muted",
             )
             title_cell_content.append(github_link)
 
         # Add to Shortcuts button
-        shortcut_btn = html.Div([
-            dbc.Button(
-                [
-                    html.I(className="fas fa-star me-1"),
-                    "Add to Shortcuts"
-                ],
-                id=f"add-shortcut-arxiv-{paper.name if hasattr(paper, 'name') else paper.get('link', '')[:50]}",
-                color="outline-warning",
-                size="sm",
-                className="me-1",
-                **{
-                    "data-source-name": paper.get('display_title', 'Unknown Paper'),
-                    "data-source-domain": "Papers",
-                    "data-source-filter": json.dumps({
-                        "source": "arxiv",
-                        "title": paper.get('display_title', ''),
-                        "category": paper.get('primary_category_display', ''),
-                        "authors": paper.get('authors_display', ''),
-                        "link": paper.get('link', '')
-                    })
-                }
-            )
-        ])
+        shortcut_btn = html.Div(
+            [
+                dbc.Button(
+                    [html.I(className="fas fa-star me-1"), "Add to Shortcuts"],
+                    id=f"add-shortcut-arxiv-{paper.name if hasattr(paper, 'name') else paper.get('link', '')[:50]}",
+                    color="outline-warning",
+                    size="sm",
+                    className="me-1",
+                    **{
+                        "data-source-name": paper.get("display_title", "Unknown Paper"),
+                        "data-source-domain": "Papers",
+                        "data-source-filter": json.dumps(
+                            {
+                                "source": "arxiv",
+                                "title": paper.get("display_title", ""),
+                                "category": paper.get("primary_category_display", ""),
+                                "authors": paper.get("authors_display", ""),
+                                "link": paper.get("link", ""),
+                            }
+                        ),
+                    },
+                )
+            ]
+        )
 
         table_body_rows.append(
-            html.Tr([
-                html.Td(title_cell_content),
-                html.Td(
-                    paper.get('authors_display', 'Unknown'),
-                    className="small"
-                ),
-                html.Td(
-                    dbc.Badge(
-                        paper.get('primary_category_display', 'Unknown'),
-                        color="outline-primary",
-                        className="small"
-                    )
-                ),
-                html.Td(
-                    format_date_display(paper.get('published_display')),
-                    className="small text-muted"
-                ),
-                html.Td(
-                    paper.get('summary_preview', 'No summary available'),
-                    className="small text-muted",
-                    style={"max-width": "250px"}
-                ),
-                html.Td(
-                    render_trend_badge(trending_items.get(f"category:{paper.get('source')}") or trending_items.get(paper.get('id'))) if is_item_trending(paper.to_dict(), trending_items) else None,
-                    className="text-nowrap"
-                ),
-                html.Td(
-                    shortcut_btn,
-                    className="text-nowrap"
-                )
-            ])
+            html.Tr(
+                [
+                    html.Td(title_cell_content),
+                    html.Td(paper.get("authors_display", "Unknown"), className="small"),
+                    html.Td(
+                        dbc.Badge(
+                            paper.get("primary_category_display", "Unknown"),
+                            color="outline-primary",
+                            className="small",
+                        )
+                    ),
+                    html.Td(
+                        format_date_display(paper.get("published_display")),
+                        className="small text-muted",
+                    ),
+                    html.Td(
+                        paper.get("summary_preview", "No summary available"),
+                        className="small text-muted",
+                        style={"max-width": "250px"},
+                    ),
+                    html.Td(
+                        (render_trend_badge(trending_items.get(f"category:{paper.get('source')}") or trending_items.get(paper.get("id"))) if is_item_trending(paper.to_dict(), trending_items) else None),
+                        className="text-nowrap",
+                    ),
+                    html.Td(shortcut_btn, className="text-nowrap"),
+                ]
+            )
         )
 
     table_body = [html.Tbody(table_body_rows)]
@@ -238,8 +233,9 @@ def create_papers_table(df_subset):
         responsive=True,
         striped=True,
         size="sm",
-        className="table-responsive"
+        className="table-responsive",
     )
+
 
 def render_arxiv_research_tab():
     """Main render function for ArXiv Research tab"""
@@ -247,25 +243,17 @@ def render_arxiv_research_tab():
     load_arxiv_data()
 
     if not ARXIV_DATA_LOADED:
-        return dbc.Alert(
-            "ArXiv data failed to load. Check logs.",
-            color="danger",
-            className="mt-3"
-        )
+        return dbc.Alert("ArXiv data failed to load. Check logs.", color="danger", className="mt-3")
 
     if ALL_ARXIV_DATA.empty:
-        return dbc.Alert(
-            "No ArXiv papers data currently available.",
-            color="info",
-            className="mt-3"
-        )
+        return dbc.Alert("No ArXiv papers data currently available.", color="info", className="mt-3")
 
     # Prepare filter options
-    categories = ALL_ARXIV_DATA['primary_category_display'].dropna().unique()
+    categories = ALL_ARXIV_DATA["primary_category_display"].dropna().unique()
     category_options = [{"label": cat, "value": cat} for cat in sorted(categories)]
 
     total_papers = len(ALL_ARXIV_DATA)
-    latest_date = ALL_ARXIV_DATA['published_display'].dropna().iloc[0] if not ALL_ARXIV_DATA.empty else "N/A"
+    latest_date = ALL_ARXIV_DATA["published_display"].dropna().iloc[0] if not ALL_ARXIV_DATA.empty else "N/A"
 
     # Create simple preset controls (HTML-only, no callback conflicts)
     preset_controls = [
@@ -273,191 +261,238 @@ def render_arxiv_research_tab():
         dbc.Select(
             id="arxiv-preset-selector",
             placeholder="Select saved preset...",
-            className="mb-2"
+            className="mb-2",
         ),
         # Preset action buttons
-        html.Div([
-            dbc.Button(
-                "Save Current Filters",
-                id="arxiv-save-preset-btn",
-                color="primary",
-                size="sm",
-                className="me-2"
-            ),
-            dbc.Button(
-                "Update Preset",
-                id="arxiv-update-preset-btn",
-                color="warning",
-                size="sm",
-                className="me-2",
-                style={"display": "none"}
-            ),
-            dbc.Button(
-                "Delete Preset",
-                id="arxiv-delete-preset-btn",
-                color="danger",
-                size="sm",
-                style={"display": "none"}
-            )
-        ], className="d-flex gap-2 mb-2"),
+        html.Div(
+            [
+                dbc.Button(
+                    "Save Current Filters",
+                    id="arxiv-save-preset-btn",
+                    color="primary",
+                    size="sm",
+                    className="me-2",
+                ),
+                dbc.Button(
+                    "Update Preset",
+                    id="arxiv-update-preset-btn",
+                    color="warning",
+                    size="sm",
+                    className="me-2",
+                    style={"display": "none"},
+                ),
+                dbc.Button(
+                    "Delete Preset",
+                    id="arxiv-delete-preset-btn",
+                    color="danger",
+                    size="sm",
+                    style={"display": "none"},
+                ),
+            ],
+            className="d-flex gap-2 mb-2",
+        ),
         # Hidden storage for current filters (for JavaScript access)
-        dcc.Store(
-            id="arxiv-current-filters",
-            data={}
-        ),
+        dcc.Store(id="arxiv-current-filters", data={}),
         # Hidden storage for selected preset
-        dcc.Store(
-            id="arxiv-selected-preset",
-            data={}
-        ),
+        dcc.Store(id="arxiv-selected-preset", data={}),
         # Hidden storage for show duplicates toggle (Story 4.1: Content Deduplication)
-        dcc.Store(
-            id="arxiv-show-duplicates-store",
-            data={"show_duplicates": False}
-        ),
+        dcc.Store(id="arxiv-show-duplicates-store", data={"show_duplicates": False}),
         # Dummy output for preset apply clientside callback
         html.Div(id="dummy-output-preset-apply", style={"display": "none"}),
         # Preset save modal
-        dbc.Modal([
-            dbc.ModalHeader("Save Filter Preset"),
-            dbc.ModalBody([
-                dbc.Label("Preset Name:"),
-                dbc.Input(
-                    id="arxiv-preset-name-input",
-                    placeholder="Enter preset name...",
-                    maxLength=50
-                ),
-                html.Div(
-                    id="arxiv-preset-error",
-                    className="text-danger mt-2",
-                    style={"display": "none"}
-                )
-            ]),
-            dbc.ModalFooter([
-                dbc.Button("Cancel", id="arxiv-cancel-save-btn", color="secondary"),
-                dbc.Button("Save", id="arxiv-confirm-save-btn", color="primary")
-            ])
-        ], id="arxiv-save-preset-modal", is_open=False)
-    ]
-
-    return html.Div([
-        # Header with simple stats
-        dbc.Row([
-            dbc.Col([
-                html.H3([
-                    html.I(className="fas fa-graduation-cap me-2"),
-                    "ArXiv Research Papers"
-                ], className="text-primary mb-3"),
-                dbc.Row([
-                    dbc.Col([
-                        html.H5(f"{total_papers:,}", className="text-primary mb-0"),
-                        html.P("Total Papers", className="text-muted small mb-0")
-                    ], md=4),
-                    dbc.Col([
-                        html.H5(f"{len(categories)}", className="text-success mb-0"),
-                        html.P("Categories", className="text-muted small mb-0")
-                    ], md=4),
-                    dbc.Col([
-                        html.H5(latest_date, className="text-info mb-0"),
-                        html.P("Latest Paper", className="text-muted small mb-0")
-                    ], md=4),
-                ], className="mb-4")
-            ])
-        ]),
-
-        # Filter presets controls
-        html.Div(preset_controls, className="mb-3"),
-
-        # Search and filter controls
-        dbc.Row([
-            dbc.Col([
-                dbc.Input(
-                    id="arxiv-search-input",
-                    placeholder="Search by title or abstract...",
-                    className="mb-2"
-                )
-            ], md=4),
-            dbc.Col([
-                dcc.Dropdown(
-                    id="arxiv-category-dropdown",
-                    options=category_options,
-                    placeholder="Filter by category",
-                    className="mb-2"
-                )
-            ], md=3),
-            create_items_per_page_selector("arxiv", default_value=DEFAULT_PAGE_SIZE),
-            dbc.Col([
-                dbc.Button(
-                    id="arxiv-show-duplicates-btn",
-                    color="outline-info",
-                    size="sm",
-                    className="w-100 mb-2",
-                    children="Show Duplicates"
-                )
-            ], md=2),
-            dbc.Col([
-                render_trend_filter("arxiv-trend-filter")
-            ], md=2),
-            dbc.Col([
-                dbc.Button(
-                    "Clear Filters",
-                    id="arxiv-clear-button",
-                    color="outline-secondary",
-                    size="sm",
-                    className="w-100"
-                )
-            ], md=2)
-        ], className="mb-3"),
-
-        # Papers table container
-        html.Div(id="arxiv-papers-container"),
-
-        # Hidden element for shortcuts add callback
-        html.Div(id="dummy-output-shortcuts-add", style={"display": "none"}),
-
-        # Pagination
-        html.Div(
-            id="arxiv-pagination-wrapper",
-            className="d-flex justify-content-between align-items-center mt-3",
-            children=[
-                html.Div(id="arxiv-pagination-info", className="text-muted"),
-                html.Div(
-                    className="d-flex align-items-center gap-2",
-                    children=[
-                        dbc.Button(
-                            "« Previous",
-                            id="arxiv-prev-btn",
-                            size="sm",
-                            outline=True,
-                            color="primary",
-                            disabled=True,
-                        ),
+        dbc.Modal(
+            [
+                dbc.ModalHeader("Save Filter Preset"),
+                dbc.ModalBody(
+                    [
+                        dbc.Label("Preset Name:"),
                         dbc.Input(
-                            id="arxiv-page-input",
-                            type="number",
-                            value=1,
-                            min=1,
-                            max=1,
-                            style={"width": "80px", "textAlign": "center"},
-                            size="sm",
+                            id="arxiv-preset-name-input",
+                            placeholder="Enter preset name...",
+                            maxLength=50,
                         ),
-                        html.Span("of", className="mx-2 text-muted"),
-                        html.Span(id="arxiv-total-pages", className="text-muted"),
-                        dbc.Button(
-                            "Next »",
-                            id="arxiv-next-btn",
-                            size="sm",
-                            outline=True,
-                            color="primary",
-                            disabled=True,
+                        html.Div(
+                            id="arxiv-preset-error",
+                            className="text-danger mt-2",
+                            style={"display": "none"},
                         ),
-                    ],
+                    ]
+                ),
+                dbc.ModalFooter(
+                    [
+                        dbc.Button("Cancel", id="arxiv-cancel-save-btn", color="secondary"),
+                        dbc.Button("Save", id="arxiv-confirm-save-btn", color="primary"),
+                    ]
                 ),
             ],
+            id="arxiv-save-preset-modal",
+            is_open=False,
         ),
-        # Script to initialize items-per-page selector from localStorage
-        html.Script(load_initial_preference("arxiv")),
-    ])
+    ]
+
+    return html.Div(
+        [
+            # Header with simple stats
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.H3(
+                                [
+                                    html.I(className="fas fa-graduation-cap me-2"),
+                                    "ArXiv Research Papers",
+                                ],
+                                className="text-primary mb-3",
+                            ),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        [
+                                            html.H5(
+                                                f"{total_papers:,}",
+                                                className="text-primary mb-0",
+                                            ),
+                                            html.P(
+                                                "Total Papers",
+                                                className="text-muted small mb-0",
+                                            ),
+                                        ],
+                                        md=4,
+                                    ),
+                                    dbc.Col(
+                                        [
+                                            html.H5(
+                                                f"{len(categories)}",
+                                                className="text-success mb-0",
+                                            ),
+                                            html.P(
+                                                "Categories",
+                                                className="text-muted small mb-0",
+                                            ),
+                                        ],
+                                        md=4,
+                                    ),
+                                    dbc.Col(
+                                        [
+                                            html.H5(latest_date, className="text-info mb-0"),
+                                            html.P(
+                                                "Latest Paper",
+                                                className="text-muted small mb-0",
+                                            ),
+                                        ],
+                                        md=4,
+                                    ),
+                                ],
+                                className="mb-4",
+                            ),
+                        ]
+                    )
+                ]
+            ),
+            # Filter presets controls
+            html.Div(preset_controls, className="mb-3"),
+            # Search and filter controls
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Input(
+                                id="arxiv-search-input",
+                                placeholder="Search by title or abstract...",
+                                className="mb-2",
+                            )
+                        ],
+                        md=4,
+                    ),
+                    dbc.Col(
+                        [
+                            dcc.Dropdown(
+                                id="arxiv-category-dropdown",
+                                options=category_options,
+                                placeholder="Filter by category",
+                                className="mb-2",
+                            )
+                        ],
+                        md=3,
+                    ),
+                    create_items_per_page_selector("arxiv", default_value=DEFAULT_PAGE_SIZE),
+                    dbc.Col(
+                        [
+                            dbc.Button(
+                                id="arxiv-show-duplicates-btn",
+                                color="outline-info",
+                                size="sm",
+                                className="w-100 mb-2",
+                                children="Show Duplicates",
+                            )
+                        ],
+                        md=2,
+                    ),
+                    dbc.Col([render_trend_filter("arxiv-trend-filter")], md=2),
+                    dbc.Col(
+                        [
+                            dbc.Button(
+                                "Clear Filters",
+                                id="arxiv-clear-button",
+                                color="outline-secondary",
+                                size="sm",
+                                className="w-100",
+                            )
+                        ],
+                        md=2,
+                    ),
+                ],
+                className="mb-3",
+            ),
+            # Papers table container
+            html.Div(id="arxiv-papers-container"),
+            # Hidden element for shortcuts add callback
+            html.Div(id="dummy-output-shortcuts-add", style={"display": "none"}),
+            # Pagination
+            html.Div(
+                id="arxiv-pagination-wrapper",
+                className="d-flex justify-content-between align-items-center mt-3",
+                children=[
+                    html.Div(id="arxiv-pagination-info", className="text-muted"),
+                    html.Div(
+                        className="d-flex align-items-center gap-2",
+                        children=[
+                            dbc.Button(
+                                "« Previous",
+                                id="arxiv-prev-btn",
+                                size="sm",
+                                outline=True,
+                                color="primary",
+                                disabled=True,
+                            ),
+                            dbc.Input(
+                                id="arxiv-page-input",
+                                type="number",
+                                value=1,
+                                min=1,
+                                max=1,
+                                style={"width": "80px", "textAlign": "center"},
+                                size="sm",
+                            ),
+                            html.Span("of", className="mx-2 text-muted"),
+                            html.Span(id="arxiv-total-pages", className="text-muted"),
+                            dbc.Button(
+                                "Next »",
+                                id="arxiv-next-btn",
+                                size="sm",
+                                outline=True,
+                                color="primary",
+                                disabled=True,
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            # Script to initialize items-per-page selector from localStorage
+            html.Script(load_initial_preference("arxiv")),
+        ]
+    )
+
 
 def register_arxiv_callbacks(app):
     """Register all ArXiv tab callbacks including filter presets"""
@@ -468,43 +503,36 @@ def register_arxiv_callbacks(app):
         Output("arxiv-current-filters", "data"),
         [
             Input("arxiv-search-input", "value"),
-            Input("arxiv-category-dropdown", "value")
-        ]
+            Input("arxiv-category-dropdown", "value"),
+        ],
     )
     def update_current_filters(search_term, category):
         """Store current filter values for preset functionality"""
         return {"search_term": search_term, "category": category}
 
-    
     # Apply preset callback
     @app.callback(
         [
             Output("arxiv-search-input", "value", allow_duplicate=True),
-            Output("arxiv-category-dropdown", "value", allow_duplicate=True)
+            Output("arxiv-category-dropdown", "value", allow_duplicate=True),
         ],
-        [
-            Input("arxiv-preset-selector", "value")
-        ],
-        [
-            State("arxiv-selected-preset", "data")
-        ],
-        prevent_initial_call=True
+        [Input("arxiv-preset-selector", "value")],
+        [State("arxiv-selected-preset", "data")],
+        prevent_initial_call=True,
     )
     def apply_preset(selected_preset_name, selected_preset_data):
         """Apply selected preset to filter inputs"""
         if not selected_preset_name or not selected_preset_data:
             return [None, None]
 
-        filters = selected_preset_data.get('filters', {})
-        return [filters.get('search_term'), filters.get('category')]
+        filters = selected_preset_data.get("filters", {})
+        return [filters.get("search_term"), filters.get("category")]
 
     # Delete preset callback
     @app.callback(
         Output("arxiv-preset-selector", "value", allow_duplicate=True),
-        [
-            Input("arxiv-delete-preset-btn", "n_clicks")
-        ],
-        prevent_initial_call=True
+        [Input("arxiv-delete-preset-btn", "n_clicks")],
+        prevent_initial_call=True,
     )
     def delete_preset(n_clicks):
         """Delete selected preset"""
@@ -515,10 +543,8 @@ def register_arxiv_callbacks(app):
     # Update preset callback
     @app.callback(
         Output("arxiv-save-preset-modal", "is_open", allow_duplicate=True),
-        [
-            Input("arxiv-update-preset-btn", "n_clicks")
-        ],
-        prevent_initial_call=True
+        [Input("arxiv-update-preset-btn", "n_clicks")],
+        prevent_initial_call=True,
     )
     def update_preset(n_clicks):
         """Open modal for updating preset"""
@@ -550,18 +576,38 @@ def register_arxiv_callbacks(app):
         ],
         prevent_initial_call=False,
     )
-    def update_arxiv_papers(search_term, category, current_page, prev_clicks, items_per_page, next_clicks, selected_preset, duplicates_store, trend_filter_store):
+    def update_arxiv_papers(
+        search_term,
+        category,
+        current_page,
+        prev_clicks,
+        items_per_page,
+        next_clicks,
+        selected_preset,
+        duplicates_store,
+        trend_filter_store,
+    ):
         try:
             if not ARXIV_DATA_LOADED:
                 return (
                     dbc.Alert("Loading ArXiv data...", color="info"),
-                    "", "1", 1, 1, True, True
+                    "",
+                    "1",
+                    1,
+                    1,
+                    True,
+                    True,
                 )
 
             if ALL_ARXIV_DATA.empty:
                 return (
                     dbc.Alert("No ArXiv data available.", color="warning"),
-                    "", "1", 1, 1, True, True
+                    "",
+                    "1",
+                    1,
+                    1,
+                    True,
+                    True,
                 )
 
             # Apply filters
@@ -570,17 +616,14 @@ def register_arxiv_callbacks(app):
             # Handle duplicates filtering (Story 4.1: Content Deduplication Engine)
             show_duplicates = duplicates_store.get("show_duplicates", False) if duplicates_store else False
             if not show_duplicates:
-                df_filtered = df_filtered[df_filtered.get('is_duplicate', False) == False]
+                df_filtered = df_filtered[df_filtered.get("is_duplicate", False) == False]
 
             if search_term:
                 search_lower = search_term.lower()
-                df_filtered = df_filtered[
-                    df_filtered['display_title'].str.lower().contains(search_lower, na=False) |
-                    df_filtered['display_summary'].str.lower().contains(search_lower, na=False)
-                ]
+                df_filtered = df_filtered[df_filtered["display_title"].str.lower().contains(search_lower, na=False) | df_filtered["display_summary"].str.lower().contains(search_lower, na=False)]
 
             if category:
-                df_filtered = df_filtered[df_filtered['primary_category_display'] == category]
+                df_filtered = df_filtered[df_filtered["primary_category_display"] == category]
 
             # Apply trend filtering (Story 8.2: Simple Trend Indicators)
             if trend_filter_store and trend_filter_store.get("show_trending_only", False):
@@ -588,11 +631,8 @@ def register_arxiv_callbacks(app):
                     trending_items_map = get_trending_items_map()
 
                     # Convert DataFrame to list for trend filtering
-                    filtered_list = df_filtered.to_dict('records')
-                    trend_filtered_list = [
-                        item for item in filtered_list
-                        if is_item_trending(item, trending_items_map)
-                    ]
+                    filtered_list = df_filtered.to_dict("records")
+                    trend_filtered_list = [item for item in filtered_list if is_item_trending(item, trending_items_map)]
 
                     if trend_filtered_list:
                         df_filtered = pd.DataFrame(trend_filtered_list)
@@ -605,7 +645,12 @@ def register_arxiv_callbacks(app):
             if df_filtered.empty:
                 return (
                     dbc.Alert("No papers match your filters.", color="info"),
-                    "", "1", 1, 1, True, True
+                    "",
+                    "1",
+                    1,
+                    1,
+                    True,
+                    True,
                 )
 
             # Use items_per_page from selector, fallback to default
@@ -659,7 +704,12 @@ def register_arxiv_callbacks(app):
             logger.error(f"Error updating ArXiv papers: {e}")
             return (
                 dbc.Alert(f"Error loading ArXiv data: {e!s}", color="danger"),
-                "", "1", 1, 1, True, True
+                "",
+                "1",
+                1,
+                1,
+                True,
+                True,
             )
 
     # Reset pagination when filters change
@@ -688,8 +738,6 @@ def register_arxiv_callbacks(app):
             return "", None
         return dash.no_update, dash.no_update
 
-    
-  
     # Clientside callbacks for filter preset functionality
     app.clientside_callback(
         """
@@ -712,7 +760,7 @@ def register_arxiv_callbacks(app):
         }
         """,
         Output("arxiv-preset-selector", "options"),
-        Input("arxiv-preset-selector", "id")
+        Input("arxiv-preset-selector", "id"),
     )
 
     # Apply selected preset
@@ -743,7 +791,7 @@ def register_arxiv_callbacks(app):
         """,
         Output("arxiv-selected-preset", "data"),
         [Input("arxiv-preset-selector", "value")],
-        [State("arxiv-current-filters", "data")]
+        [State("arxiv-current-filters", "data")],
     )
 
     # Save preset functionality
@@ -819,14 +867,14 @@ def register_arxiv_callbacks(app):
         Output("arxiv-save-preset-modal", "is_open", allow_duplicate=True),
         [
             Input("arxiv-confirm-save-btn", "n_clicks"),
-            Input("arxiv-cancel-save-btn", "n_clicks")
+            Input("arxiv-cancel-save-btn", "n_clicks"),
         ],
         [
             State("arxiv-save-preset-modal", "is_open"),
             State("arxiv-preset-name-input", "value"),
-            State("arxiv-current-filters", "data")
+            State("arxiv-current-filters", "data"),
         ],
-        prevent_initial_call=True
+        prevent_initial_call=True,
     )
 
     # Apply selected preset to filters
@@ -861,7 +909,7 @@ def register_arxiv_callbacks(app):
         """,
         Output("dummy-output-preset-apply", "children"),
         [Input("arxiv-selected-preset", "data")],
-        [State("arxiv-preset-selector", "value")]
+        [State("arxiv-preset-selector", "value")],
     )
 
     # Add to Shortcuts functionality
@@ -970,7 +1018,7 @@ def register_arxiv_callbacks(app):
         """,
         Output("dummy-output-shortcuts-add", "children", allow_duplicate=True),
         [Input({"type": "add-shortcut-arxiv", "index": dash.ALL}, "n_clicks")],
-        prevent_initial_call=True
+        prevent_initial_call=True,
     )
 
     # Callback for toggling duplicates visibility (Story 4.1: Content Deduplication)
@@ -979,7 +1027,7 @@ def register_arxiv_callbacks(app):
         Output("arxiv-show-duplicates-btn", "children"),
         Output("arxiv-show-duplicates-btn", "color"),
         Input("arxiv-show-duplicates-btn", "n_clicks"),
-        State("arxiv-show-duplicates-store", "data")
+        State("arxiv-show-duplicates-store", "data"),
     )
     def toggle_duplicates_visibility(n_clicks, store_data):
         """Toggle visibility of duplicate content."""
@@ -993,7 +1041,7 @@ def register_arxiv_callbacks(app):
         if ALL_ARXIV_DATA.empty:
             duplicate_count = 0
         else:
-            duplicate_count = len(ALL_ARXIV_DATA[ALL_ARXIV_DATA.get('is_duplicate', False) == True])
+            duplicate_count = len(ALL_ARXIV_DATA[ALL_ARXIV_DATA.get("is_duplicate", False) == True])
 
         if show_duplicates:
             button_text = f"Hide Duplicates ({duplicate_count})" if duplicate_count > 0 else "Hide Duplicates"
@@ -1015,21 +1063,31 @@ def register_arxiv_callbacks(app):
         Output("arxiv-trend-filter-btn", "color"),
         Output("arxiv-trend-filter-btn", "style"),
         Input("arxiv-trend-filter-btn", "n_clicks"),
-        State("arxiv-trend-filter-store", "data")
+        State("arxiv-trend-filter-store", "data"),
     )
     def toggle_trend_filter(n_clicks, current_filter):
         """Toggle trend filter state and button appearance."""
         if n_clicks is None:
             # Initial load - check if we have trend data
             trends_data = load_latest_trends()
-            trending_count = len(trends_data.get('trending_items', []))
+            trending_count = len(trends_data.get("trending_items", []))
 
             if trending_count > 0:
                 # Show button if we have trend data
-                return current_filter, f"🔥 Trending ({trending_count})", "outline-info", {"display": "block", "fontSize": "0.85em"}
+                return (
+                    current_filter,
+                    f"🔥 Trending ({trending_count})",
+                    "outline-info",
+                    {"display": "block", "fontSize": "0.85em"},
+                )
             else:
                 # Hide button if no trend data
-                return current_filter, "🔥 Trending", "outline-info", {"display": "none"}
+                return (
+                    current_filter,
+                    "🔥 Trending",
+                    "outline-info",
+                    {"display": "none"},
+                )
 
         # Toggle filter state
         show_trending = current_filter.get("show_trending_only", False)
@@ -1043,12 +1101,13 @@ def register_arxiv_callbacks(app):
             button_style = {"display": "block", "fontSize": "0.85em"}
         else:
             trends_data = load_latest_trends()
-            trending_count = len(trends_data.get('trending_items', []))
+            trending_count = len(trends_data.get("trending_items", []))
             button_text = f"🔥 Trending ({trending_count})"
             button_color = "outline-info"
             button_style = {"display": "block", "fontSize": "0.85em"}
 
         return new_filter, button_text, button_color, button_style
+
 
 # Load data when module is imported
 load_arxiv_data()
@@ -1057,7 +1116,7 @@ if __name__ == "__main__":
     print("ArXiv Research Tab - Data Summary:")
     print(f"  Papers loaded: {len(ALL_ARXIV_DATA)}")
     if not ALL_ARXIV_DATA.empty:
-        categories = ALL_ARXIV_DATA['primary_category_display'].nunique()
+        categories = ALL_ARXIV_DATA["primary_category_display"].nunique()
         print(f"  Categories: {categories}")
-        latest = ALL_ARXIV_DATA['published_display'].dropna().iloc[0]
+        latest = ALL_ARXIV_DATA["published_display"].dropna().iloc[0]
         print(f"  Latest paper: {latest}")

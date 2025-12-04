@@ -1,15 +1,14 @@
-"""
-Simple, working unit tests that are guaranteed to pass.
+"""Simple, working unit tests that are guaranteed to pass.
 These test basic Python functionality and our core imports.
 """
 
-import unittest
 import json
-import tempfile
-from pathlib import Path
-from datetime import datetime
-import sys
 import os
+import sys
+import tempfile
+import unittest
+from datetime import datetime
+from pathlib import Path
 
 # Test that our core modules can be imported
 try:
@@ -86,7 +85,7 @@ class TestBasicFunctionality(unittest.TestCase):
 
         try:
             # Read the file
-            with open(temp_file, "r") as f:
+            with open(temp_file) as f:
                 content = f.read()
 
             self.assertEqual(content, "test content")
@@ -138,13 +137,6 @@ class TestImports(unittest.TestCase):
 
     def test_standard_library_imports(self):
         """Test that standard library imports work."""
-        import json
-        import os
-        import sys
-        import datetime
-        import pathlib
-        import tempfile
-
         # If we get here without ImportError, imports work
         self.assertTrue(True)
 

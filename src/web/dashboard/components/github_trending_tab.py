@@ -108,7 +108,7 @@ GITHUB_TRENDING_FEEDS = {
 def load_github_trending_data(file_path):
     """Load GitHub trending data from JSON file."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
             # Ensure data is a list
             if isinstance(data, dict):
@@ -146,15 +146,10 @@ def get_all_github_trending_data():
     import time
 
     now = time.time()
-    if _GITHUB_TRENDING_ALL_CACHE.get("data") and (
-        now - _GITHUB_TRENDING_ALL_CACHE.get("ts", 0) < 60
-    ):
+    if _GITHUB_TRENDING_ALL_CACHE.get("data") and (now - _GITHUB_TRENDING_ALL_CACHE.get("ts", 0) < 60):
         return _GITHUB_TRENDING_ALL_CACHE["data"]
 
-    result = {
-        feed_key: load_github_trending_data(config["path"])
-        for feed_key, config in GITHUB_TRENDING_FEEDS.items()
-    }
+    result = {feed_key: load_github_trending_data(config["path"]) for feed_key, config in GITHUB_TRENDING_FEEDS.items()}
     _GITHUB_TRENDING_ALL_CACHE["ts"] = now
     _GITHUB_TRENDING_ALL_CACHE["data"] = result
     return result
@@ -170,11 +165,7 @@ def parse_github_date(date_str):
     # Try ISO format first (GitHub API standard)
     try:
         dt = datetime.fromisoformat(s_date.replace("Z", "+00:00"))
-        return (
-            dt.astimezone(timezone.utc)
-            if dt.tzinfo
-            else dt.replace(tzinfo=timezone.utc)
-        )
+        return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     except (ValueError, TypeError):
         pass
 
@@ -229,23 +220,15 @@ def create_github_trending_tab_content(feed_keys, combined_name=None):
         repos_from_feed = all_trending_data.get(key, [])
         # Add feed info to each repo
         for repo in repos_from_feed:
-            repo["feed_display_name"] = repo.get(
-                "trending_category", GITHUB_TRENDING_FEEDS[key]["name"]
-            )
+            repo["feed_display_name"] = repo.get("trending_category", GITHUB_TRENDING_FEEDS[key]["name"])
         all_repos_for_tab.extend(repos_from_feed)
 
     # Sort by stars (descending), then by date
     def get_sort_key(repo):
         stars = int(repo.get("stars", 0)) if repo.get("stars") else 0
-        date_str = (
-            repo.get("rss_published")
-            or repo.get("updated_at")
-            or repo.get("fetched_at")
-        )
+        date_str = repo.get("rss_published") or repo.get("updated_at") or repo.get("fetched_at")
         parsed_date = parse_github_date(date_str)
-        date_val = (
-            parsed_date if parsed_date else datetime.min.replace(tzinfo=timezone.utc)
-        )
+        date_val = parsed_date if parsed_date else datetime.min.replace(tzinfo=timezone.utc)
         return (-stars, -date_val.timestamp())  # Negative for descending order
 
     all_repos_for_tab.sort(key=get_sort_key)
@@ -255,9 +238,7 @@ def create_github_trending_tab_content(feed_keys, combined_name=None):
     repos_to_display = all_repos_for_tab[:MAX_REPOS_PER_TAB]
 
     if not repos_to_display:
-        return dbc.Alert(
-            f"No repositories available for {source_display_name}.", color="info"
-        )
+        return dbc.Alert(f"No repositories available for {source_display_name}.", color="info")
 
     # Create table header
     table_header = [
@@ -365,9 +346,7 @@ def create_github_trending_tab_content(feed_keys, combined_name=None):
                     ),
                     html.Td(owner, style={"fontSize": "0.9em"}),
                     html.Td(
-                        dbc.Badge(
-                            category, color="secondary", style={"fontSize": "0.7em"}
-                        ),
+                        dbc.Badge(category, color="secondary", style={"fontSize": "0.7em"}),
                         style={"whiteSpace": "nowrap"},
                     ),
                     html.Td(
@@ -393,14 +372,10 @@ def create_github_trending_tab_content(feed_keys, combined_name=None):
     )
 
     # Add summary info
-    total_stars = sum(
-        int(repo.get("stars", 0)) for repo in repos_to_display if repo.get("stars")
-    )
+    total_stars = sum(int(repo.get("stars", 0)) for repo in repos_to_display if repo.get("stars"))
     summary_info = html.Div(
         [
-            dbc.Badge(
-                f"{len(repos_to_display)} repositories", color="info", className="me-2"
-            ),
+            dbc.Badge(f"{len(repos_to_display)} repositories", color="info", className="me-2"),
             dbc.Badge(
                 f"{format_number(total_stars)} total stars",
                 color="warning",
@@ -427,7 +402,6 @@ def create_github_trending_tab_content(feed_keys, combined_name=None):
 
 def render_github_trending_tab():
     """Main function to render the GitHub trending tab with subtabs."""
-
     tab_definitions = [
         # All Languages by Period
         {"label": "Daily - All", "keys": "daily_all", "id": "daily-all"},
@@ -455,9 +429,7 @@ def render_github_trending_tab():
     tabs_children = []
     for tab_def in tab_definitions:
         tab_id = f"github-trending-tab-{tab_def['id']}"
-        content = create_github_trending_tab_content(
-            tab_def["keys"], combined_name=tab_def["label"]
-        )
+        content = create_github_trending_tab_content(tab_def["keys"], combined_name=tab_def["label"])
         tabs_children.append(
             dbc.Tab(
                 label=tab_def["label"],

@@ -15,12 +15,10 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -58,7 +56,7 @@ class CryptoFinanceDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract crypto and financial deals from multiple sources."""
         logger.info("Starting crypto & financial deals extraction...")
 
@@ -71,7 +69,7 @@ class CryptoFinanceDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} crypto & financial deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _get_curated_crypto_finance_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_crypto_finance_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of crypto and financial deals."""
         curated = [
             {
@@ -448,7 +446,7 @@ class CryptoFinanceDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated crypto & financial deals")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform crypto and financial deals data."""
         logger.info("Starting crypto & financial deals transformation...")
 
@@ -485,9 +483,7 @@ class CryptoFinanceDealsETL(BaseETL):
                     "bonus_currency": deal.get("bonus_currency", "none"),
                     "minimum_deposit": deal.get("minimum_deposit", 0),
                     "service_type": deal.get("service_type", "unknown"),
-                    "geographic_restriction": deal.get(
-                        "geographic_restriction", "unknown"
-                    ),
+                    "geographic_restriction": deal.get("geographic_restriction", "unknown"),
                     "kyc_required": deal.get("kyc_required", True),
                     "fees": deal.get("fees", "unknown"),
                     "promotion_duration": deal.get("promotion_duration", "unknown"),
@@ -506,14 +502,12 @@ class CryptoFinanceDealsETL(BaseETL):
                 continue
 
         # Sort by finance score and bonus amount
-        transformed_deals.sort(
-            key=lambda x: (x["finance_score"], x["bonus_amount"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["finance_score"], x["bonus_amount"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} crypto & financial deals")
         return transformed_deals
 
-    def _calculate_finance_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_finance_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate finance value score for ranking deals."""
         score = 0.0
 
@@ -592,7 +586,7 @@ class CryptoFinanceDealsETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_risk_assessment(self, deal: Dict[str, Any]) -> str:
+    def _determine_risk_assessment(self, deal: dict[str, Any]) -> str:
         """Determine overall risk assessment of the financial deal."""
         regulatory = deal.get("regulatory_status", "").lower()
         risk_level = deal.get("risk_level", "medium").lower()
@@ -600,27 +594,15 @@ class CryptoFinanceDealsETL(BaseETL):
         category = deal.get("category", "").lower()
 
         # Very low risk indicators
-        if (
-            any(keyword in regulatory for keyword in ["fdic", "sipc"])
-            and risk_level == "low"
-        ):
+        if any(keyword in regulatory for keyword in ["fdic", "sipc"]) and risk_level == "low":
             return "very_low"
 
         # Low risk indicators
-        if any(
-            keyword in regulatory for keyword in ["sec", "regulated"]
-        ) and risk_level in ["low", "none"]:
-            return "low"
-        elif (
-            any(name in platform for name in ["mint", "credit karma"])
-            and "tools" in category
-        ):
+        if any(keyword in regulatory for keyword in ["sec", "regulated"]) and risk_level in ["low", "none"] or (any(name in platform for name in ["mint", "credit karma"]) and "tools" in category):
             return "low"
 
         # Medium risk indicators
-        if "licensed" in regulatory and risk_level == "medium":
-            return "medium"
-        elif any(name in platform for name in ["coinbase", "robinhood", "sofi"]):
+        if "licensed" in regulatory and risk_level == "medium" or any(name in platform for name in ["coinbase", "robinhood", "sofi"]):
             return "medium"
 
         # High risk indicators
@@ -632,7 +614,7 @@ class CryptoFinanceDealsETL(BaseETL):
         # Default
         return "medium"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed crypto and financial deals data to files."""
         try:
             # Ensure output directory exists
@@ -652,9 +634,7 @@ class CryptoFinanceDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} crypto & financial deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} crypto & financial deals to {output_dir}")
             return True
 
         except Exception as e:

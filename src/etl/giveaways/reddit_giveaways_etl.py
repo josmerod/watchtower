@@ -16,7 +16,7 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 import urllib3
@@ -25,9 +25,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -71,7 +69,7 @@ class RedditGiveawaysETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract giveaway data from Reddit subreddits."""
         logger.info("Starting Reddit giveaways extraction...")
 
@@ -111,9 +109,7 @@ class RedditGiveawaysETL(BaseETL):
                         "upvote_ratio": post.get("upvote_ratio", 0),
                         "num_comments": post.get("num_comments", 0),
                         "created_utc": created_utc,
-                        "created_date": datetime.fromtimestamp(
-                            created_utc, tz=timezone.utc
-                        ).isoformat(),
+                        "created_date": datetime.fromtimestamp(created_utc, tz=timezone.utc).isoformat(),
                         "subreddit": subreddit,
                         "category": config["category"],
                         "description": config["description"],
@@ -147,9 +143,7 @@ class RedditGiveawaysETL(BaseETL):
                     ):
                         all_posts.append(post_info)
 
-                logger.info(
-                    f"Successfully extracted {len([p for p in all_posts if p['subreddit'] == subreddit])} posts from r/{subreddit}"
-                )
+                logger.info(f"Successfully extracted {len([p for p in all_posts if p['subreddit'] == subreddit])} posts from r/{subreddit}")
 
                 # Rate limiting
                 time.sleep(1)
@@ -161,7 +155,7 @@ class RedditGiveawaysETL(BaseETL):
         logger.info(f"Total extracted {len(all_posts)} giveaway posts from Reddit")
         return {"posts": all_posts, "total_count": len(all_posts)}
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform Reddit giveaway data."""
         logger.info("Starting Reddit giveaways transformation...")
 
@@ -208,14 +202,12 @@ class RedditGiveawaysETL(BaseETL):
                 continue
 
         # Sort by relevance score and creation date
-        transformed_posts.sort(
-            key=lambda x: (x["relevance_score"], x["score"]), reverse=True
-        )
+        transformed_posts.sort(key=lambda x: (x["relevance_score"], x["score"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_posts)} Reddit giveaway posts")
         return transformed_posts
 
-    def _determine_giveaway_type(self, post: Dict[str, Any]) -> str:
+    def _determine_giveaway_type(self, post: dict[str, Any]) -> str:
         """Determine the type of giveaway based on post content."""
         title_lower = post["title"].lower()
         domain = post.get("domain", "").lower()
@@ -238,10 +230,7 @@ class RedditGiveawaysETL(BaseETL):
             return "game"
 
         # Book-related
-        if category == "books" or any(
-            keyword in title_lower
-            for keyword in ["book", "ebook", "kindle", "audiobook", "pdf", "reading"]
-        ):
+        if category == "books" or any(keyword in title_lower for keyword in ["book", "ebook", "kindle", "audiobook", "pdf", "reading"]):
             return "book"
 
         # Course-related
@@ -274,15 +263,12 @@ class RedditGiveawaysETL(BaseETL):
             return "software"
 
         # Bundle deals
-        if any(
-            keyword in title_lower
-            for keyword in ["bundle", "pack", "collection", "humble"]
-        ):
+        if any(keyword in title_lower for keyword in ["bundle", "pack", "collection", "humble"]):
             return "bundle"
 
         return "other"
 
-    def _calculate_relevance_score(self, post: Dict[str, Any]) -> float:
+    def _calculate_relevance_score(self, post: dict[str, Any]) -> float:
         """Calculate relevance score for ranking posts."""
         score = 0.0
 
@@ -303,17 +289,14 @@ class RedditGiveawaysETL(BaseETL):
 
         # Title quality indicators
         title_lower = post["title"].lower()
-        if any(
-            keyword in title_lower
-            for keyword in ["limited time", "ends soon", "expires"]
-        ):
+        if any(keyword in title_lower for keyword in ["limited time", "ends soon", "expires"]):
             score += 1.0
         if any(keyword in title_lower for keyword in ["100% off", "free", "giveaway"]):
             score += 0.5
 
         return round(score, 2)
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed giveaway data to files."""
         try:
             # Ensure output directory exists
@@ -333,9 +316,7 @@ class RedditGiveawaysETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} Reddit giveaways to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} Reddit giveaways to {output_dir}")
             return True
 
         except Exception as e:

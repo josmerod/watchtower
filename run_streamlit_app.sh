@@ -7,7 +7,7 @@ echo "=========================================="
 echo ""
 
 # Change to the project root directory
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 # Verify we're in the right directory
 if [ ! -f "pyproject.toml" ]; then
@@ -67,4 +67,4 @@ else
     echo "3. Or run: uv cache clean"
 fi
 echo "=========================================="
-echo "" 
+echo ""

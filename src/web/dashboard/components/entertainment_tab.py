@@ -1,5 +1,4 @@
-"""
-Entertainment Dashboard Tab
+"""Entertainment Dashboard Tab
 Integrates entertainment-related ETLs including cinema, meme economics, and other entertainment content
 """
 
@@ -31,9 +30,7 @@ ENTERTAINMENT_SOURCES_CONFIG = {
         "description": "Current movie showtimes and cinema listings from eCartelera",
     },
     "cinema_ecartelera_improved": {
-        "path": get_data_path(
-            "cinema_ecartelera_improved", "cinema_improved_latest.json"
-        ),
+        "path": get_data_path("cinema_ecartelera_improved", "cinema_improved_latest.json"),
         "name": "Enhanced Cinema",
         "icon": "🎭",
         "category": "Cinema",
@@ -82,7 +79,7 @@ def load_entertainment_data(file_path):
             logger.warning(f"Entertainment data file not found: {file_path}")
             return []
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
 
         if isinstance(data, list):
@@ -154,21 +151,13 @@ def process_entertainment_item(item):
 
         return {
             "title": title,
-            "description": (
-                description[:200] + "..." if len(description) > 200 else description
-            ),
+            "description": (description[:200] + "..." if len(description) > 200 else description),
             "timestamp": timestamp,
             "genre": genre,
             "rating": float(rating) if rating else 0,
             "duration": str(duration),
             "cinema_name": cinema_name,
-            "showtimes": (
-                showtimes
-                if isinstance(showtimes, list)
-                else [showtimes]
-                if showtimes
-                else []
-            ),
+            "showtimes": (showtimes if isinstance(showtimes, list) else [showtimes] if showtimes else []),
             "trend_score": float(trend_score) if trend_score else 0,
             "engagement": int(engagement) if engagement else 0,
             "price": float(price) if price else 0,
@@ -212,9 +201,22 @@ def create_simple_table(items, columns):
         page_size=10,
         sort_action="native",
         filter_action="native",
-        style_cell={"textAlign": "left", "padding": "8px", "fontFamily": "Poppins, sans-serif"},
-        style_header={"backgroundColor": "#3C3970", "color": "#E2E8F0", "fontWeight": "bold"},
-        style_data={"backgroundColor": "#2D2B55", "color": "#CDD6F4", "whiteSpace": "normal", "height": "auto"},
+        style_cell={
+            "textAlign": "left",
+            "padding": "8px",
+            "fontFamily": "Poppins, sans-serif",
+        },
+        style_header={
+            "backgroundColor": "#3C3970",
+            "color": "#E2E8F0",
+            "fontWeight": "bold",
+        },
+        style_data={
+            "backgroundColor": "#2D2B55",
+            "color": "#CDD6F4",
+            "whiteSpace": "normal",
+            "height": "auto",
+        },
         style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "#252343"}],
     )
 
@@ -326,15 +328,11 @@ def create_entertainment_summary_cards():
                 ),
                 dbc.CardBody(
                     [
-                        html.P(
-                            config["description"], className="small text-muted mb-2"
-                        ),
+                        html.P(config["description"], className="small text-muted mb-2"),
                         html.Div(
                             [
                                 html.Strong("Category: "),
-                                dbc.Badge(
-                                    config["category"], color="info", className="me-2"
-                                ),
+                                dbc.Badge(config["category"], color="info", className="me-2"),
                             ],
                             className="mb-1",
                         ),
@@ -396,9 +394,7 @@ def create_entertainment_table(source_id, items):
     df_data = []
     for item in sorted_items:
         # Format timestamp
-        time_str = (
-            item["timestamp"].strftime("%Y-%m-%d %H:%M") if item["timestamp"] else "N/A"
-        )
+        time_str = item["timestamp"].strftime("%Y-%m-%d %H:%M") if item["timestamp"] else "N/A"
 
         # Format rating
         rating_str = f"{item['rating']:.1f}/10" if item["rating"] > 0 else "N/A"
@@ -409,21 +405,15 @@ def create_entertainment_table(source_id, items):
             showtime_str += f" +{len(item['showtimes']) - 3} more"
 
         row = {
-            "Title": (
-                item["title"][:60] + "..." if len(item["title"]) > 60 else item["title"]
-            ),
+            "Title": (item["title"][:60] + "..." if len(item["title"]) > 60 else item["title"]),
             "Description": item["description"],
             "Genre": item["genre"],
             "Rating": rating_str,
             "Duration": item["duration"],
             "Cinema": item["cinema_name"] if item["cinema_name"] else "N/A",
             "Showtimes": showtime_str,
-            "Trend Score": (
-                f"{item['trend_score']:.1f}" if item["trend_score"] > 0 else "N/A"
-            ),
-            "Engagement": (
-                f"{item['engagement']:,}" if item["engagement"] > 0 else "N/A"
-            ),
+            "Trend Score": (f"{item['trend_score']:.1f}" if item["trend_score"] > 0 else "N/A"),
+            "Engagement": (f"{item['engagement']:,}" if item["engagement"] > 0 else "N/A"),
             "Date": time_str,
             "URL": item["url"],
         }
@@ -466,9 +456,7 @@ def create_entertainment_table(source_id, items):
     )
 
     # Convert URLs to markdown links
-    df["URL"] = df.apply(
-        lambda row: f"[🔗 View]({row['URL']})" if row["URL"] != "#" else "N/A", axis=1
-    )
+    df["URL"] = df.apply(lambda row: f"[🔗 View]({row['URL']})" if row["URL"] != "#" else "N/A", axis=1)
 
     return dash_table.DataTable(
         data=df.to_dict("records"),
@@ -509,11 +497,8 @@ def create_entertainment_table(source_id, items):
 
 def render_entertainment_tab():
     """Main render function for the Entertainment dashboard tab"""
-
     total_items = len(ALL_ENTERTAINMENT)
-    total_genres = len(
-        set(item["genre"] for item in ALL_ENTERTAINMENT if item.get("genre") and item["genre"] != "Unknown")
-    )
+    total_genres = len({item["genre"] for item in ALL_ENTERTAINMENT if item.get("genre") and item["genre"] != "Unknown"})
     active_sources = sum(1 for data in ENTERTAINMENT_DATA.values() if len(data) > 0)
 
     # Calculate average rating
@@ -637,9 +622,7 @@ def render_entertainment_tab():
                         [
                             dbc.Card(
                                 [
-                                    dbc.CardHeader(
-                                        html.H5("Content by Genre", className="mb-0")
-                                    ),
+                                    dbc.CardHeader(html.H5("Content by Genre", className="mb-0")),
                                     dbc.CardBody([create_genre_distribution_chart()]),
                                 ]
                             )
@@ -650,9 +633,7 @@ def render_entertainment_tab():
                         [
                             dbc.Card(
                                 [
-                                    dbc.CardHeader(
-                                        html.H5("Rating Distribution", className="mb-0")
-                                    ),
+                                    dbc.CardHeader(html.H5("Rating Distribution", className="mb-0")),
                                     dbc.CardBody([create_rating_distribution_chart()]),
                                 ]
                             )
@@ -667,13 +648,22 @@ def render_entertainment_tab():
             dbc.Row(create_entertainment_summary_cards(), className="mb-4"),
             # Trakt & Spotify tables
             html.H4("Trending Movies (Trakt)", className="text-primary mb-2"),
-            create_simple_table(ENTERTAINMENT_DATA.get("trakt_movies", []), ["title", "year", "watchers"]),
+            create_simple_table(
+                ENTERTAINMENT_DATA.get("trakt_movies", []),
+                ["title", "year", "watchers"],
+            ),
             html.H4("Trending Shows (Trakt)", className="text-primary mt-4 mb-2"),
             create_simple_table(ENTERTAINMENT_DATA.get("trakt_shows", []), ["title", "year", "watchers"]),
             html.H4("Spotify New Releases", className="text-primary mt-4 mb-2"),
-            create_simple_table((ENTERTAINMENT_DATA.get("spotify_browse", []) or {}).get("new_releases", []) if isinstance(ENTERTAINMENT_DATA.get("spotify_browse", {}), dict) else [], ["name", "release_date", "artists"]),
+            create_simple_table(
+                ((ENTERTAINMENT_DATA.get("spotify_browse", []) or {}).get("new_releases", []) if isinstance(ENTERTAINMENT_DATA.get("spotify_browse", {}), dict) else []),
+                ["name", "release_date", "artists"],
+            ),
             html.H4("Spotify Featured Playlists", className="text-primary mt-4 mb-2"),
-            create_simple_table((ENTERTAINMENT_DATA.get("spotify_browse", []) or {}).get("playlists", []) if isinstance(ENTERTAINMENT_DATA.get("spotify_browse", {}), dict) else [], ["name", "owner", "tracks"]),
+            create_simple_table(
+                ((ENTERTAINMENT_DATA.get("spotify_browse", []) or {}).get("playlists", []) if isinstance(ENTERTAINMENT_DATA.get("spotify_browse", {}), dict) else []),
+                ["name", "owner", "tracks"],
+            ),
             # Data display area
             html.Div(id="entertainment-data-display"),
             # Storage for selected source
@@ -684,9 +674,8 @@ def render_entertainment_tab():
 
 def register_entertainment_callbacks(app):
     """Register callbacks for the Entertainment dashboard tab"""
-
     # Create callbacks for each source button
-    for source_id in ENTERTAINMENT_SOURCES_CONFIG.keys():
+    for source_id in ENTERTAINMENT_SOURCES_CONFIG:
 
         @callback(
             Output("entertainment-data-display", "children"),
@@ -726,6 +715,4 @@ if __name__ == "__main__":
         print(f"  {config['name']}: {item_count} items")
 
     total = len(ALL_ENTERTAINMENT)
-    print(
-        f"  Total: {total} entertainment items across {len(ENTERTAINMENT_SOURCES_CONFIG)} sources"
-    )
+    print(f"  Total: {total} entertainment items across {len(ENTERTAINMENT_SOURCES_CONFIG)} sources")

@@ -37,68 +37,68 @@ logger = logging.getLogger(__name__)
 
 class MyDataManager:
     """Manages data loading and filtering for My New Tab."""
-    
+
     def __init__(self):
         self.data = []
         self.loaded = False
         self.last_loaded = None
-        
+
     def load_data(self) -> List[Dict[str, Any]]:
         """Load data from JSON files with caching."""
         current_time = datetime.now()
-        
+
         # Cache data for 5 minutes to improve performance
-        if (self.loaded and self.last_loaded and 
+        if (self.loaded and self.last_loaded and
             (current_time - self.last_loaded).seconds < 300):
             return self.data
-            
+
         logger.info("Loading data for My New Tab...")
         self.data = []
-        
+
         # Load data from the appropriate JSON file
         data_path = Path(get_data_path("my_data_source"))
         json_file = data_path / "my_data_latest.json"
-        
+
         if not json_file.exists():
             logger.warning(f"Data file not found: {json_file}")
             self.loaded = True
             self.last_loaded = current_time
             return []
-            
+
         try:
             with open(json_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                
+
             # Ensure data is a list
             if isinstance(data, dict):
                 data = data.get('items', [])
             elif not isinstance(data, list):
                 logger.error(f"Unexpected data format in {json_file}")
                 data = []
-                
+
             # Process and validate data
             processed_data = []
             for item in data:
                 if self._validate_item(item):
                     processed_item = self._process_item(item)
                     processed_data.append(processed_item)
-                    
+
             self.data = processed_data
             logger.info(f"Loaded {len(self.data)} items for My New Tab")
-            
+
         except Exception as e:
             logger.error(f"Error loading data from {json_file}: {e}")
             self.data = []
-            
+
         self.loaded = True
         self.last_loaded = current_time
         return self.data
-        
+
     def _validate_item(self, item: Dict[str, Any]) -> bool:
         """Validate individual data item."""
         required_fields = ['title', 'id']
         return all(field in item and item[field] for field in required_fields)
-        
+
     def _process_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """Process and normalize individual item."""
         return {
@@ -110,32 +110,32 @@ class MyDataManager:
             'category': item.get('category', 'general'),
             'metadata': item.get('metadata', {})
         }
-        
+
     def filter_data(
-        self, 
+        self,
         search_term: Optional[str] = None,
         category_filter: Optional[str] = None,
         date_range: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Filter data based on criteria."""
         data = self.load_data()
-        
+
         if not data:
             return []
-            
+
         # Apply search filter
         if search_term:
             search_lower = search_term.lower()
             data = [
-                item for item in data 
-                if (search_lower in item.get('title', '').lower() or 
+                item for item in data
+                if (search_lower in item.get('title', '').lower() or
                     search_lower in item.get('description', '').lower())
             ]
-            
+
         # Apply category filter
         if category_filter and category_filter != 'all':
             data = [item for item in data if item.get('category') == category_filter]
-            
+
         # Apply date filter (days back)
         if date_range and date_range > 0:
             cutoff_date = datetime.now(timezone.utc) - timedelta(days=date_range)
@@ -143,16 +143,16 @@ class MyDataManager:
                 item for item in data
                 if self._parse_date(item.get('created_at', '')) >= cutoff_date
             ]
-            
+
         return data
-        
+
     def _parse_date(self, date_str: str) -> datetime:
         """Parse date string to datetime object."""
         try:
             return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         except (ValueError, TypeError):
             return datetime.min.replace(tzinfo=timezone.utc)
-            
+
     def get_categories(self) -> List[str]:
         """Get unique categories from data."""
         data = self.load_data()
@@ -164,14 +164,14 @@ data_manager = MyDataManager()
 
 def render_my_new_tab() -> dbc.Container:
     """Render the My New Tab component."""
-    
+
     # Load initial data to get categories
     categories = data_manager.get_categories()
     category_options = [{'label': 'All Categories', 'value': 'all'}]
     category_options.extend([
         {'label': cat.title(), 'value': cat} for cat in categories
     ])
-    
+
     return dbc.Container([
         # Header section
         dbc.Row([
@@ -180,7 +180,7 @@ def render_my_new_tab() -> dbc.Container:
                 html.P("Real-time monitoring of my data source", className="text-muted")
             ])
         ], className="mb-4"),
-        
+
         # Filter controls
         dbc.Row([
             dbc.Col([
@@ -226,7 +226,7 @@ def render_my_new_tab() -> dbc.Container:
                 )
             ], width=2)
         ], className="mb-4"),
-        
+
         # Statistics summary
         dbc.Row([
             dbc.Col([
@@ -262,7 +262,7 @@ def render_my_new_tab() -> dbc.Container:
                 ], className="text-center")
             ], width=3)
         ], className="mb-4"),
-        
+
         # Main content area
         dbc.Row([
             dbc.Col([
@@ -283,7 +283,7 @@ def render_items_grid(items: List[Dict[str, Any]]) -> List[dbc.Card]:
                 className="text-center"
             )
         ]
-        
+
     cards = []
     for item in items:
         # Create card for each item
@@ -324,19 +324,19 @@ def render_items_grid(items: List[Dict[str, Any]]) -> List[dbc.Card]:
             ])
         ], className="h-100 mb-3")
         cards.append(card)
-        
+
     # Arrange cards in responsive grid
     grid_items = []
     for i in range(0, len(cards), 3):
         row_cards = cards[i:i+3]
         cols = [dbc.Col(card, width=4) for card in row_cards]
         grid_items.append(dbc.Row(cols, className="mb-3"))
-        
+
     return grid_items
 
 def register_my_tab_callbacks(app):
     """Register callbacks for My New Tab."""
-    
+
     @app.callback(
         [
             Output("my-tab-content", "children"),
@@ -359,38 +359,38 @@ def register_my_tab_callbacks(app):
             # Force data refresh if refresh button was clicked
             if callback_context.triggered and "refresh-btn" in callback_context.triggered[0]['prop_id']:
                 data_manager.loaded = False
-                
+
             # Get filtered data
             filtered_items = data_manager.filter_data(
                 search_term=search_term,
                 category_filter=category_filter,
                 date_range=date_filter
             )
-            
+
             # Calculate statistics
             all_items = data_manager.load_data()
             total_count = len(all_items)
-            
+
             # Today's items
             today = datetime.now(timezone.utc).date()
             today_count = len([
                 item for item in all_items
                 if data_manager._parse_date(item.get('created_at', '')).date() == today
             ])
-            
+
             # This week's items
             week_start = datetime.now(timezone.utc) - timedelta(days=7)
             week_count = len([
                 item for item in all_items
                 if data_manager._parse_date(item.get('created_at', '')) >= week_start
             ])
-            
+
             # Categories count
             categories_count = len(data_manager.get_categories())
-            
+
             # Render content
             content = render_items_grid(filtered_items)
-            
+
             return (
                 content,
                 str(total_count),
@@ -398,7 +398,7 @@ def register_my_tab_callbacks(app):
                 str(week_count),
                 str(categories_count)
             )
-            
+
         except Exception as e:
             logger.error(f"Error updating My Tab content: {e}")
             error_content = dbc.Alert(
@@ -412,17 +412,17 @@ def register_my_tab_callbacks(app):
 if __name__ == "__main__":
     # Test data loading
     print("Testing My New Tab data loading...")
-    
+
     manager = MyDataManager()
     data = manager.load_data()
     print(f"Loaded {len(data)} items")
-    
+
     if data:
         print("Sample item:", data[0])
-        
+
     categories = manager.get_categories()
     print(f"Categories: {categories}")
-    
+
     # Test filtering
     filtered = manager.filter_data(search_term="test")
     print(f"Filtered items: {len(filtered)}")
@@ -459,41 +459,41 @@ For complex data handling, implement a dedicated manager class:
 ```python
 class AdvancedDataManager:
     """Advanced data manager with caching and aggregation."""
-    
+
     def __init__(self):
         self._cache = {}
         self._cache_timeout = 300  # 5 minutes
-        
+
     def get_data_with_cache(self, data_source: str, force_refresh: bool = False):
         """Get data with intelligent caching."""
         cache_key = f"data_{data_source}"
         current_time = time.time()
-        
+
         # Check cache validity
-        if (not force_refresh and 
-            cache_key in self._cache and 
+        if (not force_refresh and
+            cache_key in self._cache and
             current_time - self._cache[cache_key]['timestamp'] < self._cache_timeout):
             return self._cache[cache_key]['data']
-            
+
         # Load fresh data
         data = self._load_data(data_source)
-        
+
         # Update cache
         self._cache[cache_key] = {
             'data': data,
             'timestamp': current_time
         }
-        
+
         return data
-        
+
     def aggregate_metrics(self, data: List[Dict]) -> Dict[str, Any]:
         """Calculate aggregated metrics from data."""
         if not data:
             return {'total': 0, 'categories': [], 'recent': 0}
-            
+
         # Convert to DataFrame for easier aggregation
         df = pd.DataFrame(data)
-        
+
         # Calculate metrics
         metrics = {
             'total': len(df),
@@ -501,7 +501,7 @@ class AdvancedDataManager:
             'recent': len(df[df['created_at'] >= (datetime.now() - timedelta(days=7)).isoformat()]) if 'created_at' in df.columns else 0,
             'top_categories': df['category'].value_counts().head(5).to_dict() if 'category' in df.columns else {}
         }
-        
+
         return metrics
 ```
 
@@ -525,7 +525,7 @@ def create_advanced_filters() -> dbc.Row:
                 )
             ])
         ], width=3),
-        
+
         # Multi-select categories
         dbc.Col([
             dcc.Dropdown(
@@ -534,7 +534,7 @@ def create_advanced_filters() -> dbc.Row:
                 multi=True
             )
         ], width=3),
-        
+
         # Date range picker
         dbc.Col([
             dcc.DatePickerRange(
@@ -544,7 +544,7 @@ def create_advanced_filters() -> dbc.Row:
                 display_format='YYYY-MM-DD'
             )
         ], width=3),
-        
+
         # Sort options
         dbc.Col([
             dcc.Dropdown(
@@ -608,14 +608,14 @@ def paginated_display(items: List[Dict], page_size: int = 50, current_page: int 
     """Display items with pagination."""
     total_items = len(items)
     total_pages = (total_items + page_size - 1) // page_size
-    
+
     # Calculate slice indices
     start_idx = (current_page - 1) * page_size
     end_idx = min(start_idx + page_size, total_items)
-    
+
     # Get items for current page
     page_items = items[start_idx:end_idx]
-    
+
     # Render pagination controls
     pagination = dbc.Pagination(
         id="pagination",
@@ -625,7 +625,7 @@ def paginated_display(items: List[Dict], page_size: int = 50, current_page: int 
         previous_next=True,
         active_page=current_page
     )
-    
+
     return html.Div([
         render_items_grid(page_items),
         html.Hr(),
@@ -667,7 +667,7 @@ from src.web.dashboard.components.my_new_tab import MyDataManager, render_my_new
 
 class TestMyDataManager:
     """Test suite for MyDataManager."""
-    
+
     @pytest.fixture
     def sample_data(self):
         return [
@@ -679,39 +679,39 @@ class TestMyDataManager:
                 'created_at': '2023-01-01T00:00:00Z'
             },
             {
-                'id': '2', 
+                'id': '2',
                 'title': 'Another Test',
                 'description': 'Another description',
                 'category': 'other',
                 'created_at': '2023-01-02T00:00:00Z'
             }
         ]
-    
+
     @patch('src.web.dashboard.components.my_new_tab.get_data_path')
     @patch('builtins.open', new_callable=mock_open)
     def test_load_data_success(self, mock_file, mock_path, sample_data):
         """Test successful data loading."""
         mock_path.return_value = "/fake/path"
         mock_file.return_value.read.return_value = json.dumps(sample_data)
-        
+
         manager = MyDataManager()
         data = manager.load_data()
-        
+
         assert len(data) == 2
         assert data[0]['title'] == 'Test Item 1'
-        
+
     def test_filter_data(self, sample_data):
         """Test data filtering functionality."""
         manager = MyDataManager()
         manager.data = sample_data
         manager.loaded = True
-        
+
         # Test search filter
         filtered = manager.filter_data(search_term="Another")
         assert len(filtered) == 1
         assert filtered[0]['title'] == 'Another Test'
-        
-        # Test category filter  
+
+        # Test category filter
         filtered = manager.filter_data(category_filter="test")
         assert len(filtered) == 1
         assert filtered[0]['category'] == 'test'
@@ -728,11 +728,11 @@ def test_dashboard_loads():
     """Test that dashboard loads without errors."""
     app = import_app("src.web.dashboard.app")
     assert app is not None
-    
+
 def test_tab_rendering():
     """Test that tabs render correctly."""
     from src.web.dashboard.components.my_new_tab import render_my_new_tab
-    
+
     component = render_my_new_tab()
     assert component is not None
     assert hasattr(component, 'children')

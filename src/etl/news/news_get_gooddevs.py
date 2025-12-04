@@ -15,9 +15,7 @@ from src.utils.logging import get_logger
 logger = get_logger("GoodDevsETL")
 
 
-def get_gooddevs_articles(
-    max_retries: int = 3, retry_delay: int = 5
-) -> list[dict[str, Any]]:
+def get_gooddevs_articles(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str, Any]]:
     """Fetches articles from a curated list of tech authors and bloggers.
 
     Args:
@@ -77,9 +75,7 @@ def get_gooddevs_articles(
                     logger.warning(f"No entries found in RSS feed from {rss_url}")
                     break
 
-                logger.debug(
-                    f"Found {len(feed.entries)} entries in RSS feed from {rss_url}"
-                )
+                logger.debug(f"Found {len(feed.entries)} entries in RSS feed from {rss_url}")
 
                 # Extract domain from the URL to use as a source identifier
                 source_domain = re.search(r"https?://(?:www\.)?([^/]+)", rss_url)
@@ -109,9 +105,7 @@ def get_gooddevs_articles(
                         # Handle different author formats
                         if hasattr(entry, "author"):
                             article["author"] = entry.author
-                        elif hasattr(entry, "author_detail") and hasattr(
-                            entry.author_detail, "name"
-                        ):
+                        elif hasattr(entry, "author_detail") and hasattr(entry.author_detail, "name"):
                             article["author"] = entry.author_detail.name
                         else:
                             # Use domain as fallback for author
@@ -119,9 +113,7 @@ def get_gooddevs_articles(
 
                         # Extract tags/categories if available
                         if hasattr(entry, "tags"):
-                            article["tags"] = [
-                                tag.term for tag in entry.tags if hasattr(tag, "term")
-                            ]
+                            article["tags"] = [tag.term for tag in entry.tags if hasattr(tag, "term")]
                         elif hasattr(entry, "categories"):
                             article["tags"] = entry.categories
                         else:
@@ -137,16 +129,12 @@ def get_gooddevs_articles(
                 break
 
             except Exception as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e!s}"
-                )
+                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e!s}")
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                 else:
-                    logger.error(
-                        f"Error fetching data from RSS feed {rss_url} after {max_retries} attempts: {e!s}"
-                    )
+                    logger.error(f"Error fetching data from RSS feed {rss_url} after {max_retries} attempts: {e!s}")
 
     # Remove duplicates based on article_id and title
     unique_articles = {}
@@ -252,9 +240,7 @@ def main():
         latest_csv = os.path.join(output_dir, "gooddevs_latest.csv")
         pd.DataFrame(processed_articles).to_csv(latest_csv, index=False)
 
-        logger.info(
-            f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}"
-        )
+        logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
 
     except Exception as e:
         logger.error(f"Error in Good Devs ETL process: {e!s}", exc_info=True)

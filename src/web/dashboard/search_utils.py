@@ -23,10 +23,7 @@ def filter_duplicates(content: list[dict[str, Any]], show_duplicates: bool = Fal
         return content
 
     # Filter out items marked as duplicates
-    filtered_content = [
-        item for item in content
-        if not item.get('is_duplicate', False)
-    ]
+    filtered_content = [item for item in content if not item.get("is_duplicate", False)]
 
     logger.info(f"Filtered {len(content) - len(filtered_content)} duplicates from {len(content)} items")
     return filtered_content
@@ -47,13 +44,13 @@ def highlight_matches(text: str, query: str) -> str:
 
     try:
         # Escape HTML special characters first
-        escaped_text = str(text).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        escaped_text = str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
         # Create regex pattern for case-insensitive matching
         pattern = re.compile(re.escape(query), re.IGNORECASE)
 
         # Use <mark> tags for highlighting
-        highlighted = pattern.sub(f'<mark>{query}</mark>', escaped_text)
+        highlighted = pattern.sub(f"<mark>{query}</mark>", escaped_text)
 
         return highlighted
     except Exception as e:
@@ -61,7 +58,11 @@ def highlight_matches(text: str, query: str) -> str:
         return str(text)
 
 
-def filter_content(search_query: str, content: list[dict[str, Any]], searchable_fields: list[str] = None) -> list[dict[str, Any]]:
+def filter_content(
+    search_query: str,
+    content: list[dict[str, Any]],
+    searchable_fields: list[str] = None,
+) -> list[dict[str, Any]]:
     """Filter content based on search query using case-insensitive substring matching.
 
     Args:
@@ -77,7 +78,15 @@ def filter_content(search_query: str, content: list[dict[str, Any]], searchable_
 
     # Default searchable fields if not specified
     if searchable_fields is None:
-        searchable_fields = ['title', 'description', 'summary', 'content', 'source', 'name', 'channel']
+        searchable_fields = [
+            "title",
+            "description",
+            "summary",
+            "content",
+            "source",
+            "name",
+            "channel",
+        ]
 
     query_lower = search_query.lower()
     filtered_content = []
@@ -87,11 +96,11 @@ def filter_content(search_query: str, content: list[dict[str, Any]], searchable_
         searchable_text_parts = []
 
         for field in searchable_fields:
-            field_value = item.get(field, '')
+            field_value = item.get(field, "")
             if field_value:
                 searchable_text_parts.append(str(field_value))
 
-        searchable_text = ' '.join(searchable_text_parts).lower()
+        searchable_text = " ".join(searchable_text_parts).lower()
 
         # Check if query matches any part of searchable text
         if query_lower in searchable_text:
@@ -136,7 +145,7 @@ def create_search_input(input_id: str, placeholder: str = "Search...", clear_but
                 dbc.InputGroupText(
                     html.I(className="fas fa-times"),
                     id=f"{input_id}-clear",
-                    style={"cursor": "pointer"}
+                    style={"cursor": "pointer"},
                 ),
             ],
             className="mb-3",
@@ -155,16 +164,22 @@ def get_common_searchable_fields(content_type: str) -> list[str]:
         List of field names to search in
     """
     field_mappings = {
-        'videos': ['title', 'description', 'channel', 'published_at'],
-        'news': ['title', 'description', 'source', 'summary', 'source_display_name'],
-        'deals': ['title', 'description', 'platform', 'source_category', 'source_name'],
-        'papers': ['title', 'summary', 'authors', 'categories', 'primary_category_display'],
-        'courses': ['title', 'description', 'instructor', 'category'],
-        'arxiv': ['title', 'summary', 'authors_display', 'primary_category_display'],
-        'default': ['title', 'description', 'summary', 'content', 'source', 'name']
+        "videos": ["title", "description", "channel", "published_at"],
+        "news": ["title", "description", "source", "summary", "source_display_name"],
+        "deals": ["title", "description", "platform", "source_category", "source_name"],
+        "papers": [
+            "title",
+            "summary",
+            "authors",
+            "categories",
+            "primary_category_display",
+        ],
+        "courses": ["title", "description", "instructor", "category"],
+        "arxiv": ["title", "summary", "authors_display", "primary_category_display"],
+        "default": ["title", "description", "summary", "content", "source", "name"],
     }
 
-    return field_mappings.get(content_type, field_mappings['default'])
+    return field_mappings.get(content_type, field_mappings["default"])
 
 
 def validate_search_performance(content_size: int, max_items: int = 10000) -> bool:
@@ -187,7 +202,12 @@ def validate_search_performance(content_size: int, max_items: int = 10000) -> bo
 _search_cache = {}
 
 
-def cached_filter_content(search_query: str, content: list[dict], content_hash: str, searchable_fields: list[str] = None) -> list[dict]:
+def cached_filter_content(
+    search_query: str,
+    content: list[dict],
+    content_hash: str,
+    searchable_fields: list[str] = None,
+) -> list[dict]:
     """Cached version of filter_content for better performance.
 
     Args:

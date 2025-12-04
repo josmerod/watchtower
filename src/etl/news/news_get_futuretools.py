@@ -22,9 +22,7 @@ from src.utils.logging import get_logger
 logger = get_logger("FuturetoolsETL")
 
 
-def get_futuretools_data(
-    max_retries: int = 3, retry_delay: int = 5
-) -> list[dict[str, Any]]:
+def get_futuretools_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str, Any]]:
     """Fetches news articles from the futuretools web by scraping the HTML page.
 
     Args:
@@ -50,9 +48,7 @@ def get_futuretools_data(
             soup = BeautifulSoup(response.content, "html.parser")
 
             # Find all news items
-            news_items = soup.find_all(
-                "div", role="listitem", class_="collection-item-6 w-dyn-item"
-            )
+            news_items = soup.find_all("div", role="listitem", class_="collection-item-6 w-dyn-item")
             logger.debug(f"Found {len(news_items)} news items in the HTML")
 
             articles = []
@@ -66,9 +62,7 @@ def get_futuretools_data(
                     link_element = item.find("a", class_="link-block-8 w-inline-block")
                     if link_element:
                         url = link_element.get("href", "")
-                        title_element = link_element.find(
-                            "div", class_="text-block-27 white-text-db-gc"
-                        )
+                        title_element = link_element.find("div", class_="text-block-27 white-text-db-gc")
                         title = title_element.text.strip() if title_element else ""
 
                         article = {
@@ -92,9 +86,7 @@ def get_futuretools_data(
                 logger.info(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
             else:
-                logger.error(
-                    f"Error fetching data from futuretools website after {max_retries} attempts: {e!s}"
-                )
+                logger.error(f"Error fetching data from futuretools website after {max_retries} attempts: {e!s}")
                 return []
 
 
@@ -166,9 +158,7 @@ def main():
         pd.DataFrame(processed_articles).to_csv(csv_file, index=False)
         logger.debug(f"Saved CSV data to {csv_file}")
 
-        logger.info(
-            f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}"
-        )
+        logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
 
     except Exception as e:
         logger.error(f"Error in futuretools ETL process: {e!s}", exc_info=True)

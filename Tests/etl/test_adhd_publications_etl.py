@@ -1,16 +1,20 @@
-import pytest
-from unittest.mock import patch, MagicMock
 import os
 import xml.etree.ElementTree as ET
-import sys
+from unittest.mock import (
+    MagicMock,
+    mock_open,  # Requires Python 3.8+ for new_callable in this specific way sometimes.
+    patch,
+)
 
-import json
-from unittest.mock import mock_open # Requires Python 3.8+ for new_callable in this specific way sometimes.
+import pytest
 
 # Ensure src directory is in path to import ADHDPublicationETL and models
-from src.etl.adhd.adhd_publications_etl import ADHDPublicationETL, ESEARCH_URL, EFETCH_URL
-from src.models.adhd import ADHDPublication # Import the Pydantic model
-import pandas as pd
+from src.etl.adhd.adhd_publications_etl import (
+    EFETCH_URL,
+    ESEARCH_URL,
+    ADHDPublicationETL,
+)
+from src.models.adhd import ADHDPublication  # Import the Pydantic model
 
 # Sample XML Data
 SAMPLE_ESEARCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
@@ -34,27 +38,12 @@ SAMPLE_ESEARCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
         </TermSet>
     </TranslationStack>
 </eSearchResult>
+"""
 
 SAMPLE_EFETCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
 <PubmedArticleSet>
 <PubmedArticle>
     <MedlineCitation Status="MEDLINE" Owner="NLM">
-        <PMID Version="1">30000001</PMID>
-        <DateCompleted>
-            <Year>2023</Year>
-            <Month>1</Month>
-            <Day>15</Day>
-        </DateCompleted>
-        <Article PubModel="Print">
-            <Journal>
-                <ISSN IssnType="Print">0000-0001</ISSN>
-                <JournalIssue CitedMedium="Print">
-                    <Volume>10</Volume>
-                    <Issue>1</Issue>
-                    <PubDate>
-                        <Year>2023</Year>
-                        <Month>Jan</Month>
-                    </PubDate>
                 </JournalIssue>
                 <Title>Journal of ADHD Research</Title>
                 <ISOAbbreviation>J ADHD Res</ISOAbbreviation>
@@ -150,8 +139,10 @@ SAMPLE_EFETCH_XML = """<?xml version="1.0" encoding="UTF-8" ?>
     </MedlineCitation>
 </PubmedArticle>
 </PubmedArticleSet>
+"""
 
-@pytest.fixture
+
+@pytest.fixture()
 def adhd_etl_instance(tmp_path):
     # Use tmp_path for output_dir to avoid creating files in the project during tests
     # The ADHDPublicationETL constructor now takes 'name' and '**kwargs'
@@ -165,6 +156,7 @@ def adhd_etl_instance(tmp_path):
     # instance = ADHDPublicationETL(name="test_adhd_etl", output_dir=str(tmp_path))
     return instance
 
+
 def mock_requests_get_side_effect(*args, **kwargs):
     mock_response = MagicMock()
     if args[0] == ESEARCH_URL:
@@ -176,50 +168,50 @@ def mock_requests_get_side_effect(*args, **kwargs):
         mock_response.status_code = 404
     return mock_response
 
-@patch('requests.get')
-def test_extract_successful_fetch_and_parse(mock_get, adhd_etl_instance):
 
+@patch("requests.get")
+def test_extract_successful_fetch_and_parse(mock_get, adhd_etl_instance):
     extracted_data = adhd_etl_instance.extract()
 
-    assert mock_get.call_count >= 2 # At least one for esearch, one for efetch
+    assert mock_get.call_count >= 2  # At least one for esearch, one for efetch
 
     # Verify call arguments for ESEARCH_URL
-    esearch_call_args = mock_get.call_args_list[0][1] # kwargs of the first call
-    assert esearch_call_args['params']['db'] == 'pubmed'
-    assert "ADHD OR \"Attention Deficit Hyperactivity Disorder\"" in esearch_call_args['params']['term']
+    esearch_call_args = mock_get.call_args_list[0][1]  # kwargs of the first call
+    assert esearch_call_args["params"]["db"] == "pubmed"
+    assert 'ADHD OR "Attention Deficit Hyperactivity Disorder"' in esearch_call_args["params"]["term"]
 
     # Verify call arguments for EFETCH_URL (assuming it's the second call)
-    efetch_call_args = mock_get.call_args_list[1][1] # kwargs of the second call
-    assert efetch_call_args['params']['db'] == 'pubmed'
-    assert efetch_call_args['params']['WebEnv'] == "NCID_1_123456789_130.14.22.107_9001_1604016997_1727487202_0MetA0_S_MegaStore_F_1"
-    assert efetch_call_args['params']['query_key'] == "1"
+    efetch_call_args = mock_get.call_args_list[1][1]  # kwargs of the second call
+    assert efetch_call_args["params"]["db"] == "pubmed"
+    assert efetch_call_args["params"]["WebEnv"] == "NCID_1_123456789_130.14.22.107_9001_1604016997_1727487202_0MetA0_S_MegaStore_F_1"
+    assert efetch_call_args["params"]["query_key"] == "1"
 
     assert isinstance(extracted_data, list)
-    assert len(extracted_data) == 2 # Based on SAMPLE_EFETCH_XML
+    assert len(extracted_data) == 2  # Based on SAMPLE_EFETCH_XML
 
     paper1 = extracted_data[0]
-    assert paper1['title'] == "A Study on ADHD Interventions."
-    assert paper1['authors'] == ["John A. Doe", "Jane B. Smith"] # Adjusted based on typical ForeName LastName processing
-    assert paper1['pmid'] == "30000001"
-    assert paper1['doi'] == "10.1000/j.jadhdres.2023.001"
-    assert paper1['url'] == "https://pubmed.ncbi.nlm.nih.gov/30000001/"
-    assert paper1['abstract'] == "This is an abstract for the first paper on ADHD interventions."
-    assert paper1['publication_date'] == "2023 Jan" # Based on PubDate/Year and PubDate/Month
+    assert paper1["title"] == "A Study on ADHD Interventions."
+    assert paper1["authors"] == ["John A. Doe", "Jane B. Smith"]  # Adjusted based on typical ForeName LastName processing
+    assert paper1["pmid"] == "30000001"
+    assert paper1["doi"] == "10.1000/j.jadhdres.2023.001"
+    assert paper1["url"] == "https://pubmed.ncbi.nlm.nih.gov/30000001/"
+    assert paper1["abstract"] == "This is an abstract for the first paper on ADHD interventions."
+    assert paper1["publication_date"] == "2023 Jan"  # Based on PubDate/Year and PubDate/Month
 
     paper2 = extracted_data[1]
-    assert paper2['title'] == "Exploring Genetic Markers in ADHD."
-    assert paper2['authors'] == ["The ADHD Genetics Consortium"]
-    assert paper2['pmid'] == "30000002"
-    assert paper2['doi'] == "10.1001/ijnd.2023.002"
-    assert paper2['url'] == "https://pubmed.ncbi.nlm.nih.gov/30000002/"
+    assert paper2["title"] == "Exploring Genetic Markers in ADHD."
+    assert paper2["authors"] == ["The ADHD Genetics Consortium"]
+    assert paper2["pmid"] == "30000002"
+    assert paper2["doi"] == "10.1001/ijnd.2023.002"
+    assert paper2["url"] == "https://pubmed.ncbi.nlm.nih.gov/30000002/"
     # Abstract with labels, ensure they are concatenated
-    assert "BACKGROUND: Background: ADHD has a strong genetic component." in paper2['abstract']
-    assert "OBJECTIVE: To identify new genetic markers." in paper2['abstract']
-    assert "This abstract explores genetic markers for ADHD." in paper2['abstract']
-    assert paper2['publication_date'] == "2023 Feb"
+    assert "BACKGROUND: Background: ADHD has a strong genetic component." in paper2["abstract"]
+    assert "OBJECTIVE: To identify new genetic markers." in paper2["abstract"]
+    assert "This abstract explores genetic markers for ADHD." in paper2["abstract"]
+    assert paper2["publication_date"] == "2023 Feb"
 
 
-@patch('requests.get')
+@patch("requests.get")
 def test_extract_handles_esearch_api_error(mock_get, adhd_etl_instance):
     mock_response_esearch_error = MagicMock()
     mock_response_esearch_error.status_code = 500
@@ -237,26 +229,26 @@ def test_extract_handles_esearch_api_error(mock_get, adhd_etl_instance):
     mock_get.side_effect = esearch_error_side_effect
 
     # Patch the logger to check if errors are logged
-    with patch.object(adhd_etl_instance.logger, 'error') as mock_logger_error:
+    with patch.object(adhd_etl_instance.logger, "error") as mock_logger_error:
         extracted_data = adhd_etl_instance.extract()
         assert extracted_data == []
-        mock_logger_error.assert_called_once() # Check that an error was logged
+        mock_logger_error.assert_called_once()  # Check that an error was logged
         assert "Error during eSearch request" in mock_logger_error.call_args[0][0]
 
 
-@patch('requests.get')
+@patch("requests.get")
 def test_extract_handles_efetch_api_error(mock_get, adhd_etl_instance):
     mock_response_efetch_error = MagicMock()
     mock_response_efetch_error.status_code = 500
     mock_response_efetch_error.raise_for_status.side_effect = requests.exceptions.HTTPError("API Error")
 
     def efetch_error_side_effect(*args, **kwargs):
-        if args[0] == ESEARCH_URL: # Successful esearch
+        if args[0] == ESEARCH_URL:  # Successful esearch
             mock_esearch_ok = MagicMock()
             mock_esearch_ok.status_code = 200
             mock_esearch_ok.text = SAMPLE_ESEARCH_XML
             return mock_esearch_ok
-        elif args[0] == EFETCH_URL: # Failed efetch
+        elif args[0] == EFETCH_URL:  # Failed efetch
             return mock_response_efetch_error
         mock_response_other = MagicMock()
         mock_response_other.status_code = 404
@@ -264,14 +256,14 @@ def test_extract_handles_efetch_api_error(mock_get, adhd_etl_instance):
 
     mock_get.side_effect = efetch_error_side_effect
 
-    with patch.object(adhd_etl_instance.logger, 'error') as mock_logger_error:
+    with patch.object(adhd_etl_instance.logger, "error") as mock_logger_error:
         extracted_data = adhd_etl_instance.extract()
         assert extracted_data == []
         mock_logger_error.assert_called_once()
         assert "Error during eFetch request" in mock_logger_error.call_args[0][0]
 
 
-@patch('requests.get')
+@patch("requests.get")
 def test_extract_handles_empty_pmids_from_esearch(mock_get, adhd_etl_instance):
     SAMPLE_ESEARCH_XML_NO_PMIDS = """<?xml version="1.0" encoding="UTF-8" ?>
     <eSearchResult>
@@ -283,6 +275,7 @@ def test_extract_handles_empty_pmids_from_esearch(mock_get, adhd_etl_instance):
         <IdList/>
     </eSearchResult>
     """
+
     def no_pmids_side_effect(*args, **kwargs):
         if args[0] == ESEARCH_URL:
             mock_response = MagicMock()
@@ -296,7 +289,7 @@ def test_extract_handles_empty_pmids_from_esearch(mock_get, adhd_etl_instance):
 
     mock_get.side_effect = no_pmids_side_effect
 
-    with patch.object(adhd_etl_instance.logger, 'warning') as mock_logger_warning:
+    with patch.object(adhd_etl_instance.logger, "warning") as mock_logger_warning:
         extracted_data = adhd_etl_instance.extract()
         assert extracted_data == []
         mock_logger_warning.assert_called_once()
@@ -305,28 +298,30 @@ def test_extract_handles_empty_pmids_from_esearch(mock_get, adhd_etl_instance):
         efetch_calls = [call for call in mock_get.call_args_list if call[0][0] == EFETCH_URL]
         assert len(efetch_calls) == 0
 
+
 # Import requests for the HTTPError exception
 import requests
 
+
 # Test for parsing errors during eSearch
-@patch('requests.get')
-@patch('xml.etree.ElementTree.fromstring')
+@patch("requests.get")
+@patch("xml.etree.ElementTree.fromstring")
 def test_extract_handles_esearch_xml_parse_error(mock_fromstring, mock_get, adhd_etl_instance):
     mock_esearch_response = MagicMock()
     mock_esearch_response.status_code = 200
     mock_esearch_response.content = b"<malformed_xml>"
     mock_get.return_value = mock_esearch_response
 
-
-    with patch.object(adhd_etl_instance.logger, 'error') as mock_logger_error:
+    with patch.object(adhd_etl_instance.logger, "error") as mock_logger_error:
         extracted_data = adhd_etl_instance.extract()
         assert extracted_data == []
         mock_logger_error.assert_called_once()
         assert "Error parsing eSearch XML response" in mock_logger_error.call_args[0][0]
 
+
 # Test for parsing errors during eFetch
-@patch('requests.get')
-@patch('xml.etree.ElementTree.fromstring')
+@patch("requests.get")
+@patch("xml.etree.ElementTree.fromstring")
 def test_extract_handles_efetch_xml_parse_error(mock_fromstring, mock_get, adhd_etl_instance):
     # This needs two different behaviors for fromstring: success for esearch, failure for efetch
     # And two different behaviors for requests.get: success for esearch, success for efetch (content-wise)
@@ -339,8 +334,8 @@ def test_extract_handles_efetch_xml_parse_error(mock_fromstring, mock_get, adhd_
     # Set up side effects
     # mock_fromstring will be called twice. First for esearch, then for efetch.
     mock_fromstring.side_effect = [
-        esearch_root_mock, # Successful parse for esearch
-        ET.ParseError("Malformed eFetch XML") # Failed parse for efetch
+        esearch_root_mock,  # Successful parse for esearch
+        ET.ParseError("Malformed eFetch XML"),  # Failed parse for efetch
     ]
 
     # requests.get will also be called twice.
@@ -349,10 +344,9 @@ def test_extract_handles_efetch_xml_parse_error(mock_fromstring, mock_get, adhd_
 
     mock_efetch_response = MagicMock()
     mock_efetch_response.status_code = 200
-    mock_efetch_response.content = b"<malformed_efetch_xml>" # Content for efetch
+    mock_efetch_response.content = b"<malformed_efetch_xml>"  # Content for efetch
 
-
-    with patch.object(adhd_etl_instance.logger, 'error') as mock_logger_error:
+    with patch.object(adhd_etl_instance.logger, "error") as mock_logger_error:
         extracted_data = adhd_etl_instance.extract()
         assert extracted_data == []
         mock_logger_error.assert_called_once()
@@ -361,40 +355,21 @@ def test_extract_handles_efetch_xml_parse_error(mock_fromstring, mock_get, adhd_
 
 # --- Tests for transform method ---
 
-@pytest.fixture
+
+@pytest.fixture()
 def sample_raw_papers_data():
     return [
         {
-
-
-
-
-
-
-
-            'url': 'https://pubmed.ncbi.nlm.nih.gov/12345/'
+            "url": "https://pubmed.ncbi.nlm.nih.gov/12345/"
             # 'source' is added by transform, not expected in raw data from extract
         },
-        {
-
-
-
-
-
-
-
-            'url': 'https://pubmed.ncbi.nlm.nih.gov/67890/'
-        },
-        { # Paper with minimal required data by Pydantic model (title, authors, source)
-          # 'source' will be added by transform
-
-
-
-
-
+        {"url": "https://pubmed.ncbi.nlm.nih.gov/67890/"},
+        {  # Paper with minimal required data by Pydantic model (title, authors, source)
+            # 'source' will be added by transform
             # 'abstract', 'doi', 'journal_title' are optional in Pydantic model or not directly used
-        }
+        },
     ]
+
 
 def test_transform_maps_data_correctly(adhd_etl_instance, sample_raw_papers_data):
     transformed_papers = adhd_etl_instance.transform(sample_raw_papers_data)
@@ -406,51 +381,22 @@ def test_transform_maps_data_correctly(adhd_etl_instance, sample_raw_papers_data
         assert isinstance(transformed_paper, ADHDPublication)
         raw_item = sample_raw_papers_data[i]
 
-        assert transformed_paper.title == raw_item['title']
-        assert transformed_paper.authors == raw_item['authors']
-        assert transformed_paper.publication_date == raw_item.get('publication_date')
-        assert transformed_paper.abstract == raw_item.get('abstract')
-        assert transformed_paper.doi == raw_item.get('doi')
-        assert transformed_paper.url == raw_item['url']
-        assert transformed_paper.source == "PubMed" # This is set by transform
+        assert transformed_paper.title == raw_item["title"]
+        assert transformed_paper.authors == raw_item["authors"]
+        assert transformed_paper.publication_date == raw_item.get("publication_date")
+        assert transformed_paper.abstract == raw_item.get("abstract")
+        assert transformed_paper.doi == raw_item.get("doi")
+        assert transformed_paper.url == raw_item["url"]
+        assert transformed_paper.source == "PubMed"  # This is set by transform
+
 
 def test_transform_handles_empty_input(adhd_etl_instance):
     transformed_papers = adhd_etl_instance.transform([])
     assert transformed_papers == []
 
+
 def test_transform_handles_missing_critical_fields(adhd_etl_instance, caplog):
     # 'title' is a required field in ADHDPublication Pydantic model
-    # 'authors' is also required (List[str])
-    # 'source' is required but added by transform
-
-    malformed_data = [
-        { # Missing title
-
-
-
-
-
-            'url': 'https://pubmed.ncbi.nlm.nih.gov/00001/'
-        },
-
-
-
-
-
-
-            'url': 'https://pubmed.ncbi.nlm.nih.gov/12345/'
-        },
-
-
-
-
-
-            'url': 'https://pubmed.ncbi.nlm.nih.gov/00002/'
-        }
-    ]
-
-    # The transform method in ADHDPublicationETL has a try-except for general Exception
-    # which includes Pydantic's ValidationError. It logs the error.
 
     # To capture logs from adhd_etl_instance.logger specifically:
     # Method 1: Patch the logger on the instance if it's already configured
@@ -462,8 +408,9 @@ def test_transform_handles_missing_critical_fields(adhd_etl_instance, caplog):
     # This requires the logger used in the ETL to propagate to root or be captured by pytest.
     # BaseETL's logger is named after the class, so it should be captured by caplog.
 
-    import logging # Required for caplog to work with named loggers
-    caplog.set_level(logging.ERROR, logger="ADHDPublicationETL") # Ensure we capture errors from this logger
+    import logging  # Required for caplog to work with named loggers
+
+    caplog.set_level(logging.ERROR, logger="ADHDPublicationETL")  # Ensure we capture errors from this logger
 
     transformed_papers = adhd_etl_instance.transform(malformed_data)
 
@@ -473,7 +420,7 @@ def test_transform_handles_missing_critical_fields(adhd_etl_instance, caplog):
     assert transformed_papers[0].title == "Valid Title"
 
     # Check that errors were logged for the malformed items
-    assert len(caplog.records) >= 2 # Two items should have caused errors
+    assert len(caplog.records) >= 2  # Two items should have caused errors
 
     # Check details of logged messages (optional, but good for specific error types)
     # Pydantic's ValidationError will be caught by the generic Exception in transform
@@ -499,36 +446,38 @@ def test_transform_handles_missing_critical_fields(adhd_etl_instance, caplog):
 
 # --- Tests for load method ---
 
-@pytest.fixture
+
+@pytest.fixture()
 def sample_transformed_papers_data():
     return [
         ADHDPublication(
-            title='Test Title 1 Loaded',
-            authors=['Author X', 'Author Y'],
-            publication_date='2023 Mar 10',
-            abstract='Abstract for loaded paper 1.',
-            doi='10.load/test.1',
-            url='https://pubmed.ncbi.nlm.nih.gov/load1',
-            source='PubMed'
+            title="Test Title 1 Loaded",
+            authors=["Author X", "Author Y"],
+            publication_date="2023 Mar 10",
+            abstract="Abstract for loaded paper 1.",
+            doi="10.load/test.1",
+            url="https://pubmed.ncbi.nlm.nih.gov/load1",
+            source="PubMed",
         ),
         ADHDPublication(
-            title='Test Title 2 Loaded: Minimal',
-            authors=['Author Z'],
-            publication_date='2022',
-            abstract=None, # Optional
-            doi=None, # Optional
-            url='https://pubmed.ncbi.nlm.nih.gov/load2',
-            source='PubMed'
-        )
+            title="Test Title 2 Loaded: Minimal",
+            authors=["Author Z"],
+            publication_date="2022",
+            abstract=None,  # Optional
+            doi=None,  # Optional
+            url="https://pubmed.ncbi.nlm.nih.gov/load2",
+            source="PubMed",
+        ),
     ]
 
-@patch('os.makedirs') # Mock makedirs as it's called inside load
-@patch('builtins.open', new_callable=mock_open)
-@patch('pandas.DataFrame.to_csv')
-def test_load_saves_json_and_csv_correctly(mock_df_to_csv, mock_file_open, mock_os_makedirs, adhd_etl_instance, sample_transformed_papers_data, tmp_path, caplog):
-    adhd_etl_instance.output_dir = str(tmp_path) # Redirect output for this test
 
-    caplog.set_level(logging.INFO) # Capture info logs for success messages
+@patch("os.makedirs")  # Mock makedirs as it's called inside load
+@patch("builtins.open", new_callable=mock_open)
+@patch("pandas.DataFrame.to_csv")
+def test_load_saves_json_and_csv_correctly(mock_df_to_csv, mock_file_open, mock_os_makedirs, adhd_etl_instance, sample_transformed_papers_data, tmp_path, caplog):
+    adhd_etl_instance.output_dir = str(tmp_path)  # Redirect output for this test
+
+    caplog.set_level(logging.INFO)  # Capture info logs for success messages
 
     adhd_etl_instance.load(sample_transformed_papers_data)
 
@@ -545,7 +494,7 @@ def test_load_saves_json_and_csv_correctly(mock_df_to_csv, mock_file_open, mock_
     # mock_open().write calls are what json.dump eventually calls.
     # We need to check call_args for the paths.
     # Two calls for JSON: timestamped and latest
-    json_open_calls = [call for call in mock_file_open.call_args_list if call[0][0].endswith('.json')]
+    json_open_calls = [call for call in mock_file_open.call_args_list if call[0][0].endswith(".json")]
     assert len(json_open_calls) == 2
 
     # Check that one call is for 'latest_papers.json' and another for a timestamped file
@@ -580,7 +529,7 @@ def test_load_saves_json_and_csv_correctly(mock_df_to_csv, mock_file_open, mock_
 
     # Check kwargs for to_csv
     for call_args in mock_df_to_csv.call_args_list:
-        assert call_args[1]['index'] is False # index=False
+        assert call_args[1]["index"] is False  # index=False
 
     # Check DataFrame content (first argument to to_csv is the DataFrame instance)
     # df_arg = mock_df_to_csv.call_args_list[0][0][0] # This is the DataFrame instance
@@ -590,23 +539,23 @@ def test_load_saves_json_and_csv_correctly(mock_df_to_csv, mock_file_open, mock_
     # So, we'd need to replicate that for expected_df.
 
     # Log assertions
-    assert "Successfully saved" in caplog.text # General check for success logs
+    assert "Successfully saved" in caplog.text  # General check for success logs
     assert "papers to" in caplog.text
     assert "latest_papers.json" in caplog.text
     assert "latest_papers.csv" in caplog.text
     assert "Load process completed for 2 papers" in caplog.text
 
 
-@patch('os.makedirs')
-@patch('builtins.open', new_callable=mock_open)
-@patch('pandas.DataFrame.to_csv')
+@patch("os.makedirs")
+@patch("builtins.open", new_callable=mock_open)
+@patch("pandas.DataFrame.to_csv")
 def test_load_handles_empty_input(mock_df_to_csv, mock_file_open, mock_os_makedirs, adhd_etl_instance, tmp_path, caplog):
     adhd_etl_instance.output_dir = str(tmp_path)
     caplog.set_level(logging.WARNING)
 
     adhd_etl_instance.load([])
 
-    mock_os_makedirs.assert_not_called() # Should not attempt to create dirs if no data
+    mock_os_makedirs.assert_not_called()  # Should not attempt to create dirs if no data
     mock_file_open.assert_not_called()
     mock_df_to_csv.assert_not_called()
 
@@ -614,11 +563,10 @@ def test_load_handles_empty_input(mock_df_to_csv, mock_file_open, mock_os_makedi
 
 
 # This test does not mock os.makedirs to verify its actual behavior
-@patch('builtins.open', new_callable=mock_open) # Mock file operations to prevent actual writes
-@patch('pandas.DataFrame.to_csv')               # Mock csv writing
+@patch("builtins.open", new_callable=mock_open)  # Mock file operations to prevent actual writes
+@patch("pandas.DataFrame.to_csv")  # Mock csv writing
 def test_load_creates_output_directories(mock_df_to_csv, mock_file_open, adhd_etl_instance, sample_transformed_papers_data, tmp_path):
     adhd_etl_instance.output_dir = str(tmp_path)
-
 
     json_dir = tmp_path / "json"
     csv_dir = tmp_path / "csv"
@@ -631,15 +579,16 @@ def test_load_creates_output_directories(mock_df_to_csv, mock_file_open, adhd_et
 
 # --- Tests for run method ---
 
-@patch.object(ADHDPublicationETL, 'load')
-@patch.object(ADHDPublicationETL, 'transform')
-@patch.object(ADHDPublicationETL, 'extract')
+
+@patch.object(ADHDPublicationETL, "load")
+@patch.object(ADHDPublicationETL, "transform")
+@patch.object(ADHDPublicationETL, "extract")
 def test_run_calls_extract_transform_load_in_order(m_extract, m_transform, m_load, adhd_etl_instance, caplog):
     caplog.set_level(logging.INFO)
 
-    mock_extracted_data = [{'pmid': '1', 'title': 'Raw Paper', 'authors':['Auth'], 'url':'url1', 'source':'PubMed'}]
+    mock_extracted_data = [{"pmid": "1", "title": "Raw Paper", "authors": ["Auth"], "url": "url1", "source": "PubMed"}]
     # ADHDPublication needs title, authors, source, url at minimum if other fields are None by default
-    mock_transformed_data = [ADHDPublication(title='Transformed Paper', authors=['Author'], source='PubMed', url='http://example.com/1', pmid='1')]
+    mock_transformed_data = [ADHDPublication(title="Transformed Paper", authors=["Author"], source="PubMed", url="http://example.com/1", pmid="1")]
 
     m_extract.return_value = mock_extracted_data
     m_transform.return_value = mock_transformed_data
@@ -654,9 +603,9 @@ def test_run_calls_extract_transform_load_in_order(m_extract, m_transform, m_loa
     assert f"Starting ETL pipeline: {adhd_etl_instance.name}" in caplog.text
 
 
-@patch.object(ADHDPublicationETL, 'load')
-@patch.object(ADHDPublicationETL, 'transform')
-@patch.object(ADHDPublicationETL, 'extract', return_value=[]) # Mock extract to return empty list
+@patch.object(ADHDPublicationETL, "load")
+@patch.object(ADHDPublicationETL, "transform")
+@patch.object(ADHDPublicationETL, "extract", return_value=[])  # Mock extract to return empty list
 def test_run_handles_empty_extract_output(m_extract, m_transform, m_load, adhd_etl_instance, caplog):
     caplog.set_level(logging.WARNING)
 
@@ -669,14 +618,14 @@ def test_run_handles_empty_extract_output(m_extract, m_transform, m_load, adhd_e
     assert "Extraction yielded no data. Skipping transform and load." in caplog.text
 
 
-@patch.object(ADHDPublicationETL, 'load')
-@patch.object(ADHDPublicationETL, 'transform', return_value=[]) # Mock transform to return empty list
-@patch.object(ADHDPublicationETL, 'extract')
+@patch.object(ADHDPublicationETL, "load")
+@patch.object(ADHDPublicationETL, "transform", return_value=[])  # Mock transform to return empty list
+@patch.object(ADHDPublicationETL, "extract")
 def test_run_handles_empty_transform_output(m_extract, m_transform, m_load, adhd_etl_instance, caplog):
     caplog.set_level(logging.WARNING)
 
     # Need extract to return non-empty, so transform is called
-    mock_extracted_data = [{'pmid': '1', 'title': 'Raw Paper', 'authors':['Auth'], 'url':'url1', 'source':'PubMed'}]
+    mock_extracted_data = [{"pmid": "1", "title": "Raw Paper", "authors": ["Auth"], "url": "url1", "source": "PubMed"}]
     m_extract.return_value = mock_extracted_data
 
     adhd_etl_instance.run()
@@ -688,9 +637,9 @@ def test_run_handles_empty_transform_output(m_extract, m_transform, m_load, adhd
     assert "Transformation yielded no data. Skipping load." in caplog.text
 
 
-@patch.object(ADHDPublicationETL, 'load')
-@patch.object(ADHDPublicationETL, 'transform')
-@patch.object(ADHDPublicationETL, 'extract', side_effect=Exception("Big Extractor Boom")) # Mock extract to raise exception
+@patch.object(ADHDPublicationETL, "load")
+@patch.object(ADHDPublicationETL, "transform")
+@patch.object(ADHDPublicationETL, "extract", side_effect=Exception("Big Extractor Boom"))  # Mock extract to raise exception
 def test_run_handles_general_exception_during_extract(m_extract, m_transform, m_load, adhd_etl_instance, caplog):
     caplog.set_level(logging.ERROR)
 
@@ -703,14 +652,14 @@ def test_run_handles_general_exception_during_extract(m_extract, m_transform, m_
     assert f"Error during ETL pipeline: {adhd_etl_instance.name}: Big Extractor Boom" in caplog.text
 
 
-@patch.object(ADHDPublicationETL, 'load')
-@patch.object(ADHDPublicationETL, 'transform', side_effect=Exception("Transform Failure")) # Mock transform to raise exception
-@patch.object(ADHDPublicationETL, 'extract')
+@patch.object(ADHDPublicationETL, "load")
+@patch.object(ADHDPublicationETL, "transform", side_effect=Exception("Transform Failure"))  # Mock transform to raise exception
+@patch.object(ADHDPublicationETL, "extract")
 def test_run_handles_general_exception_during_transform(m_extract, m_transform, m_load, adhd_etl_instance, caplog):
     caplog.set_level(logging.ERROR)
 
-    mock_extracted_data = [{'pmid': '1', 'title': 'Raw Paper', 'authors':['Auth'], 'url':'url1', 'source':'PubMed'}]
-    m_extract.return_value = mock_extracted_data # Extract succeeds
+    mock_extracted_data = [{"pmid": "1", "title": "Raw Paper", "authors": ["Auth"], "url": "url1", "source": "PubMed"}]
+    m_extract.return_value = mock_extracted_data  # Extract succeeds
 
     adhd_etl_instance.run()
 
@@ -721,17 +670,17 @@ def test_run_handles_general_exception_during_transform(m_extract, m_transform, 
     assert f"Error during ETL pipeline: {adhd_etl_instance.name}: Transform Failure" in caplog.text
 
 
-@patch.object(ADHDPublicationETL, 'load', side_effect=Exception("Load Exploded")) # Mock load to raise exception
-@patch.object(ADHDPublicationETL, 'transform')
-@patch.object(ADHDPublicationETL, 'extract')
+@patch.object(ADHDPublicationETL, "load", side_effect=Exception("Load Exploded"))  # Mock load to raise exception
+@patch.object(ADHDPublicationETL, "transform")
+@patch.object(ADHDPublicationETL, "extract")
 def test_run_handles_general_exception_during_load(m_extract, m_transform, m_load, adhd_etl_instance, caplog):
     caplog.set_level(logging.ERROR)
 
-    mock_extracted_data = [{'pmid': '1', 'title': 'Raw Paper', 'authors':['Auth'], 'url':'url1', 'source':'PubMed'}]
-    mock_transformed_data = [ADHDPublication(title='Transformed Paper', authors=['Author'], source='PubMed', url='http://example.com/1', pmid='1')]
+    mock_extracted_data = [{"pmid": "1", "title": "Raw Paper", "authors": ["Auth"], "url": "url1", "source": "PubMed"}]
+    mock_transformed_data = [ADHDPublication(title="Transformed Paper", authors=["Author"], source="PubMed", url="http://example.com/1", pmid="1")]
 
     m_extract.return_value = mock_extracted_data
-    m_transform.return_value = mock_transformed_data # Transform succeeds
+    m_transform.return_value = mock_transformed_data  # Transform succeeds
 
     adhd_etl_instance.run()
 
@@ -740,5 +689,3 @@ def test_run_handles_general_exception_during_load(m_extract, m_transform, m_loa
     m_load.assert_called_once_with(mock_transformed_data)
 
     assert f"Error during ETL pipeline: {adhd_etl_instance.name}: Load Exploded" in caplog.text
-
-

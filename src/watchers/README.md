@@ -73,12 +73,12 @@ class MyCustomWatcher(BaseWatcher):
     def __init__(self, name: str = "custom_watcher", check_interval: int = 3600):
         url = "https://example.com/page-to-watch"
         super().__init__(name, url, check_interval)
-    
+
     def extract_value(self, html_content: str) -> Any:
         # Extract and return the value to watch
         return extracted_value
-    
+
     def has_changed(self, old_value: Any, new_value: Any) -> bool:
         # Return True if the value has changed enough to trigger an alarm
         return old_value != new_value
-``` 
+```

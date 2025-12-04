@@ -7,9 +7,7 @@ from datetime import datetime
 from typing import Any
 
 # Add project root to Python path
-global_project_root = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../..")
-)
+global_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 import pandas as pd
 
 from src.utils.course_deduplication import deduplicate_courses
@@ -17,9 +15,7 @@ from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
 logger = logging.getLogger("udemy_universal_etl")
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 # Constants
 BASE_OUTPUT_DIR = "data/udemy"
@@ -63,9 +59,7 @@ class UdemyUniversalCoursesETL:
                 scraped_at = dt.isoformat()
             except ValueError:
                 scraped_at = datetime.now().isoformat()
-                logger.warning(
-                    f"Could not parse timestamp from filename: {filename}, using current time"
-                )
+                logger.warning(f"Could not parse timestamp from filename: {filename}, using current time")
 
             try:
                 with open(filepath, encoding="utf-8") as f:
@@ -112,16 +106,12 @@ class UdemyUniversalCoursesETL:
                 with open(self.courses_file, encoding="utf-8") as f:
                     existing_courses = json.load(f)
                     all_courses = existing_courses + courses
-                    logger.info(
-                        f"Combined {len(courses)} new courses with {len(existing_courses)} existing courses"
-                    )
+                    logger.info(f"Combined {len(courses)} new courses with {len(existing_courses)} existing courses")
             except json.JSONDecodeError:
                 logger.warning("Error reading existing courses file. Starting fresh.")
 
         # Deduplicate courses before saving
-        deduplicated_courses, removed_count = deduplicate_courses(
-            all_courses, key_field="url", prefer_newer=True
-        )
+        deduplicated_courses, removed_count = deduplicate_courses(all_courses, key_field="url", prefer_newer=True)
         if removed_count > 0:
             logger.info(f"Removed {removed_count} duplicate courses")
 
@@ -129,9 +119,7 @@ class UdemyUniversalCoursesETL:
         try:
             with open(self.courses_file, "w", encoding="utf-8") as f:
                 json.dump(deduplicated_courses, f, ensure_ascii=False, indent=2)
-            logger.info(
-                f"Saved {len(deduplicated_courses)} unique courses to JSON: {self.courses_file}"
-            )
+            logger.info(f"Saved {len(deduplicated_courses)} unique courses to JSON: {self.courses_file}")
         except Exception as e:
             logger.error(f"Error saving JSON file {self.courses_file}: {e}")
 

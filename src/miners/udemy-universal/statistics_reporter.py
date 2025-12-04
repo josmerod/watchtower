@@ -161,9 +161,7 @@ class StatisticsReporter:
         if session_id is None:
             session_id = f"session_{int(time.time())}"
 
-        self.current_session = EnrollmentStats(
-            session_id=session_id, timestamp=datetime.now().isoformat(), duration=0.0
-        )
+        self.current_session = EnrollmentStats(session_id=session_id, timestamp=datetime.now().isoformat(), duration=0.0)
         self.session_start_time = time.time()
         self.site_stats.clear()
 
@@ -185,13 +183,7 @@ class StatisticsReporter:
             self.current_session.duration = time.time() - self.session_start_time
 
         # Calculate totals
-        self.current_session.total_processed = (
-            self.current_session.enrolled
-            + self.current_session.already_enrolled
-            + self.current_session.expired
-            + self.current_session.excluded
-            + self.current_session.failed
-        )
+        self.current_session.total_processed = self.current_session.enrolled + self.current_session.already_enrolled + self.current_session.expired + self.current_session.excluded + self.current_session.failed
 
         # Add to all stats
         self.all_stats.append(self.current_session)
@@ -233,9 +225,7 @@ class StatisticsReporter:
                 daily.active_sites.append(site)
 
         # Calculate average session duration
-        daily.avg_session_duration = (
-            daily.avg_session_duration * (daily.sessions - 1) + session.duration
-        ) / daily.sessions
+        daily.avg_session_duration = (daily.avg_session_duration * (daily.sessions - 1) + session.duration) / daily.sessions
 
     def record_enrollment(
         self,
@@ -309,17 +299,11 @@ class StatisticsReporter:
 
         # Calculate average processing time
         if site_stat.courses_processed > 0:
-            site_stat.avg_processing_time = (
-                site_stat.avg_processing_time * (site_stat.courses_processed - 1)
-                + processing_time
-            ) / site_stat.courses_processed
+            site_stat.avg_processing_time = (site_stat.avg_processing_time * (site_stat.courses_processed - 1) + processing_time) / site_stat.courses_processed
 
         # Calculate success rate
         if site_stat.courses_processed > 0:
-            site_stat.success_rate = (
-                (site_stat.courses_processed - site_stat.errors)
-                / site_stat.courses_processed
-            ) * 100
+            site_stat.success_rate = ((site_stat.courses_processed - site_stat.errors) / site_stat.courses_processed) * 100
 
         # Add to session sites
         if site_name not in self.current_session.sites_scraped:
@@ -331,9 +315,7 @@ class StatisticsReporter:
         Returns:
             Dictionary containing session summary
         """
-        session = self.current_session or (
-            self.all_stats[-1] if self.all_stats else None
-        )
+        session = self.current_session or (self.all_stats[-1] if self.all_stats else None)
         if not session:
             return None
 
@@ -363,9 +345,7 @@ class StatisticsReporter:
             session: Session to report on, or current/last session if None
         """
         if session is None:
-            session = self.current_session or (
-                self.all_stats[-1] if self.all_stats else None
-            )
+            session = self.current_session or (self.all_stats[-1] if self.all_stats else None)
 
         if not session:
             self.logger.info("No session data available")
@@ -406,17 +386,13 @@ class StatisticsReporter:
 
         if session.categories_processed:
             self.logger.info("📚 CATEGORIES PROCESSED:")
-            for category, count in sorted(
-                session.categories_processed.items(), key=lambda x: x[1], reverse=True
-            ):
+            for category, count in sorted(session.categories_processed.items(), key=lambda x: x[1], reverse=True):
                 self.logger.info(f"  • {category}: {count}")
             self.logger.info("")
 
         if session.languages_processed:
             self.logger.info("🌍 LANGUAGES PROCESSED:")
-            for language, count in sorted(
-                session.languages_processed.items(), key=lambda x: x[1], reverse=True
-            ):
+            for language, count in sorted(session.languages_processed.items(), key=lambda x: x[1], reverse=True):
                 self.logger.info(f"  • {language}: {count}")
 
         self.logger.info("=" * 60)
@@ -433,11 +409,7 @@ class StatisticsReporter:
 
         # Filter statistics by date
         cutoff_date = datetime.now() - timedelta(days=days)
-        recent_stats = [
-            stat
-            for stat in self.all_stats
-            if datetime.fromisoformat(stat.timestamp) >= cutoff_date
-        ]
+        recent_stats = [stat for stat in self.all_stats if datetime.fromisoformat(stat.timestamp) >= cutoff_date]
 
         if not recent_stats:
             self.logger.info(f"No statistics available for the last {days} days")
@@ -472,9 +444,7 @@ class StatisticsReporter:
 
         if site_counts:
             self.logger.info("🌐 MOST ACTIVE SITES:")
-            for site, count in sorted(
-                site_counts.items(), key=lambda x: x[1], reverse=True
-            )[:5]:
+            for site, count in sorted(site_counts.items(), key=lambda x: x[1], reverse=True)[:5]:
                 self.logger.info(f"  • {site}: {count} sessions")
 
         self.logger.info("=" * 60)
@@ -499,10 +469,7 @@ class StatisticsReporter:
                     json.dump(
                         {
                             "sessions": [asdict(stat) for stat in self.all_stats],
-                            "daily_stats": {
-                                date: asdict(stats)
-                                for date, stats in self.daily_stats.items()
-                            },
+                            "daily_stats": {date: asdict(stats) for date, stats in self.daily_stats.items()},
                             "exported_at": datetime.now().isoformat(),
                         },
                         f,
@@ -530,9 +497,7 @@ class StatisticsReporter:
                         ]
                     )
                     for stat in self.all_stats:
-                        success_rate = (
-                            stat.enrolled / max(1, stat.total_processed)
-                        ) * 100
+                        success_rate = (stat.enrolled / max(1, stat.total_processed)) * 100
                         writer.writerow(
                             [
                                 stat.session_id,
@@ -571,9 +536,7 @@ def end_session() -> EnrollmentStats | None:
     return stats_reporter.end_session()
 
 
-def record_enrollment(
-    status: str, amount_saved: float = 0.0, category: str = None, language: str = None
-):
+def record_enrollment(status: str, amount_saved: float = 0.0, category: str = None, language: str = None):
     """Convenience function to record enrollment."""
     stats_reporter.record_enrollment(status, amount_saved, category, language)
 
@@ -585,9 +548,7 @@ def record_site_activity(
     errors: int = 0,
 ):
     """Convenience function to record site activity."""
-    stats_reporter.record_site_activity(
-        site_name, courses_found, processing_time, errors
-    )
+    stats_reporter.record_site_activity(site_name, courses_found, processing_time, errors)
 
 
 def display_session_report():

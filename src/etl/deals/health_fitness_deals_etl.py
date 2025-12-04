@@ -15,12 +15,10 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -58,7 +56,7 @@ class HealthFitnessDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract health and fitness deals from multiple sources."""
         logger.info("Starting health & fitness deals extraction...")
 
@@ -71,7 +69,7 @@ class HealthFitnessDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} health & fitness deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _get_curated_health_fitness_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_health_fitness_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of health and fitness deals."""
         curated = [
             {
@@ -427,7 +425,7 @@ class HealthFitnessDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated health & fitness deals")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform health and fitness deals data."""
         logger.info("Starting health & fitness deals transformation...")
 
@@ -483,14 +481,12 @@ class HealthFitnessDealsETL(BaseETL):
                 continue
 
         # Sort by health score and savings
-        transformed_deals.sort(
-            key=lambda x: (x["health_score"], x["savings"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["health_score"], x["savings"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} health & fitness deals")
         return transformed_deals
 
-    def _calculate_health_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_health_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate health value score for ranking deals."""
         score = 0.0
 
@@ -536,9 +532,7 @@ class HealthFitnessDealsETL(BaseETL):
 
         # Health focus bonus
         health_focus = deal.get("health_focus", "").lower()
-        if any(
-            keyword in health_focus for keyword in ["mental", "wellness", "mindfulness"]
-        ):
+        if any(keyword in health_focus for keyword in ["mental", "wellness", "mindfulness"]):
             score += 1.0  # Mental health is important
         elif "nutrition" in health_focus:
             score += 0.5
@@ -567,7 +561,7 @@ class HealthFitnessDealsETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_accessibility_level(self, deal: Dict[str, Any]) -> str:
+    def _determine_accessibility_level(self, deal: dict[str, Any]) -> str:
         """Determine accessibility level of the health/fitness deal."""
         location_type = deal.get("location_type", "").lower()
         equipment = deal.get("equipment_access", "").lower()
@@ -575,20 +569,11 @@ class HealthFitnessDealsETL(BaseETL):
         fees = deal.get("additional_fees", "").lower()
 
         # Highly accessible indicators
-        if (
-            any(keyword in location_type for keyword in ["home", "mobile", "anywhere"])
-            and ("none" in equipment or "bodyweight" in equipment)
-            and not commitment
-            and "none" in fees
-        ):
+        if any(keyword in location_type for keyword in ["home", "mobile", "anywhere"]) and ("none" in equipment or "bodyweight" in equipment) and not commitment and "none" in fees:
             return "highly_accessible"
 
         # Very accessible indicators
-        if (
-            any(keyword in location_type for keyword in ["home", "mobile"])
-            and "minimal" in equipment
-            and not commitment
-        ):
+        if any(keyword in location_type for keyword in ["home", "mobile"]) and "minimal" in equipment and not commitment:
             return "very_accessible"
 
         # Accessible indicators
@@ -602,7 +587,7 @@ class HealthFitnessDealsETL(BaseETL):
         # Limited accessibility
         return "limited_accessibility"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed health and fitness deals data to files."""
         try:
             # Ensure output directory exists
@@ -622,9 +607,7 @@ class HealthFitnessDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} health & fitness deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} health & fitness deals to {output_dir}")
             return True
 
         except Exception as e:

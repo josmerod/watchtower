@@ -30,14 +30,11 @@ MIN_METACRITIC_SCORE = 70
 logger = get_logger(__name__)
 
 if API_KEY == "YOUR_RAWG_API_KEY":
-    logger.warning(
-        "RAWG_API_KEY is not set. Please set it as an environment variable or in the script."
-    )
+    logger.warning("RAWG_API_KEY is not set. Please set it as an environment variable or in the script.")
 
 
 def fetch_games(page_num: int, params: dict) -> dict | None:
-    """
-    Fetches a page of game data from the RAWG API.
+    """Fetches a page of game data from the RAWG API.
 
     Args:
         page_num: The page number to fetch.
@@ -49,24 +46,18 @@ def fetch_games(page_num: int, params: dict) -> dict | None:
     request_params = params.copy()
     request_params["page"] = page_num
     try:
-        response = requests.get(
-            RAWG_API_URL, params=request_params, timeout=10
-        )  # 10 second timeout
+        response = requests.get(RAWG_API_URL, params=request_params, timeout=10)  # 10 second timeout
         response.raise_for_status()  # Raises an HTTPError for bad responses (4XX or 5XX)
         return response.json()
     except requests.exceptions.Timeout:
         logger.error(f"Request timed out while fetching page {page_num}.")
         return None
     except requests.exceptions.HTTPError as http_err:
-        logger.error(
-            f"HTTP error occurred while fetching page {page_num}: {http_err} - Status Code: {response.status_code}"
-        )
+        logger.error(f"HTTP error occurred while fetching page {page_num}: {http_err} - Status Code: {response.status_code}")
         if response.status_code == 401:
             logger.error("Unauthorized: Check your RAWG_API_KEY.")
         elif response.status_code == 404:
-            logger.error(
-                f"Resource not found for page {page_num}. This might indicate no more pages."
-            )
+            logger.error(f"Resource not found for page {page_num}. This might indicate no more pages.")
         return None
     except requests.exceptions.RequestException as req_err:
         logger.error(f"Error during request for page {page_num}: {req_err}")
@@ -77,8 +68,7 @@ def fetch_games(page_num: int, params: dict) -> dict | None:
 
 
 def process_games_data(games_raw_data: list) -> list:
-    """
-    Processes raw game data from the API response.
+    """Processes raw game data from the API response.
 
     Args:
         games_raw_data: A list of game objects from the API.
@@ -97,11 +87,7 @@ def process_games_data(games_raw_data: list) -> list:
         if metacritic_score is None or metacritic_score < MIN_METACRITIC_SCORE:
             continue
 
-        platforms = [
-            p["platform"]["name"]
-            for p in game.get("platforms", [])
-            if p.get("platform")
-        ]
+        platforms = [p["platform"]["name"] for p in game.get("platforms", []) if p.get("platform")]
         genres = [g["name"] for g in game.get("genres", [])]
 
         processed_game = {
@@ -111,32 +97,22 @@ def process_games_data(games_raw_data: list) -> list:
             "platforms": platforms,
             "genres": genres,
             "metacritic": metacritic_score,
-            "description_raw": game.get(
-                "description_raw", f"https://rawg.io/games/{game.get('slug')}"
-            ),  # Fallback to link if no description
+            "description_raw": game.get("description_raw", f"https://rawg.io/games/{game.get('slug')}"),  # Fallback to link if no description
             "rawg_link": f"https://rawg.io/games/{game.get('slug')}",
         }
         processed_games.append(processed_game)
 
-    logger.info(
-        f"Processed {len(processed_games)} games out of {len(games_raw_data)} raw entries."
-    )
+    logger.info(f"Processed {len(processed_games)} games out of {len(games_raw_data)} raw entries.")
     return processed_games
 
 
 def get_new_releases():
-    """
-    Main function to fetch, process, and save new game releases.
-    """
+    """Main function to fetch, process, and save new game releases."""
     logger.info("Starting get_new_releases function.")
     all_processed_games = []
 
-    start_date = (datetime.date.today() - datetime.timedelta(days=DAYS_PAST)).strftime(
-        "%Y-%m-%d"
-    )
-    end_date = (datetime.date.today() + datetime.timedelta(days=DAYS_FUTURE)).strftime(
-        "%Y-%m-%d"
-    )
+    start_date = (datetime.date.today() - datetime.timedelta(days=DAYS_PAST)).strftime("%Y-%m-%d")
+    end_date = (datetime.date.today() + datetime.timedelta(days=DAYS_FUTURE)).strftime("%Y-%m-%d")
 
     params = {
         "key": API_KEY,
@@ -161,13 +137,9 @@ def get_new_releases():
                 f.write("[]")
 
             with open(csv_output_file, "w") as f:
-                f.write(
-                    "id|name|released|platforms|genres|metacritic|description_raw|rawg_link\n"
-                )  # Header only
+                f.write("id|name|released|platforms|genres|metacritic|description_raw|rawg_link\n")  # Header only
 
-            logger.info(
-                f"Empty new releases files created at {json_output_file} and {csv_output_file}"
-            )
+            logger.info(f"Empty new releases files created at {json_output_file} and {csv_output_file}")
         except Exception as e:
             logger.error(f"Error creating empty new releases files: {e}")
         return
@@ -188,9 +160,7 @@ def get_new_releases():
 
             processed_data = process_games_data(games_data)
             all_processed_games.extend(processed_data)
-            logger.info(
-                f"Fetched and processed {len(processed_data)} games from page {current_page}. Total processed: {len(all_processed_games)}"
-            )
+            logger.info(f"Fetched and processed {len(processed_data)} games from page {current_page}. Total processed: {len(all_processed_games)}")
 
             # Check for next page
             if raw_response.get("next"):
@@ -199,9 +169,7 @@ def get_new_releases():
                 logger.info("No 'next' page found. Ending pagination.")
                 break
         else:
-            logger.warning(
-                f"No data received or error in fetching page {current_page}. Ending process."
-            )
+            logger.warning(f"No data received or error in fetching page {current_page}. Ending process.")
             break
 
         if current_page > max_pages:
@@ -223,13 +191,9 @@ def get_new_releases():
                 f.write("[]")
 
             with open(csv_output_file, "w") as f:
-                f.write(
-                    "id|name|released|platforms|genres|metacritic|description_raw|rawg_link\n"
-                )  # Header only
+                f.write("id|name|released|platforms|genres|metacritic|description_raw|rawg_link\n")  # Header only
 
-            logger.info(
-                f"Empty new releases files created at {json_output_file} and {csv_output_file}"
-            )
+            logger.info(f"Empty new releases files created at {json_output_file} and {csv_output_file}")
         except Exception as e:
             logger.error(f"Error creating empty new releases files: {e}")
         return

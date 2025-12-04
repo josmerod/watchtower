@@ -1,22 +1,20 @@
-"""
-Working unit tests for Pydantic models that actually exist.
+"""Working unit tests for Pydantic models that actually exist.
 Tests validation, serialization, and model behavior.
 """
 
 import unittest
-from datetime import datetime
-from typing import Dict, List, Optional, Any
 import uuid
+from datetime import datetime
 
 from pydantic import ValidationError
 
 from src.models.base import (
     BaseModel,
-    TimestampedModel,
-    StatusModel,
     ErrorModel,
-    PaginationModel,
     PaginatedResponse,
+    PaginationModel,
+    StatusModel,
+    TimestampedModel,
 )
 
 
@@ -40,7 +38,7 @@ class TestBaseModels(unittest.TestCase):
 
         class TestModel(BaseModel):
             name: str
-            optional: Optional[str] = None
+            optional: str | None = None
 
         model = TestModel(name="test")
         result = model.dict_without_none()
@@ -184,7 +182,7 @@ class TestModelSerialization(unittest.TestCase):
 
         class TestModel(TimestampedModel):
             name: str
-            tags: List[str] = []
+            tags: list[str] = []
 
         model = TestModel(name="test", tags=["tag1", "tag2"])
 

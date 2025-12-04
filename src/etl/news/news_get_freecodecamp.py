@@ -10,13 +10,12 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("FreeCodeCampETL")
 
@@ -39,9 +38,9 @@ def _parse_date(date_str: str | None) -> str | None:
         return date_str
 
 
-def fetch_freecodecamp() -> List[Dict[str, Any]]:
+def fetch_freecodecamp() -> list[dict[str, Any]]:
     logger.info(f"Fetching FreeCodeCamp RSS: {FEED_URL}")
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(FEED_URL)
     except Exception as e:
@@ -85,7 +84,7 @@ def fetch_freecodecamp() -> List[Dict[str, Any]]:
     return entries
 
 
-def save_freecodecamp(entries: List[Dict[str, Any]]) -> None:
+def save_freecodecamp(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No FreeCodeCamp entries to save")
         return
@@ -134,5 +133,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

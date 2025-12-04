@@ -691,7 +691,7 @@
       "icon": "📈",
       "description": "Application performance monitoring"
     },
-    
+
     {
       "name": "Grafana (eval)",
       "url": "https://grafana.com/",
@@ -705,7 +705,7 @@
       "description": "Website uptime monitoring"
     }
   ],
- 
+
   "Training": [
     {
       "name": "Desata tu potencial (course)",
@@ -936,7 +936,7 @@
     }
   ],
   "Communication & Collaboration": [
-    
+
     {
       "name": "Excalidraw",
       "url": "https://excalidraw.com/",
@@ -950,7 +950,7 @@
       "description": "Online diagramming tool"
     }
   ],
-  
+
   "Learning Resources (extra)": [
     {
       "name": "Boot.dev",

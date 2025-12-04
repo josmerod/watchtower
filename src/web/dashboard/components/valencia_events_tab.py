@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -18,7 +18,7 @@ VALENCIA_EVENTS_FILE = Path("data/valencia_events/valencia_events.json")
 TECH_EVENTS_FILE = Path("data/tech_events/tech_events_valencia.json")
 
 
-def load_valencia_events() -> List[Dict[str, Any]]:
+def load_valencia_events() -> list[dict[str, Any]]:
     """Load Valencia events data from JSON files"""
     try:
         all_events = []
@@ -29,7 +29,7 @@ def load_valencia_events() -> List[Dict[str, Any]]:
             file_mtime = VALENCIA_EVENTS_FILE.stat().st_mtime
             file_time = datetime.fromtimestamp(file_mtime).strftime("%Y-%m-%d %H:%M:%S")
 
-            with open(VALENCIA_EVENTS_FILE, "r", encoding="utf-8") as f:
+            with open(VALENCIA_EVENTS_FILE, encoding="utf-8") as f:
                 general_events = json.load(f)
                 if isinstance(general_events, list):
                     all_events.extend(general_events)
@@ -42,7 +42,7 @@ def load_valencia_events() -> List[Dict[str, Any]]:
 
         # Load tech-specific events
         if TECH_EVENTS_FILE.exists():
-            with open(TECH_EVENTS_FILE, "r", encoding="utf-8") as f:
+            with open(TECH_EVENTS_FILE, encoding="utf-8") as f:
                 tech_events = json.load(f)
                 if isinstance(tech_events, list):
                     all_events.extend(tech_events)
@@ -56,7 +56,7 @@ def load_valencia_events() -> List[Dict[str, Any]]:
         return []
 
 
-def create_event_card(event: Dict[str, Any]) -> dbc.Card:
+def create_event_card(event: dict[str, Any]) -> dbc.Card:
     """Create a card component for a single event"""
     try:
         title = event.get("title", "Sin título")
@@ -81,17 +81,7 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
             venue_city = "Valencia"
 
         # Format dates
-        date_display = (
-            date_text
-            if date_text
-            else (
-                f"{start_date} - {end_date}"
-                if start_date and end_date
-                else start_date
-                if start_date
-                else "Fecha por confirmar"
-            )
-        )
+        date_display = date_text if date_text else (f"{start_date} - {end_date}" if start_date and end_date else start_date if start_date else "Fecha por confirmar")
 
         # Determine event type badge color
         badge_color = "primary"
@@ -118,9 +108,7 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
                         html.H5(title, className="mb-1"),
                         html.Div(
                             [
-                                dbc.Badge(
-                                    category, color=badge_color, className="me-2"
-                                ),
+                                dbc.Badge(category, color=badge_color, className="me-2"),
                                 cost_badge,
                             ]
                         ),
@@ -131,19 +119,13 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
 
         card_body_content = [
             html.P(description, className="card-text mb-3"),
-            html.Div(
-                [html.Strong("📅 Fecha: "), html.Span(date_display)], className="mb-2"
-            ),
+            html.Div([html.Strong("📅 Fecha: "), html.Span(date_display)], className="mb-2"),
             html.Div(
                 [
                     html.Strong("📍 Lugar: "),
                     html.Span(venue_name),
                     html.Br() if venue_address else "",
-                    (
-                        html.Small(venue_address, className="text-muted")
-                        if venue_address
-                        else ""
-                    ),
+                    (html.Small(venue_address, className="text-muted") if venue_address else ""),
                 ],
                 className="mb-2",
             ),
@@ -163,9 +145,7 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
             ),
         ]
 
-        return dbc.Card(
-            [card_header, dbc.CardBody(card_body_content)], className="mb-3 h-100"
-        )
+        return dbc.Card([card_header, dbc.CardBody(card_body_content)], className="mb-3 h-100")
 
     except Exception as e:
         logger.error(f"Error creating event card: {e}")
@@ -173,14 +153,14 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
             dbc.CardBody(
                 [
                     html.H4("Error Loading Event", className="card-title"),
-                    html.P(f"Error: {str(e)}", className="card-text"),
+                    html.P(f"Error: {e!s}", className="card-text"),
                 ]
             ),
             className="mb-3",
         )
 
 
-def create_events_table(events: List[Dict[str, Any]]) -> dash_table.DataTable:
+def create_events_table(events: list[dict[str, Any]]) -> dash_table.DataTable:
     """Create a table view of events"""
     try:
         if not events:
@@ -193,15 +173,7 @@ def create_events_table(events: List[Dict[str, Any]]) -> dash_table.DataTable:
         display_columns = ["title", "category", "date_text", "source"]
         if "venue" in df.columns:
             # Extract venue name for table display
-            df["venue_name"] = df["venue"].apply(
-                lambda x: (
-                    x.get("name", "N/A")
-                    if isinstance(x, dict)
-                    else str(x)
-                    if x
-                    else "N/A"
-                )
-            )
+            df["venue_name"] = df["venue"].apply(lambda x: (x.get("name", "N/A") if isinstance(x, dict) else str(x) if x else "N/A"))
             display_columns.append("venue_name")
 
         # Filter existing columns
@@ -241,27 +213,19 @@ def create_events_table(events: List[Dict[str, Any]]) -> dash_table.DataTable:
                 "whiteSpace": "normal",
                 "height": "auto",
             },
-            style_data_conditional=[
-                {"if": {"row_index": "odd"}, "backgroundColor": "rgb(255, 255, 255)"}
-            ],
+            style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "rgb(255, 255, 255)"}],
             sort_action="native",
             filter_action="native",
             page_action="native",
             page_current=0,
             page_size=15,
-            tooltip_data=[
-                {
-                    column: {"value": str(value), "type": "text"}
-                    for column, value in row.items()
-                }
-                for row in df_display.to_dict("records")
-            ],
+            tooltip_data=[{column: {"value": str(value), "type": "text"} for column, value in row.items()} for row in df_display.to_dict("records")],
             tooltip_duration=None,
         )
 
     except Exception as e:
         logger.error(f"Error creating events table: {e}")
-        return html.Div(f"Error creando tabla: {str(e)}")
+        return html.Div(f"Error creando tabla: {e!s}")
 
 
 def render_valencia_events_tab() -> html.Div:
@@ -278,9 +242,7 @@ def render_valencia_events_tab() -> html.Div:
                                 "No hay eventos de Valencia disponibles",
                                 className="alert-heading",
                             ),
-                            html.P(
-                                "No se encontraron datos de eventos. Ejecuta el ETL de Valencia para poblar los datos."
-                            ),
+                            html.P("No se encontraron datos de eventos. Ejecuta el ETL de Valencia para poblar los datos."),
                             html.Hr(),
                             html.P(
                                 f"Ubicación esperada: {VALENCIA_EVENTS_FILE} o {TECH_EVENTS_FILE}",
@@ -301,15 +263,8 @@ def render_valencia_events_tab() -> html.Div:
 
         # Statistics
         total_events = len(events_data)
-        categories = set(event.get("category", "General") for event in events_data)
-        tech_events = len(
-            [
-                e
-                for e in events_data
-                if "tech" in e.get("category", "").lower()
-                or "tecnología" in e.get("category", "").lower()
-            ]
-        )
+        categories = {event.get("category", "General") for event in events_data}
+        tech_events = len([e for e in events_data if "tech" in e.get("category", "").lower() or "tecnología" in e.get("category", "").lower()])
         free_events = len([e for e in events_data if e.get("cost", 0) == 0])
 
         stats_cards = dbc.Row(
@@ -320,9 +275,7 @@ def render_valencia_events_tab() -> html.Div:
                             [
                                 dbc.CardBody(
                                     [
-                                        html.H4(
-                                            str(total_events), className="card-title"
-                                        ),
+                                        html.H4(str(total_events), className="card-title"),
                                         html.P("Total Eventos", className="card-text"),
                                     ]
                                 )
@@ -337,9 +290,7 @@ def render_valencia_events_tab() -> html.Div:
                             [
                                 dbc.CardBody(
                                     [
-                                        html.H4(
-                                            str(len(categories)), className="card-title"
-                                        ),
+                                        html.H4(str(len(categories)), className="card-title"),
                                         html.P("Categorías", className="card-text"),
                                     ]
                                 )
@@ -354,9 +305,7 @@ def render_valencia_events_tab() -> html.Div:
                             [
                                 dbc.CardBody(
                                     [
-                                        html.H4(
-                                            str(tech_events), className="card-title"
-                                        ),
+                                        html.H4(str(tech_events), className="card-title"),
                                         html.P("Eventos Tech", className="card-text"),
                                     ]
                                 )
@@ -371,12 +320,8 @@ def render_valencia_events_tab() -> html.Div:
                             [
                                 dbc.CardBody(
                                     [
-                                        html.H4(
-                                            str(free_events), className="card-title"
-                                        ),
-                                        html.P(
-                                            "Eventos Gratuitos", className="card-text"
-                                        ),
+                                        html.H4(str(free_events), className="card-title"),
+                                        html.P("Eventos Gratuitos", className="card-text"),
                                     ]
                                 )
                             ]
@@ -397,9 +342,7 @@ def render_valencia_events_tab() -> html.Div:
                     color="primary",
                     outline=True,
                 ),
-                dbc.Button(
-                    "Vista de Tabla", id="table-view-btn", color="primary", outline=True
-                ),
+                dbc.Button("Vista de Tabla", id="table-view-btn", color="primary", outline=True),
             ],
             className="mb-4",
         )
@@ -413,11 +356,7 @@ def render_valencia_events_tab() -> html.Div:
         card_columns = []
         for i in range(0, len(event_cards), 3):  # 3 cards per row
             row_cards = event_cards[i : i + 3]
-            card_columns.append(
-                dbc.Row(
-                    [dbc.Col(card, width=4) for card in row_cards], className="mb-4"
-                )
-            )
+            card_columns.append(dbc.Row([dbc.Col(card, width=4) for card in row_cards], className="mb-4"))
 
         # Create table view
         events_table = create_events_table(events_data)
@@ -472,11 +411,7 @@ def render_valencia_events_tab() -> html.Div:
     except Exception as e:
         logger.error(f"Error rendering Valencia events tab: {e}")
         return html.Div(
-            [
-                dbc.Alert(
-                    f"Error cargando eventos de Valencia: {str(e)}", color="danger"
-                )
-            ],
+            [dbc.Alert(f"Error cargando eventos de Valencia: {e!s}", color="danger")],
             className="p-4",
         )
 

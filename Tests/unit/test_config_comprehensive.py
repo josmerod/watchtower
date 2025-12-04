@@ -1,32 +1,23 @@
-"""
-Comprehensive unit tests for the configuration system.
+"""Comprehensive unit tests for the configuration system.
 Tests both settings.py and models.py functionality.
 """
 
-import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
-from typing import Dict, Any
+from unittest.mock import patch
 
-import pytest
 from pydantic import ValidationError
 
-from src.config.settings import Settings, get_settings
 from src.config.models import (
     DatabaseConfig,
     ETLConfig,
-    LoggingConfig,
-    StreamlitConfig,
-    SecurityConfig,
-    APIConfig,
-    WatcherConfig,
-    ScrapingConfig,
-    MonitoringConfig,
-    NotificationConfig,
     GoogleDriveConfig,
+    LoggingConfig,
+    SecurityConfig,
+    StreamlitConfig,
 )
+from src.config.settings import Settings, get_settings
 
 
 class TestConfigurationModels(unittest.TestCase):
@@ -261,9 +252,7 @@ name = "test-project"
         # Should be the same instance due to lru_cache
         self.assertIs(settings1, settings2)
 
-    @patch.dict(
-        "os.environ", {"WATCHTOWER_API_KEYS__OPENAI_API_KEY": "test-key"}, clear=True
-    )
+    @patch.dict("os.environ", {"WATCHTOWER_API_KEYS__OPENAI_API_KEY": "test-key"}, clear=True)
     def test_settings_api_keys_from_env(self):
         """Test API keys loading from environment."""
         with patch("src.config.settings.Path.cwd", return_value=self.test_project_root):

@@ -7,7 +7,7 @@ for users based on their interests, viewed items, and ratings.
 
 import json
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -18,19 +18,15 @@ from src.utils.logging import get_logger
 
 
 class PersonalRecommender:
-    """
-    Recommender system that provides personalized recommendations based on user interests
+    """Recommender system that provides personalized recommendations based on user interests
     and interaction history.
 
     This class implements content-based filtering to recommend items (papers) that
     match user interests and previous interactions.
     """
 
-    def __init__(
-        self, name: str = "arxiv_recommender", user_profile_dir: Optional[str] = None
-    ):
-        """
-        Initialize the recommender system.
+    def __init__(self, name: str = "arxiv_recommender", user_profile_dir: str | None = None):
+        """Initialize the recommender system.
 
         Args:
             name (str): Name for this recommender instance
@@ -61,8 +57,7 @@ class PersonalRecommender:
         self.logger.info(f"Recommender {name} initialized")
 
     def _get_user_profile_path(self, user_id: str) -> str:
-        """
-        Get the path to a user's profile file.
+        """Get the path to a user's profile file.
 
         Args:
             user_id (str): User identifier
@@ -72,9 +67,8 @@ class PersonalRecommender:
         """
         return os.path.join(self.user_profile_dir, f"{user_id}.json")
 
-    def load_user_profile(self, user_id: str) -> Dict[str, Any]:
-        """
-        Load a user profile from disk.
+    def load_user_profile(self, user_id: str) -> dict[str, Any]:
+        """Load a user profile from disk.
 
         Args:
             user_id (str): User identifier
@@ -85,9 +79,7 @@ class PersonalRecommender:
         profile_path = self._get_user_profile_path(user_id)
 
         if not os.path.exists(profile_path):
-            self.logger.info(
-                f"User profile for {user_id} not found, creating new profile"
-            )
+            self.logger.info(f"User profile for {user_id} not found, creating new profile")
             return {
                 "user_id": user_id,
                 "interests": [],
@@ -99,12 +91,12 @@ class PersonalRecommender:
             }
 
         try:
-            with open(profile_path, "r", encoding="utf-8") as f:
+            with open(profile_path, encoding="utf-8") as f:
                 profile = json.load(f)
                 self.logger.info(f"Loaded profile for user {user_id}")
                 return profile
         except Exception as e:
-            self.logger.error(f"Error loading user profile for {user_id}: {str(e)}")
+            self.logger.error(f"Error loading user profile for {user_id}: {e!s}")
             return {
                 "user_id": user_id,
                 "interests": [],
@@ -115,9 +107,8 @@ class PersonalRecommender:
                 "updated_at": "",
             }
 
-    def save_user_profile(self, user_id: str, profile: Dict[str, Any]) -> bool:
-        """
-        Save a user profile to disk.
+    def save_user_profile(self, user_id: str, profile: dict[str, Any]) -> bool:
+        """Save a user profile to disk.
 
         Args:
             user_id (str): User identifier
@@ -145,12 +136,11 @@ class PersonalRecommender:
             self.logger.info(f"Saved profile for user {user_id}")
             return True
         except Exception as e:
-            self.logger.error(f"Error saving user profile for {user_id}: {str(e)}")
+            self.logger.error(f"Error saving user profile for {user_id}: {e!s}")
             return False
 
-    def update_user_interests(self, user_id: str, interests: List[str]) -> bool:
-        """
-        Update a user's interests.
+    def update_user_interests(self, user_id: str, interests: list[str]) -> bool:
+        """Update a user's interests.
 
         Args:
             user_id (str): User identifier
@@ -170,8 +160,7 @@ class PersonalRecommender:
         return self.save_user_profile(user_id, profile)
 
     def record_item_view(self, user_id: str, item_id: str) -> bool:
-        """
-        Record that a user has viewed an item.
+        """Record that a user has viewed an item.
 
         Args:
             user_id (str): User identifier
@@ -193,8 +182,7 @@ class PersonalRecommender:
         return True
 
     def record_item_rating(self, user_id: str, item_id: str, rating: float) -> bool:
-        """
-        Record a user's rating for an item.
+        """Record a user's rating for an item.
 
         Args:
             user_id (str): User identifier
@@ -217,9 +205,8 @@ class PersonalRecommender:
 
         return self.save_user_profile(user_id, profile)
 
-    def update_preferred_categories(self, user_id: str, categories: List[str]) -> bool:
-        """
-        Update a user's preferred categories.
+    def update_preferred_categories(self, user_id: str, categories: list[str]) -> bool:
+        """Update a user's preferred categories.
 
         Args:
             user_id (str): User identifier
@@ -238,9 +225,8 @@ class PersonalRecommender:
 
         return self.save_user_profile(user_id, profile)
 
-    def load_items(self, items: List[Dict[str, Any]]) -> bool:
-        """
-        Load item data into the recommender.
+    def load_items(self, items: list[dict[str, Any]]) -> bool:
+        """Load item data into the recommender.
 
         Args:
             items (List[Dict[str, Any]]): List of items (papers)
@@ -293,7 +279,7 @@ class PersonalRecommender:
                 return False
 
         except Exception as e:
-            self.logger.error(f"Error loading items: {str(e)}")
+            self.logger.error(f"Error loading items: {e!s}")
             # Reset to a clean state
             self.item_ids = []
             self.item_features = {}
@@ -301,19 +287,15 @@ class PersonalRecommender:
             return False
 
     def has_items(self) -> bool:
-        """
-        Check if the recommender has items loaded.
+        """Check if the recommender has items loaded.
 
         Returns:
             bool: True if items are loaded, False otherwise
         """
         return self.item_vectors is not None and len(self.item_ids) > 0
 
-    def _calculate_user_vector(
-        self, profile: Dict[str, Any]
-    ) -> Tuple[np.ndarray, float]:
-        """
-        Calculate a user's interest vector based on their profile.
+    def _calculate_user_vector(self, profile: dict[str, Any]) -> tuple[np.ndarray, float]:
+        """Calculate a user's interest vector based on their profile.
 
         Args:
             profile (Dict[str, Any]): User profile
@@ -349,7 +331,7 @@ class PersonalRecommender:
                 user_vector += interest_weight * interest_vector.toarray()[0]
                 components += 1
             except Exception as e:
-                self.logger.error(f"Error processing interests: {str(e)}")
+                self.logger.error(f"Error processing interests: {e!s}")
 
         # Add vectors from viewed items
         if viewed_items:
@@ -360,9 +342,7 @@ class PersonalRecommender:
                     viewed_vectors.append(self.item_vectors[idx])
 
             if viewed_vectors:
-                viewed_centroid = np.mean(
-                    np.vstack([v.toarray() for v in viewed_vectors]), axis=0
-                )
+                viewed_centroid = np.mean(np.vstack([v.toarray() for v in viewed_vectors]), axis=0)
                 user_vector += viewed_weight * viewed_centroid
                 components += 1
 
@@ -381,9 +361,7 @@ class PersonalRecommender:
 
             if rated_vectors:
                 # Weighted average of rated item vectors
-                rated_centroid = np.average(
-                    np.vstack(rated_vectors), axis=0, weights=weights
-                )
+                rated_centroid = np.average(np.vstack(rated_vectors), axis=0, weights=weights)
                 user_vector += rating_weight * rated_centroid
                 components += 1
 
@@ -395,7 +373,7 @@ class PersonalRecommender:
                 user_vector += category_weight * category_vector.toarray()[0]
                 components += 1
             except Exception as e:
-                self.logger.error(f"Error processing categories: {str(e)}")
+                self.logger.error(f"Error processing categories: {e!s}")
 
         # Calculate confidence based on profile completeness
         confidence = min(1.0, components / 4.0)
@@ -413,9 +391,8 @@ class PersonalRecommender:
         n_recommendations: int = 10,
         exclude_viewed: bool = True,
         min_similarity: float = 0.0,
-    ) -> List[Dict[str, Any]]:
-        """
-        Generate recommendations for a user.
+    ) -> list[dict[str, Any]]:
+        """Generate recommendations for a user.
 
         Args:
             user_id (str): User identifier
@@ -437,16 +414,12 @@ class PersonalRecommender:
         user_vector, confidence = self._calculate_user_vector(profile)
 
         if user_vector is None:
-            self.logger.warning(
-                f"Could not calculate interest vector for user {user_id}"
-            )
+            self.logger.warning(f"Could not calculate interest vector for user {user_id}")
             return []
 
         # If confidence is too low, use a fallback strategy
         if confidence < 0.2:
-            self.logger.info(
-                f"Low confidence ({confidence}) for user {user_id}, using fallback recommendations"
-            )
+            self.logger.info(f"Low confidence ({confidence}) for user {user_id}, using fallback recommendations")
             return self._fallback_recommendations(n_recommendations)
 
         # Calculate similarities to all items
@@ -473,18 +446,13 @@ class PersonalRecommender:
             )
 
         # Sort by similarity (descending)
-        sorted_similarities = sorted(
-            similarities, key=lambda x: x["similarity"], reverse=True
-        )
+        sorted_similarities = sorted(similarities, key=lambda x: x["similarity"], reverse=True)
 
         # Return top N
         return sorted_similarities[:n_recommendations]
 
-    def _fallback_recommendations(
-        self, n_recommendations: int = 10
-    ) -> List[Dict[str, Any]]:
-        """
-        Generate fallback recommendations when user profile is insufficient.
+    def _fallback_recommendations(self, n_recommendations: int = 10) -> list[dict[str, Any]]:
+        """Generate fallback recommendations when user profile is insufficient.
 
         Args:
             n_recommendations (int): Number of recommendations to generate

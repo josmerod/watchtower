@@ -192,9 +192,7 @@ class DataSourceError(ETLError):
 
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_DATA_SOURCE_ERROR")
-        kwargs["user_message"] = (
-            "Data source is currently unavailable. Please try again later."
-        )
+        kwargs["user_message"] = "Data source is currently unavailable. Please try again later."
 
         super().__init__(message, **kwargs)
 
@@ -251,9 +249,7 @@ class ETLTimeoutError(ETLError):
 
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_ETL_TIMEOUT")
-        kwargs["user_message"] = (
-            "Operation timed out. Please try again with a longer timeout."
-        )
+        kwargs["user_message"] = "Operation timed out. Please try again with a longer timeout."
 
         super().__init__(message, **kwargs)
 

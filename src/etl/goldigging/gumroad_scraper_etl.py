@@ -1,5 +1,4 @@
-"""
-Gumroad Free Products Scraper ETL
+"""Gumroad Free Products Scraper ETL
 
 This ETL scrapes free products from Gumroad's discover page using Playwright.
 It handles pagination using the 'from' parameter and supports both regular runs (500 items) and first run (10000 items).
@@ -9,16 +8,9 @@ import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
 
-from playwright.async_api import (
-    Browser,
-    Page,
-    async_playwright,
-)
-from playwright.async_api import (
-    TimeoutError as PlaywrightTimeoutError,
-)
+from playwright.async_api import Browser, Page, async_playwright
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from src.etl.base import BaseETL
 from src.models.ecommerce import GumroadProduct, GumroadRawData
@@ -28,14 +20,12 @@ logger = get_logger("GumroadETL")
 
 
 class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
-    """
-    ETL class for scraping free products from Gumroad using Playwright.
+    """ETL class for scraping free products from Gumroad using Playwright.
     Uses 'from' parameter for pagination instead of page numbers.
     """
 
     def __init__(self, first_run: bool = False, max_items: int = None):
-        """
-        Initialize the Gumroad scraper.
+        """Initialize the Gumroad scraper.
 
         Args:
             first_run: If True, scrapes up to 10000 items. If False, scrapes up to 500 items.
@@ -62,10 +52,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
         # Pagination settings
         self.items_per_page = 48  # Typical items per page on Gumroad
 
-        self.logger.info(
-            f"Initialized Gumroad scraper for {'first run' if first_run else 'regular run'} "
-            f"with {self.max_items} items max"
-        )
+        self.logger.info(f"Initialized Gumroad scraper for {'first run' if first_run else 'regular run'} " f"with {self.max_items} items max")
 
     def _build_url(self, from_offset: int = 0) -> str:
         """Build the URL for a specific starting position."""
@@ -103,9 +90,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
 
         return browser, page
 
-    async def _extract_product_data(
-        self, page: Page, from_offset: int
-    ) -> List[GumroadRawData]:
+    async def _extract_product_data(self, page: Page, from_offset: int) -> list[GumroadRawData]:
         """Extract product data from a JSON API response."""
         products = []
 
@@ -132,16 +117,12 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
 
                 if "products" in data and isinstance(data["products"], list):
                     products_list = data["products"]
-                    self.logger.info(
-                        f"Found {len(products_list)} products at offset {from_offset} from JSON response"
-                    )
+                    self.logger.info(f"Found {len(products_list)} products at offset {from_offset} from JSON response")
 
                     for idx, product in enumerate(products_list, 1):
                         try:
                             # Extract product ID
-                            product_id = product.get(
-                                "permalink", f"unknown_{from_offset}_{idx}"
-                            )
+                            product_id = product.get("permalink", f"unknown_{from_offset}_{idx}")
 
                             # Store the raw JSON product data
                             raw_content = json.dumps(product, indent=2)
@@ -157,19 +138,13 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                             )
 
                         except Exception as e:
-                            self.logger.warning(
-                                f"Error extracting product {idx} at offset {from_offset}: {e}"
-                            )
+                            self.logger.warning(f"Error extracting product {idx} at offset {from_offset}: {e}")
                             continue
                 else:
-                    self.logger.warning(
-                        f"No products found in JSON response at offset {from_offset}"
-                    )
+                    self.logger.warning(f"No products found in JSON response at offset {from_offset}")
 
             except json.JSONDecodeError as e:
-                self.logger.error(
-                    f"Failed to parse JSON response at offset {from_offset}: {e}"
-                )
+                self.logger.error(f"Failed to parse JSON response at offset {from_offset}: {e}")
                 return products
 
         except Exception as e:
@@ -177,9 +152,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
 
         return products
 
-    async def _has_more_results(
-        self, page: Page, products_count: int, current_offset: int = 0
-    ) -> bool:
+    async def _has_more_results(self, page: Page, products_count: int, current_offset: int = 0) -> bool:
         """Check if there are more results available based on the JSON response."""
         try:
             # Get the page content and parse JSON
@@ -204,15 +177,11 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
 
                 # If we've processed fewer products than the total available, there are more results
                 if processed_so_far < total_products:
-                    self.logger.info(
-                        f"More results available: {processed_so_far}/{total_products} processed"
-                    )
+                    self.logger.info(f"More results available: {processed_so_far}/{total_products} processed")
                     return True
 
                 # If we've processed all available products, no more results
-                self.logger.info(
-                    f"All results processed: {processed_so_far}/{total_products}"
-                )
+                self.logger.info(f"All results processed: {processed_so_far}/{total_products}")
                 return False
 
             except json.JSONDecodeError:
@@ -223,7 +192,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             self.logger.warning(f"Error checking for more results: {e}")
             return False
 
-    def _load_existing_data(self) -> List[GumroadProduct]:
+    def _load_existing_data(self) -> list[GumroadProduct]:
         """Load existing data from JSON file if it exists."""
         json_file = self.output_dir / "gumroad_free_products.json"
 
@@ -231,7 +200,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             return []
 
         try:
-            with open(json_file, "r", encoding="utf-8") as f:
+            with open(json_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             # Convert to GumroadProduct objects
@@ -240,22 +209,16 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                 try:
                     # Handle datetime fields
                     if isinstance(item.get("fetched_at"), str):
-                        item["fetched_at"] = datetime.fromisoformat(
-                            item["fetched_at"].replace("Z", "+00:00")
-                        )
+                        item["fetched_at"] = datetime.fromisoformat(item["fetched_at"].replace("Z", "+00:00"))
                     if isinstance(item.get("parsed_at"), str):
-                        item["parsed_at"] = datetime.fromisoformat(
-                            item["parsed_at"].replace("Z", "+00:00")
-                        )
+                        item["parsed_at"] = datetime.fromisoformat(item["parsed_at"].replace("Z", "+00:00"))
 
                     products.append(GumroadProduct(**item))
                 except Exception as e:
                     self.logger.warning(f"Error parsing existing product: {e}")
                     continue
 
-            self.logger.info(
-                f"Loaded {len(products)} existing products from {json_file}"
-            )
+            self.logger.info(f"Loaded {len(products)} existing products from {json_file}")
             return products
 
         except Exception as e:
@@ -264,9 +227,9 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
 
     def _merge_with_existing(
         self,
-        new_products: List[GumroadProduct],
-        existing_products: List[GumroadProduct],
-    ) -> List[GumroadProduct]:
+        new_products: list[GumroadProduct],
+        existing_products: list[GumroadProduct],
+    ) -> list[GumroadProduct]:
         """Merge new products with existing ones, avoiding duplicates."""
         if not existing_products:
             return new_products
@@ -283,12 +246,10 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
         # Add new products at the beginning (most recent first)
         merged_products = unique_new_products + existing_products
 
-        self.logger.info(
-            f"Merged {len(unique_new_products)} new products with {len(existing_products)} existing products"
-        )
+        self.logger.info(f"Merged {len(unique_new_products)} new products with {len(existing_products)} existing products")
         return merged_products
 
-    async def _extract_async(self) -> List[GumroadRawData]:
+    async def _extract_async(self) -> list[GumroadRawData]:
         """Async extraction method to handle Playwright operations."""
         all_products = []
 
@@ -326,9 +287,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
 
                 while items_loaded < self.max_items:
                     current_offset = from_offset + items_loaded
-                    self.logger.info(
-                        f"Scraping from offset {current_offset} (loaded {items_loaded}/{self.max_items})"
-                    )
+                    self.logger.info(f"Scraping from offset {current_offset} (loaded {items_loaded}/{self.max_items})")
 
                     url = self._build_url(current_offset)
                     self.logger.info(f"Generated URL: {url}")
@@ -353,29 +312,19 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                             self.logger.info(f"Saved debug HTML to {debug_file}")
 
                         # Extract products from this page
-                        page_products = await self._extract_product_data(
-                            page, current_offset
-                        )
+                        page_products = await self._extract_product_data(page, current_offset)
 
                         if not page_products:
-                            self.logger.warning(
-                                f"No products found at offset {current_offset}"
-                            )
+                            self.logger.warning(f"No products found at offset {current_offset}")
                             # Check if we've reached the end
-                            if not await self._has_more_results(
-                                page, 0, current_offset
-                            ):
-                                self.logger.info(
-                                    f"No more results available at offset {current_offset}"
-                                )
+                            if not await self._has_more_results(page, 0, current_offset):
+                                self.logger.info(f"No more results available at offset {current_offset}")
                                 break
                             continue
 
                         all_products.extend(page_products)
                         items_loaded += len(page_products)
-                        self.logger.info(
-                            f"Extracted {len(page_products)} products from offset {current_offset}"
-                        )
+                        self.logger.info(f"Extracted {len(page_products)} products from offset {current_offset}")
 
                         # Update checkpoint
                         if self.enable_checkpointing:
@@ -388,22 +337,14 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                                     timestamp=datetime.utcnow(),
                                     metadata={},
                                 )
-                            self.current_checkpoint.metadata["from_offset"] = (
-                                from_offset
-                            )
-                            self.current_checkpoint.metadata["items_loaded"] = (
-                                items_loaded
-                            )
+                            self.current_checkpoint.metadata["from_offset"] = from_offset
+                            self.current_checkpoint.metadata["items_loaded"] = items_loaded
                             self.current_checkpoint.processed_count = len(all_products)
                             self._save_checkpoint(self.current_checkpoint)
 
                         # Check if we've reached the end naturally
-                        if not await self._has_more_results(
-                            page, len(page_products), current_offset
-                        ):
-                            self.logger.info(
-                                f"Reached end of available results at offset {current_offset}"
-                            )
+                        if not await self._has_more_results(page, len(page_products), current_offset):
+                            self.logger.info(f"Reached end of available results at offset {current_offset}")
                             break
 
                         # Brief pause between pages
@@ -420,12 +361,10 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                 if browser:
                     await browser.close()
 
-        self.logger.info(
-            f"Extracted {len(all_products)} total products from {self.max_items} items max"
-        )
+        self.logger.info(f"Extracted {len(all_products)} total products from {self.max_items} items max")
         return all_products
 
-    def extract(self) -> List[GumroadRawData]:
+    def extract(self) -> list[GumroadRawData]:
         """Extract raw product data from Gumroad using Playwright."""
         # Run the async extraction in an event loop
         try:
@@ -451,7 +390,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             # No event loop running, create a new one
             return asyncio.run(self._extract_async())
 
-    def transform(self, data: List[GumroadRawData]) -> List[GumroadProduct]:
+    def transform(self, data: list[GumroadRawData]) -> list[GumroadProduct]:
         """Transform raw product data into structured GumroadProduct objects."""
         transformed_products = []
 
@@ -462,17 +401,13 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                     transformed_products.append(product)
 
             except Exception as e:
-                self.logger.error(
-                    f"Error transforming product {raw_product.product_id}: {e}"
-                )
+                self.logger.error(f"Error transforming product {raw_product.product_id}: {e}")
                 continue
 
         self.logger.info(f"Transformed {len(transformed_products)} products")
         return transformed_products
 
-    def _parse_product_html(
-        self, raw_product: GumroadRawData
-    ) -> Optional[GumroadProduct]:
+    def _parse_product_html(self, raw_product: GumroadRawData) -> GumroadProduct | None:
         """Parse JSON content to extract product details."""
         try:
             # Parse the JSON data
@@ -481,9 +416,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             # Extract product name
             name = product_data.get("name")
             if not name:
-                self.logger.warning(
-                    f"Could not extract name for product {raw_product.product_id}"
-                )
+                self.logger.warning(f"Could not extract name for product {raw_product.product_id}")
                 return None
 
             # Extract price information
@@ -508,9 +441,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             thumbnail_url = product_data.get("thumbnail_url")
 
             # Build product URL
-            product_url = product_data.get(
-                "url", f"https://gumroad.com/l/{raw_product.product_id}"
-            )
+            product_url = product_data.get("url", f"https://gumroad.com/l/{raw_product.product_id}")
 
             # Extract ratings
             ratings = product_data.get("ratings", {})
@@ -551,17 +482,13 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             )
 
         except json.JSONDecodeError as e:
-            self.logger.error(
-                f"Error parsing JSON for product {raw_product.product_id}: {e}"
-            )
+            self.logger.error(f"Error parsing JSON for product {raw_product.product_id}: {e}")
             return None
         except Exception as e:
-            self.logger.error(
-                f"Error parsing product data for {raw_product.product_id}: {e}"
-            )
+            self.logger.error(f"Error parsing product data for {raw_product.product_id}: {e}")
             return None
 
-    def load(self, data: List[GumroadProduct]) -> None:
+    def load(self, data: list[GumroadProduct]) -> None:
         """Load the transformed products into JSON and CSV files, merging with existing data."""
         if not data:
             self.logger.warning("No products to load")
@@ -614,20 +541,13 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             )
 
         # Save in scavenging format
-        scavenging_file = Path(
-            self.data_dir.parent.parent
-            / "data"
-            / "scavenging"
-            / "gumroad_free_products.json"
-        )
+        scavenging_file = Path(self.data_dir.parent.parent / "data" / "scavenging" / "gumroad_free_products.json")
         scavenging_file.parent.mkdir(parents=True, exist_ok=True)
 
         try:
             with open(scavenging_file, "w", encoding="utf-8") as f:
                 json.dump(scavenging_data, f, indent=2, ensure_ascii=False, default=str)
-            self.logger.info(
-                f"Saved {len(scavenging_data)} products in scavenging format to {scavenging_file}"
-            )
+            self.logger.info(f"Saved {len(scavenging_data)} products in scavenging format to {scavenging_file}")
         except Exception as e:
             self.logger.error(f"Error saving scavenging format file: {e}")
 
@@ -637,12 +557,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Gumroad Free Products Scraper")
-    parser.add_argument(
-        "--first-run", action="store_true", help="Run first-time scraping (10000 items)"
-    )
-    parser.add_argument(
-        "--max-items", type=int, help="Override maximum items to scrape"
-    )
+    parser.add_argument("--first-run", action="store_true", help="Run first-time scraping (10000 items)")
+    parser.add_argument("--max-items", type=int, help="Override maximum items to scrape")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     args = parser.parse_args()

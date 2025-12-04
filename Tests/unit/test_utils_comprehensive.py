@@ -1,70 +1,58 @@
-"""
-Comprehensive unit tests for all utility functions.
+"""Comprehensive unit tests for all utility functions.
 Tests file system operations, logging, deduplication, NLP, and more.
 """
 
 import json
 import logging
-import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
-from typing import List, Dict, Any
+from unittest.mock import MagicMock, patch
 
-import pandas as pd
-import pytest
-
-from src.utils.file_system import (
-    FileSystemManager,
-    ensure_directory,
-    read_json_file,
-    write_json_file,
-    backup_file,
-    get_file_size,
-    clean_filename,
-    batch_process_files,
-)
-from src.utils.logging import (
-    setup_logging,
-    get_logger,
-    LogFormatter,
-    StructuredLogger,
-    log_execution_time,
-    log_memory_usage,
-)
 from src.utils.course_deduplication import (
     CourseDuplicateDetector,
     calculate_similarity,
-    normalize_course_title,
     extract_course_features,
+    normalize_course_title,
+)
+from src.utils.file_system import (
+    FileSystemManager,
+    backup_file,
+    batch_process_files,
+    clean_filename,
+    ensure_directory,
+    get_file_size,
+    read_json_file,
+    write_json_file,
+)
+from src.utils.github_utils import GitHubAPIClient, get_repo_stats, parse_github_url
+from src.utils.logging import (
+    LogFormatter,
+    StructuredLogger,
+    get_logger,
+    log_execution_time,
+    log_memory_usage,
+    setup_logging,
 )
 from src.utils.nlp_classifier import (
     TextClassifier,
-    preprocess_text,
-    extract_keywords,
     classify_technology_category,
+    extract_keywords,
+    preprocess_text,
     sentiment_analysis,
-)
-from src.utils.github_utils import (
-    GitHubAPIClient,
-    parse_github_url,
-    get_repo_stats,
-    fetch_repository_info,
-    get_trending_repositories,
 )
 from src.utils.pwc_utils import (
     PWCDataExtractor,
-    parse_paper_data,
     extract_benchmarks,
     format_benchmark_results,
+    parse_paper_data,
     validate_paper_format,
 )
 from src.utils.recommender import (
     ContentRecommender,
     calculate_content_similarity,
-    generate_recommendations,
     filter_by_user_preferences,
+    generate_recommendations,
     update_recommendation_model,
 )
 
@@ -259,9 +247,7 @@ class TestLoggingUtilities(unittest.TestCase):
         """Test setup_logging creates properly configured logger."""
         log_file = self.test_dir / "test.log"
 
-        logger = setup_logging(
-            log_file=str(log_file), log_level="INFO", log_to_console=False
-        )
+        logger = setup_logging(log_file=str(log_file), log_level="INFO", log_to_console=False)
 
         self.assertIsInstance(logger, logging.Logger)
         self.assertEqual(logger.level, logging.INFO)
@@ -373,9 +359,7 @@ class TestCourseDuplication(unittest.TestCase):
 
     def test_calculate_similarity_similar_strings(self):
         """Test calculate_similarity with similar strings."""
-        similarity = calculate_similarity(
-            "Python Programming Basics", "Python Programming Fundamentals"
-        )
+        similarity = calculate_similarity("Python Programming Basics", "Python Programming Fundamentals")
         self.assertGreater(similarity, 0.5)
 
     def test_normalize_course_title_removes_common_words(self):
@@ -455,16 +439,12 @@ class TestNLPClassifier(unittest.TestCase):
 
     def test_extract_keywords_finds_important_words(self):
         """Test extract_keywords identifies important words."""
-        text = (
-            "Machine learning and artificial intelligence are transforming technology"
-        )
+        text = "Machine learning and artificial intelligence are transforming technology"
         keywords = extract_keywords(text, max_keywords=3)
 
         self.assertIsInstance(keywords, list)
         self.assertLessEqual(len(keywords), 3)
-        self.assertTrue(
-            any("machine" in kw.lower() or "learning" in kw.lower() for kw in keywords)
-        )
+        self.assertTrue(any("machine" in kw.lower() or "learning" in kw.lower() for kw in keywords))
 
     def test_extract_keywords_handles_short_text(self):
         """Test extract_keywords handles short text."""
@@ -583,9 +563,7 @@ class TestPWCUtils(unittest.TestCase):
             "abstract": "Test abstract",
             "authors": ["Author 1", "Author 2"],
             "url": "https://arxiv.org/abs/2301.00001",
-            "benchmarks": [
-                {"dataset": "ImageNet", "metric": "Accuracy", "value": 95.2}
-            ],
+            "benchmarks": [{"dataset": "ImageNet", "metric": "Accuracy", "value": 95.2}],
         }
 
         parsed = parse_paper_data(paper_data)
@@ -693,9 +671,7 @@ class TestRecommender(unittest.TestCase):
         """Test generate_recommendations returns similar content."""
         target_content = self.sample_content[0]
 
-        recommendations = generate_recommendations(
-            target_content, self.sample_content, max_recommendations=2
-        )
+        recommendations = generate_recommendations(target_content, self.sample_content, max_recommendations=2)
 
         self.assertIsInstance(recommendations, list)
         self.assertLessEqual(len(recommendations), 2)

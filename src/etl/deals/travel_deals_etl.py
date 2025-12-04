@@ -15,12 +15,10 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -63,7 +61,7 @@ class TravelDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract travel deals from multiple sources."""
         logger.info("Starting travel deals extraction...")
 
@@ -76,7 +74,7 @@ class TravelDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} travel deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _get_curated_travel_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_travel_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of travel deals and sources."""
         curated = [
             {
@@ -392,7 +390,7 @@ class TravelDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated travel deals")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform travel deals data."""
         logger.info("Starting travel deals transformation...")
 
@@ -447,14 +445,12 @@ class TravelDealsETL(BaseETL):
                 continue
 
         # Sort by travel score and savings
-        transformed_deals.sort(
-            key=lambda x: (x["travel_score"], x["savings"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["travel_score"], x["savings"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} travel deals")
         return transformed_deals
 
-    def _calculate_travel_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_travel_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate travel value score for ranking deals."""
         score = 0.0
 
@@ -525,7 +521,7 @@ class TravelDealsETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_travel_deal_quality(self, deal: Dict[str, Any]) -> str:
+    def _determine_travel_deal_quality(self, deal: dict[str, Any]) -> str:
         """Determine travel deal quality tier."""
         platform = deal.get("platform", "").lower()
         rating = deal.get("rating", 0)
@@ -533,23 +529,15 @@ class TravelDealsETL(BaseETL):
         flexibility = deal.get("booking_flexibility", "medium").lower()
 
         # Premium quality indicators
-        if any(name in platform for name in ["costco", "travelzoo"]) and savings > 400:
-            return "premium"
-        elif rating >= 4.6 and savings > 500:
+        if any(name in platform for name in ["costco", "travelzoo"]) and savings > 400 or rating >= 4.6 and savings > 500:
             return "premium"
 
         # High quality indicators
-        if any(name in platform for name in ["google", "going"]) and rating >= 4.5:
-            return "high"
-        elif flexibility == "high" and savings > 200:
-            return "high"
-        elif rating >= 4.3 and savings > 300:
+        if any(name in platform for name in ["google", "going"]) and rating >= 4.5 or flexibility == "high" and savings > 200 or rating >= 4.3 and savings > 300:
             return "high"
 
         # Good quality indicators
-        if rating >= 4.0 and savings > 100:
-            return "good"
-        elif any(name in platform for name in ["booking.com", "expedia", "airbnb"]):
+        if rating >= 4.0 and savings > 100 or any(name in platform for name in ["booking.com", "expedia", "airbnb"]):
             return "good"
 
         # Standard quality
@@ -558,7 +546,7 @@ class TravelDealsETL(BaseETL):
 
         return "basic"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed travel deals data to files."""
         try:
             # Ensure output directory exists
@@ -578,9 +566,7 @@ class TravelDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} travel deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} travel deals to {output_dir}")
             return True
 
         except Exception as e:

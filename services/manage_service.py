@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Cross-platform service manager for Watchtower platform.
+"""Cross-platform service manager for Watchtower platform.
 
 Supports:
 - systemd (Linux)
@@ -74,6 +73,7 @@ class ServiceManager:
         # Copy service file
         try:
             import shutil
+
             shutil.copy2(service_file, target_file)
 
             # Reload systemd
@@ -107,6 +107,7 @@ class ServiceManager:
 
             # Copy plist file
             import shutil
+
             shutil.copy2(plist_file, target_file)
 
             # Load the service
@@ -130,17 +131,40 @@ class ServiceManager:
         try:
             # Install service
             cmd = [
-                nssm_path, "install", "WatchtowerPlatform",
-                "uv", "run", "python", str(script_path), "--mode", "production"
+                nssm_path,
+                "install",
+                "WatchtowerPlatform",
+                "uv",
+                "run",
+                "python",
+                str(script_path),
+                "--mode",
+                "production",
             ]
 
             subprocess.run(cmd, check=True, cwd=self.project_root)
 
             # Set service properties
-            subprocess.run([nssm_path, "set", "WatchtowerPlatform", "DisplayName",
-                          "Watchtower Intelligence Platform"], check=True)
-            subprocess.run([nssm_path, "set", "WatchtowerPlatform", "Description",
-                          "Watchtower Intelligence Platform - Real-time data collection and monitoring"], check=True)
+            subprocess.run(
+                [
+                    nssm_path,
+                    "set",
+                    "WatchtowerPlatform",
+                    "DisplayName",
+                    "Watchtower Intelligence Platform",
+                ],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    nssm_path,
+                    "set",
+                    "WatchtowerPlatform",
+                    "Description",
+                    "Watchtower Intelligence Platform - Real-time data collection and monitoring",
+                ],
+                check=True,
+            )
 
             print("SUCCESS NSSM service installed successfully!")
             print("🚀 Start with: net start WatchtowerPlatform")
@@ -159,24 +183,30 @@ class ServiceManager:
         wrapper_script = self.services_dir / "watchtower_service.bat"
 
         # Create wrapper script
-        wrapper_content = f'''@echo off
+        wrapper_content = f"""@echo off
 setlocal enabledelayedexpansion
 
 cd /d "%~dp0"
 uv run python "{script_path}" --mode production
 
 endlocal
-'''
+"""
 
-        with open(wrapper_script, 'w') as f:
+        with open(wrapper_script, "w") as f:
             f.write(wrapper_content)
 
         try:
             # Create service
             cmd = [
-                "sc", "create", "WatchtowerPlatform", "binPath=",
-                f"\"{wrapper_script}\"", "start=", "auto",
-                "DisplayName=", "Watchtower Intelligence Platform"
+                "sc",
+                "create",
+                "WatchtowerPlatform",
+                "binPath=",
+                f'"{wrapper_script}"',
+                "start=",
+                "auto",
+                "DisplayName=",
+                "Watchtower Intelligence Platform",
             ]
 
             subprocess.run(cmd, check=True, shell=True)
@@ -231,7 +261,14 @@ endlocal
 
         try:
             # Unload service
-            subprocess.run(["launchctl", "unload", "~/Library/LaunchAgents/com.watchtower.platform.plist"], check=True)
+            subprocess.run(
+                [
+                    "launchctl",
+                    "unload",
+                    "~/Library/LaunchAgents/com.watchtower.platform.plist",
+                ],
+                check=True,
+            )
 
             # Remove plist file
             plist_file = Path.home() / "Library" / "LaunchAgents" / "com.watchtower.platform.plist"
@@ -292,24 +329,33 @@ endlocal
         manager = self.detect_service_manager()
 
         if manager == "systemd":
-            result = subprocess.run(["systemctl", "status", "watchtower", "--no-pager"],
-                                  capture_output=True, text=True)
+            result = subprocess.run(
+                ["systemctl", "status", "watchtower", "--no-pager"],
+                capture_output=True,
+                text=True,
+            )
             print(result.stdout)
         elif manager == "launchd":
-            result = subprocess.run(["launchctl", "list", "|", "grep", "watchtower"],
-                                  capture_output=True, text=True, shell=True)
+            result = subprocess.run(
+                ["launchctl", "list", "|", "grep", "watchtower"],
+                capture_output=True,
+                text=True,
+                shell=True,
+            )
             print(result.stdout)
         elif manager in ["nssm", "sc"]:
-            result = subprocess.run(["sc", "query", "WatchtowerPlatform"],
-                                  capture_output=True, text=True)
+            result = subprocess.run(["sc", "query", "WatchtowerPlatform"], capture_output=True, text=True)
             print(result.stdout)
 
 
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Watchtower Service Manager")
-    parser.add_argument("action", choices=["install", "uninstall", "start", "stop", "status"],
-                       help="Action to perform")
+    parser.add_argument(
+        "action",
+        choices=["install", "uninstall", "start", "stop", "status"],
+        help="Action to perform",
+    )
     parser.add_argument("--platform", help="Force platform (linux, darwin, windows)")
 
     args = parser.parse_args()
@@ -317,6 +363,7 @@ def main():
     if args.platform:
         # Override platform detection for testing
         import sys
+
         sys.modules[__name__].platform.system = lambda: args.platform
 
     manager = ServiceManager()

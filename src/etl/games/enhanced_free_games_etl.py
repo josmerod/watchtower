@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import feedparser
 
@@ -45,9 +45,7 @@ class EnhancedFreeGamesETL(BaseETL):
             "isthereanydeal_giveaways": "https://isthereanydeal.com/feeds/ES/EUR/giveaways.rss",
         }
 
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
+        self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
 
         # Quality assessment keywords
         self.quality_indicators = {
@@ -73,7 +71,7 @@ class EnhancedFreeGamesETL(BaseETL):
             "genre_horror": ["horror", "scary", "dark", "survival"],
         }
 
-    def extract(self) -> List[Dict[str, Any]]:
+    def extract(self) -> list[dict[str, Any]]:
         """Extract free games data from multiple platforms."""
         self.logger.info("Starting enhanced free games data extraction 🎮")
         extracted_data = []
@@ -111,7 +109,7 @@ class EnhancedFreeGamesETL(BaseETL):
 
         return extracted_data
 
-    def _extract_itchio_games(self) -> List[Dict[str, Any]]:
+    def _extract_itchio_games(self) -> list[dict[str, Any]]:
         """Extract free games from Itch.io."""
         itchio_data = []
 
@@ -160,7 +158,7 @@ class EnhancedFreeGamesETL(BaseETL):
         itchio_data.extend(mock_games)
         return itchio_data
 
-    def _extract_epic_free_games(self) -> List[Dict[str, Any]]:
+    def _extract_epic_free_games(self) -> list[dict[str, Any]]:
         """Extract Epic Games free weekly games."""
         epic_data = []
 
@@ -191,15 +189,13 @@ class EnhancedFreeGamesETL(BaseETL):
         epic_data.extend(mock_epic)
         return epic_data
 
-    def _extract_giveaways(self) -> List[Dict[str, Any]]:
+    def _extract_giveaways(self) -> list[dict[str, Any]]:
         """Extract giveaways from RSS feeds."""
         giveaway_data = []
 
         try:
             # Use existing IsThereAnyDeal giveaways RSS
-            giveaways_feed = feedparser.parse(
-                self.endpoints["isthereanydeal_giveaways"]
-            )
+            giveaways_feed = feedparser.parse(self.endpoints["isthereanydeal_giveaways"])
 
             for entry in giveaways_feed.entries[:20]:  # Latest 20 giveaways
                 # Extract expiry date from description
@@ -207,9 +203,7 @@ class EnhancedFreeGamesETL(BaseETL):
                 expiry_date = None
                 if expiry_match:
                     try:
-                        expiry_date = datetime.strptime(
-                            expiry_match.group(1).strip(), "%Y-%m-%d %H:%M:%S"
-                        ).isoformat()
+                        expiry_date = datetime.strptime(expiry_match.group(1).strip(), "%Y-%m-%d %H:%M:%S").isoformat()
                     except:
                         expiry_date = None
 
@@ -218,9 +212,7 @@ class EnhancedFreeGamesETL(BaseETL):
                     "platform": "various",
                     "title": entry.title,
                     "url": entry.link,
-                    "published": datetime.strptime(
-                        entry.published, "%a, %d %b %Y %H:%M:%S %z"
-                    ).isoformat(),
+                    "published": datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z").isoformat(),
                     "expires": expiry_date,
                     "description": entry.description,
                     "source": "isthereanydeal",
@@ -234,7 +226,7 @@ class EnhancedFreeGamesETL(BaseETL):
 
         return giveaway_data
 
-    def _generate_quality_assessments(self) -> List[Dict[str, Any]]:
+    def _generate_quality_assessments(self) -> list[dict[str, Any]]:
         """Generate game quality assessments and recommendations."""
         quality_data = []
 
@@ -270,7 +262,7 @@ class EnhancedFreeGamesETL(BaseETL):
         quality_data.append(daily_recommendations)
         return quality_data
 
-    def transform(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Transform free games data with quality analysis."""
         self.logger.info(f"Transforming {len(data)} free games records 🔧")
         transformed_data = []
@@ -282,15 +274,11 @@ class EnhancedFreeGamesETL(BaseETL):
                     transformed_record = {
                         **record,
                         "quality_score": self._calculate_quality_score(record),
-                        "recommendation_level": self._assess_recommendation_level(
-                            record
-                        ),
+                        "recommendation_level": self._assess_recommendation_level(record),
                         "estimated_value": self._estimate_game_value(record),
                         "time_investment": self._assess_time_investment(record),
                         "genre_classification": self._classify_genre(record),
-                        "hidden_gem_potential": self._assess_hidden_gem_potential(
-                            record
-                        ),
+                        "hidden_gem_potential": self._assess_hidden_gem_potential(record),
                         "family_friendly": self._assess_family_friendliness(record),
                     }
                 elif record.get("data_type") == "giveaway":
@@ -298,9 +286,7 @@ class EnhancedFreeGamesETL(BaseETL):
                     transformed_record = {
                         **record,
                         "urgency_level": self._assess_giveaway_urgency(record),
-                        "claim_recommendation": self._assess_claim_recommendation(
-                            record
-                        ),
+                        "claim_recommendation": self._assess_claim_recommendation(record),
                         "expiry_warning": self._generate_expiry_warning(record),
                     }
                 else:
@@ -315,7 +301,7 @@ class EnhancedFreeGamesETL(BaseETL):
 
         return transformed_data
 
-    def _calculate_quality_score(self, record: Dict[str, Any]) -> float:
+    def _calculate_quality_score(self, record: dict[str, Any]) -> float:
         """Calculate game quality score based on various metrics."""
         score = 5.0  # Base score
 
@@ -340,22 +326,14 @@ class EnhancedFreeGamesETL(BaseETL):
 
         # Description quality analysis
         description = record.get("description", "").lower()
-        positive_keywords = sum(
-            1
-            for keyword in self.quality_indicators["positive"]
-            if keyword in description
-        )
-        negative_keywords = sum(
-            1
-            for keyword in self.quality_indicators["negative"]
-            if keyword in description
-        )
+        positive_keywords = sum(1 for keyword in self.quality_indicators["positive"] if keyword in description)
+        negative_keywords = sum(1 for keyword in self.quality_indicators["negative"] if keyword in description)
 
         score += positive_keywords * 0.5 - negative_keywords * 0.8
 
         return max(0.0, min(10.0, score))
 
-    def _assess_recommendation_level(self, record: Dict[str, Any]) -> str:
+    def _assess_recommendation_level(self, record: dict[str, Any]) -> str:
         """Assess game recommendation level."""
         quality_score = self._calculate_quality_score(record)
 
@@ -370,7 +348,7 @@ class EnhancedFreeGamesETL(BaseETL):
         else:
             return "skip"
 
-    def _estimate_game_value(self, record: Dict[str, Any]) -> float:
+    def _estimate_game_value(self, record: dict[str, Any]) -> float:
         """Estimate the actual value of the free game."""
         original_price = record.get("original_price", 0)
         if original_price > 0:
@@ -389,7 +367,7 @@ class EnhancedFreeGamesETL(BaseETL):
         else:
             return min(quality_score * 5, 30.0)
 
-    def _assess_time_investment(self, record: Dict[str, Any]) -> str:
+    def _assess_time_investment(self, record: dict[str, Any]) -> str:
         """Assess time investment level."""
         playtime = record.get("estimated_playtime", "").lower()
         genre = record.get("genre", "").lower()
@@ -415,26 +393,22 @@ class EnhancedFreeGamesETL(BaseETL):
         else:
             return "moderate_investment"
 
-    def _classify_genre(self, record: Dict[str, Any]) -> List[str]:
+    def _classify_genre(self, record: dict[str, Any]) -> list[str]:
         """Classify game genre based on tags and description."""
         genres = []
-        title_desc = (
-            f"{record.get('title', '')} {record.get('description', '')}".lower()
-        )
+        title_desc = f"{record.get('title', '')} {record.get('description', '')}".lower()
         tags = record.get("tags", [])
 
         # Check against genre indicators
         for genre_type, keywords in self.quality_indicators.items():
             if genre_type.startswith("genre_"):
                 genre_name = genre_type.replace("genre_", "")
-                if any(keyword in title_desc for keyword in keywords) or any(
-                    keyword in str(tags) for keyword in keywords
-                ):
+                if any(keyword in title_desc for keyword in keywords) or any(keyword in str(tags) for keyword in keywords):
                     genres.append(genre_name)
 
         return genres if genres else ["unknown"]
 
-    def _assess_hidden_gem_potential(self, record: Dict[str, Any]) -> float:
+    def _assess_hidden_gem_potential(self, record: dict[str, Any]) -> float:
         """Assess if this could be a hidden gem."""
         quality_score = self._calculate_quality_score(record)
         downloads = record.get("download_count", 0)
@@ -450,11 +424,9 @@ class EnhancedFreeGamesETL(BaseETL):
         else:
             return 0.2
 
-    def _assess_family_friendliness(self, record: Dict[str, Any]) -> bool:
+    def _assess_family_friendliness(self, record: dict[str, Any]) -> bool:
         """Assess if game is family friendly."""
-        title_desc = (
-            f"{record.get('title', '')} {record.get('description', '')}".lower()
-        )
+        title_desc = f"{record.get('title', '')} {record.get('description', '')}".lower()
         rating = record.get("epic_rating", "").upper()
 
         # Check for mature content indicators
@@ -467,7 +439,7 @@ class EnhancedFreeGamesETL(BaseETL):
 
         return not (has_mature_content or has_mature_rating)
 
-    def _assess_giveaway_urgency(self, record: Dict[str, Any]) -> str:
+    def _assess_giveaway_urgency(self, record: dict[str, Any]) -> str:
         """Assess urgency level for giveaways."""
         expires = record.get("expires")
         if not expires:
@@ -475,9 +447,7 @@ class EnhancedFreeGamesETL(BaseETL):
 
         try:
             expiry_date = datetime.fromisoformat(expires.replace("Z", "+00:00"))
-            time_left = expiry_date - datetime.utcnow().replace(
-                tzinfo=expiry_date.tzinfo
-            )
+            time_left = expiry_date - datetime.utcnow().replace(tzinfo=expiry_date.tzinfo)
 
             if time_left.total_seconds() <= 0:
                 return "expired"
@@ -492,7 +462,7 @@ class EnhancedFreeGamesETL(BaseETL):
         except:
             return "unknown"
 
-    def _assess_claim_recommendation(self, record: Dict[str, Any]) -> str:
+    def _assess_claim_recommendation(self, record: dict[str, Any]) -> str:
         """Generate claim recommendation for giveaways."""
         title = record.get("title", "").lower()
         urgency = self._assess_giveaway_urgency(record)
@@ -509,7 +479,7 @@ class EnhancedFreeGamesETL(BaseETL):
         else:
             return "claim_if_interested"
 
-    def _generate_expiry_warning(self, record: Dict[str, Any]) -> Optional[str]:
+    def _generate_expiry_warning(self, record: dict[str, Any]) -> str | None:
         """Generate expiry warning message."""
         urgency = self._assess_giveaway_urgency(record)
 
@@ -524,15 +494,12 @@ class EnhancedFreeGamesETL(BaseETL):
 
         return warning_messages.get(urgency)
 
-    def load(self, data: List[Dict[str, Any]]) -> None:
+    def load(self, data: list[dict[str, Any]]) -> None:
         """Load enhanced free games data to storage."""
         self.logger.info(f"Loading {len(data)} enhanced free games records 💾")
 
         # Save complete data
-        output_file = (
-            self.output_dir
-            / f"enhanced_free_games_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+        output_file = self.output_dir / f"enhanced_free_games_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
 
         try:
             with open(output_file, "w", encoding="utf-8") as f:
@@ -552,47 +519,25 @@ class EnhancedFreeGamesETL(BaseETL):
             # Log useful stats
             free_games = [d for d in data if d.get("data_type") == "free_game"]
             giveaways = [d for d in data if d.get("data_type") == "giveaway"]
-            must_play = [
-                g for g in free_games if g.get("recommendation_level") == "must_play"
-            ]
-            urgent_giveaways = [
-                g
-                for g in giveaways
-                if g.get("urgency_level") in ["urgent_hours_left", "urgent_24_hours"]
-            ]
+            must_play = [g for g in free_games if g.get("recommendation_level") == "must_play"]
+            urgent_giveaways = [g for g in giveaways if g.get("urgency_level") in ["urgent_hours_left", "urgent_24_hours"]]
 
-            self.logger.info(
-                f"Summary: {len(free_games)} free games, {len(giveaways)} giveaways, {len(must_play)} must-play recommendations, {len(urgent_giveaways)} urgent claims 🎯"
-            )
+            self.logger.info(f"Summary: {len(free_games)} free games, {len(giveaways)} giveaways, {len(must_play)} must-play recommendations, {len(urgent_giveaways)} urgent claims 🎯")
 
         except Exception as e:
             self.logger.error(f"Failed to save enhanced free games data: {e}")
             raise
 
-    def _create_filtered_datasets(self, data: List[Dict[str, Any]]) -> None:
+    def _create_filtered_datasets(self, data: list[dict[str, Any]]) -> None:
         """Create filtered datasets for specific use cases."""
         # Must-play games only
-        must_play_games = [
-            d
-            for d in data
-            if d.get("data_type") == "free_game"
-            and d.get("recommendation_level") == "must_play"
-        ]
+        must_play_games = [d for d in data if d.get("data_type") == "free_game" and d.get("recommendation_level") == "must_play"]
 
         # Urgent giveaways
-        urgent_giveaways = [
-            d
-            for d in data
-            if d.get("data_type") == "giveaway"
-            and d.get("urgency_level") in ["urgent_hours_left", "urgent_24_hours"]
-        ]
+        urgent_giveaways = [d for d in data if d.get("data_type") == "giveaway" and d.get("urgency_level") in ["urgent_hours_left", "urgent_24_hours"]]
 
         # Family-friendly games
-        family_games = [
-            d
-            for d in data
-            if d.get("data_type") == "free_game" and d.get("family_friendly", False)
-        ]
+        family_games = [d for d in data if d.get("data_type") == "free_game" and d.get("family_friendly", False)]
 
         # Save filtered datasets
         filters = {

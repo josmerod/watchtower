@@ -6,7 +6,7 @@ links within text content.
 """
 
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 import requests
@@ -18,9 +18,8 @@ logger = get_logger(__name__)
 GITHUB_API_BASE_URL = "https://api.github.com/repos"
 
 
-def extract_github_owner_repo(url: str) -> Optional[Tuple[str, str]]:
-    """
-    Extracts the owner and repository name from a GitHub URL.
+def extract_github_owner_repo(url: str) -> tuple[str, str] | None:
+    """Extracts the owner and repository name from a GitHub URL.
 
     Args:
         url (str): The GitHub URL.
@@ -37,11 +36,8 @@ def extract_github_owner_repo(url: str) -> Optional[Tuple[str, str]]:
     return None
 
 
-def get_github_repo_info(
-    repo_url: str, github_token: Optional[str] = None
-) -> Optional[Dict[str, Any]]:
-    """
-    Fetches information about a GitHub repository using its URL.
+def get_github_repo_info(repo_url: str, github_token: str | None = None) -> dict[str, Any] | None:
+    """Fetches information about a GitHub repository using its URL.
 
     Args:
         repo_url (str): The full URL of the GitHub repository.
@@ -78,18 +74,14 @@ def get_github_repo_info(
             if lang_response.status_code == 200:
                 languages_data = lang_response.json()
             else:
-                logger.warning(
-                    f"Failed to fetch languages for {owner}/{repo}: {lang_response.status_code}"
-                )
+                logger.warning(f"Failed to fetch languages for {owner}/{repo}: {lang_response.status_code}")
 
         return {
             "github_html_url": data.get("html_url"),
             "github_description": data.get("description"),
             "github_stars": data.get("stargazers_count"),
             "github_forks": data.get("forks_count"),
-            "github_watchers": data.get(
-                "subscribers_count"
-            ),  # 'subscribers_count' is often referred to as watchers
+            "github_watchers": data.get("subscribers_count"),  # 'subscribers_count' is often referred to as watchers
             "github_open_issues": data.get("open_issues_count"),
             "github_last_updated": data.get("updated_at"),
             "github_created_at": data.get("created_at"),
@@ -114,8 +106,7 @@ def get_github_repo_info(
 
 
 def find_github_links_in_text(text: str) -> list[str]:
-    """
-    Finds all GitHub repository URLs in a given text.
+    """Finds all GitHub repository URLs in a given text.
 
     Args:
         text (str): The text to search for GitHub links.
@@ -131,9 +122,7 @@ def find_github_links_in_text(text: str) -> list[str]:
     found_urls = re.findall(regex, text)
 
     # Reconstruct the full URLs and ensure uniqueness
-    unique_urls = sorted(
-        list(set([f"https://github.com/{owner}/{repo}" for owner, repo in found_urls]))
-    )
+    unique_urls = sorted(list({f"https://github.com/{owner}/{repo}" for owner, repo in found_urls}))
 
     return unique_urls
 
@@ -175,9 +164,7 @@ if __name__ == "__main__":
         repo_info = get_github_repo_info(url)
         if repo_info:
             logger.info(f"Repository: {repo_info.get('github_html_url')}")
-            logger.info(
-                f"  Stars: {repo_info.get('github_stars')}, Forks: {repo_info.get('github_forks')}"
-            )
+            logger.info(f"  Stars: {repo_info.get('github_stars')}, Forks: {repo_info.get('github_forks')}")
             logger.info(f"  Description: {repo_info.get('github_description')}")
             logger.info(f"  Last Updated: {repo_info.get('github_last_updated')}")
             logger.info(f"  Primary Language: {repo_info.get('github_language')}")

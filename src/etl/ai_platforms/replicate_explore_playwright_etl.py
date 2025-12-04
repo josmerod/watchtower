@@ -10,15 +10,13 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Set
+from typing import Any
 
 from playwright.sync_api import sync_playwright
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("ReplicateExploreETL")
 
@@ -39,9 +37,9 @@ def _normalize_model_link(href: str) -> str | None:
     return f"{owner}/{model}"
 
 
-def fetch_replicate_explore(max_items: int = 100) -> List[Dict[str, Any]]:
-    items: List[Dict[str, Any]] = []
-    seen: Set[str] = set()
+def fetch_replicate_explore(max_items: int = 100) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    seen: set[str] = set()
     logger.info(f"Fetching Replicate Explore page: {EXPLORE_URL}")
 
     try:
@@ -69,7 +67,12 @@ def fetch_replicate_explore(max_items: int = 100) -> List[Dict[str, Any]]:
                     # Visible name text
                     name_text = (a.inner_text() or "").strip()
                     # Basic filter: avoid menu and unrelated links
-                    if "/explore" in href or name_text.lower() in {"explore", "blog", "docs", "pricing"}:
+                    if "/explore" in href or name_text.lower() in {
+                        "explore",
+                        "blog",
+                        "docs",
+                        "pricing",
+                    }:
                         continue
                     seen.add(norm)
                     items.append(
@@ -98,7 +101,7 @@ def fetch_replicate_explore(max_items: int = 100) -> List[Dict[str, Any]]:
     return items
 
 
-def save_replicate_explore(items: List[Dict[str, Any]]) -> None:
+def save_replicate_explore(items: list[dict[str, Any]]) -> None:
     if not items:
         logger.info("No Replicate explore items to save")
         return
@@ -123,5 +126,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

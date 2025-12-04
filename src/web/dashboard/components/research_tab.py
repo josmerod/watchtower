@@ -1,5 +1,4 @@
-"""
-Research Dashboard Tab
+"""Research Dashboard Tab
 Specialized for ADHD research publications and neurodivergent-friendly locations
 """
 
@@ -24,9 +23,7 @@ logger = logging.getLogger(__name__)
 # Research sources configuration
 RESEARCH_SOURCES_CONFIG = {
     "adhd_publications": {
-        "path": get_data_path(
-            "adhd_publications", "output", "json", "latest_papers.json"
-        ),
+        "path": get_data_path("adhd_publications", "output", "json", "latest_papers.json"),
         "name": "ADHD Publications",
         "icon": "🧠",
         "category": "Medical Research",
@@ -51,7 +48,7 @@ def load_research_data(file_path):
             logger.warning(f"Research data file not found: {file_path}")
             return []
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
 
         if isinstance(data, list):
@@ -84,9 +81,7 @@ def process_research_item(item):
     """Process individual research item with standardized fields"""
     try:
         # Extract common fields
-        title = item.get(
-            "title", item.get("name", item.get("paper_title", "Unknown Study"))
-        )
+        title = item.get("title", item.get("name", item.get("paper_title", "Unknown Study")))
         abstract = item.get(
             "abstract",
             item.get("description", item.get("summary", "No abstract available")),
@@ -119,9 +114,7 @@ def process_research_item(item):
         # Location-specific fields (for ADHD-friendly locations)
         location_type = item.get("location_type", item.get("type", "Unknown"))
         address = item.get("address", item.get("location", ""))
-        accessibility_features = item.get(
-            "accessibility_features", item.get("features", [])
-        )
+        accessibility_features = item.get("accessibility_features", item.get("features", []))
         rating = item.get("rating", item.get("score", 0))
 
         # Research impact metrics
@@ -147,11 +140,7 @@ def process_research_item(item):
             "sample_size": int(sample_size) if sample_size else 0,
             "location_type": location_type,
             "address": address,
-            "accessibility_features": (
-                accessibility_features
-                if isinstance(accessibility_features, list)
-                else []
-            ),
+            "accessibility_features": (accessibility_features if isinstance(accessibility_features, list) else []),
             "rating": float(rating) if rating else 0,
             "citation_count": int(citation_count) if citation_count else 0,
             "impact_factor": float(impact_factor) if impact_factor else 0,
@@ -183,9 +172,7 @@ for source_id, data in RESEARCH_DATA.items():
 
 def create_study_type_chart():
     """Create a pie chart showing distribution of study types"""
-    research_papers = [
-        item for item in ALL_RESEARCH if item["source_category"] == "Medical Research"
-    ]
+    research_papers = [item for item in ALL_RESEARCH if item["source_category"] == "Medical Research"]
 
     if not research_papers:
         return html.Div("No research papers available for visualization")
@@ -193,9 +180,7 @@ def create_study_type_chart():
     # Count study types
     study_counts = Counter()
     for paper in research_papers:
-        study_type = (
-            paper["study_type"] if paper["study_type"] != "Unknown" else "Other"
-        )
+        study_type = paper["study_type"] if paper["study_type"] != "Unknown" else "Other"
         study_counts[study_type] += 1
 
     fig = px.pie(
@@ -217,11 +202,7 @@ def create_study_type_chart():
 
 def create_publication_timeline():
     """Create a timeline chart showing publication trends"""
-    research_papers = [
-        item
-        for item in ALL_RESEARCH
-        if item["source_category"] == "Medical Research" and item["publication_date"]
-    ]
+    research_papers = [item for item in ALL_RESEARCH if item["source_category"] == "Medical Research" and item["publication_date"]]
 
     if not research_papers:
         return html.Div("No publication date data available")
@@ -275,17 +256,11 @@ def create_research_summary_cards():
         if data:
             if config["category"] == "Medical Research":
                 # Research papers metrics
-                valid_citations = [
-                    item["citation_count"]
-                    for item in data
-                    if item["citation_count"] > 0
-                ]
+                valid_citations = [item["citation_count"] for item in data if item["citation_count"] > 0]
                 if valid_citations:
                     avg_citation = sum(valid_citations) / len(valid_citations)
 
-                valid_samples = [
-                    item["sample_size"] for item in data if item["sample_size"] > 0
-                ]
+                valid_samples = [item["sample_size"] for item in data if item["sample_size"] > 0]
                 if valid_samples:
                     avg_sample_size = sum(valid_samples) / len(valid_samples)
             else:
@@ -297,9 +272,7 @@ def create_research_summary_cards():
         # Get latest update
         latest_update = "No data"
         if data:
-            timestamps = [
-                item["publication_date"] for item in data if item["publication_date"]
-            ]
+            timestamps = [item["publication_date"] for item in data if item["publication_date"]]
             if timestamps:
                 latest_update = max(timestamps).strftime("%Y-%m-%d")
 
@@ -365,15 +338,11 @@ def create_research_summary_cards():
                 ),
                 dbc.CardBody(
                     [
-                        html.P(
-                            config["description"], className="small text-muted mb-2"
-                        ),
+                        html.P(config["description"], className="small text-muted mb-2"),
                         html.Div(
                             [
                                 html.Strong("Category: "),
-                                dbc.Badge(
-                                    config["category"], color="info", className="me-2"
-                                ),
+                                dbc.Badge(config["category"], color="info", className="me-2"),
                             ],
                             className="mb-1",
                         ),
@@ -432,29 +401,15 @@ def create_research_table(source_id, items):
     for item in sorted_items:
         if config["category"] == "Medical Research":
             # Research paper format
-            date_str = (
-                item["publication_date"].strftime("%Y-%m-%d")
-                if item["publication_date"]
-                else "N/A"
-            )
+            date_str = item["publication_date"].strftime("%Y-%m-%d") if item["publication_date"] else "N/A"
 
             row = {
-                "Title": (
-                    item["title"][:80] + "..."
-                    if len(item["title"]) > 80
-                    else item["title"]
-                ),
+                "Title": (item["title"][:80] + "..." if len(item["title"]) > 80 else item["title"]),
                 "Authors": item["authors_str"],
                 "Journal": item["journal"],
                 "Study Type": item["study_type"],
-                "Sample Size": (
-                    f"{item['sample_size']:,}" if item["sample_size"] > 0 else "N/A"
-                ),
-                "Citations": (
-                    f"{item['citation_count']:,}"
-                    if item["citation_count"] > 0
-                    else "N/A"
-                ),
+                "Sample Size": (f"{item['sample_size']:,}" if item["sample_size"] > 0 else "N/A"),
+                "Citations": (f"{item['citation_count']:,}" if item["citation_count"] > 0 else "N/A"),
                 "Publication Date": date_str,
                 "DOI": item["doi"] if item["doi"] else "N/A",
                 "Abstract": item["abstract"],
@@ -462,11 +417,7 @@ def create_research_table(source_id, items):
             }
         else:
             # Location format
-            features_str = (
-                ", ".join(item["accessibility_features"][:3])
-                if item["accessibility_features"]
-                else "None listed"
-            )
+            features_str = ", ".join(item["accessibility_features"][:3]) if item["accessibility_features"] else "None listed"
             if len(item["accessibility_features"]) > 3:
                 features_str += f" +{len(item['accessibility_features']) - 3} more"
 
@@ -514,9 +465,7 @@ def create_research_table(source_id, items):
         ]
 
     # Convert URLs to markdown links
-    df["URL"] = df.apply(
-        lambda row: f"[🔗 View]({row['URL']})" if row["URL"] != "#" else "N/A", axis=1
-    )
+    df["URL"] = df.apply(lambda row: f"[🔗 View]({row['URL']})" if row["URL"] != "#" else "N/A", axis=1)
 
     return dash_table.DataTable(
         data=df.to_dict("records"),
@@ -543,39 +492,23 @@ def create_research_table(source_id, items):
             "whiteSpace": "normal",
             "height": "auto",
         },
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#252343"}
-        ],
-        tooltip_data=[
-            {
-                col: {"value": str(row[col]), "type": "markdown"}
-                for col in ["Abstract", "Description"]
-                if col in row
-            }
-            for row in df.to_dict("records")
-        ],
+        style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "#252343"}],
+        tooltip_data=[{col: {"value": str(row[col]), "type": "markdown"} for col in ["Abstract", "Description"] if col in row} for row in df.to_dict("records")],
         tooltip_duration=None,
     )
 
 
 def render_research_tab():
     """Main render function for the Research dashboard tab"""
-
     total_items = len(ALL_RESEARCH)
-    research_papers = [
-        item for item in ALL_RESEARCH if item["source_category"] == "Medical Research"
-    ]
-    locations = [
-        item for item in ALL_RESEARCH if item["source_category"] == "Accessibility"
-    ]
+    research_papers = [item for item in ALL_RESEARCH if item["source_category"] == "Medical Research"]
+    locations = [item for item in ALL_RESEARCH if item["source_category"] == "Accessibility"]
 
     # Calculate metrics
     total_citations = sum(item["citation_count"] for item in research_papers)
     avg_sample_size = 0
     if research_papers:
-        valid_samples = [
-            item["sample_size"] for item in research_papers if item["sample_size"] > 0
-        ]
+        valid_samples = [item["sample_size"] for item in research_papers if item["sample_size"] > 0]
         if valid_samples:
             avg_sample_size = sum(valid_samples) / len(valid_samples)
 
@@ -645,12 +578,7 @@ def render_research_tab():
                                                     dbc.CardBody(
                                                         [
                                                             html.H4(
-                                                                (
-                                                                    f"{avg_sample_size:.0f}"
-                                                                    if avg_sample_size
-                                                                    > 0
-                                                                    else "N/A"
-                                                                ),
+                                                                (f"{avg_sample_size:.0f}" if avg_sample_size > 0 else "N/A"),
                                                                 className="text-info mb-0",
                                                             ),
                                                             html.P(
@@ -699,11 +627,7 @@ def render_research_tab():
                         [
                             dbc.Card(
                                 [
-                                    dbc.CardHeader(
-                                        html.H5(
-                                            "Study Types Distribution", className="mb-0"
-                                        )
-                                    ),
+                                    dbc.CardHeader(html.H5("Study Types Distribution", className="mb-0")),
                                     dbc.CardBody([create_study_type_chart()]),
                                 ]
                             )
@@ -714,11 +638,7 @@ def render_research_tab():
                         [
                             dbc.Card(
                                 [
-                                    dbc.CardHeader(
-                                        html.H5(
-                                            "Publication Timeline", className="mb-0"
-                                        )
-                                    ),
+                                    dbc.CardHeader(html.H5("Publication Timeline", className="mb-0")),
                                     dbc.CardBody([create_publication_timeline()]),
                                 ]
                             )
@@ -741,9 +661,8 @@ def render_research_tab():
 
 def register_research_callbacks(app):
     """Register callbacks for the Research dashboard tab"""
-
     # Create callbacks for each source button
-    for source_id in RESEARCH_SOURCES_CONFIG.keys():
+    for source_id in RESEARCH_SOURCES_CONFIG:
 
         @callback(
             Output("research-data-display", "children"),
@@ -783,6 +702,4 @@ if __name__ == "__main__":
         print(f"  {config['name']}: {item_count} items")
 
     total = len(ALL_RESEARCH)
-    print(
-        f"  Total: {total} research items across {len(RESEARCH_SOURCES_CONFIG)} sources"
-    )
+    print(f"  Total: {total} research items across {len(RESEARCH_SOURCES_CONFIG)} sources")

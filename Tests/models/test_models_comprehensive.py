@@ -1,89 +1,78 @@
-"""
-Comprehensive unit tests for all Pydantic models.
+"""Comprehensive unit tests for all Pydantic models.
 Tests validation, serialization, and model behavior.
 """
 
 import unittest
 from datetime import datetime, timezone
-from decimal import Decimal
-from typing import Dict, List, Optional, Any
-from uuid import UUID
 
-import pytest
 from pydantic import ValidationError
 
-from src.models.base import (
-    TimestampedModel,
-    StatusModel,
-    TaggedModel,
-    SourceModel,
-    MetricsModel,
-    ErrorModel,
+from src.models.ai_platforms import (
+    AIModelMetrics,
+    AIModelModel,
+    AIModelProvider,
+    AIModelRating,
+    AIModelStatus,
+    AIModelType,
 )
 from src.models.arxiv import (
-    ArxivPaperModel,
+    ArxivAuthor,
     ArxivCategory,
     ArxivCategoryEnum,
-    ArxivAuthor,
     ArxivLink,
     ArxivMetrics,
+    ArxivPaperModel,
 )
-from src.models.technology import (
-    TechnologyModel,
-    TrendDirection,
-    AdoptionLevel,
-    TechnologyMetrics,
-    TechnologyRating,
-    TechnologyCategory,
+from src.models.base import (
+    ErrorModel,
+    MetricsModel,
+    SourceModel,
+    StatusModel,
+    TaggedModel,
+    TimestampedModel,
+)
+from src.models.ecommerce import (
+    ProductCategory,
+    ProductMetrics,
+    ProductModel,
+    ProductPrice,
+    ProductStatus,
+)
+from src.models.events import (
+    EventLocation,
+    EventModel,
+    EventSpeaker,
+    EventStatus,
+    EventType,
+)
+from src.models.games import (
+    GameGenre,
+    GameMetrics,
+    GameModel,
+    GamePlatform,
+    GamePrice,
+    GameRating,
+    GameStatus,
 )
 from src.models.news import (
     NewsArticleModel,
-    NewsSource,
     NewsCategory,
     NewsMetrics,
-    NewsRating,
     NewsSentiment,
-)
-from src.models.games import (
-    GameModel,
-    GamePlatform,
-    GameGenre,
-    GameRating,
-    GamePrice,
-    GameMetrics,
-    GameStatus,
-)
-from src.models.events import (
-    EventModel,
-    EventStatus,
-    EventType,
-    EventLocation,
-    EventMetrics,
-    EventRegistration,
-    EventSpeaker,
-)
-from src.models.ai_platforms import (
-    AIModelModel,
-    AIModelType,
-    AIModelStatus,
-    AIModelMetrics,
-    AIModelRating,
-    AIModelProvider,
+    NewsSource,
 )
 from src.models.security import (
     SecurityVulnerabilityModel,
     SeverityLevel,
     VulnerabilityStatus,
-    SecurityMetrics,
-    SecurityRating,
-    SecurityImpact,
 )
-from src.models.ecommerce import (
-    ProductModel,
-    ProductCategory,
-    ProductStatus,
-    ProductPrice,
-    ProductMetrics,
+from src.models.technology import (
+    AdoptionLevel,
+    TechnologyCategory,
+    TechnologyMetrics,
+    TechnologyModel,
+    TechnologyRating,
+    TrendDirection,
 )
 
 
@@ -139,9 +128,7 @@ class TestBaseModels(unittest.TestCase):
         class TestModel(SourceModel):
             name: str
 
-        model = TestModel(
-            name="test", source_url="https://example.com", source_name="Example Source"
-        )
+        model = TestModel(name="test", source_url="https://example.com", source_name="Example Source")
 
         self.assertEqual(model.source_url, "https://example.com")
         self.assertEqual(model.source_name, "Example Source")
@@ -179,9 +166,7 @@ class TestArxivModels(unittest.TestCase):
 
     def test_arxiv_author_model(self):
         """Test ArxivAuthor model."""
-        author = ArxivAuthor(
-            name="John Doe", affiliation="MIT", email="john.doe@mit.edu"
-        )
+        author = ArxivAuthor(name="John Doe", affiliation="MIT", email="john.doe@mit.edu")
 
         self.assertEqual(author.name, "John Doe")
         self.assertEqual(author.affiliation, "MIT")
@@ -217,11 +202,7 @@ class TestArxivModels(unittest.TestCase):
             ArxivCategory(term="cs.LG", scheme="http://arxiv.org/schemas/atom"),
         ]
 
-        links = [
-            ArxivLink(
-                href="https://arxiv.org/pdf/2301.00001.pdf", type="application/pdf"
-            )
-        ]
+        links = [ArxivLink(href="https://arxiv.org/pdf/2301.00001.pdf", type="application/pdf")]
 
         paper = ArxivPaperModel(
             arxiv_id="2301.00001",
@@ -243,9 +224,7 @@ class TestArxivModels(unittest.TestCase):
 
     def test_arxiv_metrics_model(self):
         """Test ArxivMetrics model."""
-        metrics = ArxivMetrics(
-            citation_count=150, download_count=1000, bookmark_count=25
-        )
+        metrics = ArxivMetrics(citation_count=150, download_count=1000, bookmark_count=25)
 
         self.assertEqual(metrics.citation_count, 150)
         self.assertEqual(metrics.download_count, 1000)
@@ -269,9 +248,7 @@ class TestTechnologyModels(unittest.TestCase):
 
     def test_technology_model_complete(self):
         """Test complete TechnologyModel."""
-        metrics = TechnologyMetrics(
-            github_stars=10000, npm_downloads=50000, stack_overflow_questions=1500
-        )
+        metrics = TechnologyMetrics(github_stars=10000, npm_downloads=50000, stack_overflow_questions=1500)
 
         rating = TechnologyRating(
             overall_score=8.5,
@@ -304,7 +281,8 @@ class TestTechnologyModels(unittest.TestCase):
         """Test TechnologyModel validation errors."""
         with self.assertRaises(ValidationError):
             TechnologyModel(
-                name="", description="Test description"  # Empty name should fail
+                name="",
+                description="Test description",  # Empty name should fail
             )
 
 
@@ -389,9 +367,7 @@ class TestGameModels(unittest.TestCase):
         """Test complete GameModel."""
         price = GamePrice(current_price=29.99, original_price=59.99, currency="USD")
 
-        metrics = GameMetrics(
-            player_count=1000000, rating_count=5000, review_count=2500
-        )
+        metrics = GameMetrics(player_count=1000000, rating_count=5000, review_count=2500)
 
         game = GameModel(
             title="Cyberpunk 2077",
@@ -452,9 +428,7 @@ class TestEventModels(unittest.TestCase):
 
     def test_event_model_complete(self):
         """Test complete EventModel."""
-        location = EventLocation(
-            name="Convention Center", city="San Francisco", country="USA"
-        )
+        location = EventLocation(name="Convention Center", city="San Francisco", country="USA")
 
         speakers = [
             EventSpeaker(name="Alice Smith", title="CTO", company="AI Corp"),

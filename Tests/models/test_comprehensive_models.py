@@ -1,88 +1,16 @@
-"""
-Comprehensive unit tests for all Pydantic models.
+"""Comprehensive unit tests for all Pydantic models.
 Tests validation, serialization, and model behavior.
 """
 
 import unittest
-from datetime import datetime, timezone
-from decimal import Decimal
-from typing import Dict, List, Optional, Any
-
-import pytest
-from pydantic import ValidationError
+from datetime import datetime
 
 from src.models.base import (
-    TimestampedModel,
+    MetricsModel,
+    SourceModel,
     StatusModel,
     TaggedModel,
-    SourceModel,
-    MetricsModel,
-    ErrorModel,
-)
-from src.models.arxiv import (
-    ArxivPaperModel,
-    ArxivCategory,
-    ArxivCategoryEnum,
-    ArxivAuthor,
-    ArxivLink,
-    ArxivMetrics,
-)
-from src.models.technology import (
-    TechnologyModel,
-    TrendDirection,
-    AdoptionLevel,
-    TechnologyMetrics,
-    TechnologyRating,
-    TechnologyCategory,
-)
-from src.models.news import (
-    NewsArticleModel,
-    NewsSource,
-    NewsCategory,
-    NewsMetrics,
-    NewsRating,
-    NewsSentiment,
-)
-from src.models.games import (
-    GameModel,
-    GamePlatform,
-    GameGenre,
-    GameRating,
-    GamePrice,
-    GameMetrics,
-    GameStatus,
-)
-from src.models.events import (
-    EventModel,
-    EventStatus,
-    EventType,
-    EventLocation,
-    EventMetrics,
-    EventRegistration,
-    EventSpeaker,
-)
-from src.models.ai_platforms import (
-    AIModelModel,
-    AIModelType,
-    AIModelStatus,
-    AIModelMetrics,
-    AIModelRating,
-    AIModelProvider,
-)
-from src.models.security import (
-    SecurityVulnerabilityModel,
-    SeverityLevel,
-    VulnerabilityStatus,
-    SecurityMetrics,
-    SecurityRating,
-    SecurityImpact,
-)
-from src.models.ecommerce import (
-    ProductModel,
-    ProductCategory,
-    ProductStatus,
-    ProductPrice,
-    ProductMetrics,
+    TimestampedModel,
 )
 
 
@@ -125,9 +53,7 @@ class TestBaseModels(unittest.TestCase):
         class TestModel(SourceModel):
             name: str
 
-        model = TestModel(
-            name="test", source_url="https://example.com", source_name="Example Source"
-        )
+        model = TestModel(name="test", source_url="https://example.com", source_name="Example Source")
 
         self.assertEqual(model.source_url, "https://example.com")
         self.assertEqual(model.source_name, "Example Source")

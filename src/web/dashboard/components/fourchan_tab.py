@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 DATA_FILE = Path("data/4chan_generals/output/latest.json")
 
 
-def load_4chan_data() -> List[Dict[str, Any]]:
+def load_4chan_data() -> list[dict[str, Any]]:
     """Load 4chan generals data from JSON file"""
     try:
         if not DATA_FILE.exists():
             logger.warning(f"4chan data file not found: {DATA_FILE}")
             return []
 
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+        with open(DATA_FILE, encoding="utf-8") as f:
             data = json.load(f)
 
         logger.info(f"Loaded {len(data)} 4chan general threads")
@@ -54,7 +54,7 @@ def get_board_description(board: str) -> str:
     return board_descriptions.get(board, f"Board /{board}/")
 
 
-def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
+def create_board_table(board: str, threads: list[dict[str, Any]]) -> html.Div:
     """Create a table for a specific board's threads"""
     try:
         if not threads:
@@ -133,13 +133,7 @@ def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
             page_action="native",
             page_current=0,
             page_size=10,
-            tooltip_data=[
-                {
-                    column: {"value": str(value), "type": "markdown"}
-                    for column, value in row.items()
-                }
-                for row in display_df.to_dict("records")
-            ],
+            tooltip_data=[{column: {"value": str(value), "type": "markdown"} for column, value in row.items()} for row in display_df.to_dict("records")],
             css=[
                 {
                     "selector": ".dash-table-tooltip",
@@ -151,9 +145,7 @@ def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
         board_desc = get_board_description(board)
         return html.Div(
             [
-                html.H5(
-                    f"/{board}/ – {len(threads)} General threads", className="mb-2"
-                ),
+                html.H5(f"/{board}/ – {len(threads)} General threads", className="mb-2"),
                 html.P(
                     board_desc.split(" - ")[1] if " - " in board_desc else board_desc,
                     className="text-muted mb-3",
@@ -166,7 +158,7 @@ def create_board_table(board: str, threads: List[Dict[str, Any]]) -> html.Div:
     except Exception as e:
         logger.error(f"Error creating board table for {board}: {e}")
         return dbc.Alert(
-            f"Error loading data for board /{board}/: {str(e)}",
+            f"Error loading data for board /{board}/: {e!s}",
             color="danger",
             className="alert-danger",
         )
@@ -182,16 +174,10 @@ def render_fourchan_tab() -> html.Div:
                 [
                     dbc.Alert(
                         [
-                            html.H4(
-                                "No 4chan Data Available", className="alert-heading"
-                            ),
-                            html.P(
-                                "No 4chan generals data found. Please run the FourChanGeneralsETL to generate the latest snapshot."
-                            ),
+                            html.H4("No 4chan Data Available", className="alert-heading"),
+                            html.P("No 4chan generals data found. Please run the FourChanGeneralsETL to generate the latest snapshot."),
                             html.Hr(),
-                            html.P(
-                                f"Expected data location: {DATA_FILE}", className="mb-0"
-                            ),
+                            html.P(f"Expected data location: {DATA_FILE}", className="mb-0"),
                         ],
                         color="warning",
                         className="alert-warning",
@@ -223,11 +209,7 @@ def render_fourchan_tab() -> html.Div:
                 dcc.Tab(
                     label=f"/{board}/ ({thread_count})",
                     value=tab_id,
-                    children=[
-                        html.Div(
-                            [create_board_table(board, grouped[board])], className="p-3"
-                        )
-                    ],
+                    children=[html.Div([create_board_table(board, grouped[board])], className="p-3")],
                 )
             )
 
@@ -275,7 +257,7 @@ def render_fourchan_tab() -> html.Div:
         return html.Div(
             [
                 dbc.Alert(
-                    f"Error loading 4chan generals tab: {str(e)}",
+                    f"Error loading 4chan generals tab: {e!s}",
                     color="danger",
                     className="alert-danger",
                 )

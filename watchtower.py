@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Watchtower Platform - Unified Entry Point
+"""Watchtower Platform - Unified Entry Point
 
 This script provides easy access to all Watchtower functionality:
 - Development and production modes
@@ -29,6 +28,7 @@ sys.path.insert(0, str(src_dir))
 
 try:
     from launcher.cli import main
+
     main()
 except ImportError as e:
     print(f"❌ Import error: {e}")

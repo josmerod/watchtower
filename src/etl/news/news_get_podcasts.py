@@ -31,13 +31,11 @@ PODCAST_FEEDS: dict[str, str] = {
     "MLOpsCommunity": "https://anchor.fm/s/174cb1b8/podcast/rss",
     "IHaveADHD": "https://ihaveadhd.com/feed/",
     "ADHDExperts": "http://feeds.libsyn.com/44408/rss",
-    "LexFridman": "https://lexfridman.com/feed/podcast/"
+    "LexFridman": "https://lexfridman.com/feed/podcast/",
 }
 
 
-def get_podcast_episodes(
-    max_retries: int = 3, retry_delay: int = 5
-) -> list[dict[str, Any]]:
+def get_podcast_episodes(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str, Any]]:
     """Fetches latest podcast episodes from defined RSS feeds.
 
     Args:
@@ -60,17 +58,13 @@ def get_podcast_episodes(
                 if hasattr(feed, "status") and feed.status != 200:
                     raise Exception(f"Failed to fetch feed, HTTP status {feed.status}")
                 if not feed.entries:
-                    logger.warning(
-                        f"No entries found in podcast feed {rss_url}, attempt {attempt + 1}/{max_retries}"
-                    )
+                    logger.warning(f"No entries found in podcast feed {rss_url}, attempt {attempt + 1}/{max_retries}")
                     if attempt < max_retries - 1:
                         logger.info(f"Retrying {rss_url} after {retry_delay}s...")
                         time.sleep(retry_delay)
                         continue
                     else:
-                        logger.error(
-                            f"Giving up on {rss_url} after {max_retries} attempts with no entries"
-                        )
+                        logger.error(f"Giving up on {rss_url} after {max_retries} attempts with no entries")
                         break
                 for entry in feed.entries:
                     episode = {
@@ -78,22 +72,17 @@ def get_podcast_episodes(
                         "url": getattr(entry, "link", ""),
                         "published_at": getattr(entry, "published", ""),
                         "source": source,
-                        "episode_id": getattr(entry, "id", "")
-                        or getattr(entry, "link", ""),
+                        "episode_id": getattr(entry, "id", "") or getattr(entry, "link", ""),
                         "feed_source": rss_url,
                     }
                     episodes.append(episode)
                 break
             except Exception as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e}"
-                )
+                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e}")
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
                 else:
-                    logger.error(
-                        f"Error fetching podcast feed {rss_url} after {max_retries} attempts: {e}"
-                    )
+                    logger.error(f"Error fetching podcast feed {rss_url} after {max_retries} attempts: {e}")
     # Deduplicate based on episode_id and title
     unique: dict[str, dict[str, Any]] = {}
     seen_titles = set()

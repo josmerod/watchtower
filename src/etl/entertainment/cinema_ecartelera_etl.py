@@ -3,7 +3,6 @@
 import json
 import time
 from datetime import datetime, timedelta
-from typing import List
 from urllib.parse import urljoin
 
 from playwright.sync_api import sync_playwright
@@ -21,7 +20,7 @@ class CinemaMovie(TimestampedModel):
     rating: str = ""
     director: str = ""
     cast: str = ""
-    showtimes: List[str] = []
+    showtimes: list[str] = []
     poster_url: str = ""
     synopsis: str = ""
     trailer_url: str = ""
@@ -51,7 +50,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
             },
         ]
 
-    def get_date_range(self, days_ahead: int = 7) -> List[str]:
+    def get_date_range(self, days_ahead: int = 7) -> list[str]:
         """Get list of dates to check (today + next N days)."""
         dates = []
         today = datetime.now()
@@ -60,9 +59,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
             dates.append(date.strftime("%Y-%m-%d"))
         return dates
 
-    def extract_movies_from_cinema(
-        self, cinema_info: dict, page, date: str
-    ) -> List[dict]:
+    def extract_movies_from_cinema(self, cinema_info: dict, page, date: str) -> list[dict]:
         """Extract movies from a specific cinema page for a specific date."""
         movies = []
 
@@ -77,9 +74,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
             # Try to find and click date selector if available
             try:
                 # Look for date navigation elements
-                date_selectors = page.locator(
-                    '[class*="date"], [class*="dia"], [data-date]'
-                )
+                date_selectors = page.locator('[class*="date"], [class*="dia"], [data-date]')
                 if date_selectors.count() > 0:
                     # Try to find the specific date
                     target_date = datetime.strptime(date, "%Y-%m-%d")
@@ -96,9 +91,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
 
                         for date_option in date_text_options:
                             if date_option.lower() in selector_text:
-                                self.logger.info(
-                                    f"Clicking date selector: {selector_text}"
-                                )
+                                self.logger.info(f"Clicking date selector: {selector_text}")
                                 selector.click()
                                 page.wait_for_timeout(2000)
                                 break
@@ -125,26 +118,20 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
                     elements = page.locator(selector)
                     if elements.count() > 0:
                         movie_elements = elements
-                        self.logger.debug(
-                            f"Found {elements.count()} movies using selector: {selector}"
-                        )
+                        self.logger.debug(f"Found {elements.count()} movies using selector: {selector}")
                         break
                 except Exception:
                     continue
 
             if not movie_elements:
-                self.logger.warning(
-                    f"No movie elements found for {cinema_info['name']} on {date}"
-                )
+                self.logger.warning(f"No movie elements found for {cinema_info['name']} on {date}")
                 return movies
 
             # Extract data from each movie element
             for i in range(movie_elements.count()):
                 try:
                     movie_elem = movie_elements.nth(i)
-                    movie_data = self.extract_movie_data(
-                        movie_elem, cinema_info, date, page
-                    )
+                    movie_data = self.extract_movie_data(movie_elem, cinema_info, date, page)
                     if movie_data and movie_data.get("title"):
                         movies.append(movie_data)
                         self.logger.debug(f"Extracted movie: {movie_data.get('title')}")
@@ -157,9 +144,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
 
         return movies
 
-    def extract_movie_data(
-        self, movie_elem, cinema_info: dict, date: str, page
-    ) -> dict:
+    def extract_movie_data(self, movie_elem, cinema_info: dict, date: str, page) -> dict:
         """Extract data from a single movie element."""
         movie_data = {
             "cinema_name": cinema_info["name"],
@@ -201,9 +186,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
                         info_text = info_elements.nth(j).inner_text().strip()
 
                         # Look for duration (e.g., "129 min.")
-                        if "min" in info_text.lower() and not movie_data.get(
-                            "duration"
-                        ):
+                        if "min" in info_text.lower() and not movie_data.get("duration"):
                             movie_data["duration"] = info_text
 
                         # Look for genre/rating info
@@ -218,10 +201,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
                             "aventura",
                         ]
                         for keyword in genre_keywords:
-                            if (
-                                keyword.lower() in info_text.lower()
-                                and not movie_data.get("genre")
-                            ):
+                            if keyword.lower() in info_text.lower() and not movie_data.get("genre"):
                                 movie_data["genre"] = info_text
                                 break
                 except Exception:
@@ -234,11 +214,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
                     director_elem = movie_elem.locator(selector).first
                     if director_elem.count() > 0:
                         director_text = director_elem.inner_text().strip()
-                        movie_data["director"] = (
-                            director_text.replace("Director:", "")
-                            .replace("Dir:", "")
-                            .strip()
-                        )
+                        movie_data["director"] = director_text.replace("Director:", "").replace("Dir:", "").strip()
                         break
                 except Exception:
                     continue
@@ -255,11 +231,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
                     cast_elem = movie_elem.locator(selector).first
                     if cast_elem.count() > 0:
                         cast_text = cast_elem.inner_text().strip()
-                        movie_data["cast"] = (
-                            cast_text.replace("Reparto:", "")
-                            .replace("Cast:", "")
-                            .strip()
-                        )
+                        movie_data["cast"] = cast_text.replace("Reparto:", "").replace("Cast:", "").strip()
                         break
                 except Exception:
                     continue
@@ -292,13 +264,9 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
             try:
                 img_elem = movie_elem.locator("img").first
                 if img_elem.count() > 0:
-                    poster_url = img_elem.get_attribute(
-                        "src"
-                    ) or img_elem.get_attribute("data-src")
+                    poster_url = img_elem.get_attribute("src") or img_elem.get_attribute("data-src")
                     if poster_url:
-                        movie_data["poster_url"] = urljoin(
-                            cinema_info["url"], poster_url
-                        )
+                        movie_data["poster_url"] = urljoin(cinema_info["url"], poster_url)
             except Exception:
                 pass
 
@@ -321,9 +289,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
 
             # Try to extract trailer link
             try:
-                trailer_elem = movie_elem.locator(
-                    'a[href*="trailer"], a[href*="youtube"]'
-                ).first
+                trailer_elem = movie_elem.locator('a[href*="trailer"], a[href*="youtube"]').first
                 if trailer_elem.count() > 0:
                     trailer_url = trailer_elem.get_attribute("href")
                     if trailer_url:
@@ -336,7 +302,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
 
         return movie_data
 
-    def extract(self) -> List[dict]:
+    def extract(self) -> list[dict]:
         """Extract cinema data using Playwright."""
         all_movies = []
         dates = self.get_date_range(7)  # Check next 7 days
@@ -344,27 +310,21 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
         with sync_playwright() as p:
             # Use Chromium with headless mode
             browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            )
+            context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
             page = context.new_page()
 
             try:
                 for cinema_info in self.cinema_urls:
                     for date in dates:
                         try:
-                            movies = self.extract_movies_from_cinema(
-                                cinema_info, page, date
-                            )
+                            movies = self.extract_movies_from_cinema(cinema_info, page, date)
                             all_movies.extend(movies)
 
                             # Small delay between requests
                             time.sleep(1)
 
                         except Exception as e:
-                            self.logger.error(
-                                f"Error processing {cinema_info['name']} for {date}: {e}"
-                            )
+                            self.logger.error(f"Error processing {cinema_info['name']} for {date}: {e}")
                             continue
 
             finally:
@@ -373,7 +333,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
         self.logger.info(f"Extracted {len(all_movies)} movies from all cinemas")
         return all_movies
 
-    def transform(self, data: List[dict]) -> List[CinemaMovie]:
+    def transform(self, data: list[dict]) -> list[CinemaMovie]:
         """Transform raw cinema data into structured models."""
         if not data:
             return []
@@ -400,7 +360,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
             cleaned["title"] = cleaned["title"].strip()
 
         # Clean duration
-        if "duration" in cleaned and cleaned["duration"]:
+        if cleaned.get("duration"):
             duration = cleaned["duration"].strip()
             # Extract just the duration part if there's extra text
             import re
@@ -410,7 +370,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
                 cleaned["duration"] = duration_match.group()
 
         # Clean genre
-        if "genre" in cleaned and cleaned["genre"]:
+        if cleaned.get("genre"):
             genre = cleaned["genre"].strip()
             # Remove rating info if mixed with genre
             import re
@@ -436,7 +396,7 @@ class CinemaECarteleraETL(BaseETL[dict, CinemaMovie]):
 
         return cleaned
 
-    def load(self, data: List[CinemaMovie]) -> None:
+    def load(self, data: list[CinemaMovie]) -> None:
         """Save cinema data to JSON and CSV files."""
         if not data:
             self.logger.info("No cinema data to load")
@@ -469,9 +429,7 @@ def main():
     etl = CinemaECarteleraETL()
     try:
         metrics = etl.run()
-        etl.logger.info(
-            f"Cinema ETL completed successfully. Metrics: {metrics.model_dump()}"
-        )
+        etl.logger.info(f"Cinema ETL completed successfully. Metrics: {metrics.model_dump()}")
     except Exception as e:
         etl.logger.error(f"Cinema ETL failed: {e}", exc_info=True)
         raise

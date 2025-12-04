@@ -5,7 +5,6 @@ import random
 import re
 import time
 from datetime import datetime, timedelta
-from typing import List
 from urllib.parse import urljoin
 
 from playwright.sync_api import sync_playwright
@@ -23,7 +22,7 @@ class CinemaMovie(TimestampedModel):
     rating: str = ""
     director: str = ""
     cast: str = ""
-    showtimes: List[str] = []
+    showtimes: list[str] = []
     poster_url: str = ""
     synopsis: str = ""
     trailer_url: str = ""
@@ -53,7 +52,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             },
         ]
 
-    def get_date_range(self, days_ahead: int = 7) -> List[str]:
+    def get_date_range(self, days_ahead: int = 7) -> list[str]:
         """Get list of dates to check (today + next N days)."""
         dates = []
         today = datetime.now()
@@ -62,7 +61,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             dates.append(date.strftime("%Y-%m-%d"))
         return dates
 
-    def extract(self) -> List[dict]:
+    def extract(self) -> list[dict]:
         """Extract cinema data using enhanced Playwright configuration."""
         all_movies = []
         dates = self.get_date_range(3)  # Check next 3 days to reduce load
@@ -100,12 +99,12 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
                 Object.defineProperty(navigator, 'webdriver', {
                     get: () => undefined,
                 });
-                
+
                 // Mock plugins
                 Object.defineProperty(navigator, 'plugins', {
                     get: () => [1, 2, 3, 4, 5],
                 });
-                
+
                 // Mock languages
                 Object.defineProperty(navigator, 'languages', {
                     get: () => ['es-ES', 'es', 'en'],
@@ -117,18 +116,14 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
                 for cinema_info in self.cinema_urls:
                     for date in dates:
                         try:
-                            movies = self.extract_movies_from_cinema(
-                                cinema_info, page, date
-                            )
+                            movies = self.extract_movies_from_cinema(cinema_info, page, date)
                             all_movies.extend(movies)
 
                             # Human-like delay between requests
                             time.sleep(random.uniform(2, 5))
 
                         except Exception as e:
-                            self.logger.error(
-                                f"Error processing {cinema_info['name']} for {date}: {e}"
-                            )
+                            self.logger.error(f"Error processing {cinema_info['name']} for {date}: {e}")
                             continue
 
             finally:
@@ -151,9 +146,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
 
         return all_movies
 
-    def extract_movies_from_cinema(
-        self, cinema_info: dict, page, date: str
-    ) -> List[dict]:
+    def extract_movies_from_cinema(self, cinema_info: dict, page, date: str) -> list[dict]:
         """Extract movies from a specific cinema page for a specific date."""
         movies = []
 
@@ -188,9 +181,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             # Scroll to trigger lazy loading
             try:
                 for i in range(3):
-                    page.evaluate(
-                        f"window.scrollTo(0, document.body.scrollHeight * {(i + 1) / 3})"
-                    )
+                    page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {(i + 1) / 3})")
                     page.wait_for_timeout(1000)
             except Exception as e:
                 self.logger.debug(f"Error scrolling: {e}")
@@ -237,18 +228,14 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
                 try:
                     elements = page.query_selector_all(selector_pattern)
                     if elements:
-                        self.logger.debug(
-                            f"Found {len(elements)} elements with pattern: {selector_pattern}"
-                        )
+                        self.logger.debug(f"Found {len(elements)} elements with pattern: {selector_pattern}")
 
                         for element in elements[:5]:  # Check first 5
                             try:
                                 element_text = element.inner_text().strip().lower()
                                 for date_option in date_text_options:
                                     if date_option in element_text:
-                                        self.logger.info(
-                                            f"Clicking date selector: {element_text}"
-                                        )
+                                        self.logger.info(f"Clicking date selector: {element_text}")
                                         element.click()
                                         page.wait_for_timeout(3000)
                                         found_date_selector = True
@@ -266,16 +253,12 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
                     continue
 
             if not found_date_selector:
-                self.logger.debug(
-                    f"No date selector found for {target_date}, using current page content"
-                )
+                self.logger.debug(f"No date selector found for {target_date}, using current page content")
 
         except Exception as e:
             self.logger.debug(f"Could not interact with date selector: {e}")
 
-    def extract_movies_multiple_strategies(
-        self, page, cinema_info: dict, date: str
-    ) -> List[dict]:
+    def extract_movies_multiple_strategies(self, page, cinema_info: dict, date: str) -> list[dict]:
         """Extract movies using multiple strategies."""
         movies = []
 
@@ -305,24 +288,18 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             try:
                 elements = page.query_selector_all(selector)
                 element_count = len(elements)
-                self.logger.debug(
-                    f"Selector '{selector}': found {element_count} elements"
-                )
+                self.logger.debug(f"Selector '{selector}': found {element_count} elements")
 
                 if element_count > 0 and elements_found == 0:
                     movie_elements = elements
                     elements_found = element_count
-                    self.logger.info(
-                        f"Using selector '{selector}' with {element_count} elements"
-                    )
+                    self.logger.info(f"Using selector '{selector}' with {element_count} elements")
 
                     # Log sample content for debugging
                     for i, elem in enumerate(elements[:3]):
                         try:
                             text_content = elem.inner_text().strip()[:100]
-                            self.logger.debug(
-                                f"Sample element {i + 1}: {text_content}..."
-                            )
+                            self.logger.debug(f"Sample element {i + 1}: {text_content}...")
                         except:
                             pass
                     break
@@ -335,9 +312,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
         if movie_elements:
             for i, movie_elem in enumerate(movie_elements):
                 try:
-                    movie_data = self.extract_movie_data_enhanced(
-                        movie_elem, cinema_info, date
-                    )
+                    movie_data = self.extract_movie_data_enhanced(movie_elem, cinema_info, date)
                     if movie_data and movie_data.get("title"):
                         movies.append(movie_data)
                         self.logger.debug(f"Extracted movie: {movie_data.get('title')}")
@@ -348,41 +323,27 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             # Strategy 2: Try to find any movie-related content in page text
             try:
                 all_text = page.inner_text()
-                if any(
-                    keyword in all_text.lower()
-                    for keyword in ["película", "movie", "cine", "sesión", "horario"]
-                ):
-                    self.logger.debug(
-                        "Found movie-related content, but no specific movie containers"
-                    )
+                if any(keyword in all_text.lower() for keyword in ["película", "movie", "cine", "sesión", "horario"]):
+                    self.logger.debug("Found movie-related content, but no specific movie containers")
 
                     # Save debug HTML for analysis
-                    debug_file = (
-                        self.output_dir
-                        / f"debug_{cinema_info['name'].replace(' ', '_')}_{date}.html"
-                    )
+                    debug_file = self.output_dir / f"debug_{cinema_info['name'].replace(' ', '_')}_{date}.html"
                     debug_file.write_text(page.content(), encoding="utf-8")
                     self.logger.debug(f"Saved debug HTML to {debug_file}")
 
                     # Try to extract basic info from text patterns
-                    movies = self.extract_from_text_patterns(
-                        all_text, cinema_info, date
-                    )
+                    movies = self.extract_from_text_patterns(all_text, cinema_info, date)
                 else:
                     self.logger.debug("No movie-related content found")
             except Exception as e:
                 self.logger.debug(f"Error analyzing page content: {e}")
 
         if not movies:
-            self.logger.warning(
-                f"No movie elements found for {cinema_info['name']} on {date}"
-            )
+            self.logger.warning(f"No movie elements found for {cinema_info['name']} on {date}")
 
         return movies
 
-    def extract_from_text_patterns(
-        self, text: str, cinema_info: dict, date: str
-    ) -> List[dict]:
+    def extract_from_text_patterns(self, text: str, cinema_info: dict, date: str) -> list[dict]:
         """Extract movie info from plain text using regex patterns."""
         movies = []
 
@@ -393,9 +354,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             current_movie = None
             for line in lines:
                 # Look for potential movie titles (capitalized, reasonable length)
-                if re.match(r"^[A-Z][A-Za-z\s:,-]{5,50}$", line) and not any(
-                    x in line.lower() for x in ["cinema", "cine", "ver", "horario"]
-                ):
+                if re.match(r"^[A-Z][A-Za-z\s:,-]{5,50}$", line) and not any(x in line.lower() for x in ["cinema", "cine", "ver", "horario"]):
                     if current_movie:
                         movies.append(current_movie)
 
@@ -421,9 +380,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             valid_movies = []
             for movie in movies:
                 if movie.get("title") and len(movie["title"]) > 3:
-                    movie["showtimes"] = list(
-                        set(movie["showtimes"])
-                    )  # Remove duplicates
+                    movie["showtimes"] = list(set(movie["showtimes"]))  # Remove duplicates
                     valid_movies.append(movie)
 
             self.logger.info(f"Extracted {len(valid_movies)} movies from text patterns")
@@ -433,9 +390,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             self.logger.error(f"Error extracting from text patterns: {e}")
             return []
 
-    def extract_movie_data_enhanced(
-        self, movie_elem, cinema_info: dict, date: str
-    ) -> dict:
+    def extract_movie_data_enhanced(self, movie_elem, cinema_info: dict, date: str) -> dict:
         """Enhanced extraction of data from a single movie element."""
         movie_data = {
             "cinema_name": cinema_info["name"],
@@ -476,9 +431,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             if not movie_data.get("title"):
                 try:
                     full_text = movie_elem.inner_text().strip()
-                    lines = [
-                        line.strip() for line in full_text.split("\n") if line.strip()
-                    ]
+                    lines = [line.strip() for line in full_text.split("\n") if line.strip()]
                     if lines:
                         potential_title = lines[0]
                         if len(potential_title) > 2 and len(potential_title) < 100:
@@ -531,9 +484,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
                 for line in lines:
                     line_lower = line.lower().strip()
 
-                    if (
-                        "director" in line_lower or "dirigida" in line_lower
-                    ) and not movie_data.get("director"):
+                    if ("director" in line_lower or "dirigida" in line_lower) and not movie_data.get("director"):
                         director_text = line.strip()
                         for prefix in [
                             "Director:",
@@ -545,11 +496,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
                                 director_text = director_text[len(prefix) :].strip()
                         movie_data["director"] = director_text
 
-                    if (
-                        "reparto" in line_lower
-                        or "actores" in line_lower
-                        or "protagonistas" in line_lower
-                    ) and not movie_data.get("cast"):
+                    if ("reparto" in line_lower or "actores" in line_lower or "protagonistas" in line_lower) and not movie_data.get("cast"):
                         cast_text = line.strip()
                         for prefix in [
                             "Reparto:",
@@ -597,17 +544,11 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             try:
                 img_elements = movie_elem.query_selector_all("img")
                 for img_elem in img_elements:
-                    poster_url = (
-                        img_elem.get_attribute("src")
-                        or img_elem.get_attribute("data-src")
-                        or img_elem.get_attribute("data-lazy")
-                    )
+                    poster_url = img_elem.get_attribute("src") or img_elem.get_attribute("data-src") or img_elem.get_attribute("data-lazy")
                     if poster_url and not poster_url.startswith("data:"):
                         if poster_url.startswith("//"):
                             poster_url = "https:" + poster_url
-                        elif poster_url.startswith("/"):
-                            poster_url = urljoin(cinema_info["url"], poster_url)
-                        elif not poster_url.startswith("http"):
+                        elif poster_url.startswith("/") or not poster_url.startswith("http"):
                             poster_url = urljoin(cinema_info["url"], poster_url)
 
                         movie_data["poster_url"] = poster_url
@@ -617,9 +558,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
 
             # Extract trailer link
             try:
-                trailer_links = movie_elem.query_selector_all(
-                    'a[href*="trailer"], a[href*="youtube"], a[href*="youtu.be"]'
-                )
+                trailer_links = movie_elem.query_selector_all('a[href*="trailer"], a[href*="youtube"], a[href*="youtu.be"]')
                 for link in trailer_links:
                     trailer_url = link.get_attribute("href")
                     if trailer_url:
@@ -633,7 +572,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
 
         return movie_data
 
-    def transform(self, data: List[dict]) -> List[CinemaMovie]:
+    def transform(self, data: list[dict]) -> list[CinemaMovie]:
         """Transform raw cinema data into structured models."""
         if not data:
             return []
@@ -659,14 +598,14 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             cleaned["title"] = cleaned["title"].strip()
 
         # Clean duration
-        if "duration" in cleaned and cleaned["duration"]:
+        if cleaned.get("duration"):
             duration = cleaned["duration"].strip()
             duration_match = re.search(r"\d+\s*min", duration, re.IGNORECASE)
             if duration_match:
                 cleaned["duration"] = duration_match.group()
 
         # Clean genre
-        if "genre" in cleaned and cleaned["genre"]:
+        if cleaned.get("genre"):
             genre = cleaned["genre"].strip()
             genre_clean = re.sub(r"\+\d+|\b\d+\b", "", genre).strip()
             cleaned["genre"] = genre_clean
@@ -686,7 +625,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
 
         return cleaned
 
-    def load(self, data: List[CinemaMovie]) -> None:
+    def load(self, data: list[CinemaMovie]) -> None:
         """Save cinema data to JSON and CSV files."""
         if not data:
             self.logger.info("No cinema data to load")
@@ -719,9 +658,7 @@ def main():
     etl = CinemaECarteleraImprovedETL()
     try:
         metrics = etl.run()
-        etl.logger.info(
-            f"Enhanced Cinema ETL completed successfully. Metrics: {metrics.model_dump()}"
-        )
+        etl.logger.info(f"Enhanced Cinema ETL completed successfully. Metrics: {metrics.model_dump()}")
     except Exception as e:
         etl.logger.error(f"Enhanced Cinema ETL failed: {e}", exc_info=True)
         raise

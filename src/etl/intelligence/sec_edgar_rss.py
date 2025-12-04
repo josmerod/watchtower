@@ -10,13 +10,12 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("SECEDGARETL")
 
@@ -36,9 +35,9 @@ def _parse_date(date_str: str | None) -> str | None:
             return date_str
 
 
-def fetch_sec_edgar() -> List[Dict[str, Any]]:
+def fetch_sec_edgar() -> list[dict[str, Any]]:
     logger.info(f"Fetching SEC EDGAR RSS: {FEED_URL}")
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(FEED_URL)
     except Exception as e:
@@ -65,7 +64,7 @@ def fetch_sec_edgar() -> List[Dict[str, Any]]:
     return entries
 
 
-def save_sec(entries: List[Dict[str, Any]]) -> None:
+def save_sec(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No SEC entries to save")
         return
@@ -96,4 +95,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

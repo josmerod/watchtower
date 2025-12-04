@@ -28,9 +28,7 @@ from src.utils.logging import get_logger
 logger = get_logger("BensBitesETL")
 
 
-def get_bensbites_data(
-    max_retries: int = 3, retry_delay: int = 5, max_pages: int = 4
-) -> list[dict[str, Any]]:
+def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: int = 4) -> list[dict[str, Any]]:
     """Fetches trending news articles from Ben's Bites website using Playwright.
 
     Args:
@@ -84,14 +82,10 @@ def get_bensbites_data(
                 # Add a variable delay between pages to appear more human-like
                 if page_num > 0:
                     delay = 15  # Increasing delay for each subsequent page
-                    logger.info(
-                        f"Waiting {delay} seconds before fetching page {page_num + 1}"
-                    )
+                    logger.info(f"Waiting {delay} seconds before fetching page {page_num + 1}")
                     time.sleep(delay)
 
-                current_url = (
-                    f"{base_url}?page={page_num + 1}" if page_num > 0 else base_url
-                )
+                current_url = f"{base_url}?page={page_num + 1}" if page_num > 0 else base_url
                 logger.info(f"Processing page {page_num + 1}: {current_url}")
 
                 # Navigate to the page and wait for content to load
@@ -101,19 +95,13 @@ def get_bensbites_data(
                         # Clear cache and cookies between attempts
                         if attempt > 0:
                             context.clear_cookies()
-                            time.sleep(
-                                retry_delay * (attempt + 1)
-                            )  # Exponential backoff
+                            time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
 
                         # Navigate to the page and wait for network to be idle
-                        response = page.goto(
-                            current_url, wait_until="networkidle", timeout=30000
-                        )
+                        response = page.goto(current_url, wait_until="networkidle", timeout=30000)
 
                         if not response.ok:
-                            logger.warning(
-                                f"Page {page_num + 1} returned status {response.status}"
-                            )
+                            logger.warning(f"Page {page_num + 1} returned status {response.status}")
                             if attempt < max_retries - 1:
                                 continue
                             break
@@ -125,9 +113,7 @@ def get_bensbites_data(
                             time.sleep(0.5)
 
                         # Wait for the content to load
-                        content = page.wait_for_selector(
-                            ".grid.lg\\:grid-cols-12", state="visible", timeout=15000
-                        )
+                        content = page.wait_for_selector(".grid.lg\\:grid-cols-12", state="visible", timeout=15000)
 
                         if content:
                             # Add a small random delay to simulate reading
@@ -139,21 +125,13 @@ def get_bensbites_data(
 
                     except Exception as e:
                         if attempt < max_retries - 1:
-                            logger.warning(
-                                f"Failed to load page {page_num + 1}, attempt {attempt + 1}/{max_retries}: {e!s}"
-                            )
-                            time.sleep(
-                                retry_delay * (attempt + 1)
-                            )  # Exponential backoff
+                            logger.warning(f"Failed to load page {page_num + 1}, attempt {attempt + 1}/{max_retries}: {e!s}")
+                            time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
                         else:
-                            logger.error(
-                                f"Failed to load page {page_num + 1} after {max_retries} attempts"
-                            )
+                            logger.error(f"Failed to load page {page_num + 1} after {max_retries} attempts")
 
                 if not success:
-                    logger.warning(
-                        f"Skipping page {page_num + 1} due to loading failures"
-                    )
+                    logger.warning(f"Skipping page {page_num + 1} due to loading failures")
                     # If first page fails, abort entirely
                     if page_num == 0:
                         logger.error("First page failed to load, aborting")
@@ -163,9 +141,7 @@ def get_bensbites_data(
                 # Extract articles
                 articles = page.query_selector_all("div[wire\\:id] div[wire\\:id]")
                 article_count = len(articles)
-                logger.info(
-                    f"Found {article_count} potential articles on page {page_num + 1}"
-                )
+                logger.info(f"Found {article_count} potential articles on page {page_num + 1}")
 
                 # If we find no articles, assume we've reached the end
                 if article_count == 0:
@@ -175,9 +151,7 @@ def get_bensbites_data(
                 for article in articles:
                     try:
                         # Extract title and URL
-                        title_element = article.query_selector(
-                            "h3.text-primary.leading-5 a"
-                        )
+                        title_element = article.query_selector("h3.text-primary.leading-5 a")
                         if not title_element:
                             continue
 
@@ -190,63 +164,35 @@ def get_bensbites_data(
                         seen_urls.add(url)
 
                         # Extract source
-                        source_element = article.query_selector(
-                            "span.font-normal.text-secondary.text-xs.italic"
-                        )
-                        source = (
-                            source_element.inner_text().strip()
-                            if source_element
-                            else "bensbites.com"
-                        )
+                        source_element = article.query_selector("span.font-normal.text-secondary.text-xs.italic")
+                        source = source_element.inner_text().strip() if source_element else "bensbites.com"
 
                         # Extract timestamp
-                        time_element = article.query_selector(
-                            "div.flex.space-x-1\\.5.text-xs.text-secondary span:nth-child(2)"
-                        )
-                        published_at = (
-                            time_element.inner_text().strip() if time_element else ""
-                        )
+                        time_element = article.query_selector("div.flex.space-x-1\\.5.text-xs.text-secondary span:nth-child(2)")
+                        published_at = time_element.inner_text().strip() if time_element else ""
 
                         # Convert relative time to timestamp
                         current_time = datetime.now()
                         if "hours ago" in published_at:
                             hours = int(published_at.split()[0])
-                            published_at = (
-                                current_time.replace(microsecond=0)
-                                - timedelta(hours=hours)
-                            ).isoformat()
+                            published_at = (current_time.replace(microsecond=0) - timedelta(hours=hours)).isoformat()
                         elif "minutes ago" in published_at:
                             minutes = int(published_at.split()[0])
-                            published_at = (
-                                current_time.replace(microsecond=0)
-                                - timedelta(minutes=minutes)
-                            ).isoformat()
+                            published_at = (current_time.replace(microsecond=0) - timedelta(minutes=minutes)).isoformat()
                         else:
-                            published_at = current_time.replace(
-                                microsecond=0
-                            ).isoformat()
+                            published_at = current_time.replace(microsecond=0).isoformat()
 
                         # Extract votes if available
-                        votes_element = article.query_selector(
-                            "div.flex svg + span.mx-1"
-                        )
-                        votes = (
-                            votes_element.inner_text().strip() if votes_element else "0"
-                        )
+                        votes_element = article.query_selector("div.flex svg + span.mx-1")
+                        votes = votes_element.inner_text().strip() if votes_element else "0"
 
                         # Extract tags if available
-                        tag_element = article.query_selector(
-                            "a.text-gray-600.bg-gray-50"
-                        )
+                        tag_element = article.query_selector("a.text-gray-600.bg-gray-50")
                         tag = tag_element.inner_text().strip() if tag_element else ""
 
                         article_data = {
                             "title": title,
-                            "url": (
-                                url
-                                if url.startswith("http")
-                                else f"https://news.bensbites.com{url}"
-                            ),
+                            "url": (url if url.startswith("http") else f"https://news.bensbites.com{url}"),
                             "published_at": published_at,
                             "source": source,
                             "votes": votes,
@@ -270,9 +216,7 @@ def get_bensbites_data(
         logger.error(f"Error during scraping: {e!s}")
         return []
 
-    logger.info(
-        f"Retrieved a total of {len(all_articles)} unique articles across {max_pages} pages"
-    )
+    logger.info(f"Retrieved a total of {len(all_articles)} unique articles across {max_pages} pages")
     return all_articles
 
 
@@ -346,9 +290,7 @@ def main():
         pd.DataFrame(processed_articles).to_csv(csv_file, index=False)
         logger.debug(f"Saved CSV data to {csv_file}")
 
-        logger.info(
-            f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}"
-        )
+        logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
 
     except Exception as e:
         logger.error(f"Error in Ben's Bites ETL process: {e!s}", exc_info=True)

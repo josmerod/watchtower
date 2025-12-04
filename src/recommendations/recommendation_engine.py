@@ -37,7 +37,11 @@ class RecommendationEngine:
     3. Content similar to recently clicked items (title matching)
     """
 
-    def __init__(self, activity_tracker: UserActivityTracker | None = None, data_dir: Path | None = None):
+    def __init__(
+        self,
+        activity_tracker: UserActivityTracker | None = None,
+        data_dir: Path | None = None,
+    ):
         """Initialize the recommendation engine.
 
         Args:
@@ -109,7 +113,10 @@ class RecommendationEngine:
             return None
 
     def _generate_top_source_recommendations(
-        self, user_id: str, profile: UserActivityProfile, recommendations: UserRecommendations
+        self,
+        user_id: str,
+        profile: UserActivityProfile,
+        recommendations: UserRecommendations,
     ) -> None:
         """Generate recommendations based on user's top sources.
 
@@ -154,7 +161,10 @@ class RecommendationEngine:
             logger.error(f"Failed to generate top source recommendations: {e}")
 
     def _generate_top_category_recommendations(
-        self, user_id: str, profile: UserActivityProfile, recommendations: UserRecommendations
+        self,
+        user_id: str,
+        profile: UserActivityProfile,
+        recommendations: UserRecommendations,
     ) -> None:
         """Generate recommendations based on user's top categories.
 
@@ -199,7 +209,10 @@ class RecommendationEngine:
             logger.error(f"Failed to generate category recommendations: {e}")
 
     def _generate_similar_content_recommendations(
-        self, user_id: str, activities: list[ActivityEvent], recommendations: UserRecommendations
+        self,
+        user_id: str,
+        activities: list[ActivityEvent],
+        recommendations: UserRecommendations,
     ) -> None:
         """Generate recommendations based on content similarity to recently viewed items.
 
@@ -210,12 +223,9 @@ class RecommendationEngine:
         """
         try:
             # Get recently clicked/viewed content (last 14 days)
-            recent_interactions = [
-                a for a in activities
-                if a.action in [ActivityType.CLICK, ActivityType.VIEW]
-                and a.timestamp > datetime.now() - timedelta(days=14)
-                and a.title
-            ][:10]  # Limit to 10 recent items
+            recent_interactions = [a for a in activities if a.action in [ActivityType.CLICK, ActivityType.VIEW] and a.timestamp > datetime.now() - timedelta(days=14) and a.title][
+                :10
+            ]  # Limit to 10 recent items
 
             for i, activity in enumerate(recent_interactions):
                 # Find similar content based on title
@@ -238,7 +248,7 @@ class RecommendationEngine:
                             content_id=content["id"],
                             content_type=content["type"],
                             title=content["title"],
-                            description=f"Similar to \"{activity.title}\" which you recently viewed",
+                            description=f'Similar to "{activity.title}" which you recently viewed',
                             score=confidence,
                             metadata={
                                 "similarity_score": similarity,
@@ -275,15 +285,17 @@ class RecommendationEngine:
             arxiv_file = data_dir / "arxiv" / "latest.json"
             if arxiv_file.exists():
                 try:
-                    with open(arxiv_file, encoding='utf-8') as f:
+                    with open(arxiv_file, encoding="utf-8") as f:
                         data = json.load(f)
                         for item in data[:limit]:
-                            content_items.append({
-                                "id": item.get("id", ""),
-                                "title": item.get("title", ""),
-                                "type": "arxiv_paper",
-                                "recent_count": 1,  # Placeholder
-                            })
+                            content_items.append(
+                                {
+                                    "id": item.get("id", ""),
+                                    "title": item.get("title", ""),
+                                    "type": "arxiv_paper",
+                                    "recent_count": 1,  # Placeholder
+                                }
+                            )
                 except Exception as e:
                     logger.warning(f"Failed to load ArXiv data: {e}")
 
@@ -294,15 +306,17 @@ class RecommendationEngine:
                 news_file = data_dir / news_dir / "latest.json"
                 if news_file.exists():
                     try:
-                        with open(news_file, encoding='utf-8') as f:
+                        with open(news_file, encoding="utf-8") as f:
                             data = json.load(f)
                             for item in data[:limit]:
-                                content_items.append({
-                                    "id": item.get("id", ""),
-                                    "title": item.get("title", ""),
-                                    "type": "news_article",
-                                    "recent_count": 1,
-                                })
+                                content_items.append(
+                                    {
+                                        "id": item.get("id", ""),
+                                        "title": item.get("title", ""),
+                                        "type": "news_article",
+                                        "recent_count": 1,
+                                    }
+                                )
                             break  # Use first successful source
                     except Exception as e:
                         logger.warning(f"Failed to load {news_dir} data: {e}")
@@ -359,6 +373,19 @@ class RecommendationEngine:
         similar_content.sort(key=lambda x: x["similarity_score"], reverse=True)
         return similar_content[:limit]
 
+    def get_related_content(self, title: str, content_type: str, limit: int = 5) -> list[dict[str, Any]]:
+        """Get content related to a specific title.
+
+        Args:
+            title: Title to find related content for
+            content_type: Type of the original content
+            limit: Maximum number of items to return
+
+        Returns:
+            List of related content items
+        """
+        return self._find_similar_content(title, content_type, limit)
+
     def _calculate_title_similarity(self, title1: str, title2: str) -> float:
         """Calculate similarity score between two titles.
 
@@ -413,18 +440,18 @@ class RecommendationEngine:
             data = recommendations.dict()
 
             # Convert datetime fields to ISO strings
-            if isinstance(data.get('generated_at'), datetime):
-                data['generated_at'] = recommendations.generated_at.isoformat()
+            if isinstance(data.get("generated_at"), datetime):
+                data["generated_at"] = recommendations.generated_at.isoformat()
 
-            for rec in data['recommendations']:
-                if isinstance(rec.get('generated_at'), datetime):
-                    rec['generated_at'] = rec['generated_at'].isoformat()
-                if isinstance(rec.get('expires_at'), datetime):
-                    rec['expires_at'] = rec['expires_at'].isoformat()
-                if isinstance(rec.get('feedback_timestamp'), datetime):
-                    rec['feedback_timestamp'] = rec['feedback_timestamp'].isoformat()
+            for rec in data["recommendations"]:
+                if isinstance(rec.get("generated_at"), datetime):
+                    rec["generated_at"] = rec["generated_at"].isoformat()
+                if isinstance(rec.get("expires_at"), datetime):
+                    rec["expires_at"] = rec["expires_at"].isoformat()
+                if isinstance(rec.get("feedback_timestamp"), datetime):
+                    rec["feedback_timestamp"] = rec["feedback_timestamp"].isoformat()
 
-            with open(recommendations_file, 'w', encoding='utf-8') as f:
+            with open(recommendations_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
             logger.debug(f"Saved {len(recommendations.recommendations)} recommendations for user {user_id}")
@@ -449,20 +476,20 @@ class RecommendationEngine:
             if not recommendations_file.exists():
                 return None
 
-            with open(recommendations_file, encoding='utf-8') as f:
+            with open(recommendations_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             # Parse datetime fields
-            if isinstance(data.get('generated_at'), str):
-                data['generated_at'] = datetime.fromisoformat(data['generated_at'].replace('Z', '+00:00'))
+            if isinstance(data.get("generated_at"), str):
+                data["generated_at"] = datetime.fromisoformat(data["generated_at"].replace("Z", "+00:00"))
 
-            for rec in data.get('recommendations', []):
-                if isinstance(rec.get('generated_at'), str):
-                    rec['generated_at'] = datetime.fromisoformat(rec['generated_at'].replace('Z', '+00:00'))
-                if isinstance(rec.get('expires_at'), str):
-                    rec['expires_at'] = datetime.fromisoformat(rec['expires_at'].replace('Z', '+00:00'))
-                if rec.get('feedback_timestamp'):
-                    rec['feedback_timestamp'] = datetime.fromisoformat(rec['feedback_timestamp'].replace('Z', '+00:00'))
+            for rec in data.get("recommendations", []):
+                if isinstance(rec.get("generated_at"), str):
+                    rec["generated_at"] = datetime.fromisoformat(rec["generated_at"].replace("Z", "+00:00"))
+                if isinstance(rec.get("expires_at"), str):
+                    rec["expires_at"] = datetime.fromisoformat(rec["expires_at"].replace("Z", "+00:00"))
+                if rec.get("feedback_timestamp"):
+                    rec["feedback_timestamp"] = datetime.fromisoformat(rec["feedback_timestamp"].replace("Z", "+00:00"))
 
             return UserRecommendations(**data)
 
@@ -470,9 +497,7 @@ class RecommendationEngine:
             logger.error(f"Failed to load recommendations for user {user_id}: {e}")
             return None
 
-    def update_recommendation_feedback(
-        self, user_id: str, recommendation_id: str, helpful: bool
-    ) -> bool:
+    def update_recommendation_feedback(self, user_id: str, recommendation_id: str, helpful: bool) -> bool:
         """Update user feedback on a recommendation.
 
         Args:

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """ETL module for collecting active "General" threads from selected 4chan boards.
 
 This ETL fetches each board's catalog via the official 4chan JSON API, filters
@@ -11,11 +9,13 @@ Output files (one dated and one `latest.json`) are written to
 information easily.
 """
 
+from __future__ import annotations
+
 import json
 import re
 import warnings
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning  # type: ignore
@@ -32,7 +32,7 @@ class FourChanGeneralsETL(SimpleETL):
 
     CATALOG_URL = "https://a.4cdn.org/{board}/catalog.json"
 
-    def __init__(self, boards: List[str] | None = None, **kwargs: Any):
+    def __init__(self, boards: list[str] | None = None, **kwargs: Any):
         self.boards = boards or [
             "g",  # Technology
             "vg",  # Video Games Generals
@@ -57,7 +57,7 @@ class FourChanGeneralsETL(SimpleETL):
     # ------------------------------------------------------------------
     # Extract
     # ------------------------------------------------------------------
-    def extract(self) -> List[dict[str, Any]]:  # noqa: D401
+    def extract(self) -> list[dict[str, Any]]:
         """Retrieve raw thread data from each board's catalog."""
         self.logger.info("Extracting catalog data from 4chan API …")
         extracted: list[dict[str, Any]] = []
@@ -83,7 +83,7 @@ class FourChanGeneralsETL(SimpleETL):
     # ------------------------------------------------------------------
     # Transform
     # ------------------------------------------------------------------
-    def transform(self, data: List[dict[str, Any]]) -> List[dict[str, Any]]:  # noqa: D401
+    def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Filter *General* threads and clean up fields."""
         if not data:
             self.logger.warning("No data extracted – skipping transform phase.")
@@ -104,11 +104,7 @@ class FourChanGeneralsETL(SimpleETL):
 
             # Convert HTML comment to plain-text
             comment_html = item.get("com", "")
-            comment_text = (
-                BeautifulSoup(comment_html, "html.parser").get_text(" ", strip=True)
-                if comment_html
-                else ""
-            )
+            comment_text = BeautifulSoup(comment_html, "html.parser").get_text(" ", strip=True) if comment_html else ""
 
             transformed.append(
                 {
@@ -129,7 +125,7 @@ class FourChanGeneralsETL(SimpleETL):
     # ------------------------------------------------------------------
     # Load
     # ------------------------------------------------------------------
-    def load(self, data: List[dict[str, Any]]) -> None:  # noqa: D401
+    def load(self, data: list[dict[str, Any]]) -> None:
         """Persist results to JSON – dated and latest pointers."""
         if not data:
             self.logger.info("No *General* threads detected – nothing to load.")

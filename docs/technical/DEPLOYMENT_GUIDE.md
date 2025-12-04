@@ -352,7 +352,7 @@ upstream watchtower {
 server {
     listen 80;
     server_name your-domain.com;
-    
+
     # Redirect HTTP to HTTPS
     return 301 https://$server_name$request_uri;
 }
@@ -360,24 +360,24 @@ server {
 server {
     listen 443 ssl http2;
     server_name your-domain.com;
-    
+
     # SSL configuration (managed by certbot)
     ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
-    
+
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
     add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
-    
+
     # Gzip compression
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
     gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
-    
+
     # Main application
     location / {
         proxy_pass http://watchtower;
@@ -385,25 +385,25 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
+
         # WebSocket support (for Dash)
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        
+
         # Timeouts
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
     }
-    
+
     # Static files (if any)
     location /assets/ {
         alias /opt/watchtower/src/web/dashboard/assets/;
         expires 7d;
         add_header Cache-Control "public, no-transform";
     }
-    
+
     # Health check
     location /health {
         access_log off;
@@ -554,10 +554,10 @@ echo "0 12 * * * /usr/bin/certbot renew --quiet" | sudo crontab -
    ```bash
    # Check service status
    sudo systemctl status watchtower
-   
+
    # Check logs
    tail -f /opt/watchtower/logs/dashboard.log
-   
+
    # Check port availability
    netstat -tlnp | grep 7777
    ```
@@ -567,7 +567,7 @@ echo "0 12 * * * /usr/bin/certbot renew --quiet" | sudo crontab -
    # Check ETL logs
    ls -la /opt/watchtower/logs/
    tail -f /opt/watchtower/logs/etl_*.log
-   
+
    # Test individual ETL
    cd /opt/watchtower
    uv run python src/etl/news/news_get_ycombinator.py
@@ -577,7 +577,7 @@ echo "0 12 * * * /usr/bin/certbot renew --quiet" | sudo crontab -
    ```bash
    # Check process memory
    ps aux | grep python | sort -k4 -nr
-   
+
    # Restart services if needed
    sudo systemctl restart watchtower
    ```
@@ -586,7 +586,7 @@ echo "0 12 * * * /usr/bin/certbot renew --quiet" | sudo crontab -
    ```bash
    # Check largest files
    du -h /opt/watchtower/data | sort -hr | head -20
-   
+
    # Clean old data (if configured)
    find /opt/watchtower/data -name "*.json" -mtime +30 -not -name "*_latest.json"
    ```

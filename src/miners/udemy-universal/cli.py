@@ -43,9 +43,7 @@ def check_dependencies():
                 except Exception:
                     logger.warning("Playwright is installed but browsers are missing.")
                     logger.warning("Run: playwright install")
-                    logger.warning(
-                        "Some scrapers (Real Discount, Udemy Free Courses, Udemy Freebies) may fail without Playwright browsers."
-                    )
+                    logger.warning("Some scrapers (Real Discount, Udemy Free Courses, Udemy Freebies) may fail without Playwright browsers.")
         except ImportError:
             missing_deps.append("playwright")
     except ImportError:
@@ -104,9 +102,7 @@ def create_scraping_thread(site: str, scraper):
             # Check if the scraper has finished with an error during initialization
             if getattr(scraper, f"{code_name}_done", False):
                 if getattr(scraper, f"{code_name}_length", 0) == -1:
-                    thread_logger.error(
-                        f"Scraper for {site} failed during initialization"
-                    )
+                    thread_logger.error(f"Scraper for {site} failed during initialization")
                     return
                 else:
                     # Scraper completed during initialization - this is normal for some sites
@@ -129,9 +125,7 @@ def create_scraping_thread(site: str, scraper):
         if getattr(scraper, f"{code_name}_done", False):
             courses = getattr(scraper, f"{code_name}_data", [])
             if courses and len(courses) > 0:
-                thread_logger.info(
-                    f"Scraping completed for {site} with {len(courses)} courses"
-                )
+                thread_logger.info(f"Scraping completed for {site} with {len(courses)} courses")
             else:
                 thread_logger.warning(f"No courses found for {site}")
             return
@@ -139,9 +133,7 @@ def create_scraping_thread(site: str, scraper):
         # Create and update progress bar with better error handling
         try:
             progress_bar = tqdm(
-                total=max(
-                    1, final_length
-                ),  # Ensure total is at least 1 to avoid division by zero
+                total=max(1, final_length),  # Ensure total is at least 1 to avoid division by zero
                 desc=site,
                 leave=True,  # leave=True to see finished bars
                 unit="items",
@@ -170,13 +162,9 @@ def create_scraping_thread(site: str, scraper):
             # Add a timeout for the entire scraping process
             elapsed_time = time.time() - start_time
             if elapsed_time > scraping_timeout:
-                thread_logger.error(
-                    f"Timeout during scraping process for {site} after {elapsed_time:.1f}s"
-                )
+                thread_logger.error(f"Timeout during scraping process for {site} after {elapsed_time:.1f}s")
                 setattr(scraper, f"{code_name}_done", True)
-                setattr(
-                    scraper, f"{code_name}_length", max(prev_progress, 1)
-                )  # Set final length to current progress
+                setattr(scraper, f"{code_name}_length", max(prev_progress, 1))  # Set final length to current progress
                 break
 
         # Ensure progress bar reaches 100% safely
@@ -193,9 +181,7 @@ def create_scraping_thread(site: str, scraper):
         courses = getattr(scraper, f"{code_name}_data", [])
         # Even if we only got partial results, save them
         if courses and len(courses) > 0:
-            thread_logger.info(
-                f"Scraping completed for {site} with {len(courses)} courses"
-            )
+            thread_logger.info(f"Scraping completed for {site} with {len(courses)} courses")
         else:
             thread_logger.warning(f"No courses found for {site}")
 
@@ -242,18 +228,12 @@ def main_extract():
                 settings = json.load(f)
                 # Use sites enabled in settings if available
                 if "sites" in settings and isinstance(settings["sites"], dict):
-                    sites_to_scrape = [
-                        site for site, enabled in settings["sites"].items() if enabled
-                    ]
+                    sites_to_scrape = [site for site, enabled in settings["sites"].items() if enabled]
                     if not sites_to_scrape:
-                        logger.warning(
-                            "No sites enabled in settings file. Defaulting to all sites."
-                        )
+                        logger.warning("No sites enabled in settings file. Defaulting to all sites.")
                         sites_to_scrape = list(scraper_dict.keys())
                 else:
-                    logger.warning(
-                        "'sites' key not found or invalid in settings. Defaulting to all sites."
-                    )
+                    logger.warning("'sites' key not found or invalid in settings. Defaulting to all sites.")
     except Exception as e:
         logger.error(f"Error loading settings to determine sites: {e!s}")
         logger.warning("Defaulting to scrape all sites.")
@@ -270,9 +250,7 @@ def main_extract():
     try:
         # Get courses from scrapers using the threading function
         logger.info("Starting course extraction from selected sites...")
-        scraped_data = scraper.get_scraped_courses(
-            lambda site: create_scraping_thread(site, scraper)
-        )
+        scraped_data = scraper.get_scraped_courses(lambda site: create_scraping_thread(site, scraper))
         # Wait a moment for progress bars to finish visually
         time.sleep(2)
         logger.info("Extraction process finished.")
@@ -291,9 +269,7 @@ def main_extract():
             else:
                 failed_sites.append(site)
                 if site_error:
-                    logger.error(
-                        f"✗ {site}: Failed with error - {site_error.split(chr(10))[0]}"
-                    )  # First line of error
+                    logger.error(f"✗ {site}: Failed with error - {site_error.split(chr(10))[0]}")  # First line of error
                 else:
                     logger.error(f"✗ {site}: Failed - no courses found")
 
@@ -302,12 +278,8 @@ def main_extract():
 
         # Save successful results to JSON file
         if successful_data:
-            total_courses_found = sum(
-                len(courses) for courses in successful_data.values()
-            )
-            logger.info(
-                f"Found {total_courses_found} potential courses from {len(successful_data)} sites."
-            )
+            total_courses_found = sum(len(courses) for courses in successful_data.values())
+            logger.info(f"Found {total_courses_found} potential courses from {len(successful_data)} sites.")
             try:
                 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
                     json.dump(successful_data, f, indent=4, ensure_ascii=False)
@@ -320,14 +292,10 @@ def main_extract():
             except OSError as e:
                 logger.error(f"Error saving course list to '{OUTPUT_FILE}': {e}")
         else:
-            logger.warning(
-                "No courses found or all scrapers failed. Output file not created."
-            )
+            logger.warning("No courses found or all scrapers failed. Output file not created.")
             logger.warning("This might be due to:")
             logger.warning("  1. Network connectivity issues")
-            logger.warning(
-                "  2. Missing dependencies (run: pip install playwright cloudscraper)"
-            )
+            logger.warning("  2. Missing dependencies (run: pip install playwright cloudscraper)")
             logger.warning("  3. Missing Playwright browsers (run: playwright install)")
             logger.warning("  4. Sites being temporarily unavailable")
 

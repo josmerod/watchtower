@@ -10,7 +10,7 @@ The GitHub Trending RSS ETL fetches trending repository data from RSS feeds prov
 
 ### All Languages
 - Daily trending repositories across all programming languages
-- Weekly trending repositories across all programming languages  
+- Weekly trending repositories across all programming languages
 - Monthly trending repositories across all programming languages
 
 ### Python Specific
@@ -53,7 +53,7 @@ Each repository entry contains:
 {
   "id": "unique-uuid",
   "name": "repository-name",
-  "full_name": "owner/repository-name", 
+  "full_name": "owner/repository-name",
   "description": "Repository description",
   "url": "https://github.com/owner/repo",
   "language": "Python",

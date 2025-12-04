@@ -14,14 +14,12 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.models.giveaways import UnifiedGiveawayModel
@@ -56,7 +54,7 @@ class FreeGamesETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract free games from multiple sources."""
         logger.info("Starting free games extraction...")
 
@@ -73,7 +71,7 @@ class FreeGamesETL(BaseETL):
         logger.info(f"Total extracted {len(all_games)} free games")
         return {"games": all_games, "total_count": len(all_games)}
 
-    def _extract_epic_games(self) -> List[Dict[str, Any]]:
+    def _extract_epic_games(self) -> list[dict[str, Any]]:
         """Extract free games from Epic Games Store API."""
         try:
             logger.info("Extracting free games from Epic Games Store...")
@@ -87,12 +85,7 @@ class FreeGamesETL(BaseETL):
             data = response.json()
             games = []
 
-            promotions = (
-                data.get("data", {})
-                .get("Catalog", {})
-                .get("searchStore", {})
-                .get("elements", [])
-            )
+            promotions = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", [])
 
             for game in promotions:
                 try:
@@ -108,22 +101,13 @@ class FreeGamesETL(BaseETL):
                     promotion_end = None
 
                     if promotions_data:
-                        promotional_offers = promotions_data.get(
-                            "promotionalOffers", []
-                        )
-                        upcoming_offers = promotions_data.get(
-                            "upcomingPromotionalOffers", []
-                        )
+                        promotional_offers = promotions_data.get("promotionalOffers", [])
+                        upcoming_offers = promotions_data.get("upcomingPromotionalOffers", [])
 
                         # Check current promotional offers
                         for offer_set in promotional_offers:
                             for offer in offer_set.get("promotionalOffers", []):
-                                if (
-                                    offer.get("discountSetting", {}).get(
-                                        "discountPercentage"
-                                    )
-                                    == 0
-                                ):
+                                if offer.get("discountSetting", {}).get("discountPercentage") == 0:
                                     is_free = True
                                     promotion_end = offer.get("endDate")
                                     break
@@ -132,28 +116,17 @@ class FreeGamesETL(BaseETL):
                         if not is_free:
                             for offer_set in upcoming_offers:
                                 for offer in offer_set.get("promotionalOffers", []):
-                                    if (
-                                        offer.get("discountSetting", {}).get(
-                                            "discountPercentage"
-                                        )
-                                        == 0
-                                    ):
+                                    if offer.get("discountSetting", {}).get("discountPercentage") == 0:
                                         # This will be free in the future
                                         promotion_start = offer.get("startDate")
                                         promotion_end = offer.get("endDate")
                                         games.append(
                                             {
                                                 "title": game.get("title", "Unknown"),
-                                                "description": game.get(
-                                                    "description", ""
-                                                ),
+                                                "description": game.get("description", ""),
                                                 "url": f"https://store.epicgames.com/en-US/p/{game.get('catalogNs', {}).get('mappings', [{}])[0].get('pageSlug', '')}",
                                                 "image_url": self._get_game_image(game),
-                                                "original_price": (
-                                                    original_price / 100
-                                                    if original_price
-                                                    else 0
-                                                ),
+                                                "original_price": (original_price / 100 if original_price else 0),
                                                 "current_price": 0,
                                                 "discount_percentage": 100,
                                                 "platform": "Epic Games Store",
@@ -165,9 +138,7 @@ class FreeGamesETL(BaseETL):
                                                 "tags": self._extract_tags(game),
                                                 "developer": game.get("developer", ""),
                                                 "publisher": game.get("publisher", ""),
-                                                "fetched_at": datetime.now(
-                                                    timezone.utc
-                                                ).isoformat(),
+                                                "fetched_at": datetime.now(timezone.utc).isoformat(),
                                                 "source": "Epic Games Store API",
                                             }
                                         )
@@ -180,15 +151,9 @@ class FreeGamesETL(BaseETL):
                                 "description": game.get("description", ""),
                                 "url": f"https://store.epicgames.com/en-US/p/{game.get('catalogNs', {}).get('mappings', [{}])[0].get('pageSlug', '')}",
                                 "image_url": self._get_game_image(game),
-                                "original_price": (
-                                    original_price / 100 if original_price else 0
-                                ),
-                                "current_price": (
-                                    discount_price / 100 if discount_price else 0
-                                ),
-                                "discount_percentage": (
-                                    100 if discount_price == 0 else 0
-                                ),
+                                "original_price": (original_price / 100 if original_price else 0),
+                                "current_price": (discount_price / 100 if discount_price else 0),
+                                "discount_percentage": (100 if discount_price == 0 else 0),
                                 "platform": "Epic Games Store",
                                 "category": "games",
                                 "giveaway_type": "free_game",
@@ -214,7 +179,7 @@ class FreeGamesETL(BaseETL):
             logger.error(f"Error extracting from Epic Games Store: {e}")
             return []
 
-    def _get_game_image(self, game: Dict[str, Any]) -> str:
+    def _get_game_image(self, game: dict[str, Any]) -> str:
         """Extract game image URL."""
         try:
             key_images = game.get("keyImages", [])
@@ -225,7 +190,7 @@ class FreeGamesETL(BaseETL):
         except:
             return ""
 
-    def _extract_tags(self, game: Dict[str, Any]) -> List[str]:
+    def _extract_tags(self, game: dict[str, Any]) -> list[str]:
         """Extract game tags/genres."""
         try:
             tags = []
@@ -238,12 +203,12 @@ class FreeGamesETL(BaseETL):
         except:
             return []
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform free games data."""
         logger.info("Starting free games transformation...")
 
         games = raw_data.get("games", [])
-        transformed_games: List[Dict[str, Any]] = []
+        transformed_games: list[dict[str, Any]] = []
 
         for game in games:
             try:
@@ -260,9 +225,7 @@ class FreeGamesETL(BaseETL):
 
                 transformed_game = {
                     "title": title,
-                    "description": game.get("description", "")[
-                        :300
-                    ],  # Limit description
+                    "description": game.get("description", "")[:300],  # Limit description
                     "url": game["url"],
                     "image_url": game.get("image_url", ""),
                     "original_price": game.get("original_price", 0),
@@ -307,14 +270,12 @@ class FreeGamesETL(BaseETL):
                 continue
 
         # Sort by relevance score and active status
-        transformed_games.sort(
-            key=lambda x: (x["is_active"], x["relevance_score"]), reverse=True
-        )
+        transformed_games.sort(key=lambda x: (x["is_active"], x["relevance_score"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_games)} free games")
         return transformed_games
 
-    def _calculate_game_relevance_score(self, game: Dict[str, Any]) -> float:
+    def _calculate_game_relevance_score(self, game: dict[str, Any]) -> float:
         """Calculate relevance score for ranking games."""
         score = 0.0
 
@@ -347,7 +308,7 @@ class FreeGamesETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_availability(self, game: Dict[str, Any]) -> str:
+    def _determine_availability(self, game: dict[str, Any]) -> str:
         """Determine game availability status."""
         if not game.get("is_active", True):
             return "upcoming"
@@ -372,7 +333,7 @@ class FreeGamesETL(BaseETL):
 
         return "permanent"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed free games data to files."""
         try:
             # Ensure output directory exists
@@ -398,9 +359,7 @@ class FreeGamesETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} free games to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} free games to {output_dir}")
             self._last_load_count = len(transformed_data)
             return True
 

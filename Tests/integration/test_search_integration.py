@@ -1,13 +1,11 @@
-"""
-Integration tests for search functionality across dashboard tabs
-"""
+"""Integration tests for search functionality across dashboard tabs"""
 
 import pytest
-import json
+
 from src.web.dashboard.utils.search_utils import (
     filter_content,
     get_common_searchable_fields,
-    highlight_matches
+    highlight_matches,
 )
 
 
@@ -23,7 +21,7 @@ class TestNewsSearchIntegration:
                 "source": "TechCrunch",
                 "summary": "AI research breakthrough announced",
                 "source_display_name": "TechCrunch",
-                "published_at": "2025-01-16"
+                "published_at": "2025-01-16",
             },
             {
                 "title": "Python 3.12 Released",
@@ -31,7 +29,7 @@ class TestNewsSearchIntegration:
                 "source": "Ars Technica",
                 "summary": "Python 3.12 features enhanced performance",
                 "source_display_name": "Ars Technica",
-                "published_at": "2025-01-15"
+                "published_at": "2025-01-15",
             },
             {
                 "title": "Cloud Computing Trends",
@@ -39,14 +37,14 @@ class TestNewsSearchIntegration:
                 "source": "VentureBeat",
                 "summary": "Cloud computing continues to grow",
                 "source_display_name": "VentureBeat",
-                "published_at": "2025-01-14"
-            }
+                "published_at": "2025-01-14",
+            },
         ]
 
     def test_news_title_search(self):
         """Test searching news by title"""
         news_data = self.create_sample_news_data()
-        searchable_fields = get_common_searchable_fields('news')
+        searchable_fields = get_common_searchable_fields("news")
 
         result = filter_content("python", news_data, searchable_fields)
 
@@ -57,7 +55,7 @@ class TestNewsSearchIntegration:
     def test_news_description_search(self):
         """Test searching news by description"""
         news_data = self.create_sample_news_data()
-        searchable_fields = get_common_searchable_fields('news')
+        searchable_fields = get_common_searchable_fields("news")
 
         result = filter_content("artificial intelligence", news_data, searchable_fields)
 
@@ -67,7 +65,7 @@ class TestNewsSearchIntegration:
     def test_news_source_search(self):
         """Test searching news by source"""
         news_data = self.create_sample_news_data()
-        searchable_fields = get_common_searchable_fields('news')
+        searchable_fields = get_common_searchable_fields("news")
 
         result = filter_content("TechCrunch", news_data, searchable_fields)
 
@@ -77,7 +75,7 @@ class TestNewsSearchIntegration:
     def test_news_multiple_field_search(self):
         """Test searching across multiple news fields"""
         news_data = self.create_sample_news_data()
-        searchable_fields = get_common_searchable_fields('news')
+        searchable_fields = get_common_searchable_fields("news")
 
         result = filter_content("computing", news_data, searchable_fields)
 
@@ -103,7 +101,7 @@ class TestDealsSearchIntegration:
                 "current_price": 149.99,
                 "discount_percentage": 50.0,
                 "savings": 150.00,
-                "deal_rating": 4.5
+                "deal_rating": 4.5,
             },
             {
                 "title": "Gaming Laptop Deal",
@@ -115,7 +113,7 @@ class TestDealsSearchIntegration:
                 "current_price": 909.99,
                 "discount_percentage": 30.0,
                 "savings": 390.00,
-                "deal_rating": 4.2
+                "deal_rating": 4.2,
             },
             {
                 "title": "Online Course Bundle",
@@ -127,14 +125,14 @@ class TestDealsSearchIntegration:
                 "current_price": 19.99,
                 "discount_percentage": 90.0,
                 "savings": 180.00,
-                "deal_rating": 4.8
-            }
+                "deal_rating": 4.8,
+            },
         ]
 
     def test_deals_title_search(self):
         """Test searching deals by title"""
         deals_data = self.create_sample_deals_data()
-        searchable_fields = get_common_searchable_fields('deals')
+        searchable_fields = get_common_searchable_fields("deals")
 
         result = filter_content("software", deals_data, searchable_fields)
 
@@ -145,7 +143,7 @@ class TestDealsSearchIntegration:
     def test_deals_platform_search(self):
         """Test searching deals by platform"""
         deals_data = self.create_sample_deals_data()
-        searchable_fields = get_common_searchable_fields('deals')
+        searchable_fields = get_common_searchable_fields("deals")
 
         result = filter_content("Udemy", deals_data, searchable_fields)
 
@@ -155,7 +153,7 @@ class TestDealsSearchIntegration:
     def test_deals_category_search(self):
         """Test searching deals by category"""
         deals_data = self.create_sample_deals_data()
-        searchable_fields = get_common_searchable_fields('deals')
+        searchable_fields = get_common_searchable_fields("deals")
 
         result = filter_content("hardware", deals_data, searchable_fields)
 
@@ -165,7 +163,7 @@ class TestDealsSearchIntegration:
     def test_deals_description_search(self):
         """Test searching deals by description"""
         deals_data = self.create_sample_deals_data()
-        searchable_fields = get_common_searchable_fields('deals')
+        searchable_fields = get_common_searchable_fields("deals")
 
         result = filter_content("programming", deals_data, searchable_fields)
 
@@ -181,7 +179,7 @@ class TestSearchHighlightingIntegration:
         news_item = {
             "title": "Breaking AI News Today",
             "description": "Latest developments in artificial intelligence",
-            "source": "Tech News"
+            "source": "Tech News",
         }
 
         # Apply highlighting
@@ -195,7 +193,7 @@ class TestSearchHighlightingIntegration:
         """Test highlighting in deals content"""
         deal_item = {
             "title": "Software Development Bundle Deal",
-            "description": "Complete development toolkit for programmers"
+            "description": "Complete development toolkit for programmers",
         }
 
         highlighted_title = highlight_matches(deal_item["title"], "software")
@@ -220,16 +218,28 @@ class TestSearchFieldMappingIntegration:
 
     def test_news_fields_mapping(self):
         """Test news field mapping covers all necessary fields"""
-        news_fields = get_common_searchable_fields('news')
-        expected_fields = ['title', 'description', 'source', 'summary', 'source_display_name']
+        news_fields = get_common_searchable_fields("news")
+        expected_fields = [
+            "title",
+            "description",
+            "source",
+            "summary",
+            "source_display_name",
+        ]
 
         for field in expected_fields:
             assert field in news_fields, f"Missing field '{field}' in news searchable fields"
 
     def test_deals_fields_mapping(self):
         """Test deals field mapping covers all necessary fields"""
-        deals_fields = get_common_searchable_fields('deals')
-        expected_fields = ['title', 'description', 'platform', 'source_category', 'source_name']
+        deals_fields = get_common_searchable_fields("deals")
+        expected_fields = [
+            "title",
+            "description",
+            "platform",
+            "source_category",
+            "source_name",
+        ]
 
         for field in expected_fields:
             assert field in deals_fields, f"Missing field '{field}' in deals searchable fields"
@@ -238,10 +248,10 @@ class TestSearchFieldMappingIntegration:
         """Test that missing fields don't cause errors"""
         incomplete_news = [
             {"title": "News Article"},  # Missing description, source, etc.
-            {"description": "Article description"}  # Missing title, source, etc.
+            {"description": "Article description"},  # Missing title, source, etc.
         ]
 
-        searchable_fields = get_common_searchable_fields('news')
+        searchable_fields = get_common_searchable_fields("news")
         result = filter_content("article", incomplete_news, searchable_fields)
 
         # Should find both articles despite missing fields

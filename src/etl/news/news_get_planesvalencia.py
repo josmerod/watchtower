@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, List
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
@@ -104,11 +104,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 title = title_element.text.strip() if title_element else ""
 
                 # Extract date
-                date_element = block.find(
-                    string=lambda t: t
-                    and isinstance(t, str)
-                    and ("Del" in t or "al" in t or "2025" in t)
-                )
+                date_element = block.find(string=lambda t: t and isinstance(t, str) and ("Del" in t or "al" in t or "2025" in t))
                 date_text = date_element.strip() if date_element else ""
 
                 # Extract URL
@@ -123,10 +119,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 for tag in category_tags:
                     if tag.get("class") and isinstance(tag.get("class"), list):
                         class_text = " ".join(tag.get("class"))
-                        if any(
-                            c in class_text.lower()
-                            for c in ["música", "exposición", "deporte"]
-                        ):
+                        if any(c in class_text.lower() for c in ["música", "exposición", "deporte"]):
                             category = tag.text.strip()
                             break
 
@@ -159,38 +152,21 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             event_entries = []
 
             # Try finding events with the format from the example
-            potential_entries = soup.find_all(
-                class_=lambda x: x
-                and isinstance(x, str)
-                and (x.startswith("###") or "event" in x.lower())
-            )
+            potential_entries = soup.find_all(class_=lambda x: x and isinstance(x, str) and (x.startswith("###") or "event" in x.lower()))
 
             # If that doesn't work, try a more general approach
             if not potential_entries:
                 # Look for sections that likely contain event information
-                potential_entries = soup.find_all(
-                    lambda tag: tag.name in ["article", "div", "section"]
-                    and tag.find(["h3", "h2", "h4"])
-                )
+                potential_entries = soup.find_all(lambda tag: tag.name in ["article", "div", "section"] and tag.find(["h3", "h2", "h4"]))
 
             event_entries.extend(potential_entries)
 
             # Also try with HTML structure seen in the example
-            event_items = soup.find_all(
-                lambda tag: tag.name
-                and tag.get_text()
-                and (
-                    "exposición" in tag.get_text().lower()
-                    or "música" in tag.get_text().lower()
-                    or "2025" in tag.get_text()
-                )
-            )
+            event_items = soup.find_all(lambda tag: tag.name and tag.get_text() and ("exposición" in tag.get_text().lower() or "música" in tag.get_text().lower() or "2025" in tag.get_text()))
 
             event_entries.extend(event_items)
 
-            self.logger.debug(
-                f"Approach 2: Found {len(event_entries)} potential event entries"
-            )
+            self.logger.debug(f"Approach 2: Found {len(event_entries)} potential event entries")
 
             for entry in event_entries:
                 try:
@@ -203,11 +179,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
                     # Extract date - look for date pattern
                     date_text = ""
-                    date_element = entry.find(
-                        string=lambda t: t
-                        and isinstance(t, str)
-                        and ("Del" in t or "al" in t or "2025" in t)
-                    )
+                    date_element = entry.find(string=lambda t: t and isinstance(t, str) and ("Del" in t or "al" in t or "2025" in t))
 
                     if date_element:
                         date_text = date_element.strip()
@@ -215,22 +187,14 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                         # Try looking at sibling elements
                         next_sibling = entry.next_sibling
                         while next_sibling and not date_text:
-                            if hasattr(next_sibling, "text") and isinstance(
-                                next_sibling.text, str
-                            ):
-                                if (
-                                    "Del" in next_sibling.text
-                                    or "al" in next_sibling.text
-                                    or "2025" in next_sibling.text
-                                ):
+                            if hasattr(next_sibling, "text") and isinstance(next_sibling.text, str):
+                                if "Del" in next_sibling.text or "al" in next_sibling.text or "2025" in next_sibling.text:
                                     date_text = next_sibling.text.strip()
                             next_sibling = next_sibling.next_sibling
 
                     # Extract URL
                     event_url = ""
-                    link = entry.find("a") or (
-                        entry.parent.find("a") if entry.parent else None
-                    )
+                    link = entry.find("a") or (entry.parent.find("a") if entry.parent else None)
                     if link:
                         event_url = link.get("href", "")
                         if event_url and not event_url.startswith("http"):
@@ -239,11 +203,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     # Extract category if possible
                     category = ""
                     if entry.get("class"):
-                        class_text = " ".join(
-                            entry.get("class")
-                            if isinstance(entry.get("class"), list)
-                            else [entry.get("class")]
-                        )
+                        class_text = " ".join(entry.get("class") if isinstance(entry.get("class"), list) else [entry.get("class")])
                         for cat in [
                             "exposición",
                             "música",
@@ -314,28 +274,16 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
                     # Check for date text in siblings
                     for sibling in list(parent.children):
-                        if (
-                            sibling != heading
-                            and hasattr(sibling, "text")
-                            and isinstance(sibling.text, str)
-                        ):
+                        if sibling != heading and hasattr(sibling, "text") and isinstance(sibling.text, str):
                             sibling_text = sibling.text.strip()
-                            if (
-                                "Del" in sibling_text
-                                or "al" in sibling_text
-                                or "2025" in sibling_text
-                            ):
+                            if "Del" in sibling_text or "al" in sibling_text or "2025" in sibling_text:
                                 date_text = sibling_text
                                 break
 
                     # If no date found, look for a date in the parent text
                     if not date_text and hasattr(parent, "text"):
                         parent_text = parent.text
-                        date_parts = [
-                            part
-                            for part in parent_text.split("\n")
-                            if "Del" in part or "al" in part or "2025" in part
-                        ]
+                        date_parts = [part for part in parent_text.split("\n") if "Del" in part or "al" in part or "2025" in part]
                         if date_parts:
                             date_text = date_parts[0].strip()
 
@@ -386,12 +334,10 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     self.logger.error(f"Error in Approach 3 parsing event: {e!s}")
                     continue
 
-        self.logger.info(
-            f"Retrieved {len(events)} events from Valencia website for {date}"
-        )
+        self.logger.info(f"Retrieved {len(events)} events from Valencia website for {date}")
         return events
 
-    def extract(self) -> List[dict]:
+    def extract(self) -> list[dict]:
         """Extract events from Valencia website for current and next month."""
         # Get current and next month
         current_month, next_month = self.get_current_and_next_month()
@@ -415,9 +361,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
         return all_events
 
-    def process_valencia_events(
-        self, events: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def process_valencia_events(self, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Process and transform Valencia events into a standardized format.
 
         Args:
@@ -445,9 +389,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     end_date = end_part
                 elif "2025" in date_info:
                     # Try to extract date with 2025 year
-                    date_parts = [
-                        part.strip() for part in date_info.split() if "2025" in part
-                    ]
+                    date_parts = [part.strip() for part in date_info.split() if "2025" in part]
                     if date_parts:
                         start_date = date_parts[0]
                         if len(date_parts) > 1:
@@ -565,9 +507,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     merged_event["description"] = event.get("description")
 
                 # Prefer more complete date information
-                if len(event.get("date_text", "")) > len(
-                    merged_event.get("date_text", "")
-                ):
+                if len(event.get("date_text", "")) > len(merged_event.get("date_text", "")):
                     merged_event["date_text"] = event.get("date_text")
                     merged_event["start_date"] = event.get("start_date", "")
                     merged_event["end_date"] = event.get("end_date", "")
@@ -577,7 +517,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         self.logger.info(f"Removed {len(events) - len(unique_events)} duplicate events")
         return unique_events
 
-    def transform(self, data: List[dict]) -> List[ValenciaEvent]:
+    def transform(self, data: list[dict]) -> list[ValenciaEvent]:
         """Transform raw events into structured models."""
         if not data:
             return []
@@ -599,7 +539,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
         return models
 
-    def load(self, data: List[ValenciaEvent]) -> None:
+    def load(self, data: list[ValenciaEvent]) -> None:
         """Save events to JSON and CSV files."""
         if not data:
             self.logger.info("No data to load")

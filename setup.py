@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """Setup script for Watchtower project."""
 
-from setuptools import setup, find_packages
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 # Read the contents of README file
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text(encoding="utf-8")
 
+
 def read_requirements(filename):
     """Read requirements from a file, filtering out comments and empty lines."""
     requirements = []
     try:
-        with open(filename, "r", encoding="utf-8") as f:
+        with open(filename, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 # Skip empty lines, comments, and lines starting with -
@@ -26,9 +28,10 @@ def read_requirements(filename):
         print(f"Warning: {filename} not found")
     return requirements
 
-# Read requirements from all files  
+
+# Read requirements from all files
 requirements = read_requirements("requirements-minimal.txt")
-dev_requirements = read_requirements("requirements-dev.txt")  
+dev_requirements = read_requirements("requirements-dev.txt")
 ml_requirements = read_requirements("requirements-ml.txt")
 web_requirements = read_requirements("requirements-web.txt")
 

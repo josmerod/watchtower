@@ -25,25 +25,15 @@ def create_category_card(category_name, shortcuts_list, search_term=""):
     """Creates a Bootstrap Card for a category of shortcuts."""
     if search_term:
         shortcuts_list = [
-            s
-            for s in shortcuts_list
-            if search_term.lower() in s["name"].lower()
-            or search_term.lower() in s["url"].lower()
-            or (
-                s.get("description") and search_term.lower() in s["description"].lower()
-            )
+            s for s in shortcuts_list if search_term.lower() in s["name"].lower() or search_term.lower() in s["url"].lower() or (s.get("description") and search_term.lower() in s["description"].lower())
         ]
 
-    if (
-        not shortcuts_list
-    ):  # If no shortcuts match search, don't render the card for this category
+    if not shortcuts_list:  # If no shortcuts match search, don't render the card for this category
         return None
 
     return dbc.Card(
         [
-            dbc.CardHeader(
-                html.H5(category_name, className="mb-0")
-            ),  # Use H5 for category titles
+            dbc.CardHeader(html.H5(category_name, className="mb-0")),  # Use H5 for category titles
             dbc.CardBody(
                 dbc.Row(
                     [create_shortcut_button(s) for s in shortcuts_list],
@@ -58,9 +48,7 @@ def create_category_card(category_name, shortcuts_list, search_term=""):
 def render_shortcuts_tab_layout(shortcuts_data, search_term=""):
     """Renders the full layout for the shortcuts tab based on data and search term."""
     if not shortcuts_data:
-        return html.Div(
-            dbc.Alert("No shortcut data loaded or available.", color="warning")
-        )
+        return html.Div(dbc.Alert("No shortcut data loaded or available.", color="warning"))
 
     cards = []
     for category, shortcut_items in shortcuts_data.items():
@@ -69,16 +57,13 @@ def render_shortcuts_tab_layout(shortcuts_data, search_term=""):
             cards.append(card)
 
     if not cards and search_term:  # If search yielded no results in any category
-        return html.Div(
-            dbc.Alert(f"No shortcuts found matching '{search_term}'.", color="info")
-        )
+        return html.Div(dbc.Alert(f"No shortcuts found matching '{search_term}'.", color="info"))
 
     return html.Div(cards)
 
 
 def render_shortcuts_tab():
-    """
-    Main function to create the shortcuts tab layout.
+    """Main function to create the shortcuts tab layout.
     This is what will be imported by the main app.
     It sets up the static parts of the layout and the container for dynamic content.
     """
@@ -117,7 +102,7 @@ def render_shortcuts_tab():
 def load_shortcuts_from_file(file_path):
     """Loads shortcuts from a JSON file."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         print(f"Warning: Shortcut file not found at {file_path}")
@@ -212,6 +197,7 @@ def get_shortcuts_data():
 if __name__ == "__main__":
     # This part is for testing the component independently
     app_test = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+    ALL_SHORTCUTS_DATA = get_all_shortcuts()
 
     # The render_shortcuts_tab now produces the full initial layout including the search bar
     app_test.layout = dbc.Container(
@@ -223,12 +209,8 @@ if __name__ == "__main__":
 
     # Define the callback for the standalone test app_test
     @app_test.callback(
-        Output(
-            "shortcuts-cards-container", "children"
-        ),  # Target the container within the rendered layout
-        [
-            Input("search-shortcuts-input", "value")
-        ],  # Source from the input within the rendered layout
+        Output("shortcuts-cards-container", "children"),  # Target the container within the rendered layout
+        [Input("search-shortcuts-input", "value")],  # Source from the input within the rendered layout
     )
     def update_shortcuts_for_test(search_value):
         # ALL_SHORTCUTS_DATA is loaded when the module is imported
@@ -237,7 +219,5 @@ if __name__ == "__main__":
     print("Running standalone test for shortcuts_tab.py...")
     print("Expected predefined: ../../../data/shortcuts/predefined_shortcuts.json")
     print("Expected custom: ../../../data/shortcuts/custom_shortcuts.json (optional)")
-    print(
-        "If paths are incorrect, data loading will fail and be reported in console/layout."
-    )
+    print("If paths are incorrect, data loading will fail and be reported in console/layout.")
     app_test.run_server(debug=True, port=8051)

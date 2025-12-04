@@ -1,21 +1,20 @@
-"""
-Integration tests for Items Per Page JavaScript functionality
-"""
+"""Integration tests for Items Per Page JavaScript functionality"""
+
+import time
 
 import pytest
-import time
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 from selenium.common.exceptions import JavascriptException, NoSuchElementException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class TestItemsPerPageJavaScript:
     """Test ItemsPerPageManager JavaScript functionality"""
 
-    @pytest.fixture
+    @pytest.fixture()
     def driver(self):
         """Setup Chrome WebDriver for testing"""
         options = Options()
@@ -30,7 +29,7 @@ class TestItemsPerPageJavaScript:
         yield driver
         driver.quit()
 
-    @pytest.fixture
+    @pytest.fixture()
     def dashboard_url(self):
         """Dashboard URL for testing"""
         return "http://localhost:7777"
@@ -40,15 +39,11 @@ class TestItemsPerPageJavaScript:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         # Check if ItemsPerPageManager is defined
         try:
-            is_manager_available = driver.execute_script(
-                "return typeof window.itemsPerPageManager !== 'undefined';"
-            )
+            is_manager_available = driver.execute_script("return typeof window.itemsPerPageManager !== 'undefined';")
             assert is_manager_available, "ItemsPerPageManager should be available"
         except JavascriptException as e:
             pytest.fail(f"JavaScript error checking ItemsPerPageManager: {e}")
@@ -58,9 +53,7 @@ class TestItemsPerPageJavaScript:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         # Check required methods exist
         required_methods = [
@@ -70,14 +63,12 @@ class TestItemsPerPageJavaScript:
             "getDefaultValue",
             "getOptions",
             "validateValue",
-            "resetPreference"
+            "resetPreference",
         ]
 
         for method in required_methods:
             try:
-                method_exists = driver.execute_script(
-                    f"return typeof window.itemsPerPageManager.{method} === 'function';"
-                )
+                method_exists = driver.execute_script(f"return typeof window.itemsPerPageManager.{method} === 'function';")
                 assert method_exists, f"ItemsPerPageManager.{method} should be available"
             except JavascriptException as e:
                 pytest.fail(f"JavaScript error checking method {method}: {e}")
@@ -87,24 +78,20 @@ class TestItemsPerPageJavaScript:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         # Test default values for different tabs
         expected_defaults = {
-            'videos': 48,
-            'arxiv': 24,
-            'news': 24,
-            'deals': 48,
-            'courses': 24
+            "videos": 48,
+            "arxiv": 24,
+            "news": 24,
+            "deals": 48,
+            "courses": 24,
         }
 
         for tab, expected_value in expected_defaults.items():
             try:
-                default_value = driver.execute_script(
-                    f"return window.itemsPerPageManager.getDefaultValue('{tab}');"
-                )
+                default_value = driver.execute_script(f"return window.itemsPerPageManager.getDefaultValue('{tab}');")
                 assert default_value == expected_value, f"Default value for {tab} should be {expected_value}"
             except JavascriptException as e:
                 pytest.fail(f"JavaScript error getting default value for {tab}: {e}")
@@ -114,15 +101,11 @@ class TestItemsPerPageJavaScript:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         # Get allowed values
         try:
-            allowed_values = driver.execute_script(
-                "return window.itemsPerPageManager.getAllowedValues();"
-            )
+            allowed_values = driver.execute_script("return window.itemsPerPageManager.getAllowedValues();")
             expected_values = [12, 24, 48, 96]
             assert allowed_values == expected_values, f"Allowed values should be {expected_values}"
         except JavascriptException as e:
@@ -133,9 +116,7 @@ class TestItemsPerPageJavaScript:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         # Test saving a preference
         try:
@@ -143,15 +124,11 @@ class TestItemsPerPageJavaScript:
             driver.execute_script("localStorage.removeItem('watchtower_items_per_page');")
 
             # Save a preference
-            save_result = driver.execute_script(
-                "return window.itemsPerPageManager.savePreference('videos', 24);"
-            )
+            save_result = driver.execute_script("return window.itemsPerPageManager.savePreference('videos', 24);")
             assert save_result is True, "Save preference should return True"
 
             # Load the preference
-            loaded_value = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('videos');"
-            )
+            loaded_value = driver.execute_script("return window.itemsPerPageManager.getPreference('videos');")
             assert loaded_value == 24, "Loaded preference should match saved value"
 
         except JavascriptException as e:
@@ -162,18 +139,14 @@ class TestItemsPerPageJavaScript:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         # Test valid values
         valid_values = [12, 24, 48, 96]
         for value in valid_values:
             try:
-                result = driver.execute_script(
-                    f"return window.itemsPerPageManager.validateValue({value});"
-                )
-                assert result['valid'] is True, f"Value {value} should be valid"
+                result = driver.execute_script(f"return window.itemsPerPageManager.validateValue({value});")
+                assert result["valid"] is True, f"Value {value} should be valid"
             except JavascriptException as e:
                 pytest.fail(f"JavaScript error validating valid value {value}: {e}")
 
@@ -181,10 +154,8 @@ class TestItemsPerPageJavaScript:
         invalid_values = [0, 6, 100, "invalid", None]
         for value in invalid_values:
             try:
-                result = driver.execute_script(
-                    f"return window.itemsPerPageManager.validateValue({value});"
-                )
-                assert result['valid'] is False, f"Value {value} should be invalid"
+                result = driver.execute_script(f"return window.itemsPerPageManager.validateValue({value});")
+                assert result["valid"] is False, f"Value {value} should be invalid"
             except JavascriptException as e:
                 pytest.fail(f"JavaScript error validating invalid value {value}: {e}")
 
@@ -193,9 +164,7 @@ class TestItemsPerPageJavaScript:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         try:
             # Save a preference
@@ -205,14 +174,10 @@ class TestItemsPerPageJavaScript:
             driver.refresh()
 
             # Wait for page to load again
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.TAG_NAME, "body"))
-            )
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
             # Check if preference persisted
-            loaded_value = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('arxiv');"
-            )
+            loaded_value = driver.execute_script("return window.itemsPerPageManager.getPreference('arxiv');")
             assert loaded_value == 96, "Preference should persist across page reloads"
 
         except JavascriptException as e:
@@ -223,15 +188,18 @@ class TestItemsPerPageJavaScript:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         # Try to find videos tab and click it
         try:
             # Look for Videos tab
             videos_tab = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Videos') or contains(text(), '📺')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'Videos') or contains(text(), '📺')]",
+                    )
+                )
             )
             videos_tab.click()
 
@@ -239,9 +207,7 @@ class TestItemsPerPageJavaScript:
             time.sleep(2)
 
             # Look for items-per-page selector
-            selector = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "videos-items-per-page-select"))
-            )
+            selector = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "videos-items-per-page-select")))
 
             # Test changing the selector value
             # Find the dropdown element and click it
@@ -251,14 +217,15 @@ class TestItemsPerPageJavaScript:
             try:
                 # This is a simplified test - in a real scenario, you'd need to handle
                 # the dropdown selection more carefully based on the specific implementation
-                option_24 = driver.find_element(By.XPATH, "//select[@id='videos-items-per-page-select']/option[@value='24']")
+                option_24 = driver.find_element(
+                    By.XPATH,
+                    "//select[@id='videos-items-per-page-select']/option[@value='24']",
+                )
                 option_24.click()
 
                 # Check if preference was saved
                 time.sleep(1)  # Give it time to save
-                current_preference = driver.execute_script(
-                    "return window.itemsPerPageManager.getPreference('videos');"
-                )
+                current_preference = driver.execute_script("return window.itemsPerPageManager.getPreference('videos');")
                 assert current_preference == 24, "Preference should be updated when selector changes"
 
             except NoSuchElementException:
@@ -272,7 +239,7 @@ class TestItemsPerPageJavaScript:
 class TestItemsPerPagePerformance:
     """Test performance aspects of items-per-page functionality"""
 
-    @pytest.fixture
+    @pytest.fixture()
     def driver(self):
         """Setup Chrome WebDriver for testing"""
         options = Options()
@@ -290,9 +257,7 @@ class TestItemsPerPagePerformance:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         # Test performance of loading preferences
         start_time = time.time()
@@ -311,9 +276,7 @@ class TestItemsPerPagePerformance:
         driver.get(dashboard_url)
 
         # Wait for page to load
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
         # Test performance of saving preferences
         start_time = time.time()

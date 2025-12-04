@@ -135,9 +135,7 @@ def load_deals_data():
 
     if df.empty:
         ALL_GAMES_DATA["deals"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["deals"] = (
-            True  # File existed and was valid JSON, but empty
-        )
+        DATA_LOADED_SUCCESSFULLY["deals"] = True  # File existed and was valid JSON, but empty
         print("Info (Deals): deals.json was empty or resulted in an empty DataFrame.")
         return
 
@@ -168,17 +166,13 @@ def load_deals_data():
         if col not in df.columns:
             df[col] = None
 
-    df["published_date"] = df["published_date_str"].apply(
-        lambda x: parse_game_date(x)
-    )  # Assuming a date field exists
+    df["published_date"] = df["published_date_str"].apply(lambda x: parse_game_date(x))  # Assuming a date field exists
     df["price_new_numeric"] = df["price_new"].apply(parse_price)
     df["price_old_numeric"] = df["price_old"].apply(parse_price)
 
     # Ensure discount is numeric if it's like "75%" -> 75.0 or 0.75
     if "discount" in df.columns:
-        df["discount_numeric"] = (
-            df["discount"].astype(str).str.extract(r"(\d+)").astype(float)
-        )
+        df["discount_numeric"] = df["discount"].astype(str).str.extract(r"(\d+)").astype(float)
     else:
         df["discount_numeric"] = None
 
@@ -247,40 +241,23 @@ def load_bundles_data():
                 if col not in df.columns:
                     df[col] = None  # Add missing columns with None
 
-            df["expiry_date"] = df["expiry_date_str"].apply(
-                lambda x: parse_game_date(x)
-            )
+            df["expiry_date"] = df["expiry_date_str"].apply(lambda x: parse_game_date(x))
             df["price_numeric"] = df["price"].apply(parse_price)
 
             # 'game_count' might need extraction if it's like "10 games"
             if "game_count" in df.columns and df["game_count"].dtype == "object":
-                df["game_count_numeric"] = (
-                    df["game_count"]
-                    .astype(str)
-                    .str.extract(r"(\d+)")
-                    .astype(float)
-                    .fillna(0)
-                    .astype(int)
-                )
+                df["game_count_numeric"] = df["game_count"].astype(str).str.extract(r"(\d+)").astype(float).fillna(0).astype(int)
             elif "game_count" in df.columns:  # Already numeric
-                df["game_count_numeric"] = (
-                    pd.to_numeric(df["game_count"], errors="coerce")
-                    .fillna(0)
-                    .astype(int)
-                )
+                df["game_count_numeric"] = pd.to_numeric(df["game_count"], errors="coerce").fillna(0).astype(int)
             else:
                 df["game_count_numeric"] = 0
 
             all_bundles_dfs.append(df)
             any_file_processed_successfully = True
-            print(
-                f"Info (Bundles): Loaded {len(df)} bundles from {os.path.basename(file_path)}."
-            )
+            print(f"Info (Bundles): Loaded {len(df)} bundles from {os.path.basename(file_path)}.")
 
         except ValueError as e:
-            print(
-                f"Error (Bundles): Could not decode JSON from {file_path}. Error: {e}"
-            )
+            print(f"Error (Bundles): Could not decode JSON from {file_path}. Error: {e}")
         except Exception as e:
             print(f"Error (Bundles): Failed to read or process {file_path}. Error: {e}")
 
@@ -316,9 +293,7 @@ def load_bundles_data():
     # If bundles don't have a primary "published" date, expiry or a load date might be used.
     # For now, sorting by expiry date, making active bundles (future expiry) appear first if sorted ascending.
     # Or, if no reliable date, don't sort or sort by title. Let's sort by expiry_date descending for now.
-    combined_df = combined_df.sort_values(
-        by="expiry_date", ascending=False, na_position="last"
-    )
+    combined_df = combined_df.sort_values(by="expiry_date", ascending=False, na_position="last")
 
     ALL_GAMES_DATA["bundles"] = combined_df
     DATA_LOADED_SUCCESSFULLY["bundles"] = True
@@ -334,7 +309,7 @@ def load_giveaways_data():
     canonical_path = get_data_path("giveaways", "free_games.json")
     legacy_path = get_data_path("games", "giveaways.json")
     epic_free_path = get_data_path("games", "epic_free_games.json")
-    
+
     if file_exists(enhanced_latest_path):
         file_path = enhanced_latest_path
     elif file_exists(enhanced_latest_dir):
@@ -381,7 +356,7 @@ def load_giveaways_data():
             "expiryDate": "expiry_date_str",  # Or similar field for when it expires
             "name": "title",
             "start_date": "published_date_str",  # Epic Games format
-            "end_date": "expiry_date_str",       # Epic Games format
+            "end_date": "expiry_date_str",  # Epic Games format
         },
         inplace=True,
     )
@@ -463,14 +438,8 @@ def load_trending_data():
     )
 
     # If author is in a nested 'user' dict and not flattened by pd.read_json's normalize
-    if (
-        "user" in df.columns
-        and isinstance(df["user"].iloc[0], dict)
-        and "author" not in df.columns
-    ):
-        df["author"] = df["user"].apply(
-            lambda x: x.get("name") if isinstance(x, dict) else None
-        )
+    if "user" in df.columns and isinstance(df["user"].iloc[0], dict) and "author" not in df.columns:
+        df["author"] = df["user"].apply(lambda x: x.get("name") if isinstance(x, dict) else None)
 
     expected_cols = [
         "title",
@@ -510,43 +479,31 @@ def load_new_releases_data():
         # For now, assume direct list of dicts or pandas handles it.
         # If it's nested, may need to adjust: data = json.load(f); df = pd.json_normalize(data, 'results')
         raw_data = []
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             raw_data = json.load(f)
 
-        if (
-            isinstance(raw_data, dict) and "results" in raw_data
-        ):  # Common for APIs like RAWG
+        if isinstance(raw_data, dict) and "results" in raw_data:  # Common for APIs like RAWG
             df = pd.json_normalize(raw_data, "results")
         elif isinstance(raw_data, list):
             df = pd.DataFrame(raw_data)
         else:
-            raise ValueError(
-                "JSON structure not a list of records or recognized dict like {'results': [...]}"
-            )
+            raise ValueError("JSON structure not a list of records or recognized dict like {'results': [...]}")
 
     except ValueError as e:
-        print(
-            f"Error (New Releases): Could not decode or normalize JSON from {file_path}. Error: {e}"
-        )
+        print(f"Error (New Releases): Could not decode or normalize JSON from {file_path}. Error: {e}")
         ALL_GAMES_DATA["new_releases"] = pd.DataFrame()
         DATA_LOADED_SUCCESSFULLY["new_releases"] = False
         return
     except Exception as e:
-        print(
-            f"Error (New Releases): Failed to read or process {file_path}. Error: {e}"
-        )
+        print(f"Error (New Releases): Failed to read or process {file_path}. Error: {e}")
         ALL_GAMES_DATA["new_releases"] = pd.DataFrame()
         DATA_LOADED_SUCCESSFULLY["new_releases"] = False
         return
 
     if df.empty:
         ALL_GAMES_DATA["new_releases"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["new_releases"] = (
-            True  # File existed, valid, but empty
-        )
-        print(
-            "Info (New Releases): new_releases.json was empty or contained no results."
-        )
+        DATA_LOADED_SUCCESSFULLY["new_releases"] = True  # File existed, valid, but empty
+        print("Info (New Releases): new_releases.json was empty or contained no results.")
         return
 
     # Standardize columns - Example for RAWG API like structure
@@ -577,28 +534,18 @@ def load_new_releases_data():
         if col not in df.columns:
             df[col] = None
 
-    df["release_date"] = df["release_date_str"].apply(
-        lambda x: parse_game_date(x, source_format="%Y-%m-%d")
-    )
+    df["release_date"] = df["release_date_str"].apply(lambda x: parse_game_date(x, source_format="%Y-%m-%d"))
 
     # Extract platform names
     def get_platform_names(platforms_list):
         if isinstance(platforms_list, list):
-            return ", ".join(
-                [
-                    p["platform"]["name"]
-                    for p in platforms_list
-                    if "platform" in p and "name" in p["platform"]
-                ]
-            )
+            return ", ".join([p["platform"]["name"] for p in platforms_list if "platform" in p and "name" in p["platform"]])
         return "N/A"
 
     df["platform_names"] = df["platforms"].apply(get_platform_names)
 
     # Construct RAWG link
-    df["link"] = df["slug_for_rawg_link"].apply(
-        lambda x: f"https://rawg.io/games/{x}" if x else None
-    )
+    df["link"] = df["slug_for_rawg_link"].apply(lambda x: f"https://rawg.io/games/{x}" if x else None)
 
     # Convert metacritic_score to numeric, coercing errors
     df["metacritic_score"] = pd.to_numeric(df["metacritic_score"], errors="coerce")
@@ -645,7 +592,10 @@ def load_all_games_data():
         gb_games = get_data_path("games", "giantbomb_games_latest.json")
         if file_exists(gb_games):
             df = pd.read_json(gb_games)
-            df.rename(columns={"title": "name", "release_date": "release_date_str"}, inplace=True)
+            df.rename(
+                columns={"title": "name", "release_date": "release_date_str"},
+                inplace=True,
+            )
             if "release_date_str" in df.columns:
                 df["release_date"] = df["release_date_str"].apply(lambda x: parse_game_date(x))
             ALL_GAMES_DATA["giantbomb_games"] = df
@@ -687,9 +637,7 @@ def format_display_date(dt_obj):
 
 
 def render_giveaways_sub_tab(df):
-    if (
-        not DATA_LOADED_SUCCESSFULLY.get("giveaways", False) or df.empty
-    ):  # Check load status too
+    if not DATA_LOADED_SUCCESSFULLY.get("giveaways", False) or df.empty:  # Check load status too
         return dbc.Alert(
             "No giveaways data currently available or failed to load.",
             color="info",
@@ -709,9 +657,7 @@ def render_giveaways_sub_tab(df):
         )
     ]
     table_body_rows = []
-    for _, row in df.head(
-        50
-    ).iterrows():  # Limit rows for display performance initially
+    for _, row in df.head(50).iterrows():  # Limit rows for display performance initially
         table_body_rows.append(
             html.Tr(
                 [
@@ -775,11 +721,7 @@ def render_bundles_sub_tab(df):
                         )
                     ),
                     html.Td(row.get("store", "N/A")),
-                    html.Td(
-                        f"${row.get('price_numeric', 0.0):.2f}"
-                        if pd.notna(row.get("price_numeric"))
-                        else "N/A"
-                    ),
+                    html.Td(f"${row.get('price_numeric', 0.0):.2f}" if pd.notna(row.get("price_numeric")) else "N/A"),
                     html.Td(row.get("game_count_numeric", "N/A")),
                     html.Td(format_display_date(row.get("expiry_date"))),
                 ]
@@ -822,11 +764,7 @@ def render_deals_sub_tab(df):
     ]
     table_body_rows = []
     for _, row in df.head(50).iterrows():
-        discount_display = (
-            f"{int(row.get('discount_numeric', 0))}%"
-            if pd.notna(row.get("discount_numeric"))
-            else "N/A"
-        )
+        discount_display = f"{int(row.get('discount_numeric', 0))}%" if pd.notna(row.get("discount_numeric")) else "N/A"
         table_body_rows.append(
             html.Tr(
                 [
@@ -838,16 +776,8 @@ def render_deals_sub_tab(df):
                         )
                     ),
                     html.Td(row.get("store", "N/A")),
-                    html.Td(
-                        f"${row.get('price_new_numeric', 0.0):.2f}"
-                        if pd.notna(row.get("price_new_numeric"))
-                        else "N/A"
-                    ),
-                    html.Td(
-                        f"${row.get('price_old_numeric', 0.0):.2f}"
-                        if pd.notna(row.get("price_old_numeric"))
-                        else "N/A"
-                    ),
+                    html.Td(f"${row.get('price_new_numeric', 0.0):.2f}" if pd.notna(row.get("price_new_numeric")) else "N/A"),
+                    html.Td(f"${row.get('price_old_numeric', 0.0):.2f}" if pd.notna(row.get("price_old_numeric")) else "N/A"),
                     html.Td(discount_display),
                     html.Td(format_display_date(row.get("published_date"))),
                 ]
@@ -888,15 +818,7 @@ def render_trending_sub_tab(df):
     ]
     table_body_rows = []
     for _, row in df.head(50).iterrows():
-        price_display = (
-            "Free"
-            if row.get("price_numeric", -1) == 0.0
-            else (
-                f"${row.get('price_numeric', 0.0):.2f}"
-                if pd.notna(row.get("price_numeric"))
-                else "N/A"
-            )
-        )
+        price_display = "Free" if row.get("price_numeric", -1) == 0.0 else (f"${row.get('price_numeric', 0.0):.2f}" if pd.notna(row.get("price_numeric")) else "N/A")
         table_body_rows.append(
             html.Tr(
                 [
@@ -991,7 +913,16 @@ def render_giantbomb_games_sub_tab(df):
                 ]
             )
         )
-    return dbc.Table(header + [html.Tbody(rows)], bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive mt-3")
+    return dbc.Table(
+        header + [html.Tbody(rows)],
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive mt-3",
+    )
 
 
 def render_giantbomb_reviews_sub_tab(df):
@@ -1013,7 +944,16 @@ def render_giantbomb_reviews_sub_tab(df):
                 ]
             )
         )
-    return dbc.Table(header + [html.Tbody(rows)], bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive mt-3")
+    return dbc.Table(
+        header + [html.Tbody(rows)],
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive mt-3",
+    )
 
 
 def render_new_releases_sub_tab(df):
@@ -1030,11 +970,7 @@ def render_new_releases_sub_tab(df):
         metacritic_score = row.get("metacritic_score", "N/A")
         if pd.notna(metacritic_score):
             metacritic_display = str(int(metacritic_score))
-            color = (
-                "success"
-                if metacritic_score >= 75
-                else ("warning" if metacritic_score >= 50 else "danger")
-            )
+            color = "success" if metacritic_score >= 75 else ("warning" if metacritic_score >= 50 else "danger")
             badge = dbc.Badge(metacritic_display, color=color, className="ms-2")
             title_display = html.Div([title_display, badge])
 
@@ -1042,9 +978,7 @@ def render_new_releases_sub_tab(df):
             dbc.AccordionItem(
                 title=title_display,
                 children=[
-                    html.P(
-                        f"Release Date: {format_display_date(row.get('release_date'))}"
-                    ),
+                    html.P(f"Release Date: {format_display_date(row.get('release_date'))}"),
                     html.P(f"Platforms: {row.get('platform_names', 'N/A')}"),
                     html.P(
                         html.A(
@@ -1088,9 +1022,7 @@ def render_games_tab():
         # Check if it's because files are missing vs other errors
         all_files_missing = True
         for key in ALL_GAMES_DATA:
-            file_path = get_data_path(
-                "games", f"{key}.json"
-            )  # Adjust filename if needed
+            file_path = get_data_path("games", f"{key}.json")  # Adjust filename if needed
             # Special handling for bundles, etc.
             if key == "bundles":
                 file_path = get_data_path("games", "bundles.json")
@@ -1101,9 +1033,7 @@ def render_games_tab():
             if key == "metacritic":
                 file_path = get_data_path("games", "metacritic_latest.json")
 
-            if file_exists(
-                file_path
-            ):  # A bit simplified, assumes direct mapping for check
+            if file_exists(file_path):  # A bit simplified, assumes direct mapping for check
                 all_files_missing = False
                 break
         if all_files_missing:
@@ -1158,30 +1088,22 @@ def render_games_tab():
                     dbc.Tab(
                         label="Nuevos Lanzamientos",
                         tab_id="subtab-new-releases",
-                        children=render_new_releases_sub_tab(
-                            ALL_GAMES_DATA["new_releases"]
-                        ),
+                        children=render_new_releases_sub_tab(ALL_GAMES_DATA["new_releases"]),
                     ),
                     dbc.Tab(
                         label="Reseñas (Metacritic)",
                         tab_id="subtab-metacritic",
-                        children=render_metacritic_sub_tab(
-                            ALL_GAMES_DATA["metacritic"]
-                        ),
+                        children=render_metacritic_sub_tab(ALL_GAMES_DATA["metacritic"]),
                     ),
                     dbc.Tab(
                         label="GiantBomb Juegos",
                         tab_id="subtab-giantbomb-games",
-                        children=render_giantbomb_games_sub_tab(
-                            ALL_GAMES_DATA["giantbomb_games"]
-                        ),
+                        children=render_giantbomb_games_sub_tab(ALL_GAMES_DATA["giantbomb_games"]),
                     ),
                     dbc.Tab(
                         label="GiantBomb Reseñas",
                         tab_id="subtab-giantbomb-reviews",
-                        children=render_giantbomb_reviews_sub_tab(
-                            ALL_GAMES_DATA["giantbomb_reviews"]
-                        ),
+                        children=render_giantbomb_reviews_sub_tab(ALL_GAMES_DATA["giantbomb_reviews"]),
                     ),
                 ],
             ),
@@ -1220,8 +1142,6 @@ if __name__ == "__main__":
                 "trending": "itchio_trending.json",
                 "new_releases": "new_releases.json",
             }
-            print(
-                f"  Verifique si {DATA_BASE_PATH}{filename_map.get(key, key + '.json')} existe y es válido."
-            )
+            print(f"  Verifique si {DATA_BASE_PATH}{filename_map.get(key, key + '.json')} existe y es válido.")
 
     app_test.run_server(debug=True, port=8057)

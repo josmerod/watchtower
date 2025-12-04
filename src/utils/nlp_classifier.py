@@ -8,7 +8,7 @@ to classify text documents, extract keywords, and identify topics.
 import os
 import pickle
 from collections import Counter
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import nltk
 import numpy as np
@@ -23,8 +23,7 @@ from src.utils.logging import get_logger
 
 
 class NLPContentClassifier:
-    """
-    NLP-based classifier for text content.
+    """NLP-based classifier for text content.
 
     This class provides utilities to:
     1. Extract keywords from text
@@ -33,8 +32,7 @@ class NLPContentClassifier:
     """
 
     def __init__(self, name: str = "nlp_classifier"):
-        """
-        Initialize the NLP content classifier.
+        """Initialize the NLP content classifier.
 
         Args:
             name (str): Name of the classifier, used for logging and storing models
@@ -47,9 +45,7 @@ class NLPContentClassifier:
 
         # Paths for storing models and data
         self.project_root = get_project_root()
-        self.models_dir = os.path.join(
-            self.project_root, f"data/models/nlp/{self.name}"
-        )
+        self.models_dir = os.path.join(self.project_root, f"data/models/nlp/{self.name}")
         ensure_directories([f"data/models/nlp/{self.name}"])
 
         # Initialize models
@@ -80,9 +76,8 @@ class NLPContentClassifier:
                 self.logger.info(f"Downloading NLTK resource: {resource_name}")
                 nltk.download(resource_name, quiet=True)
 
-    def extract_keywords(self, text: str, top_n: int = 10) -> List[str]:
-        """
-        Extract most important keywords from text.
+    def extract_keywords(self, text: str, top_n: int = 10) -> list[str]:
+        """Extract most important keywords from text.
 
         Args:
             text (str): Input text
@@ -96,29 +91,20 @@ class NLPContentClassifier:
 
         # Remove stopwords, punctuation, and short words
         stop_words = set(nltk.corpus.stopwords.words("english"))
-        tokens = [
-            word
-            for word in tokens
-            if word.isalnum() and word not in stop_words and len(word) > 2
-        ]
+        tokens = [word for word in tokens if word.isalnum() and word not in stop_words and len(word) > 2]
 
         # Get part-of-speech tags
         pos_tags = nltk.pos_tag(tokens)
 
         # Keep only nouns and adjectives as keywords are often these types
-        keywords = [
-            word
-            for word, pos in pos_tags
-            if pos.startswith("NN") or pos.startswith("JJ")
-        ]
+        keywords = [word for word, pos in pos_tags if pos.startswith("NN") or pos.startswith("JJ")]
 
         # Count occurrences and get top keywords
         counter = Counter(keywords)
         return [word for word, _ in counter.most_common(top_n)]
 
-    def train_classifier(self, texts: List[str], n_clusters: int = 10):
-        """
-        Train the classifier using a collection of texts.
+    def train_classifier(self, texts: list[str], n_clusters: int = 10):
+        """Train the classifier using a collection of texts.
 
         Args:
             texts (List[str]): List of text documents to train on
@@ -144,9 +130,7 @@ class NLPContentClassifier:
 
         # Create clustering component
         self.clustering = KMeans(
-            n_clusters=min(
-                n_clusters, len(texts)
-            ),  # Don't create more clusters than docs
+            n_clusters=min(n_clusters, len(texts)),  # Don't create more clusters than docs
             random_state=42,
         )
 
@@ -170,9 +154,8 @@ class NLPContentClassifier:
 
         self.logger.info("Classifier training completed")
 
-    def _extract_cluster_keywords(self, texts: List[str], top_n: int = 10):
-        """
-        Extract top keywords that characterize each cluster.
+    def _extract_cluster_keywords(self, texts: list[str], top_n: int = 10):
+        """Extract top keywords that characterize each cluster.
 
         Args:
             texts (List[str]): The texts used for training
@@ -209,13 +192,10 @@ class NLPContentClassifier:
 
                 self.top_keywords_per_cluster[cluster_id] = top_terms
 
-        self.logger.info(
-            f"Extracted top {top_n} keywords for {len(self.top_keywords_per_cluster)} clusters"
-        )
+        self.logger.info(f"Extracted top {top_n} keywords for {len(self.top_keywords_per_cluster)} clusters")
 
-    def get_cluster_labels(self) -> Dict[int, str]:
-        """
-        Generate human-readable labels for each cluster.
+    def get_cluster_labels(self) -> dict[int, str]:
+        """Generate human-readable labels for each cluster.
 
         Returns:
             Dict[int, str]: Mapping of cluster IDs to labels
@@ -233,9 +213,8 @@ class NLPContentClassifier:
 
         return cluster_labels
 
-    def classify_document(self, text: str) -> Dict[str, Any]:
-        """
-        Classify a document into a cluster and extract its keywords.
+    def classify_document(self, text: str) -> dict[str, Any]:
+        """Classify a document into a cluster and extract its keywords.
 
         Args:
             text (str): Text to classify
@@ -274,9 +253,8 @@ class NLPContentClassifier:
             "document_keywords": document_keywords,
         }
 
-    def batch_classify(self, texts: List[str]) -> List[Dict[str, Any]]:
-        """
-        Classify a batch of documents.
+    def batch_classify(self, texts: list[str]) -> list[dict[str, Any]]:
+        """Classify a batch of documents.
 
         Args:
             texts (List[str]): Texts to classify
@@ -302,9 +280,7 @@ class NLPContentClassifier:
         for i, text in enumerate(texts):
             cluster_id = int(cluster_ids[i])
             document_keywords = self.extract_keywords(text, top_n=10)
-            cluster_keywords = self.top_keywords_per_cluster.get(
-                cluster_id, ["unknown"]
-            )
+            cluster_keywords = self.top_keywords_per_cluster.get(cluster_id, ["unknown"])
             cluster_label = " | ".join(cluster_keywords[:3])
 
             results.append(
@@ -318,9 +294,8 @@ class NLPContentClassifier:
 
         return results
 
-    def save_model(self, filepath: Optional[str] = None):
-        """
-        Save the trained model to disk.
+    def save_model(self, filepath: str | None = None):
+        """Save the trained model to disk.
 
         Args:
             filepath (Optional[str]): Path to save the model, or None to use default path
@@ -344,11 +319,10 @@ class NLPContentClassifier:
                 pickle.dump(model_data, f)
             self.logger.info(f"Model saved to {filepath}")
         except Exception as e:
-            self.logger.error(f"Error saving model: {str(e)}")
+            self.logger.error(f"Error saving model: {e!s}")
 
-    def load_model(self, filepath: Optional[str] = None):
-        """
-        Load a trained model from disk.
+    def load_model(self, filepath: str | None = None):
+        """Load a trained model from disk.
 
         Args:
             filepath (Optional[str]): Path to the saved model, or None to use default path
@@ -371,5 +345,5 @@ class NLPContentClassifier:
             self.logger.warning(f"Model file not found: {filepath}")
             return False
         except Exception as e:
-            self.logger.error(f"Error loading model: {str(e)}")
+            self.logger.error(f"Error loading model: {e!s}")
             return False

@@ -9,10 +9,11 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any
 
 try:
     # Prefer project utilities when available
@@ -32,7 +33,7 @@ class ShoppyScraper:
 
     base_url: str = "https://shoppy.gg/"
 
-    def fetch_product_data(self, product_id: str) -> Dict[str, Any]:
+    def fetch_product_data(self, product_id: str) -> dict[str, Any]:
         """Return mock raw data containing the requested product_id."""
         return {
             "product_id": product_id,
@@ -40,7 +41,7 @@ class ShoppyScraper:
             "fetched_at": datetime.now(timezone.utc).isoformat(),
         }
 
-    def parse_product_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
+    def parse_product_data(self, raw_data: dict[str, Any]) -> dict[str, Any]:
         """Parse raw data into a normalized dict.
 
         Falls back to defaults expected by tests when fields are missing.
@@ -61,7 +62,7 @@ def _ensure_output_dir() -> Path:
     return DATA_DIR
 
 
-def run_shoppy_etl(product_ids: Iterable[str]) -> List[Dict[str, Any]]:
+def run_shoppy_etl(product_ids: Iterable[str]) -> list[dict[str, Any]]:
     """Run a minimal ETL over the provided product IDs.
 
     - Extract: fetch mock raw data per product_id
@@ -73,12 +74,12 @@ def run_shoppy_etl(product_ids: Iterable[str]) -> List[Dict[str, Any]]:
     _ensure_output_dir()
 
     # Extract raw
-    raw_items: List[Dict[str, Any]] = []
+    raw_items: list[dict[str, Any]] = []
     for pid in product_ids:
         raw_items.append(scraper.fetch_product_data(pid))
 
     # Transform
-    processed: List[Dict[str, Any]] = []
+    processed: list[dict[str, Any]] = []
     for raw in raw_items:
         item = scraper.parse_product_data(raw)
         # Ensure a deterministic name for tests if missing

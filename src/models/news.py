@@ -54,27 +54,17 @@ class FeedSourceModel(TimestampedModel):
     url: HttpUrl = Field(description="Feed URL")
     feed_type: FeedType = Field(description="Type of feed")
     category: str = Field(description="Feed category")
-    language: ContentLanguage = Field(
-        default=ContentLanguage.EN, description="Content language"
-    )
+    language: ContentLanguage = Field(default=ContentLanguage.EN, description="Content language")
 
     # Configuration
     active: bool = Field(default=True, description="Whether feed is active")
-    fetch_interval: int = Field(
-        default=3600, ge=300, le=86400, description="Fetch interval in seconds"
-    )
-    max_articles: int = Field(
-        default=100, ge=1, le=1000, description="Maximum articles to fetch per run"
-    )
+    fetch_interval: int = Field(default=3600, ge=300, le=86400, description="Fetch interval in seconds")
+    max_articles: int = Field(default=100, ge=1, le=1000, description="Maximum articles to fetch per run")
 
     # Metadata
-    last_fetched_at: datetime | None = Field(
-        default=None, description="Last successful fetch timestamp"
-    )
+    last_fetched_at: datetime | None = Field(default=None, description="Last successful fetch timestamp")
     last_error: str | None = Field(default=None, description="Last error message")
-    total_articles_fetched: int = Field(
-        default=0, ge=0, description="Total articles fetched from this source"
-    )
+    total_articles_fetched: int = Field(default=0, ge=0, description="Total articles fetched from this source")
 
     # Source-specific settings
     user_agent: str | None = Field(default=None, description="Custom user agent")
@@ -126,9 +116,7 @@ class NewsArticleModel(TimestampedModel):
     excerpt: str | None = Field(default=None, description="Article excerpt")
 
     # Publication info
-    published_at: datetime | None = Field(
-        default=None, description="Original publication timestamp"
-    )
+    published_at: datetime | None = Field(default=None, description="Original publication timestamp")
     author: str | None = Field(default=None, description="Article author")
     source_name: str = Field(description="Source name")
     source_id: str | None = Field(default=None, description="Source feed ID")
@@ -136,49 +124,29 @@ class NewsArticleModel(TimestampedModel):
     # Categorization
     category: str | None = Field(default=None, description="Article category")
     tags: list[str] = Field(default=[], description="Article tags")
-    language: ContentLanguage = Field(
-        default=ContentLanguage.EN, description="Article language"
-    )
+    language: ContentLanguage = Field(default=ContentLanguage.EN, description="Article language")
 
     # Metadata
-    status: ArticleStatus = Field(
-        default=ArticleStatus.PUBLISHED, description="Article status"
-    )
+    status: ArticleStatus = Field(default=ArticleStatus.PUBLISHED, description="Article status")
     word_count: int | None = Field(default=None, ge=0, description="Word count")
-    reading_time_minutes: int | None = Field(
-        default=None, ge=0, description="Estimated reading time in minutes"
-    )
+    reading_time_minutes: int | None = Field(default=None, ge=0, description="Estimated reading time in minutes")
 
     # Social/engagement metrics
-    comments_count: int | None = Field(
-        default=None, ge=0, description="Number of comments"
-    )
-    likes_count: int | None = Field(
-        default=None, ge=0, description="Number of likes/upvotes"
-    )
+    comments_count: int | None = Field(default=None, ge=0, description="Number of comments")
+    likes_count: int | None = Field(default=None, ge=0, description="Number of likes/upvotes")
     shares_count: int | None = Field(default=None, ge=0, description="Number of shares")
 
     # Technical metadata
     original_id: str | None = Field(default=None, description="Original ID from source")
-    checksum: str | None = Field(
-        default=None, description="Content checksum for deduplication"
-    )
-    scraped_at: datetime = Field(
-        default_factory=datetime.utcnow, description="When article was scraped"
-    )
+    checksum: str | None = Field(default=None, description="Content checksum for deduplication")
+    scraped_at: datetime = Field(default_factory=datetime.utcnow, description="When article was scraped")
 
     # Processing metadata
-    processed: bool = Field(
-        default=False, description="Whether article has been processed"
-    )
-    processing_notes: str | None = Field(
-        default=None, description="Processing notes or errors"
-    )
+    processed: bool = Field(default=False, description="Whether article has been processed")
+    processing_notes: str | None = Field(default=None, description="Processing notes or errors")
 
     # Additional data
-    metadata: dict[str, Any] | None = Field(
-        default=None, description="Additional metadata from source"
-    )
+    metadata: dict[str, Any] | None = Field(default=None, description="Additional metadata from source")
 
     @field_validator("title")
     @classmethod

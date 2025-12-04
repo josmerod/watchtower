@@ -1,0 +1,4 @@
+[flake8]
+max-line-length = 210
+extend-ignore = E203,E402,E722,F401,F811,F841,E712,E501,E741,F403
+exclude = .git,__pycache__,build,dist,Tests,src/miners

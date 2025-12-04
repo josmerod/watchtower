@@ -75,7 +75,7 @@ class DeduplicationEngine:
             "title_similarity_matches": 0,
             "content_hash_matches": 0,
             "url_matches": 0,
-            "total_comparisons": 0
+            "total_comparisons": 0,
         }
 
     def _initialize_source_scores(self) -> dict[str, int]:
@@ -95,31 +95,26 @@ class DeduplicationEngine:
             "science": 97,
             "acm": 94,
             "ieee": 93,
-
             # High reputation news sources
             "reuters": 90,
             "ap_news": 89,
             "bbc": 88,
             "npr": 87,
-
             # Tech news sources
             "hackernews": 85,
             "techcrunch": 82,
             "ars_technica": 84,
             "wired": 83,
-
             # Course platforms
             "coursera": 86,
             "edx": 85,
             "udacity": 83,
-
             # Gaming sources
             "steam": 88,
             "epic_games": 85,
             "gog": 82,
-
             # Default score for unknown sources
-            "default": 75
+            "default": 75,
         }
         return scores
 
@@ -136,10 +131,10 @@ class DeduplicationEngine:
             return ""
 
         # Convert to lowercase and remove extra whitespace
-        text = re.sub(r'\s+', ' ', text.lower().strip())
+        text = re.sub(r"\s+", " ", text.lower().strip())
 
         # Remove common punctuation that doesn't affect meaning
-        text = re.sub(r'[^\w\s]', '', text)
+        text = re.sub(r"[^\w\s]", "", text)
 
         return text
 
@@ -180,23 +175,23 @@ class DeduplicationEngine:
         content_parts = []
 
         # Add title if available
-        if hasattr(item, 'title') and item.title:
+        if hasattr(item, "title") and item.title:
             content_parts.append(str(item.title))
 
         # Add description/summary if available
-        for field in ['description', 'summary', 'content', 'abstract']:
+        for field in ["description", "summary", "content", "abstract"]:
             if hasattr(item, field) and getattr(item, field):
                 content_parts.append(str(getattr(item, field)))
 
         # Add URL if available (for link-based content)
-        if hasattr(item, 'url') and item.url:
+        if hasattr(item, "url") and item.url:
             content_parts.append(str(item.url))
 
         # Combine all content parts
-        full_content = ' '.join(content_parts)
+        full_content = " ".join(content_parts)
 
         # Generate SHA256 hash
-        return hashlib.sha256(full_content.encode('utf-8')).hexdigest()
+        return hashlib.sha256(full_content.encode("utf-8")).hexdigest()
 
     def _get_source_score(self, item: TimestampedModel) -> int:
         """Get source reputation score for an item.
@@ -211,25 +206,25 @@ class DeduplicationEngine:
         source_name = None
 
         # Check common source field names
-        for field in ['source', 'source_name', 'platform', 'provider', 'site']:
+        for field in ["source", "source_name", "platform", "provider", "site"]:
             if hasattr(item, field) and getattr(item, field):
                 source_name = str(getattr(item, field)).lower()
                 break
 
         # Try to extract from URL if no source field found
-        if not source_name and hasattr(item, 'url') and item.url:
+        if not source_name and hasattr(item, "url") and item.url:
             url = str(item.url).lower()
-            if 'arxiv' in url:
-                source_name = 'arxiv'
-            elif 'github' in url:
-                source_name = 'github'
-            elif 'steam' in url:
-                source_name = 'steam'
-            elif 'coursera' in url:
-                source_name = 'coursera'
+            if "arxiv" in url:
+                source_name = "arxiv"
+            elif "github" in url:
+                source_name = "github"
+            elif "steam" in url:
+                source_name = "steam"
+            elif "coursera" in url:
+                source_name = "coursera"
 
         # Return score for source, or default if unknown
-        return self.source_reputation_scores.get(source_name, self.source_reputation_scores['default'])
+        return self.source_reputation_scores.get(source_name, self.source_reputation_scores["default"])
 
     def _calculate_recency_score(self, item: TimestampedModel) -> float:
         """Calculate recency score for an item.
@@ -243,10 +238,10 @@ class DeduplicationEngine:
             Recency score (0.0 to 1.0).
         """
         # Use created_at timestamp, fall back to current time if not available
-        created_at = getattr(item, 'created_at', datetime.utcnow())
+        created_at = getattr(item, "created_at", datetime.utcnow())
         if isinstance(created_at, str):
             try:
-                created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
             except:
                 created_at = datetime.utcnow()
 
@@ -270,9 +265,19 @@ class DeduplicationEngine:
         """
         # Define important fields for content quality
         important_fields = [
-            'title', 'description', 'summary', 'content', 'abstract',
-            'url', 'author', 'published_at', 'created_at', 'updated_at',
-            'tags', 'category', 'source'
+            "title",
+            "description",
+            "summary",
+            "content",
+            "abstract",
+            "url",
+            "author",
+            "published_at",
+            "created_at",
+            "updated_at",
+            "tags",
+            "category",
+            "source",
         ]
 
         populated_fields = 0
@@ -307,11 +312,7 @@ class DeduplicationEngine:
         # Source reputation is most important (40%)
         # Recency is moderately important (35%)
         # Completeness is less important (25%)
-        quality_score = (
-            source_score * 0.4 +
-            (recency_score * 100) * 0.35 +
-            (completeness_score * 100) * 0.25
-        )
+        quality_score = source_score * 0.4 + (recency_score * 100) * 0.35 + (completeness_score * 100) * 0.25
 
         return min(100.0, max(0.0, quality_score))
 
@@ -319,7 +320,7 @@ class DeduplicationEngine:
         """Find duplicates based on title similarity.
 
         Optimized using sorting and windowing to avoid O(N^2) complexity.
-        
+
         Args:
             items: List of items to check for duplicates.
 
@@ -328,73 +329,73 @@ class DeduplicationEngine:
         """
         duplicate_groups = []
         processed_ids = set()
-        
+
         # Filter items with titles and pre-calculate normalized titles
         valid_items = []
         normalized_titles = {}
-        
+
         for item in items:
-            title = getattr(item, 'title', '')
+            title = getattr(item, "title", "")
             if title:
                 valid_items.append(item)
-                item_id = getattr(item, 'id', str(item))
+                item_id = getattr(item, "id", str(item))
                 normalized_titles[item_id] = self._normalize_text(title)
-        
+
         # Sort items by normalized title to bring similar items close together
-        valid_items.sort(key=lambda x: normalized_titles[getattr(x, 'id', str(x))])
-        
+        valid_items.sort(key=lambda x: normalized_titles[getattr(x, "id", str(x))])
+
         # Comparison window size - items further apart than this are unlikely to be duplicates
         # unless the dataset is extremely dense with very similar titles
         WINDOW_SIZE = 25
-        
+
         for i in range(len(valid_items)):
             item1 = valid_items[i]
-            item1_id = getattr(item1, 'id', str(item1))
-            
+            item1_id = getattr(item1, "id", str(item1))
+
             if item1_id in processed_ids:
                 continue
-                
-            title1 = getattr(item1, 'title', '')
+
+            title1 = getattr(item1, "title", "")
             norm_title1 = normalized_titles[item1_id]
             current_group = [item1]
-            
+
             # Check only items within the window
             for j in range(i + 1, min(i + WINDOW_SIZE + 1, len(valid_items))):
                 item2 = valid_items[j]
-                item2_id = getattr(item2, 'id', str(item2))
-                
+                item2_id = getattr(item2, "id", str(item2))
+
                 if item2_id in processed_ids:
                     continue
-                    
-                title2 = getattr(item2, 'title', '')
+
+                title2 = getattr(item2, "title", "")
                 norm_title2 = normalized_titles[item2_id]
-                
+
                 # Optimization: Check length difference first on NORMALIZED titles
                 # If lengths differ significantly, ratio cannot be high
                 len1, len2 = len(norm_title1), len(norm_title2)
                 if abs(len1 - len2) / max(len1, len2) > (1 - self.title_similarity_threshold):
                     continue
-                
+
                 # Optimization: Use quick_ratio first (O(N)) before full ratio (expensive)
                 matcher = SequenceMatcher(None, norm_title1, norm_title2)
                 if matcher.real_quick_ratio() < self.title_similarity_threshold:
                     continue
                 if matcher.quick_ratio() < self.title_similarity_threshold:
                     continue
-                
+
                 # Use SequenceMatcher directly on pre-normalized titles
                 similarity = matcher.ratio()
                 self.stats["total_comparisons"] += 1
-                
+
                 if similarity >= self.title_similarity_threshold:
                     current_group.append(item2)
                     processed_ids.add(item2_id)
                     self.stats["title_similarity_matches"] += 1
-            
+
             if len(current_group) > 1:
                 duplicate_groups.append(current_group)
                 processed_ids.add(item1_id)
-                
+
         return duplicate_groups
 
     def _find_duplicates_by_content_hash(self, items: list[TimestampedModel]) -> list[list[TimestampedModel]]:
@@ -418,7 +419,7 @@ class DeduplicationEngine:
         for hash_value, group_items in hash_groups.items():
             if len(group_items) > 1:
                 duplicate_groups.append(group_items)
-                self.stats["content_hash_matches"] += (len(group_items) - 1)
+                self.stats["content_hash_matches"] += len(group_items) - 1
 
         return duplicate_groups
 
@@ -435,7 +436,7 @@ class DeduplicationEngine:
         url_groups = defaultdict(list)
 
         for item in items:
-            url = getattr(item, 'url', '')
+            url = getattr(item, "url", "")
             if url:
                 url_groups[url].append(item)
 
@@ -444,7 +445,7 @@ class DeduplicationEngine:
         for url, group_items in url_groups.items():
             if len(group_items) > 1:
                 duplicate_groups.append(group_items)
-                self.stats["url_matches"] += (len(group_items) - 1)
+                self.stats["url_matches"] += len(group_items) - 1
 
         return duplicate_groups
 
@@ -467,7 +468,7 @@ class DeduplicationEngine:
 
         for group_idx, group in enumerate(groups):
             for item in group:
-                item_id = getattr(item, 'id', str(item))
+                item_id = getattr(item, "id", str(item))
                 item_to_groups[item_id].append(group_idx)
 
         # Merge overlapping groups
@@ -482,7 +483,7 @@ class DeduplicationEngine:
             merged_group = []
             seen_ids = set()
             for item in group:
-                item_id = getattr(item, 'id', str(item))
+                item_id = getattr(item, "id", str(item))
                 if item_id not in seen_ids:
                     merged_group.append(item)
                     seen_ids.add(item_id)
@@ -500,7 +501,7 @@ class DeduplicationEngine:
                         continue
 
                     for item in groups[group_idx]:
-                        item_id = getattr(item, 'id', str(item))
+                        item_id = getattr(item, "id", str(item))
 
                         # Find all groups containing this item
                         overlapping_groups = item_to_groups.get(item_id, [])
@@ -509,7 +510,7 @@ class DeduplicationEngine:
                                 groups_to_merge.add(overlap_idx)
                                 changed = True
                                 for new_item in groups[overlap_idx]:
-                                    new_item_id = getattr(new_item, 'id', str(new_item))
+                                    new_item_id = getattr(new_item, "id", str(new_item))
                                     if new_item_id not in seen_ids:
                                         new_group_items.append(new_item)
                                         seen_ids.add(new_item_id)
@@ -540,7 +541,7 @@ class DeduplicationEngine:
         # Calculate quality scores for all items
         scored_items = []
         for item in items:
-            if getattr(item, 'quality_score', None) is not None:
+            if getattr(item, "quality_score", None) is not None:
                 quality_score = item.quality_score
             else:
                 quality_score = self._calculate_quality_score(item)
@@ -580,10 +581,10 @@ class DeduplicationEngine:
 
         return DuplicateGroup(
             group_id=group_id,
-            items=[item.model_dump() if hasattr(item, 'model_dump') else item for item in items],
-            primary_item=primary_item.model_dump() if hasattr(primary_item, 'model_dump') else primary_item,
-            duplicate_items=[item.model_dump() if hasattr(item, 'model_dump') else item for item in duplicate_items],
-            detection_method=detection_method
+            items=[item.model_dump() if hasattr(item, "model_dump") else item for item in items],
+            primary_item=(primary_item.model_dump() if hasattr(primary_item, "model_dump") else primary_item),
+            duplicate_items=[item.model_dump() if hasattr(item, "model_dump") else item for item in duplicate_items],
+            detection_method=detection_method,
         )
 
     def find_duplicates(self, content: list[TimestampedModel]) -> DeduplicationResult:
@@ -602,7 +603,7 @@ class DeduplicationEngine:
             "title_similarity_matches": 0,
             "content_hash_matches": 0,
             "url_matches": 0,
-            "total_comparisons": 0
+            "total_comparisons": 0,
         }
 
         if not content:
@@ -612,7 +613,7 @@ class DeduplicationEngine:
                 duplicate_groups=[],
                 duplicates_removed=0,
                 processing_time_seconds=0.0,
-                detection_stats=self.stats.copy()
+                detection_stats=self.stats.copy(),
             )
 
         logger.info(f"Starting deduplication for {len(content)} items")
@@ -640,13 +641,13 @@ class DeduplicationEngine:
             detection_method = "mixed"
 
             # Determine primary detection method
-            group_item_ids = {getattr(item, 'id', str(item)) for item in group}
+            group_item_ids = {getattr(item, "id", str(item)) for item in group}
 
-            if any(set(getattr(item, 'id', str(item)) for item in dup_group) & group_item_ids for dup_group in title_duplicates):
+            if any({getattr(item, "id", str(item)) for item in dup_group} & group_item_ids for dup_group in title_duplicates):
                 detection_method = "title_similarity"
-            elif any(set(getattr(item, 'id', str(item)) for item in dup_group) & group_item_ids for dup_group in hash_duplicates):
+            elif any({getattr(item, "id", str(item)) for item in dup_group} & group_item_ids for dup_group in hash_duplicates):
                 detection_method = "content_hash"
-            elif any(set(getattr(item, 'id', str(item)) for item in dup_group) & group_item_ids for dup_group in url_duplicates):
+            elif any({getattr(item, "id", str(item)) for item in dup_group} & group_item_ids for dup_group in url_duplicates):
                 detection_method = "url_match"
 
             try:
@@ -655,7 +656,7 @@ class DeduplicationEngine:
 
                 # Mark all items in this group as processed
                 for item in group:
-                    processed_items.add(getattr(item, 'id', str(item)))
+                    processed_items.add(getattr(item, "id", str(item)))
 
             except Exception as e:
                 logger.error(f"Error creating duplicate group {group_id}: {e}")
@@ -664,7 +665,7 @@ class DeduplicationEngine:
         # Filter out duplicate items to get unique items
         unique_items = []
         for item in content:
-            item_id = getattr(item, 'id', str(item))
+            item_id = getattr(item, "id", str(item))
             if item_id not in processed_items:
                 # Add metadata for non-duplicate items
                 item.duplicate_group_id = None
@@ -675,8 +676,8 @@ class DeduplicationEngine:
             else:
                 # Find the primary item from duplicate groups and add to unique items
                 for group in duplicate_groups:
-                    primary_item_id = group.primary_item.get('id') if isinstance(group.primary_item, dict) else getattr(group.primary_item, 'id', str(group.primary_item))
-                    if getattr(item, 'id', str(item)) == primary_item_id:
+                    primary_item_id = group.primary_item.get("id") if isinstance(group.primary_item, dict) else getattr(group.primary_item, "id", str(group.primary_item))
+                    if getattr(item, "id", str(item)) == primary_item_id:
                         unique_items.append(item)
                         break
 
@@ -684,25 +685,22 @@ class DeduplicationEngine:
         processing_time = (datetime.utcnow() - start_time).total_seconds()
         duplicates_removed = sum(len(group.duplicate_items) for group in duplicate_groups)
 
-        logger.info(
-            f"Deduplication completed: {len(content)} items -> {len(unique_items)} unique, "
-            f"{duplicates_removed} duplicates removed in {processing_time:.2f}s"
-        )
+        logger.info(f"Deduplication completed: {len(content)} items -> {len(unique_items)} unique, " f"{duplicates_removed} duplicates removed in {processing_time:.2f}s")
 
         # Convert model instances to dictionaries for Pydantic compatibility
-        unique_items_dict = [item.model_dump() if hasattr(item, 'model_dump') else item for item in unique_items]
+        unique_items_dict = [item.model_dump() if hasattr(item, "model_dump") else item for item in unique_items]
         duplicate_groups_dict = []
         for group in duplicate_groups:
-            if hasattr(group, 'model_dump'):
+            if hasattr(group, "model_dump"):
                 duplicate_groups_dict.append(group.model_dump())
             else:
                 # Convert items to dictionaries
                 group_dict = {
                     "group_id": group.group_id,
-                    "items": [item.model_dump() if hasattr(item, 'model_dump') else item for item in group.items],
-                    "primary_item": group.primary_item.model_dump() if hasattr(group.primary_item, 'model_dump') else group.primary_item,
-                    "duplicate_items": [item.model_dump() if hasattr(item, 'model_dump') else item for item in group.duplicate_items],
-                    "detection_method": group.detection_method
+                    "items": [item.model_dump() if hasattr(item, "model_dump") else item for item in group.items],
+                    "primary_item": (group.primary_item.model_dump() if hasattr(group.primary_item, "model_dump") else group.primary_item),
+                    "duplicate_items": [item.model_dump() if hasattr(item, "model_dump") else item for item in group.duplicate_items],
+                    "detection_method": group.detection_method,
                 }
                 duplicate_groups_dict.append(DuplicateGroup(**group_dict))
 
@@ -712,7 +710,7 @@ class DeduplicationEngine:
             duplicate_groups=duplicate_groups_dict,
             duplicates_removed=duplicates_removed,
             processing_time_seconds=processing_time,
-            detection_stats=self.stats.copy()
+            detection_stats=self.stats.copy(),
         )
 
     def deduplicate_content(self, content: list[TimestampedModel]) -> list[TimestampedModel]:

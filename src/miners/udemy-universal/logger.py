@@ -19,9 +19,7 @@ from typing import Any
 LOG_DIR = "logs"
 LOG_LEVEL = logging.INFO  # Default log level
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-DEBUG_FORMAT = (
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]"
-)
+DEBUG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Ensure log directory exists
@@ -119,9 +117,7 @@ class LoggerAdapter(logging.LoggerAdapter):
 
     def process(self, msg, kwargs) -> tuple[str, dict]:
         # Add extra context from self.extra to the message
-        context_str = " ".join(
-            f"[{k}={v}]" for k, v in self.extra.items() if v is not None
-        )
+        context_str = " ".join(f"[{k}={v}]" for k, v in self.extra.items() if v is not None)
         if context_str:
             msg = f"{msg} {context_str}"
         return msg, kwargs
@@ -255,9 +251,7 @@ class MetricsLogger:
         self.metrics[name] = value
         self.logger.debug(f"Gauge '{name}' set to {value}")
 
-    def log_metric(
-        self, name: str, value: Any, tags: dict[str, str] | None = None
-    ) -> None:
+    def log_metric(self, name: str, value: Any, tags: dict[str, str] | None = None) -> None:
         """Log a custom metric."""
         metric_data = {
             "metric": name,
@@ -280,9 +274,7 @@ class MetricsLogger:
         self.logger.info("Metrics reset")
 
 
-def setup_structured_logging(
-    logger_name: str, log_file: str | None = None
-) -> logging.Logger:
+def setup_structured_logging(logger_name: str, log_file: str | None = None) -> logging.Logger:
     """Setup structured JSON logging for a specific logger.
 
     Args:

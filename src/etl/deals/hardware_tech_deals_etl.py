@@ -16,12 +16,10 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -159,7 +157,7 @@ class HardwareTechDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract hardware and tech deals from multiple sources."""
         logger.info("Starting hardware & tech deals extraction...")
 
@@ -172,7 +170,7 @@ class HardwareTechDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} hardware & tech deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _get_curated_hardware_tech_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_hardware_tech_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of hardware and tech deals."""
         curated = [
             {
@@ -187,9 +185,22 @@ class HardwareTechDealsETL(BaseETL):
                 "savings": 0,
                 "discount_percentage": 0,
                 "product_type": "various",
-                "brand_focus": ["Sony", "Samsung", "Apple", "Microsoft", "Bosch", "Siemens"],
+                "brand_focus": [
+                    "Sony",
+                    "Samsung",
+                    "Apple",
+                    "Microsoft",
+                    "Bosch",
+                    "Siemens",
+                ],
                 "region": "europe",
-                "tags": ["electronics", "computers", "accessories", "daily deals", "german"],
+                "tags": [
+                    "electronics",
+                    "computers",
+                    "accessories",
+                    "daily deals",
+                    "german",
+                ],
                 "created_date": datetime.now(timezone.utc).isoformat(),
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
                 "source": "Curated",
@@ -225,7 +236,14 @@ class HardwareTechDealsETL(BaseETL):
                 "savings": 0,
                 "discount_percentage": 0,
                 "product_type": "electronics",
-                "brand_focus": ["Apple", "Samsung", "Sony", "LG", "Panasonic", "Toshiba"],
+                "brand_focus": [
+                    "Apple",
+                    "Samsung",
+                    "Sony",
+                    "LG",
+                    "Panasonic",
+                    "Toshiba",
+                ],
                 "region": "europe",
                 "tags": ["electronics", "appliances", "clearance", "retail", "uk"],
                 "created_date": datetime.now(timezone.utc).isoformat(),
@@ -244,7 +262,12 @@ class HardwareTechDealsETL(BaseETL):
                 "savings": 0,
                 "discount_percentage": 0,
                 "product_type": "components",
-                "brand_focus": ["Arduino", "Raspberry Pi", "Texas Instruments", "STMicroelectronics"],
+                "brand_focus": [
+                    "Arduino",
+                    "Raspberry Pi",
+                    "Texas Instruments",
+                    "STMicroelectronics",
+                ],
                 "region": "europe",
                 "tags": ["electronics", "components", "technical", "german"],
                 "created_date": datetime.now(timezone.utc).isoformat(),
@@ -371,7 +394,7 @@ class HardwareTechDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated hardware & tech deals")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform hardware and tech deals data."""
         logger.info("Starting hardware & tech deals transformation...")
 
@@ -420,14 +443,12 @@ class HardwareTechDealsETL(BaseETL):
                 continue
 
         # Sort by tech score and savings
-        transformed_deals.sort(
-            key=lambda x: (x["tech_score"], x["savings"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["tech_score"], x["savings"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} hardware & tech deals")
         return transformed_deals
 
-    def _calculate_tech_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_tech_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate tech value score for ranking deals."""
         score = 0.0
 
@@ -459,9 +480,7 @@ class HardwareTechDealsETL(BaseETL):
             score += 4.0
         elif deal_type == "refurbished":
             score += 3.5
-        elif deal_type == "cashback":
-            score += 3.0
-        elif deal_type == "outlet_deals":
+        elif deal_type == "cashback" or deal_type == "outlet_deals":
             score += 3.0
 
         # Product type weight
@@ -486,7 +505,7 @@ class HardwareTechDealsETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_product_category(self, deal: Dict[str, Any]) -> str:
+    def _determine_product_category(self, deal: dict[str, Any]) -> str:
         """Determine specific product category."""
         product_type = deal.get("product_type", "").lower()
         category = deal.get("category", "").lower()
@@ -504,7 +523,7 @@ class HardwareTechDealsETL(BaseETL):
         else:
             return "electronics"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed hardware and tech deals data to files."""
         try:
             # Ensure output directory exists
@@ -524,9 +543,7 @@ class HardwareTechDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} hardware & tech deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} hardware & tech deals to {output_dir}")
             return True
 
         except Exception as e:

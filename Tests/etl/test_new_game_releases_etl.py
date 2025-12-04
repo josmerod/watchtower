@@ -1,10 +1,8 @@
-import sys
 import os
+import sys
 import unittest
-from unittest.mock import patch, Mock, MagicMock
-import pandas as pd
-import datetime
-import json
+from unittest.mock import Mock, patch
+
 import requests  # Import requests for requests.exceptions.RequestException
 
 # Add project root to sys.path to allow imports from src
@@ -12,8 +10,8 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..
 if project_root not in sys.path:
     from src.etl.games.games_get_new_releases import (
         fetch_games,
-        process_games_data,
         get_new_releases,
+        process_games_data,
     )
 from src.utils.logging import get_logger  # For logger interactions if needed
 
@@ -22,7 +20,6 @@ test_logger = get_logger(__name__)
 
 
 class TestNewGameReleasesETL(unittest.TestCase):
-
     def setUp(self):
         # Define constants used in the script, can be overridden in tests
         self.MIN_METACRITIC_SCORE = 70  # From the script
@@ -64,21 +61,15 @@ class TestNewGameReleasesETL(unittest.TestCase):
         result = fetch_games(page_num=1, params=params)
 
         self.assertEqual(result, self.sample_rawg_response_page1)
-        mock_get.assert_called_once_with(
-            "https://api.rawg.io/api/games", params=params, timeout=10
-        )
+        mock_get.assert_called_once_with("https://api.rawg.io/api/games", params=params, timeout=10)
 
     @patch("src.etl.games.games_get_new_releases.requests.get")
-    @patch(
-        "src.etl.games.games_get_new_releases.logger"
-    )  # Mock logger to check error logging
+    @patch("src.etl.games.games_get_new_releases.logger")  # Mock logger to check error logging
     def test_fetch_games_api_error(self, mock_logger, mock_get):
         # Configure the mock response for an API error (e.g., 500)
         mock_response = Mock()
         mock_response.status_code = 500
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-            "API Error"
-        )
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("API Error")
         mock_get.return_value = mock_response
 
         params = {"key": self.mock_api_key, "page": 1}
@@ -99,9 +90,7 @@ class TestNewGameReleasesETL(unittest.TestCase):
         result = fetch_games(page_num=1, params=params)
 
         self.assertIsNone(result)
-        mock_logger.error.assert_called_with(
-            "Error during request for page 1: Connection Error"
-        )
+        mock_logger.error.assert_called_with("Error during request for page 1: Connection Error")
 
     @patch("src.etl.games.games_get_new_releases.requests.get")
     @patch("src.etl.games.games_get_new_releases.logger")
@@ -127,9 +116,7 @@ class TestNewGameReleasesETL(unittest.TestCase):
         result = fetch_games(page_num=1, params=params)
 
         self.assertIsNone(result)
-        mock_logger.error.assert_called_with(
-            "Failed to decode JSON response for page 1."
-        )
+        mock_logger.error.assert_called_with("Failed to decode JSON response for page 1.")
 
     # Tests for process_games_data
     def test_process_games_data_valid(self):
@@ -144,9 +131,7 @@ class TestNewGameReleasesETL(unittest.TestCase):
         self.assertEqual(len(processed), 2)
         self.assertEqual(processed[0]["id"], self.sample_game_high_score["id"])
         self.assertEqual(processed[0]["name"], self.sample_game_high_score["name"])
-        self.assertEqual(
-            processed[0]["metacritic"], self.sample_game_high_score["metacritic"]
-        )
+        self.assertEqual(processed[0]["metacritic"], self.sample_game_high_score["metacritic"])
         self.assertEqual(processed[0]["platforms"], ["PC", "PlayStation 5"])
         self.assertEqual(processed[0]["genres"], ["Action", "Adventure"])
         self.assertEqual(
@@ -155,9 +140,7 @@ class TestNewGameReleasesETL(unittest.TestCase):
         )
 
         self.assertEqual(processed[1]["id"], self.sample_game_meets_score["id"])
-        self.assertEqual(
-            processed[1]["metacritic"], self.sample_game_meets_score["metacritic"]
-        )
+        self.assertEqual(processed[1]["metacritic"], self.sample_game_meets_score["metacritic"])
 
     def test_process_games_data_empty_input(self):
         processed = process_games_data([])
@@ -225,9 +208,7 @@ class TestNewGameReleasesETL(unittest.TestCase):
         get_new_releases()
 
         # Assertions
-        self.assertEqual(
-            mock_fetch.call_count, 3
-        )  # Called for page 1, page 2, then page 3 (which is empty)
+        self.assertEqual(mock_fetch.call_count, 3)  # Called for page 1, page 2, then page 3 (which is empty)
         mock_ensure_dirs.assert_called_once_with(["/fake/project/root/data/games"])
 
         # Check that to_json and to_csv were called.
@@ -249,12 +230,8 @@ class TestNewGameReleasesETL(unittest.TestCase):
 
     @patch("src.etl.games.games_get_new_releases.os.getenv")
     @patch("src.etl.games.games_get_new_releases.logger.warning")
-    @patch(
-        "src.etl.games.games_get_new_releases.fetch_games"
-    )  # Mock fetch to avoid actual calls
-    @patch(
-        "src.etl.games.games_get_new_releases.pd.DataFrame.to_json"
-    )  # Mock file saves
+    @patch("src.etl.games.games_get_new_releases.fetch_games")  # Mock fetch to avoid actual calls
+    @patch("src.etl.games.games_get_new_releases.pd.DataFrame.to_json")  # Mock file saves
     @patch("src.etl.games.games_get_new_releases.pd.DataFrame.to_csv")
     @patch("src.etl.games.games_get_new_releases.ensure_directories")
     @patch("src.etl.games.games_get_new_releases.get_project_root")
@@ -322,9 +299,7 @@ class TestNewGameReleasesETL(unittest.TestCase):
         get_new_releases()
 
         mock_fetch.assert_called_once()  # Should be called once and fail
-        mock_logger.warning.assert_called_with(
-            "No data received or error in fetching page 1. Ending process."
-        )
+        mock_logger.warning.assert_called_with("No data received or error in fetching page 1. Ending process.")
         mock_to_json.assert_not_called()  # No data, so no file saving
         mock_to_csv.assert_not_called()
         mock_ensure_dirs.assert_not_called()  # Should not be called if no games processed
@@ -356,9 +331,7 @@ class TestNewGameReleasesETL(unittest.TestCase):
 
         mock_fetch.assert_called_once()
         # process_games_data would return empty list, so all_processed_games remains empty
-        mock_logger.info.assert_any_call(
-            "No games found or processed. Skipping file saving."
-        )
+        mock_logger.info.assert_any_call("No games found or processed. Skipping file saving.")
         mock_to_json.assert_not_called()
         mock_to_csv.assert_not_called()
         mock_ensure_dirs.assert_not_called()  # ensure_directories is called only if there are games

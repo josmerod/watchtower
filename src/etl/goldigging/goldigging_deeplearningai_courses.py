@@ -13,9 +13,7 @@ from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
 logger = logging.getLogger("classcentral_scraper")
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 # Constants
 BASE_OUTPUT_DIR = "data/classcentral"
@@ -62,14 +60,10 @@ class ClassCentralScraper:
         # Set max pages based on whether this is first run
         if self.max_pages is None:
             if self.is_first_run:
-                logger.info(
-                    f"First run detected, will scrape {MAX_PAGES_FIRST_RUN} pages"
-                )
+                logger.info(f"First run detected, will scrape {MAX_PAGES_FIRST_RUN} pages")
                 self.max_pages = MAX_PAGES_FIRST_RUN
             else:
-                logger.info(
-                    f"Not first run, using default of {MAX_PAGES_SUBSEQUENT_RUN} pages"
-                )
+                logger.info(f"Not first run, using default of {MAX_PAGES_SUBSEQUENT_RUN} pages")
                 self.max_pages = MAX_PAGES_SUBSEQUENT_RUN
 
     async def scrape_courses(self) -> list[dict[str, Any]]:
@@ -108,49 +102,33 @@ class ClassCentralScraper:
 
                         # Save debug info for the first page
                         if page_num == 1:
-                            debug_file = os.path.join(
-                                self.debug_dir, f"page_{page_num}.html"
-                            )
-                            debug_screenshot = os.path.join(
-                                self.debug_dir, f"page_{page_num}.png"
-                            )
+                            debug_file = os.path.join(self.debug_dir, f"page_{page_num}.html")
+                            debug_screenshot = os.path.join(self.debug_dir, f"page_{page_num}.png")
                             content = await page.content()
                             with open(debug_file, "w", encoding="utf-8") as f:
                                 f.write(content)
                             await page.screenshot(path=debug_screenshot)
-                            logger.info(
-                                f"Saved debug info to {debug_file} and {debug_screenshot}"
-                            )
+                            logger.info(f"Saved debug info to {debug_file} and {debug_screenshot}")
 
                         # Extract course elements
                         content = await page.content()
                         soup = BeautifulSoup(content, "html.parser")
 
                         # Find all course listings - they're in a list structure
-                        course_elements = soup.find_all(
-                            "li", class_="course-list-course"
-                        )
+                        course_elements = soup.find_all("li", class_="course-list-course")
 
                         if not course_elements:
                             # Try alternative selector
-                            course_elements = soup.select(
-                                "div.catalog-grid__results li"
-                            )
+                            course_elements = soup.select("div.catalog-grid__results li")
 
                         if not course_elements:
                             # Save debug info
-                            debug_file = os.path.join(
-                                self.debug_dir, f"page_{page_num}_failed.html"
-                            )
-                            debug_screenshot = os.path.join(
-                                self.debug_dir, f"page_{page_num}_failed.png"
-                            )
+                            debug_file = os.path.join(self.debug_dir, f"page_{page_num}_failed.html")
+                            debug_screenshot = os.path.join(self.debug_dir, f"page_{page_num}_failed.png")
                             with open(debug_file, "w", encoding="utf-8") as f:
                                 f.write(content)
                             await page.screenshot(path=debug_screenshot)
-                            logger.error(
-                                f"No courses found on page {page_num}, saved debug info"
-                            )
+                            logger.error(f"No courses found on page {page_num}, saved debug info")
 
                             # Check if we've reached the end (no next page link)
                             next_link = soup.find("link", attrs={"rel": "next"})
@@ -161,9 +139,7 @@ class ClassCentralScraper:
                             page_num += 1
                             continue
 
-                        logger.info(
-                            f"Found {len(course_elements)} course elements on page {page_num}"
-                        )
+                        logger.info(f"Found {len(course_elements)} course elements on page {page_num}")
 
                         # Process courses
                         for course_element in course_elements:
@@ -217,9 +193,7 @@ class ClassCentralScraper:
                     course_data["url"] = f"https://www.classcentral.com{relative_url}"
 
             # Extract institution
-            institution_element = course_element.find(
-                "a", href=lambda x: x and "/institution/" in x
-            )
+            institution_element = course_element.find("a", href=lambda x: x and "/institution/" in x)
             if institution_element:
                 course_data["institution"] = institution_element.text.strip()
 
@@ -254,19 +228,14 @@ class ClassCentralScraper:
                         course_data["start_date"] = text_content
 
                     # Cost/Pricing
-                    elif (
-                        "icon-tag-red" in icon_class
-                        or "icon-tag-charcoal" in icon_class
-                    ):
+                    elif "icon-tag-red" in icon_class or "icon-tag-charcoal" in icon_class:
                         course_data["cost"] = text_content
                         course_data["is_free"] = "Free" in text_content
 
             # Extract rating if available
             rating_element = course_element.find("span", class_="cmpt-rating-medium")
             if rating_element:
-                filled_stars = rating_element.find_all(
-                    "i", class_=lambda c: c and "icon-star-" in c and "empty" not in c
-                )
+                filled_stars = rating_element.find_all("i", class_=lambda c: c and "icon-star-" in c and "empty" not in c)
                 course_data["rating"] = len(filled_stars) if filled_stars else 0
 
             # Extract subject/category if available
@@ -305,9 +274,7 @@ class ClassCentralScraper:
         try:
             # Ensure we have at least some data before saving
             if len(courses) < 3:
-                logger.warning(
-                    f"Found only {len(courses)} courses, which is suspiciously low. Check scraping."
-                )
+                logger.warning(f"Found only {len(courses)} courses, which is suspiciously low. Check scraping.")
 
             # Save courses as JSON
             with open(self.courses_file, "w", encoding="utf-8") as f:
@@ -394,12 +361,8 @@ if __name__ == "__main__":
     # Parse command line arguments
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Scrape Coursera courses from classcentral.com"
-    )
-    parser.add_argument(
-        "--max-pages", type=int, help="Maximum number of pages to scrape"
-    )
+    parser = argparse.ArgumentParser(description="Scrape Coursera courses from classcentral.com")
+    parser.add_argument("--max-pages", type=int, help="Maximum number of pages to scrape")
     args = parser.parse_args()
 
     main(max_pages=args.max_pages)

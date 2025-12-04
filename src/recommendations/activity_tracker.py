@@ -124,7 +124,7 @@ class UserActivityTracker:
             if not activity_file.exists():
                 return []
 
-            with open(activity_file, encoding='utf-8') as f:
+            with open(activity_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             # Parse JSON to ActivityEvent objects
@@ -137,15 +137,15 @@ class UserActivityTracker:
             for event_data in data:
                 try:
                     # Parse timestamp
-                    if isinstance(event_data.get('timestamp'), str):
-                        event_data['timestamp'] = datetime.fromisoformat(event_data['timestamp'].replace('Z', '+00:00'))
+                    if isinstance(event_data.get("timestamp"), str):
+                        event_data["timestamp"] = datetime.fromisoformat(event_data["timestamp"].replace("Z", "+00:00"))
 
                     # Parse activity type
-                    if isinstance(event_data.get('action'), str):
-                        event_data['action'] = ActivityType(event_data['action'])
+                    if isinstance(event_data.get("action"), str):
+                        event_data["action"] = ActivityType(event_data["action"])
 
                     # Apply date filter if specified
-                    if cutoff_date and event_data['timestamp'] < cutoff_date:
+                    if cutoff_date and event_data["timestamp"] < cutoff_date:
                         continue
 
                     activities.append(ActivityEvent(**event_data))
@@ -178,14 +178,14 @@ class UserActivityTracker:
             for activity in activities:
                 event_data = activity.dict()
                 # Convert datetime to ISO string
-                if isinstance(event_data.get('timestamp'), datetime):
-                    event_data['timestamp'] = activity.timestamp.isoformat()
+                if isinstance(event_data.get("timestamp"), datetime):
+                    event_data["timestamp"] = activity.timestamp.isoformat()
                 data.append(event_data)
 
             # Sort by timestamp (newest first) for easier analysis
-            data.sort(key=lambda x: x['timestamp'], reverse=True)
+            data.sort(key=lambda x: x["timestamp"], reverse=True)
 
-            with open(activity_file, 'w', encoding='utf-8') as f:
+            with open(activity_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
             logger.debug(f"Saved {len(activities)} activities for user {user_id}")
@@ -210,12 +210,12 @@ class UserActivityTracker:
             # Load existing profile if available
             if profile_file.exists():
                 try:
-                    with open(profile_file, encoding='utf-8') as f:
+                    with open(profile_file, encoding="utf-8") as f:
                         data = json.load(f)
 
                     # Parse last_updated timestamp
-                    if isinstance(data.get('last_updated'), str):
-                        data['last_updated'] = datetime.fromisoformat(data['last_updated'].replace('Z', '+00:00'))
+                    if isinstance(data.get("last_updated"), str):
+                        data["last_updated"] = datetime.fromisoformat(data["last_updated"].replace("Z", "+00:00"))
 
                     return UserActivityProfile(**data)
 
@@ -251,10 +251,10 @@ class UserActivityTracker:
 
             # Convert to JSON-serializable format
             data = profile.dict()
-            if isinstance(data.get('last_updated'), datetime):
-                data['last_updated'] = profile.last_updated.isoformat()
+            if isinstance(data.get("last_updated"), datetime):
+                data["last_updated"] = profile.last_updated.isoformat()
 
-            with open(profile_file, 'w', encoding='utf-8') as f:
+            with open(profile_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
             logger.debug(f"Saved profile for user {user_id}")
@@ -279,15 +279,15 @@ class UserActivityTracker:
 
             if not activities:
                 return {
-                    'total_activities': 0,
-                    'unique_content_items': 0,
-                    'activity_types': {},
-                    'content_types': {},
-                    'avg_duration': 0.0,
+                    "total_activities": 0,
+                    "unique_content_items": 0,
+                    "activity_types": {},
+                    "content_types": {},
+                    "avg_duration": 0.0,
                 }
 
             # Calculate statistics
-            unique_content = set(a.content_id for a in activities)
+            unique_content = {a.content_id for a in activities}
             activity_types = {}
             content_types = {}
             durations = [a.duration_seconds for a in activities if a.duration_seconds]
@@ -302,12 +302,12 @@ class UserActivityTracker:
                 content_types[content_type] = content_types.get(content_type, 0) + 1
 
             summary = {
-                'total_activities': len(activities),
-                'unique_content_items': len(unique_content),
-                'activity_types': activity_types,
-                'content_types': content_types,
-                'avg_duration': sum(durations) / len(durations) if durations else 0.0,
-                'period_days': days,
+                "total_activities": len(activities),
+                "unique_content_items": len(unique_content),
+                "activity_types": activity_types,
+                "content_types": content_types,
+                "avg_duration": sum(durations) / len(durations) if durations else 0.0,
+                "period_days": days,
             }
 
             return summary
@@ -344,7 +344,7 @@ class UserActivityTracker:
 
                 if len(activities) != original_count:
                     self.save_user_activities(uid, activities)
-                    total_removed += (original_count - len(activities))
+                    total_removed += original_count - len(activities)
 
                     logger.debug(f"Cleaned {original_count - len(activities)} old activities for user {uid}")
 

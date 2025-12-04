@@ -417,9 +417,7 @@ class ConfigValidator:
             ],
         }
 
-    def validate_config(
-        self, config: dict[str, Any]
-    ) -> tuple[bool, list[ValidationResult]]:
+    def validate_config(self, config: dict[str, Any]) -> tuple[bool, list[ValidationResult]]:
         """Validate entire configuration.
 
         Args:
@@ -440,15 +438,11 @@ class ConfigValidator:
         self._check_unknown_fields(config, self.schema, "")
 
         # Determine overall validity
-        has_errors = any(
-            result.level == ValidationLevel.ERROR for result in self.validation_results
-        )
+        has_errors = any(result.level == ValidationLevel.ERROR for result in self.validation_results)
 
         return not has_errors, self.validation_results
 
-    def _validate_section(
-        self, config: dict[str, Any], schema: dict[str, Any], prefix: str
-    ):
+    def _validate_section(self, config: dict[str, Any], schema: dict[str, Any], prefix: str):
         """Validate a configuration section.
 
         Args:
@@ -582,9 +576,7 @@ class ConfigValidator:
                     )
                 )
 
-    def _validate_numeric(
-        self, field_path: str, value: int | float, rules: dict[str, Any]
-    ):
+    def _validate_numeric(self, field_path: str, value: int | float, rules: dict[str, Any]):
         """Validate numeric field.
 
         Args:
@@ -660,9 +652,7 @@ class ConfigValidator:
                         )
                     )
 
-    def _validate_dict(
-        self, field_path: str, value: dict[str, Any], rules: dict[str, Any]
-    ):
+    def _validate_dict(self, field_path: str, value: dict[str, Any], rules: dict[str, Any]):
         """Validate dictionary field.
 
         Args:
@@ -747,9 +737,7 @@ class ConfigValidator:
                 )
             )
 
-    def _check_unknown_fields(
-        self, config: dict[str, Any], schema: dict[str, Any], prefix: str
-    ):
+    def _check_unknown_fields(self, config: dict[str, Any], schema: dict[str, Any], prefix: str):
         """Check for unknown fields in configuration.
 
         Args:
@@ -770,9 +758,7 @@ class ConfigValidator:
                     )
                 )
 
-    def load_and_validate_config(
-        self, config_path: str
-    ) -> tuple[bool, dict[str, Any], list[ValidationResult]]:
+    def load_and_validate_config(self, config_path: str) -> tuple[bool, dict[str, Any], list[ValidationResult]]:
         """Load and validate configuration from file.
 
         Args:
@@ -842,10 +828,7 @@ class ConfigValidator:
                     if "default" in rules:
                         result[field] = rules["default"]
                     elif "nested_schema" in rules:
-                        if (
-                            isinstance(rules["nested_schema"], dict)
-                            and "type" not in rules["nested_schema"]
-                        ):
+                        if isinstance(rules["nested_schema"], dict) and "type" not in rules["nested_schema"]:
                             result[field] = extract_defaults(rules["nested_schema"])
                         else:
                             result[field] = {}

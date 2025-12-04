@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import html
@@ -12,7 +12,7 @@ from dash import html
 logger = logging.getLogger(__name__)
 
 
-def load_anime_data() -> Dict[str, List[Dict[str, Any]]]:
+def load_anime_data() -> dict[str, list[dict[str, Any]]]:
     """Load anime data from JSON files categorized by type"""
     try:
         data_dir = Path("data/anime")
@@ -50,7 +50,7 @@ def load_anime_data() -> Dict[str, List[Dict[str, Any]]]:
                 json_file = data_dir / filename
                 if json_file.exists():
                     try:
-                        with open(json_file, "r", encoding="utf-8") as f:
+                        with open(json_file, encoding="utf-8") as f:
                             data = json.load(f)
                             if isinstance(data, list):
                                 anime_categories[category] = data
@@ -60,9 +60,7 @@ def load_anime_data() -> Dict[str, List[Dict[str, Any]]]:
                         logger.error(f"Error loading {json_file}: {e}")
 
         total_items = sum(len(v) for v in anime_categories.values())
-        logger.info(
-            f"Loaded {total_items} anime items across {len(anime_categories)} categories"
-        )
+        logger.info(f"Loaded {total_items} anime items across {len(anime_categories)} categories")
         return anime_categories
     except Exception as e:
         logger.error(f"Error loading anime data: {e}")
@@ -81,7 +79,7 @@ def load_anime_data() -> Dict[str, List[Dict[str, Any]]]:
         }
 
 
-def create_anime_card(anime: Dict[str, Any], rank_info: Dict[str, str], idx: int) -> dbc.Card:
+def create_anime_card(anime: dict[str, Any], rank_info: dict[str, str], idx: int) -> dbc.Card:
     """Create an enhanced anime card with image and better layout"""
     try:
         rank_display = anime.get("rank", idx + 1)
@@ -89,42 +87,46 @@ def create_anime_card(anime: Dict[str, Any], rank_info: Dict[str, str], idx: int
         title = anime.get("title", "Unknown Title")
         image_url = anime.get("main_picture", {}).get("medium", "")
         synopsis = anime.get("synopsis", "")
-        
+
         # Truncate synopsis for card display
         short_synopsis = synopsis[:120] + "..." if len(synopsis) > 120 else synopsis
-        
+
         # Genre information
         genres = anime.get("genres", [])
         genre_names = [g.get("name", "") for g in genres[:3] if g]
-        
+
         card_content = [
             dbc.Row(
                 [
                     # Image column
                     dbc.Col(
                         [
-                            html.Img(
-                                src=image_url if image_url else "/assets/anime-placeholder.png",
-                                style={
-                                    "width": "60px",
-                                    "height": "85px",
-                                    "objectFit": "cover",
-                                    "borderRadius": "4px",
-                                },
-                                className="mb-2",
-                            ) if image_url else html.Div(
-                                "🎌",
-                                style={
-                                    "fontSize": "2rem",
-                                    "textAlign": "center",
-                                    "width": "60px",
-                                    "height": "85px",
-                                    "display": "flex",
-                                    "alignItems": "center",
-                                    "justifyContent": "center",
-                                    "backgroundColor": "#f8f9fa",
-                                    "borderRadius": "4px",
-                                }
+                            (
+                                html.Img(
+                                    src=(image_url if image_url else "/assets/anime-placeholder.png"),
+                                    style={
+                                        "width": "60px",
+                                        "height": "85px",
+                                        "objectFit": "cover",
+                                        "borderRadius": "4px",
+                                    },
+                                    className="mb-2",
+                                )
+                                if image_url
+                                else html.Div(
+                                    "🎌",
+                                    style={
+                                        "fontSize": "2rem",
+                                        "textAlign": "center",
+                                        "width": "60px",
+                                        "height": "85px",
+                                        "display": "flex",
+                                        "alignItems": "center",
+                                        "justifyContent": "center",
+                                        "backgroundColor": "#f8f9fa",
+                                        "borderRadius": "4px",
+                                    },
+                                )
                             )
                         ],
                         width=3,
@@ -160,18 +162,22 @@ def create_anime_card(anime: Dict[str, Any], rank_info: Dict[str, str], idx: int
                             html.Div(
                                 [
                                     html.Small(
-                                        " • ".join(genre_names) if genre_names else "No genres",
+                                        (" • ".join(genre_names) if genre_names else "No genres"),
                                         className="text-muted",
                                         style={"fontSize": "0.75rem"},
                                     )
                                 ],
                                 className="mb-2",
                             ),
-                            html.P(
-                                short_synopsis,
-                                className="text-muted mb-0",
-                                style={"fontSize": "0.8rem", "lineHeight": "1.3"},
-                            ) if short_synopsis else None,
+                            (
+                                html.P(
+                                    short_synopsis,
+                                    className="text-muted mb-0",
+                                    style={"fontSize": "0.8rem", "lineHeight": "1.3"},
+                                )
+                                if short_synopsis
+                                else None
+                            ),
                         ],
                         width=9,
                     ),
@@ -179,7 +185,7 @@ def create_anime_card(anime: Dict[str, Any], rank_info: Dict[str, str], idx: int
                 className="g-2",
             )
         ]
-        
+
         return dbc.Card(
             dbc.CardBody(card_content, className="p-3"),
             className="mb-3 h-100 shadow-sm border-0",
@@ -194,7 +200,7 @@ def create_anime_card(anime: Dict[str, Any], rank_info: Dict[str, str], idx: int
 
 
 def create_community_rankings_section(
-    anime_data: Dict[str, List[Dict[str, Any]]],
+    anime_data: dict[str, list[dict[str, Any]]],
 ) -> html.Div:
     """Create comprehensive community rankings section with multi-column layout"""
     try:
@@ -255,19 +261,19 @@ def create_community_rankings_section(
         primary_categories = ["top_rated_all", "top_tv_series", "top_movies"]
         secondary_categories = ["top_airing", "top_upcoming"]
         tertiary_categories = ["top_ova", "top_special"]
-        
-        def create_category_column(categories: List[str]) -> html.Div:
+
+        def create_category_column(categories: list[str]) -> html.Div:
             """Create a column of anime categories"""
             column_content = []
-            
+
             for category in categories:
                 if category not in anime_data or not anime_data[category]:
                     continue
-                    
+
                 anime_list = anime_data[category]
                 info = ranking_info[category]
                 display_count = info["display_count"]
-                
+
                 # Create anime cards for this category
                 anime_cards = []
                 for idx, anime in enumerate(anime_list[:display_count]):
@@ -275,14 +281,17 @@ def create_community_rankings_section(
                         continue
                     card = create_anime_card(anime, info, idx)
                     anime_cards.append(card)
-                
+
                 if anime_cards:
                     category_section = html.Div(
                         [
                             html.Div(
                                 [
                                     html.H4(
-                                        [html.Span(info["icon"], className="me-2"), info["title"]],
+                                        [
+                                            html.Span(info["icon"], className="me-2"),
+                                            info["title"],
+                                        ],
                                         className="mb-2",
                                         style={"fontSize": "1.25rem"},
                                     ),
@@ -299,12 +308,12 @@ def create_community_rankings_section(
                         className="mb-5",
                     )
                     column_content.append(category_section)
-            
+
             return html.Div(column_content)
 
         # Check if we have any data
-        available_categories = [cat for cat in ranking_info.keys() if anime_data.get(cat)]
-        
+        available_categories = [cat for cat in ranking_info if anime_data.get(cat)]
+
         if not available_categories:
             return html.Div(
                 [
@@ -314,9 +323,7 @@ def create_community_rankings_section(
                                 "Community Rankings Not Available",
                                 className="alert-heading",
                             ),
-                            html.P(
-                                "Comprehensive anime rankings data is not yet available."
-                            ),
+                            html.P("Comprehensive anime rankings data is not yet available."),
                             html.Hr(),
                             html.P(
                                 "Run the enhanced ETL to fetch community rankings:",
@@ -393,12 +400,8 @@ def render_anime_tab() -> html.Div:
                 [
                     dbc.Alert(
                         [
-                            html.H4(
-                                "No Anime Data Available", className="alert-heading"
-                            ),
-                            html.P(
-                                "No anime data found. Please run the anime ETL to populate data."
-                            ),
+                            html.H4("No Anime Data Available", className="alert-heading"),
+                            html.P("No anime data found. Please run the anime ETL to populate data."),
                             html.Hr(),
                             html.P(
                                 "Expected data location: data/anime/*.json",
@@ -458,7 +461,7 @@ def render_anime_tab() -> html.Div:
     except Exception as e:
         logger.error(f"Error rendering anime tab: {e}")
         return html.Div(
-            [dbc.Alert(f"Error loading anime tab: {str(e)}", color="danger")],
+            [dbc.Alert(f"Error loading anime tab: {e!s}", color="danger")],
             className="p-4",
         )
 

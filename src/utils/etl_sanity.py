@@ -26,9 +26,7 @@ class ArtifactStatus:
 
 def _safe_stat_mtime(path: Path) -> str | None:
     try:
-        return datetime.utcfromtimestamp(os.path.getmtime(path)).isoformat(
-            timespec="seconds"
-        )
+        return datetime.utcfromtimestamp(os.path.getmtime(path)).isoformat(timespec="seconds")
     except Exception:
         return None
 

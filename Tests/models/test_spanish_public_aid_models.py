@@ -1,24 +1,25 @@
 """Tests for Spanish Public Aid models."""
 
-import pytest
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+import pytest
+
 from src.models.spanish_public_aid import (
-    SpanishPublicAidModel,
-    AidScope,
-    AidType,
     AidCategory,
-    AidStatus,
-    BeneficiaryType,
-    PaymentType,
-    GeographicScopeModel,
-    AmountModel,
-    RequirementModel,
-    DocumentModel,
-    ContactInfoModel,
-    AidStatisticsModel,
+    AidScope,
     AidSearchFilter,
+    AidStatisticsModel,
+    AidStatus,
+    AidType,
+    AmountModel,
+    BeneficiaryType,
+    ContactInfoModel,
+    DocumentModel,
+    GeographicScopeModel,
+    PaymentType,
+    RequirementModel,
+    SpanishPublicAidModel,
 )
 
 
@@ -53,9 +54,7 @@ class TestSpanishPublicAidModels:
 
         # Test negative amount validation
         with pytest.raises(ValueError):
-            AmountModel(
-                min_amount=Decimal("-100.00"), payment_type=PaymentType.LUMP_SUM
-            )
+            AmountModel(min_amount=Decimal("-100.00"), payment_type=PaymentType.LUMP_SUM)
 
     def test_requirement_model(self):
         """Test RequirementModel creation."""

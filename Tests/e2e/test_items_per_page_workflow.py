@@ -1,23 +1,22 @@
-"""
-End-to-end tests for Items Per Page workflow
+"""End-to-end tests for Items Per Page workflow
 Tests complete user workflow from selection to preference persistence
 """
 
-import pytest
 import time
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome.options import Options
+
+import pytest
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class TestItemsPerPageWorkflow:
     """Complete end-to-end workflow tests for items-per-page functionality"""
 
-    @pytest.fixture
+    @pytest.fixture()
     def driver(self):
         """Setup Chrome WebDriver for testing"""
         options = Options()
@@ -31,7 +30,7 @@ class TestItemsPerPageWorkflow:
         yield driver
         driver.quit()
 
-    @pytest.fixture
+    @pytest.fixture()
     def dashboard_url(self):
         """Dashboard URL for testing"""
         return "http://localhost:7777"
@@ -43,22 +42,23 @@ class TestItemsPerPageWorkflow:
         # Navigate to Videos tab
         try:
             videos_tab = WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Videos') or contains(text(), '📺')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'Videos') or contains(text(), '📺')]",
+                    )
+                )
             )
             videos_tab.click()
 
             # Wait for Videos content to load
-            WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.ID, "videos-container"))
-            )
+            WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "videos-container")))
         except TimeoutException:
             pytest.skip("Videos tab not available for testing")
 
         # Step 1: Verify items-per-page selector exists and shows default value
         try:
-            selector = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "videos-items-per-page-select"))
-            )
+            selector = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "videos-items-per-page-select")))
 
             # Check default value is selected
             dropdown = selector.find_element(By.TAG_NAME, "select")
@@ -75,7 +75,12 @@ class TestItemsPerPageWorkflow:
 
             # Select 24 items option
             option_24 = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//select[@id='videos-items-per-page-select']/option[@value='24']"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//select[@id='videos-items-per-page-select']/option[@value='24']",
+                    )
+                )
             )
             option_24.click()
             time.sleep(2)  # Allow preference to save
@@ -96,9 +101,7 @@ class TestItemsPerPageWorkflow:
 
         # Step 4: Verify preference was saved to localStorage
         try:
-            saved_preference = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('videos');"
-            )
+            saved_preference = driver.execute_script("return window.itemsPerPageManager.getPreference('videos');")
             assert saved_preference == 24, "Preference should be saved as 24"
         except Exception as e:
             pytest.fail(f"Could not verify saved preference: {e}")
@@ -107,7 +110,12 @@ class TestItemsPerPageWorkflow:
         try:
             # Navigate to another tab
             arxiv_tab = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'ArXiv') or contains(text(), '📄')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'ArXiv') or contains(text(), '📄')]",
+                    )
+                )
             )
             arxiv_tab.click()
             time.sleep(2)
@@ -117,12 +125,8 @@ class TestItemsPerPageWorkflow:
             time.sleep(3)  # Allow full reload
 
             # Check if preference is still applied
-            dropdown = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "videos-items-per-page-select"))
-            )
-            selected_value = driver.execute_script(
-                "return document.getElementById('videos-items-per-page-select').value;"
-            )
+            dropdown = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "videos-items-per-page-select")))
+            selected_value = driver.execute_script("return document.getElementById('videos-items-per-page-select').value;")
             assert selected_value == "24", "Preference should persist across tab navigation"
 
         except TimeoutException:
@@ -135,43 +139,45 @@ class TestItemsPerPageWorkflow:
         # Navigate to ArXiv tab
         try:
             arxiv_tab = WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'ArXiv') or contains(text(), '📄')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'ArXiv') or contains(text(), '📄')]",
+                    )
+                )
             )
             arxiv_tab.click()
 
             # Wait for ArXiv content to load
-            WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.ID, "arxiv-papers-container"))
-            )
+            WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "arxiv-papers-container")))
         except TimeoutException:
             pytest.skip("ArXiv tab not available for testing")
 
         # Test workflow similar to Videos tab but with ArXiv-specific expectations
         try:
-            selector = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "arxiv-items-per-page-select"))
-            )
+            selector = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "arxiv-items-per-page-select")))
 
             # Check default value for ArXiv (should be 24)
             dropdown = selector.find_element(By.TAG_NAME, "select")
-            initial_value = driver.execute_script(
-                "return document.getElementById('arxiv-items-per-page-select').value;"
-            )
+            initial_value = driver.execute_script("return document.getElementById('arxiv-items-per-page-select').value;")
             assert initial_value == "24", "Default value for ArXiv should be 24"
 
             # Change to 96 items
             dropdown.click()
             time.sleep(1)
             option_96 = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//select[@id='arxiv-items-per-page-select']/option[@value='96']"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//select[@id='arxiv-items-per-page-select']/option[@value='96']",
+                    )
+                )
             )
             option_96.click()
             time.sleep(3)
 
             # Verify preference saved
-            saved_preference = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('arxiv');"
-            )
+            saved_preference = driver.execute_script("return window.itemsPerPageManager.getPreference('arxiv');")
             assert saved_preference == 96, "ArXiv preference should be saved as 96"
 
         except (TimeoutException, NoSuchElementException):
@@ -184,13 +190,16 @@ class TestItemsPerPageWorkflow:
         # Navigate to Videos tab
         try:
             videos_tab = WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Videos') or contains(text(), '📺')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'Videos') or contains(text(), '📺')]",
+                    )
+                )
             )
             videos_tab.click()
 
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "videos-items-per-page-select"))
-            )
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "videos-items-per-page-select")))
         except TimeoutException:
             pytest.skip("Videos tab not available for testing")
 
@@ -199,24 +208,16 @@ class TestItemsPerPageWorkflow:
             driver.execute_script("window.itemsPerPageManager.savePreference('videos', 12);")
 
             # Verify it's changed
-            current_value = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('videos');"
-            )
+            current_value = driver.execute_script("return window.itemsPerPageManager.getPreference('videos');")
             assert current_value == 12, "Preference should be changed to 12"
 
             # Reset preference
-            reset_result = driver.execute_script(
-                "return window.itemsPerPageManager.resetPreference('videos');"
-            )
+            reset_result = driver.execute_script("return window.itemsPerPageManager.resetPreference('videos');")
             assert reset_result is True, "Reset should return True"
 
             # Verify it's reset to default
-            reset_value = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('videos');"
-            )
-            default_value = driver.execute_script(
-                "return window.itemsPerPageManager.getDefaultValue('videos');"
-            )
+            reset_value = driver.execute_script("return window.itemsPerPageManager.getPreference('videos');")
+            default_value = driver.execute_script("return window.itemsPerPageManager.getDefaultValue('videos');")
             assert reset_value == default_value, "Reset value should match default value"
 
         except Exception as e:
@@ -229,13 +230,16 @@ class TestItemsPerPageWorkflow:
         # Navigate to Videos tab
         try:
             videos_tab = WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Videos') or contains(text(), '📺')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'Videos') or contains(text(), '📺')]",
+                    )
+                )
             )
             videos_tab.click()
 
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "videos-items-per-page-select"))
-            )
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "videos-items-per-page-select")))
         except TimeoutException:
             pytest.skip("Videos tab not available for testing")
 
@@ -246,9 +250,7 @@ class TestItemsPerPageWorkflow:
             time.sleep(2)
 
             # Verify preference was set
-            js_value = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('videos');"
-            )
+            js_value = driver.execute_script("return window.itemsPerPageManager.getPreference('videos');")
             assert js_value == 96, "JavaScript-based preference setting should work"
 
             # Reset to test UI-based interaction
@@ -260,14 +262,15 @@ class TestItemsPerPageWorkflow:
             dropdown.click()
             time.sleep(1)
 
-            option_12 = driver.find_element(By.XPATH, "//select[@id='videos-items-per-page-select']/option[@value='12']")
+            option_12 = driver.find_element(
+                By.XPATH,
+                "//select[@id='videos-items-per-page-select']/option[@value='12']",
+            )
             option_12.click()
             time.sleep(3)
 
             # Verify UI-based preference setting
-            ui_value = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('videos');"
-            )
+            ui_value = driver.execute_script("return window.itemsPerPageManager.getPreference('videos');")
             assert ui_value == 12, "UI-based preference setting should work"
 
             # Verify both methods produce consistent results
@@ -283,23 +286,22 @@ class TestItemsPerPageWorkflow:
         # Test invalid preference values
         try:
             # Try to save invalid value
-            invalid_result = driver.execute_script(
-                "return window.itemsPerPageManager.savePreference('videos', 999);"
-            )
+            invalid_result = driver.execute_script("return window.itemsPerPageManager.savePreference('videos', 999);")
             assert invalid_result is False, "Invalid value should return False"
 
             # Try to save non-numeric value
-            non_numeric_result = driver.execute_script(
-                "return window.itemsPerPageManager.savePreference('videos', 'invalid');"
-            )
+            non_numeric_result = driver.execute_script("return window.itemsPerPageManager.savePreference('videos', 'invalid');")
             assert non_numeric_result is False, "Non-numeric value should return False"
 
             # Verify preference wasn't changed
-            current_preference = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('videos');"
-            )
+            current_preference = driver.execute_script("return window.itemsPerPageManager.getPreference('videos');")
             # Should still be default or a valid value
-            assert current_preference in [12, 24, 48, 96], "Preference should remain valid after invalid attempts"
+            assert current_preference in [
+                12,
+                24,
+                48,
+                96,
+            ], "Preference should remain valid after invalid attempts"
 
         except Exception as e:
             pytest.fail(f"Error handling test failed: {e}")
@@ -311,13 +313,16 @@ class TestItemsPerPageWorkflow:
         # Navigate to Videos tab
         try:
             videos_tab = WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Videos') or contains(text(), '📺')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'Videos') or contains(text(), '📺')]",
+                    )
+                )
             )
             videos_tab.click()
 
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "videos-items-per-page-select"))
-            )
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "videos-items-per-page-select")))
         except TimeoutException:
             pytest.skip("Videos tab not available for testing")
 
@@ -326,16 +331,14 @@ class TestItemsPerPageWorkflow:
             selector = driver.find_element(By.ID, "videos-items-per-page-select")
 
             # Test tab navigation to selector
-            selector.send_keys('\t')  # Tab to next element
+            selector.send_keys("\t")  # Tab to next element
 
             # Test arrow key navigation within selector
-            selector.send_keys('\ue015')  # Down arrow
-            selector.send_keys('\ue015')  # Down arrow again
+            selector.send_keys("\ue015")  # Down arrow
+            selector.send_keys("\ue015")  # Down arrow again
 
             # Verify selection changed
-            selected_value = driver.execute_script(
-                "return document.getElementById('videos-items-per-page-select').value;"
-            )
+            selected_value = driver.execute_script("return document.getElementById('videos-items-per-page-select').value;")
             assert selected_value is not None, "Keyboard navigation should work"
 
         except Exception as e:
@@ -345,7 +348,7 @@ class TestItemsPerPageWorkflow:
 class TestItemsPerPageAcceptanceCriteria:
     """Test specific acceptance criteria from the user story"""
 
-    @pytest.fixture
+    @pytest.fixture()
     def driver(self):
         """Setup Chrome WebDriver for testing"""
         options = Options()
@@ -359,7 +362,7 @@ class TestItemsPerPageAcceptanceCriteria:
         yield driver
         driver.quit()
 
-    @pytest.fixture
+    @pytest.fixture()
     def dashboard_url(self):
         """Dashboard URL for testing"""
         return "http://localhost:7777"
@@ -371,18 +374,19 @@ class TestItemsPerPageAcceptanceCriteria:
         try:
             # Navigate to Videos tab
             videos_tab = WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Videos') or contains(text(), '📺')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'Videos') or contains(text(), '📺')]",
+                    )
+                )
             )
             videos_tab.click()
 
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "videos-container"))
-            )
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "videos-container")))
 
             # Count initial items
-            initial_items = driver.execute_script(
-                "return document.querySelectorAll('#videos-container .card').length;"
-            )
+            initial_items = driver.execute_script("return document.querySelectorAll('#videos-container .card').length;")
 
             # Change items-per-page selector
             selector = driver.find_element(By.ID, "videos-items-per-page-select")
@@ -390,20 +394,17 @@ class TestItemsPerPageAcceptanceCriteria:
             time.sleep(1)
 
             # Select different option
-            option_12 = driver.find_element(By.XPATH, "//select[@id='videos-items-per-page-select']/option[@value='12']")
+            option_12 = driver.find_element(
+                By.XPATH,
+                "//select[@id='videos-items-per-page-select']/option[@value='12']",
+            )
             option_12.click()
 
             # Wait for update (should be immediate)
-            WebDriverWait(driver, 5).until(
-                lambda d: d.execute_script(
-                    "return document.querySelectorAll('#videos-container .card').length;"
-                ) != initial_items
-            )
+            WebDriverWait(driver, 5).until(lambda d: d.execute_script("return document.querySelectorAll('#videos-container .card').length;") != initial_items)
 
             # Verify items count changed
-            final_items = driver.execute_script(
-                "return document.querySelectorAll('#videos-container .card').length;"
-            )
+            final_items = driver.execute_script("return document.querySelectorAll('#videos-container .card').length;")
             assert final_items != initial_items, "Display should update immediately when preference changes"
 
         except TimeoutException:
@@ -416,35 +417,37 @@ class TestItemsPerPageAcceptanceCriteria:
         try:
             # Set preference for Videos tab
             videos_tab = WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Videos') or contains(text(), '📺')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'Videos') or contains(text(), '📺')]",
+                    )
+                )
             )
             videos_tab.click()
 
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "videos-items-per-page-select"))
-            )
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "videos-items-per-page-select")))
 
             driver.execute_script("window.itemsPerPageManager.savePreference('videos', 12);")
 
             # Set different preference for ArXiv tab
             arxiv_tab = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'ArXiv') or contains(text(), '📄')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'ArXiv') or contains(text(), '📄')]",
+                    )
+                )
             )
             arxiv_tab.click()
 
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "arxiv-items-per-page-select"))
-            )
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "arxiv-items-per-page-select")))
 
             driver.execute_script("window.itemsPerPageManager.savePreference('arxiv', 96);")
 
             # Verify preferences are different per tab
-            videos_preference = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('videos');"
-            )
-            arxiv_preference = driver.execute_script(
-                "return window.itemsPerPageManager.getPreference('arxiv');"
-            )
+            videos_preference = driver.execute_script("return window.itemsPerPageManager.getPreference('videos');")
+            arxiv_preference = driver.execute_script("return window.itemsPerPageManager.getPreference('arxiv');")
 
             assert videos_preference == 12, "Videos preference should be 12"
             assert arxiv_preference == 96, "ArXiv preference should be 96"
@@ -460,25 +463,36 @@ class TestItemsPerPageAcceptanceCriteria:
         try:
             # Set preference on Videos tab
             videos_tab = WebDriverWait(driver, 15).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Videos') or contains(text(), '📺')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'Videos') or contains(text(), '📺')]",
+                    )
+                )
             )
             videos_tab.click()
 
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "videos-items-per-page-select"))
-            )
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "videos-items-per-page-select")))
 
             # Change preference to 24
             selector = driver.find_element(By.ID, "videos-items-per-page-select")
             selector.click()
             time.sleep(1)
-            option_24 = driver.find_element(By.XPATH, "//select[@id='videos-items-per-page-select']/option[@value='24']")
+            option_24 = driver.find_element(
+                By.XPATH,
+                "//select[@id='videos-items-per-page-select']/option[@value='24']",
+            )
             option_24.click()
             time.sleep(2)
 
             # Navigate away
             arxiv_tab = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'ArXiv') or contains(text(), '📄')]"))
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[contains(text(), 'ArXiv') or contains(text(), '📄')]",
+                    )
+                )
             )
             arxiv_tab.click()
             time.sleep(2)
@@ -488,15 +502,11 @@ class TestItemsPerPageAcceptanceCriteria:
             time.sleep(3)
 
             # Check preference is applied
-            current_preference = driver.execute_script(
-                "return document.getElementById('videos-items-per-page-select').value;"
-            )
+            current_preference = driver.execute_script("return document.getElementById('videos-items-per-page-select').value;")
             assert current_preference == "24", "Preference should be applied when returning to tab"
 
             # Check content reflects preference
-            displayed_items = driver.execute_script(
-                "return document.querySelectorAll('#videos-container .card').length;"
-            )
+            displayed_items = driver.execute_script("return document.querySelectorAll('#videos-container .card').length;")
             assert 20 <= displayed_items <= 30, f"Should display ~24 items, found {displayed_items}"
 
         except Exception as e:

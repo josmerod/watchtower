@@ -1,5 +1,4 @@
-"""
-YouTube OCR Results Converter Utility
+"""YouTube OCR Results Converter Utility
 
 This module provides utilities to convert YouTube shorts OCR results
 into tabular format for dashboard visualization.
@@ -8,7 +7,6 @@ into tabular format for dashboard visualization.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
 
 import pandas as pd
 
@@ -19,8 +17,7 @@ class YouTubeOCRConverter:
     """Converter for YouTube OCR results to various table formats."""
 
     def __init__(self, json_file_path: str):
-        """
-        Initialize converter with JSON file path.
+        """Initialize converter with JSON file path.
 
         Args:
             json_file_path: Path to the YouTube OCR results JSON file
@@ -28,10 +25,10 @@ class YouTubeOCRConverter:
         self.json_file_path = Path(json_file_path)
         self.data = self._load_json_data()
 
-    def _load_json_data(self) -> List[Dict]:
+    def _load_json_data(self) -> list[dict]:
         """Load and validate JSON data."""
         try:
-            with open(self.json_file_path, "r", encoding="utf-8") as f:
+            with open(self.json_file_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             if not isinstance(data, list):
@@ -51,8 +48,7 @@ class YouTubeOCRConverter:
             return []
 
     def get_basic_video_table(self) -> pd.DataFrame:
-        """
-        Get basic video information table.
+        """Get basic video information table.
 
         Returns:
             DataFrame with video URL, title, processing info, and basic stats
@@ -70,9 +66,7 @@ class YouTubeOCRConverter:
                 "total_frames": item.get("metadata", {}).get("total_frames", 0),
                 "url_count": item.get("metadata", {}).get("url_count", 0),
                 "unique_domains": item.get("metadata", {}).get("unique_domains", 0),
-                "avg_confidence": round(
-                    item.get("metadata", {}).get("avg_confidence", 0), 2
-                ),
+                "avg_confidence": round(item.get("metadata", {}).get("avg_confidence", 0), 2),
                 "ocr_text_length": len(item.get("ocr_description", "")),
                 "has_extracted_urls": len(item.get("extracted_urls", [])) > 0,
             }
@@ -87,8 +81,7 @@ class YouTubeOCRConverter:
         return df
 
     def get_extracted_urls_table(self) -> pd.DataFrame:
-        """
-        Get table of all extracted URLs with metadata.
+        """Get table of all extracted URLs with metadata.
 
         Returns:
             DataFrame with URL details, confidence scores, and context
@@ -119,8 +112,7 @@ class YouTubeOCRConverter:
         return df
 
     def get_domain_statistics(self) -> pd.DataFrame:
-        """
-        Get statistics grouped by domain.
+        """Get statistics grouped by domain.
 
         Returns:
             DataFrame with domain-level statistics
@@ -159,8 +151,7 @@ class YouTubeOCRConverter:
         return domain_stats
 
     def get_processing_statistics(self) -> pd.DataFrame:
-        """
-        Get processing statistics overview.
+        """Get processing statistics overview.
 
         Returns:
             DataFrame with processing metrics
@@ -172,16 +163,10 @@ class YouTubeOCRConverter:
 
         stats = {
             "total_videos": len(basic_df),
-            "successful_processing": len(
-                basic_df[basic_df["processing_status"] == "success"]
-            ),
-            "failed_processing": len(
-                basic_df[basic_df["processing_status"] != "success"]
-            ),
+            "successful_processing": len(basic_df[basic_df["processing_status"] == "success"]),
+            "failed_processing": len(basic_df[basic_df["processing_status"] != "success"]),
             "videos_with_urls": len(basic_df[basic_df["has_extracted_urls"] == True]),
-            "videos_without_urls": len(
-                basic_df[basic_df["has_extracted_urls"] == False]
-            ),
+            "videos_without_urls": len(basic_df[basic_df["has_extracted_urls"] == False]),
             "avg_duration": round(basic_df["duration"].mean(), 2),
             "avg_frames_processed": round(basic_df["processed_frames"].mean(), 2),
             "avg_confidence": round(basic_df["avg_confidence"].mean(), 2),
@@ -192,8 +177,7 @@ class YouTubeOCRConverter:
         return pd.DataFrame([stats])
 
     def get_text_analysis_table(self) -> pd.DataFrame:
-        """
-        Get table focused on OCR text analysis.
+        """Get table focused on OCR text analysis.
 
         Returns:
             DataFrame with text analysis metrics
@@ -209,18 +193,9 @@ class YouTubeOCRConverter:
                 "ocr_text": ocr_text,
                 "text_length": len(ocr_text),
                 "word_count": len(ocr_text.split()) if ocr_text else 0,
-                "contains_website_keywords": any(
-                    keyword in ocr_text.lower()
-                    for keyword in ["website", "site", ".com", ".org", ".net", "http"]
-                ),
-                "contains_productivity_keywords": any(
-                    keyword in ocr_text.lower()
-                    for keyword in ["productivity", "tool", "app", "software"]
-                ),
-                "contains_design_keywords": any(
-                    keyword in ocr_text.lower()
-                    for keyword in ["design", "template", "mockup", "graphic"]
-                ),
+                "contains_website_keywords": any(keyword in ocr_text.lower() for keyword in ["website", "site", ".com", ".org", ".net", "http"]),
+                "contains_productivity_keywords": any(keyword in ocr_text.lower() for keyword in ["productivity", "tool", "app", "software"]),
+                "contains_design_keywords": any(keyword in ocr_text.lower() for keyword in ["design", "template", "mockup", "graphic"]),
                 "processing_status": item.get("processing_status", ""),
                 "processed_at": item.get("processed_at", ""),
             }
@@ -256,11 +231,8 @@ class YouTubeOCRConverter:
         except Exception:
             return url
 
-    def export_to_csv(
-        self, output_dir: str = "data/youtube_shorts_ocr/"
-    ) -> Dict[str, str]:
-        """
-        Export all tables to CSV files.
+    def export_to_csv(self, output_dir: str = "data/youtube_shorts_ocr/") -> dict[str, str]:
+        """Export all tables to CSV files.
 
         Args:
             output_dir: Directory to save CSV files
@@ -290,9 +262,8 @@ class YouTubeOCRConverter:
 
         return file_paths
 
-    def get_dashboard_summary(self) -> Dict:
-        """
-        Get summary statistics for dashboard display.
+    def get_dashboard_summary(self) -> dict:
+        """Get summary statistics for dashboard display.
 
         Returns:
             Dictionary with key metrics for dashboard
@@ -306,9 +277,7 @@ class YouTubeOCRConverter:
         return {
             "total_videos_analyzed": len(basic_df),
             "successful_processing_rate": round(
-                len(basic_df[basic_df["processing_status"] == "success"])
-                / len(basic_df)
-                * 100,
+                len(basic_df[basic_df["processing_status"] == "success"]) / len(basic_df) * 100,
                 1,
             ),
             "videos_with_urls": len(basic_df[basic_df["has_extracted_urls"] == True]),
@@ -317,11 +286,7 @@ class YouTubeOCRConverter:
             "avg_confidence_score": round(basic_df["avg_confidence"].mean(), 1),
             "avg_video_duration": round(basic_df["duration"].mean(), 1),
             "total_processing_time": round(basic_df["duration"].sum(), 1),
-            "most_common_domains": (
-                url_df["domain"].value_counts().head(5).to_dict()
-                if not url_df.empty
-                else {}
-            ),
+            "most_common_domains": (url_df["domain"].value_counts().head(5).to_dict() if not url_df.empty else {}),
             "processing_date_range": (
                 {
                     "start": basic_df["processed_at"].min(),
@@ -336,8 +301,7 @@ class YouTubeOCRConverter:
 def load_youtube_ocr_data(
     json_file_path: str = "data/youtube_shorts_ocr/youtube_shorts_ocr_results.json",
 ) -> YouTubeOCRConverter:
-    """
-    Convenience function to load YouTube OCR data.
+    """Convenience function to load YouTube OCR data.
 
     Args:
         json_file_path: Path to the JSON file

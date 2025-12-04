@@ -1,10 +1,10 @@
-"""
-End-to-end tests for Filter Presets functionality
+"""End-to-end tests for Filter Presets functionality
 Tests complete user workflows with browser automation
 """
 
-import pytest
 import time
+
+import pytest
 from playwright.sync_api import Page, expect
 
 
@@ -26,7 +26,6 @@ class TestFilterPresetsE2E:
 
     def test_save_filter_preset_workflow(self, page: Page):
         """Test complete workflow: apply filters -> save preset -> verify saved"""
-
         # Step 1: Apply filters
         page.fill("#arxiv-search-input", "machine learning")
         page.select_option("#arxiv-category-dropdown", "Artificial Intelligence")
@@ -52,7 +51,6 @@ class TestFilterPresetsE2E:
 
     def test_apply_preset_workflow(self, page: Page):
         """Test applying saved preset"""
-
         # First, save a preset (or use existing one)
         page.fill("#arxiv-search-input", "computer vision")
         page.select_option("#arxiv-category-dropdown", "Computer Vision")
@@ -74,7 +72,6 @@ class TestFilterPresetsE2E:
 
     def test_update_preset_workflow(self, page: Page):
         """Test updating existing preset"""
-
         # First save a preset
         page.fill("#arxiv-search-input", "neural networks")
         page.click("#filter_presets_arxiv_research_save_preset_btn")
@@ -95,7 +92,6 @@ class TestFilterPresetsE2E:
 
     def test_delete_preset_workflow(self, page: Page):
         """Test deleting preset"""
-
         # First save a preset
         page.fill("#arxiv-search-input", "test deletion")
         page.click("#filter_presets_arxiv_research_save_preset_btn")
@@ -116,7 +112,6 @@ class TestFilterPresetsE2E:
 
     def test_preset_persistence_across_sessions(self, page: Page):
         """Test that presets persist across browser sessions"""
-
         # Save a preset
         page.fill("#arxiv-search-input", "persistence test")
         page.click("#filter_presets_arxiv_research_save_preset_btn")
@@ -136,7 +131,6 @@ class TestFilterPresetsE2E:
 
     def test_max_presets_limit(self, page: Page):
         """Test enforcement of maximum 10 presets per tab"""
-
         # Try to save 11 presets
         for i in range(11):
             page.fill("#arxiv-search-input", f"test preset {i}")
@@ -161,7 +155,6 @@ class TestFilterPresetsE2E:
 
     def test_preset_performance_requirement(self, page: Page):
         """Test that preset application takes <300ms"""
-
         # Save a preset with complex filters
         page.fill("#arxiv-search-input", "complex search term for performance testing")
         page.select_option("#arxiv-category-dropdown", "Machine Learning")
@@ -187,7 +180,6 @@ class TestFilterPresetsE2E:
 
     def test_invalid_preset_name_handling(self, page: Page):
         """Test handling of invalid preset names"""
-
         # Apply some filters first
         page.fill("#arxiv-search-input", "test")
 
@@ -202,7 +194,6 @@ class TestFilterPresetsE2E:
 
     def test_duplicate_preset_name_handling(self, page: Page):
         """Test handling of duplicate preset names"""
-
         # Save first preset
         page.fill("#arxiv-search-input", "first preset")
         page.click("#filter_presets_arxiv_research_save_preset_btn")
@@ -221,7 +212,6 @@ class TestFilterPresetsE2E:
 
     def test_empty_preset_name_handling(self, page: Page):
         """Test handling of empty preset names"""
-
         # Apply some filters first
         page.fill("#arxiv-search-input", "test")
 
@@ -235,5 +225,5 @@ class TestFilterPresetsE2E:
         expect(page.locator("#filter_presets_arxiv_research_preset_error")).to_contain_text("empty")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__])

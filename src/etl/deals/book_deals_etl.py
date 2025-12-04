@@ -15,12 +15,10 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -64,7 +62,7 @@ class BookDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract book deals from multiple sources."""
         logger.info("Starting book deals extraction...")
 
@@ -77,7 +75,7 @@ class BookDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} book deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _get_curated_book_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_book_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of book deals and free sources."""
         curated = [
             {
@@ -383,7 +381,7 @@ class BookDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated book deals")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform book deals data."""
         logger.info("Starting book deals transformation...")
 
@@ -437,14 +435,12 @@ class BookDealsETL(BaseETL):
                 continue
 
         # Sort by book score and savings
-        transformed_deals.sort(
-            key=lambda x: (x["book_score"], x["savings"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["book_score"], x["savings"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} book deals")
         return transformed_deals
 
-    def _calculate_book_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_book_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate book value score for ranking deals."""
         score = 0.0
 
@@ -512,7 +508,7 @@ class BookDealsETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_reading_quality(self, deal: Dict[str, Any]) -> str:
+    def _determine_reading_quality(self, deal: dict[str, Any]) -> str:
         """Determine reading experience quality."""
         platform = deal.get("platform", "").lower()
         drm_free = deal.get("drm_protected") is False
@@ -520,23 +516,15 @@ class BookDealsETL(BaseETL):
         avg_rating = deal.get("avg_rating", 0)
 
         # Premium quality indicators
-        if "standard ebooks" in platform or (
-            drm_free and len(formats) > 2 and avg_rating >= 4.5
-        ):
+        if "standard ebooks" in platform or (drm_free and len(formats) > 2 and avg_rating >= 4.5):
             return "premium"
 
         # High quality indicators
-        if any(name in platform for name in ["project gutenberg", "humble bundle"]):
-            return "high"
-        elif drm_free and avg_rating >= 4.0:
+        if any(name in platform for name in ["project gutenberg", "humble bundle"]) or drm_free and avg_rating >= 4.0:
             return "high"
 
         # Good quality indicators
-        if any(
-            name in platform for name in ["amazon kindle", "audible", "apple books"]
-        ):
-            return "good"
-        elif avg_rating >= 4.0:
+        if any(name in platform for name in ["amazon kindle", "audible", "apple books"]) or avg_rating >= 4.0:
             return "good"
 
         # Standard quality
@@ -545,7 +533,7 @@ class BookDealsETL(BaseETL):
 
         return "basic"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed book deals data to files."""
         try:
             # Ensure output directory exists
@@ -565,9 +553,7 @@ class BookDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} book deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} book deals to {output_dir}")
             return True
 
         except Exception as e:

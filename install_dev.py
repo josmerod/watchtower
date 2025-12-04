@@ -5,10 +5,10 @@ This script installs the Watchtower package in development mode using UV,
 the extremely fast Python package manager written in Rust.
 """
 
-import subprocess
-import sys
 import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -20,30 +20,30 @@ def check_uv_installed() -> bool:
 def install_uv() -> bool:
     """Install UV using the official installer."""
     print("[INFO] UV not found. Installing UV...")
-    
+
     try:
-        if sys.platform.startswith('win'):
+        if sys.platform.startswith("win"):
             # Windows installation
             cmd = [
-                "powershell", "-ExecutionPolicy", "ByPass", "-c",
-                "irm https://astral.sh/uv/install.ps1 | iex"
+                "powershell",
+                "-ExecutionPolicy",
+                "ByPass",
+                "-c",
+                "irm https://astral.sh/uv/install.ps1 | iex",
             ]
         else:
             # Unix/Linux/macOS installation
-            cmd = [
-                "sh", "-c",
-                "curl -LsSf https://astral.sh/uv/install.sh | sh"
-            ]
-        
+            cmd = ["sh", "-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"]
+
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         print("[PASS] UV installed successfully")
-        
+
         # Add UV to PATH for current session (Unix-like systems)
-        if not sys.platform.startswith('win'):
+        if not sys.platform.startswith("win"):
             uv_bin_path = Path.home() / ".cargo" / "bin"
             if str(uv_bin_path) not in os.environ.get("PATH", ""):
                 os.environ["PATH"] = f"{uv_bin_path}:{os.environ.get('PATH', '')}"
-        
+
         return True
     except subprocess.CalledProcessError as e:
         print(f"[FAIL] Failed to install UV: {e}")
@@ -71,39 +71,43 @@ def main():
     """Main installation function."""
     print("[INFO] Watchtower Development Setup with UV")
     print("=" * 50)
-    
+
     # Check if we're in the right directory
     if not Path("pyproject.toml").exists():
         print("[FAIL] Error: pyproject.toml not found. Please run this script from the project root.")
         sys.exit(1)
-    
+
     # Check if UV is installed
     if not check_uv_installed():
         if not install_uv():
             sys.exit(1)
-        
+
         # Re-check after installation
         if not check_uv_installed():
             print("[FAIL] UV installation failed. Please install manually.")
             sys.exit(1)
-    
+
     print("[PASS] UV is available")
-    
+
     # Install package in development mode using UV
     commands = [
         # Sync dependencies and install in development mode
-        (["uv", "sync", "--all-extras"], 
-         "Syncing dependencies with UV"),
-        
+        (["uv", "sync", "--all-extras"], "Syncing dependencies with UV"),
         # Install Playwright browsers
-        (["uv", "run", "playwright", "install"], 
-         "Installing Playwright browsers"),
-        
+        (["uv", "run", "playwright", "install"], "Installing Playwright browsers"),
         # Verify installation
-        (["uv", "run", "python", "-c", "from src.config.settings import get_settings; print('[PASS] Package setup successfully')"], 
-         "Verifying installation"),
+        (
+            [
+                "uv",
+                "run",
+                "python",
+                "-c",
+                "from src.config.settings import get_settings; print('[PASS] Package setup successfully')",
+            ],
+            "Verifying installation",
+        ),
     ]
-    
+
     success_count = 0
     for command, description in commands:
         if run_command(command, description):
@@ -112,7 +116,7 @@ def main():
             print(f"\n[FAIL] Setup failed at step: {description}")
             print("Please check the error messages above and try again.")
             sys.exit(1)
-    
+
     print("\n" + "=" * 50)
     print("[PASS] Development setup completed successfully with UV!")
     print("\nNext steps:")
@@ -131,4 +135,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

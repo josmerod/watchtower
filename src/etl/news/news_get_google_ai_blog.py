@@ -11,13 +11,12 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("GoogleAIBlogETL")
 
@@ -49,8 +48,8 @@ def _parse_date(date_str: str | None) -> str | None:
     return date_str
 
 
-def fetch_google_ai_blog() -> List[Dict[str, Any]]:
-    entries: List[Dict[str, Any]] = []
+def fetch_google_ai_blog() -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
     for url in (FEED_URL, FALLBACK_FEED_URL):
         logger.info(f"Fetching Google AI Blog feed: {url}")
         try:
@@ -107,7 +106,7 @@ def fetch_google_ai_blog() -> List[Dict[str, Any]]:
     return entries
 
 
-def save_google_ai_blog(entries: List[Dict[str, Any]]) -> None:
+def save_google_ai_blog(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No Google AI Blog entries to save")
         return
@@ -131,7 +130,7 @@ def save_google_ai_blog(entries: List[Dict[str, Any]]) -> None:
     if entries:
         import csv
 
-        flat_entries: List[Dict[str, Any]] = []
+        flat_entries: list[dict[str, Any]] = []
         for e in entries:
             row = e.copy()
             for field in ("categories",):
@@ -159,5 +158,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

@@ -1,5 +1,5 @@
 import logging  # Keep logging for the __main__ block, if needed, or for specific logger instances
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
@@ -7,9 +7,9 @@ import requests
 from pydantic import ValidationError
 
 # Actual imports:
-from src.etl.base import (
-    SimpleETL,
-)  # , ETLMetrics # ETLMetrics is part of BaseETL/SimpleETL typically
+from src.etl.base import SimpleETL
+
+# , ETLMetrics # ETLMetrics is part of BaseETL/SimpleETL typically
 from src.models.museums import VirtualMuseumModel
 
 # WIKIDATA_SPARQL_URL can be defined before the class or within if it's specific
@@ -23,7 +23,7 @@ class VirtualMuseumsETL(SimpleETL):
             description="ETL process for fetching virtual museum data from Wikidata.",
         )
 
-    def extract(self) -> List[Dict[str, Any]]:
+    def extract(self) -> list[dict[str, Any]]:
         self.logger.info("Starting data extraction for virtual museums from Wikidata.")
 
         sparql_query = """
@@ -68,15 +68,11 @@ class VirtualMuseumsETL(SimpleETL):
         }
         params = {"query": sparql_query}
 
-        extracted_items: List[Dict[str, Any]] = []
+        extracted_items: list[dict[str, Any]] = []
 
         try:
-            self.logger.info(
-                f"Querying Wikidata SPARQL endpoint: {WIKIDATA_SPARQL_URL}"
-            )
-            response = requests.get(
-                WIKIDATA_SPARQL_URL, headers=headers, params=params, timeout=30
-            )
+            self.logger.info(f"Querying Wikidata SPARQL endpoint: {WIKIDATA_SPARQL_URL}")
+            response = requests.get(WIKIDATA_SPARQL_URL, headers=headers, params=params, timeout=30)
             response.raise_for_status()  # Raises HTTPError for bad responses (4XX or 5XX)
 
             data = response.json()
@@ -94,18 +90,12 @@ class VirtualMuseumsETL(SimpleETL):
                 if coordinates_str:
                     # Format is "Point(Longitude Latitude)"
                     try:
-                        parts = (
-                            coordinates_str.replace("Point(", "")
-                            .replace(")", "")
-                            .split()
-                        )
+                        parts = coordinates_str.replace("Point(", "").replace(")", "").split()
                         if len(parts) == 2:
                             longitude = float(parts[0])
                             latitude = float(parts[1])
                     except ValueError:
-                        self.logger.warning(
-                            f"Could not parse coordinates: {coordinates_str} for {get_value('museum')}"
-                        )
+                        self.logger.warning(f"Could not parse coordinates: {coordinates_str} for {get_value('museum')}")
 
                 processed_item = {
                     "wikidata_url": get_value("museum"),
@@ -123,25 +113,21 @@ class VirtualMuseumsETL(SimpleETL):
                 }
                 extracted_items.append(processed_item)
 
-            self.logger.info(
-                f"Successfully extracted and processed {len(extracted_items)} items."
-            )
+            self.logger.info(f"Successfully extracted and processed {len(extracted_items)} items.")
 
         except requests.exceptions.Timeout:
             self.logger.error("Wikidata query timed out.")
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Error during data extraction from Wikidata: {e}")
         except Exception as e:
-            self.logger.error(
-                f"An unexpected error occurred during extraction: {e}", exc_info=True
-            )
+            self.logger.error(f"An unexpected error occurred during extraction: {e}", exc_info=True)
 
         return extracted_items
 
-    def transform(self, data: List[Dict[str, Any]]) -> List[VirtualMuseumModel]:
+    def transform(self, data: list[dict[str, Any]]) -> list[VirtualMuseumModel]:
         self.logger.info(f"Starting data transformation for {len(data)} raw items.")
 
-        transformed_models: List[VirtualMuseumModel] = []
+        transformed_models: list[VirtualMuseumModel] = []
         failed_count = 0
 
         for item_data in data:
@@ -151,9 +137,7 @@ class VirtualMuseumsETL(SimpleETL):
                 # If 'name' is None or missing from item_data due to an issue upstream,
                 # Pydantic will raise a ValidationError, which is caught below.
                 if item_data.get("name") is None:
-                    self.logger.warning(
-                        f"Skipping item due to missing 'name': {item_data.get('wikidata_url', 'Unknown Wikidata URL')}"
-                    )
+                    self.logger.warning(f"Skipping item due to missing 'name': {item_data.get('wikidata_url', 'Unknown Wikidata URL')}")
                     failed_count += 1
                     continue
 
@@ -161,9 +145,7 @@ class VirtualMuseumsETL(SimpleETL):
                 transformed_models.append(model_instance)
             except ValidationError as e:
                 failed_count += 1
-                self.logger.error(
-                    f"Validation error transforming item: {item_data.get('wikidata_url', 'Unknown item')}"
-                )
+                self.logger.error(f"Validation error transforming item: {item_data.get('wikidata_url', 'Unknown item')}")
                 # self.logger.debug(f"Problematic data: {item_data}") # Potentially verbose
                 self.logger.debug(f"Pydantic errors: {e.errors()}")
             except Exception as e:
@@ -175,9 +157,7 @@ class VirtualMuseumsETL(SimpleETL):
 
         self.logger.info(f"Successfully transformed {len(transformed_models)} items.")
         if failed_count > 0:
-            self.logger.warning(
-                f"{failed_count} items failed validation or transformation."
-            )
+            self.logger.warning(f"{failed_count} items failed validation or transformation.")
 
         return transformed_models
 
@@ -190,7 +170,7 @@ if __name__ == "__main__":
     etl_process = VirtualMuseumsETL()
     metrics = etl_process.run()
 
-    logging.info(f"Virtual Museums ETL script finished. Metrics:")
+    logging.info("Virtual Museums ETL script finished. Metrics:")
     logging.info(metrics.model_dump_json(indent=2))
 
     # Example of how to check status and handle results

@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import Any
 
 from src.etl.base import BaseETL
+from src.exceptions.etl import LoadError
 from src.utils.logging import get_logger
 
 
@@ -191,9 +192,7 @@ class AIMonitoringETL(BaseETL):
         self.logger.info(f"Extracted {len(extracted_data)} total records")
         return extracted_data
 
-    def _extract_platform_data(
-        self, platform_id: str, config: dict[str, Any]
-    ) -> list[dict[str, Any]]:
+    def _extract_platform_data(self, platform_id: str, config: dict[str, Any]) -> list[dict[str, Any]]:
         """Extract data from a specific platform."""
         platform_data = []
 
@@ -202,21 +201,15 @@ class AIMonitoringETL(BaseETL):
             try:
                 collector_data = self.collectors[platform_id].extract()
                 platform_data.extend(collector_data)
-                self.logger.info(
-                    f"Extracted {len(collector_data)} records from {platform_id} via collector"
-                )
+                self.logger.info(f"Extracted {len(collector_data)} records from {platform_id} via collector")
                 return platform_data
             except Exception as e:
-                self.logger.warning(
-                    f"Collector failed for {platform_id}, falling back to generic: {e}"
-                )
+                self.logger.warning(f"Collector failed for {platform_id}, falling back to generic: {e}")
 
         # Generic extraction for platforms without specialized collectors
         return self._generic_platform_extraction(platform_id, config)
 
-    def _generic_platform_extraction(
-        self, platform_id: str, config: dict[str, Any]
-    ) -> list[dict[str, Any]]:
+    def _generic_platform_extraction(self, platform_id: str, config: dict[str, Any]) -> list[dict[str, Any]]:
         """Generic platform data extraction."""
         platform_data = []
 
@@ -232,9 +225,7 @@ class AIMonitoringETL(BaseETL):
         }
 
         platform_data.append(basic_info)
-        self.logger.info(
-            f"Generic extraction for {platform_id}: {len(platform_data)} records"
-        )
+        self.logger.info(f"Generic extraction for {platform_id}: {len(platform_data)} records")
 
         return platform_data
 
@@ -328,9 +319,7 @@ class AIMonitoringETL(BaseETL):
             self.logger.error(f"Failed to transform model release: {e}")
             return None
 
-    def _transform_platform_update(
-        self, record: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    def _transform_platform_update(self, record: dict[str, Any]) -> dict[str, Any] | None:
         """Transform platform update data."""
         try:
             return {
@@ -356,9 +345,7 @@ class AIMonitoringETL(BaseETL):
             self.logger.error(f"Failed to transform API metrics: {e}")
             return None
 
-    def _transform_market_intelligence(
-        self, record: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    def _transform_market_intelligence(self, record: dict[str, Any]) -> dict[str, Any] | None:
         """Transform market intelligence data."""
         try:
             return {
@@ -380,9 +367,7 @@ class AIMonitoringETL(BaseETL):
             "confidence_score": 0.5,  # Default medium confidence
         }
 
-    def _generate_cross_platform_analytics(
-        self, data: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def _generate_cross_platform_analytics(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Generate cross-platform analytics and insights."""
         analytics = []
 
@@ -630,9 +615,7 @@ class AIMonitoringETL(BaseETL):
             self.logger.error(f"Failed to load data: {e}")
             raise LoadError(f"Failed to save AI platform data: {e}")
 
-    def _generate_summary_report(
-        self, data: list[dict[str, Any]], timestamp: str
-    ) -> None:
+    def _generate_summary_report(self, data: list[dict[str, Any]], timestamp: str) -> None:
         """Generate executive summary report."""
         summary = {
             "report_timestamp": timestamp,
@@ -647,15 +630,11 @@ class AIMonitoringETL(BaseETL):
         # Generate insights based on data
         model_releases = [d for d in data if d.get("data_type") == "model_release"]
         if model_releases:
-            summary["key_insights"].append(
-                f"Detected {len(model_releases)} new model releases"
-            )
+            summary["key_insights"].append(f"Detected {len(model_releases)} new model releases")
 
         platform_updates = [d for d in data if d.get("data_type") == "platform_update"]
         if platform_updates:
-            summary["key_insights"].append(
-                f"Monitored {len(platform_updates)} platform updates"
-            )
+            summary["key_insights"].append(f"Monitored {len(platform_updates)} platform updates")
 
         # Save summary
         summary_file = self.output_dir / f"ai_intelligence_summary_{timestamp}.json"

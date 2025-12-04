@@ -15,7 +15,7 @@ echo "[INFO] Timeout set to $TIMEOUT_SECONDS seconds for each operation"
 echo ""
 
 # Change to the project root directory
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 # Check if pyproject.toml exists
 if [ ! -f "pyproject.toml" ]; then
@@ -157,7 +157,8 @@ echo "========================================================"
 echo ""
 
 # Make scripts executable
+# shellcheck disable=SC2035
 chmod +x *.sh 2>/dev/null || true
 
 echo "[INFO] Deployment script completed. Scripts are now executable."
-echo "[INFO] You can now run: ./run_watchtower_dashboard.sh" 
+echo "[INFO] You can now run: ./run_watchtower_dashboard.sh"

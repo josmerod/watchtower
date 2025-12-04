@@ -6,7 +6,7 @@ import json
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -17,18 +17,18 @@ from src.recommendations.models import ActivityEvent, ActivityType
 class TestUserActivityTracker:
     """Test suite for UserActivityTracker functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_data_dir(self):
         """Create a temporary directory for test data."""
         with tempfile.TemporaryDirectory() as temp_dir:
             yield Path(temp_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def activity_tracker(self, temp_data_dir):
         """Create a UserActivityTracker instance with temporary data directory."""
         return UserActivityTracker(data_dir=temp_data_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_activities(self):
         """Create sample activity events for testing."""
         return [
@@ -122,7 +122,11 @@ class TestUserActivityTracker:
     def test_track_interaction_failure(self, activity_tracker):
         """Test activity tracking failure handling."""
         # Mock Path operations to raise an exception
-        with patch.object(activity_tracker.get_user_activity_file('test_user'), 'exists', side_effect=Exception("Test error")):
+        with patch.object(
+            activity_tracker.get_user_activity_file("test_user"),
+            "exists",
+            side_effect=Exception("Test error"),
+        ):
             success = activity_tracker.track_interaction(
                 user_id="test_user",
                 action=ActivityType.CLICK,
@@ -186,7 +190,7 @@ class TestUserActivityTracker:
         activity_file = activity_tracker.get_user_activity_file("test_user")
         assert activity_file.exists()
 
-        with open(activity_file, 'r', encoding='utf-8') as f:
+        with open(activity_file, encoding="utf-8") as f:
             data = json.load(f)
 
         assert len(data) == len(sample_activities)

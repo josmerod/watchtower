@@ -151,7 +151,6 @@ def create_example_watchers():
 
 async def run_example_watchers():
     """Run example watchers for demonstration."""
-
     watchers = create_example_watchers()
 
     print("Starting example watchers...")

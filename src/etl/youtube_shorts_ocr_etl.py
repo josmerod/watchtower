@@ -8,7 +8,7 @@ import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse, urlunparse
 
 import cv2
@@ -37,9 +37,7 @@ if sys.platform.startswith("win"):
     tesseract_paths = [
         r"C:\Program Files\Tesseract-OCR\tesseract.exe",
         r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-        r"C:\Users\{}\AppData\Local\Tesseract-OCR\tesseract.exe".format(
-            os.environ.get("USERNAME", "user")
-        ),
+        r"C:\Users\{}\AppData\Local\Tesseract-OCR\tesseract.exe".format(os.environ.get("USERNAME", "user")),
     ]
 
     for path in tesseract_paths:
@@ -56,9 +54,7 @@ from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
 logger = logging.getLogger("youtube_shorts_ocr_etl")
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Configuration
 TARGET_CHANNEL_URL = "https://youtube.com/@setupsaitony/shorts"
@@ -76,9 +72,7 @@ MAX_RETRIES = 3  # Maximum retry attempts for failed operations
 
 # OCR Quality Configuration
 MIN_TEXT_LENGTH = 4  # Minimum length for text to be considered valid
-MIN_CONFIDENCE = (
-    10  # Minimum confidence score for OCR results (lowered for better URL detection)
-)
+MIN_CONFIDENCE = 10  # Minimum confidence score for OCR results (lowered for better URL detection)
 FRAME_SIMILARITY_THRESHOLD = 0.95  # Skip frames that are too similar
 
 
@@ -214,7 +208,7 @@ class URLExtractor:
         timestamp: float = 0.0,
         frame_number: int = 0,
         region: str = "full_frame",
-    ) -> List[ExtractedURL]:
+    ) -> list[ExtractedURL]:
         """Extract URLs from OCR text with cleaning and validation"""
         urls = []
         cleaned_text = self.clean_ocr_text_for_urls(text)
@@ -258,8 +252,7 @@ class URLExtractor:
 
                     url_obj = ExtractedURL(
                         url=raw_url,
-                        confidence=confidence
-                        * 0.9,  # Slightly lower confidence for fallback
+                        confidence=confidence * 0.9,  # Slightly lower confidence for fallback
                         timestamp=timestamp,
                         frame_number=frame_number,
                         cleaned_url=cleaned_url,
@@ -270,9 +263,7 @@ class URLExtractor:
                     urls.append(url_obj)
 
         # Apply aggressive post-processing extraction
-        aggressive_urls = self.aggressive_url_extraction(
-            text, confidence, timestamp, frame_number, region + "_aggressive"
-        )
+        aggressive_urls = self.aggressive_url_extraction(text, confidence, timestamp, frame_number, region + "_aggressive")
 
         # Combine all URLs and deduplicate
         all_urls = urls + aggressive_urls
@@ -284,15 +275,13 @@ class URLExtractor:
 
         return list(unique_urls.values())
 
-    def clean_and_validate_url(self, url: str) -> Optional[str]:
+    def clean_and_validate_url(self, url: str) -> str | None:
         """Clean and validate a URL"""
         url = url.strip()
 
         # Add protocol if missing
         if not url.startswith(("http://", "https://", "ftp://")):
-            if url.startswith("www."):
-                url = "https://" + url
-            elif "." in url and not url.startswith("localhost"):
+            if url.startswith("www.") or "." in url and not url.startswith("localhost"):
                 url = "https://" + url
             elif url.startswith("localhost"):
                 url = "http://" + url
@@ -319,9 +308,8 @@ class URLExtractor:
         timestamp: float = 0.0,
         frame_number: int = 0,
         region: str = "post_processing",
-    ) -> List[ExtractedURL]:
-        """
-        Aggressive post-processing URL extraction with maximum flexibility.
+    ) -> list[ExtractedURL]:
+        """Aggressive post-processing URL extraction with maximum flexibility.
         This catches URLs that might be missed by the primary extraction.
         """
         urls = []
@@ -346,8 +334,7 @@ class URLExtractor:
 
                     url_obj = ExtractedURL(
                         url=raw_url,
-                        confidence=confidence
-                        * 0.8,  # Slightly lower confidence for aggressive extraction
+                        confidence=confidence * 0.8,  # Slightly lower confidence for aggressive extraction
                         timestamp=timestamp,
                         frame_number=frame_number,
                         cleaned_url=cleaned_url,
@@ -358,49 +345,25 @@ class URLExtractor:
                     urls.append(url_obj)
 
         # Additional domain reconstruction for known services
-        urls.extend(
-            self.reconstruct_popular_domains(
-                processed_text, confidence, timestamp, frame_number, region
-            )
-        )
+        urls.extend(self.reconstruct_popular_domains(processed_text, confidence, timestamp, frame_number, region))
 
         return urls
 
     def aggressive_text_preprocessing(self, text: str) -> str:
         """Preprocess text for aggressive URL extraction"""
         # Handle common OCR errors in URLs
-        text = re.sub(
-            r"([a-zA-Z0-9])\s+([a-zA-Z0-9])", r"\1\2", text
-        )  # Remove spaces within words
-        text = re.sub(
-            r"([a-zA-Z0-9])\s*\.\s*([a-zA-Z0-9])", r"\1.\2", text
-        )  # Fix spaced dots
-        text = re.sub(
-            r"([a-zA-Z0-9])\s*:\s*([a-zA-Z0-9])", r"\1:\2", text
-        )  # Fix spaced colons
-        text = re.sub(
-            r"([a-zA-Z0-9])\s*/\s*([a-zA-Z0-9])", r"\1/\2", text
-        )  # Fix spaced slashes
-        text = re.sub(
-            r"([a-zA-Z0-9])\s*=\s*([a-zA-Z0-9])", r"\1=\2", text
-        )  # Fix spaced equals
-        text = re.sub(
-            r"([a-zA-Z0-9])\s*&\s*([a-zA-Z0-9])", r"\1&\2", text
-        )  # Fix spaced ampersands
+        text = re.sub(r"([a-zA-Z0-9])\s+([a-zA-Z0-9])", r"\1\2", text)  # Remove spaces within words
+        text = re.sub(r"([a-zA-Z0-9])\s*\.\s*([a-zA-Z0-9])", r"\1.\2", text)  # Fix spaced dots
+        text = re.sub(r"([a-zA-Z0-9])\s*:\s*([a-zA-Z0-9])", r"\1:\2", text)  # Fix spaced colons
+        text = re.sub(r"([a-zA-Z0-9])\s*/\s*([a-zA-Z0-9])", r"\1/\2", text)  # Fix spaced slashes
+        text = re.sub(r"([a-zA-Z0-9])\s*=\s*([a-zA-Z0-9])", r"\1=\2", text)  # Fix spaced equals
+        text = re.sub(r"([a-zA-Z0-9])\s*&\s*([a-zA-Z0-9])", r"\1&\2", text)  # Fix spaced ampersands
 
         # Fix common OCR character mistakes
-        text = re.sub(
-            r"(?<=[a-zA-Z0-9])[O0](?=[a-zA-Z0-9])", "o", text
-        )  # O/0 -> o in middle of words
-        text = re.sub(
-            r"(?<=[a-zA-Z0-9])[Il1](?=[a-zA-Z0-9])", "l", text
-        )  # I/l/1 -> l in middle of words
-        text = re.sub(
-            r"(?<=[a-zA-Z0-9])[S5](?=[a-zA-Z0-9])", "s", text
-        )  # S/5 -> s in middle of words
-        text = re.sub(
-            r"(?<=[a-zA-Z0-9])[Z2](?=[a-zA-Z0-9])", "z", text
-        )  # Z/2 -> z in middle of words
+        text = re.sub(r"(?<=[a-zA-Z0-9])[O0](?=[a-zA-Z0-9])", "o", text)  # O/0 -> o in middle of words
+        text = re.sub(r"(?<=[a-zA-Z0-9])[Il1](?=[a-zA-Z0-9])", "l", text)  # I/l/1 -> l in middle of words
+        text = re.sub(r"(?<=[a-zA-Z0-9])[S5](?=[a-zA-Z0-9])", "s", text)  # S/5 -> s in middle of words
+        text = re.sub(r"(?<=[a-zA-Z0-9])[Z2](?=[a-zA-Z0-9])", "z", text)  # Z/2 -> z in middle of words
 
         # Fix protocol patterns
         text = re.sub(r"h[t]{1,3}[p]{1,2}[s]?[:\s]*[/\\]*[/\\]*", "https://", text)
@@ -408,7 +371,7 @@ class URLExtractor:
 
         return text
 
-    def aggressive_url_cleanup(self, url: str) -> Optional[str]:
+    def aggressive_url_cleanup(self, url: str) -> str | None:
         """Clean up aggressively extracted URLs"""
         url = url.strip()
 
@@ -419,11 +382,7 @@ class URLExtractor:
         url = re.sub(r'^[.,;:!?(\[\{<\'"]+', "", url)
 
         # Fix common protocol issues
-        if (
-            url.startswith("http")
-            and not url.startswith("http://")
-            and not url.startswith("https://")
-        ):
+        if url.startswith("http") and not url.startswith("http://") and not url.startswith("https://"):
             url = re.sub(r"^https?", "https://", url)
 
         # Add protocol if missing but looks like a URL
@@ -476,7 +435,7 @@ class URLExtractor:
         timestamp: float,
         frame_number: int,
         region: str,
-    ) -> List[ExtractedURL]:
+    ) -> list[ExtractedURL]:
         """Reconstruct URLs for popular domains that might be fragmented"""
         urls = []
 
@@ -533,8 +492,7 @@ class URLExtractor:
 
                     url_obj = ExtractedURL(
                         url=f"{base_text}...{tld_text}",
-                        confidence=confidence
-                        * 0.7,  # Lower confidence for reconstruction
+                        confidence=confidence * 0.7,  # Lower confidence for reconstruction
                         timestamp=timestamp,
                         frame_number=frame_number,
                         cleaned_url=reconstructed_url,
@@ -547,9 +505,8 @@ class URLExtractor:
         return urls
 
 
-def preprocess_image_for_ocr(image: Image.Image) -> List[Image.Image]:
-    """
-    Apply multiple preprocessing techniques to improve OCR quality.
+def preprocess_image_for_ocr(image: Image.Image) -> list[Image.Image]:
+    """Apply multiple preprocessing techniques to improve OCR quality.
     Returns a list of processed images to try different approaches.
     """
     processed_images = []
@@ -597,15 +554,11 @@ def preprocess_image_for_ocr(image: Image.Image) -> List[Image.Image]:
     return processed_images
 
 
-def extract_text_with_confidence(image: Image.Image, config: str) -> Tuple[str, float]:
-    """
-    Extract text from image and return text with average confidence score.
-    """
+def extract_text_with_confidence(image: Image.Image, config: str) -> tuple[str, float]:
+    """Extract text from image and return text with average confidence score."""
     try:
         # Get detailed OCR data with confidence scores
-        data = pytesseract.image_to_data(
-            image, config=config, output_type=pytesseract.Output.DICT
-        )
+        data = pytesseract.image_to_data(image, config=config, output_type=pytesseract.Output.DICT)
 
         # Filter out low-confidence text
         confidences = []
@@ -634,12 +587,11 @@ def extract_text_with_confidence(image: Image.Image, config: str) -> Tuple[str, 
 
 def extract_text_from_frame(
     frame_array: np.ndarray,
-    url_extractor: Optional[URLExtractor] = None,
+    url_extractor: URLExtractor | None = None,
     timestamp: float = 0.0,
     frame_number: int = 0,
-) -> Dict[str, Any]:
-    """
-    Extract text and URLs from a single video frame using multiple OCR techniques.
+) -> dict[str, Any]:
+    """Extract text and URLs from a single video frame using multiple OCR techniques.
     Returns the best result based on confidence and text quality, plus extracted URLs.
     """
     # Convert frame to PIL Image
@@ -671,18 +623,12 @@ def extract_text_from_frame(
 
                 # Extract URLs from this text if extractor provided
                 if url_extractor and text:
-                    urls = url_extractor.extract_urls_from_text(
-                        text, confidence, timestamp, frame_number, "full_frame"
-                    )
+                    urls = url_extractor.extract_urls_from_text(text, confidence, timestamp, frame_number, "full_frame")
                     all_urls.extend(urls)
 
                 # Score the result (higher is better)
-                score = confidence * (
-                    len(text) / 100.0
-                )  # Balance confidence and text length
-                current_score = best_result["confidence"] * (
-                    len(best_result["text"]) / 100.0
-                )
+                score = confidence * (len(text) / 100.0)  # Balance confidence and text length
+                current_score = best_result["confidence"] * (len(best_result["text"]) / 100.0)
 
                 if score > current_score and len(text) > MIN_TEXT_LENGTH:
                     best_result = {
@@ -692,7 +638,7 @@ def extract_text_from_frame(
                         "urls": [],
                     }
 
-            except Exception as e:
+            except Exception:
                 continue
 
     # Add unique URLs to the result
@@ -708,21 +654,11 @@ def extract_text_from_frame(
 
 
 def are_frames_similar(frame1: np.ndarray, frame2: np.ndarray) -> bool:
-    """
-    Check if two frames are too similar to warrant separate OCR processing.
-    """
+    """Check if two frames are too similar to warrant separate OCR processing."""
     try:
         # Convert to grayscale for comparison
-        gray1 = (
-            cv2.cvtColor(frame1, cv2.COLOR_RGB2GRAY)
-            if len(frame1.shape) == 3
-            else frame1
-        )
-        gray2 = (
-            cv2.cvtColor(frame2, cv2.COLOR_RGB2GRAY)
-            if len(frame2.shape) == 3
-            else frame2
-        )
+        gray1 = cv2.cvtColor(frame1, cv2.COLOR_RGB2GRAY) if len(frame1.shape) == 3 else frame1
+        gray2 = cv2.cvtColor(frame2, cv2.COLOR_RGB2GRAY) if len(frame2.shape) == 3 else frame2
 
         # Resize to fixed size for comparison
         gray1 = cv2.resize(gray1, (100, 100))
@@ -737,9 +673,7 @@ def are_frames_similar(frame1: np.ndarray, frame2: np.ndarray) -> bool:
 
 
 def clean_extracted_text(text: str) -> str:
-    """
-    Clean up extracted text by removing obvious OCR errors and noise.
-    """
+    """Clean up extracted text by removing obvious OCR errors and noise."""
     if not text:
         return ""
 
@@ -802,30 +736,28 @@ def verify_tesseract_installation():
         return False
 
 
-def load_checkpoint() -> Dict[str, Any]:
+def load_checkpoint() -> dict[str, Any]:
     """Load processing checkpoint to resume from previous state."""
     if os.path.exists(CHECKPOINT_FILE):
         try:
-            with open(CHECKPOINT_FILE, "r", encoding="utf-8") as f:
+            with open(CHECKPOINT_FILE, encoding="utf-8") as f:
                 checkpoint = json.load(f)
-                logger.info(
-                    f"Loaded checkpoint with {len(checkpoint.get('processed_videos', []))} processed videos"
-                )
+                logger.info(f"Loaded checkpoint with {len(checkpoint.get('processed_videos', []))} processed videos")
                 return checkpoint
-        except (json.JSONDecodeError, IOError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             logger.warning(f"Error loading checkpoint: {e}. Starting fresh.")
 
     return {"processed_videos": [], "last_processed_date": None, "failed_videos": []}
 
 
-def save_checkpoint(checkpoint: Dict[str, Any]) -> None:
+def save_checkpoint(checkpoint: dict[str, Any]) -> None:
     """Save current processing state to checkpoint file."""
     try:
         ensure_directories([OUTPUT_DIR])
         with open(CHECKPOINT_FILE, "w", encoding="utf-8") as f:
             json.dump(checkpoint, f, indent=2, ensure_ascii=False)
         logger.debug("Checkpoint saved successfully")
-    except IOError as e:
+    except OSError as e:
         logger.error(f"Error saving checkpoint: {e}")
 
 
@@ -833,11 +765,8 @@ def save_checkpoint(checkpoint: Dict[str, Any]) -> None:
     stop=stop_after_attempt(MAX_RETRIES),
     wait=wait_exponential(multiplier=1, min=4, max=10),
 )
-def get_short_video_urls(
-    channel_url: str, limit: int, lookback_days: int, checkpoint: Dict[str, Any]
-) -> List[Dict[str, str]]:
-    """
-    Fetches URLs and titles of short videos from a given YouTube channel URL.
+def get_short_video_urls(channel_url: str, limit: int, lookback_days: int, checkpoint: dict[str, Any]) -> list[dict[str, str]]:
+    """Fetches URLs and titles of short videos from a given YouTube channel URL.
     Only fetches videos published within the lookback period.
     Filters out already processed videos based on checkpoint.
     """
@@ -845,15 +774,11 @@ def get_short_video_urls(
 
     # Add reasonable limits to prevent hanging
     if limit > 1000:
-        logger.warning(
-            f"[WARNING] Large limit requested ({limit}). Capping at 1000 videos to prevent hanging."
-        )
+        logger.warning(f"[WARNING] Large limit requested ({limit}). Capping at 1000 videos to prevent hanging.")
         limit = 1000
 
     if lookback_days > 365:
-        logger.warning(
-            f"[WARNING] Large lookback period requested ({lookback_days} days). Capping at 365 days to prevent hanging."
-        )
+        logger.warning(f"[WARNING] Large lookback period requested ({lookback_days} days). Capping at 365 days to prevent hanging.")
         lookback_days = 365
 
     # Add delay before making request to be respectful
@@ -866,22 +791,16 @@ def get_short_video_urls(
         nonlocal last_progress_time
         current_time = time.time()
         if current_time - last_progress_time > 10:  # Log every 10 seconds
-            logger.info(
-                f"[PROGRESS] yt-dlp is working... (status: {d.get('status', 'unknown')})"
-            )
+            logger.info(f"[PROGRESS] yt-dlp is working... (status: {d.get('status', 'unknown')})")
             last_progress_time = current_time
 
     ydl_opts = {
         "extract_flat": "discard_in_playlist",  # Get individual video info
-        "playlistend": min(
-            limit * 2, 500
-        ),  # Cap the initial request to prevent hanging
+        "playlistend": min(limit * 2, 500),  # Cap the initial request to prevent hanging
         "quiet": True,
         "no_warnings": True,
         "ignoreerrors": True,
-        "dateafter": (datetime.now() - timedelta(days=lookback_days)).strftime(
-            "%Y%m%d"
-        ),
+        "dateafter": (datetime.now() - timedelta(days=lookback_days)).strftime("%Y%m%d"),
         "socket_timeout": 60,  # Increased socket timeout for large channels
         "fragment_retries": 2,  # Reduced retries to fail faster
         "retries": 2,  # Reduced retries to fail faster
@@ -894,15 +813,9 @@ def get_short_video_urls(
     processed_ids = set(checkpoint.get("processed_videos", []))
     failed_ids = set(checkpoint.get("failed_videos", []))
 
-    logger.info(
-        f"[INFO] Checkpoint status: {len(processed_ids)} already processed, {len(failed_ids)} failed videos"
-    )
-    logger.info(
-        f"[INFO] Searching for videos from the last {lookback_days} days (limit: {limit})..."
-    )
-    logger.info(
-        f"[WARNING] Large requests may take several minutes. Initial fetch limited to {min(limit * 2, 500)} videos to prevent hanging..."
-    )
+    logger.info(f"[INFO] Checkpoint status: {len(processed_ids)} already processed, {len(failed_ids)} failed videos")
+    logger.info(f"[INFO] Searching for videos from the last {lookback_days} days (limit: {limit})...")
+    logger.info(f"[WARNING] Large requests may take several minutes. Initial fetch limited to {min(limit * 2, 500)} videos to prevent hanging...")
 
     try:
         logger.info("[INFO] Connecting to YouTube to fetch video metadata...")
@@ -910,9 +823,7 @@ def get_short_video_urls(
 
         # Use yt-dlp's built-in timeout mechanisms with progress monitoring
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            logger.info(
-                "[PROGRESS] Starting metadata extraction... This may take a few minutes for large channels."
-            )
+            logger.info("[PROGRESS] Starting metadata extraction... This may take a few minutes for large channels.")
             result = ydl.extract_info(channel_url, download=False)
 
         fetch_time = time.time() - start_time
@@ -920,9 +831,7 @@ def get_short_video_urls(
 
         if result and "entries" in result:
             total_entries = len(result["entries"])
-            logger.info(
-                f"[INFO] Found {total_entries} total videos from channel, filtering for shorts..."
-            )
+            logger.info(f"[INFO] Found {total_entries} total videos from channel, filtering for shorts...")
 
             if total_entries == 0:
                 logger.warning("No videos found in the channel or time range")
@@ -943,9 +852,7 @@ def get_short_video_urls(
                     # Log progress every 50 videos for large batches
                     progress_interval = 50 if total_entries > 200 else 10
                     if processed_count % progress_interval == 0:
-                        logger.info(
-                            f"[PROGRESS] Processing video {processed_count}/{total_entries} - Found {len(videos_info)} valid shorts so far..."
-                        )
+                        logger.info(f"[PROGRESS] Processing video {processed_count}/{total_entries} - Found {len(videos_info)} valid shorts so far...")
 
                     # Skip if already processed or failed
                     if video_id in processed_ids:
@@ -966,53 +873,34 @@ def get_short_video_urls(
                                 "upload_date": upload_date,
                             }
                         )
-                        logger.debug(
-                            f"[OK] Added video {len(videos_info)}/{limit}: {title[:50]}..."
-                        )
+                        logger.debug(f"[OK] Added video {len(videos_info)}/{limit}: {title[:50]}...")
                     else:
-                        logger.warning(
-                            f"Could not get video ID for an entry in {channel_url}"
-                        )
+                        logger.warning(f"Could not get video ID for an entry in {channel_url}")
                 elif len(videos_info) >= limit:
-                    logger.info(
-                        f"[INFO] Reached limit of {limit} videos, stopping search..."
-                    )
+                    logger.info(f"[INFO] Reached limit of {limit} videos, stopping search...")
                     break
 
-            logger.info(
-                f"[INFO] Filter summary: {len(videos_info)} new videos, {skipped_processed} already processed, {skipped_failed} previously failed"
-            )
+            logger.info(f"[INFO] Filter summary: {len(videos_info)} new videos, {skipped_processed} already processed, {skipped_failed} previously failed")
 
         else:
-            logger.warning(
-                f"No entries found for channel {channel_url}. Result: {result}"
-            )
+            logger.warning(f"No entries found for channel {channel_url}. Result: {result}")
 
     except Exception as e:
         logger.error(f"Error fetching video URLs from {channel_url}: {e}")
         if "timed out" in str(e).lower():
-            logger.info(
-                "[HINT] This might be due to a very large request. Try reducing --limit or --days parameters"
-            )
+            logger.info("[HINT] This might be due to a very large request. Try reducing --limit or --days parameters")
             logger.info("[HINT] Recommended: --limit 50 --days 30 for testing")
         raise  # Re-raise to trigger retry mechanism
 
-    logger.info(
-        f"[OK] Successfully found {len(videos_info)} new shorts to process from the last {lookback_days} days (after filtering already processed)."
-    )
+    logger.info(f"[OK] Successfully found {len(videos_info)} new shorts to process from the last {lookback_days} days (after filtering already processed).")
     return videos_info
 
 
-def extract_text_from_video_frames(
-    video_path: str, frame_interval_seconds: int = 2
-) -> Dict[str, Any]:
-    """
-    Extracts text and URLs from video frames using advanced OCR techniques.
+def extract_text_from_video_frames(video_path: str, frame_interval_seconds: int = 2) -> dict[str, Any]:
+    """Extracts text and URLs from video frames using advanced OCR techniques.
     Compatible with MoviePy 2.x with improved OCR quality and URL extraction.
     """
-    logger.info(
-        f"Starting enhanced OCR with URL extraction for video: {os.path.basename(video_path)}"
-    )
+    logger.info(f"Starting enhanced OCR with URL extraction for video: {os.path.basename(video_path)}")
 
     # Initialize URL extractor
     url_extractor = URLExtractor()
@@ -1028,9 +916,7 @@ def extract_text_from_video_frames(
         duration = video_clip.duration
 
         if duration is None:
-            logger.warning(
-                f"Could not get duration for video {video_path}. Skipping OCR."
-            )
+            logger.warning(f"Could not get duration for video {video_path}. Skipping OCR.")
             return {"text": "", "urls": [], "metadata": {}}
 
         # Process frames with intelligent spacing
@@ -1059,9 +945,7 @@ def extract_text_from_video_frames(
             try:
                 # Log progress for longer videos
                 if len(frame_times) > 10 and (i + 1) % 5 == 0:
-                    logger.info(
-                        f"[PROGRESS] OCR progress: {i + 1}/{len(frame_times)} frames ({((i + 1) / len(frame_times) * 100):.1f}%)"
-                    )
+                    logger.info(f"[PROGRESS] OCR progress: {i + 1}/{len(frame_times)} frames ({((i + 1) / len(frame_times) * 100):.1f}%)")
 
                 # Get frame at specified time
                 frame = video_clip.get_frame(frame_time)
@@ -1072,21 +956,14 @@ def extract_text_from_video_frames(
                     continue
 
                 # Skip very similar frames
-                if previous_frame is not None and are_frames_similar(
-                    frame, previous_frame
-                ):
+                if previous_frame is not None and are_frames_similar(frame, previous_frame):
                     skipped_frames += 1
                     continue
 
                 # Extract text and URLs using enhanced OCR
-                ocr_result = extract_text_from_frame(
-                    frame, url_extractor, frame_time, i
-                )
+                ocr_result = extract_text_from_frame(frame, url_extractor, frame_time, i)
 
-                if (
-                    ocr_result["confidence"] > MIN_CONFIDENCE
-                    and len(ocr_result["text"]) > MIN_TEXT_LENGTH
-                ):
+                if ocr_result["confidence"] > MIN_CONFIDENCE and len(ocr_result["text"]) > MIN_TEXT_LENGTH:
                     cleaned_text = clean_extracted_text(ocr_result["text"])
                     if cleaned_text:
                         all_extracted_text.append(
@@ -1097,16 +974,12 @@ def extract_text_from_video_frames(
                                 "method": ocr_result["method"],
                             }
                         )
-                        logger.debug(
-                            f"OCR @{frame_time:.1f}s (conf: {ocr_result['confidence']:.1f}): {cleaned_text[:100]}..."
-                        )
+                        logger.debug(f"OCR @{frame_time:.1f}s (conf: {ocr_result['confidence']:.1f}): {cleaned_text[:100]}...")
 
                 # Collect URLs from this frame
                 if ocr_result["urls"]:
                     all_urls.extend(ocr_result["urls"])
-                    logger.info(
-                        f"[INFO] Found {len(ocr_result['urls'])} URLs in frame {i + 1} at {frame_time:.1f}s"
-                    )
+                    logger.info(f"[INFO] Found {len(ocr_result['urls'])} URLs in frame {i + 1} at {frame_time:.1f}s")
 
                 previous_frame = frame
                 processed_frames += 1
@@ -1118,14 +991,10 @@ def extract_text_from_video_frames(
                 logger.error(f"Error processing frame at {frame_time}s: {e}")
                 continue
 
-        logger.info(
-            f"[OK] OCR complete: processed {processed_frames} frames, skipped {skipped_frames} similar frames"
-        )
+        logger.info(f"[OK] OCR complete: processed {processed_frames} frames, skipped {skipped_frames} similar frames")
 
     except Exception as e:
-        logger.error(
-            f"Error opening or processing video file {video_path} with MoviePy: {e}"
-        )
+        logger.error(f"Error opening or processing video file {video_path} with MoviePy: {e}")
         return {"text": "", "urls": [], "metadata": {}}
 
     finally:
@@ -1174,9 +1043,7 @@ def extract_text_from_video_frames(
     }
 
     if all_extracted_text:
-        avg_confidence = sum(item["confidence"] for item in all_extracted_text) / len(
-            all_extracted_text
-        )
+        avg_confidence = sum(item["confidence"] for item in all_extracted_text) / len(all_extracted_text)
         metadata["avg_confidence"] = avg_confidence
         logger.info(f"Average confidence: {avg_confidence:.1f}%")
 
@@ -1195,9 +1062,8 @@ def extract_text_from_video_frames(
     stop=stop_after_attempt(MAX_RETRIES),
     wait=wait_exponential(multiplier=1, min=4, max=10),
 )
-def download_video(video_id: str, output_path: str) -> Optional[str]:
-    """
-    Download a YouTube video to the specified path.
+def download_video(video_id: str, output_path: str) -> str | None:
+    """Download a YouTube video to the specified path.
     Returns the path to the downloaded video file, or None if download fails.
     """
     video_url = f"https://www.youtube.com/watch?v={video_id}"
@@ -1218,9 +1084,7 @@ def download_video(video_id: str, output_path: str) -> Optional[str]:
     }
 
     try:
-        logger.info(
-            f"[INFO] Downloading video {video_id} (worst quality for faster processing)..."
-        )
+        logger.info(f"[INFO] Downloading video {video_id} (worst quality for faster processing)...")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
 
@@ -1228,12 +1092,8 @@ def download_video(video_id: str, output_path: str) -> Optional[str]:
         for ext in ["mp4", "mkv", "webm", "flv", "avi"]:
             downloaded_file_path = os.path.join(video_specific_dir, f"{video_id}.{ext}")
             if os.path.exists(downloaded_file_path):
-                file_size = (
-                    os.path.getsize(downloaded_file_path) / 1024 / 1024
-                )  # Size in MB
-                logger.info(
-                    f"[OK] Successfully downloaded video: {video_id}.{ext} ({file_size:.1f} MB)"
-                )
+                file_size = os.path.getsize(downloaded_file_path) / 1024 / 1024  # Size in MB
+                logger.info(f"[OK] Successfully downloaded video: {video_id}.{ext} ({file_size:.1f} MB)")
                 return downloaded_file_path
 
         logger.error(f"Download reported success, but file not found for {video_id}")
@@ -1244,15 +1104,12 @@ def download_video(video_id: str, output_path: str) -> Optional[str]:
         raise  # Re-raise to trigger retry mechanism
 
 
-def process_single_video(
-    video_meta: Dict[str, str], checkpoint: Dict[str, Any]
-) -> Dict[str, Any]:
-    """
-    Process a single video: download, OCR, and cleanup.
+def process_single_video(video_meta: dict[str, str], checkpoint: dict[str, Any]) -> dict[str, Any]:
+    """Process a single video: download, OCR, and cleanup.
     Returns the processing result and updates checkpoint.
     """
     video_id = video_meta["id"]
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "url": video_meta["url"],
         "title": video_meta["title"],
         "upload_date": video_meta.get("upload_date", ""),
@@ -1269,61 +1126,40 @@ def process_single_video(
 
         if video_path:
             # Add delay before OCR processing
-            logger.info(
-                f"[WAIT] Waiting {DEFAULT_PROCESSING_DELAY}s before OCR processing..."
-            )
+            logger.info(f"[WAIT] Waiting {DEFAULT_PROCESSING_DELAY}s before OCR processing...")
             time.sleep(DEFAULT_PROCESSING_DELAY)
 
             # Extract text and URLs from video with enhanced OCR
-            logger.info(f"[INFO] Starting OCR analysis of video frames...")
-            ocr_result = extract_text_from_video_frames(
-                video_path, frame_interval_seconds=2
-            )
+            logger.info("[INFO] Starting OCR analysis of video frames...")
+            ocr_result = extract_text_from_video_frames(video_path, frame_interval_seconds=2)
 
-            result["ocr_description"] = (
-                ocr_result["text"]
-                if ocr_result["text"]
-                else "No high-quality text found in video"
-            )
+            result["ocr_description"] = ocr_result["text"] if ocr_result["text"] else "No high-quality text found in video"
             result["extracted_urls"] = ocr_result["urls"]
             # Extract cleaned URLs with robust handling
             all_detected_urls = []
             for url in ocr_result["urls"]:
                 if hasattr(url, "cleaned_url"):  # It's an ExtractedURL object
                     all_detected_urls.append(url.cleaned_url)
-                elif (
-                    isinstance(url, dict) and "cleaned_url" in url
-                ):  # It's a dictionary with cleaned_url
+                elif isinstance(url, dict) and "cleaned_url" in url:  # It's a dictionary with cleaned_url
                     all_detected_urls.append(url["cleaned_url"])
                 elif isinstance(url, str):  # It's a string URL
                     all_detected_urls.append(url)
-            result["all_detected_urls"] = (
-                all_detected_urls  # Dedicated field for all URLs
-            )
+            result["all_detected_urls"] = all_detected_urls  # Dedicated field for all URLs
             result["metadata"] = ocr_result["metadata"]
             result["processing_status"] = "success"
 
             # Log success with URL count
             if all_detected_urls:
-                logger.info(
-                    f"[OK] Successfully processed {video_id} - Found {len(all_detected_urls)} URLs"
-                )
+                logger.info(f"[OK] Successfully processed {video_id} - Found {len(all_detected_urls)} URLs")
             else:
-                logger.info(
-                    f"[OK] Successfully processed {video_id} - No URLs detected"
-                )
+                logger.info(f"[OK] Successfully processed {video_id} - No URLs detected")
 
             # Clean up immediately after processing
             try:
                 video_folder_path = os.path.dirname(video_path)
-                if (
-                    os.path.commonpath([TEMP_VIDEO_DIR, video_folder_path])
-                    == TEMP_VIDEO_DIR
-                ):
+                if os.path.commonpath([TEMP_VIDEO_DIR, video_folder_path]) == TEMP_VIDEO_DIR:
                     shutil.rmtree(video_folder_path)
-                    logger.debug(
-                        f"[CLEANUP] Cleaned up temporary video folder: {video_folder_path}"
-                    )
+                    logger.debug(f"[CLEANUP] Cleaned up temporary video folder: {video_folder_path}")
             except Exception as e:
                 logger.error(f"Error cleaning up video folder {video_folder_path}: {e}")
 
@@ -1337,7 +1173,7 @@ def process_single_video(
 
     except Exception as e:
         logger.error(f"[ERROR] Error processing video {video_id}: {e}")
-        result["ocr_description"] = f"Processing error: {str(e)}"
+        result["ocr_description"] = f"Processing error: {e!s}"
         checkpoint["failed_videos"].append(video_id)
 
     return result
@@ -1346,7 +1182,7 @@ def process_single_video(
 def main(args):
     """Main function to orchestrate the ETL process."""
     logger.info("Starting Enhanced YouTube Shorts OCR ETL process...")
-    logger.info(f"Using MoviePy 2.x compatible imports and advanced OCR techniques")
+    logger.info("Using MoviePy 2.x compatible imports and advanced OCR techniques")
     logger.info(f"Project root: {get_project_root()}")
 
     # Verify Tesseract installation
@@ -1365,14 +1201,10 @@ def main(args):
     logger.info(f"Request delay: {args.request_delay}s")
     logger.info(f"Download delay: {args.download_delay}s")
     logger.info(f"Processing delay: {args.processing_delay}s")
-    logger.info(
-        f"Enhanced OCR: Min confidence {MIN_CONFIDENCE}%, Min text length {MIN_TEXT_LENGTH}"
-    )
+    logger.info(f"Enhanced OCR: Min confidence {MIN_CONFIDENCE}%, Min text length {MIN_TEXT_LENGTH}")
 
     try:
-        short_videos_meta = get_short_video_urls(
-            TARGET_CHANNEL_URL, args.limit, args.days, checkpoint
-        )
+        short_videos_meta = get_short_video_urls(TARGET_CHANNEL_URL, args.limit, args.days, checkpoint)
     except Exception as e:
         logger.error(f"Failed to fetch video URLs after retries: {e}")
         return
@@ -1394,9 +1226,7 @@ def main(args):
     for i, video_meta in enumerate(short_videos_meta, 1):
         video_start_time = time.time()
 
-        logger.info(
-            f"[PROGRESS] Processing video {i}/{len(short_videos_meta)} ({(i / len(short_videos_meta) * 100):.1f}% complete)"
-        )
+        logger.info(f"[PROGRESS] Processing video {i}/{len(short_videos_meta)} ({(i / len(short_videos_meta) * 100):.1f}% complete)")
         logger.info(f"[CURRENT] Current video: {video_meta['title']}")
 
         result = process_single_video(video_meta, checkpoint)
@@ -1416,14 +1246,10 @@ def main(args):
             avg_time_per_video = (time.time() - processing_start_time) / i
             remaining_videos = len(short_videos_meta) - i
             estimated_time_remaining = remaining_videos * avg_time_per_video
-            logger.info(
-                f"[TIMING] Video processed in {video_duration:.1f}s. Estimated time remaining: {estimated_time_remaining / 60:.1f} minutes"
-            )
+            logger.info(f"[TIMING] Video processed in {video_duration:.1f}s. Estimated time remaining: {estimated_time_remaining / 60:.1f} minutes")
 
         # Log progress summary
-        logger.info(
-            f"[PROGRESS] Progress: {successful_processing} successful, {failed_processing} failed, {urls_found} URLs found so far"
-        )
+        logger.info(f"[PROGRESS] Progress: {successful_processing} successful, {failed_processing} failed, {urls_found} URLs found so far")
 
         # Save checkpoint after each video
         checkpoint["last_processed_date"] = datetime.now().isoformat()
@@ -1436,12 +1262,8 @@ def main(args):
 
     # Final summary with total time
     total_time = time.time() - processing_start_time
-    logger.info(
-        f"[COMPLETE] Processing complete! Final stats: {successful_processing} successful, {failed_processing} failed, {urls_found} total URLs found"
-    )
-    logger.info(
-        f"[TIMING] Total processing time: {total_time / 60:.1f} minutes ({total_time / len(short_videos_meta):.1f}s per video)"
-    )
+    logger.info(f"[COMPLETE] Processing complete! Final stats: {successful_processing} successful, {failed_processing} failed, {urls_found} total URLs found")
+    logger.info(f"[TIMING] Total processing time: {total_time / 60:.1f} minutes ({total_time / len(short_videos_meta):.1f}s per video)")
 
     # Save final results
     output_file_path = os.path.join(OUTPUT_DIR, "youtube_shorts_ocr_results.json")
@@ -1450,9 +1272,9 @@ def main(args):
         existing_results = []
         if os.path.exists(output_file_path):
             try:
-                with open(output_file_path, "r", encoding="utf-8") as f:
+                with open(output_file_path, encoding="utf-8") as f:
                     existing_results = json.load(f)
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 pass
 
         # Combine with new results
@@ -1489,20 +1311,16 @@ def main(args):
 
         with open(output_file_path, "w", encoding="utf-8") as f:
             json.dump(unique_results, f, indent=4, ensure_ascii=False)
-        logger.info(
-            f"Successfully saved {len(unique_results)} results to {output_file_path}"
-        )
+        logger.info(f"Successfully saved {len(unique_results)} results to {output_file_path}")
 
-    except IOError as e:
+    except OSError as e:
         logger.error(f"Error saving results to {output_file_path}: {e}")
 
     # Clean up empty temp directory
     try:
         if os.path.exists(TEMP_VIDEO_DIR) and not os.listdir(TEMP_VIDEO_DIR):
             shutil.rmtree(TEMP_VIDEO_DIR)
-            logger.info(
-                f"Successfully removed empty temporary directory: {TEMP_VIDEO_DIR}"
-            )
+            logger.info(f"Successfully removed empty temporary directory: {TEMP_VIDEO_DIR}")
     except Exception as e:
         logger.error(f"Error removing temporary directory {TEMP_VIDEO_DIR}: {e}")
 
@@ -1514,12 +1332,8 @@ def main(args):
     total_urls = sum(len(r.get("extracted_urls", [])) for r in all_results)
     videos_with_urls = len([r for r in all_results if r.get("extracted_urls")])
 
-    logger.info(
-        f"Enhanced YouTube Shorts OCR ETL process completed. Success: {successful}, Failed: {failed}"
-    )
-    logger.info(
-        f"URL Extraction Summary: {total_urls} URLs found across {videos_with_urls} videos"
-    )
+    logger.info(f"Enhanced YouTube Shorts OCR ETL process completed. Success: {successful}, Failed: {failed}")
+    logger.info(f"URL Extraction Summary: {total_urls} URLs found across {videos_with_urls} videos")
 
     # Show extracted URLs
     if total_urls > 0:
@@ -1543,9 +1357,7 @@ def main(args):
                         context_text = url.get("context_text", "")
 
                     print(f"   [URL] {cleaned_url}")
-                    print(
-                        f"      Confidence: {confidence:.1f}% | Time: {timestamp:.1f}s | Region: {region}"
-                    )
+                    print(f"      Confidence: {confidence:.1f}% | Time: {timestamp:.1f}s | Region: {region}")
                     if context_text:
                         print(f"      Context: {context_text[:100]}...")
                     print()
@@ -1553,9 +1365,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Enhanced YouTube Shorts OCR ETL with advanced image processing"
-    )
+    parser = argparse.ArgumentParser(description="Enhanced YouTube Shorts OCR ETL with advanced image processing")
     parser.add_argument(
         "--limit",
         type=int,

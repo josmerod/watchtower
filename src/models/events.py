@@ -57,13 +57,9 @@ class SpeakerModel(TimestampedModel):
     github_handle: str | None = Field(default=None, description="GitHub handle")
 
     # Speaker metrics
-    influence_score: float = Field(
-        default=0.0, ge=0.0, le=100.0, description="Speaker influence score"
-    )
+    influence_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Speaker influence score")
     expertise_areas: list[str] = Field(default=[], description="Areas of expertise")
-    speaking_experience: int | None = Field(
-        default=None, ge=0, description="Years of speaking experience"
-    )
+    speaking_experience: int | None = Field(default=None, ge=0, description="Years of speaking experience")
 
     @field_validator("name")
     @classmethod
@@ -85,9 +81,7 @@ class VenueModel(TimestampedModel):
 
     # Venue details
     capacity: int | None = Field(default=None, ge=0, description="Venue capacity")
-    accessibility_features: list[str] = Field(
-        default=[], description="Accessibility features"
-    )
+    accessibility_features: list[str] = Field(default=[], description="Accessibility features")
     amenities: list[str] = Field(default=[], description="Venue amenities")
 
     # Location coordinates
@@ -114,27 +108,19 @@ class TechEventModel(TimestampedModel):
     description: str | None = Field(default=None, description="Event description")
     event_type: EventType = Field(description="Type of event")
     format: EventFormat = Field(description="Event format")
-    status: EventStatus = Field(
-        default=EventStatus.UPCOMING, description="Event status"
-    )
+    status: EventStatus = Field(default=EventStatus.UPCOMING, description="Event status")
 
     # Date and time information
     start_date: datetime = Field(description="Event start date")
     end_date: datetime | None = Field(default=None, description="Event end date")
     timezone: str | None = Field(default=None, description="Event timezone")
-    duration_hours: float | None = Field(
-        default=None, ge=0, description="Event duration in hours"
-    )
+    duration_hours: float | None = Field(default=None, ge=0, description="Event duration in hours")
 
     # Location information
     venue: VenueModel | None = Field(default=None, description="Event venue")
-    location: str | None = Field(
-        default=None, description="Event location (if different from venue)"
-    )
+    location: str | None = Field(default=None, description="Event location (if different from venue)")
     is_virtual: bool = Field(default=False, description="Whether event is virtual")
-    virtual_platform: str | None = Field(
-        default=None, description="Virtual platform used"
-    )
+    virtual_platform: str | None = Field(default=None, description="Virtual platform used")
 
     # Event content
     topics: list[str] = Field(default=[], description="Event topics")
@@ -145,58 +131,32 @@ class TechEventModel(TimestampedModel):
     # Speakers and organizers
     speakers: list[SpeakerModel] = Field(default=[], description="Event speakers")
     organizer: str | None = Field(default=None, description="Event organizer")
-    organizer_website: HttpUrl | None = Field(
-        default=None, description="Organizer website"
-    )
+    organizer_website: HttpUrl | None = Field(default=None, description="Organizer website")
 
     # Registration and costs
-    registration_url: HttpUrl | None = Field(
-        default=None, description="Registration URL"
-    )
-    registration_deadline: datetime | None = Field(
-        default=None, description="Registration deadline"
-    )
-    registration_required: bool = Field(
-        default=True, description="Whether registration is required"
-    )
-    estimated_cost: float | None = Field(
-        default=None, ge=0, description="Estimated cost in USD"
-    )
+    registration_url: HttpUrl | None = Field(default=None, description="Registration URL")
+    registration_deadline: datetime | None = Field(default=None, description="Registration deadline")
+    registration_required: bool = Field(default=True, description="Whether registration is required")
+    estimated_cost: float | None = Field(default=None, ge=0, description="Estimated cost in USD")
     is_free: bool = Field(default=False, description="Whether event is free")
 
     # Event intelligence scores
-    speaker_influence_score: float = Field(
-        default=0.0, ge=0.0, le=100.0, description="Overall speaker influence"
-    )
-    relevance_score: float = Field(
-        default=0.0, ge=0.0, le=100.0, description="Topic relevance score"
-    )
-    networking_score: float = Field(
-        default=0.0, ge=0.0, le=100.0, description="Networking potential score"
-    )
-    roi_score: float = Field(
-        default=0.0, ge=0.0, le=100.0, description="Return on investment score"
-    )
-    quality_score: float = Field(
-        default=0.0, ge=0.0, le=100.0, description="Overall quality score"
-    )
+    speaker_influence_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Overall speaker influence")
+    relevance_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Topic relevance score")
+    networking_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Networking potential score")
+    roi_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Return on investment score")
+    quality_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Overall quality score")
 
     # Social and engagement
-    attendee_count: int | None = Field(
-        default=None, ge=0, description="Expected/actual attendee count"
-    )
-    social_media_buzz: float | None = Field(
-        default=None, ge=0, description="Social media buzz score"
-    )
+    attendee_count: int | None = Field(default=None, ge=0, description="Expected/actual attendee count")
+    social_media_buzz: float | None = Field(default=None, ge=0, description="Social media buzz score")
     hashtags: list[str] = Field(default=[], description="Event hashtags")
 
     # Links and resources
     website_url: HttpUrl | None = Field(default=None, description="Event website")
     agenda_url: HttpUrl | None = Field(default=None, description="Event agenda URL")
     live_stream_url: HttpUrl | None = Field(default=None, description="Live stream URL")
-    recording_url: HttpUrl | None = Field(
-        default=None, description="Recording URL (post-event)"
-    )
+    recording_url: HttpUrl | None = Field(default=None, description="Recording URL (post-event)")
 
     # Data source information
     source_name: str = Field(description="Data source name")
@@ -206,9 +166,7 @@ class TechEventModel(TimestampedModel):
     # Additional metadata
     tags: list[str] = Field(default=[], description="Event tags")
     categories: list[str] = Field(default=[], description="Event categories")
-    metadata: dict[str, Any] | None = Field(
-        default=None, description="Additional metadata"
-    )
+    metadata: dict[str, Any] | None = Field(default=None, description="Additional metadata")
 
     @field_validator("name")
     @classmethod
@@ -258,11 +216,7 @@ class TechEventModel(TimestampedModel):
     @property
     def is_high_quality(self) -> bool:
         """Check if event is considered high quality."""
-        return (
-            self.quality_score >= 75.0
-            and self.speaker_influence_score >= 60.0
-            and len(self.speakers) > 0
-        )
+        return self.quality_score >= 75.0 and self.speaker_influence_score >= 60.0 and len(self.speakers) > 0
 
     @computed_field
     @property
@@ -286,29 +240,19 @@ class EventRecommendationModel(TimestampedModel):
     """Model for event recommendations."""
 
     event: TechEventModel = Field(description="Recommended event")
-    recommendation_score: float = Field(
-        ge=0.0, le=100.0, description="Recommendation score"
-    )
+    recommendation_score: float = Field(ge=0.0, le=100.0, description="Recommendation score")
     recommendation_reason: str = Field(description="Why this event is recommended")
 
     # Matching factors
     interest_match: float = Field(ge=0.0, le=1.0, description="Interest match score")
-    location_convenience: float = Field(
-        ge=0.0, le=1.0, description="Location convenience score"
-    )
+    location_convenience: float = Field(ge=0.0, le=1.0, description="Location convenience score")
     budget_fit: float = Field(ge=0.0, le=1.0, description="Budget fit score")
-    schedule_compatibility: float = Field(
-        ge=0.0, le=1.0, description="Schedule compatibility score"
-    )
+    schedule_compatibility: float = Field(ge=0.0, le=1.0, description="Schedule compatibility score")
 
     # Additional insights
     key_benefits: list[str] = Field(default=[], description="Key benefits of attending")
-    potential_connections: list[str] = Field(
-        default=[], description="Potential networking connections"
-    )
-    learning_outcomes: list[str] = Field(
-        default=[], description="Expected learning outcomes"
-    )
+    potential_connections: list[str] = Field(default=[], description="Potential networking connections")
+    learning_outcomes: list[str] = Field(default=[], description="Expected learning outcomes")
 
     @computed_field
     @property
@@ -324,59 +268,33 @@ class UserEventPreferencesModel(TimestampedModel):
 
     # Interest preferences
     preferred_topics: list[str] = Field(default=[], description="Preferred topics")
-    preferred_technologies: list[str] = Field(
-        default=[], description="Preferred technologies"
-    )
-    preferred_event_types: list[EventType] = Field(
-        default=[], description="Preferred event types"
-    )
-    preferred_formats: list[EventFormat] = Field(
-        default=[], description="Preferred formats"
-    )
+    preferred_technologies: list[str] = Field(default=[], description="Preferred technologies")
+    preferred_event_types: list[EventType] = Field(default=[], description="Preferred event types")
+    preferred_formats: list[EventFormat] = Field(default=[], description="Preferred formats")
 
     # Location and travel preferences
-    preferred_locations: list[str] = Field(
-        default=[], description="Preferred locations"
-    )
-    max_travel_distance: int | None = Field(
-        default=None, ge=0, description="Max travel distance in km"
-    )
-    willing_to_travel: bool = Field(
-        default=True, description="Willing to travel for events"
-    )
+    preferred_locations: list[str] = Field(default=[], description="Preferred locations")
+    max_travel_distance: int | None = Field(default=None, ge=0, description="Max travel distance in km")
+    willing_to_travel: bool = Field(default=True, description="Willing to travel for events")
 
     # Budget and time preferences
-    max_budget: float | None = Field(
-        default=None, ge=0, description="Maximum budget per event"
-    )
-    preferred_duration_min: int | None = Field(
-        default=None, ge=0, description="Minimum event duration in hours"
-    )
-    preferred_duration_max: int | None = Field(
-        default=None, ge=0, description="Maximum event duration in hours"
-    )
+    max_budget: float | None = Field(default=None, ge=0, description="Maximum budget per event")
+    preferred_duration_min: int | None = Field(default=None, ge=0, description="Minimum event duration in hours")
+    preferred_duration_max: int | None = Field(default=None, ge=0, description="Maximum event duration in hours")
 
     # Experience level and goals
     experience_level: str | None = Field(default=None, description="Experience level")
     learning_goals: list[str] = Field(default=[], description="Learning goals")
-    networking_interests: list[str] = Field(
-        default=[], description="Networking interests"
-    )
+    networking_interests: list[str] = Field(default=[], description="Networking interests")
 
     # Scheduling preferences
-    preferred_days_of_week: list[str] = Field(
-        default=[], description="Preferred days of week"
-    )
+    preferred_days_of_week: list[str] = Field(default=[], description="Preferred days of week")
     preferred_times: list[str] = Field(default=[], description="Preferred times of day")
     exclude_holidays: bool = Field(default=True, description="Exclude holidays")
 
     # Notification preferences
-    notification_lead_time: int = Field(
-        default=30, ge=1, description="Notification lead time in days"
-    )
-    enable_recommendations: bool = Field(
-        default=True, description="Enable event recommendations"
-    )
+    notification_lead_time: int = Field(default=30, ge=1, description="Notification lead time in days")
+    enable_recommendations: bool = Field(default=True, description="Enable event recommendations")
 
     @field_validator("user_id")
     @classmethod

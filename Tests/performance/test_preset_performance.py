@@ -1,13 +1,11 @@
-"""
-Performance tests for Filter Presets functionality
+"""Performance tests for Filter Presets functionality
 Tests <300ms preset application time requirement
 """
 
-import pytest
-import time
 import statistics
-from typing import List, Dict, Any
-from unittest.mock import Mock, patch
+import time
+
+import pytest
 
 
 class TestPresetPerformance:
@@ -15,43 +13,40 @@ class TestPresetPerformance:
 
     def test_localstorage_performance_simulation(self):
         """Simulate localStorage performance for preset operations"""
-
         # Simulate localStorage operations with different data sizes
         test_data_sizes = [1, 5, 10, 20, 50]  # Number of presets
         preset_application_times = []
 
         for num_presets in test_data_sizes:
             # Create test data
-            preset_data = {
-                'tab_presets': {
-                    'test_tab': []
-                }
-            }
+            preset_data = {"tab_presets": {"test_tab": []}}
 
             # Generate presets
             for i in range(num_presets):
-                preset_data['tab_presets']['test_tab'].append({
-                    'name': f'Preset {i}',
-                    'filters': {
-                        'search_term': f'search term {i} with some additional text to simulate realistic filter data',
-                        'category': f'Category {i}',
-                        'date_range': 'last_30_days',
-                        'source': f'source_{i}'
-                    },
-                    'created_at': '2025-01-16T10:00:00Z',
-                    'updated_at': '2025-01-16T10:00:00Z'
-                })
+                preset_data["tab_presets"]["test_tab"].append(
+                    {
+                        "name": f"Preset {i}",
+                        "filters": {
+                            "search_term": f"search term {i} with some additional text to simulate realistic filter data",
+                            "category": f"Category {i}",
+                            "date_range": "last_30_days",
+                            "source": f"source_{i}",
+                        },
+                        "created_at": "2025-01-16T10:00:00Z",
+                        "updated_at": "2025-01-16T10:00:00Z",
+                    }
+                )
 
             # Simulate JSON serialization/deserialization time
             start_time = time.perf_counter()
 
             # Simulate localStorage read
-            serialized_data = __import__('json').dumps(preset_data)
-            deserialized_data = __import__('json').loads(serialized_data)
+            serialized_data = __import__("json").dumps(preset_data)
+            deserialized_data = __import__("json").loads(serialized_data)
 
             # Simulate finding and applying specific preset
-            target_preset = deserialized_data['tab_presets']['test_tab'][0]
-            filters_to_apply = target_preset['filters']
+            target_preset = deserialized_data["tab_presets"]["test_tab"][0]
+            filters_to_apply = target_preset["filters"]
 
             # Simulate applying filters to UI components
             applied_filters = {}
@@ -70,7 +65,7 @@ class TestPresetPerformance:
         avg_time = statistics.mean(preset_application_times)
         max_time = max(preset_application_times)
 
-        print(f"Performance Summary:")
+        print("Performance Summary:")
         print(f"Average preset application time: {avg_time:.2f}ms")
         print(f"Maximum preset application time: {max_time:.2f}ms")
         print(f"Time range: {min(preset_application_times):.2f}ms - {max(preset_application_times):.2f}ms")
@@ -81,31 +76,38 @@ class TestPresetPerformance:
 
     def test_preset_storage_overhead(self):
         """Test storage overhead and memory usage"""
-
         # Calculate storage requirements for different numbers of presets
-        test_cases = [1, 5, 10, 20, 50]  # Maximum is 10, but test higher for performance analysis
+        test_cases = [
+            1,
+            5,
+            10,
+            20,
+            50,
+        ]  # Maximum is 10, but test higher for performance analysis
 
         for num_presets in test_cases:
             preset_data = []
 
             for i in range(num_presets):
-                preset_data.append({
-                    'name': f'Performance Test Preset {i}',
-                    'filters': {
-                        'search_term': f'Complex search term with multiple keywords term{i} term{i+1} term{i+2}',
-                        'category': f'Advanced Category {i}',
-                        'date_range': 'custom_date_range_with_start_and_end_dates',
-                        'source': f'multiple_source_selection_{i}',
-                        'additional_filter_1': f'extra_filter_data_{i}',
-                        'additional_filter_2': f'more_filter_options_{i}'
-                    },
-                    'created_at': '2025-01-16T10:00:00Z',
-                    'updated_at': '2025-01-16T10:00:00Z'
-                })
+                preset_data.append(
+                    {
+                        "name": f"Performance Test Preset {i}",
+                        "filters": {
+                            "search_term": f"Complex search term with multiple keywords term{i} term{i+1} term{i+2}",
+                            "category": f"Advanced Category {i}",
+                            "date_range": "custom_date_range_with_start_and_end_dates",
+                            "source": f"multiple_source_selection_{i}",
+                            "additional_filter_1": f"extra_filter_data_{i}",
+                            "additional_filter_2": f"more_filter_options_{i}",
+                        },
+                        "created_at": "2025-01-16T10:00:00Z",
+                        "updated_at": "2025-01-16T10:00:00Z",
+                    }
+                )
 
             # Calculate storage size
-            serialized_data = __import__('json').dumps(preset_data)
-            storage_size_bytes = len(serialized_data.encode('utf-8'))
+            serialized_data = __import__("json").dumps(preset_data)
+            storage_size_bytes = len(serialized_data.encode("utf-8"))
             storage_size_kb = storage_size_bytes / 1024
 
             print(f"Storage usage for {num_presets} presets: {storage_size_kb:.2f} KB")
@@ -119,7 +121,6 @@ class TestPresetPerformance:
 
     def test_filter_preset_component_creation_performance(self):
         """Test performance of creating FilterPresetsComponent instances"""
-
         from src.web.dashboard.components.filter_presets import FilterPresetsComponent
 
         # Test component creation time
@@ -129,12 +130,12 @@ class TestPresetPerformance:
             start_time = time.perf_counter()
 
             filter_inputs = {
-                'search_term': f'test-search-input-{i}',
-                'category': f'test-category-dropdown-{i}',
-                'date_range': f'test-date-range-{i}'
+                "search_term": f"test-search-input-{i}",
+                "category": f"test-category-dropdown-{i}",
+                "date_range": f"test-date-range-{i}",
             }
 
-            component = FilterPresetsComponent(f'test_tab_{i}', filter_inputs)
+            component = FilterPresetsComponent(f"test_tab_{i}", filter_inputs)
             controls = component.create_preset_controls()
 
             end_time = time.perf_counter()
@@ -144,7 +145,7 @@ class TestPresetPerformance:
         avg_creation_time = statistics.mean(creation_times)
         max_creation_time = max(creation_times)
 
-        print(f"Component Creation Performance:")
+        print("Component Creation Performance:")
         print(f"Average creation time: {avg_creation_time:.2f}ms")
         print(f"Maximum creation time: {max_creation_time:.2f}ms")
 
@@ -154,7 +155,6 @@ class TestPresetPerformance:
 
     def test_callback_generation_performance(self):
         """Test performance of generating clientside callbacks"""
-
         from src.web.dashboard.components.filter_presets import FilterPresetsComponent
 
         callback_generation_times = []
@@ -163,12 +163,12 @@ class TestPresetPerformance:
             start_time = time.perf_counter()
 
             filter_inputs = {
-                'search_term': f'search-{i}',
-                'category': f'category-{i}',
-                'source': f'source-{i}'
+                "search_term": f"search-{i}",
+                "category": f"category-{i}",
+                "source": f"source-{i}",
             }
 
-            component = FilterPresetsComponent(f'tab_{i}', filter_inputs)
+            component = FilterPresetsComponent(f"tab_{i}", filter_inputs)
             callbacks = component.get_clientside_callbacks()
 
             end_time = time.perf_counter()
@@ -178,7 +178,7 @@ class TestPresetPerformance:
         avg_generation_time = statistics.mean(callback_generation_times)
         max_generation_time = max(callback_generation_times)
 
-        print(f"Callback Generation Performance:")
+        print("Callback Generation Performance:")
         print(f"Average generation time: {avg_generation_time:.2f}ms")
         print(f"Maximum generation time: {max_generation_time:.2f}ms")
 
@@ -188,16 +188,13 @@ class TestPresetPerformance:
 
     def test_preset_application_with_large_filter_data(self):
         """Test preset application performance with large filter data"""
-
         # Create preset with large filter data
         large_filter_data = {
-            'search_term': ' '.join([f'keyword{i}' for i in range(100)]),  # 100 keywords
-            'category': 'Very Long Category Name with Multiple Words and Special Characters',
-            'description': 'A' * 1000,  # 1000 character description
-            'tags': ['tag' + str(i) for i in range(50)],  # 50 tags
-            'metadata': {
-                'custom_field_' + str(i): f'value_{i}' * 10 for i in range(20)  # 20 custom fields with long values
-            }
+            "search_term": " ".join([f"keyword{i}" for i in range(100)]),  # 100 keywords
+            "category": "Very Long Category Name with Multiple Words and Special Characters",
+            "description": "A" * 1000,  # 1000 character description
+            "tags": ["tag" + str(i) for i in range(50)],  # 50 tags
+            "metadata": {"custom_field_" + str(i): f"value_{i}" * 10 for i in range(20)},  # 20 custom fields with long values
         }
 
         # Test applying large preset data
@@ -207,15 +204,17 @@ class TestPresetPerformance:
             start_time = time.perf_counter()
 
             # Simulate preset application
-            serialized_preset = __import__('json').dumps({
-                'name': f'Large Preset {i}',
-                'filters': large_filter_data,
-                'created_at': '2025-01-16T10:00:00Z',
-                'updated_at': '2025-01-16T10:00:00Z'
-            })
+            serialized_preset = __import__("json").dumps(
+                {
+                    "name": f"Large Preset {i}",
+                    "filters": large_filter_data,
+                    "created_at": "2025-01-16T10:00:00Z",
+                    "updated_at": "2025-01-16T10:00:00Z",
+                }
+            )
 
-            deserialized_preset = __import__('json').loads(serialized_preset)
-            applied_filters = deserialized_preset['filters']
+            deserialized_preset = __import__("json").loads(serialized_preset)
+            applied_filters = deserialized_preset["filters"]
 
             # Simulate applying each filter to UI
             for key, value in applied_filters.items():
@@ -230,7 +229,7 @@ class TestPresetPerformance:
         avg_time = statistics.mean(application_times)
         max_time = max(application_times)
 
-        print(f"Large Filter Data Performance:")
+        print("Large Filter Data Performance:")
         print(f"Average application time: {avg_time:.2f}ms")
         print(f"Maximum application time: {max_time:.2f}ms")
 
@@ -240,9 +239,8 @@ class TestPresetPerformance:
 
     def test_concurrent_preset_operations(self):
         """Test performance of concurrent preset operations"""
-
-        import threading
         import queue
+        import threading
 
         # Simulate concurrent preset operations
         results = queue.Queue()
@@ -253,17 +251,17 @@ class TestPresetPerformance:
 
             # Simulate operation
             preset_data = {
-                'name': f'Concurrent Preset {operation_id}',
-                'filters': {
-                    'search_term': f'search_{operation_id}',
-                    'category': f'category_{operation_id}'
+                "name": f"Concurrent Preset {operation_id}",
+                "filters": {
+                    "search_term": f"search_{operation_id}",
+                    "category": f"category_{operation_id}",
                 },
-                'created_at': '2025-01-16T10:00:00Z'
+                "created_at": "2025-01-16T10:00:00Z",
             }
 
             # Simulate localStorage operations
-            serialized = __import__('json').dumps(preset_data)
-            deserialized = __import__('json').loads(serialized)
+            serialized = __import__("json").dumps(preset_data)
+            deserialized = __import__("json").loads(serialized)
 
             end_time = time.perf_counter()
             operation_time = (end_time - start_time) * 1000
@@ -293,7 +291,7 @@ class TestPresetPerformance:
         avg_operation_time = statistics.mean(operation_times)
         max_operation_time = max(operation_times)
 
-        print(f"Concurrent Operations Performance:")
+        print("Concurrent Operations Performance:")
         print(f"Total time for 20 concurrent operations: {total_time:.2f}ms")
         print(f"Average individual operation time: {avg_operation_time:.2f}ms")
         print(f"Maximum individual operation time: {max_operation_time:.2f}ms")
@@ -303,5 +301,5 @@ class TestPresetPerformance:
         assert avg_operation_time < 100, f"Average concurrent operation time {avg_operation_time:.2f}ms exceeds 100ms"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__])

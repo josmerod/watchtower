@@ -31,7 +31,7 @@ def load_ms_skills_data():
         return []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
             if isinstance(data, list):
                 return data
@@ -56,7 +56,7 @@ def load_watcher_state():
         return {}
 
     try:
-        with open(state_file, "r", encoding="utf-8") as f:
+        with open(state_file, encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         print(f"Error loading watcher state: {e}")
@@ -85,9 +85,7 @@ def create_watcher_status_cards():
             dbc.CardBody(
                 [
                     html.H4("🔍 MS Skills Watcher", className="card-title"),
-                    html.H5(
-                        f"{ms_skills_count:,} Events", className=f"text-{status_color}"
-                    ),
+                    html.H5(f"{ms_skills_count:,} Events", className=f"text-{status_color}"),
                     html.P(
                         f"Last check: {last_check}",
                         className="card-text small text-muted",
@@ -191,9 +189,7 @@ def create_ms_skills_table(data):
         title = item.get("title", item.get("name", item.get("skill_name", "Untitled")))
 
         # Event type
-        event_type = item.get(
-            "event_type", item.get("type", item.get("change_type", "Update"))
-        )
+        event_type = item.get("event_type", item.get("type", item.get("change_type", "Update")))
         event_color = {
             "new": "success",
             "updated": "info",
@@ -217,17 +213,13 @@ def create_ms_skills_table(data):
                     pass
 
         # Description or changes
-        description = item.get(
-            "description", item.get("changes", item.get("summary", ""))
-        )
+        description = item.get("description", item.get("changes", item.get("summary", "")))
         if isinstance(description, list):
             description = ", ".join(description)
         description = description[:200] + ("..." if len(description) > 200 else "")
 
         # Category
-        category = item.get(
-            "category", item.get("skill_area", item.get("subject", "General"))
-        )
+        category = item.get("category", item.get("skill_area", item.get("subject", "General")))
 
         row = html.Tr(
             [
@@ -320,9 +312,7 @@ def watchers_tab():
                                         [
                                             dcc.Graph(
                                                 id="ms-skills-chart",
-                                                figure=create_ms_skills_chart(
-                                                    ms_skills_data
-                                                ),
+                                                figure=create_ms_skills_chart(ms_skills_data),
                                             )
                                         ]
                                     ),
@@ -343,18 +333,14 @@ def watchers_tab():
                                 [
                                     dbc.CardHeader(
                                         [
-                                            html.H5(
-                                                "🔍 MS Skills Events", className="mb-0"
-                                            ),
+                                            html.H5("🔍 MS Skills Events", className="mb-0"),
                                             html.Small(
                                                 f"Showing latest {min(50, len(ms_skills_data))} events",
                                                 className="text-muted",
                                             ),
                                         ]
                                     ),
-                                    dbc.CardBody(
-                                        [create_ms_skills_table(ms_skills_data)]
-                                    ),
+                                    dbc.CardBody([create_ms_skills_table(ms_skills_data)]),
                                 ]
                             )
                         ]

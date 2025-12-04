@@ -12,9 +12,7 @@ import sys
 from datetime import datetime
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.deals.bargain_hunter_etl import BargainHunterETL
 from src.etl.deals.book_deals_etl import BookDealsETL
@@ -70,9 +68,7 @@ def run_all_deals_etl():
             if metrics.is_successful or record_count > 0:
                 results[name] = {"status": "success", "records": record_count}
                 total_records += record_count
-                logger.info(
-                    f"[OK] {name} ETL completed successfully ({record_count} records)"
-                )
+                logger.info(f"[OK] {name} ETL completed successfully ({record_count} records)")
             else:
                 results[name] = {"status": "failed", "records": 0}
                 logger.error(f"[FAIL] {name} ETL failed")
@@ -94,9 +90,7 @@ def run_all_deals_etl():
 
     for name, result in results.items():
         status_symbol = "[OK]" if result["status"] == "success" else "[FAIL]"
-        logger.info(
-            f"{status_symbol} {name}: {result['status'].upper()} ({result['records']} records)"
-        )
+        logger.info(f"{status_symbol} {name}: {result['status'].upper()} ({result['records']} records)")
 
     successful_etls = sum(1 for r in results.values() if r["status"] == "success")
     logger.info(f"\nSuccess rate: {successful_etls}/{len(etl_modules)} ETL modules")

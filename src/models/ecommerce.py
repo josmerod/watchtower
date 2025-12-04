@@ -1,20 +1,17 @@
 # src/models/ecommerce.py
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, HttpUrl
 
 
 class ShoppyProduct(BaseModel):
-    """
-    Data model for a product listed on Shoppy.gg or similar platforms.
-    """
+    """Data model for a product listed on Shoppy.gg or similar platforms."""
 
     product_id: str
     name: str
     price: str  # Keeping as string for now, can be parsed to float/decimal later if needed and currency is consistent
-    seller: Optional[str] = None
-    description: Optional[str] = None
+    seller: str | None = None
+    description: str | None = None
     url: HttpUrl
 
     # Timestamps for tracking when data was fetched and parsed
@@ -22,19 +19,17 @@ class ShoppyProduct(BaseModel):
     parsed_at: datetime
 
     # Optional fields that might be useful
-    category: Optional[str] = None
-    stock_status: Optional[str] = None  # e.g., "In Stock", "Out of Stock"
-    rating: Optional[float] = None  # e.g., 4.5
-    num_reviews: Optional[int] = None
+    category: str | None = None
+    stock_status: str | None = None  # e.g., "In Stock", "Out of Stock"
+    rating: float | None = None  # e.g., 4.5
+    num_reviews: int | None = None
 
     # To store any other relevant data not fitting the predefined fields
-    additional_info: Optional[dict] = None
+    additional_info: dict | None = None
 
 
 class ShoppyRawData(BaseModel):
-    """
-    Model for the raw data fetched before parsing.
-    """
+    """Model for the raw data fetched before parsing."""
 
     product_id: str
     raw_content: str  # Could be HTML, JSON string, etc.
@@ -42,15 +37,13 @@ class ShoppyRawData(BaseModel):
 
 
 class GumroadProduct(BaseModel):
-    """
-    Data model for a free product listed on Gumroad.
-    """
+    """Data model for a free product listed on Gumroad."""
 
     product_id: str
     name: str
     price: str  # Should be "Free" or "$0.00" for free products
-    seller: Optional[str] = None
-    description: Optional[str] = None
+    seller: str | None = None
+    description: str | None = None
     url: HttpUrl
 
     # Timestamps for tracking when data was fetched and parsed
@@ -58,25 +51,23 @@ class GumroadProduct(BaseModel):
     parsed_at: datetime
 
     # Gumroad-specific fields
-    category: Optional[str] = None
-    tags: Optional[list[str]] = None
-    rating: Optional[float] = None
-    num_ratings: Optional[int] = None
-    thumbnail_url: Optional[str] = None
+    category: str | None = None
+    tags: list[str] | None = None
+    rating: float | None = None
+    num_ratings: int | None = None
+    thumbnail_url: str | None = None
 
     # Additional metadata
     is_free: bool = True  # Should always be True for our scraper
-    file_size: Optional[str] = None
-    file_type: Optional[str] = None
+    file_size: str | None = None
+    file_type: str | None = None
 
     # To store any other relevant data not fitting the predefined fields
-    additional_info: Optional[dict] = None
+    additional_info: dict | None = None
 
 
 class GumroadRawData(BaseModel):
-    """
-    Model for the raw data fetched from Gumroad before parsing.
-    """
+    """Model for the raw data fetched from Gumroad before parsing."""
 
     product_id: str
     raw_content: str  # HTML content from the product page
@@ -86,18 +77,16 @@ class GumroadRawData(BaseModel):
 
 
 class TravelDeal(BaseModel):
-    """
-    Data model for a travel deal from Viajeros Piratas or similar travel deal sites.
-    """
+    """Data model for a travel deal from Viajeros Piratas or similar travel deal sites."""
 
     deal_id: str
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     price: float = 0.0  # Numeric price for sorting/filtering
     currency: str = "EUR"
     raw_price: str = ""  # Original price text as scraped
     category: str = "other"  # hotel, flight, vacation, attraction, other
-    url: Optional[str] = None
+    url: str | None = None
 
     # Timestamps
     published_at: datetime
@@ -110,18 +99,16 @@ class TravelDeal(BaseModel):
     source: str = "viajeros_piratas"
 
     # Optional fields for travel-specific data
-    destination: Optional[str] = None
-    duration: Optional[str] = None  # e.g., "3 nights", "1 week"
-    deal_type: Optional[str] = None  # e.g., "all_inclusive", "flight_only"
+    destination: str | None = None
+    duration: str | None = None  # e.g., "3 nights", "1 week"
+    deal_type: str | None = None  # e.g., "all_inclusive", "flight_only"
 
     # Additional metadata
-    additional_info: Optional[dict] = None
+    additional_info: dict | None = None
 
 
 class TravelDealRawData(BaseModel):
-    """
-    Model for raw travel deal data before parsing.
-    """
+    """Model for raw travel deal data before parsing."""
 
     deal_id: str
     raw_content: str  # HTML content of the deal

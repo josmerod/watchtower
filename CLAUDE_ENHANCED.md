@@ -239,7 +239,7 @@ Located in `src/models/`, follows strict Pydantic BaseModel patterns:
 When creating new ETL processes:
 
 1. **Inherit from BaseETL**: Use `src/etl/base.py` for all new ETL implementations
-2. **Implement Required Methods**: 
+2. **Implement Required Methods**:
    - `extract()`: Data retrieval from source
    - `transform()`: Data processing and classification
    - `load()`: Persistence to JSON files
@@ -255,11 +255,11 @@ class MyCustomETL(BaseETL[Dict[str, Any], Dict[str, Any]]):
     def extract(self) -> List[Dict[str, Any]]:
         # Implement data extraction
         pass
-    
+
     def transform(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         # Implement data transformation
         pass
-    
+
     def load(self, data: List[Dict[str, Any]]) -> None:
         # Implement data loading
         pass
@@ -282,7 +282,7 @@ class MyWatcher(BaseWatcher):
     def extract_value(self, html_content: str) -> Any:
         # Extract the value to monitor
         pass
-    
+
     def has_changed(self, old_value: Any, new_value: Any) -> bool:
         # Determine if change is significant
         pass

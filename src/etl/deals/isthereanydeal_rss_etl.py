@@ -16,7 +16,6 @@ import feedparser
 
 from src.etl.base import BaseETL
 
-
 BASE = "https://isthereanydeal.com"
 FEEDS = {
     "deals": f"{BASE}/feeds/US/USD/deals.rss",
@@ -36,9 +35,7 @@ class IsThereAnyDealRSSETL(BaseETL[dict[str, Any], dict[str, Any]]):
             **kwargs: Additional arguments for BaseETL
         """
         if feed_type not in FEEDS:
-            raise ValueError(
-                f"Invalid feed_type '{feed_type}'. Must be one of: {list(FEEDS.keys())}"
-            )
+            raise ValueError(f"Invalid feed_type '{feed_type}'. Must be one of: {list(FEEDS.keys())}")
 
         super().__init__(
             name=f"isthereanydeal_{feed_type}",
@@ -69,8 +66,7 @@ class IsThereAnyDealRSSETL(BaseETL[dict[str, Any], dict[str, Any]]):
                 item = {
                     "title": getattr(entry, "title", ""),
                     "link": getattr(entry, "link", ""),
-                    "summary": getattr(entry, "summary", getattr(entry, "description", ""))
-                    or "",
+                    "summary": getattr(entry, "summary", getattr(entry, "description", "")) or "",
                     "published": getattr(entry, "published", None),
                     "published_parsed": getattr(entry, "published_parsed", None),
                 }
@@ -153,19 +149,13 @@ class IsThereAnyDealRSSETL(BaseETL[dict[str, Any], dict[str, Any]]):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         timestamped_file = self.output_dir / f"isthereanydeal_{self.feed_type}_{timestamp}.json"
 
-        timestamped_file.write_text(
-            json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
-        )
+        timestamped_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
         # Save latest version
         latest_file = self.output_dir / f"isthereanydeal_{self.feed_type}_latest.json"
-        latest_file.write_text(
-            json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
-        )
+        latest_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
-        self.logger.info(
-            f"Saved ITAD {self.feed_type} to {timestamped_file} and {latest_file}"
-        )
+        self.logger.info(f"Saved ITAD {self.feed_type} to {timestamped_file} and {latest_file}")
 
     def _parse_date(self, date_str: str | None) -> str | None:
         """Parse date string into ISO format.
@@ -190,9 +180,7 @@ class IsThereAnyDealRSSETL(BaseETL[dict[str, Any], dict[str, Any]]):
         except Exception:
             return date_str
 
-    def _extract_prices(
-        self, text: str
-    ) -> tuple[float | None, float | None, int | None]:
+    def _extract_prices(self, text: str) -> tuple[float | None, float | None, int | None]:
         """Extract original price, sale price, and discount percentage from text.
 
         Args:

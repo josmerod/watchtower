@@ -130,9 +130,7 @@ class TechnologyAdoptionAnalyzer:
         try:
             # Initialize with default models
             self.prediction_models = {
-                "adoption_predictor": RandomForestRegressor(
-                    n_estimators=100, random_state=42, max_depth=10
-                ),
+                "adoption_predictor": RandomForestRegressor(n_estimators=100, random_state=42, max_depth=10),
                 "growth_predictor": LinearRegression(),
                 "scaler": StandardScaler(),
             }
@@ -141,9 +139,7 @@ class TechnologyAdoptionAnalyzer:
 
         except Exception as e:
             self.logger.error(f"Failed to setup prediction models: {e}")
-            raise TechnologyAdoptionAnalysisError(
-                "Failed to initialize prediction models", cause=e
-            )
+            raise TechnologyAdoptionAnalysisError("Failed to initialize prediction models", cause=e)
 
     async def analyze_framework_battles(
         self,
@@ -165,14 +161,10 @@ class TechnologyAdoptionAnalyzer:
                 self.logger.debug(f"Analyzing {category.value} frameworks")
 
                 # Get framework data for this category
-                framework_data = await self._gather_framework_data(
-                    config["frameworks"], config["keywords"]
-                )
+                framework_data = await self._gather_framework_data(config["frameworks"], config["keywords"])
 
                 if not framework_data:
-                    self.logger.warning(
-                        f"No data available for {category.value} frameworks"
-                    )
+                    self.logger.warning(f"No data available for {category.value} frameworks")
                     continue
 
                 # Perform comparative analysis
@@ -182,14 +174,9 @@ class TechnologyAdoptionAnalyzer:
                 battle = self._create_framework_battle(category, comparison_results)
                 battles[category] = battle
 
-                self.logger.info(
-                    f"{category.value} battle analyzed: "
-                    f"Winner={battle.winner}, Runner-up={battle.runner_up}"
-                )
+                self.logger.info(f"{category.value} battle analyzed: " f"Winner={battle.winner}, Runner-up={battle.runner_up}")
 
-            self.logger.info(
-                f"Completed framework battle analysis for {len(battles)} categories"
-            )
+            self.logger.info(f"Completed framework battle analysis for {len(battles)} categories")
             return battles
 
         except Exception as e:
@@ -200,9 +187,7 @@ class TechnologyAdoptionAnalyzer:
                 cause=e,
             )
 
-    async def _gather_framework_data(
-        self, frameworks: list[str], keywords: list[str]
-    ) -> dict[str, dict[str, Any]]:
+    async def _gather_framework_data(self, frameworks: list[str], keywords: list[str]) -> dict[str, dict[str, Any]]:
         """Gather framework data from multiple sources.
 
         Args:
@@ -222,9 +207,7 @@ class TechnologyAdoptionAnalyzer:
             dev_data = await self._get_dev_community_data()
 
             for framework in frameworks:
-                metrics = await self._extract_framework_metrics(
-                    framework, keywords, github_data, dev_data
-                )
+                metrics = await self._extract_framework_metrics(framework, keywords, github_data, dev_data)
 
                 if metrics:
                     framework_data[framework] = metrics
@@ -312,19 +295,13 @@ class TechnologyAdoptionAnalyzer:
             # Calculate derived metrics
             metrics = self._calculate_derived_metrics(metrics)
 
-            return (
-                metrics
-                if any(v > 0 for k, v in metrics.items() if isinstance(v, (int, float)))
-                else None
-            )
+            return metrics if any(v > 0 for k, v in metrics.items() if isinstance(v, (int, float))) else None
 
         except Exception as e:
             self.logger.warning(f"Failed to extract metrics for {framework}: {e}")
             return None
 
-    def _extract_github_metrics(
-        self, framework: str, github_data: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def _extract_github_metrics(self, framework: str, github_data: list[dict[str, Any]]) -> dict[str, Any]:
         """Extract GitHub-specific metrics for a framework.
 
         Args:
@@ -347,11 +324,7 @@ class TechnologyAdoptionAnalyzer:
             repo_topics = [topic.lower() for topic in repo.get("topics", [])]
 
             # Check if repository is related to the framework
-            if (
-                framework_lower in repo_name
-                or framework_lower in repo_description
-                or framework_lower in repo_topics
-            ):
+            if framework_lower in repo_name or framework_lower in repo_description or framework_lower in repo_topics:
                 total_stars += repo.get("stars", 0)
                 total_forks += repo.get("forks", 0)
 
@@ -371,9 +344,7 @@ class TechnologyAdoptionAnalyzer:
 
         return metrics
 
-    def _extract_dev_metrics(
-        self, framework: str, keywords: list[str], dev_data: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def _extract_dev_metrics(self, framework: str, keywords: list[str], dev_data: list[dict[str, Any]]) -> dict[str, Any]:
         """Extract DEV community metrics for a framework.
 
         Args:
@@ -399,9 +370,7 @@ class TechnologyAdoptionAnalyzer:
             # Check if article mentions the framework
             article_text = f"{title} {content} {' '.join(tags)}"
 
-            if framework_lower in article_text or any(
-                keyword in article_text for keyword in keyword_set
-            ):
+            if framework_lower in article_text or any(keyword in article_text for keyword in keyword_set):
                 mentions += 1
 
                 engagement_score = article.get("engagement_score", 0)
@@ -412,16 +381,9 @@ class TechnologyAdoptionAnalyzer:
             metrics.update(
                 {
                     "dev_mentions": mentions,
-                    "dev_engagement_score": round(
-                        statistics.mean(engagement_scores), 2
-                    ),
+                    "dev_engagement_score": round(statistics.mean(engagement_scores), 2),
                     "dev_trend_score": round(
-                        sum(
-                            article.get("trend_score", 0)
-                            for article in dev_data
-                            if framework_lower in article.get("title", "").lower()
-                        )
-                        / max(mentions, 1),
+                        sum(article.get("trend_score", 0) for article in dev_data if framework_lower in article.get("title", "").lower()) / max(mentions, 1),
                         2,
                     ),
                 }
@@ -442,9 +404,7 @@ class TechnologyAdoptionAnalyzer:
             # Calculate popularity score
             github_component = min((metrics.get("github_stars", 0) / 10000) * 40, 40)
             dev_component = min((metrics.get("dev_mentions", 0) / 100) * 30, 30)
-            activity_component = min(
-                (metrics.get("github_activity_score", 0) / 100) * 30, 30
-            )
+            activity_component = min((metrics.get("github_activity_score", 0) / 100) * 30, 30)
 
             popularity_score = github_component + dev_component + activity_component
             metrics["popularity_score"] = round(popularity_score, 2)
@@ -477,9 +437,7 @@ class TechnologyAdoptionAnalyzer:
             metrics["maturity_level"] = maturity
 
             # Calculate trend score
-            trend_score = (
-                popularity_score * 0.6 + (metrics.get("growth_rate", 0) * 100) * 0.4
-            )
+            trend_score = popularity_score * 0.6 + (metrics.get("growth_rate", 0) * 100) * 0.4
             metrics["trend_score"] = round(trend_score, 2)
 
         except Exception as e:
@@ -487,9 +445,7 @@ class TechnologyAdoptionAnalyzer:
 
         return metrics
 
-    def _compare_frameworks(
-        self, framework_data: dict[str, dict[str, Any]]
-    ) -> list[TechnologyComparisonModel]:
+    def _compare_frameworks(self, framework_data: dict[str, dict[str, Any]]) -> list[TechnologyComparisonModel]:
         """Compare frameworks within a category.
 
         Args:
@@ -523,16 +479,10 @@ class TechnologyAdoptionAnalyzer:
                     category=self._determine_category(framework_name),
                     popularity_score=metrics.get("popularity_score", 0),
                     growth_rate=metrics.get("growth_rate", 0),
-                    community_health=min(
-                        metrics.get("dev_engagement_score", 0) * 10, 100
-                    ),
-                    job_market_demand=self._estimate_job_demand(
-                        framework_name, metrics
-                    ),
+                    community_health=min(metrics.get("dev_engagement_score", 0) * 10, 100),
+                    job_market_demand=self._estimate_job_demand(framework_name, metrics),
                     learning_curve=self._assess_learning_curve(framework_name),
-                    maturity_level=MaturityLevel(
-                        metrics.get("maturity_level", "emerging")
-                    ),
+                    maturity_level=MaturityLevel(metrics.get("maturity_level", "emerging")),
                     ecosystem_size=self._estimate_ecosystem_size(metrics),
                     performance_score=self._estimate_performance_score(framework_name),
                     overall_rank=rank,
@@ -545,16 +495,12 @@ class TechnologyAdoptionAnalyzer:
                 comparisons.append(comparison)
 
             except Exception as e:
-                self.logger.warning(
-                    f"Failed to create comparison for {framework_name}: {e}"
-                )
+                self.logger.warning(f"Failed to create comparison for {framework_name}: {e}")
                 continue
 
         return comparisons
 
-    def _analyze_strengths_weaknesses(
-        self, metrics: dict[str, Any]
-    ) -> tuple[list[str], list[str]]:
+    def _analyze_strengths_weaknesses(self, metrics: dict[str, Any]) -> tuple[list[str], list[str]]:
         """Analyze framework strengths and weaknesses.
 
         Args:
@@ -615,9 +561,7 @@ class TechnologyAdoptionAnalyzer:
 
         return round(min(score, 100), 2)
 
-    def _determine_use_cases(
-        self, framework_name: str, metrics: dict[str, Any]
-    ) -> list[str]:
+    def _determine_use_cases(self, framework_name: str, metrics: dict[str, Any]) -> list[str]:
         """Determine recommended use cases for a framework.
 
         Args:
@@ -703,9 +647,7 @@ class TechnologyAdoptionAnalyzer:
             ],
         }
 
-        use_cases = framework_use_cases.get(
-            framework_name.lower(), ["General purpose development"]
-        )
+        use_cases = framework_use_cases.get(framework_name.lower(), ["General purpose development"])
 
         # Add maturity-based recommendations
         if metrics.get("maturity_level") == "established":
@@ -729,9 +671,7 @@ class TechnologyAdoptionAnalyzer:
                 return category
         return TechnologyCategory.GENERAL
 
-    def _estimate_job_demand(
-        self, framework_name: str, metrics: dict[str, Any]
-    ) -> float:
+    def _estimate_job_demand(self, framework_name: str, metrics: dict[str, Any]) -> float:
         """Estimate job market demand for a framework.
 
         Args:
@@ -842,9 +782,7 @@ class TechnologyAdoptionAnalyzer:
 
         return performance_scores.get(framework_name.lower(), 60.0)
 
-    def _create_framework_battle(
-        self, category: TechnologyCategory, comparisons: list[TechnologyComparisonModel]
-    ) -> FrameworkBattleModel:
+    def _create_framework_battle(self, category: TechnologyCategory, comparisons: list[TechnologyComparisonModel]) -> FrameworkBattleModel:
         """Create a framework battle model from comparison results.
 
         Args:
@@ -855,52 +793,30 @@ class TechnologyAdoptionAnalyzer:
             Framework battle model.
         """
         if not comparisons:
-            raise TechnologyAdoptionAnalysisError(
-                f"No frameworks available for {category.value} battle"
-            )
+            raise TechnologyAdoptionAnalysisError(f"No frameworks available for {category.value} battle")
 
         # Sort by overall score
-        sorted_comparisons = sorted(
-            comparisons, key=lambda x: x.recommendation_score, reverse=True
-        )
+        sorted_comparisons = sorted(comparisons, key=lambda x: x.recommendation_score, reverse=True)
 
         winner = sorted_comparisons[0].technology_name
-        runner_up = (
-            sorted_comparisons[1].technology_name
-            if len(sorted_comparisons) > 1
-            else winner
-        )
+        runner_up = sorted_comparisons[1].technology_name if len(sorted_comparisons) > 1 else winner
 
         # Find rising star (highest growth rate)
-        rising_star = (
-            max(comparisons, key=lambda x: x.growth_rate).technology_name
-            if comparisons
-            else None
-        )
+        rising_star = max(comparisons, key=lambda x: x.growth_rate).technology_name if comparisons else None
 
         # Market analysis
-        market_share_leader = max(
-            comparisons, key=lambda x: x.popularity_score
-        ).technology_name
+        market_share_leader = max(comparisons, key=lambda x: x.popularity_score).technology_name
 
-        developer_preference = max(
-            comparisons, key=lambda x: x.community_health
-        ).technology_name
+        developer_preference = max(comparisons, key=lambda x: x.community_health).technology_name
 
-        enterprise_adoption = max(
-            comparisons, key=lambda x: x.job_market_demand
-        ).technology_name
+        enterprise_adoption = max(comparisons, key=lambda x: x.job_market_demand).technology_name
 
         # Simple predictions (6 and 12 month)
         predicted_winner_6m = winner  # Conservative prediction
-        predicted_winner_12m = (
-            rising_star if rising_star and rising_star != winner else winner
-        )
+        predicted_winner_12m = rising_star if rising_star and rising_star != winner else winner
 
         # Calculate confidence scores
-        confidence_score = min(
-            len(comparisons) / 4, 1.0
-        )  # More frameworks = higher confidence
+        confidence_score = min(len(comparisons) / 4, 1.0)  # More frameworks = higher confidence
         data_quality_score = 0.8  # Assuming good data quality
 
         return FrameworkBattleModel(
@@ -918,9 +834,7 @@ class TechnologyAdoptionAnalyzer:
             data_quality_score=data_quality_score,
         )
 
-    async def predict_adoption_trends(
-        self, timeframe_months: int = 12
-    ) -> dict[str, TechnologyPredictionModel]:
+    async def predict_adoption_trends(self, timeframe_months: int = 12) -> dict[str, TechnologyPredictionModel]:
         """Predict technology adoption trends using ML.
 
         Args:
@@ -932,9 +846,7 @@ class TechnologyAdoptionAnalyzer:
         Raises:
             TechnologyAdoptionAnalysisError: If prediction fails.
         """
-        self.logger.info(
-            f"Starting adoption trend predictions for {timeframe_months} months"
-        )
+        self.logger.info(f"Starting adoption trend predictions for {timeframe_months} months")
 
         try:
             predictions = {}
@@ -943,28 +855,20 @@ class TechnologyAdoptionAnalyzer:
             current_technologies = await self._gather_current_technology_data()
 
             if not current_technologies:
-                raise TechnologyAdoptionAnalysisError(
-                    "No current technology data available"
-                )
+                raise TechnologyAdoptionAnalysisError("No current technology data available")
 
             for tech_name, tech_data in current_technologies.items():
                 try:
-                    prediction = await self._predict_single_technology(
-                        tech_name, tech_data, timeframe_months
-                    )
+                    prediction = await self._predict_single_technology(tech_name, tech_data, timeframe_months)
 
                     if prediction:
                         predictions[tech_name] = prediction
 
                 except Exception as e:
-                    self.logger.warning(
-                        f"Failed to predict trends for {tech_name}: {e}"
-                    )
+                    self.logger.warning(f"Failed to predict trends for {tech_name}: {e}")
                     continue
 
-            self.logger.info(
-                f"Generated predictions for {len(predictions)} technologies"
-            )
+            self.logger.info(f"Generated predictions for {len(predictions)} technologies")
             return predictions
 
         except Exception as e:
@@ -986,9 +890,7 @@ class TechnologyAdoptionAnalyzer:
         try:
             # Collect data from all framework categories
             for category, config in self.framework_categories.items():
-                framework_data = await self._gather_framework_data(
-                    config["frameworks"], config["keywords"]
-                )
+                framework_data = await self._gather_framework_data(config["frameworks"], config["keywords"])
                 current_data.update(framework_data)
 
         except Exception as e:
@@ -996,9 +898,7 @@ class TechnologyAdoptionAnalyzer:
 
         return current_data
 
-    async def _predict_single_technology(
-        self, tech_name: str, tech_data: dict[str, Any], timeframe_months: int
-    ) -> TechnologyPredictionModel | None:
+    async def _predict_single_technology(self, tech_name: str, tech_data: dict[str, Any], timeframe_months: int) -> TechnologyPredictionModel | None:
         """Predict adoption trends for a single technology.
 
         Args:
@@ -1053,9 +953,7 @@ class TechnologyAdoptionAnalyzer:
                 key_drivers=key_drivers,
                 risk_factors=risk_factors,
                 recommendation=recommendation,
-                early_adoption_indicators=self._identify_early_adoption_indicators(
-                    tech_data
-                ),
+                early_adoption_indicators=self._identify_early_adoption_indicators(tech_data),
                 competitive_threats=self._identify_competitive_threats(tech_name),
             )
 
@@ -1111,9 +1009,7 @@ class TechnologyAdoptionAnalyzer:
 
         return min(confidence, 1.0)
 
-    def _identify_key_drivers(
-        self, tech_data: dict[str, Any], predicted_growth: float
-    ) -> list[str]:
+    def _identify_key_drivers(self, tech_data: dict[str, Any], predicted_growth: float) -> list[str]:
         """Identify key growth drivers for a technology.
 
         Args:
@@ -1142,9 +1038,7 @@ class TechnologyAdoptionAnalyzer:
 
         return drivers
 
-    def _identify_risk_factors(
-        self, tech_data: dict[str, Any], predicted_growth: float
-    ) -> list[str]:
+    def _identify_risk_factors(self, tech_data: dict[str, Any], predicted_growth: float) -> list[str]:
         """Identify risk factors for a technology.
 
         Args:
@@ -1170,9 +1064,7 @@ class TechnologyAdoptionAnalyzer:
 
         return risks
 
-    def _generate_recommendation(
-        self, predicted_growth: float, confidence: float
-    ) -> str:
+    def _generate_recommendation(self, predicted_growth: float, confidence: float) -> str:
         """Generate adoption recommendation based on prediction.
 
         Args:
@@ -1193,9 +1085,7 @@ class TechnologyAdoptionAnalyzer:
         else:
             return "Avoid - Declining trend predicted"
 
-    def _identify_early_adoption_indicators(
-        self, tech_data: dict[str, Any]
-    ) -> list[str]:
+    def _identify_early_adoption_indicators(self, tech_data: dict[str, Any]) -> list[str]:
         """Identify early adoption indicators.
 
         Args:

@@ -4,7 +4,7 @@ import asyncio
 import json
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import aiohttp
 from pydantic import Field, validator
@@ -25,8 +25,8 @@ class WatcherState(TimestampedModel):
     """Model for watcher state persistence."""
 
     watcher_name: str = Field(..., description="Name of the watcher")
-    last_check: Optional[datetime] = Field(None, description="Last check timestamp")
-    last_value: Optional[str] = Field(None, description="Last extracted value")
+    last_check: datetime | None = Field(None, description="Last check timestamp")
+    last_value: str | None = Field(None, description="Last extracted value")
     check_count: int = Field(default=0, description="Total number of checks performed")
     error_count: int = Field(default=0, description="Number of errors encountered")
     success_rate: float = Field(default=0.0, description="Success rate percentage")
@@ -47,12 +47,10 @@ class WatcherEvent(TimestampedModel):
 
     watcher_name: str = Field(..., description="Name of the watcher")
     event_type: str = Field(..., description="Type of event")
-    old_value: Optional[Any] = Field(None, description="Previous value")
-    new_value: Optional[Any] = Field(None, description="Current value")
-    url: Optional[str] = Field(None, description="URL being watched")
-    details: Dict[str, Any] = Field(
-        default_factory=dict, description="Additional event details"
-    )
+    old_value: Any | None = Field(None, description="Previous value")
+    new_value: Any | None = Field(None, description="Current value")
+    url: str | None = Field(None, description="URL being watched")
+    details: dict[str, Any] = Field(default_factory=dict, description="Additional event details")
 
     @validator("event_type")
     def validate_event_type(cls, v):
@@ -75,33 +73,25 @@ class WatcherConfig(BaseWatchtowerModel):
 
     name: str = Field(..., description="Unique name for the watcher")
     url: str = Field(..., description="URL to watch")
-    check_interval: int = Field(
-        default=3600, ge=1, description="Check interval in seconds"
-    )
+    check_interval: int = Field(default=3600, ge=1, description="Check interval in seconds")
     max_retries: int = Field(default=3, ge=1, description="Maximum retry attempts")
-    retry_delay: int = Field(
-        default=5, ge=1, description="Delay between retries in seconds"
-    )
+    retry_delay: int = Field(default=5, ge=1, description="Delay between retries in seconds")
     timeout: int = Field(default=30, ge=1, description="Request timeout in seconds")
     enabled: bool = Field(default=True, description="Whether the watcher is enabled")
-    alert_threshold: Optional[int] = Field(
-        None, description="Alert after N consecutive failures"
-    )
+    alert_threshold: int | None = Field(None, description="Alert after N consecutive failures")
 
     @validator("name")
     def validate_name(cls, v):
         """Validate watcher name."""
         if not v.replace("_", "").replace("-", "").isalnum():
-            raise ValueError(
-                "Watcher name must be alphanumeric with underscores/hyphens"
-            )
+            raise ValueError("Watcher name must be alphanumeric with underscores/hyphens")
         return v
 
 
 class EnhancedWatcher(ABC):
     """Enhanced base class for all watchers with modern architecture."""
 
-    def __init__(self, config: Union[WatcherConfig, Dict[str, Any]]):
+    def __init__(self, config: WatcherConfig | dict[str, Any]):
         """Initialize the enhanced watcher.
 
         Args:
@@ -127,9 +117,7 @@ class EnhancedWatcher(ABC):
 
     def _setup_storage(self) -> None:
         """Setup storage directories and paths."""
-        self.watcher_dir = self.fs_manager.get_absolute_path(
-            f"data/watchers/{self.config.name}"
-        )
+        self.watcher_dir = self.fs_manager.get_absolute_path(f"data/watchers/{self.config.name}")
         self.events_dir = self.watcher_dir / "events"
         self.state_file = self.watcher_dir / "state.json"
 
@@ -145,7 +133,7 @@ class EnhancedWatcher(ABC):
         """Load watcher state from file."""
         try:
             if self.state_file.exists():
-                with open(self.state_file, "r", encoding="utf-8") as f:
+                with open(self.state_file, encoding="utf-8") as f:
                     data = json.load(f)
                 return WatcherState(**data)
         except Exception as e:
@@ -171,7 +159,7 @@ class EnhancedWatcher(ABC):
         event_type: str,
         old_value: Any = None,
         new_value: Any = None,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> WatcherEvent:
         """Record a watcher event.
 
@@ -224,9 +212,7 @@ class EnhancedWatcher(ABC):
                     response.raise_for_status()
                     content = await response.text()
 
-                    self.logger.debug(
-                        f"Fetched {len(content)} characters from {self.config.url}"
-                    )
+                    self.logger.debug(f"Fetched {len(content)} characters from {self.config.url}")
                     return content
 
         except asyncio.TimeoutError as e:
@@ -238,7 +224,7 @@ class EnhancedWatcher(ABC):
             ) from e
         except Exception as e:
             raise WatcherError(
-                message=f"Failed to fetch {self.config.url}: {str(e)}",
+                message=f"Failed to fetch {self.config.url}: {e!s}",
                 error_code="FETCH_FAILED",
                 context={
                     "watcher": self.config.name,
@@ -272,9 +258,7 @@ class EnhancedWatcher(ABC):
         """
         pass
 
-    def trigger_alert(
-        self, old_value: Any, new_value: Any, details: Optional[Dict[str, Any]] = None
-    ) -> None:
+    def trigger_alert(self, old_value: Any, new_value: Any, details: dict[str, Any] | None = None) -> None:
         """Trigger an alert when a significant change is detected.
 
         Args:
@@ -282,9 +266,7 @@ class EnhancedWatcher(ABC):
             new_value: Current value.
             details: Additional alert details.
         """
-        self.logger.warning(
-            f"CHANGE DETECTED in {self.config.name}: {old_value} -> {new_value}"
-        )
+        self.logger.warning(f"CHANGE DETECTED in {self.config.name}: {old_value} -> {new_value}")
 
         # Record the change event
         self._record_event(
@@ -338,9 +320,7 @@ class EnhancedWatcher(ABC):
                         details={"check_time": now.isoformat()},
                     )
             else:
-                self.logger.info(
-                    f"First check for {self.config.name}, value: {current_value}"
-                )
+                self.logger.info(f"First check for {self.config.name}, value: {current_value}")
 
             # Update state
             self.state.last_check = now
@@ -375,14 +355,8 @@ class EnhancedWatcher(ABC):
             )
 
             # Check if we should alert on consecutive failures
-            if (
-                self.config.alert_threshold
-                and self.consecutive_failures >= self.config.alert_threshold
-            ):
-                self.logger.error(
-                    f"Watcher {self.config.name} has failed {self.consecutive_failures} "
-                    f"consecutive times (threshold: {self.config.alert_threshold})"
-                )
+            if self.config.alert_threshold and self.consecutive_failures >= self.config.alert_threshold:
+                self.logger.error(f"Watcher {self.config.name} has failed {self.consecutive_failures} " f"consecutive times (threshold: {self.config.alert_threshold})")
                 self._record_event(
                     "threshold_exceeded",
                     details={"consecutive_failures": self.consecutive_failures},
@@ -404,20 +378,15 @@ class EnhancedWatcher(ABC):
                 return await self.check()
             except Exception as e:
                 if attempt < self.config.max_retries - 1:
-                    self.logger.warning(
-                        f"Attempt {attempt + 1}/{self.config.max_retries} failed for "
-                        f"{self.config.name}: {e}. Retrying in {self.config.retry_delay}s..."
-                    )
+                    self.logger.warning(f"Attempt {attempt + 1}/{self.config.max_retries} failed for " f"{self.config.name}: {e}. Retrying in {self.config.retry_delay}s...")
                     await asyncio.sleep(self.config.retry_delay)
                 else:
-                    self.logger.error(
-                        f"All {self.config.max_retries} attempts failed for {self.config.name}"
-                    )
+                    self.logger.error(f"All {self.config.max_retries} attempts failed for {self.config.name}")
                     return False
 
         return False
 
-    async def run_continuous(self, max_iterations: Optional[int] = None) -> None:
+    async def run_continuous(self, max_iterations: int | None = None) -> None:
         """Run the watcher continuously.
 
         Args:
@@ -432,29 +401,21 @@ class EnhancedWatcher(ABC):
 
                 iteration += 1
                 if max_iterations is not None:
-                    self.logger.debug(
-                        f"Iteration {iteration}/{max_iterations} completed"
-                    )
+                    self.logger.debug(f"Iteration {iteration}/{max_iterations} completed")
 
                 # Wait for next check
-                self.logger.debug(
-                    f"Waiting {self.config.check_interval} seconds until next check"
-                )
+                self.logger.debug(f"Waiting {self.config.check_interval} seconds until next check")
                 await asyncio.sleep(self.config.check_interval)
 
         except KeyboardInterrupt:
-            self.logger.info(
-                f"Stopping watcher {self.config.name} due to keyboard interrupt"
-            )
+            self.logger.info(f"Stopping watcher {self.config.name} due to keyboard interrupt")
         except Exception as e:
             self.logger.error(f"Unexpected error in continuous monitoring: {e}")
             raise
         finally:
-            self.logger.info(
-                f"Watcher {self.config.name} stopped after {iteration} iterations"
-            )
+            self.logger.info(f"Watcher {self.config.name} stopped after {iteration} iterations")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current watcher status.
 
         Returns:
@@ -464,9 +425,7 @@ class EnhancedWatcher(ABC):
             "name": self.config.name,
             "enabled": self.config.enabled,
             "url": self.config.url,
-            "last_check": (
-                self.state.last_check.isoformat() if self.state.last_check else None
-            ),
+            "last_check": (self.state.last_check.isoformat() if self.state.last_check else None),
             "last_value": self.state.last_value,
             "check_count": self.state.check_count,
             "error_count": self.state.error_count,

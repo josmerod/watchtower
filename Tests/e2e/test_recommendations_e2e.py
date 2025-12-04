@@ -4,8 +4,9 @@ This test suite validates the complete user experience of the recommendations
 system, including UI interactions, feedback mechanisms, and dismiss functionality.
 """
 
-import pytest
 import time
+
+import pytest
 from playwright.sync_api import Page, expect
 
 
@@ -16,8 +17,13 @@ class TestRecommendationsE2E:
     def setup_test_data(self, temp_dir):
         """Set up test data for E2E tests."""
         from src.recommendations.activity_tracker import UserActivityTracker
+        from src.recommendations.models import (
+            ActivityEvent,
+            ActivityType,
+            Recommendation,
+            RecommendationType,
+        )
         from src.recommendations.recommendation_engine import RecommendationEngine
-        from src.recommendations.models import ActivityEvent, ActivityType, Recommendation, RecommendationType
 
         # Create test user activities to generate recommendations
         activity_tracker = UserActivityTracker(data_dir=temp_dir)
@@ -72,12 +78,20 @@ class TestRecommendationsE2E:
 
         # Create mock recommendations for testing
         recommendations = []
-        recommendation_types = [RecommendationType.TOP_SOURCE, RecommendationType.TOP_CATEGORY, RecommendationType.SIMILAR_CONTENT]
-        titles = ["Advanced Machine Learning", "AI Research Trends", "Deep Learning Applications"]
+        recommendation_types = [
+            RecommendationType.TOP_SOURCE,
+            RecommendationType.TOP_CATEGORY,
+            RecommendationType.SIMILAR_CONTENT,
+        ]
+        titles = [
+            "Advanced Machine Learning",
+            "AI Research Trends",
+            "Deep Learning Applications",
+        ]
         descriptions = [
             "Based on your frequent reading of machine learning papers",
             "Popular in AI - a category you engage with frequently",
-            "Similar to 'Deep Learning Advances' which you recently viewed"
+            "Similar to 'Deep Learning Advances' which you recently viewed",
         ]
 
         for i, rec_type in enumerate(recommendation_types):
@@ -95,6 +109,7 @@ class TestRecommendationsE2E:
 
         # Save mock recommendations
         from src.recommendations.models import UserRecommendations
+
         user_recommendations = UserRecommendations(
             user_id="test_user",
             recommendations=recommendations,
@@ -123,7 +138,10 @@ class TestRecommendationsE2E:
             recommendations_tab.first.click()
 
         # Wait for recommendations content to load
-        dashboard_page.wait_for_selector("[data-testid='recommendations-container'], .recommendations-content, h4:has-text('Recommended for You')", timeout=10000)
+        dashboard_page.wait_for_selector(
+            "[data-testid='recommendations-container'], .recommendations-content, h4:has-text('Recommended for You')",
+            timeout=10000,
+        )
 
         # Verify recommendations section is visible
         expect(dashboard_page.locator("h4:has-text('Recommended for You')")).to_be_visible()
@@ -264,7 +282,11 @@ class TestRecommendationsE2E:
         similar_content_section = dashboard_page.locator("h5:has-text('Similar Content'), h5:has-text('🔗')")
 
         # At least one section should be visible if recommendations exist
-        sections = [top_sources_section, top_categories_section, similar_content_section]
+        sections = [
+            top_sources_section,
+            top_categories_section,
+            similar_content_section,
+        ]
         visible_sections = [section for section in sections if section.count() > 0]
 
         if visible_sections:
@@ -343,7 +365,10 @@ class TestRecommendationsE2E:
 
         # Wait for recommendations to be visible
         try:
-            dashboard_page.wait_for_selector(".card:has(.card-title), .recommendation-card, .no-recommendations", timeout=5000)
+            dashboard_page.wait_for_selector(
+                ".card:has(.card-title), .recommendation-card, .no-recommendations",
+                timeout=5000,
+            )
             load_time = time.time() - start_time
 
             # Verify load time is reasonable (< 5 seconds)

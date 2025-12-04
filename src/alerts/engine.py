@@ -9,10 +9,9 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from src.config.settings import get_settings
 from src.utils.file_system import ensure_directories, get_project_root
@@ -39,11 +38,11 @@ class AlertEngine:
         self.data_dir = self.project_root / "data" / "alerts"
 
         # Cache for loaded rules
-        self._rules_cache: Dict[str, List[AlertRule]] = {}
-        self._rules_cache_timestamp: Dict[str, datetime] = {}
+        self._rules_cache: dict[str, list[AlertRule]] = {}
+        self._rules_cache_timestamp: dict[str, datetime] = {}
 
         # Deduplication cache (content_hash -> timestamp)
-        self._dedup_cache: Dict[str, datetime] = {}
+        self._dedup_cache: dict[str, datetime] = {}
         self._dedup_window = timedelta(hours=1)  # 1-hour deduplication window
 
         # Thread lock for thread safety
@@ -56,7 +55,7 @@ class AlertEngine:
 
         self.logger.info("AlertEngine initialized")
 
-    def evaluate_content(self, content: Dict[str, Any], user_id: str) -> List[AlertEvent]:
+    def evaluate_content(self, content: dict[str, Any], user_id: str) -> list[AlertEvent]:
         """Evaluate content against user's alert rules.
 
         Args:
@@ -75,7 +74,7 @@ class AlertEngine:
 
                 # Check for duplicates within deduplication window
                 if self._is_duplicate(content_hash):
-                    self.logger.debug(f"Content duplicate detected, skipping evaluation")
+                    self.logger.debug("Content duplicate detected, skipping evaluation")
                     return []
 
                 # Load user's alert rules
@@ -113,7 +112,7 @@ class AlertEngine:
             self._errors_count += 1
             return []
 
-    def _generate_content_hash(self, content: Dict[str, Any]) -> str:
+    def _generate_content_hash(self, content: dict[str, Any]) -> str:
         """Generate a unique hash for content deduplication.
 
         Args:
@@ -136,7 +135,7 @@ class AlertEngine:
         content_json = json.dumps(hashable_content, sort_keys=True, ensure_ascii=False)
 
         # Generate SHA-256 hash
-        return hashlib.sha256(content_json.encode('utf-8')).hexdigest()
+        return hashlib.sha256(content_json.encode("utf-8")).hexdigest()
 
     def _is_duplicate(self, content_hash: str) -> bool:
         """Check if content has already been processed within deduplication window.
@@ -171,15 +170,12 @@ class AlertEngine:
         Args:
             now: Current timestamp
         """
-        expired_hashes = [
-            hash_val for hash_val, timestamp in self._dedup_cache.items()
-            if (now - timestamp) >= self._dedup_window
-        ]
+        expired_hashes = [hash_val for hash_val, timestamp in self._dedup_cache.items() if (now - timestamp) >= self._dedup_window]
 
         for hash_val in expired_hashes:
             del self._dedup_cache[hash_val]
 
-    def _load_user_rules(self, user_id: str) -> List[AlertRule]:
+    def _load_user_rules(self, user_id: str) -> list[AlertRule]:
         """Load alert rules for a specific user.
 
         Args:
@@ -204,7 +200,7 @@ class AlertEngine:
                 self.logger.debug(f"No rules file found for user {user_id}")
                 return []
 
-            with open(rules_file, 'r', encoding='utf-8') as f:
+            with open(rules_file, encoding="utf-8") as f:
                 rules_data = json.load(f)
 
             # Convert to AlertRule objects
@@ -228,7 +224,7 @@ class AlertEngine:
             self.logger.error(f"Error loading rules for user {user_id}: {e}")
             return []
 
-    def _create_alert_event(self, rule: AlertRule, content: Dict[str, Any], content_hash: str) -> AlertEvent:
+    def _create_alert_event(self, rule: AlertRule, content: dict[str, Any], content_hash: str) -> AlertEvent:
         """Create an alert event from a matching rule and content.
 
         Args:
@@ -260,10 +256,10 @@ class AlertEngine:
             content=content,
             content_hash=content_hash,
             message=message,
-            severity=severity
+            severity=severity,
         )
 
-    def _store_alert_events(self, user_id: str, events: List[AlertEvent]) -> None:
+    def _store_alert_events(self, user_id: str, events: list[AlertEvent]) -> None:
         """Store alert events to file system.
 
         Args:
@@ -282,7 +278,7 @@ class AlertEngine:
                 event_file = user_events_dir / event_filename
 
                 # Write event to file
-                with open(event_file, 'w', encoding='utf-8') as f:
+                with open(event_file, "w", encoding="utf-8") as f:
                     json.dump(event.dict(), f, indent=2, ensure_ascii=False, default=str)
 
             self.logger.info(f"Stored {len(events)} alert events for user {user_id}")
@@ -311,7 +307,7 @@ class AlertEngine:
                 self._rules_cache_timestamp.clear()
                 self.logger.info("Reloaded rules for all users")
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get alert engine performance metrics.
 
         Returns:
@@ -322,9 +318,7 @@ class AlertEngine:
                 "evaluations_count": self._evaluations_count,
                 "matches_count": self._matches_count,
                 "errors_count": self._errors_count,
-                "match_rate": (
-                    self._matches_count / max(self._evaluations_count, 1) * 100
-                ),
+                "match_rate": (self._matches_count / max(self._evaluations_count, 1) * 100),
                 "cached_users": len(self._rules_cache),
                 "dedup_cache_size": len(self._dedup_cache),
                 "dedup_window_hours": self._dedup_window.total_seconds() / 3600,

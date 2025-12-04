@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-🏯 Watchtower Dashboard - Unified Installer Script
+"""🏯 Watchtower Dashboard - Unified Installer Script
 📡 Real-time Intelligence & Monitoring Platform
 
 This script automatically detects your operating system and runs the appropriate
@@ -8,11 +7,11 @@ deployment script with proper timeout handling to avoid hanging.
 """
 
 import os
-import sys
-import subprocess
 import platform
-import time
 import signal
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 
@@ -36,28 +35,28 @@ def run_with_timeout(command, timeout_seconds=300):
     """Run a command with timeout handling"""
     print(f"[INFO] Running: {command}")
     print(f"[INFO] Timeout set to {timeout_seconds} seconds")
-    
+
     try:
         # Set up signal handler for timeout (Unix-like systems)
         if platform.system() != "Windows":
             signal.signal(signal.SIGALRM, timeout_handler)
             signal.alarm(timeout_seconds)
-        
+
         # Run the command
         result = subprocess.run(
             command,
             shell=True,
             capture_output=False,
             text=True,
-            timeout=timeout_seconds
+            timeout=timeout_seconds,
         )
-        
+
         # Cancel the alarm (Unix-like systems)
         if platform.system() != "Windows":
             signal.alarm(0)
-        
+
         return result.returncode == 0
-    
+
     except subprocess.TimeoutExpired:
         print(f"\n[ERROR] Command timed out after {timeout_seconds} seconds!")
         print("[INFO] Please check your network connection and try again.")
@@ -73,7 +72,7 @@ def run_with_timeout(command, timeout_seconds=300):
 def detect_os():
     """Detect the operating system"""
     system = platform.system().lower()
-    
+
     if system == "windows":
         return "windows"
     elif system == "darwin":
@@ -91,7 +90,7 @@ def check_python_version():
         print(f"[ERROR] Python 3.10+ required. Current version: {version.major}.{version.minor}")
         print("[INFO] Please upgrade Python and try again.")
         return False
-    
+
     print(f"[PASS] Python version: {version.major}.{version.minor}")
     return True
 
@@ -99,22 +98,22 @@ def check_python_version():
 def main():
     """Main installer function"""
     print_banner()
-    
+
     # Check if we're in the right directory
     if not Path("pyproject.toml").exists():
         print("[ERROR] pyproject.toml not found. Please run this script from the project root.")
         print(f"[ERROR] Current directory: {os.getcwd()}")
         sys.exit(1)
-    
+
     # Check Python version
     if not check_python_version():
         sys.exit(1)
-    
+
     # Detect operating system
     os_type = detect_os()
     print(f"[INFO] Detected OS: {os_type}")
     print()
-    
+
     # Select appropriate deployment script
     if os_type == "windows":
         script_name = "deploy_windows.bat"
@@ -132,13 +131,13 @@ def main():
         print("  macOS:   bash deploy_mac.sh")
         print("  Linux:   bash deploy_linux.sh")
         sys.exit(1)
-    
+
     # Check if deployment script exists
     if not Path(script_name).exists():
         print(f"[ERROR] Deployment script not found: {script_name}")
         print("[INFO] Please ensure all deployment scripts are present in the project root.")
         sys.exit(1)
-    
+
     # Make script executable on Unix-like systems
     if os_type in ["macos", "linux"]:
         try:
@@ -146,19 +145,19 @@ def main():
             print(f"[INFO] Made {script_name} executable")
         except Exception as e:
             print(f"[WARNING] Could not make script executable: {e}")
-    
+
     print(f"[INFO] Running deployment script: {script_name}")
     print(f"[INFO] Command: {command}")
     print()
-    
+
     # Run the deployment script with timeout
     start_time = time.time()
     success = run_with_timeout(command, timeout_seconds=600)  # 10 minute timeout
     end_time = time.time()
-    
+
     print()
     print("=" * 64)
-    
+
     if success:
         print("  ✅ Watchtower Installation Complete!")
         print("=" * 64)
@@ -199,12 +198,12 @@ def main():
         print("  3. Run the deployment script manually:")
         print(f"     {command}")
         print("  4. Check the documentation for manual setup instructions")
-        
+
         sys.exit(1)
-    
+
     print("=" * 64)
     print()
 
 
 if __name__ == "__main__":
-    main() 
+    main()

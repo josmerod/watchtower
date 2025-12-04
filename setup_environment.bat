@@ -26,7 +26,7 @@ if %errorlevel% neq 0 (
     echo ERROR: UV not found. Installing UV...
     echo.
     powershell -Command "& {try { Invoke-RestMethod -Uri 'https://astral.sh/uv/install.ps1' | Invoke-Expression } catch { Write-Host 'Failed to install UV automatically. Please install manually.' -ForegroundColor Red; exit 1 }}"
-    
+
     REM Check if UV is now available
     uv --version >nul 2>nul
     if %errorlevel% neq 0 (
@@ -39,7 +39,7 @@ if %errorlevel% neq 0 (
     )
 )
 
-echo UV version: 
+echo UV version:
 uv --version
 
 REM Create logs directory if it doesn't exist
@@ -88,16 +88,16 @@ timeout /t 2 /nobreak >nul
 REM Remove existing virtual environment if it exists
 if exist ".venv" (
     echo Removing existing virtual environment...
-    
+
     REM Try basic removal first
     rmdir /s /q ".venv" >nul 2>nul
-    
+
     REM If that fails, try PowerShell force removal
     if exist ".venv" (
         echo Using PowerShell force removal...
         powershell -Command "& {Get-ChildItem -Path '.venv' -Recurse -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item '.venv' -Recurse -Force -ErrorAction SilentlyContinue}"
     )
-    
+
     REM Final check
     if exist ".venv" (
         echo WARNING: Cannot remove .venv directory completely.
