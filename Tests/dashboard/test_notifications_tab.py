@@ -1,25 +1,21 @@
 """Tests for the notifications tab functionality."""
 
-import json
-import os
+# Mock the imports that might not be available
+import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-# Mock the imports that might not be available
-import sys
-from unittest.mock import MagicMock
-
 # Create mock modules for potentially missing dependencies
-sys.modules['src.alerts'] = MagicMock()
-sys.modules['src.alerts.models'] = MagicMock()
-sys.modules['src.alerts.engine'] = MagicMock()
-sys.modules['src.utils'] = MagicMock()
-sys.modules['src.utils.file_system'] = MagicMock()
-sys.modules['src.utils.logging'] = MagicMock()
-sys.modules['src.web.dashboard.components.rule_form'] = MagicMock()
+sys.modules["src.alerts"] = MagicMock()
+sys.modules["src.alerts.models"] = MagicMock()
+sys.modules["src.alerts.engine"] = MagicMock()
+sys.modules["src.utils"] = MagicMock()
+sys.modules["src.utils.file_system"] = MagicMock()
+sys.modules["src.utils.logging"] = MagicMock()
+sys.modules["src.web.dashboard.components.rule_form"] = MagicMock()
 
 # Import the notifications tab after mocking
 from src.web.dashboard.components.notifications_tab import (
@@ -33,7 +29,7 @@ from src.web.dashboard.components.notifications_tab import (
 class TestNotificationsManager:
     """Test the NotificationsManager class."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_project_root(self):
         """Create a temporary project root for testing."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -42,12 +38,12 @@ class TestNotificationsManager:
             data_dir.mkdir(parents=True, exist_ok=True)
             yield temp_path
 
-    @pytest.fixture
+    @pytest.fixture()
     def manager(self, temp_project_root):
         """Create a NotificationsManager instance with mocked project root."""
-        with patch('src.web.dashboard.components.notifications_tab.get_project_root_fallback') as mock_get_root:
+        with patch("src.web.dashboard.components.notifications_tab.get_project_root_fallback") as mock_get_root:
             mock_get_root.return_value = temp_project_root
-            with patch('src.web.dashboard.components.notifications_tab.ensure_directories_fallback') as mock_ensure:
+            with patch("src.web.dashboard.components.notifications_tab.ensure_directories_fallback") as mock_ensure:
                 manager = NotificationsManager()
                 mock_ensure.assert_called_once()
                 return manager
@@ -73,11 +69,11 @@ class TestNotificationsManager:
                 {
                     "condition_type": "keyword_match",
                     "value": "python",
-                    "operator": "contains"
+                    "operator": "contains",
                 }
             ],
             "active": True,
-            "notification_channels": ["browser"]
+            "notification_channels": ["browser"],
         }
 
         # Save the rule
@@ -98,7 +94,7 @@ class TestNotificationsManager:
             "name": "Test Rule",
             "conditions": [{"condition_type": "keyword_match", "value": "test"}],
             "active": True,
-            "notification_channels": ["browser"]
+            "notification_channels": ["browser"],
         }
 
         manager.save_rule(rule_data)
@@ -168,12 +164,10 @@ class TestRenderFunctions:
                 "name": "Test Rule 1",
                 "description": "A test rule",
                 "active": True,
-                "conditions": [
-                    {"condition_type": "keyword_match", "value": "python"}
-                ],
+                "conditions": [{"condition_type": "keyword_match", "value": "python"}],
                 "notification_channels": ["browser"],
                 "trigger_count": 0,
-                "last_triggered": None
+                "last_triggered": None,
             }
         ]
 
@@ -183,7 +177,7 @@ class TestRenderFunctions:
         # Should contain the condition
         assert "Keyword: python" in str(result)
 
-    @patch('src.web.dashboard.components.notifications_tab.NotificationsManager')
+    @patch("src.web.dashboard.components.notifications_tab.NotificationsManager")
     def test_render_notifications_tab(self, mock_manager_class):
         """Test rendering the notifications tab."""
         # Mock the manager instance
@@ -200,7 +194,7 @@ class TestRenderFunctions:
 class TestNotificationsManagerIntegration:
     """Integration tests for NotificationsManager."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_data_dir(self):
         """Create a temporary data directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -211,7 +205,7 @@ class TestNotificationsManagerIntegration:
 
     def test_round_trip_rule_management(self, temp_data_dir):
         """Test complete round-trip of rule management."""
-        with patch('src.web.dashboard.components.notifications_tab.get_project_root_fallback') as mock_get_root:
+        with patch("src.web.dashboard.components.notifications_tab.get_project_root_fallback") as mock_get_root:
             mock_get_root.return_value = temp_data_dir
 
             manager = NotificationsManager()
@@ -226,18 +220,18 @@ class TestNotificationsManagerIntegration:
                         "condition_type": "keyword_match",
                         "value": "machine learning",
                         "operator": "contains",
-                        "case_sensitive": False
+                        "case_sensitive": False,
                     },
                     {
                         "condition_type": "category_match",
                         "value": "Technology",
-                        "operator": "equals"
-                    }
+                        "operator": "equals",
+                    },
                 ],
                 "active": True,
                 "notification_channels": ["browser", "email"],
                 "trigger_count": 5,
-                "last_triggered": "2024-01-01T12:00:00Z"
+                "last_triggered": "2024-01-01T12:00:00Z",
             }
 
             # Save rule
@@ -274,7 +268,7 @@ class TestNotificationsManagerIntegration:
 
     def test_error_handling(self, temp_data_dir):
         """Test error handling in NotificationsManager."""
-        with patch('src.web.dashboard.components.notifications_tab.get_project_root_fallback') as mock_get_root:
+        with patch("src.web.dashboard.components.notifications_tab.get_project_root_fallback") as mock_get_root:
             mock_get_root.return_value = temp_data_dir
 
             manager = NotificationsManager()

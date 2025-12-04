@@ -95,15 +95,9 @@ class RequirementModel(TimestampedModel):
 
     title: str = Field(description="Requirement title")
     description: str = Field(description="Detailed requirement description")
-    is_mandatory: bool = Field(
-        default=True, description="Whether requirement is mandatory"
-    )
-    documentation_needed: list[str] = Field(
-        default_factory=list, description="List of required documents"
-    )
-    verification_method: str | None = Field(
-        default=None, description="How requirement is verified"
-    )
+    is_mandatory: bool = Field(default=True, description="Whether requirement is mandatory")
+    documentation_needed: list[str] = Field(default_factory=list, description="List of required documents")
+    verification_method: str | None = Field(default=None, description="How requirement is verified")
 
 
 class DocumentModel(TimestampedModel):
@@ -111,16 +105,10 @@ class DocumentModel(TimestampedModel):
 
     name: str = Field(description="Document name")
     description: str | None = Field(default=None, description="Document description")
-    is_mandatory: bool = Field(
-        default=True, description="Whether document is mandatory"
-    )
+    is_mandatory: bool = Field(default=True, description="Whether document is mandatory")
     format: str | None = Field(default=None, description="Required format (PDF, etc.)")
-    template_url: HttpUrl | None = Field(
-        default=None, description="URL to document template"
-    )
-    max_size_mb: float | None = Field(
-        default=None, description="Maximum file size in MB"
-    )
+    template_url: HttpUrl | None = Field(default=None, description="URL to document template")
+    max_size_mb: float | None = Field(default=None, description="Maximum file size in MB")
 
 
 class ContactInfoModel(TimestampedModel):
@@ -140,14 +128,10 @@ class AmountModel(TimestampedModel):
     min_amount: Decimal | None = Field(default=None, description="Minimum aid amount")
     max_amount: Decimal | None = Field(default=None, description="Maximum aid amount")
     fixed_amount: Decimal | None = Field(default=None, description="Fixed aid amount")
-    percentage: float | None = Field(
-        default=None, description="Percentage of eligible costs"
-    )
+    percentage: float | None = Field(default=None, description="Percentage of eligible costs")
     currency: str = Field(default="EUR", description="Currency code")
     payment_type: PaymentType = Field(description="Type of payment")
-    total_budget: Decimal | None = Field(
-        default=None, description="Total budget available"
-    )
+    total_budget: Decimal | None = Field(default=None, description="Total budget available")
 
     @field_validator("min_amount", "max_amount", "fixed_amount", "total_budget")
     @classmethod
@@ -163,14 +147,10 @@ class GeographicScopeModel(TimestampedModel):
 
     scope: AidScope = Field(description="Geographic scope level")
     country: str = Field(default="España", description="Country")
-    autonomous_community: str | None = Field(
-        default=None, description="Autonomous community"
-    )
+    autonomous_community: str | None = Field(default=None, description="Autonomous community")
     province: str | None = Field(default=None, description="Province")
     municipality: str | None = Field(default=None, description="Municipality")
-    postal_codes: list[str] = Field(
-        default_factory=list, description="Specific postal codes if applicable"
-    )
+    postal_codes: list[str] = Field(default_factory=list, description="Specific postal codes if applicable")
 
 
 class SpanishPublicAidModel(TimestampedModel):
@@ -188,100 +168,54 @@ class SpanishPublicAidModel(TimestampedModel):
 
     # Organizing entity
     organizing_entity: str = Field(description="Entity organizing the aid")
-    organizing_entity_type: str | None = Field(
-        default=None, description="Type of organizing entity"
-    )
-    ministry_department: str | None = Field(
-        default=None, description="Ministry or department"
-    )
+    organizing_entity_type: str | None = Field(default=None, description="Type of organizing entity")
+    ministry_department: str | None = Field(default=None, description="Ministry or department")
 
     # Beneficiaries
     beneficiary_type: BeneficiaryType = Field(description="Type of beneficiary")
-    target_population: str | None = Field(
-        default=None, description="Specific target population"
-    )
-    age_requirements: dict[str, Any] | None = Field(
-        default=None, description="Age requirements (min/max)"
-    )
-    income_requirements: dict[str, Any] | None = Field(
-        default=None, description="Income requirements"
-    )
+    target_population: str | None = Field(default=None, description="Specific target population")
+    age_requirements: dict[str, Any] | None = Field(default=None, description="Age requirements (min/max)")
+    income_requirements: dict[str, Any] | None = Field(default=None, description="Income requirements")
 
     # Financial information
     amount: AmountModel = Field(description="Aid amount information")
-    compatibility: str | None = Field(
-        default=None, description="Compatibility with other aids"
-    )
+    compatibility: str | None = Field(default=None, description="Compatibility with other aids")
 
     # Requirements and documentation
-    requirements: list[RequirementModel] = Field(
-        default_factory=list, description="List of requirements"
-    )
-    required_documents: list[DocumentModel] = Field(
-        default_factory=list, description="Required documents"
-    )
+    requirements: list[RequirementModel] = Field(default_factory=list, description="List of requirements")
+    required_documents: list[DocumentModel] = Field(default_factory=list, description="Required documents")
 
     # Dates and deadlines
-    publication_date: datetime | None = Field(
-        default=None, description="Publication date"
-    )
-    opening_date: datetime | None = Field(
-        default=None, description="Application opening date"
-    )
-    closing_date: datetime | None = Field(
-        default=None, description="Application closing date"
-    )
-    resolution_date: datetime | None = Field(
-        default=None, description="Expected resolution date"
-    )
-    payment_date: datetime | None = Field(
-        default=None, description="Expected payment date"
-    )
-    validity_period: dict[str, Any] | None = Field(
-        default=None, description="Validity period information"
-    )
+    publication_date: datetime | None = Field(default=None, description="Publication date")
+    opening_date: datetime | None = Field(default=None, description="Application opening date")
+    closing_date: datetime | None = Field(default=None, description="Application closing date")
+    resolution_date: datetime | None = Field(default=None, description="Expected resolution date")
+    payment_date: datetime | None = Field(default=None, description="Expected payment date")
+    validity_period: dict[str, Any] | None = Field(default=None, description="Validity period information")
 
     # Status and tracking
     status: AidStatus = Field(description="Current status")
     bdns_id: str | None = Field(default=None, description="BDNS identifier")
     boe_reference: str | None = Field(default=None, description="BOE reference")
-    official_reference: str | None = Field(
-        default=None, description="Official reference number"
-    )
+    official_reference: str | None = Field(default=None, description="Official reference number")
 
     # Application process
     application_method: str | None = Field(default=None, description="How to apply")
-    application_url: HttpUrl | None = Field(
-        default=None, description="Online application URL"
-    )
+    application_url: HttpUrl | None = Field(default=None, description="Online application URL")
     forms_url: HttpUrl | None = Field(default=None, description="Forms download URL")
 
     # Contact and additional information
-    contact_info: ContactInfoModel | None = Field(
-        default=None, description="Contact information"
-    )
-    additional_info_url: HttpUrl | None = Field(
-        default=None, description="Additional information URL"
-    )
-    legal_framework: str | None = Field(
-        default=None, description="Legal framework or regulation"
-    )
+    contact_info: ContactInfoModel | None = Field(default=None, description="Contact information")
+    additional_info_url: HttpUrl | None = Field(default=None, description="Additional information URL")
+    legal_framework: str | None = Field(default=None, description="Legal framework or regulation")
 
     # Metadata
     source_url: HttpUrl = Field(description="Source URL where information was found")
     source_name: str = Field(description="Name of the source")
-    last_updated: datetime = Field(
-        default_factory=datetime.utcnow, description="Last update timestamp"
-    )
-    scraping_timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="When data was scraped"
-    )
-    data_quality_score: float | None = Field(
-        default=None, description="Data quality score (0-1)"
-    )
-    is_verified: bool = Field(
-        default=False, description="Whether information has been verified"
-    )
+    last_updated: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+    scraping_timestamp: datetime = Field(default_factory=datetime.utcnow, description="When data was scraped")
+    data_quality_score: float | None = Field(default=None, description="Data quality score (0-1)")
+    is_verified: bool = Field(default=False, description="Whether information has been verified")
 
     # Tags and search
     tags: list[str] = Field(default_factory=list, description="Tags for categorization")
@@ -328,52 +262,26 @@ class AidStatisticsModel(TimestampedModel):
 
     total_aids: int = Field(description="Total number of aids")
     active_aids: int = Field(description="Number of active aids")
-    by_category: dict[str, int] = Field(
-        default_factory=dict, description="Aids by category"
-    )
-    by_scope: dict[str, int] = Field(
-        default_factory=dict, description="Aids by geographic scope"
-    )
-    by_status: dict[str, int] = Field(
-        default_factory=dict, description="Aids by status"
-    )
-    total_budget: Decimal | None = Field(
-        default=None, description="Total budget available"
-    )
-    average_amount: Decimal | None = Field(
-        default=None, description="Average aid amount"
-    )
-    closing_soon: int = Field(
-        default=0, description="Number of aids closing within 7 days"
-    )
-    last_updated: datetime = Field(
-        default_factory=datetime.utcnow, description="Statistics update timestamp"
-    )
+    by_category: dict[str, int] = Field(default_factory=dict, description="Aids by category")
+    by_scope: dict[str, int] = Field(default_factory=dict, description="Aids by geographic scope")
+    by_status: dict[str, int] = Field(default_factory=dict, description="Aids by status")
+    total_budget: Decimal | None = Field(default=None, description="Total budget available")
+    average_amount: Decimal | None = Field(default=None, description="Average aid amount")
+    closing_soon: int = Field(default=0, description="Number of aids closing within 7 days")
+    last_updated: datetime = Field(default_factory=datetime.utcnow, description="Statistics update timestamp")
 
 
 class AidSearchFilter(TimestampedModel):
     """Model for aid search filters."""
 
     keywords: list[str] = Field(default_factory=list, description="Search keywords")
-    categories: list[AidCategory] = Field(
-        default_factory=list, description="Filter by categories"
-    )
-    scopes: list[AidScope] = Field(
-        default_factory=list, description="Filter by geographic scope"
-    )
-    statuses: list[AidStatus] = Field(
-        default_factory=list, description="Filter by status"
-    )
+    categories: list[AidCategory] = Field(default_factory=list, description="Filter by categories")
+    scopes: list[AidScope] = Field(default_factory=list, description="Filter by geographic scope")
+    statuses: list[AidStatus] = Field(default_factory=list, description="Filter by status")
     min_amount: Decimal | None = Field(default=None, description="Minimum aid amount")
     max_amount: Decimal | None = Field(default=None, description="Maximum aid amount")
-    autonomous_community: str | None = Field(
-        default=None, description="Specific autonomous community"
-    )
+    autonomous_community: str | None = Field(default=None, description="Specific autonomous community")
     municipality: str | None = Field(default=None, description="Specific municipality")
-    beneficiary_types: list[BeneficiaryType] = Field(
-        default_factory=list, description="Filter by beneficiary type"
-    )
-    closing_within_days: int | None = Field(
-        default=None, description="Filter aids closing within X days"
-    )
+    beneficiary_types: list[BeneficiaryType] = Field(default_factory=list, description="Filter by beneficiary type")
+    closing_within_days: int | None = Field(default=None, description="Filter aids closing within X days")
     only_active: bool = Field(default=True, description="Only show active aids")

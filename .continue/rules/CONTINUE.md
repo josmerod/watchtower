@@ -58,7 +58,7 @@ MEGALITH is a comprehensive monitoring and ETL framework for scraping, aggregati
    ```bash
    # Install all dependencies automatically
    uv sync --all-extras
-   
+
    # Install Playwright browsers
    uv run playwright install
    ```
@@ -196,19 +196,19 @@ The project uses a hierarchical configuration system:
    ```python
    # src/etl/mysource/my_etl.py
    from src.etl.base import BaseETL
-   
+
    class MySourceETL(BaseETL[dict, MyDataModel]):
        def __init__(self):
            super().__init__("my_source", description="My data source")
-       
+
        def extract(self) -> List[dict]:
            # Implement data extraction
            pass
-       
+
        def transform(self, data: List[dict]) -> List[MyDataModel]:
            # Implement data transformation
            pass
-       
+
        def load(self, data: List[MyDataModel]) -> None:
            # Implement data loading
            pass
@@ -218,7 +218,7 @@ The project uses a hierarchical configuration system:
    ```python
    # src/models/mysource.py
    from pydantic import BaseModel
-   
+
    class MyDataModel(BaseModel):
        title: str
        url: str
@@ -238,13 +238,13 @@ The project uses a hierarchical configuration system:
    # src/watchers/my_watcher.py
    from src.watchers.base_watcher import BaseWatcher
    from bs4 import BeautifulSoup
-   
+
    class MyWatcher(BaseWatcher):
        def extract_value(self, html_content: str) -> Any:
            soup = BeautifulSoup(html_content, 'html.parser')
            # Extract the value to monitor
            return soup.find('specific-element').text
-       
+
        def has_changed(self, old_value: Any, new_value: Any) -> bool:
            return old_value != new_value
    ```
@@ -269,7 +269,7 @@ The project uses a hierarchical configuration system:
    ```bash
    # Run all tests
    uv run pytest
-   
+
    # Run with coverage
    uv run pytest --cov=src --cov-report=html
    ```
@@ -351,7 +351,7 @@ Watchers monitor web content for changes:
    ```bash
    # Start Prefect server
    prefect server start
-   
+
    # Run specific flow
    uv run python prefect_flows/news_flow.py
    ```
@@ -430,7 +430,7 @@ Watchers monitor web content for changes:
    ```bash
    # Reinstall browsers
    uv run playwright install
-   
+
    # Install system dependencies (if needed)
    uv run playwright install-deps
    ```
@@ -439,7 +439,7 @@ Watchers monitor web content for changes:
    ```bash
    # Ensure running from project root
    # Use 'uv run' prefix for all commands
-   
+
    # Check PYTHONPATH if needed
    export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
    ```

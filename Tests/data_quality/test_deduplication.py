@@ -9,16 +9,11 @@ Tests cover:
 - Edge cases and error handling
 """
 
-import hashlib
-import pytest
 from datetime import datetime, timedelta
-from difflib import SequenceMatcher
 
-from src.data_quality.deduplication import (
-    DeduplicationEngine,
-    DuplicateGroup,
-    DeduplicationResult,
-)
+import pytest
+
+from src.data_quality.deduplication import DeduplicationEngine
 from src.models.base import TimestampedModel
 
 
@@ -72,17 +67,11 @@ class TestDeduplicationEngine:
         assert similarity == 1.0
 
         # Similar titles
-        similarity = engine._calculate_title_similarity(
-            "Machine Learning Algorithms",
-            "Machine Learning Algorithm Review"
-        )
+        similarity = engine._calculate_title_similarity("Machine Learning Algorithms", "Machine Learning Algorithm Review")
         assert similarity > 0.8
 
         # Different titles
-        similarity = engine._calculate_title_similarity(
-            "Machine Learning",
-            "Quantum Physics"
-        )
+        similarity = engine._calculate_title_similarity("Machine Learning", "Quantum Physics")
         assert similarity < 0.3
 
         # Edge cases
@@ -99,12 +88,12 @@ class TestDeduplicationEngine:
         item1 = TestContentItem(
             title="Test Title",
             description="Test Description",
-            url="https://example.com/test"
+            url="https://example.com/test",
         )
         item2 = TestContentItem(
             title="Test Title",
             description="Test Description",
-            url="https://example.com/test"
+            url="https://example.com/test",
         )
 
         hash1 = engine._generate_content_hash(item1)
@@ -132,10 +121,7 @@ class TestDeduplicationEngine:
         assert engine._get_source_score(unknown_item) == engine.source_reputation_scores["default"]
 
         # Source from URL
-        github_url_item = TestContentItem(
-            url="https://github.com/user/repo",
-            source=None
-        )
+        github_url_item = TestContentItem(url="https://github.com/user/repo", source=None)
         assert engine._get_source_score(github_url_item) >= 90
 
     def test_recency_scoring(self):
@@ -170,7 +156,7 @@ class TestDeduplicationEngine:
             url="https://example.com",
             author="Author",
             content="Content",
-            source="Source"
+            source="Source",
         )
         complete_score = engine._calculate_completeness_score(complete_item)
         assert complete_score >= 0.5
@@ -191,7 +177,7 @@ class TestDeduplicationEngine:
             source="arxiv",
             created_at=datetime.utcnow(),
             url="https://arxiv.org/abs/1234",
-            author="Famous Author"
+            author="Famous Author",
         )
         high_score = engine._calculate_quality_score(high_quality_item)
         assert high_score >= 80.0
@@ -200,7 +186,7 @@ class TestDeduplicationEngine:
         low_quality_item = TestContentItem(
             title="Brief note",
             created_at=datetime.utcnow() - timedelta(days=60),
-            source="unknown_blog"
+            source="unknown_blog",
         )
         low_score = engine._calculate_quality_score(low_quality_item)
         assert low_score <= 60.0
@@ -225,7 +211,7 @@ class TestDeduplicationEngine:
         # Check that all items in group are indeed similar
         group = duplicate_groups[0]
         for i, item1 in enumerate(group):
-            for item2 in group[i+1:]:
+            for item2 in group[i + 1 :]:
                 similarity = engine._calculate_title_similarity(item1.title, item2.title)
                 assert similarity >= 0.8
 
@@ -237,17 +223,14 @@ class TestDeduplicationEngine:
             TestContentItem(
                 title="Same Content",
                 description="Same description",
-                url="https://example.com/same"
+                url="https://example.com/same",
             ),
             TestContentItem(
                 title="Same Content",  # Same as above
                 description="Same description",
-                url="https://example.com/same"  # Same URL for identical content
+                url="https://example.com/same",  # Same URL for identical content
             ),
-            TestContentItem(
-                title="Different Content",
-                description="Different description"
-            ),
+            TestContentItem(title="Different Content", description="Different description"),
         ]
 
         duplicate_groups = engine._find_duplicates_by_content_hash(items)
@@ -261,18 +244,12 @@ class TestDeduplicationEngine:
         engine = DeduplicationEngine()
 
         items = [
-            TestContentItem(
-                title="First Article",
-                url="https://example.com/article"
-            ),
+            TestContentItem(title="First Article", url="https://example.com/article"),
             TestContentItem(
                 title="Second Article",
-                url="https://example.com/article"  # Same URL
+                url="https://example.com/article",  # Same URL
             ),
-            TestContentItem(
-                title="Third Article",
-                url="https://example.com/different"
-            ),
+            TestContentItem(title="Third Article", url="https://example.com/different"),
         ]
 
         duplicate_groups = engine._find_duplicates_by_url(items)
@@ -290,7 +267,7 @@ class TestDeduplicationEngine:
             title="High Quality",
             source="arxiv",
             created_at=datetime.utcnow(),
-            description="Detailed description"
+            description="Detailed description",
         )
         high_quality_item.quality_score = 95.0
 
@@ -298,14 +275,11 @@ class TestDeduplicationEngine:
             title="Medium Quality",
             source="unknown",
             created_at=datetime.utcnow() - timedelta(days=10),
-            description="Brief description"
+            description="Brief description",
         )
         medium_quality_item.quality_score = 75.0
 
-        low_quality_item = TestContentItem(
-            title="Low Quality",
-            created_at=datetime.utcnow() - timedelta(days=60)
-        )
+        low_quality_item = TestContentItem(title="Low Quality", created_at=datetime.utcnow() - timedelta(days=60))
         low_quality_item.quality_score = 60.0
 
         duplicate_group = [low_quality_item, high_quality_item, medium_quality_item]
@@ -326,23 +300,20 @@ class TestDeduplicationEngine:
             TestContentItem(title="Machine Learning Review", source="arxiv"),
             TestContentItem(title="Machine Learning Review Paper", source="github"),
             TestContentItem(title="Machine Learning Review Extra", source="techcrunch"),  # Similar enough (>0.8)
-
             # Content hash group - exact same content
             TestContentItem(
                 title="Research Paper",
                 description="Detailed analysis of machine learning algorithms",
-                url="https://example.com/research"
+                url="https://example.com/research",
             ),
             TestContentItem(
                 title="Research Paper",
                 description="Detailed analysis of machine learning algorithms",
-                url="https://example.com/research"  # Identical content
+                url="https://example.com/research",  # Identical content
             ),
-
             # URL match group
             TestContentItem(title="First Article", url="https://example.com/article1"),
             TestContentItem(title="Second Article", url="https://example.com/article1"),
-
             # Unique items - clearly different
             TestContentItem(title="Quantum Computing Fundamentals"),
             TestContentItem(title="Climate Change Analysis"),
@@ -382,8 +353,8 @@ class TestDeduplicationEngine:
         assert len(merged[0]) == 3
 
         # Check that all items are in the merged group (by ID comparison)
-        merged_ids = {getattr(item, 'id', str(item)) for item in merged[0]}
-        expected_ids = {getattr(item, 'id', str(item)) for item in [item1, item2, item3]}
+        merged_ids = {getattr(item, "id", str(item)) for item in merged[0]}
+        expected_ids = {getattr(item, "id", str(item)) for item in [item1, item2, item3]}
         assert merged_ids == expected_ids
 
     def test_empty_data_handling(self):
@@ -413,8 +384,8 @@ class TestDeduplicationEngine:
 
         # Item should not be marked as duplicate
         unique_item = result.unique_items[0]
-        assert unique_item.get('is_duplicate') is False
-        assert unique_item.get('duplicate_group_id') is None
+        assert unique_item.get("is_duplicate") is False
+        assert unique_item.get("duplicate_group_id") is None
 
     def test_performance_large_dataset(self):
         """Test performance with large dataset."""
@@ -425,6 +396,7 @@ class TestDeduplicationEngine:
         # Create 10,000 items with some duplicates
         items = []
         import uuid
+
         for i in range(8000):
             # Use UUIDs prefix to ensure titles are distinct and sorted distributively
             items.append(TestContentItem(title=f"{uuid.uuid4()} Unique Item"))
@@ -432,11 +404,13 @@ class TestDeduplicationEngine:
         # Add duplicate groups - use exact matches for better control
         for i in range(1000):
             base_title = f"Duplicate Group {uuid.uuid4()}"
-            items.extend([
-                TestContentItem(title=base_title),
-                TestContentItem(title=base_title),
-                TestContentItem(title=base_title)
-            ])
+            items.extend(
+                [
+                    TestContentItem(title=base_title),
+                    TestContentItem(title=base_title),
+                    TestContentItem(title=base_title),
+                ]
+            )
 
         # Should complete within reasonable time (less than 30 seconds)
         start_time = time.time()
@@ -513,8 +487,8 @@ class TestDeduplicationEngine:
         assert group.detection_method == "title_similarity"
 
         # Check that items were marked correctly (by ID comparison since they're converted to dicts)
-        primary_item_id = group.primary_item.get('id')
-        duplicate_item_id = group.duplicate_items[0].get('id')
+        primary_item_id = group.primary_item.get("id")
+        duplicate_item_id = group.duplicate_items[0].get("id")
 
         assert primary_item_id == items[1].id  # Higher quality item should be primary
         assert duplicate_item_id == items[0].id
@@ -539,7 +513,7 @@ class TestDeduplicationEngine:
             url="https://example.com",
             author="Author",
             content="Content",
-            source="arxiv"
+            source="arxiv",
         )
         score = engine._calculate_quality_score(complete_item)
         assert 0.0 <= score <= 100.0

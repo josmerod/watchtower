@@ -2,21 +2,37 @@ from datetime import datetime
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import Input, Output, html, dcc, clientside_callback, ALL  # Added Input, Output, dcc, clientside_callback, ALL for Tabs and callback
+from dash import (  # Added Input, Output, dcc, clientside_callback, ALL for Tabs and callback
+    Input,
+    Output,
+    clientside_callback,
+    dcc,
+    html,
+)
 from flask import jsonify
 
+from src.web.dashboard.components.ai_research_tab import render_ai_research_tab
 from src.web.dashboard.components.anime_tab import (
     register_anime_callbacks,
     render_anime_tab,
+)
+from src.web.dashboard.components.architecture_intelligence_tab import (
+    register_architecture_callbacks,
+    render_architecture_intelligence_tab,
 )
 from src.web.dashboard.components.arxiv_research_tab import (
     register_arxiv_callbacks,
     render_arxiv_research_tab,
 )
+from src.web.dashboard.components.cloud_tab import (
+    register_cloud_callbacks,
+    render_cloud_tab,
+)
 from src.web.dashboard.components.courses_tab import (
     register_courses_callbacks,
     render_courses_tab,
 )
+from src.web.dashboard.components.customize_tabs import customize_tabs
 from src.web.dashboard.components.deals_tab import (
     register_deals_search_callbacks,
     render_deals_tab,
@@ -31,15 +47,6 @@ from src.web.dashboard.components.giveaways_tab import create_giveaways_tab
 from src.web.dashboard.components.intelligence_tab import (
     register_intelligence_callbacks,
     render_intelligence_tab,
-)
-from src.web.dashboard.components.ai_research_tab import render_ai_research_tab
-from src.web.dashboard.components.personalization_tab import (
-    render_personalization_tab,
-    register_personalization_callbacks
-)
-from src.web.dashboard.components.architecture_intelligence_tab import (
-    render_architecture_intelligence_tab,
-    register_architecture_callbacks
 )
 from src.web.dashboard.components.knowledge_garden_tab import (
     render_knowledge_garden_tab,
@@ -56,10 +63,15 @@ from src.web.dashboard.components.notifications_tab import (
     register_notifications_callbacks,
     render_notifications_tab,
 )
+from src.web.dashboard.components.personalization_tab import (
+    register_personalization_callbacks,
+    render_personalization_tab,
+)
 from src.web.dashboard.components.scavenging_tab import (
     register_scavenging_callbacks,
     render_scavenging_tab,
 )
+from src.web.dashboard.components.shortcuts_sidebar import shortcuts_sidebar
 from src.web.dashboard.components.shortcuts_tab import (
     get_shortcuts_data,
     render_shortcuts_tab,
@@ -78,8 +90,6 @@ from src.web.dashboard.components.videos_tab import (
     render_videos_tab,
 )
 from src.web.dashboard.health_monitor import HealthMonitor
-from src.web.dashboard.components.shortcuts_sidebar import shortcuts_sidebar
-from src.web.dashboard.components.customize_tabs import customize_tabs
 
 # Include localStorage script for filter presets and shortcuts functionality
 external_scripts = [
@@ -91,7 +101,7 @@ external_scripts = [
     "/assets/js/tab_preferences.js",
     "/assets/js/customize_tabs_dragdrop.js",
     "https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js",
-    "https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
+    "https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js",
 ]
 
 # Initialize the Dash application with Bootstrap styling
@@ -108,6 +118,7 @@ app.title = "Watchtower Dashboard"
 # Register callbacks for components that need them
 register_personalization_callbacks(app)
 register_architecture_callbacks(app)
+register_cloud_callbacks(app)
 
 # Add meta tags for better branding
 app.index_string = """
@@ -139,38 +150,49 @@ app.index_string = """
 app.layout = dbc.Container(
     [
         # Skip to content link for accessibility
-        html.A("Skip to main content", href="#dashboard-content", className="skip-to-content"),
-
+        html.A(
+            "Skip to main content",
+            href="#dashboard-content",
+            className="skip-to-content",
+        ),
         # Header with mobile-responsive layout
-        dbc.Row([
-            dbc.Col([
-                html.Div([
-                    html.H1("Watchtower Dashboard", className="dashboard-header-title mb-0"),
-                ], className="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-center"),
-            ], width=12),
-        ], className="dashboard-header mb-4"),
-
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.Div(
+                            [
+                                html.H1(
+                                    "Watchtower Dashboard",
+                                    className="dashboard-header-title mb-0",
+                                ),
+                            ],
+                            className="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-center",
+                        ),
+                    ],
+                    width=12,
+                ),
+            ],
+            className="dashboard-header mb-4",
+        ),
         # Header buttons container
-        html.Div([
-            shortcuts_sidebar.create_toggle_button(),
-            customize_tabs.create_toggle_button(),
-        ], className="header-buttons d-flex justify-content-end gap-2 mb-3 desktop-only"),
-
+        html.Div(
+            [
+                shortcuts_sidebar.create_toggle_button(),
+                customize_tabs.create_toggle_button(),
+            ],
+            className="header-buttons d-flex justify-content-end gap-2 mb-3 desktop-only",
+        ),
         # Add shortcuts sidebar (hidden by default)
         shortcuts_sidebar.create_sidebar(),
-
         # Add customize tabs modal with required components (hidden by default)
         customize_tabs.create_modal(),
-
         # Hidden components required for customize tabs functionality
         html.Div(id="customize-tabs-trigger", style={"display": "none"}),
         dcc.Store(id="customize-tabs-data-store", data={}),
-
         # Mobile navigation will be inserted here by JavaScript
-
         # Dashboard content area
         html.Div(id="dashboard-content", className="dashboard-content"),
-
         # Navigation tabs
         dbc.Row(
             dbc.Col(
@@ -215,7 +237,7 @@ app.layout = dbc.Container(
                             children=[render_games_tab()],
                         ),
                         dbc.Tab(
-                            label="Intelligence",
+                            label="Content Insights",
                             tab_id="tab-intelligence",
                             children=[render_intelligence_tab()],
                         ),
@@ -233,6 +255,11 @@ app.layout = dbc.Container(
                             label="🏗️ Architecture",
                             tab_id="tab-architecture",
                             children=[render_architecture_intelligence_tab()],
+                        ),
+                        dbc.Tab(
+                            label="☁️ Cloud",
+                            tab_id="tab-cloud",
+                            children=[render_cloud_tab()],
                         ),
                         dbc.Tab(
                             label="Courses",
@@ -290,11 +317,19 @@ app.layout = dbc.Container(
         ),
         # Dynamic tab content container
         dbc.Row(dbc.Col(html.Div(id="tab-content", className="mt-3"))),
-
         # Hidden trigger for dynamic tab generation
-        html.Div([
-            html.Button("Refresh Tabs", id="dynamic-tab-trigger-0", n_clicks=0, style={"display": "none"}),
-        ], id="dynamic-tab-trigger-container", style={"display": "none"}),
+        html.Div(
+            [
+                html.Button(
+                    "Refresh Tabs",
+                    id="dynamic-tab-trigger-0",
+                    n_clicks=0,
+                    style={"display": "none"},
+                ),
+            ],
+            id="dynamic-tab-trigger-container",
+            style={"display": "none"},
+        ),
     ],
     fluid=True,
 )
@@ -328,12 +363,17 @@ def health():
 
     except Exception as e:
         # Fallback response on error
-        return jsonify({
-            "status": "down",
-            "timestamp": datetime.utcnow().isoformat(),
-            "version": "1.0.0",
-            "error": str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "status": "down",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "version": "1.0.0",
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @server.route("/metrics")
@@ -358,14 +398,19 @@ def metrics():
 
     except Exception as e:
         # Fallback response on error
-        return jsonify({
-            "generated_at": datetime.utcnow().isoformat(),
-            "error": str(e),
-            "total_sources": 0,
-            "total_items": 0,
-            "last_etl_run_times": {},
-            "error_rates_per_source": {}
-        }), 500
+        return (
+            jsonify(
+                {
+                    "generated_at": datetime.utcnow().isoformat(),
+                    "error": str(e),
+                    "total_sources": 0,
+                    "total_items": 0,
+                    "last_etl_run_times": {},
+                    "error_rates_per_source": {},
+                }
+            ),
+            500,
+        )
 
 
 # Register callbacks for the main app

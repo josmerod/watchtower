@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback_context, html
 
 from src.alerts.engine import AlertEngine
-from src.alerts.models import AlertRule
 
 
 class NotificationsManager:
@@ -22,14 +21,13 @@ class NotificationsManager:
 
     def _ensure_directories(self):
         """Ensure necessary directories exist."""
-        import os
         from pathlib import Path
 
         data_dir = Path("data")
         alerts_dir = data_dir / "alerts"
         alerts_dir.mkdir(parents=True, exist_ok=True)
 
-    def load_rules(self) -> List[Dict[str, Any]]:
+    def load_rules(self) -> list[dict[str, Any]]:
         """Load alert rules from file."""
         try:
             import json
@@ -37,13 +35,13 @@ class NotificationsManager:
 
             rules_file = Path("data/alerts/rules.json")
             if rules_file.exists():
-                with open(rules_file, 'r') as f:
+                with open(rules_file) as f:
                     return json.load(f)
             return []
         except Exception:
             return []
 
-    def save_rule(self, rule: Dict[str, Any]) -> bool:
+    def save_rule(self, rule: dict[str, Any]) -> bool:
         """Save a rule to file."""
         try:
             import json
@@ -53,14 +51,14 @@ class NotificationsManager:
 
             # Update existing rule or add new one
             for i, existing_rule in enumerate(rules):
-                if existing_rule.get('id') == rule.get('id'):
+                if existing_rule.get("id") == rule.get("id"):
                     rules[i] = rule
                     break
             else:
                 rules.append(rule)
 
             rules_file = Path("data/alerts/rules.json")
-            with open(rules_file, 'w') as f:
+            with open(rules_file, "w") as f:
                 json.dump(rules, f, indent=2, default=str)
 
             return True
@@ -74,10 +72,10 @@ class NotificationsManager:
             from pathlib import Path
 
             rules = self.load_rules()
-            rules = [rule for rule in rules if rule.get('id') != rule_id]
+            rules = [rule for rule in rules if rule.get("id") != rule_id]
 
             rules_file = Path("data/alerts/rules.json")
-            with open(rules_file, 'w') as f:
+            with open(rules_file, "w") as f:
                 json.dump(rules, f, indent=2, default=str)
 
             return True
@@ -87,83 +85,117 @@ class NotificationsManager:
 
 def render_notifications_tab() -> dbc.Container:
     """Render the main notifications tab content."""
-    return dbc.Container([
-        # Header
-        dbc.Row([
-            dbc.Col([
-                html.H3("🔔 Alert Rules", className="mb-3"),
-                html.P(
-                    "Create and manage notification rules to get alerts for content you care about.",
-                    className="text-muted mb-4"
-                ),
-            ], width=12),
-        ]),
+    return dbc.Container(
+        [
+            # Header
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.H3("🔔 Alert Rules", className="mb-3"),
+                            html.P(
+                                "Create and manage notification rules to get alerts for content you care about.",
+                                className="text-muted mb-4",
+                            ),
+                        ],
+                        width=12,
+                    ),
+                ]
+            ),
+            # Action buttons
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Button(
+                                "Create Alert Rule",
+                                id="create-rule-btn",
+                                color="primary",
+                                className="me-2",
+                                n_clicks=0,
+                            ),
+                            dbc.Button(
+                                "Reload Rules",
+                                id="reload-rules-btn",
+                                color="secondary",
+                                outline=True,
+                                n_clicks=0,
+                            ),
+                        ],
+                        width=12,
+                    ),
+                ],
+                className="mb-4",
+            ),
+            # Rules list
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.Div(id="rules-list-container"),
+                        ],
+                        width=12,
+                    ),
+                ]
+            ),
+            # Status message
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.Div(id="rule-save-status"),
+                        ],
+                        width=12,
+                    ),
+                ]
+            ),
+            # Rule creation modal
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle("Create Alert Rule"), id="rule-modal-header"),
+                    dbc.ModalBody(id="rule-modal-body"),
+                    dbc.ModalFooter(
+                        [
+                            dbc.Button(
+                                "Cancel",
+                                id="rule-modal-cancel",
+                                color="secondary",
+                                className="me-2",
+                            ),
+                            dbc.Button("Save Rule", id="rule-modal-save", color="primary"),
+                        ]
+                    ),
+                ],
+                id="rule-modal",
+                is_open=False,
+                size="lg",
+            ),
+        ],
+        fluid=True,
+    )
 
-        # Action buttons
-        dbc.Row([
-            dbc.Col([
-                dbc.Button(
-                    "Create Alert Rule",
-                    id="create-rule-btn",
-                    color="primary",
-                    className="me-2",
-                    n_clicks=0,
-                ),
-                dbc.Button(
-                    "Reload Rules",
-                    id="reload-rules-btn",
-                    color="secondary",
-                    outline=True,
-                    n_clicks=0,
-                ),
-            ], width=12),
-        ], className="mb-4"),
 
-        # Rules list
-        dbc.Row([
-            dbc.Col([
-                html.Div(id="rules-list-container"),
-            ], width=12),
-        ]),
-
-        # Status message
-        dbc.Row([
-            dbc.Col([
-                html.Div(id="rule-save-status"),
-            ], width=12),
-        ]),
-
-        # Rule creation modal
-        dbc.Modal([
-            dbc.ModalHeader(dbc.ModalTitle("Create Alert Rule"), id="rule-modal-header"),
-            dbc.ModalBody(id="rule-modal-body"),
-            dbc.ModalFooter([
-                dbc.Button("Cancel", id="rule-modal-cancel", color="secondary", className="me-2"),
-                dbc.Button("Save Rule", id="rule-modal-save", color="primary"),
-            ]),
-        ], id="rule-modal", is_open=False, size="lg"),
-
-    ], fluid=True)
-
-
-def render_rules_list(rules: List[Any]) -> dbc.Container:
+def render_rules_list(rules: list[Any]) -> dbc.Container:
     """Render the list of alert rules."""
     if not rules:
-        return dbc.Container([
-            dbc.Alert(
-                "No alert rules configured yet. Click 'Create Alert Rule' to get started.",
-                color="info",
-                className="mt-3",
-            ),
-        ], fluid=True)
+        return dbc.Container(
+            [
+                dbc.Alert(
+                    "No alert rules configured yet. Click 'Create Alert Rule' to get started.",
+                    color="info",
+                    className="mt-3",
+                ),
+            ],
+            fluid=True,
+        )
 
     rules_cards = []
     for rule in rules:
-        rule_id = rule.get('id', 'unknown')
-        rule_name = rule.get('name', 'Unnamed Rule')
-        rule_description = rule.get('description', '')
-        is_active = rule.get('active', True)
-        created_at = rule.get('created_at', '')
+        rule_id = rule.get("id", "unknown")
+        rule_name = rule.get("name", "Unnamed Rule")
+        rule_description = rule.get("description", "")
+        is_active = rule.get("active", True)
+        created_at = rule.get("created_at", "")
 
         status_badge = dbc.Badge(
             "Active" if is_active else "Inactive",
@@ -171,48 +203,69 @@ def render_rules_list(rules: List[Any]) -> dbc.Container:
             className="me-2",
         )
 
-        card = dbc.Card([
-            dbc.CardBody([
-                dbc.Row([
-                    dbc.Col([
-                        html.H5(rule_name, className="mb-2"),
-                        html.P(
-                            rule_description or "No description",
-                            className="text-muted mb-3",
+        card = dbc.Card(
+            [
+                dbc.CardBody(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        html.H5(rule_name, className="mb-2"),
+                                        html.P(
+                                            rule_description or "No description",
+                                            className="text-muted mb-3",
+                                        ),
+                                    ],
+                                    width=8,
+                                ),
+                                dbc.Col(
+                                    [
+                                        status_badge,
+                                    ],
+                                    width=4,
+                                    className="text-end",
+                                ),
+                            ]
                         ),
-                    ], width=8),
-                    dbc.Col([
-                        status_badge,
-                    ], width=4, className="text-end"),
-                ]),
-
-                html.Div([
-                    html.Small([
-                        html.Strong("Created: "),
-                        created_at[:19] if created_at else "Unknown"
-                    ], className="text-muted"),
-                ], className="mb-3"),
-
-                dbc.ButtonGroup([
-                    dbc.Button(
-                        "Delete",
-                        id=f"delete-rule-{rule_id}",
-                        color="danger",
-                        outline=True,
-                        size="sm",
-                        n_clicks=0,
-                    ),
-                    dbc.Button(
-                        "Enable" if not is_active else "Disable",
-                        id=f"toggle-rule-{rule_id}",
-                        color="success" if not is_active else "warning",
-                        outline=True,
-                        size="sm",
-                        n_clicks=0,
-                    ),
-                ], className="mt-3"),
-            ]),
-        ], className="mb-3")
+                        html.Div(
+                            [
+                                html.Small(
+                                    [
+                                        html.Strong("Created: "),
+                                        created_at[:19] if created_at else "Unknown",
+                                    ],
+                                    className="text-muted",
+                                ),
+                            ],
+                            className="mb-3",
+                        ),
+                        dbc.ButtonGroup(
+                            [
+                                dbc.Button(
+                                    "Delete",
+                                    id=f"delete-rule-{rule_id}",
+                                    color="danger",
+                                    outline=True,
+                                    size="sm",
+                                    n_clicks=0,
+                                ),
+                                dbc.Button(
+                                    "Enable" if not is_active else "Disable",
+                                    id=f"toggle-rule-{rule_id}",
+                                    color="success" if not is_active else "warning",
+                                    outline=True,
+                                    size="sm",
+                                    n_clicks=0,
+                                ),
+                            ],
+                            className="mt-3",
+                        ),
+                    ]
+                ),
+            ],
+            className="mb-3",
+        )
 
         rules_cards.append(card)
 
@@ -221,51 +274,67 @@ def render_rules_list(rules: List[Any]) -> dbc.Container:
 
 def render_rule_form() -> dbc.Container:
     """Render the rule creation/editing form."""
-    return dbc.Container([
-        html.H4("Rule Details", className="mb-4"),
-
-        dbc.Row([
-            dbc.Col([
-                dbc.Label("Rule Name *"),
-                dbc.Input(
-                    id="rule-name-input",
-                    placeholder="Enter rule name",
-                    type="text",
-                    className="mb-3",
-                ),
-            ], width=12),
-        ]),
-
-        dbc.Row([
-            dbc.Col([
-                dbc.Label("Description"),
-                dbc.Textarea(
-                    id="rule-description-input",
-                    placeholder="Describe what this rule monitors for",
-                    className="mb-3",
-                    rows=3,
-                ),
-            ], width=12),
-        ]),
-
-        dbc.Row([
-            dbc.Col([
-                dbc.Checklist(
-                    id="rule-is-active",
-                    options=[
-                        {"label": "Enable this rule", "value": True},
-                    ],
-                    value=[True],
-                    className="mb-3",
-                ),
-            ], width=12),
-        ]),
-
-        html.Hr(),
-        html.H5("Basic Configuration", className="mb-3"),
-        html.P("This is a simplified form. The full implementation would include condition editors, notification channels, and quiet hours.", className="text-muted mb-3"),
-
-    ], fluid=True)
+    return dbc.Container(
+        [
+            html.H4("Rule Details", className="mb-4"),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Label("Rule Name *"),
+                            dbc.Input(
+                                id="rule-name-input",
+                                placeholder="Enter rule name",
+                                type="text",
+                                className="mb-3",
+                            ),
+                        ],
+                        width=12,
+                    ),
+                ]
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Label("Description"),
+                            dbc.Textarea(
+                                id="rule-description-input",
+                                placeholder="Describe what this rule monitors for",
+                                className="mb-3",
+                                rows=3,
+                            ),
+                        ],
+                        width=12,
+                    ),
+                ]
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Checklist(
+                                id="rule-is-active",
+                                options=[
+                                    {"label": "Enable this rule", "value": True},
+                                ],
+                                value=[True],
+                                className="mb-3",
+                            ),
+                        ],
+                        width=12,
+                    ),
+                ]
+            ),
+            html.Hr(),
+            html.H5("Basic Configuration", className="mb-3"),
+            html.P(
+                "This is a simplified form. The full implementation would include condition editors, notification channels, and quiet hours.",
+                className="text-muted mb-3",
+            ),
+        ],
+        fluid=True,
+    )
 
 
 def register_notifications_callbacks(app):
@@ -348,10 +417,28 @@ def register_notifications_callbacks(app):
             }
 
             if manager.save_rule(new_rule):
-                return dbc.Alert("Rule saved successfully!", color="success", dismissable=True, duration=3000, className="mt-3")
+                return dbc.Alert(
+                    "Rule saved successfully!",
+                    color="success",
+                    dismissable=True,
+                    duration=3000,
+                    className="mt-3",
+                )
             else:
-                return dbc.Alert("Error saving rule", color="danger", dismissable=True, duration=5000, className="mt-3")
+                return dbc.Alert(
+                    "Error saving rule",
+                    color="danger",
+                    dismissable=True,
+                    duration=5000,
+                    className="mt-3",
+                )
         except Exception as e:
-            return dbc.Alert(f"Error saving rule: {str(e)}", color="danger", dismissable=True, duration=5000, className="mt-3")
+            return dbc.Alert(
+                f"Error saving rule: {e!s}",
+                color="danger",
+                dismissable=True,
+                duration=5000,
+                className="mt-3",
+            )
 
     app.logger.info("Notifications callbacks registered successfully")

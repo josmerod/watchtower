@@ -1,7 +1,8 @@
-import requests
-import certifi
 import ssl
 import sys
+
+import certifi
+import requests
 
 print(f"Python version: {sys.version}")
 print(f"Certifi location: {certifi.where()}")

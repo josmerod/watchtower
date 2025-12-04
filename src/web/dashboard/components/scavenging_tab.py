@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Dict
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -30,7 +29,7 @@ def load_category_file(json_path: Path) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def discover_categories() -> Dict[str, Path]:
+def discover_categories() -> dict[str, Path]:
     """Return a mapping of category name -> aggregated JSON path"""
     try:
         if not DATA_DIR.exists():
@@ -50,9 +49,7 @@ def discover_categories() -> Dict[str, Path]:
         if viajeros_file.exists():
             categories["viajeros_piratas"] = viajeros_file
 
-        logger.info(
-            f"Discovered {len(categories)} scavenging categories: {list(categories.keys())}"
-        )
+        logger.info(f"Discovered {len(categories)} scavenging categories: {list(categories.keys())}")
         return categories
     except Exception as e:
         logger.error(f"Error discovering categories: {e}")
@@ -92,9 +89,7 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
 
         # Format published dates
         if "published" in df_display.columns:
-            df_display["published"] = df_display["published"].dt.strftime(
-                "%Y-%m-%d %H:%M"
-            )
+            df_display["published"] = df_display["published"].dt.strftime("%Y-%m-%d %H:%M")
 
         # Rename columns
         df_display = df_display.rename(columns=rename_map)
@@ -203,13 +198,7 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
             page_action="native",
             page_current=0,
             page_size=15,
-            tooltip_data=[
-                {
-                    column: {"value": str(value), "type": "text"}
-                    for column, value in row.items()
-                }
-                for row in df_display.to_dict("records")
-            ],
+            tooltip_data=[{column: {"value": str(value), "type": "text"} for column, value in row.items()} for row in df_display.to_dict("records")],
             tooltip_duration=None,
         )
 
@@ -261,7 +250,7 @@ def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
     except Exception as e:
         logger.error(f"Error creating category table for {category}: {e}")
         return dbc.Alert(
-            f"Error loading data for category {category}: {str(e)}",
+            f"Error loading data for category {category}: {e!s}",
             color="danger",
             className="alert-danger",
         )
@@ -281,9 +270,7 @@ def render_scavenging_tab() -> html.Div:
                                 "No Scavenging Data Available",
                                 className="alert-heading",
                             ),
-                            html.P(
-                                "No scavenging data found. Run the Scavenging ETL to populate data."
-                            ),
+                            html.P("No scavenging data found. Run the Scavenging ETL to populate data."),
                             html.Hr(),
                             html.P(
                                 f"Expected data location: {DATA_DIR}/*_rss_entries.json",
@@ -313,9 +300,7 @@ def render_scavenging_tab() -> html.Div:
                     id=tab_id,
                     value=tab_id,
                     label=category.capitalize(),
-                    children=[
-                        html.Div([create_category_table(category, df)], className="p-3")
-                    ],
+                    children=[html.Div([create_category_table(category, df)], className="p-3")],
                 )
             )
 
@@ -339,11 +324,7 @@ def render_scavenging_tab() -> html.Div:
                 # Tabs for different categories
                 dcc.Tabs(
                     id="scavenging-categories-tabs",
-                    value=(
-                        f"scavenging-{sorted(categories_map.keys())[0]}"
-                        if categories_map
-                        else ""
-                    ),
+                    value=(f"scavenging-{sorted(categories_map.keys())[0]}" if categories_map else ""),
                     children=category_content,
                     style={"marginBottom": "20px"},
                 ),
@@ -357,7 +338,7 @@ def render_scavenging_tab() -> html.Div:
         return html.Div(
             [
                 dbc.Alert(
-                    f"Error loading scavenging tab: {str(e)}",
+                    f"Error loading scavenging tab: {e!s}",
                     color="danger",
                     className="alert-danger",
                 )
@@ -368,7 +349,6 @@ def render_scavenging_tab() -> html.Div:
 
 def register_scavenging_callbacks(app):
     """Register callbacks for scavenging tab"""
-
     # Get categories for callback registration
     categories_map = discover_categories()
 
@@ -384,9 +364,7 @@ def register_scavenging_callbacks(app):
             if n_clicks:
                 df = load_category_file(categories_map[cat])
                 if not df.empty:
-                    return dcc.send_data_frame(
-                        df.to_csv, f"{cat}_scavenging.csv", index=False
-                    )
+                    return dcc.send_data_frame(df.to_csv, f"{cat}_scavenging.csv", index=False)
             return None
 
         # JSON Download callback

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import Field, HttpUrl
 
@@ -49,7 +48,6 @@ class PriceType(str, Enum):
     BUNDLE = "bundle"
 
 
-
 class GameBundleModel(TimestampedModel):
     """Model representing a game bundle deal."""
 
@@ -59,29 +57,19 @@ class GameBundleModel(TimestampedModel):
 
     # Price information
     current_price: float = Field(description="Current bundle price")
-    original_total_price: Optional[float] = Field(
-        default=None, description="Original total price of all games"
-    )
-    savings_percentage: Optional[int] = Field(
-        default=None, description="Bundle savings percentage"
-    )
+    original_total_price: float | None = Field(default=None, description="Original total price of all games")
+    savings_percentage: int | None = Field(default=None, description="Bundle savings percentage")
 
     # Bundle content
-    games: List[str] = Field(description="List of games in the bundle")
+    games: list[str] = Field(description="List of games in the bundle")
     games_count: int = Field(description="Number of games in bundle")
 
     # Bundle metadata
-    is_limited_time: bool = Field(
-        default=False, description="Whether this is a limited time offer"
-    )
-    expires_at: Optional[datetime] = Field(
-        default=None, description="Bundle expiration date"
-    )
+    is_limited_time: bool = Field(default=False, description="Whether this is a limited time offer")
+    expires_at: datetime | None = Field(default=None, description="Bundle expiration date")
 
     # ETL metadata
-    extracted_at: datetime = Field(
-        default_factory=datetime.utcnow, description="When this was extracted"
-    )
+    extracted_at: datetime = Field(default_factory=datetime.utcnow, description="When this was extracted")
 
 
 class GameGiveawayModel(TimestampedModel):
@@ -92,30 +80,18 @@ class GameGiveawayModel(TimestampedModel):
     platform: str = Field(description="Platform offering the giveaway")
 
     # Giveaway information
-    original_price: Optional[float] = Field(
-        default=None, description="Original price of the game"
-    )
-    giveaway_type: str = Field(
-        description="Type of giveaway (permanent, limited, etc.)"
-    )
+    original_price: float | None = Field(default=None, description="Original price of the game")
+    giveaway_type: str = Field(description="Type of giveaway (permanent, limited, etc.)")
 
     # Time information
-    starts_at: Optional[datetime] = Field(
-        default=None, description="When giveaway starts"
-    )
-    expires_at: Optional[datetime] = Field(
-        default=None, description="When giveaway expires"
-    )
+    starts_at: datetime | None = Field(default=None, description="When giveaway starts")
+    expires_at: datetime | None = Field(default=None, description="When giveaway expires")
 
     # Requirements
-    requirements: List[str] = Field(
-        default_factory=list, description="Requirements to claim"
-    )
+    requirements: list[str] = Field(default_factory=list, description="Requirements to claim")
 
     # ETL metadata
-    extracted_at: datetime = Field(
-        default_factory=datetime.utcnow, description="When this was extracted"
-    )
+    extracted_at: datetime = Field(default_factory=datetime.utcnow, description="When this was extracted")
 
     @property
     def is_active(self) -> bool:

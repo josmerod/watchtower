@@ -44,7 +44,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo UV package manager found: 
+echo UV package manager found:
 uv --version
 
 REM Run the unified CLI with automated enrollment
@@ -67,14 +67,14 @@ if %ENROLLMENT_RESULT% equ 0 (
     echo Completed: %DATE% %TIME%
     echo Log file: %LOG_FILE%
     echo ========================================
-    
+
     REM Display last few lines of log for quick summary
     echo.
     echo Last 10 lines of log:
     echo ----------------------------------------
     powershell "Get-Content '%LOG_FILE%' | Select-Object -Last 10"
     echo ----------------------------------------
-    
+
 ) else (
     echo.
     echo ========================================
@@ -83,7 +83,7 @@ if %ENROLLMENT_RESULT% equ 0 (
     echo Failed: %DATE% %TIME%
     echo Log file: %LOG_FILE%
     echo ========================================
-    
+
     REM Display last few lines of log for error diagnosis
     echo.
     echo Last 20 lines of log for error diagnosis:
@@ -102,4 +102,4 @@ echo Process completed with exit code: %ENROLLMENT_RESULT%
 echo End time: %DATE% %TIME%
 
 REM Exit with the same code as the enrollment process
-exit /b %ENROLLMENT_RESULT% 
+exit /b %ENROLLMENT_RESULT%

@@ -3,17 +3,22 @@
 echo "Starting ETL processes with UV at $(date)"
 
 # Change to the project root directory
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
-# Function to run ETL script with logging using UV
+# Run all ETL scripts
+echo "Starting all ETL pipelines..."
+
+# Function to run a script in the background
+# Function to run a script in the background
 run_etl() {
     local script=$1
-    local name=$(basename "$script" .py)
+    local name
+    name=$(basename "$script" .py)
     echo "Starting $name with UV..."
-    
+
     # Check if uv is available, fallback to python3
     if command -v uv &> /dev/null; then
         uv run python "$script" > "logs/${name}.log" 2>&1 &
@@ -27,40 +32,14 @@ run_etl() {
         echo "ERROR: No Python interpreter found for $name"
         return 1
     fi
-    
+
     local script_pid=$! # PID of the command
-    pids+=($script_pid) # Add script_pid to the global pids array
-    echo "$name started with PID $script_pid"
-    return 0
+    pids+=("$script_pid") # Add script_pid to the global pids array
 }
 
 # Run all ETL scripts in parallel and store their PIDs using UV
 pids=()
 
-# News ETL
-run_etl "src/etl/news/news_get_ycombinator.py"
-run_etl "src/etl/news/news_get_futuretools.py"
-run_etl "src/etl/news/news_get_genai_medium.py"
-run_etl "src/etl/news/news_get_kdnuggets.py"
-run_etl "src/etl/news/news_get_bensbites.py"
-run_etl "src/etl/news/news_get_planesvalencia.py"
-run_etl "src/etl/news/valencia_events_etl.py" # Added from .bat
-run_etl "src/etl/news/news_get_gooddevs.py"
-run_etl "src/etl/news/news_get_podcasts.py"
-run_etl "src/etl/news/news_get_newsapi.py"
-run_etl "src/etl/news/news_get_producthunt.py"
-run_etl "src/etl/news/news_get_indiehackers.py"
-run_etl "src/etl/news/news_get_gittrends.py"
-run_etl "src/etl/github/github_trending_rss_etl.py"
-run_etl "src/etl/news/news_get_hackernews_ask.py"
-run_etl "src/etl/news/news_get_stackoverflow_trends.py"
-run_etl "src/etl/news/news_get_home_server_trends.py" # Added from .bat (was in .sh but not grouped)
-run_etl "src/etl/news/news_get_media_rss.py"
-run_etl "src/etl/news/news_get_meneame.py"
-run_etl "src/etl/news/news_get_kagi.py"
-run_etl "src/etl/news/news_get_devto.py"
-run_etl "src/etl/news/news_get_techcrunch.py"
-run_etl "src/etl/news/news_get_venturebeat.py"
 run_etl "src/etl/news/news_get_freecodecamp.py"
 run_etl "src/etl/news/news_get_google_ai_blog.py"
 run_etl "src/etl/news/news_get_lobsters.py"
@@ -145,8 +124,7 @@ echo "To monitor processes: ps -p ${pids[*]}"
 # Wait for all ETL processes to complete
 echo "Waiting for all ETL processes to complete..."
 for pid in "${pids[@]}"; do
-    wait $pid
-    if [ $? -eq 0 ]; then
+    if wait "$pid"; then
         echo "Process $pid completed successfully"
     else
         echo "Process $pid completed with errors (check logs)"

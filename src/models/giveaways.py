@@ -17,23 +17,15 @@ class UnifiedGiveawayModel(BaseModel):
     title: str = Field(description="Item title")
     url: HttpUrl = Field(description="Destination URL to claim/learn more")
     platform: str = Field(description="Platform or store offering the giveaway")
-    category: str = Field(
-        description="Domain category (e.g., games, education, software)"
-    )
+    category: str = Field(description="Domain category (e.g., games, education, software)")
 
     # Status/availability
-    availability: str | None = Field(
-        default=None, description="Availability status label"
-    )
-    promotion_end: datetime | None = Field(
-        default=None, description="When promotion ends, if any"
-    )
+    availability: str | None = Field(default=None, description="Availability status label")
+    promotion_end: datetime | None = Field(default=None, description="When promotion ends, if any")
     is_active: bool = Field(default=True, description="Whether it can be claimed now")
 
     # Metadata (optional)
-    fetched_at: datetime | None = Field(
-        default=None, description="Fetch timestamp (UTC)"
-    )
+    fetched_at: datetime | None = Field(default=None, description="Fetch timestamp (UTC)")
     source: str | None = Field(default=None, description="Upstream source identifier")
 
     # Aliases and coercions from heterogeneous inputs

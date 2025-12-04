@@ -15,12 +15,10 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -61,7 +59,7 @@ class SoftwareDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract software deals from multiple sources."""
         logger.info("Starting software deals extraction...")
 
@@ -74,7 +72,7 @@ class SoftwareDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} software deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _get_curated_software_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_software_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of software deals and free sources."""
         curated = [
             {
@@ -428,7 +426,7 @@ class SoftwareDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated software deals")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform software deals data."""
         logger.info("Starting software deals transformation...")
 
@@ -482,14 +480,12 @@ class SoftwareDealsETL(BaseETL):
                 continue
 
         # Sort by software score and savings
-        transformed_deals.sort(
-            key=lambda x: (x["software_score"], x["savings"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["software_score"], x["savings"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} software deals")
         return transformed_deals
 
-    def _calculate_software_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_software_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate software value score for ranking deals."""
         score = 0.0
 
@@ -555,17 +551,14 @@ class SoftwareDealsETL(BaseETL):
 
         # Professional audience bonus
         audience = deal.get("target_audience", "").lower()
-        if any(
-            keyword in audience
-            for keyword in ["developers", "designers", "professionals"]
-        ):
+        if any(keyword in audience for keyword in ["developers", "designers", "professionals"]):
             score += 1.0
         elif "students" in audience:
             score += 0.5
 
         return round(score, 2)
 
-    def _determine_software_tier(self, deal: Dict[str, Any]) -> str:
+    def _determine_software_tier(self, deal: dict[str, Any]) -> str:
         """Determine software quality tier."""
         license_type = deal.get("license_type", "").lower()
         platform = deal.get("platform", "").lower()
@@ -573,27 +566,15 @@ class SoftwareDealsETL(BaseETL):
         tools_count = deal.get("included_tools", 1)
 
         # Enterprise tier indicators
-        if savings > 1000 and tools_count > 20:
-            return "enterprise"
-        elif (
-            any(name in platform for name in ["microsoft", "google"]) and savings > 500
-        ):
+        if savings > 1000 and tools_count > 20 or (any(name in platform for name in ["microsoft", "google"]) and savings > 500):
             return "enterprise"
 
         # Professional tier indicators
-        if license_type == "open_source" and savings > 500:
-            return "professional"
-        elif (
-            any(name in platform for name in ["jetbrains", "github"]) and savings > 200
-        ):
-            return "professional"
-        elif tools_count > 15:
+        if license_type == "open_source" and savings > 500 or (any(name in platform for name in ["jetbrains", "github"]) and savings > 200) or tools_count > 15:
             return "professional"
 
         # Standard tier indicators
-        if license_type in ["community", "freemium"] and savings > 100:
-            return "standard"
-        elif tools_count > 5:
+        if license_type in ["community", "freemium"] and savings > 100 or tools_count > 5:
             return "standard"
 
         # Basic tier
@@ -602,7 +583,7 @@ class SoftwareDealsETL(BaseETL):
 
         return "limited"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed software deals data to files."""
         try:
             # Ensure output directory exists
@@ -622,9 +603,7 @@ class SoftwareDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} software deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} software deals to {output_dir}")
             return True
 
         except Exception as e:

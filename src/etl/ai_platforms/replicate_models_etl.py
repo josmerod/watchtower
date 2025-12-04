@@ -9,13 +9,12 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("ReplicateModelsETL")
 
@@ -24,7 +23,7 @@ BASE_URL = "https://api.replicate.com/v1/collections/trending"
 ENV_KEY = "REPLICATE_API_TOKEN"
 
 
-def fetch_replicate_trending() -> List[Dict[str, Any]]:
+def fetch_replicate_trending() -> list[dict[str, Any]]:
     token = os.getenv(ENV_KEY)
     if not token:
         logger.info("REPLICATE_API_TOKEN not set; skipping Replicate ETL.")
@@ -40,7 +39,7 @@ def fetch_replicate_trending() -> List[Dict[str, Any]]:
         logger.error(f"Failed to fetch Replicate models: {e}")
         return []
 
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for it in data.get("results", []) or []:
         try:
             model = it.get("model", {})
@@ -61,7 +60,7 @@ def fetch_replicate_trending() -> List[Dict[str, Any]]:
     return items
 
 
-def save_replicate(items: List[Dict[str, Any]]) -> None:
+def save_replicate(items: list[dict[str, Any]]) -> None:
     if not items:
         logger.info("No Replicate models to save")
         return
@@ -87,4 +86,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -1,5 +1,4 @@
-"""
-Health monitoring and automatic recovery for Watchtower platform.
+"""Health monitoring and automatic recovery for Watchtower platform.
 
 Monitors:
 - Process health (dashboard, ETL processes)
@@ -12,24 +11,20 @@ Monitors:
 import asyncio
 import json
 import logging
-import os
-import psutil
-import requests
 import socket
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Set
 
 import psutil
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
+import requests
 
 
 @dataclass
 class HealthMetrics:
     """Health metrics data structure."""
+
     timestamp: datetime = field(default_factory=datetime.now)
     dashboard_healthy: bool = False
     etl_processes_healthy: bool = False
@@ -48,24 +43,25 @@ class HealthMetrics:
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         return {
-            'timestamp': self.timestamp.isoformat(),
-            'dashboard_healthy': self.dashboard_healthy,
-            'etl_processes_healthy': self.etl_processes_healthy,
-            'system_resources_ok': self.system_resources_ok,
-            'data_integrity_ok': self.data_integrity_ok,
-            'network_connectivity_ok': self.network_connectivity_ok,
-            'external_services_ok': self.external_services_ok,
-            'cpu_percent': self.cpu_percent,
-            'memory_percent': self.memory_percent,
-            'disk_usage_percent': self.disk_usage_percent,
-            'active_etl_processes': self.active_etl_processes,
-            'total_etl_processes': self.total_etl_processes,
+            "timestamp": self.timestamp.isoformat(),
+            "dashboard_healthy": self.dashboard_healthy,
+            "etl_processes_healthy": self.etl_processes_healthy,
+            "system_resources_ok": self.system_resources_ok,
+            "data_integrity_ok": self.data_integrity_ok,
+            "network_connectivity_ok": self.network_connectivity_ok,
+            "external_services_ok": self.external_services_ok,
+            "cpu_percent": self.cpu_percent,
+            "memory_percent": self.memory_percent,
+            "disk_usage_percent": self.disk_usage_percent,
+            "active_etl_processes": self.active_etl_processes,
+            "total_etl_processes": self.total_etl_processes,
         }
 
 
 @dataclass
 class RecoveryAction:
     """Recovery action to take when health issues are detected."""
+
     name: str
     description: str
     priority: int  # Lower number = higher priority
@@ -76,19 +72,19 @@ class RecoveryAction:
 class HealthMonitor:
     """Comprehensive health monitoring system."""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
         self.logger = logging.getLogger("HealthMonitor")
-        self.metrics_history: List[HealthMetrics] = []
-        self.recovery_actions: List[RecoveryAction] = []
-        self.last_recovery_actions: Dict[str, datetime] = {}
+        self.metrics_history: list[HealthMetrics] = []
+        self.recovery_actions: list[RecoveryAction] = []
+        self.last_recovery_actions: dict[str, datetime] = {}
         self.running = False
 
         # Health check intervals
         self.dashboard_check_interval = 30  # seconds
-        self.system_check_interval = 60     # seconds
-        self.data_integrity_interval = 300   # seconds (5 minutes)
-        self.network_check_interval = 120    # seconds (2 minutes)
+        self.system_check_interval = 60  # seconds
+        self.data_integrity_interval = 300  # seconds (5 minutes)
+        self.network_check_interval = 120  # seconds (2 minutes)
         self.external_services_interval = 180  # seconds (3 minutes)
 
         self.setup_recovery_actions()
@@ -101,28 +97,28 @@ class HealthMonitor:
                 description="Restart the dashboard process",
                 priority=1,
                 action_func=self.restart_dashboard,
-                cooldown_seconds=60
+                cooldown_seconds=60,
             ),
             RecoveryAction(
                 name="restart_etl_processes",
                 description="Restart failed ETL processes",
                 priority=2,
                 action_func=self.restart_etl_processes,
-                cooldown_seconds=120
+                cooldown_seconds=120,
             ),
             RecoveryAction(
                 name="cleanup_disk_space",
                 description="Clean up old log files and temporary data",
                 priority=3,
                 action_func=self.cleanup_disk_space,
-                cooldown_seconds=3600
+                cooldown_seconds=3600,
             ),
             RecoveryAction(
                 name="restart_system",
                 description="Full system restart (last resort)",
                 priority=10,
                 action_func=self.restart_system,
-                cooldown_seconds=7200  # 2 hours
+                cooldown_seconds=7200,  # 2 hours
             ),
         ]
 
@@ -134,7 +130,7 @@ class HealthMonitor:
 
             # First check if port is open
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            result = sock.connect_ex(('localhost', self.config['dashboard_port']))
+            result = sock.connect_ex(("localhost", self.config["dashboard_port"]))
             sock.close()
 
             if result != 0:
@@ -177,18 +173,14 @@ class HealthMonitor:
         try:
             cpu_percent = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
 
             # Thresholds
             cpu_threshold = 90.0
             memory_threshold = 85.0
             disk_threshold = 90.0
 
-            is_healthy = (
-                cpu_percent < cpu_threshold and
-                memory.percent < memory_threshold and
-                disk.percent < disk_threshold
-            )
+            is_healthy = cpu_percent < cpu_threshold and memory.percent < memory_threshold and disk.percent < disk_threshold
 
             return is_healthy, cpu_percent, memory.percent, disk.percent
 
@@ -240,10 +232,10 @@ class HealthMonitor:
         """Check external service dependencies."""
         try:
             # Check if we can import required modules (indicates dependencies are available)
-            import pandas
-            import requests
-            import psutil
             import aiohttp
+            import pandas
+            import psutil
+            import requests
 
             return True
 
@@ -271,7 +263,14 @@ class HealthMonitor:
         metrics.dashboard_healthy = results[0] if not isinstance(results[0], Exception) else False
         etl_healthy, metrics.active_etl_processes, metrics.total_etl_processes = results[1] if not isinstance(results[1], Exception) else (False, 0, 0)
         metrics.etl_processes_healthy = etl_healthy
-        system_ok, metrics.cpu_percent, metrics.memory_percent, metrics.disk_usage_percent = results[2] if not isinstance(results[2], Exception) else (False, 0, 0, 0)
+        (
+            system_ok,
+            metrics.cpu_percent,
+            metrics.memory_percent,
+            metrics.disk_usage_percent,
+        ) = (
+            results[2] if not isinstance(results[2], Exception) else (False, 0, 0, 0)
+        )
         metrics.system_resources_ok = system_ok
         metrics.data_integrity_ok = results[3] if not isinstance(results[3], Exception) else False
         metrics.network_connectivity_ok = results[4] if not isinstance(results[4], Exception) else False
@@ -309,11 +308,14 @@ class HealthMonitor:
 
             should_trigger = False
 
-            if action.name == "restart_dashboard" and not metrics.dashboard_healthy:
-                should_trigger = True
-            elif action.name == "restart_etl_processes" and not metrics.etl_processes_healthy:
-                should_trigger = True
-            elif action.name == "cleanup_disk_space" and metrics.disk_usage_percent > 85:
+            if (
+                action.name == "restart_dashboard"
+                and not metrics.dashboard_healthy
+                or action.name == "restart_etl_processes"
+                and not metrics.etl_processes_healthy
+                or action.name == "cleanup_disk_space"
+                and metrics.disk_usage_percent > 85
+            ):
                 should_trigger = True
             elif action.name == "restart_system" and not self.is_system_healthy(metrics):
                 # Only trigger system restart if multiple critical issues persist
@@ -363,7 +365,7 @@ class HealthMonitor:
                 for data_file in data_dir.rglob("*"):
                     if data_file.is_file() and data_file.stat().st_mtime < cutoff_time:
                         # Only remove files that aren't critical checkpoints
-                        if not data_file.name.endswith('.checkpoint'):
+                        if not data_file.name.endswith(".checkpoint"):
                             data_file.unlink()
                             self.logger.info(f"Removed old data file: {data_file}")
 
@@ -409,13 +411,13 @@ class HealthMonitor:
         try:
             metrics_file = Path("logs/health_metrics.jsonl")
 
-            with open(metrics_file, 'a') as f:
-                f.write(json.dumps(metrics.to_dict()) + '\n')
+            with open(metrics_file, "a") as f:
+                f.write(json.dumps(metrics.to_dict()) + "\n")
 
         except Exception as e:
             self.logger.error(f"Failed to save health metrics: {e}")
 
-    def get_health_summary(self) -> Dict:
+    def get_health_summary(self) -> dict:
         """Get health summary for API endpoints."""
         if not self.metrics_history:
             return {"status": "unknown", "message": "No health data available"}
@@ -448,5 +450,5 @@ class HealthMonitor:
             "status": status,
             "message": message,
             "timestamp": latest.timestamp.isoformat(),
-            "metrics": latest.to_dict()
+            "metrics": latest.to_dict(),
         }

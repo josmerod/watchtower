@@ -12,13 +12,12 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("KhanAcademyETL")
 
@@ -26,7 +25,7 @@ logger = get_logger("KhanAcademyETL")
 TOPIC_TREE_URL = "https://www.khanacademy.org/api/v1/topictree"
 
 
-def _flatten_topics(node: Dict[str, Any], results: List[Dict[str, Any]], path: List[str] | None = None) -> None:
+def _flatten_topics(node: dict[str, Any], results: list[dict[str, Any]], path: list[str] | None = None) -> None:
     path = path or []
     kind = node.get("kind")
     title = node.get("title") or node.get("translated_title") or ""
@@ -36,7 +35,7 @@ def _flatten_topics(node: Dict[str, Any], results: List[Dict[str, Any]], path: L
         results.append(
             {
                 "title": title,
-                "url": f"https://www.khanacademy.org{url}" if url.startswith("/") else url,
+                "url": (f"https://www.khanacademy.org{url}" if url.startswith("/") else url),
                 "content_kind": kind,
                 "subject_path": "/".join(path),
                 "platform": "khan_academy",
@@ -51,7 +50,7 @@ def _flatten_topics(node: Dict[str, Any], results: List[Dict[str, Any]], path: L
         _flatten_topics(child, results, path + ([title] if title else []))
 
 
-def fetch_khan_academy(limit: int = 500) -> List[Dict[str, Any]]:
+def fetch_khan_academy(limit: int = 500) -> list[dict[str, Any]]:
     headers = {"User-Agent": "Watchtower/1.0 (ETL)"}
     try:
         resp = requests.get(TOPIC_TREE_URL, headers=headers, timeout=60)
@@ -61,7 +60,7 @@ def fetch_khan_academy(limit: int = 500) -> List[Dict[str, Any]]:
         logger.error(f"Failed to fetch Khan Academy topic tree: {e}")
         return []
 
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     _flatten_topics(data, results)
     # Keep a reasonable cap
     if len(results) > limit:
@@ -70,7 +69,7 @@ def fetch_khan_academy(limit: int = 500) -> List[Dict[str, Any]]:
     return results
 
 
-def save_khan(entries: List[Dict[str, Any]]) -> None:
+def save_khan(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No Khan Academy entries to save")
         return
@@ -101,5 +100,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

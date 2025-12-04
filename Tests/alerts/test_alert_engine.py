@@ -5,46 +5,43 @@ including content matching, deduplication, and event generation.
 """
 
 import json
-import pytest
 from datetime import datetime, timedelta
-from pathlib import Path
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, mock_open, patch
+
+import pytest
 
 from src.alerts.engine import AlertEngine
 from src.alerts.models import (
-    AlertRule,
     AlertEvent,
-    KeywordMatchCondition,
-    SourceMatchCondition,
+    AlertRule,
     CategoryMatchCondition,
+    KeywordMatchCondition,
+    NotificationChannel,
     PriceThresholdCondition,
-    TimeRange,
-    NotificationChannel
+    SourceMatchCondition,
 )
 
 
 class TestAlertEngine:
     """Test AlertEngine functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def alert_engine(self):
         """Create a fresh AlertEngine instance for each test."""
         return AlertEngine()
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_rule(self):
         """Create a sample alert rule for testing."""
         return AlertRule(
             id="test_rule_1",
             name="Test Python Rule",
             user_id="test_user",
-            conditions=[
-                KeywordMatchCondition(value="python", operator="contains")
-            ],
-            notification_channels=[NotificationChannel.BROWSER]
+            conditions=[KeywordMatchCondition(value="python", operator="contains")],
+            notification_channels=[NotificationChannel.BROWSER],
         )
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_content(self):
         """Create sample content for testing."""
         return {
@@ -55,7 +52,7 @@ class TestAlertEngine:
             "source": "example_source",
             "categories": ["programming", "tutorial"],
             "price": None,
-            "tags": ["python", "programming"]
+            "tags": ["python", "programming"],
         }
 
     def test_alert_engine_initialization(self, alert_engine):
@@ -74,7 +71,7 @@ class TestAlertEngine:
     def test_evaluate_content_with_matching_rule(self, alert_engine, sample_content, sample_rule):
         """Test evaluating content that matches a rule."""
         # Mock the rule loading
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [sample_rule]
 
             events = alert_engine.evaluate_content(sample_content, "test_user")
@@ -92,12 +89,10 @@ class TestAlertEngine:
             id="no_match_rule",
             name="No Match Rule",
             user_id="test_user",
-            conditions=[
-                KeywordMatchCondition(value="nonexistent_keyword", operator="contains")
-            ]
+            conditions=[KeywordMatchCondition(value="nonexistent_keyword", operator="contains")],
         )
 
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [non_matching_rule]
 
             events = alert_engine.evaluate_content(sample_content, "test_user")
@@ -107,7 +102,7 @@ class TestAlertEngine:
         """Test that inactive rules don't trigger alerts."""
         sample_rule.active = False
 
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [sample_rule]
 
             events = alert_engine.evaluate_content(sample_content, "test_user")
@@ -119,17 +114,17 @@ class TestAlertEngine:
             id="rule_1",
             name="Python Rule",
             user_id="test_user",
-            conditions=[KeywordMatchCondition(value="python")]
+            conditions=[KeywordMatchCondition(value="python")],
         )
 
         rule2 = AlertRule(
             id="rule_2",
             name="Programming Rule",
             user_id="test_user",
-            conditions=[CategoryMatchCondition(value="programming")]
+            conditions=[CategoryMatchCondition(value="programming")],
         )
 
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [rule1, rule2]
 
             events = alert_engine.evaluate_content(sample_content, "test_user")
@@ -137,7 +132,7 @@ class TestAlertEngine:
 
     def test_deduplication_same_content(self, alert_engine, sample_content, sample_rule):
         """Test that duplicate content within window is suppressed."""
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [sample_rule]
 
             # First evaluation
@@ -150,7 +145,7 @@ class TestAlertEngine:
 
     def test_deduplication_different_content(self, alert_engine, sample_content, sample_rule):
         """Test that different content is not deduplicated."""
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [sample_rule]
 
             # First evaluation
@@ -186,9 +181,9 @@ class TestAlertEngine:
 
         mock_file_data = json.dumps(rules_data, indent=2, default=str)
 
-        with patch('builtins.open', mock_open(read_data=mock_file_data)):
-            with patch('pathlib.Path.exists', return_value=True):
-                with patch('src.alerts.engine.Path') as mock_path:
+        with patch("builtins.open", mock_open(read_data=mock_file_data)):
+            with patch("pathlib.Path.exists", return_value=True):
+                with patch("src.alerts.engine.Path") as mock_path:
                     # Mock the Path object chain
                     mock_path_instance = Mock()
                     mock_path.return_value = mock_path_instance
@@ -221,13 +216,13 @@ class TestAlertEngine:
                 user_id="test_user",
                 content_id="content_1",
                 content={"title": "Test"},
-                content_hash="hash123"
+                content_hash="hash123",
             )
         ]
 
-        with patch('src.alerts.engine.ensure_directories'):
-            with patch('builtins.open', mock_open()):
-                with patch('json.dump') as mock_dump:
+        with patch("src.alerts.engine.ensure_directories"):
+            with patch("builtins.open", mock_open()):
+                with patch("json.dump") as mock_dump:
                     alert_engine._store_alert_events("test_user", events)
 
                     # Verify json.dump was called
@@ -289,10 +284,7 @@ class TestAlertEngine:
         old_time = now - timedelta(hours=2)  # Older than 1-hour window
         recent_time = now - timedelta(minutes=30)  # Within window
 
-        alert_engine._dedup_cache = {
-            "old_hash": old_time,
-            "recent_hash": recent_time
-        }
+        alert_engine._dedup_cache = {"old_hash": old_time, "recent_hash": recent_time}
 
         alert_engine._cleanup_dedup_cache(now)
 
@@ -303,7 +295,7 @@ class TestAlertEngine:
 class TestAlertEngineIntegration:
     """Integration tests for AlertEngine with various content types."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def alert_engine(self):
         """Create a fresh AlertEngine instance."""
         return AlertEngine()
@@ -315,19 +307,13 @@ class TestAlertEngineIntegration:
             id="price_rule",
             name="Cheap Deals",
             user_id="test_user",
-            conditions=[
-                PriceThresholdCondition(value=20.0, operator="less_than")
-            ]
+            conditions=[PriceThresholdCondition(value=20.0, operator="less_than")],
         )
 
         # Content with price below threshold
-        cheap_content = {
-            "title": "Course on sale",
-            "price": 15.99,
-            "source": "udemy"
-        }
+        cheap_content = {"title": "Course on sale", "price": 15.99, "source": "udemy"}
 
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [price_rule]
 
             events = alert_engine.evaluate_content(cheap_content, "test_user")
@@ -339,17 +325,12 @@ class TestAlertEngineIntegration:
             id="source_rule",
             name="GitHub Alerts",
             user_id="test_user",
-            conditions=[
-                SourceMatchCondition(value="github", operator="contains")
-            ]
+            conditions=[SourceMatchCondition(value="github", operator="contains")],
         )
 
-        github_content = {
-            "title": "New repository",
-            "source": "GitHub Repository"
-        }
+        github_content = {"title": "New repository", "source": "GitHub Repository"}
 
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [source_rule]
 
             events = alert_engine.evaluate_content(github_content, "test_user")
@@ -364,8 +345,8 @@ class TestAlertEngineIntegration:
             conditions=[
                 KeywordMatchCondition(value="python"),
                 CategoryMatchCondition(value="programming"),
-                PriceThresholdCondition(value=0.0, operator="less_equal")
-            ]
+                PriceThresholdCondition(value=0.0, operator="less_equal"),
+            ],
         )
 
         # Content that matches all conditions
@@ -373,10 +354,10 @@ class TestAlertEngineIntegration:
             "title": "Python Programming",
             "categories": ["programming"],
             "price": 0.0,
-            "source": "free_tutorials"
+            "source": "free_tutorials",
         }
 
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [complex_rule]
 
             events = alert_engine.evaluate_content(matching_content, "test_user")
@@ -388,7 +369,7 @@ class TestAlertEngineIntegration:
         problematic_rule = Mock(spec=AlertRule)
         problematic_rule.matches_content.side_effect = Exception("Test error")
 
-        with patch.object(alert_engine, '_load_user_rules') as mock_load_rules:
+        with patch.object(alert_engine, "_load_user_rules") as mock_load_rules:
             mock_load_rules.return_value = [problematic_rule]
 
             content = {"title": "Test content"}

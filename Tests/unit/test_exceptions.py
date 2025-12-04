@@ -1,38 +1,36 @@
-"""
-Comprehensive unit tests for the exceptions system.
+"""Comprehensive unit tests for the exceptions system.
 Tests custom exceptions and error handling.
 """
 
 import unittest
-from typing import Dict, Any, Optional
 
-from src.exceptions.base import WatchtowerError, ErrorContext
-from src.exceptions.etl import (
-    ETLError,
-    ETLConfigurationError,
-    ETLDataError,
-    ETLConnectionError,
-    ETLValidationError,
-    ETLTimeoutError,
-)
-from src.exceptions.watcher import (
-    WatcherError,
-    WatcherConfigurationError,
-    WatcherStateError,
-    WatcherConnectionError,
-    WatcherTimeoutError,
-)
+from src.exceptions.base import ErrorContext, WatchtowerError
 from src.exceptions.config import (
     ConfigurationError,
-    ConfigurationValidationError,
     ConfigurationFileError,
     ConfigurationParsingError,
+    ConfigurationValidationError,
+)
+from src.exceptions.etl import (
+    ETLConfigurationError,
+    ETLConnectionError,
+    ETLDataError,
+    ETLError,
+    ETLTimeoutError,
+    ETLValidationError,
+)
+from src.exceptions.watcher import (
+    WatcherConfigurationError,
+    WatcherConnectionError,
+    WatcherError,
+    WatcherStateError,
+    WatcherTimeoutError,
 )
 from src.exceptions.web import (
-    WebError,
-    WebConnectionError,
-    WebTimeoutError,
     WebAuthenticationError,
+    WebConnectionError,
+    WebError,
+    WebTimeoutError,
     WebValidationError,
 )
 
@@ -77,9 +75,7 @@ class TestBaseExceptions(unittest.TestCase):
 
     def test_error_context_to_dict(self):
         """Test ErrorContext serialization to dictionary."""
-        context = ErrorContext(
-            component="test", operation="test_op", metadata={"test": True}
-        )
+        context = ErrorContext(component="test", operation="test_op", metadata={"test": True})
 
         context_dict = context.to_dict()
 
@@ -131,9 +127,7 @@ class TestETLExceptions(unittest.TestCase):
 
     def test_etl_validation_error(self):
         """Test ETLValidationError."""
-        error = ETLValidationError(
-            "Data validation failed", validation_errors=["Field 'name' is required"]
-        )
+        error = ETLValidationError("Data validation failed", validation_errors=["Field 'name' is required"])
 
         self.assertIsInstance(error, ETLError)
         self.assertEqual(error.validation_errors, ["Field 'name' is required"])
@@ -178,18 +172,14 @@ class TestWatcherExceptions(unittest.TestCase):
 
     def test_watcher_state_error(self):
         """Test WatcherStateError."""
-        error = WatcherStateError(
-            "Failed to load watcher state", state_file="/path/to/state.json"
-        )
+        error = WatcherStateError("Failed to load watcher state", state_file="/path/to/state.json")
 
         self.assertIsInstance(error, WatcherError)
         self.assertEqual(error.state_file, "/path/to/state.json")
 
     def test_watcher_connection_error(self):
         """Test WatcherConnectionError."""
-        error = WatcherConnectionError(
-            "Failed to connect to RSS feed", source_url="https://example.com/rss"
-        )
+        error = WatcherConnectionError("Failed to connect to RSS feed", source_url="https://example.com/rss")
 
         self.assertIsInstance(error, WatcherError)
         self.assertEqual(error.source_url, "https://example.com/rss")
@@ -215,9 +205,7 @@ class TestWatcherExceptions(unittest.TestCase):
         error = WatcherError("Failed to parse RSS feed", context=context)
 
         self.assertEqual(error.context.component, "arxiv_watcher")
-        self.assertEqual(
-            error.context.metadata["feed_url"], "https://arxiv.org/rss/cs.AI"
-        )
+        self.assertEqual(error.context.metadata["feed_url"], "https://arxiv.org/rss/cs.AI")
 
 
 class TestConfigurationExceptions(unittest.TestCase):
@@ -243,9 +231,7 @@ class TestConfigurationExceptions(unittest.TestCase):
 
     def test_configuration_file_error(self):
         """Test ConfigurationFileError."""
-        error = ConfigurationFileError(
-            "Configuration file not found", file_path="/path/to/config.yaml"
-        )
+        error = ConfigurationFileError("Configuration file not found", file_path="/path/to/config.yaml")
 
         self.assertIsInstance(error, ConfigurationError)
         self.assertEqual(error.file_path, "/path/to/config.yaml")
@@ -288,18 +274,14 @@ class TestWebExceptions(unittest.TestCase):
 
     def test_web_connection_error(self):
         """Test WebConnectionError."""
-        error = WebConnectionError(
-            "Failed to connect to server", url="https://api.example.com"
-        )
+        error = WebConnectionError("Failed to connect to server", url="https://api.example.com")
 
         self.assertIsInstance(error, WebError)
         self.assertEqual(error.url, "https://api.example.com")
 
     def test_web_timeout_error(self):
         """Test WebTimeoutError."""
-        error = WebTimeoutError(
-            "Request timed out", timeout_seconds=30, url="https://slow.example.com"
-        )
+        error = WebTimeoutError("Request timed out", timeout_seconds=30, url="https://slow.example.com")
 
         self.assertIsInstance(error, WebError)
         self.assertEqual(error.timeout_seconds, 30)

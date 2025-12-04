@@ -10,13 +10,12 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("GiantBombETL")
 
@@ -30,7 +29,7 @@ def _get_api_key() -> str | None:
         return key
     try:
         secrets_path = os.path.join(get_project_root(), "secrets", "giantbomb.json")
-        with open(secrets_path, "r", encoding="utf-8") as f:
+        with open(secrets_path, encoding="utf-8") as f:
             data = json.load(f)
         return data.get("api_key")
     except Exception:
@@ -38,7 +37,7 @@ def _get_api_key() -> str | None:
     # Fallback: parse .env in project root
     try:
         env_path = os.path.join(get_project_root(), ".env")
-        with open(env_path, "r", encoding="utf-8") as f:
+        with open(env_path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -50,7 +49,7 @@ def _get_api_key() -> str | None:
     return None
 
 
-def _request(path: str, params: Dict[str, Any]) -> Dict[str, Any] | None:
+def _request(path: str, params: dict[str, Any]) -> dict[str, Any] | None:
     key = _get_api_key()
     if not key:
         logger.info("GiantBomb API key not set; skipping.")
@@ -68,14 +67,14 @@ def _request(path: str, params: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
 
 
-def fetch_games(limit: int = 50) -> List[Dict[str, Any]]:
+def fetch_games(limit: int = 50) -> list[dict[str, Any]]:
     params = {
         "sort": "date_added:desc",
         "limit": limit,
         "field_list": "name,site_detail_url,original_release_date,expected_release_year,platforms,deck,image,genres,date_added",
     }
     data = _request("/games/", params)
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for g in (data or {}).get("results", []) or []:
         try:
             items.append(
@@ -100,14 +99,14 @@ def fetch_games(limit: int = 50) -> List[Dict[str, Any]]:
     return items
 
 
-def fetch_reviews(limit: int = 30) -> List[Dict[str, Any]]:
+def fetch_reviews(limit: int = 30) -> list[dict[str, Any]]:
     params = {
         "sort": "publish_date:desc",
         "limit": limit,
         "field_list": "publish_date,score,deck,description,site_detail_url,platforms,game",
     }
     data = _request("/reviews/", params)
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for r in (data or {}).get("results", []) or []:
         try:
             game = r.get("game") or {}
@@ -132,7 +131,7 @@ def fetch_reviews(limit: int = 30) -> List[Dict[str, Any]]:
     return items
 
 
-def _save(kind: str, items: List[Dict[str, Any]]) -> None:
+def _save(kind: str, items: list[dict[str, Any]]) -> None:
     if not items:
         logger.info(f"No {kind} to save")
         return
@@ -161,5 +160,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

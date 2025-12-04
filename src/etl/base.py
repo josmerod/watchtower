@@ -4,25 +4,21 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-import os
+
 import certifi
 
 # Set SSL certificate file globally for the ETL process
 os.environ["SSL_CERT_FILE"] = certifi.where()
 os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
-from typing import (
-    Any,
-    Generic,
-    List,
-    Type,
-    TypeVar,
-)  # Added Type, ensured Generic, List, Any, TypeVar
+from typing import Any, Generic, TypeVar
 
+# Added Type, ensured Generic, List, Any, TypeVar
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
 
@@ -55,7 +51,7 @@ class ETLMetrics(BaseModel):
     warnings_count: int = 0
 
     # Story 1.1: Enhanced error tracking
-    errors_detail: List[dict[str, Any]] = []
+    errors_detail: list[dict[str, Any]] = []
 
     # Story 1.1: Checkpoint status tracking
     checkpoint_status: str | None = None  # "resumed" | "new_run" | "checkpoint_saved" | "checkpoint_failed"
@@ -87,7 +83,7 @@ class ETLMetrics(BaseModel):
         error_type: str,
         stack_trace: str | None = None,
         context: dict[str, Any] | None = None,
-        input_data: Any = None
+        input_data: Any = None,
     ) -> None:
         """Add detailed error information to metrics.
 
@@ -165,9 +161,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         self.output_dir = self.data_dir / "output"
 
         # Initialize deduplication engine
-        self.deduplication_engine = DeduplicationEngine(
-            title_similarity_threshold=self.title_similarity_threshold
-        ) if self.enable_deduplication else None
+        self.deduplication_engine = DeduplicationEngine(title_similarity_threshold=self.title_similarity_threshold) if self.enable_deduplication else None
 
         self._ensure_directories()
 
@@ -184,14 +178,10 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             return None
         try:
             self.logger.debug(f"Loading checkpoint from {checkpoint_file_path}")
-            checkpoint_data = json.loads(
-                checkpoint_file_path.read_text(encoding="utf-8")
-            )
+            checkpoint_data = json.loads(checkpoint_file_path.read_text(encoding="utf-8"))
             return ETLCheckpoint(**checkpoint_data)
-        except (IOError, OSError) as e:
-            self.logger.error(
-                f"I/O error loading checkpoint {checkpoint_file_path}: {e}"
-            )
+        except OSError as e:
+            self.logger.error(f"I/O error loading checkpoint {checkpoint_file_path}: {e}")
             raise CheckpointError(
                 f"I/O error loading checkpoint: {e}",
                 checkpoint_path=str(checkpoint_file_path),
@@ -199,9 +189,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 etl_name=self.name,
             ) from e
         except json.JSONDecodeError as e:
-            self.logger.error(
-                f"JSON decode error loading checkpoint {checkpoint_file_path}: {e}"
-            )
+            self.logger.error(f"JSON decode error loading checkpoint {checkpoint_file_path}: {e}")
             raise CheckpointError(
                 f"JSON decode error loading checkpoint: {e}",
                 checkpoint_path=str(checkpoint_file_path),
@@ -209,9 +197,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 etl_name=self.name,
             ) from e
         except PydanticValidationError as e:
-            self.logger.error(
-                f"Pydantic validation error loading checkpoint {checkpoint_file_path}: {e}"
-            )
+            self.logger.error(f"Pydantic validation error loading checkpoint {checkpoint_file_path}: {e}")
             raise CheckpointError(
                 f"Pydantic validation error loading checkpoint: {e}",
                 checkpoint_path=str(checkpoint_file_path),
@@ -238,13 +224,9 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             self.logger.debug(f"Saving checkpoint to {checkpoint_file_path}")
             checkpoint_json = checkpoint.model_dump_json(indent=2)
             checkpoint_file_path.write_text(checkpoint_json, encoding="utf-8")
-            self.logger.info(
-                f"Checkpoint {checkpoint.checkpoint_id} saved successfully to {checkpoint_file_path}"
-            )
-        except (IOError, OSError) as e:
-            self.logger.error(
-                f"I/O error saving checkpoint {checkpoint_file_path}: {e}"
-            )
+            self.logger.info(f"Checkpoint {checkpoint.checkpoint_id} saved successfully to {checkpoint_file_path}")
+        except OSError as e:
+            self.logger.error(f"I/O error saving checkpoint {checkpoint_file_path}: {e}")
             raise CheckpointError(
                 f"I/O error saving checkpoint: {e}",
                 checkpoint_path=str(checkpoint_file_path),
@@ -252,9 +234,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 etl_name=self.name,
             ) from e
         except TypeError as e:  # Pydantic model_dump_json can raise TypeError
-            self.logger.error(
-                f"Serialization error saving checkpoint {checkpoint_file_path}: {e}"
-            )
+            self.logger.error(f"Serialization error saving checkpoint {checkpoint_file_path}: {e}")
             raise CheckpointError(
                 f"Serialization error saving checkpoint: {e}",
                 checkpoint_path=str(checkpoint_file_path),
@@ -282,9 +262,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         Returns:
             SHA256 hexdigest string.
         """
-        return hashlib.sha256(
-            json.dumps(data, sort_keys=True, default=str).encode()
-        ).hexdigest()
+        return hashlib.sha256(json.dumps(data, sort_keys=True, default=str).encode()).hexdigest()
 
     def _retry_operation(self, operation_name: str, operation_func) -> Any:
         last_exception = None
@@ -295,19 +273,15 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 last_exception = e
                 if attempt < self.max_retries:
                     delay = self.retry_delay * (2**attempt)
-                    self.logger.warning(
-                        f"{operation_name} failed (attempt {attempt + 1}/{self.max_retries + 1}): {e}. Retrying in {delay}s..."
-                    )
+                    self.logger.warning(f"{operation_name} failed (attempt {attempt + 1}/{self.max_retries + 1}): {e}. Retrying in {delay}s...")
                     time.sleep(delay)
                 else:
-                    self.logger.error(
-                        f"{operation_name} failed after {self.max_retries + 1} attempts: {e}"
-                    )
+                    self.logger.error(f"{operation_name} failed after {self.max_retries + 1} attempts: {e}")
         if last_exception:
             raise last_exception
 
     @abstractmethod
-    def extract(self) -> List[InputType]:
+    def extract(self) -> list[InputType]:
         """Extracts data from the source.
 
         This method should be implemented by subclasses to define the data
@@ -319,7 +293,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         pass
 
     @abstractmethod
-    def transform(self, data: List[InputType]) -> List[OutputType]:
+    def transform(self, data: list[InputType]) -> list[OutputType]:
         """Transforms the extracted data.
 
         This method should be implemented by subclasses to define the
@@ -335,7 +309,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         pass
 
     @abstractmethod
-    def load(self, data: List[OutputType]) -> None:
+    def load(self, data: list[OutputType]) -> None:
         """Loads the transformed data into the destination.
 
         This method should be implemented by subclasses to define the
@@ -347,23 +321,17 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         """
         pass
 
-    def validate_data(
-        self, data: List[Any], model_class: Type[BaseModel]
-    ) -> List[BaseModel]:  # Use Type
+    def validate_data(self, data: list[Any], model_class: type[BaseModel]) -> list[BaseModel]:  # Use Type
         validated = []
         for item in data:
             try:
-                validated.append(
-                    model_class(**item)
-                    if isinstance(item, dict)
-                    else model_class.parse_obj(item)
-                )
+                validated.append(model_class(**item) if isinstance(item, dict) else model_class.parse_obj(item))
             except PydanticValidationError as e:
                 self.logger.warning(f"Data validation failed: {e}")
                 self.metrics.records_failed += 1
         return validated
 
-    def process_in_batches(self, data: List[Any], process_func) -> List[Any]:
+    def process_in_batches(self, data: list[Any], process_func) -> list[Any]:
         results = []
         for i in range(0, len(data), self.batch_size):
             batch = data[i : i + self.batch_size]
@@ -406,7 +374,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         except Exception as e:
             self.logger.warning(f"Retention purge failed: {e}")
 
-    def _apply_deduplication(self, data: List[OutputType]) -> List[OutputType]:
+    def _apply_deduplication(self, data: list[OutputType]) -> list[OutputType]:
         """Apply deduplication to transformed data.
 
         Args:
@@ -451,11 +419,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             self.metrics.duplicates_removed = result.duplicates_removed
             self.metrics.deduplication_time_seconds = deduplication_time
 
-            self.logger.info(
-                f"Deduplication completed: {result.total_items} items -> "
-                f"{len(result.unique_items)} unique, {result.duplicates_removed} duplicates removed "
-                f"in {deduplication_time:.2f}s"
-            )
+            self.logger.info(f"Deduplication completed: {result.total_items} items -> " f"{len(result.unique_items)} unique, {result.duplicates_removed} duplicates removed " f"in {deduplication_time:.2f}s")
 
             # Return unique items + non-deduplicable items
             unique_items = result.unique_items
@@ -469,7 +433,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 except Exception as e:
                     self.logger.warning(f"Failed to convert deduplicated items back to model {model_class.__name__}: {e}")
                     # Fallback to returning dicts if conversion fails, though this might cause downstream issues
-            
+
             final_items = unique_items + non_deduplicable_items
 
             # Update record count for transformed items
@@ -480,9 +444,9 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         except Exception as e:
             self.logger.error(f"Deduplication failed: {e}")
             self.metrics.add_error_detail(
-                error_message=f"Deduplication failed: {str(e)}",
+                error_message=f"Deduplication failed: {e!s}",
                 error_type=type(e).__name__,
-                context={"etl_name": self.name, "item_count": len(deduplicable_items)}
+                context={"etl_name": self.name, "item_count": len(deduplicable_items)},
             )
             # Return original data if deduplication fails
             return data
@@ -515,9 +479,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             self.current_checkpoint = self._load_checkpoint()
             if self.current_checkpoint:
                 self.metrics.checkpoint_status = "resumed"
-                self.logger.info(
-                    f"Resuming from checkpoint: {self.current_checkpoint.checkpoint_id}"
-                )
+                self.logger.info(f"Resuming from checkpoint: {self.current_checkpoint.checkpoint_id}")
             else:
                 self.metrics.checkpoint_status = "new_run"
 
@@ -529,9 +491,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 self.logger.info("No data extracted. ETL run considered complete.")
                 return self.metrics
 
-            transformed = self._retry_operation(
-                "transform", lambda: self.transform(extracted)
-            )
+            transformed = self._retry_operation("transform", lambda: self.transform(extracted))
             self.metrics.records_transformed = len(transformed)
             self.logger.info(f"Transformed {self.metrics.records_transformed} records")
 
@@ -556,9 +516,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 self.logger.warning(f"Retention step failed: {e}")
 
             if self.metrics.is_successful:
-                self.logger.info(
-                    f"ETL process completed successfully. Success rate: {self.metrics.success_rate:.1f}%"
-                )
+                self.logger.info(f"ETL process completed successfully. Success rate: {self.metrics.success_rate:.1f}%")
             elif self.metrics.error_count == 0:
                 self.logger.info("ETL completed. No records loaded.")
             # else: errors occurred and were handled by _retry_operation, ETLError will be raised
@@ -568,6 +526,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
 
             # Story 1.1: Capture detailed error information
             import traceback
+
             stack_trace = traceback.format_exc()
             err_ctx = {"etl_name": self.name, "metrics": self.metrics.model_dump()}
 
@@ -575,25 +534,17 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 error_message=str(e),
                 error_type=type(e).__name__,
                 stack_trace=stack_trace,
-                context=err_ctx
+                context=err_ctx,
             )
 
-            wt_err = handle_exception(
-                e, logger=self.logger, reraise=False, add_context=err_ctx
-            )
+            wt_err = handle_exception(e, logger=self.logger, reraise=False, add_context=err_ctx)
             final_msg = f"ETL process '{self.name}' failed: {wt_err.message}"
-            if (
-                isinstance(e, ETLError)
-                and hasattr(e, "context")
-                and e.context.get("original_message_preserved")
-            ):
+            if isinstance(e, ETLError) and hasattr(e, "context") and e.context.get("original_message_preserved"):
                 final_msg = str(e)
             raise ETLError(final_msg, context=err_ctx, cause=e) from e
         finally:
             self.metrics.finish()
-            self.perf_logger.end(
-                success=not run_threw_exception and self.metrics.error_count == 0
-            )
+            self.perf_logger.end(success=not run_threw_exception and self.metrics.error_count == 0)
 
             # Persist per-run summary (always attempt; best-effort)
             try:
@@ -601,11 +552,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 run_summary = {
                     "etl_name": self.name,
                     "start_time": self.metrics.start_time.isoformat(),
-                    "end_time": (
-                        self.metrics.end_time.isoformat()
-                        if self.metrics.end_time
-                        else None
-                    ),
+                    "end_time": (self.metrics.end_time.isoformat() if self.metrics.end_time else None),
                     "duration_seconds": self.metrics.duration_seconds,
                     "records_extracted": self.metrics.records_extracted,
                     "records_transformed": self.metrics.records_transformed,
@@ -615,8 +562,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                     # Story 1.1: Include enhanced metrics
                     "errors_detail": self.metrics.errors_detail,
                     "checkpoint_status": self.metrics.checkpoint_status,
-                    "success": self.metrics.is_successful
-                    and self.metrics.error_count == 0,
+                    "success": self.metrics.is_successful and self.metrics.error_count == 0,
                     "output_dir": str(self.output_dir),
                 }
                 # Write timestamped and latest summaries in ETL output dir
@@ -634,11 +580,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 metrics_dir.mkdir(parents=True, exist_ok=True)
                 agg_path = metrics_dir / "etl_runs_latest.json"
                 try:
-                    existing = (
-                        json.loads(agg_path.read_text(encoding="utf-8"))
-                        if agg_path.exists()
-                        else {}
-                    )
+                    existing = json.loads(agg_path.read_text(encoding="utf-8")) if agg_path.exists() else {}
                 except Exception:
                     existing = {}
                 if not isinstance(existing, dict):
@@ -646,16 +588,10 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 runs = existing.get("runs") or {}
                 if not isinstance(runs, dict):
                     runs = {}
-                runs[self.name] = run_summary | {
-                    "last_updated": datetime.utcnow().isoformat(timespec="seconds")
-                }
-                existing["generated_at"] = datetime.utcnow().isoformat(
-                    timespec="seconds"
-                )
+                runs[self.name] = run_summary | {"last_updated": datetime.utcnow().isoformat(timespec="seconds")}
+                existing["generated_at"] = datetime.utcnow().isoformat(timespec="seconds")
                 existing["runs"] = runs
-                agg_path.write_text(
-                    json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8"
-                )
+                agg_path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
 
                 # Story 1.1: Save per-ETL metrics in data/metrics/{etl_name}/ pattern
                 etl_metrics_dir = metrics_dir / self.name
@@ -670,7 +606,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                     "etl_name": self.name,
                     "timestamp": timestamp,
                     "start_time": self.metrics.start_time.isoformat(),
-                    "end_time": self.metrics.end_time.isoformat() if self.metrics.end_time else None,
+                    "end_time": (self.metrics.end_time.isoformat() if self.metrics.end_time else None),
                     "duration_seconds": self.metrics.duration_seconds,
                     "records_extracted": self.metrics.records_extracted,
                     "records_transformed": self.metrics.records_transformed,
@@ -684,19 +620,19 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                     "errors_detail": self.metrics.errors_detail,
                     "checkpoint_status": self.metrics.checkpoint_status,
                     "output_dir": str(self.output_dir),
-                    "story_1_1_enhanced": True
+                    "story_1_1_enhanced": True,
                 }
 
                 per_etl_metrics_file.write_text(
                     json.dumps(metrics_data, ensure_ascii=False, indent=2, default=str),
-                    encoding="utf-8"
+                    encoding="utf-8",
                 )
 
                 # Also update latest file for this ETL
                 latest_metrics_file = etl_metrics_dir / "latest_metrics.json"
                 latest_metrics_file.write_text(
                     json.dumps(metrics_data, ensure_ascii=False, indent=2, default=str),
-                    encoding="utf-8"
+                    encoding="utf-8",
                 )
 
                 self.logger.debug(f"Per-ETL metrics saved to {per_etl_metrics_file}")
@@ -710,17 +646,14 @@ class SimpleETL(BaseETL[dict, dict]):
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
 
-    def extract(self) -> List[dict[str, Any]]:
+    def extract(self) -> list[dict[str, Any]]:
         return []
 
-    def transform(self, data: List[dict[str, Any]]) -> List[dict[str, Any]]:
+    def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return data
 
-    def load(self, data: List[dict[str, Any]]) -> None:
-        out_f = (
-            self.output_dir
-            / f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+    def load(self, data: list[dict[str, Any]]) -> None:
+        out_f = self.output_dir / f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         out_f.write_text(
             json.dumps(data, ensure_ascii=False, indent=2, default=str),
             encoding="utf-8",
@@ -728,9 +661,7 @@ class SimpleETL(BaseETL[dict, dict]):
         self.logger.info(f"Data saved to {out_f}")
 
 
-class DataFrameETL(
-    BaseETL[InputType, OutputType], Generic[InputType, OutputType]
-):  # Explicitly Generic again
+class DataFrameETL(BaseETL[InputType, OutputType], Generic[InputType, OutputType]):  # Explicitly Generic again
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
         try:
@@ -754,7 +685,7 @@ class DataFrameETL(
         pass
 
     @abstractmethod
-    def transform_dataframe(self, df: Any) -> List[OutputType]:  # df: pd.DataFrame
+    def transform_dataframe(self, df: Any) -> list[OutputType]:  # df: pd.DataFrame
         """Transforms data from a Pandas DataFrame into a list of OutputType objects.
 
         Subclasses should implement this method to perform data processing,
@@ -769,31 +700,27 @@ class DataFrameETL(
         """
         pass
 
-    def extract(self) -> List[InputType]:
+    def extract(self) -> list[InputType]:
         self.logger.debug("DataFrameETL.extract() using extract_to_dataframe().")
         df = self.extract_to_dataframe()
         return df.to_dict(orient="records") if df is not None else []
 
-    def transform(self, data: List[InputType]) -> List[OutputType]:
+    def transform(self, data: list[InputType]) -> list[OutputType]:
         if not data:
             return []
         df = self.pd.DataFrame(data)
         return self.transform_dataframe(df)
 
-    def load(self, data: List[OutputType]) -> None:
+    def load(self, data: list[OutputType]) -> None:
         if not data:
             self.logger.info("No data to load.")
             return
-        df_to_save = self.pd.DataFrame(
-            [i.model_dump() if isinstance(i, BaseModel) else i for i in data]
-        )
+        df_to_save = self.pd.DataFrame([i.model_dump() if isinstance(i, BaseModel) else i for i in data])
         out_f = self.output_dir / f"{self.name}_output.csv"
         df_to_save.to_csv(out_f, index=False)
         self.logger.info(f"DataFrameETL default load saved to {out_f}")
 
-    def save_as_csv(
-        self, data: List[dict[str, Any]], filename: str | None = None
-    ) -> Path:
+    def save_as_csv(self, data: list[dict[str, Any]], filename: str | None = None) -> Path:
         if not filename:
             filename = f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         out_f = self.output_dir / filename
@@ -801,9 +728,7 @@ class DataFrameETL(
         self.logger.info(f"Data saved as CSV to {out_f}")
         return out_f
 
-    def save_as_parquet(
-        self, data: List[dict[str, Any]], filename: str | None = None
-    ) -> Path:
+    def save_as_parquet(self, data: list[dict[str, Any]], filename: str | None = None) -> Path:
         if not filename:
             filename = f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
         out_f = self.output_dir / filename

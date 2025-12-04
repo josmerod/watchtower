@@ -36,7 +36,7 @@ REM Create logs directory if it doesn't exist
 if not exist logs mkdir logs
 
 REM Run all ETL and watcher scripts in parallel
-REM News ETL  
+REM News ETL
 start /B %PYTHON_CMD% src/etl/news/news_get_ycombinator.py
 start /B %PYTHON_CMD% src/etl/news/news_get_futuretools.py
 start /B %PYTHON_CMD% src/etl/news/news_get_genai_medium.py

@@ -149,16 +149,11 @@ class Scraper:
             try:
                 t.join()
             except Exception as thread_exc:
-                self.logger.error(
-                    f"Caught exception from thread {t.name}: {thread_exc}"
-                )
+                self.logger.error(f"Caught exception from thread {t.name}: {thread_exc}")
 
         for site in self.sites:
             code_name = scraper_dict[site]
-            if (
-                getattr(self, f"{code_name}_done")
-                and getattr(self, f"{code_name}_length") != -1
-            ):
+            if getattr(self, f"{code_name}_done") and getattr(self, f"{code_name}_length") != -1:
                 scraped_data[site] = getattr(self, f"{code_name}_data")
             elif not getattr(self, f"{code_name}_done"):
                 self.logger.warning(f"Scraper for {site} did not complete.")
@@ -175,12 +170,7 @@ class Scraper:
 
     def fetch_page_content(self, url, headers=None, timeout=scrapper_timeout_period):
         """Fetches page content using requests library with specified timeout and retries."""
-        default_headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-            )
-        }
+        default_headers = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " "(KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")}
         if headers:
             default_headers.update(headers)
 
@@ -192,9 +182,7 @@ class Scraper:
             try:
                 # First try with regular requests
                 if not used_cloudscraper:
-                    response = requests.get(
-                        url, headers=default_headers, timeout=timeout
-                    )
+                    response = requests.get(url, headers=default_headers, timeout=timeout)
                     response.raise_for_status()
                     return response.text
                 # If that fails, try with cloudscraper (handles Cloudflare protection)
@@ -206,9 +194,7 @@ class Scraper:
                             "desktop": True,
                         }
                     )
-                    response = scraper.get(
-                        url, headers=default_headers, timeout=timeout
-                    )
+                    response = scraper.get(url, headers=default_headers, timeout=timeout)
                     return response.text
             except (
                 requests.RequestException,
@@ -217,28 +203,20 @@ class Scraper:
                 retries += 1
                 if retries < max_retries:
                     # Switch to cloudscraper after first regular request failure
-                    if not used_cloudscraper and isinstance(
-                        e, requests.RequestException
-                    ):
+                    if not used_cloudscraper and isinstance(e, requests.RequestException):
                         if self.debug:
-                            self.logger.warning(
-                                f"Switching to cloudscraper for {url} after standard request failed: {e}"
-                            )
+                            self.logger.warning(f"Switching to cloudscraper for {url} after standard request failed: {e}")
                         used_cloudscraper = True
                         # No sleep before first cloudscraper attempt
                         continue
 
                     retry_delay = 2 * retries  # Exponential backoff
                     if self.debug:
-                        self.logger.warning(
-                            f"Retry {retries}/{max_retries} for {url} after {retry_delay}s: {e}"
-                        )
+                        self.logger.warning(f"Retry {retries}/{max_retries} for {url} after {retry_delay}s: {e}")
                     time.sleep(retry_delay)
                 else:
                     if self.debug:
-                        self.logger.error(
-                            f"Error fetching {url} after {max_retries} retries: {e}"
-                        )
+                        self.logger.error(f"Error fetching {url} after {max_retries} retries: {e}")
                     return ""
         return ""
 
@@ -249,12 +227,8 @@ class Scraper:
         while retries < max_retries:
             try:
                 with sync_playwright() as p:
-                    browser = p.chromium.launch(
-                        headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"]
-                    )
-                    context = browser.new_context(
-                        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
-                    )
+                    browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+                    context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36")
                     page = context.new_page()
                     page.goto(
                         url,
@@ -270,15 +244,11 @@ class Scraper:
                 if retries < max_retries:
                     retry_delay = 2 * retries  # Exponential backoff
                     if self.debug:
-                        self.logger.warning(
-                            f"Retry {retries}/{max_retries} for {url} with Playwright after {retry_delay}s: {e!s}"
-                        )
+                        self.logger.warning(f"Retry {retries}/{max_retries} for {url} with Playwright after {retry_delay}s: {e!s}")
                     time.sleep(retry_delay)
                 else:
                     if self.debug:
-                        self.logger.error(
-                            f"Error fetching {url} with Playwright after {max_retries} retries: {e!s}"
-                        )
+                        self.logger.error(f"Error fetching {url} with Playwright after {max_retries} retries: {e!s}")
                     return ""
         return ""
 
@@ -295,9 +265,7 @@ class Scraper:
         setattr(self, f"{site_code}_length", -1)
         setattr(self, f"{site_code}_done", True)
         if self.debug:
-            site_logger = LoggerAdapter(
-                get_logger(f"scraper.{site_code}"), {"site_code": site_code}
-            )
+            site_logger = LoggerAdapter(get_logger(f"scraper.{site_code}"), {"site_code": site_code})
             site_logger.error(f"Error in {site_code} scraper:")
             site_logger.debug(error_trace)
 
@@ -316,9 +284,7 @@ class Scraper:
                 if "couponCode" in query_params:
                     valid_params["couponCode"] = query_params["couponCode"]
 
-                cleaned_query = "&".join(
-                    [f"{k}={v[0]}" for k, v in valid_params.items()]
-                )
+                cleaned_query = "&".join([f"{k}={v[0]}" for k, v in valid_params.items()])
                 cleaned_path = parsed_url.path.rstrip("/") + "/"
 
                 cleaned_link = urlunparse(
@@ -368,9 +334,7 @@ class Scraper:
 
             # If no handler found and doesn't contain udemy.com, return empty
             if self.debug:
-                self.logger.debug(
-                    f"Link not recognized as Udemy or known redirector: {link}"
-                )
+                self.logger.debug(f"Link not recognized as Udemy or known redirector: {link}")
             return ""
 
         except Exception as e:
@@ -395,9 +359,7 @@ class Scraper:
     def _handle_generic_redirector(self, parsed_url, link):
         """Handle generic redirectors by following redirects"""
         try:
-            response = requests.head(
-                link, allow_redirects=True, timeout=scrapper_timeout_period
-            )
+            response = requests.head(link, allow_redirects=True, timeout=scrapper_timeout_period)
             final_url = response.url
 
             # Check if the final URL is a Udemy link
@@ -422,9 +384,7 @@ class Scraper:
             }
 
             for page in range(1, 6):  # Consider reducing page range initially?
-                content = self.fetch_page_content(
-                    f"https://www.discudemy.com/all/{page}", headers=head
-                )
+                content = self.fetch_page_content(f"https://www.discudemy.com/all/{page}", headers=head)
                 if not content:
                     continue
                 soup = self.parse_html(content)
@@ -446,9 +406,7 @@ class Scraper:
                 # Extract the identifier from the URL like https://www.discudemy.com/category/103/Business -> category/103/Business
                 # or https://www.discudemy.com/English/2 -> English/2
                 url_parts = intermediate_url.split("/")
-                identifier = "/".join(
-                    url_parts[-2:]
-                )  # take last two parts for /go/ url
+                identifier = "/".join(url_parts[-2:])  # take last two parts for /go/ url
 
                 go_url = f"https://www.discudemy.com/go/{identifier}"
                 if self.debug:
@@ -463,9 +421,7 @@ class Scraper:
                 link_div = soup.find("div", {"class": "ui segment"})
                 if not link_div or not link_div.a:
                     # Try finding link in other common tags if the primary fails
-                    link_tag = soup.find(
-                        "a", class_=re.compile(r"btn|button", re.I), href=True
-                    )
+                    link_tag = soup.find("a", class_=re.compile(r"btn|button", re.I), href=True)
                     if not link_tag:
                         if self.debug:
                             print(f"DU: Could not find link div/a tag on {go_url}")
@@ -499,9 +455,7 @@ class Scraper:
         button clicks or redirect following.
         """
         site_code = "uf"
-        processed_count = (
-            0  # Initialize processed_count at the beginning to avoid UnboundLocalError
-        )
+        processed_count = 0  # Initialize processed_count at the beginning to avoid UnboundLocalError
         try:
             all_items = []
             head = {
@@ -517,9 +471,7 @@ class Scraper:
                 use_playwright = True
             except ImportError:
                 if self.debug:
-                    print(
-                        f"{site_code.upper()}: Playwright not available, using standard requests."
-                    )
+                    print(f"{site_code.upper()}: Playwright not available, using standard requests.")
 
             # Fetch the course listing pages
             for page in range(1, 4):  # Reduced page range to 4 to speed up scraping
@@ -546,9 +498,7 @@ class Scraper:
                             browser.close()
                     except Exception as browser_error:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()}: Playwright browser error: {browser_error}"
-                            )
+                            print(f"{site_code.upper()}: Playwright browser error: {browser_error}")
                         use_playwright = False  # Fall back to requests
                         content = self.fetch_page_content(url, headers=head)
                 else:
@@ -570,9 +520,7 @@ class Scraper:
 
             setattr(self, f"{site_code}_length", len(all_items))
             if self.debug:
-                print(
-                    f"{site_code.upper()} Length: {getattr(self, f'{site_code}_length')}"
-                )
+                print(f"{site_code.upper()} Length: {getattr(self, f'{site_code}_length')}")
             for index, item in enumerate(all_items):
                 setattr(self, f"{site_code}_progress", index + 1)
 
@@ -587,9 +535,7 @@ class Scraper:
 
                 if not title or not item.get("href"):
                     if self.debug:
-                        print(
-                            f"{site_code.upper()} Skipping item {index}: Missing title or href"
-                        )
+                        print(f"{site_code.upper()} Skipping item {index}: Missing title or href")
                     continue
 
                 relative_url = item["href"]
@@ -599,30 +545,20 @@ class Scraper:
                     link = self.cleanup_link(relative_url)
                     if link:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Found direct Udemy link: {link}"
-                            )
-                        self.append_to_list(
-                            getattr(self, f"{site_code}_data"), title, link
-                        )
+                            print(f"{site_code.upper()} Found direct Udemy link: {link}")
+                        self.append_to_list(getattr(self, f"{site_code}_data"), title, link)
                         processed_count += 1
                         continue
 
                 # Build the intermediate URL
                 if not relative_url.startswith("http"):
                     base_uf = "https://www.udemyfreebies.com"
-                    intermediate_page_url = (
-                        f"{base_uf}{relative_url}"
-                        if relative_url.startswith("/")
-                        else f"{base_uf}/{relative_url}"
-                    )
+                    intermediate_page_url = f"{base_uf}{relative_url}" if relative_url.startswith("/") else f"{base_uf}/{relative_url}"
                 else:
                     intermediate_page_url = relative_url
 
                 if self.debug:
-                    print(
-                        f"{site_code.upper()} Fetching intermediate: {intermediate_page_url}"
-                    )
+                    print(f"{site_code.upper()} Fetching intermediate: {intermediate_page_url}")
 
                 # Use Playwright for intermediate pages if available
                 if use_playwright:
@@ -644,9 +580,7 @@ class Scraper:
                             try:
                                 # Wait for and click any button that might trigger the redirect
                                 button_selector = 'a:has-text("Deal"), a:has-text("Coupon"), a:has-text("Enroll"), a.btn-success, a.coupon-btn'
-                                page_obj.wait_for_selector(
-                                    button_selector, timeout=10000
-                                )
+                                page_obj.wait_for_selector(button_selector, timeout=10000)
                                 with page_obj.expect_navigation(
                                     wait_until="networkidle",
                                     timeout=scrapper_timeout_period * 1000,
@@ -659,9 +593,7 @@ class Scraper:
                                     link = self.cleanup_link(final_url)
                                     if link:
                                         if self.debug:
-                                            print(
-                                                f"{site_code.upper()} Found (after click): {title} -> {link}"
-                                            )
+                                            print(f"{site_code.upper()} Found (after click): {title} -> {link}")
                                         self.append_to_list(
                                             getattr(self, f"{site_code}_data"),
                                             title,
@@ -672,31 +604,21 @@ class Scraper:
                                         continue
                             except Exception as e:
                                 if self.debug:
-                                    print(
-                                        f"{site_code.upper()} Click attempt failed: {e!s}"
-                                    )
+                                    print(f"{site_code.upper()} Click attempt failed: {e!s}")
 
                             # If clicking failed, try to extract from the current page
                             inter_content = page_obj.content()
                             browser.close()
                     except Exception as e:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Playwright error on {intermediate_page_url}: {e!s}"
-                            )
-                        inter_content = self.fetch_page_content(
-                            intermediate_page_url, headers=head
-                        )
+                            print(f"{site_code.upper()} Playwright error on {intermediate_page_url}: {e!s}")
+                        inter_content = self.fetch_page_content(intermediate_page_url, headers=head)
                 else:
-                    inter_content = self.fetch_page_content(
-                        intermediate_page_url, headers=head
-                    )
+                    inter_content = self.fetch_page_content(intermediate_page_url, headers=head)
 
                 if not inter_content:
                     if self.debug:
-                        print(
-                            f"{site_code.upper()} Failed to fetch intermediate page: {intermediate_page_url}"
-                        )
+                        print(f"{site_code.upper()} Failed to fetch intermediate page: {intermediate_page_url}")
                     continue
 
                 inter_soup = self.parse_html(inter_content)
@@ -704,20 +626,14 @@ class Scraper:
                 # Try multiple approaches to find the Udemy link
 
                 # 1. Look for direct Udemy links
-                udemy_links = inter_soup.find_all(
-                    "a", href=re.compile(r"udemy\.com/course")
-                )
+                udemy_links = inter_soup.find_all("a", href=re.compile(r"udemy\.com/course"))
                 if udemy_links:
                     raw_link = udemy_links[0]["href"]
                     link = self.cleanup_link(raw_link)
                     if link:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Found direct Udemy link: {title} -> {link}"
-                            )
-                        self.append_to_list(
-                            getattr(self, f"{site_code}_data"), title, link
-                        )
+                            print(f"{site_code.upper()} Found direct Udemy link: {title} -> {link}")
+                        self.append_to_list(getattr(self, f"{site_code}_data"), title, link)
                         processed_count += 1
                         continue
 
@@ -726,11 +642,7 @@ class Scraper:
                     # By class
                     (
                         "a",
-                        {
-                            "class": re.compile(
-                                r"btn-success|coupon-code|redeem|affiliate|deal-button"
-                            )
-                        },
+                        {"class": re.compile(r"btn-success|coupon-code|redeem|affiliate|deal-button")},
                     ),
                     # By text
                     (
@@ -760,26 +672,18 @@ class Scraper:
                     if elements and elements[0].get("href"):
                         redirect_url = elements[0]["href"]
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Found redirect URL: {redirect_url}"
-                            )
+                            print(f"{site_code.upper()} Found redirect URL: {redirect_url}")
                         break
 
                 if not redirect_url:
                     if self.debug:
-                        print(
-                            f"{site_code.upper()} No redirect URL found on {intermediate_page_url}"
-                        )
+                        print(f"{site_code.upper()} No redirect URL found on {intermediate_page_url}")
                     continue
 
                 # 3. Handle the redirect URL
                 if not redirect_url.startswith("http"):
                     base_uf = "https://www.udemyfreebies.com"
-                    redirect_url = (
-                        f"{base_uf}{redirect_url}"
-                        if redirect_url.startswith("/")
-                        else f"{base_uf}/{redirect_url}"
-                    )
+                    redirect_url = f"{base_uf}{redirect_url}" if redirect_url.startswith("/") else f"{base_uf}/{redirect_url}"
 
                 # 4. Follow the redirect
                 try:
@@ -798,36 +702,24 @@ class Scraper:
                     if link:
                         if self.debug:
                             print(f"{site_code.upper()} Found: {title} -> {link}")
-                        self.append_to_list(
-                            getattr(self, f"{site_code}_data"), title, link
-                        )
+                        self.append_to_list(getattr(self, f"{site_code}_data"), title, link)
                         processed_count += 1
                     elif self.debug:
-                        print(
-                            f"{site_code.upper()} Skipped (not a valid Udemy link): {title} -> {final_url}"
-                        )
+                        print(f"{site_code.upper()} Skipped (not a valid Udemy link): {title} -> {final_url}")
 
                 except requests.RequestException as e:
                     if self.debug:
-                        print(
-                            fr
-                            + f"{site_code.upper()} Error fetching redirect {redirect_url} for {title}: {e}"
-                        )
+                        print(fr + f"{site_code.upper()} Error fetching redirect {redirect_url} for {title}: {e}")
                 except Exception as e:
                     if self.debug:
-                        print(
-                            fr
-                            + f"{site_code.upper()} Error processing item {index} ({title}): {e}"
-                        )
+                        print(fr + f"{site_code.upper()} Error processing item {index} ({title}): {e}")
 
         except Exception:
             self.handle_exception(site_code)
         finally:
             setattr(self, f"{site_code}_done", True)
             if self.debug:
-                print(
-                    f"{site_code.upper()} Return Length: {len(getattr(self, f'{site_code}_data'))}"
-                )
+                print(f"{site_code.upper()} Return Length: {len(getattr(self, f'{site_code}_data'))}")
                 print(f"{site_code.upper()} Processed Count: {processed_count}")
 
     def tb(self):
@@ -841,16 +733,12 @@ class Scraper:
             all_items = []
 
             for page in range(1, 8):  # Adjust page range if needed
-                content = self.fetch_page_content(
-                    f"https://www.tutorialbar.com/all-courses/page/{page}"
-                )
+                content = self.fetch_page_content(f"https://www.tutorialbar.com/all-courses/page/{page}")
                 if not content:
                     continue
                 soup = self.parse_html(content)
                 # Find h2 tags containing the course links
-                page_items = soup.find_all(
-                    "h2", class_="mb15 mt0 font110 mobfont100 fontnormal lineheight20"
-                )
+                page_items = soup.find_all("h2", class_="mb15 mt0 font110 mobfont100 fontnormal lineheight20")
                 all_items.extend(page_items)
 
             self.tb_length = len(all_items)
@@ -874,14 +762,10 @@ class Scraper:
                 soup_intermediate = self.parse_html(content)
 
                 # Find the specific button/link for the offer
-                link_element = soup_intermediate.find(
-                    "a", class_="btn_offer_block re_track_btn"
-                )
+                link_element = soup_intermediate.find("a", class_="btn_offer_block re_track_btn")
                 # Fallback selectors
                 if not link_element:
-                    link_element = soup_intermediate.find(
-                        "a", class_=re.compile(r"btn.*offer|offer.*btn"), href=True
-                    )
+                    link_element = soup_intermediate.find("a", class_=re.compile(r"btn.*offer|offer.*btn"), href=True)
                 if not link_element:
                     link_element = soup_intermediate.find(
                         "a",
@@ -919,18 +803,14 @@ class Scraper:
         visits intermediate pages to find the final Udemy course link.
         """
         site_code = "rd"
-        processed_count = (
-            0  # Initialize processed_count at the beginning to avoid UnboundLocalError
-        )
+        processed_count = 0  # Initialize processed_count at the beginning to avoid UnboundLocalError
         try:
             # Ensure Playwright is available
             try:
                 from playwright.sync_api import sync_playwright
             except ImportError:
                 if self.debug:
-                    print(
-                        f"{site_code.upper()}: Playwright not installed. Run 'pip install playwright && playwright install'. Skipping scraper."
-                    )
+                    print(f"{site_code.upper()}: Playwright not installed. Run 'pip install playwright && playwright install'. Skipping scraper.")
                 setattr(self, f"{site_code}_error", "Playwright not installed")
                 setattr(self, f"{site_code}_length", -1)
                 setattr(self, f"{site_code}_done", True)
@@ -942,9 +822,7 @@ class Scraper:
                 print(f"Starting {site_code.upper()} scraper (uses Playwright)...")
 
             # Use a reduced timeout for better performance
-            page_timeout = (
-                min(scrapper_timeout_period * 2, 60) * 1000
-            )  # in ms, capped at 60 seconds
+            page_timeout = min(scrapper_timeout_period * 2, 60) * 1000  # in ms, capped at 60 seconds
 
             with sync_playwright() as p:
                 browser = p.chromium.launch(
@@ -965,15 +843,11 @@ class Scraper:
 
                 try:
                     # Try to navigate with a more lenient 'domcontentloaded' wait strategy first
-                    page.goto(
-                        base_url, wait_until="domcontentloaded", timeout=page_timeout
-                    )
+                    page.goto(base_url, wait_until="domcontentloaded", timeout=page_timeout)
 
                     # Wait for specific content to be available before proceeding
                     if self.debug:
-                        print(
-                            f"{site_code.upper()}: Waiting for course cards to load..."
-                        )
+                        print(f"{site_code.upper()}: Waiting for course cards to load...")
                     page.wait_for_selector(
                         "div.card, article.course, div.course-card",
                         timeout=page_timeout,
@@ -982,9 +856,7 @@ class Scraper:
                     # --- Attempt to filter for free courses ---
                     try:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()}: Attempting to filter for free courses..."
-                            )
+                            print(f"{site_code.upper()}: Attempting to filter for free courses...")
                         # Try clicking the 'Free' filter button if it exists
                         free_filters = [
                             'label:has-text("Free")',
@@ -995,49 +867,33 @@ class Scraper:
                         for selector in free_filters:
                             if page.is_visible(selector):
                                 if self.debug:
-                                    print(
-                                        f"{site_code.upper()}: Found and clicking {selector}"
-                                    )
+                                    print(f"{site_code.upper()}: Found and clicking {selector}")
                                 page.click(selector)
                                 # Wait for the page to update after clicking
-                                page.wait_for_load_state(
-                                    "networkidle", timeout=page_timeout / 2
-                                )
+                                page.wait_for_load_state("networkidle", timeout=page_timeout / 2)
                                 break
                     except Exception as e:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()}: Could not apply free filter: {e!s}"
-                            )
-                            print(
-                                f"{site_code.upper()}: Proceeding with all courses..."
-                            )
+                            print(f"{site_code.upper()}: Could not apply free filter: {e!s}")
+                            print(f"{site_code.upper()}: Proceeding with all courses...")
 
                     # Get content after filtering
                     content = page.content()
                 except Exception as e:
                     if self.debug:
-                        print(
-                            f"{site_code.upper()}: Error during initial page load: {e!s}"
-                        )
+                        print(f"{site_code.upper()}: Error during initial page load: {e!s}")
                         print(f"{site_code.upper()}: Trying alternate approach...")
 
                     # Alternative approach: try a different URL
                     alt_url = "https://real.discount/filter/free"
                     try:
-                        page.goto(
-                            alt_url, wait_until="domcontentloaded", timeout=page_timeout
-                        )
+                        page.goto(alt_url, wait_until="domcontentloaded", timeout=page_timeout)
                         if self.debug:
-                            print(
-                                f"{site_code.upper()}: Navigated to alternate URL: {alt_url}"
-                            )
+                            print(f"{site_code.upper()}: Navigated to alternate URL: {alt_url}")
                         content = page.content()
                     except Exception as alt_error:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()}: Alternate approach also failed: {alt_error!s}"
-                            )
+                            print(f"{site_code.upper()}: Alternate approach also failed: {alt_error!s}")
                         self.rd_error = f"Failed to load both primary and alternate URLs: {e!s} / {alt_error!s}"
                         self.rd_length = -1
                         self.rd_done = True
@@ -1071,18 +927,14 @@ class Scraper:
                     course_cards = soup.select(selector)
                     if course_cards:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()}: Found {len(course_cards)} courses using selector '{selector}'"
-                            )
+                            print(f"{site_code.upper()}: Found {len(course_cards)} courses using selector '{selector}'")
                         break
 
                 self.rd_length = len(course_cards)
                 if self.debug:
                     print(f"{site_code.upper()} Length: {self.rd_length}")
                     if self.rd_length == 0:
-                        print(
-                            f"{site_code.upper()}: No courses found. Saving HTML for debugging."
-                        )
+                        print(f"{site_code.upper()}: No courses found. Saving HTML for debugging.")
                         with open("debug_rd_page.html", "w", encoding="utf-8") as f:
                             f.write(content)
 
@@ -1141,9 +993,7 @@ class Scraper:
 
                     if not title or not intermediate_url:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Skipping item {index}: Missing title or link"
-                            )
+                            print(f"{site_code.upper()} Skipping item {index}: Missing title or link")
                         continue
 
                     # Clean title if needed
@@ -1154,9 +1004,7 @@ class Scraper:
                         link = self.cleanup_link(intermediate_url)
                         if link:
                             if self.debug:
-                                print(
-                                    f"{site_code.upper()} Found direct Udemy link: {title} -> {link}"
-                                )
+                                print(f"{site_code.upper()} Found direct Udemy link: {title} -> {link}")
                             self.append_to_list(self.rd_data, title, link)
                             processed_count += 1
                         continue
@@ -1177,19 +1025,13 @@ class Scraper:
 
                     # Fetch the intermediate page on Real Discount to find the Udemy link
                     if self.debug:
-                        print(
-                            f"{site_code.upper()} Fetching intermediate: {intermediate_url}"
-                        )
+                        print(f"{site_code.upper()} Fetching intermediate: {intermediate_url}")
 
                     # Use a shorter timeout for intermediate pages
-                    intermediate_content = self.fetch_page_content(
-                        intermediate_url, timeout=min(scrapper_timeout_period, 30)
-                    )
+                    intermediate_content = self.fetch_page_content(intermediate_url, timeout=min(scrapper_timeout_period, 30))
                     if not intermediate_content:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Failed to fetch intermediate page: {intermediate_url}"
-                            )
+                            print(f"{site_code.upper()} Failed to fetch intermediate page: {intermediate_url}")
                         continue
 
                     soup_intermediate = self.parse_html(intermediate_content)
@@ -1198,9 +1040,7 @@ class Scraper:
                     udemy_link = None
 
                     # 1. Look for direct Udemy links first
-                    udemy_links = soup_intermediate.find_all(
-                        "a", href=re.compile(r"udemy\.com/course")
-                    )
+                    udemy_links = soup_intermediate.find_all("a", href=re.compile(r"udemy\.com/course"))
                     if udemy_links:
                         udemy_link = udemy_links[0]["href"]
                     else:
@@ -1220,9 +1060,7 @@ class Scraper:
                         for selector, attr in button_selectors:
                             if ":contains" in selector:  # Custom contains selector
                                 text = selector.split("'")[1]
-                                elements = soup_intermediate.find_all(
-                                    "a", string=re.compile(text, re.I)
-                                )
+                                elements = soup_intermediate.find_all("a", string=re.compile(text, re.I))
                             else:  # CSS selector
                                 elements = soup_intermediate.select(selector)
 
@@ -1232,9 +1070,7 @@ class Scraper:
 
                     if not udemy_link:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()}: Could not find Udemy link on {intermediate_url}"
-                            )
+                            print(f"{site_code.upper()}: Could not find Udemy link on {intermediate_url}")
                         continue
 
                     link = self.cleanup_link(udemy_link)
@@ -1244,9 +1080,7 @@ class Scraper:
                         self.append_to_list(self.rd_data, title, link)
                         processed_count += 1
                     elif self.debug:
-                        print(
-                            f"{site_code.upper()} Skipped (non-Udemy): {title} -> {udemy_link}"
-                        )
+                        print(f"{site_code.upper()} Skipped (non-Udemy): {title} -> {udemy_link}")
 
             if self.debug:
                 print(f"{site_code.upper()} Processed Count: {processed_count}")
@@ -1258,9 +1092,7 @@ class Scraper:
             # Ensure done flag is always set
             setattr(self, f"{site_code}_done", True)
             if self.debug:
-                print(
-                    f"{site_code.upper()} Return Length: {len(getattr(self, f'{site_code}_data', []))}"
-                )
+                print(f"{site_code.upper()} Return Length: {len(getattr(self, f'{site_code}_data', []))}")
 
     def cv(self):
         """Scrapes courses from Coursevania.com.
@@ -1273,9 +1105,7 @@ class Scraper:
             # Fetch main page to potentially get nonce or other required info
             if self.debug:
                 print("CV: Fetching main page...")
-            main_page_content = self.fetch_page_content(
-                "https://coursevania.com/courses/"
-            )
+            main_page_content = self.fetch_page_content("https://coursevania.com/courses/")
             if not main_page_content:
                 self.cv_error = "Failed to fetch main page"
                 self.cv_length = -1
@@ -1290,12 +1120,8 @@ class Scraper:
                 # Look for nonce in script tags (more robustly)
                 script_tags = soup_main.find_all("script")
                 # Use raw strings (r prefix) for regex patterns with backslashes
-                nonce_pattern = re.compile(
-                    r"[\'\"]load_content[\'\"]\s*:\s*[\'\"]([a-zA-Z0-9]+)[\'\"]"
-                )
-                nonce_pattern_alt = re.compile(
-                    r"ajax_nonce[\'\"]\s*:\s*[\'\"]([a-zA-Z0-9]+)[\'\"]"
-                )  # Look for ajax_nonce too
+                nonce_pattern = re.compile(r"[\'\"]load_content[\'\"]\s*:\s*[\'\"]([a-zA-Z0-9]+)[\'\"]")
+                nonce_pattern_alt = re.compile(r"ajax_nonce[\'\"]\s*:\s*[\'\"]([a-zA-Z0-9]+)[\'\"]")  # Look for ajax_nonce too
 
                 for script in script_tags:
                     script_content = str(script)  # Convert script tag content to string
@@ -1332,16 +1158,12 @@ class Scraper:
                 if not nonce:
                     # Instead of failing, we'll try an alternative approach - directly scraping course pages
                     if self.debug:
-                        print(
-                            "CV: Nonce not found. Falling back to direct course page scraping..."
-                        )
+                        print("CV: Nonce not found. Falling back to direct course page scraping...")
                     # Proceed with direct scraping
 
             except (ValueError, Exception) as e:
                 if self.debug:
-                    print(
-                        f"CV Warning: Nonce finding error: {e!s}. Proceeding with alternative approach."
-                    )
+                    print(f"CV Warning: Nonce finding error: {e!s}. Proceeding with alternative approach.")
                 # Instead of returning, continue with direct scraping approach
 
             # Direct scraping approach (fallback if API approach doesn't work)
@@ -1360,33 +1182,23 @@ class Scraper:
 
                 api_content = ""
                 try:
-                    response = requests.get(
-                        api_url, timeout=scrapper_timeout_period * 2
-                    )  # Double timeout
+                    response = requests.get(api_url, timeout=scrapper_timeout_period * 2)  # Double timeout
                     response.raise_for_status()
                     r = response.json()
                     # Check response structure - it might contain HTML in 'content' or 'html'
                     api_content = r.get("content", r.get("html", ""))
                     if not api_content and self.debug:
-                        print(
-                            fy
-                            + f"CV: API response JSON didn't contain 'content' or 'html'. Response: {r}"
-                        )
+                        print(fy + f"CV: API response JSON didn't contain 'content' or 'html'. Response: {r}")
 
                 except (requests.RequestException, json.JSONDecodeError) as e:
                     if self.debug:
-                        print(
-                            fy
-                            + f"CV Warning: API request error: {e!s}. Proceeding with direct scraping."
-                        )
+                        print(fy + f"CV Warning: API request error: {e!s}. Proceeding with direct scraping.")
                     # Continue with whatever course cards we found directly (could be empty)
 
                 # If API returned content, parse it for course items
                 if api_content:
                     soup_api = self.parse_html(api_content)
-                    api_courses = soup_api.find_all(
-                        "div", {"class": re.compile(r"stm_lms_courses__single")}
-                    )
+                    api_courses = soup_api.find_all("div", {"class": re.compile(r"stm_lms_courses__single")})
                     course_cards.extend(api_courses)
 
             # Last resort fallback - try accessing user pages which might show courses
@@ -1400,9 +1212,7 @@ class Scraper:
                 for alt_url in alternative_urls:
                     if self.debug:
                         print(f"CV Fetching alternative page: {alt_url}")
-                    alt_content = self.fetch_page_content(
-                        alt_url, timeout=scrapper_timeout_period * 2
-                    )
+                    alt_content = self.fetch_page_content(alt_url, timeout=scrapper_timeout_period * 2)
                     if alt_content:
                         alt_soup = self.parse_html(alt_content)
                         alt_courses = alt_soup.find_all(
@@ -1410,31 +1220,23 @@ class Scraper:
                             class_=re.compile(r"stm_lms_courses__single|course-item"),
                         )
                         # Also look for course links directly
-                        course_links = alt_soup.find_all(
-                            "a", href=re.compile(r"/courses/[^/]+/$")
-                        )
+                        course_links = alt_soup.find_all("a", href=re.compile(r"/courses/[^/]+/$"))
 
                         if alt_courses:
                             course_cards.extend(alt_courses)
                             if self.debug:
-                                print(
-                                    f"CV Found {len(alt_courses)} courses on {alt_url}"
-                                )
+                                print(f"CV Found {len(alt_courses)} courses on {alt_url}")
                             break  # Found courses, stop trying alternatives
                         elif course_links:
                             # Create synthetic course cards from links
                             for link in course_links:
-                                if link.get("href") and (
-                                    link.string or link.get_text(strip=True)
-                                ):
+                                if link.get("href") and (link.string or link.get_text(strip=True)):
                                     div = soup_main.new_tag("div")
                                     div["class"] = "synthetic-course-card"
                                     div.append(link)
                                     course_cards.append(div)
                             if self.debug:
-                                print(
-                                    f"CV Found {len(course_links)} course links on {alt_url}"
-                                )
+                                print(f"CV Found {len(course_links)} course links on {alt_url}")
                             break  # Found course links, stop trying alternatives
 
             # Set the length based on all courses found
@@ -1450,9 +1252,7 @@ class Scraper:
                 link_tag = None
 
                 # Try finding in title div (usual location)
-                title_div = item.find(
-                    "div", class_=re.compile(r"title|stm_lms_courses__single--title")
-                )
+                title_div = item.find("div", class_=re.compile(r"title|stm_lms_courses__single--title"))
                 if title_div and title_div.find("a", href=True):
                     link_tag = title_div.find("a", href=True)
 
@@ -1490,12 +1290,7 @@ class Scraper:
                             title = img["alt"].strip()
                         else:
                             # Last resort: extract from URL
-                            title = (
-                                link_tag["href"]
-                                .split("/")[-2]
-                                .replace("-", " ")
-                                .title()
-                            )
+                            title = link_tag["href"].split("/")[-2].replace("-", " ").title()
 
                 intermediate_url = link_tag["href"]
                 if not intermediate_url:
@@ -1503,18 +1298,12 @@ class Scraper:
 
                 # Ensure URL is absolute
                 if not intermediate_url.startswith("http"):
-                    intermediate_url = (
-                        f"https://coursevania.com{intermediate_url}"
-                        if intermediate_url.startswith("/")
-                        else f"https://coursevania.com/{intermediate_url}"
-                    )
+                    intermediate_url = f"https://coursevania.com{intermediate_url}" if intermediate_url.startswith("/") else f"https://coursevania.com/{intermediate_url}"
 
                 # Fetch the intermediate course page with extended timeout
                 if self.debug:
                     print(f" CV Fetching intermediate: {intermediate_url}")
-                content = self.fetch_page_content(
-                    intermediate_url, timeout=45
-                )  # Extended timeout
+                content = self.fetch_page_content(intermediate_url, timeout=45)  # Extended timeout
                 if not content:
                     continue
                 soup_intermediate = self.parse_html(content)
@@ -1552,17 +1341,13 @@ class Scraper:
                     },
                     {
                         "container": "div",
-                        "container_attrs": {
-                            "class": re.compile(r"price|button-container|coupon-area")
-                        },
+                        "container_attrs": {"class": re.compile(r"price|button-container|coupon-area")},
                         "tag": "a",
                     },
                     # URL pattern based selectors
                     {
                         "tag": "a",
-                        "attrs": {
-                            "href": re.compile(r"udemy\.com/course/[^/]+/\?couponCode=")
-                        },
+                        "attrs": {"href": re.compile(r"udemy\.com/course/[^/]+/\?couponCode=")},
                     },
                     # Last resort - any prominent button
                     {"tag": "a", "attrs": {"class": re.compile(r"btn|button")}},
@@ -1574,18 +1359,12 @@ class Scraper:
                 for selector in affiliate_selectors:
                     if "container" in selector:
                         # Two-step selection: find container first, then find link inside it
-                        container = soup_intermediate.find(
-                            selector["container"], selector["container_attrs"]
-                        )
+                        container = soup_intermediate.find(selector["container"], selector["container_attrs"])
                         if container:
-                            final_link_element = container.find(
-                                selector["tag"], href=True
-                            )
+                            final_link_element = container.find(selector["tag"], href=True)
                     else:
                         # Direct selection
-                        final_link_element = soup_intermediate.find(
-                            selector["tag"], selector["attrs"], href=True
-                        )
+                        final_link_element = soup_intermediate.find(selector["tag"], selector["attrs"], href=True)
 
                     if final_link_element and final_link_element.get("href"):
                         break
@@ -1594,17 +1373,13 @@ class Scraper:
                 if not final_link_element:
                     all_links = soup_intermediate.find_all("a", href=True)
                     for link in all_links:
-                        if "udemy.com/course" in link.get(
-                            "href", ""
-                        ) and "couponCode" in link.get("href", ""):
+                        if "udemy.com/course" in link.get("href", "") and "couponCode" in link.get("href", ""):
                             final_link_element = link
                             break
 
                 if not final_link_element or not final_link_element.get("href"):
                     if self.debug:
-                        print(
-                            f"CV: Could not find affiliate link on {intermediate_url}"
-                        )
+                        print(f"CV: Could not find affiliate link on {intermediate_url}")
                     continue
 
                 raw_link = final_link_element["href"]
@@ -1681,15 +1456,11 @@ class Scraper:
                     page_items = soup.select(selector)
                     if page_items:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Found {len(page_items)} items with selector: {selector}"
-                            )
+                            print(f"{site_code.upper()} Found {len(page_items)} items with selector: {selector}")
                         break
 
                 if not page_items and self.debug:
-                    print(
-                        f"{site_code.upper()}: No items found on page {page}. Site structure may have changed."
-                    )
+                    print(f"{site_code.upper()}: No items found on page {page}. Site structure may have changed.")
 
                 all_items.extend(page_items)
 
@@ -1721,27 +1492,19 @@ class Scraper:
 
                 if not title or not intermediate_url:
                     if self.debug:
-                        print(
-                            f"{site_code.upper()} Skipping item {index}: Missing title or URL"
-                        )
+                        print(f"{site_code.upper()} Skipping item {index}: Missing title or URL")
                     continue
 
                 if self.debug:
-                    print(
-                        f"{site_code.upper()} Processing: {title} - {intermediate_url}"
-                    )
+                    print(f"{site_code.upper()} Processing: {title} - {intermediate_url}")
 
                 # If the URL already has udemy.com in it, use it directly
                 if "udemy.com/course" in intermediate_url:
                     link = self.cleanup_link(intermediate_url)
                     if link:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Found direct Udemy link: {title} -> {link}"
-                            )
-                        self.append_to_list(
-                            getattr(self, f"{site_code}_data"), title, link
-                        )
+                            print(f"{site_code.upper()} Found direct Udemy link: {title} -> {link}")
+                        self.append_to_list(getattr(self, f"{site_code}_data"), title, link)
                         processed_count += 1
                     continue
 
@@ -1763,39 +1526,27 @@ class Scraper:
                     if match:
                         link_num = match.group(1)
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Found ID {link_num} using pattern {pattern}"
-                            )
+                            print(f"{site_code.upper()} Found ID {link_num} using pattern {pattern}")
                         break
 
                 # Approach 2: If no ID found, try fetching the intermediate page
                 if not link_num:
                     if self.debug:
-                        print(
-                            f"{site_code.upper()} No ID found in URL. Fetching intermediate page: {intermediate_url}"
-                        )
+                        print(f"{site_code.upper()} No ID found in URL. Fetching intermediate page: {intermediate_url}")
                     try:
-                        inter_content = self.fetch_page_content(
-                            intermediate_url, headers=headers
-                        )
+                        inter_content = self.fetch_page_content(intermediate_url, headers=headers)
                         if inter_content:
                             inter_soup = self.parse_html(inter_content)
 
                             # Look for direct Udemy links on the page
-                            udemy_links = inter_soup.find_all(
-                                "a", href=re.compile(r"udemy\.com/course")
-                            )
+                            udemy_links = inter_soup.find_all("a", href=re.compile(r"udemy\.com/course"))
                             if udemy_links:
                                 raw_link = udemy_links[0]["href"]
                                 link = self.cleanup_link(raw_link)
                                 if link:
                                     if self.debug:
-                                        print(
-                                            f"{site_code.upper()} Found direct Udemy link on intermediate page: {link}"
-                                        )
-                                    self.append_to_list(
-                                        getattr(self, f"{site_code}_data"), title, link
-                                    )
+                                        print(f"{site_code.upper()} Found direct Udemy link on intermediate page: {link}")
+                                    self.append_to_list(getattr(self, f"{site_code}_data"), title, link)
                                     processed_count += 1
                                 continue
 
@@ -1820,9 +1571,7 @@ class Scraper:
                                         link = self.cleanup_link(redirect_url)
                                         if link:
                                             if self.debug:
-                                                print(
-                                                    f"{site_code.upper()} Found Udemy link from button: {link}"
-                                                )
+                                                print(f"{site_code.upper()} Found Udemy link from button: {link}")
                                             self.append_to_list(
                                                 getattr(self, f"{site_code}_data"),
                                                 title,
@@ -1837,26 +1586,19 @@ class Scraper:
                                         if match:
                                             link_num = match.group(1)
                                             if self.debug:
-                                                print(
-                                                    f"{site_code.upper()} Found ID {link_num} from button href"
-                                                )
+                                                print(f"{site_code.upper()} Found ID {link_num} from button href")
                                             break
 
                                     if link_num:
                                         break
                     except Exception as e:
                         if self.debug:
-                            print(
-                                fr
-                                + f"{site_code.upper()} Error fetching intermediate page: {e!s}"
-                            )
+                            print(fr + f"{site_code.upper()} Error fetching intermediate page: {e!s}")
 
                 # If we still don't have an ID, skip this item
                 if not link_num:
                     if self.debug:
-                        print(
-                            f"{site_code.upper()} Could not extract ID from {intermediate_url}"
-                        )
+                        print(f"{site_code.upper()} Could not extract ID from {intermediate_url}")
                     continue
 
                 # Construct possible redirect URLs with the ID we found
@@ -1882,9 +1624,7 @@ class Scraper:
                         if "udemy.com/course" in response.url:
                             udemy_link = response.url
                             if self.debug:
-                                print(
-                                    f"{site_code.upper()} HEAD redirect successful: {udemy_link}"
-                                )
+                                print(f"{site_code.upper()} HEAD redirect successful: {udemy_link}")
                             break
 
                         # If HEAD doesn't lead to Udemy, try GET
@@ -1898,31 +1638,23 @@ class Scraper:
                         if "udemy.com/course" in response_get.url:
                             udemy_link = response_get.url
                             if self.debug:
-                                print(
-                                    f"{site_code.upper()} GET redirect successful: {udemy_link}"
-                                )
+                                print(f"{site_code.upper()} GET redirect successful: {udemy_link}")
                             break
 
                         # If direct redirect didn't work, check for Udemy links in the response
                         if not udemy_link:
                             redirect_content = response_get.text
                             redirect_soup = self.parse_html(redirect_content)
-                            udemy_links = redirect_soup.find_all(
-                                "a", href=re.compile(r"udemy\.com/course")
-                            )
+                            udemy_links = redirect_soup.find_all("a", href=re.compile(r"udemy\.com/course"))
                             if udemy_links:
                                 udemy_link = udemy_links[0]["href"]
                                 if self.debug:
-                                    print(
-                                        f"{site_code.upper()} Found Udemy link in redirect page: {udemy_link}"
-                                    )
+                                    print(f"{site_code.upper()} Found Udemy link in redirect page: {udemy_link}")
                                 break
 
                     except requests.RequestException as e:
                         if self.debug:
-                            print(
-                                f"{site_code.upper()} Error with redirect {redirect_url}: {e!s}"
-                            )
+                            print(f"{site_code.upper()} Error with redirect {redirect_url}: {e!s}")
                         continue
 
                 # Process the Udemy link if found
@@ -1931,28 +1663,20 @@ class Scraper:
                     if link:
                         if self.debug:
                             print(f"{site_code.upper()} Found: {title} -> {link}")
-                        self.append_to_list(
-                            getattr(self, f"{site_code}_data"), title, link
-                        )
+                        self.append_to_list(getattr(self, f"{site_code}_data"), title, link)
                         processed_count += 1
                     elif self.debug:
-                        print(
-                            f"{site_code.upper()} Skipped (invalid Udemy link): {title} -> {udemy_link}"
-                        )
+                        print(f"{site_code.upper()} Skipped (invalid Udemy link): {title} -> {udemy_link}")
                 else:
                     if self.debug:
-                        print(
-                            f"{site_code.upper()} Could not find Udemy link for {title}"
-                        )
+                        print(f"{site_code.upper()} Could not find Udemy link for {title}")
 
         except Exception:
             self.handle_exception(site_code)
         finally:
             setattr(self, f"{site_code}_done", True)
             if self.debug:
-                print(
-                    f"{site_code.upper()} Return Length: {len(getattr(self, f'{site_code}_data', []))}"
-                )
+                print(f"{site_code.upper()} Return Length: {len(getattr(self, f'{site_code}_data', []))}")
                 print(f"{site_code.upper()} Processed Count: {processed_count}")
 
     def en(self):
@@ -1968,20 +1692,14 @@ class Scraper:
             for page in range(1, 10):  # Adjust page range if needed
                 if self.debug:
                     print(f"EN Fetching page {page}...")
-                content = self.fetch_page_content(
-                    f"https://jobs.e-next.in/course/udemy/{page}"
-                )
+                content = self.fetch_page_content(f"https://jobs.e-next.in/course/udemy/{page}")
                 if not content:
                     continue
                 soup = self.parse_html(content)
                 # Find links that likely lead to the e-next course details page - Verify selector
-                page_items = soup.find_all(
-                    "a", {"class": "btn btn-secondary btn-sm btn-block"}
-                )
+                page_items = soup.find_all("a", {"class": "btn btn-secondary btn-sm btn-block"})
                 if not page_items and self.debug:  # Try fallback
-                    print(
-                        f"EN: Primary selector failed on page {page}. Trying article links..."
-                    )
+                    print(f"EN: Primary selector failed on page {page}. Trying article links...")
                     articles = soup.find_all("article", class_="job-item")
                     for article in articles:
                         link = article.find("a", href=True)
@@ -2011,30 +1729,18 @@ class Scraper:
 
                 # Find the title and the Udemy link on the details page - Verify selectors
                 title_element = soup_intermediate.find("h3")  # Assuming title is in h3
-                link_element = soup_intermediate.find(
-                    "a", {"class": "btn btn-primary"}
-                )  # Assuming Udemy link is in this button
+                link_element = soup_intermediate.find("a", {"class": "btn btn-primary"})  # Assuming Udemy link is in this button
                 # Fallbacks
                 if not title_element:
                     title_element = soup_intermediate.find("h1")
                 if not link_element:
-                    link_element = soup_intermediate.find(
-                        "a", string=re.compile("Enroll|Link|Coupon", re.I), href=True
-                    )
+                    link_element = soup_intermediate.find("a", string=re.compile("Enroll|Link|Coupon", re.I), href=True)
                 if not link_element:
-                    link_element = soup_intermediate.select_one(
-                        "div.course-buttons a"
-                    )  # Example selector
+                    link_element = soup_intermediate.select_one("div.course-buttons a")  # Example selector
 
-                if (
-                    not title_element
-                    or not link_element
-                    or not link_element.get("href")
-                ):
+                if not title_element or not link_element or not link_element.get("href"):
                     if self.debug:
-                        print(
-                            f"EN: Could not find title/link element on {intermediate_url}"
-                        )
+                        print(f"EN: Could not find title/link element on {intermediate_url}")
                     continue
 
                 title = title_element.string.strip() if title_element.string else "N/A"
@@ -2074,20 +1780,14 @@ class Scraper:
             for page in range(1, 4):  # Adjust page range
                 if self.debug:
                     print(f"CJ Fetching page {page}...")
-                content = self.fetch_page_content(
-                    f"https://www.coursejoiner.com/category/free-udemy/page/{page}/"
-                )
+                content = self.fetch_page_content(f"https://www.coursejoiner.com/category/free-udemy/page/{page}/")
                 if not content:
                     continue
                 soup = self.parse_html(content)
                 # Find links to individual course posts - Verify selector
-                page_items = soup.find_all(
-                    "h2", class_="card-title entry-title"
-                )  # Assuming links are in h2/a
+                page_items = soup.find_all("h2", class_="card-title entry-title")  # Assuming links are in h2/a
                 if not page_items and self.debug:  # Fallback
-                    print(
-                        f"CJ: Primary selector failed page {page}. Trying article titles..."
-                    )
+                    print(f"CJ: Primary selector failed page {page}. Trying article titles...")
                     page_items = soup.select("article h2.entry-title")
 
                 all_items_intermediate.extend(page_items)
@@ -2122,22 +1822,16 @@ class Scraper:
                 if not link_element:
                     link_element = soup_intermediate.find(
                         "a",
-                        string=re.compile(
-                            r"Get Coupon|Enroll Now|Get Deal", re.IGNORECASE
-                        ),
+                        string=re.compile(r"Get Coupon|Enroll Now|Get Deal", re.IGNORECASE),
                         href=True,
                     )  # Find by text
                 if not link_element:
                     # Look for links within common button container classes
-                    button_container = soup_intermediate.find(
-                        "div", class_=re.compile(r"wp-block-button")
-                    )
+                    button_container = soup_intermediate.find("div", class_=re.compile(r"wp-block-button"))
                     if button_container:
                         link_element = button_container.find("a", href=True)
                 if not link_element:  # Try finding based on URL patterns
-                    link_element = soup_intermediate.find(
-                        "a", href=re.compile(r"/go/|/visit/|/out/", re.I)
-                    )
+                    link_element = soup_intermediate.find("a", href=re.compile(r"/go/|/visit/|/out/", re.I))
 
                 if not link_element or not link_element.get("href"):
                     if self.debug:
@@ -2150,18 +1844,12 @@ class Scraper:
                 try:
                     # Use requests session to handle redirects automatically
                     session = requests.Session()
-                    session.headers.update(
-                        {
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                        }
-                    )
+                    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"})
                     # Set max redirects to avoid infinite loops
                     session.max_redirects = 7
                     if self.debug:
                         print(f" CJ Following redirects for: {raw_link}")
-                    response = session.get(
-                        raw_link, timeout=scrapper_timeout_period * 2
-                    )  # Longer timeout for redirects
+                    response = session.get(raw_link, timeout=scrapper_timeout_period * 2)  # Longer timeout for redirects
                     response.raise_for_status()
                     final_url = response.url  # URL after all redirects
 
@@ -2172,16 +1860,11 @@ class Scraper:
                             print(f"CJ Found: {title} -> {link}")
                         self.append_to_list(self.cj_data, title, link)
                     elif self.debug:
-                        print(
-                            f"CJ Skipped (non-Udemy after redirects?): {title} -> {final_url}"
-                        )
+                        print(f"CJ Skipped (non-Udemy after redirects?): {title} -> {final_url}")
 
                 except requests.exceptions.TooManyRedirects:
                     if self.debug:
-                        print(
-                            fr
-                            + f"CJ Error: Too many redirects for {title} from {raw_link}"
-                        )
+                        print(fr + f"CJ Error: Too many redirects for {title} from {raw_link}")
                 except requests.RequestException as e:
                     if self.debug:
                         print(fr + f"CJ Error following redirects for {title}: {e}")
@@ -2209,9 +1892,7 @@ class Scraper:
             for page in range(1, 4):  # Adjust page range
                 if self.debug:
                     print(f"CD Fetching page {page}...")
-                content = self.fetch_page_content(
-                    f"https://www.cursosdev.com/?page={page}"  # Check URL structure
-                )
+                content = self.fetch_page_content(f"https://www.cursosdev.com/?page={page}")  # Check URL structure
                 if not content:
                     continue
                 soup = self.parse_html(content)
@@ -2221,9 +1902,7 @@ class Scraper:
                     class_="c-card block bg-white shadow-md hover:shadow-xl rounded-lg overflow-hidden",  # Verify class
                 )
                 if not page_items and self.debug:  # Fallback
-                    print(
-                        f"CD: Primary selector failed page {page}. Trying article links..."
-                    )
+                    print(f"CD: Primary selector failed page {page}. Trying article links...")
                     page_items = soup.select("div.card a")
 
                 all_items_intermediate.extend(page_items)
@@ -2236,14 +1915,10 @@ class Scraper:
                 self.cd_progress = index + 1
                 intermediate_url = item.get("href")
 
-                if (
-                    not intermediate_url or "cursosdev.com" not in intermediate_url
-                ):  # Ensure it's a link to their site
+                if not intermediate_url or "cursosdev.com" not in intermediate_url:  # Ensure it's a link to their site
                     # Check if intermediate_url is relative and prepend base if needed
                     if intermediate_url and intermediate_url.startswith("/"):
-                        intermediate_url = (
-                            f"https://www.cursosdev.com{intermediate_url}"
-                        )
+                        intermediate_url = f"https://www.cursosdev.com{intermediate_url}"
                     else:
                         continue
 
@@ -2256,37 +1931,27 @@ class Scraper:
                 soup_intermediate = self.parse_html(content)
 
                 # Find title and the link to Udemy (often requires following a redirect)
-                title_element = soup_intermediate.find(
-                    "h1", class_=re.compile(r"text-3xl|text-4xl")
-                )  # Verify title tag/class
+                title_element = soup_intermediate.find("h1", class_=re.compile(r"text-3xl|text-4xl"))  # Verify title tag/class
                 link_element = soup_intermediate.find(
                     "a",
-                    class_=re.compile(
-                        r"bg-indigo-900|bg-purple-800|btn-primary"
-                    ),  # Find button by class pattern
+                    class_=re.compile(r"bg-indigo-900|bg-purple-800|btn-primary"),  # Find button by class pattern
                     href=True,
                 )
                 # Fallback: Find by text
                 if not link_element:
                     link_element = soup_intermediate.find(
                         "a",
-                        string=re.compile(
-                            r"Ir al curso|Acessar|Get Coupon", re.IGNORECASE
-                        ),
+                        string=re.compile(r"Ir al curso|Acessar|Get Coupon", re.IGNORECASE),
                         href=True,
                     )
 
                 if not title_element or not link_element:
                     if self.debug:
-                        print(
-                            f"CD: Could not find title/link element on {intermediate_url}"
-                        )
+                        print(f"CD: Could not find title/link element on {intermediate_url}")
                     continue
 
                 title = title_element.string.strip() if title_element.string else "N/A"
-                raw_link = link_element[
-                    "href"
-                ]  # This is likely an internal redirect URL
+                raw_link = link_element["href"]  # This is likely an internal redirect URL
 
                 try:
                     # Follow the redirect(s)
@@ -2298,9 +1963,7 @@ class Scraper:
                         print(f" CD Following redirect: {raw_link}")
                     session = requests.Session()
                     session.max_redirects = 5
-                    response = session.get(
-                        raw_link, allow_redirects=True, timeout=scrapper_timeout_period
-                    )
+                    response = session.get(raw_link, allow_redirects=True, timeout=scrapper_timeout_period)
                     response.raise_for_status()
                     final_url = response.url
 
@@ -2342,18 +2005,14 @@ class Scraper:
                 from playwright.sync_api import sync_playwright
             except ImportError:
                 if self.debug:
-                    print(
-                        f"{site_code.upper()}: Playwright not installed. Run 'pip install playwright && playwright install'. Skipping scraper."
-                    )
+                    print(f"{site_code.upper()}: Playwright not installed. Run 'pip install playwright && playwright install'. Skipping scraper.")
                 setattr(self, f"{site_code}_error", "Playwright not installed")
                 setattr(self, f"{site_code}_length", -1)
                 setattr(self, f"{site_code}_done", True)
                 return
 
             if self.debug:
-                print(
-                    f"Starting {site_code.upper()} scraper (uses Playwright, may be slow)..."
-                )
+                print(f"Starting {site_code.upper()} scraper (uses Playwright, may be slow)...")
 
             # We'll store found courses here before deduplication
             all_found_courses = []
@@ -2378,14 +2037,10 @@ class Scraper:
 
             with sync_playwright() as p:
                 try:
-                    browser = p.chromium.launch(
-                        headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"]
-                    )
+                    browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
                 except Exception as browser_error:
                     if self.debug:
-                        print(
-                            f"{site_code.upper()}: Playwright browsers not installed. Run 'playwright install'. Error: {browser_error}"
-                        )
+                        print(f"{site_code.upper()}: Playwright browsers not installed. Run 'playwright install'. Error: {browser_error}")
                     setattr(
                         self,
                         f"{site_code}_error",
@@ -2396,9 +2051,7 @@ class Scraper:
                     return
 
                 # Create a persistent context that we'll reuse
-                page_context = browser.new_context(
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
-                )
+                page_context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36")
 
                 for url_pattern in url_patterns:
                     base_url = url_pattern["base"]
@@ -2438,9 +2091,7 @@ class Scraper:
 
                             if not content:
                                 if self.debug:
-                                    print(
-                                        fr + f"Failed to fetch content for {page_url}"
-                                    )
+                                    print(fr + f"Failed to fetch content for {page_url}")
                                 continue
 
                             soup = self.parse_html(content)
@@ -2449,23 +2100,17 @@ class Scraper:
                             page_items = []
 
                             # Method 1: Look for article tags
-                            article_items = soup.find_all(
-                                "article", class_=re.compile(r"post-\d+|tdb_module")
-                            )
+                            article_items = soup.find_all("article", class_=re.compile(r"post-\d+|tdb_module"))
                             if article_items:
                                 page_items.extend(article_items)
 
                             # Method 2: Look for div modules (common in WordPress themes)
-                            div_modules = soup.select(
-                                "div.td-module-container, div.td_module_wrap"
-                            )
+                            div_modules = soup.select("div.td-module-container, div.td_module_wrap")
                             if div_modules:
                                 page_items.extend(div_modules)
 
                             # Method 3: Look for any entry/item classes (generic fallback)
-                            entry_items = soup.select(
-                                'div[class*="item-inner"], div[class*="entry-"], article.item'
-                            )
+                            entry_items = soup.select('div[class*="item-inner"], div[class*="entry-"], article.item')
                             if entry_items:
                                 page_items.extend(entry_items)
 
@@ -2477,27 +2122,19 @@ class Scraper:
                                     class_=re.compile(r"entry-title|post-title"),
                                 ):
                                     if heading.find("a", href=True):
-                                        heading_items.append(
-                                            heading.parent
-                                        )  # Get the parent container of the heading
+                                        heading_items.append(heading.parent)  # Get the parent container of the heading
                                 page_items.extend(heading_items)
 
                             if not page_items:
                                 if self.debug:
-                                    print(
-                                        f" {site_code.upper()}: No items found with selectors on {page_url}"
-                                    )
+                                    print(f" {site_code.upper()}: No items found with selectors on {page_url}")
                                 if page_num > 1:
                                     if self.debug:
-                                        print(
-                                            f"  No new items found on page {page_num}, stopping for {base_url}"
-                                        )
+                                        print(f"  No new items found on page {page_num}, stopping for {base_url}")
                                     break  # If no items found on page > 1, assume we've reached the end
 
                             if self.debug:
-                                print(
-                                    f"  Added {len(page_items)} items from {page_url}"
-                                )
+                                print(f"  Added {len(page_items)} items from {page_url}")
                             pattern_items.extend(page_items)
 
                         except Exception as page_error:
@@ -2541,30 +2178,20 @@ class Scraper:
                             if title_tag and link_tag and link_tag.get("href"):
                                 title = title_tag.get_text(strip=True)
                                 intermediate_url = link_tag["href"]
-                                if not intermediate_url.startswith(
-                                    "http"
-                                ):  # Handle relative URLs
-                                    intermediate_url = (
-                                        f"https://udemyfreecourses.org{intermediate_url}"
-                                        if intermediate_url.startswith("/")
-                                        else f"https://udemyfreecourses.org/{intermediate_url}"
-                                    )
+                                if not intermediate_url.startswith("http"):  # Handle relative URLs
+                                    intermediate_url = f"https://udemyfreecourses.org{intermediate_url}" if intermediate_url.startswith("/") else f"https://udemyfreecourses.org/{intermediate_url}"
 
                                 # Fetch intermediate page (using requests is usually faster here)
                                 try:
                                     if self.debug:
-                                        print(
-                                            f"  {site_code.upper()} Fetching intermediate: {intermediate_url}"
-                                        )
+                                        print(f"  {site_code.upper()} Fetching intermediate: {intermediate_url}")
                                     intermediate_content = self.fetch_page_content(
                                         intermediate_url,
                                         timeout=scrapper_timeout_period * 2,
                                     )
                                     if not intermediate_content:
                                         continue
-                                    intermediate_soup = self.parse_html(
-                                        intermediate_content
-                                    )
+                                    intermediate_soup = self.parse_html(intermediate_content)
 
                                     # Try multiple approaches to find the Udemy link/coupon
                                     udemy_link = None
@@ -2572,9 +2199,7 @@ class Scraper:
                                     # Approach 1: Look for buttons with specific classes
                                     final_link_tag = intermediate_soup.find(
                                         "a",
-                                        class_=re.compile(
-                                            r"fasc-button|btn-success|coupon-button|rh-deal-link"
-                                        ),
+                                        class_=re.compile(r"fasc-button|btn-success|coupon-button|rh-deal-link"),
                                         href=True,
                                     )
 
@@ -2597,13 +2222,9 @@ class Scraper:
                                             "post-content",
                                             "deal-box",
                                         ]:
-                                            container = intermediate_soup.find(
-                                                "div", class_=container_class
-                                            )
+                                            container = intermediate_soup.find("div", class_=container_class)
                                             if container:
-                                                final_link_tag = container.find(
-                                                    "a", href=True
-                                                )
+                                                final_link_tag = container.find("a", href=True)
                                                 if final_link_tag:
                                                     break
 
@@ -2611,9 +2232,7 @@ class Scraper:
                                     if not final_link_tag:
                                         direct_udemy_link = intermediate_soup.find(
                                             "a",
-                                            href=re.compile(
-                                                r"udemy\.com/course/[^/]+/\?couponCode="
-                                            ),
+                                            href=re.compile(r"udemy\.com/course/[^/]+/\?couponCode="),
                                         )
                                         if direct_udemy_link:
                                             final_link_tag = direct_udemy_link
@@ -2626,11 +2245,7 @@ class Scraper:
 
                                         # If cleanup_link didn't give us a valid Udemy link but the raw link seems
                                         # to be a redirect, try following it
-                                        if not udemy_link and (
-                                            "go.udemy" in raw_link
-                                            or "/go/" in raw_link
-                                            or "/redirect/" in raw_link
-                                        ):
+                                        if not udemy_link and ("go.udemy" in raw_link or "/go/" in raw_link or "/redirect/" in raw_link):
                                             try:
                                                 response = requests.get(
                                                     raw_link,
@@ -2638,39 +2253,27 @@ class Scraper:
                                                     timeout=scrapper_timeout_period * 2,
                                                 )
                                                 if response.ok:
-                                                    udemy_link = self.cleanup_link(
-                                                        response.url
-                                                    )
+                                                    udemy_link = self.cleanup_link(response.url)
                                             except Exception as redirect_err:
                                                 if self.debug:
-                                                    print(
-                                                        f"  {site_code.upper()} Error following redirect: {redirect_err}"
-                                                    )
+                                                    print(f"  {site_code.upper()} Error following redirect: {redirect_err}")
 
                                     # Add to our found courses if we have a valid link
                                     if udemy_link:
                                         all_found_courses.append((title, udemy_link))
                                         if self.debug:
-                                            print(
-                                                f"  {site_code.upper()} Found: {title} -> {udemy_link}"
-                                            )
+                                            print(f"  {site_code.upper()} Found: {title} -> {udemy_link}")
                                     else:
                                         if self.debug:
-                                            print(
-                                                f"  {site_code.upper()} No valid Udemy link found for: {title}"
-                                            )
+                                            print(f"  {site_code.upper()} No valid Udemy link found for: {title}")
 
                                 except Exception as intermediate_err:
                                     if self.debug:
-                                        print(
-                                            f"  {site_code.upper()} Error processing intermediate page: {intermediate_err}"
-                                        )
+                                        print(f"  {site_code.upper()} Error processing intermediate page: {intermediate_err}")
 
                         except Exception as item_err:
                             if self.debug:
-                                print(
-                                    f"  {site_code.upper()} Error processing item: {item_err}"
-                                )
+                                print(f"  {site_code.upper()} Error processing item: {item_err}")
                             # Continue to next item despite error
 
                 # Close the browser
@@ -2688,9 +2291,7 @@ class Scraper:
             self.ufc_length = len(deduplicated_courses)
 
             if self.debug:
-                print(
-                    f"{site_code.upper()} Final Length (deduplicated): {self.ufc_length}"
-                )
+                print(f"{site_code.upper()} Final Length (deduplicated): {self.ufc_length}")
 
         except Exception as e:
             self.handle_exception(site_code)
@@ -2726,9 +2327,7 @@ class Udemy:
         self.client.headers.update(headers)
         self.settings = {}
         self.enrolled_courses = {}
-        self.logger = LoggerAdapter(
-            get_logger("udemy"), {"user": None, "interface": interface}
-        )
+        self.logger = LoggerAdapter(get_logger("udemy"), {"user": None, "interface": interface})
 
     def print(self, content: str, color: str, **kargs):
         # Map color names to log levels
@@ -2775,9 +2374,7 @@ class Udemy:
     def load_settings(self):
         """Load settings from file"""
         try:
-            settings_file = (
-                "duce-cli-settings.json" if self.interface == "cli" else "settings.json"
-            )
+            settings_file = "duce-cli-settings.json" if self.interface == "cli" else "settings.json"
             with open(settings_file, encoding="utf-8") as f:
                 settings = json.load(f)
             self.settings = settings
@@ -2785,9 +2382,7 @@ class Udemy:
                 self.logger.debug("Settings loaded from file")
             return settings
         except FileNotFoundError:
-            self.logger.warning(
-                f"Settings file not found: {settings_file}, creating default settings"
-            )
+            self.logger.warning(f"Settings file not found: {settings_file}, creating default settings")
             # Create a default settings file if it doesn't exist
             default_settings = {
                 "email": "",
@@ -2816,9 +2411,7 @@ class Udemy:
             return {}
 
     def save_settings(self):
-        settings_file = (
-            "duce-cli-settings.json" if self.interface == "cli" else "settings.json"
-        )
+        settings_file = "duce-cli-settings.json" if self.interface == "cli" else "settings.json"
         with open(settings_file, "w", encoding="utf-8") as f:
             json.dump(self.settings, f, indent=2)
         self.logger.debug("Settings saved to file")
@@ -2839,17 +2432,13 @@ class Udemy:
                 from cookie_manager import get_cookies
 
                 cookies = get_cookies()
-                if cookies and all(
-                    key in cookies for key in ["client_id", "access_token", "csrftoken"]
-                ):
+                if cookies and all(key in cookies for key in ["client_id", "access_token", "csrftoken"]):
                     self.make_cookies(
                         cookies["client_id"],
                         cookies["access_token"],
                         cookies["csrftoken"],
                     )
-                    self.logger.info(
-                        "Successfully fetched cookies using enhanced cookie manager"
-                    )
+                    self.logger.info("Successfully fetched cookies using enhanced cookie manager")
                     return cookies
             except ImportError:
                 self.logger.warning("Enhanced cookie manager not available")
@@ -2859,9 +2448,7 @@ class Udemy:
                 cookies = rookiepy.get_cookies("udemy.com")
                 if not cookies:
                     raise Exception("No cookies found for udemy.com")
-                self.make_cookies(
-                    cookies["client_id"], cookies["access_token"], cookies["csrftoken"]
-                )
+                self.make_cookies(cookies["client_id"], cookies["access_token"], cookies["csrftoken"])
                 return cookies
             else:
                 raise Exception("No cookie extraction method available")
@@ -2911,9 +2498,7 @@ class Udemy:
                 current_major, current_minor = map(int, VERSION.split(".")[0:2])
                 latest_major, latest_minor = map(int, latest_version.split(".")[0:2])
 
-                if latest_major > current_major or (
-                    latest_major == current_major and latest_minor > current_minor
-                ):
+                if latest_major > current_major or (latest_major == current_major and latest_minor > current_minor):
                     login_title = f"Update v{latest_version}"
                     main_title = f"Update v{latest_version}"
                     self.logger.warning(f"Update available: v{latest_version}")
@@ -2978,9 +2563,7 @@ class Udemy:
             allow_redirects=False,
         )
         if r.text.__contains__("returnUrl"):
-            self.make_cookies(
-                r.cookies["client_id"], r.cookies["access_token"], csrf_token
-            )
+            self.make_cookies(r.cookies["client_id"], r.cookies["access_token"], csrf_token)
             self.logger.info("Manual login successful")
         else:
             login_error = r.json()["error"]["data"]["formErrors"][0]
@@ -3037,9 +2620,7 @@ class Udemy:
         )
         r = r.json()
         self.currency: str = r["user"]["credit"]["currency_code"]
-        self.logger.info(
-            f"Login verified for {self.display_name}, currency: {self.currency}"
-        )
+        self.logger.info(f"Login verified for {self.display_name}, currency: {self.currency}")
 
         s = cloudscraper.CloudScraper()
         s.cookies.update(self.cookie_dict)
@@ -3083,12 +2664,8 @@ class Udemy:
 
     def is_user_dumb(self) -> bool:
         self.sites = [key for key, value in self.settings["sites"].items() if value]
-        self.categories = [
-            key for key, value in self.settings["categories"].items() if value
-        ]
-        self.languages = [
-            key for key, value in self.settings["languages"].items() if value
-        ]
+        self.categories = [key for key, value in self.settings["categories"].items() if value]
+        self.languages = [key for key, value in self.settings["languages"].items() if value]
         self.instructor_exclude = self.settings["instructor_exclude"]
         self.title_exclude = self.settings["title_exclude"]
         self.min_rating = self.settings["min_rating"]
@@ -3114,9 +2691,7 @@ class Udemy:
 
     def normalize_link(self, link):
         parsed_url = urlparse(link)
-        path = (
-            parsed_url.path if parsed_url.path.endswith("/") else parsed_url.path + "/"
-        )
+        path = parsed_url.path if parsed_url.path.endswith("/") else parsed_url.path + "/"
         return urlunparse(
             (
                 parsed_url.scheme,
@@ -3163,9 +2738,7 @@ class Udemy:
 
         if dma.get("view_restriction"):
             course["is_invalid"] = True
-            course["msg"] = dma["serverSideProps"]["limitedAccess"]["errorMessage"][
-                "title"
-            ]
+            course["msg"] = dma["serverSideProps"]["limitedAccess"]["errorMessage"]["title"]
             return course
 
         course["is_free"] = not dma["serverSideProps"]["course"].get("isPaid", True)
@@ -3176,20 +2749,14 @@ class Udemy:
         return course
 
     def is_course_excluded(self, dma):
-        instructors = [
-            i["absolute_url"].split("/")[-2]
-            for i in dma["serverSideProps"]["course"]["instructors"]["instructors_info"]
-            if i["absolute_url"]
-        ]
+        instructors = [i["absolute_url"].split("/")[-2] for i in dma["serverSideProps"]["course"]["instructors"]["instructors_info"] if i["absolute_url"]]
         lang = dma["serverSideProps"]["course"]["localeSimpleEnglishTitle"]
         cat = dma["serverSideProps"]["topicMenu"]["breadcrumbs"][0]["title"]
         rating = dma["serverSideProps"]["course"]["rating"]
         last_update = dma["serverSideProps"]["course"]["lastUpdateDate"]
 
         if not self.is_course_updated(last_update):
-            self.print(
-                f"Course excluded: Last updated {last_update}", color="light blue"
-            )
+            self.print(f"Course excluded: Last updated {last_update}", color="light blue")
         elif self.is_instructor_excluded(instructors):
             self.print(f"Instructor excluded: {instructors[0]}", color="light blue")
         elif self.is_keyword_excluded(self.title):
@@ -3230,9 +2797,7 @@ class Udemy:
             price_info = data.get("price_text", {}).get("data", {})
             amount_str = price_info.get("list_price", {}).get("price_string")
             if not amount_str:  # Fallback if list_price is not directly available
-                amount_str = price_info.get(
-                    "amount"
-                )  # Check if 'amount' is directly available
+                amount_str = price_info.get("amount")  # Check if 'amount' is directly available
 
             if amount_str:
                 # Extract numeric value, handling currency symbols etc.
@@ -3240,14 +2805,9 @@ class Udemy:
 
                 match = re.search(r"[0-9]+([,.][0-9]+)?", amount_str)
                 if match:
-                    amount = float(
-                        match.group(0).replace(",", ".")
-                    )  # Handle both , and . as decimal separators
+                    amount = float(match.group(0).replace(",", "."))  # Handle both , and . as decimal separators
                     # Check if the price indicates it's free
-                    is_free = (
-                        price_info.get("purchase_price", {}).get("amount", 1) == 0
-                        or amount == 0
-                    )
+                    is_free = price_info.get("purchase_price", {}).get("amount", 1) == 0 or amount == 0
                     # Coupon is considered valid if the course is free OR if a coupon code was provided and used
                     # (assuming the API returns price info means coupon is somewhat valid)
                     coupon_valid = is_free or bool(coupon_code)
@@ -3317,9 +2877,7 @@ class Udemy:
     def setup_txt_file(self):
         if self.settings["save_txt"]:
             os.makedirs("Courses/", exist_ok=True)
-            self.txt_file = open(
-                f"Courses/{time.strftime('%Y-%m-%d--%H-%M')}.txt", "w", encoding="utf-8"
-            )
+            self.txt_file = open(f"Courses/{time.strftime('%Y-%m-%d--%H-%M')}.txt", "w", encoding="utf-8")
 
     def print_course_info(self, index, total_courses):
         self.print(f"[{index + 1} / {total_courses}] ", color="magenta", end=" ")
@@ -3344,27 +2902,15 @@ class Udemy:
         try:
             course_details = self.get_course_details(course_id)
             if course_details and not course_details.get("error"):
-                self.logger.info(
-                    f"Details for course {course_id} ({course_details.get('title', 'N/A')})"
-                )
+                self.logger.info(f"Details for course {course_id} ({course_details.get('title', 'N/A')})")
                 # Log some key details
-                self.logger.debug(
-                    f"  Rating: {course_details.get('rating')}, Students: {course_details.get('num_students')}, Lang: {course_details.get('language')}"
-                )
-                self.logger.debug(
-                    f"  Instructor(s): {', '.join([i.get('name', '') for i in course_details.get('instructors', [])])}"
-                )
-                self.logger.debug(
-                    f"  Last Updated: {course_details.get('last_update_date')}"
-                )
+                self.logger.debug(f"  Rating: {course_details.get('rating')}, Students: {course_details.get('num_students')}, Lang: {course_details.get('language')}")
+                self.logger.debug(f"  Instructor(s): {', '.join([i.get('name', '') for i in course_details.get('instructors', [])])}")
+                self.logger.debug(f"  Last Updated: {course_details.get('last_update_date')}")
             elif course_details and course_details.get("error"):
-                self.logger.warning(
-                    f"Could not fetch full details for course {course_id}: {course_details.get('error')}"
-                )
+                self.logger.warning(f"Could not fetch full details for course {course_id}: {course_details.get('error')}")
             else:
-                self.logger.warning(
-                    f"Could not fetch any details for course {course_id}"
-                )
+                self.logger.warning(f"Could not fetch any details for course {course_id}")
         except Exception as detail_err:
             self.logger.error(
                 f"Error fetching details for course {course_id}: {detail_err}",
@@ -3401,9 +2947,7 @@ class Udemy:
                 self.successfully_enrolled_c += 1
                 self.save_course()
             else:
-                self.print(
-                    "Unknown Error: Report this link to the developer", color="red"
-                )
+                self.print("Unknown Error: Report this link to the developer", color="red")
                 self.expired_c += 1
 
     def discounted_checkout(self, coupon, course_id) -> dict:
@@ -3472,9 +3016,7 @@ class Udemy:
 
     def free_checkout(self, course_id):
         self.client.get(f"https://www.udemy.com/course/subscribe/?courseId={course_id}")
-        r = self.client.get(
-            f"https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/?fields%5Bcourse%5D=%40default%2Cbuyable_object_type%2Cprimary_subcategory%2Cis_private"
-        ).json()
+        r = self.client.get(f"https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/?fields%5Bcourse%5D=%40default%2Cbuyable_object_type%2Cprimary_subcategory%2Cis_private").json()
         return r.get("_class") == "course"
 
     def handle_discounted_course(self, course_id):
@@ -3498,9 +3040,7 @@ class Udemy:
                 wait_time = int(re.search(r"\d+", checkout_response["detail"]).group(0))
             except (AttributeError, ValueError) as e:
                 self.logger.error(f"Failed to parse wait time: {e}")
-                self.print(
-                    "Unknown Error: Report this link to the developer", color="red"
-                )
+                self.print("Unknown Error: Report this link to the developer", color="red")
                 self.print(checkout_response, color="red")
                 wait_time = 60
             time.sleep(wait_time + 1.5)
@@ -3508,9 +3048,7 @@ class Udemy:
         elif checkout_response["status"] == "succeeded":
             self.print("Successfully Enrolled To Course :)", color="green")
             self.print(
-                "This course would have cost you "
-                + str(round(amount, 2))
-                + " EUR. Enjoy!",
+                "This course would have cost you " + str(round(amount, 2)) + " EUR. Enjoy!",
                 color="green",
             )
             self.successfully_enrolled_c += 1
@@ -3530,9 +3068,7 @@ class Udemy:
             self.print("Unknown Error: Report this to the developer", color="red")
             self.print(checkout_response, color="red")  # Add color parameter here
 
-    def get_course_details(
-        self, course_id: str, max_retries: int = 3, base_delay: int = 2
-    ) -> dict[str, Any]:
+    def get_course_details(self, course_id: str, max_retries: int = 3, base_delay: int = 2) -> dict[str, Any]:
         """Fetches detailed information for a given Udemy course ID.
 
         Tries to fetch data from the Udemy API first. If that fails or provides
@@ -3555,9 +3091,7 @@ class Udemy:
 
         for attempt in range(max_retries):
             try:
-                self.logger.debug(
-                    f"Attempt {attempt + 1} to fetch course details for {course_id} from API: {api_url}"
-                )
+                self.logger.debug(f"Attempt {attempt + 1} to fetch course details for {course_id} from API: {api_url}")
                 response = self.client.get(api_url, timeout=20)  # Increased timeout
                 response.raise_for_status()
                 data = response.json()
@@ -3566,11 +3100,7 @@ class Udemy:
                 details["headline"] = data.get("headline")
                 details["rating"] = data.get("rating")
                 details["num_students"] = data.get("num_subscribers")
-                details["url"] = (
-                    f"https://{self.domain}{data.get('url')}"
-                    if data.get("url")
-                    else None
-                )
+                details["url"] = f"https://{self.domain}{data.get('url')}" if data.get("url") else None
 
                 instructors_data = data.get("visible_instructors", [])
                 details["instructors"] = [
@@ -3578,22 +3108,14 @@ class Udemy:
                         "name": ins.get("display_name"),
                         "title": ins.get("job_title"),
                         "image": ins.get("image_100x100"),
-                        "url": (
-                            f"https://{self.domain}{ins.get('url')}"
-                            if ins.get("url")
-                            else None
-                        ),
+                        "url": (f"https://{self.domain}{ins.get('url')}" if ins.get("url") else None),
                     }
                     for ins in instructors_data
                 ]
 
                 locale_data = data.get("locale")
-                details["language"] = (
-                    locale_data.get("simple_english_title") if locale_data else None
-                )
-                details["last_update_date"] = data.get(
-                    "last_update_date"
-                )  # Format: YYYY-MM-DD
+                details["language"] = locale_data.get("simple_english_title") if locale_data else None
+                details["last_update_date"] = data.get("last_update_date")  # Format: YYYY-MM-DD
 
                 # Description might be HTML, keep as is for now
                 details["description"] = data.get("description")
@@ -3633,16 +3155,12 @@ class Udemy:
                 if primary_subcategory:
                     details["primary_subcategory"] = primary_subcategory.get("title")
 
-                self.logger.info(
-                    f"Successfully fetched details for course {course_id} via API."
-                )
+                self.logger.info(f"Successfully fetched details for course {course_id} via API.")
                 details["error"] = None  # Clear error if successful
                 return details
 
             except requests.exceptions.HTTPError as http_err:
-                self.logger.warning(
-                    f"API HTTP error for course {course_id} (attempt {attempt + 1}): {http_err}"
-                )
+                self.logger.warning(f"API HTTP error for course {course_id} (attempt {attempt + 1}): {http_err}")
                 if http_err.response.status_code == 404:
                     details["error"] = "Course not found via API (404)."
                     # Don't retry on 404, but allow fallback to scrape
@@ -3653,51 +3171,33 @@ class Udemy:
                     break
                 # For other HTTP errors, retry
             except (requests.RequestException, json.JSONDecodeError) as e:
-                self.logger.warning(
-                    f"API request/JSON error for course {course_id} (attempt {attempt + 1}): {e}"
-                )
+                self.logger.warning(f"API request/JSON error for course {course_id} (attempt {attempt + 1}): {e}")
 
             if attempt < max_retries - 1:
                 time.sleep(base_delay * (2**attempt))  # Exponential backoff
             else:
-                self.logger.error(
-                    f"API failed after {max_retries} attempts for course {course_id}."
-                )
-                if not details[
-                    "error"
-                ]:  # Set a generic error if a specific one (like 404) wasn't set
-                    details["error"] = (
-                        "Failed to fetch details from API after multiple retries."
-                    )
+                self.logger.error(f"API failed after {max_retries} attempts for course {course_id}.")
+                if not details["error"]:  # Set a generic error if a specific one (like 404) wasn't set
+                    details["error"] = "Failed to fetch details from API after multiple retries."
 
         # Placeholder for scraping logic and final return
-        self.logger.info(
-            f"API part finished for {course_id}, proceeding to potential scrape. Current error: {details.get('error')}"
-        )
+        self.logger.info(f"API part finished for {course_id}, proceeding to potential scrape. Current error: {details.get('error')}")
         return details  # Temporary return, will be replaced
 
         # Fallback to scraping if API failed or if crucial info is missing (e.g. description, curriculum)
         # We can define "crucial info missing" more strictly if needed
-        should_scrape = bool(details["error"]) or not all(
-            details.get(k) for k in ["title", "description"]
-        )
+        should_scrape = bool(details["error"]) or not all(details.get(k) for k in ["title", "description"])
 
         if should_scrape:
-            self.logger.info(
-                f"Falling back to scraping for course {course_id}. Previous API error: {details.get('error', 'N/A')}"
-            )
+            self.logger.info(f"Falling back to scraping for course {course_id}. Previous API error: {details.get('error', 'N/A')}")
             # Construct a plausible course URL. The slug doesn't strictly matter for course ID based fetching.
             scrape_url = f"https://{self.domain}/course/placeholder-slug/{course_id}/"
 
             for attempt in range(max_retries):
                 try:
-                    self.logger.debug(
-                        f"Scrape attempt {attempt + 1} for course {course_id} from {scrape_url}"
-                    )
+                    self.logger.debug(f"Scrape attempt {attempt + 1} for course {course_id} from {scrape_url}")
                     # Use the existing client which should handle cloudscraper session
-                    response = self.client.get(
-                        scrape_url, timeout=30
-                    )  # Longer timeout for page load
+                    response = self.client.get(scrape_url, timeout=30)  # Longer timeout for page load
                     response.raise_for_status()
                     soup = BeautifulSoup(response.content, "html5lib")
 
@@ -3712,22 +3212,14 @@ class Udemy:
                             course_data_options = [
                                 dma.get("course"),
                                 dma.get("serverSideProps", {}).get("course"),
-                                dma.get("componentProps", {}).get(
-                                    "course"
-                                ),  # Another common location
-                                dma.get("prerenderedData", {}).get(
-                                    "course"
-                                ),  # Yet another location
+                                dma.get("componentProps", {}).get("course"),  # Another common location
+                                dma.get("prerenderedData", {}).get("course"),  # Yet another location
                             ]
-                            course_data = next(
-                                (cd for cd in course_data_options if cd is not None), {}
-                            )
+                            course_data = next((cd for cd in course_data_options if cd is not None), {})
 
                             if not details.get("title") and course_data.get("title"):
                                 details["title"] = course_data["title"]
-                            if not details.get("headline") and course_data.get(
-                                "headline"
-                            ):
+                            if not details.get("headline") and course_data.get("headline"):
                                 details["headline"] = course_data["headline"]
                             if not details.get("rating") and course_data.get("rating"):
                                 details["rating"] = course_data["rating"]
@@ -3740,32 +3232,19 @@ class Udemy:
                                 (ns for ns in num_students_options if ns is not None),
                                 None,
                             )
-                            if (
-                                not details.get("num_students")
-                                and current_num_students is not None
-                            ):
+                            if not details.get("num_students") and current_num_students is not None:
                                 details["num_students"] = current_num_students
 
                             if not details.get("url"):
-                                details["url"] = (
-                                    f"https://{self.domain}{course_data.get('url')}"
-                                    if course_data.get("url")
-                                    else scrape_url
-                                )
+                                details["url"] = f"https://{self.domain}{course_data.get('url')}" if course_data.get("url") else scrape_url
 
                             if not details.get("instructors"):
                                 instructors_dma_options = [
                                     course_data.get("visible_instructors"),
-                                    course_data.get("instructors", {}).get(
-                                        "instructors_info"
-                                    ),
+                                    course_data.get("instructors", {}).get("instructors_info"),
                                 ]
                                 instructors_dma = next(
-                                    (
-                                        ido
-                                        for ido in instructors_dma_options
-                                        if ido is not None
-                                    ),
+                                    (ido for ido in instructors_dma_options if ido is not None),
                                     [],
                                 )
                                 details["instructors"] = [
@@ -3773,42 +3252,22 @@ class Udemy:
                                         "name": ins.get("display_name"),
                                         "title": ins.get("job_title"),
                                         "image": ins.get("image_100x100"),
-                                        "url": (
-                                            f"https://{self.domain}{ins.get('url')}"
-                                            if ins.get("url")
-                                            else (
-                                                f"https://{self.domain}{ins.get('absolute_url')}"
-                                                if ins.get("absolute_url")
-                                                else None
-                                            )
-                                        ),
+                                        "url": (f"https://{self.domain}{ins.get('url')}" if ins.get("url") else (f"https://{self.domain}{ins.get('absolute_url')}" if ins.get("absolute_url") else None)),
                                     }
                                     for ins in instructors_dma
                                 ]
 
-                            if not details.get("language") and course_data.get(
-                                "locale", {}
-                            ).get("simple_english_title"):
-                                details["language"] = course_data["locale"][
-                                    "simple_english_title"
-                                ]
-                            if not details.get("last_update_date") and course_data.get(
-                                "last_update_date"
-                            ):
-                                details["last_update_date"] = course_data[
-                                    "last_update_date"
-                                ]
+                            if not details.get("language") and course_data.get("locale", {}).get("simple_english_title"):
+                                details["language"] = course_data["locale"]["simple_english_title"]
+                            if not details.get("last_update_date") and course_data.get("last_update_date"):
+                                details["last_update_date"] = course_data["last_update_date"]
 
                             description_options = [
                                 course_data.get("description"),
                                 course_data.get("details_html"),
                             ]
                             current_description = next(
-                                (
-                                    desc
-                                    for desc in description_options
-                                    if desc is not None
-                                ),
+                                (desc for desc in description_options if desc is not None),
                                 None,
                             )
                             if not details.get("description") and current_description:
@@ -3816,46 +3275,27 @@ class Udemy:
 
                             if not details.get("curriculum_sections"):
                                 curriculum_dma_options = [
-                                    course_data.get(
-                                        "curriculum_lectures"
-                                    ),  # This might be flat list
-                                    course_data.get(
-                                        "curriculum_sections"
-                                    ),  # This is usually structured
-                                    dma.get("curriculum_context", {})
-                                    .get("data", {})
-                                    .get("sections"),  # API-like path in DMA
+                                    course_data.get("curriculum_lectures"),  # This might be flat list
+                                    course_data.get("curriculum_sections"),  # This is usually structured
+                                    dma.get("curriculum_context", {}).get("data", {}).get("sections"),  # API-like path in DMA
                                 ]
                                 sections_dma_source = next(
-                                    (
-                                        cdo
-                                        for cdo in curriculum_dma_options
-                                        if cdo is not None
-                                    ),
+                                    (cdo for cdo in curriculum_dma_options if cdo is not None),
                                     [],
                                 )
 
                                 temp_curriculum = []
                                 # Heuristic: if sections_dma_source looks like a list of lectures (flat), group them under a generic section
-                                if sections_dma_source and all(
-                                    "object_type" in item
-                                    and item["object_type"] == "lecture"
-                                    for item in sections_dma_source
-                                    if isinstance(item, dict)
-                                ):
+                                if sections_dma_source and all("object_type" in item and item["object_type"] == "lecture" for item in sections_dma_source if isinstance(item, dict)):
                                     temp_curriculum.append(
                                         {
                                             "title": "Course Content",
                                             "lecture_count": len(sections_dma_source),
-                                            "content_length_text": course_data.get(
-                                                "content_info"
-                                            ),  # Or some aggregate
+                                            "content_length_text": course_data.get("content_info"),  # Or some aggregate
                                             "lectures": [
                                                 {
                                                     "title": lect.get("title"),
-                                                    "content_summary": lect.get(
-                                                        "content_summary"
-                                                    ),
+                                                    "content_summary": lect.get("content_summary"),
                                                 }
                                                 for lect in sections_dma_source
                                             ],
@@ -3869,42 +3309,26 @@ class Udemy:
                                         temp_curriculum.append(
                                             {
                                                 "title": sec_dma.get("title"),
-                                                "lecture_count": sec_dma.get(
-                                                    "lecture_count"
-                                                ),
-                                                "content_length_text": sec_dma.get(
-                                                    "content_length_text"
-                                                ),
+                                                "lecture_count": sec_dma.get("lecture_count"),
+                                                "content_length_text": sec_dma.get("content_length_text"),
                                                 "lectures": [
                                                     {
                                                         "title": lect.get("title"),
-                                                        "content_summary": lect.get(
-                                                            "content_summary"
-                                                        ),
+                                                        "content_summary": lect.get("content_summary"),
                                                     }
                                                     for lect in lectures_dma
-                                                    if isinstance(lect, dict)
-                                                    and (
-                                                        lect.get("object_type")
-                                                        == "lecture"
-                                                        or lect.get("_class")
-                                                        == "lecture"
-                                                    )
+                                                    if isinstance(lect, dict) and (lect.get("object_type") == "lecture" or lect.get("_class") == "lecture")
                                                 ],
                                             }
                                         )
                                 if temp_curriculum:
                                     details["curriculum_sections"] = temp_curriculum
 
-                            self.logger.info(
-                                f"Successfully extracted details for course {course_id} via DMA scrape."
-                            )
+                            self.logger.info(f"Successfully extracted details for course {course_id} via DMA scrape.")
                             details["error"] = None
                             return details
                         except json.JSONDecodeError:
-                            self.logger.warning(
-                                f"Failed to parse data-module-args for course {course_id}."
-                            )
+                            self.logger.warning(f"Failed to parse data-module-args for course {course_id}.")
                         except Exception as dma_exc:
                             self.logger.warning(
                                 f"Error processing DMA for course {course_id}: {dma_exc}",
@@ -3912,28 +3336,20 @@ class Udemy:
                             )
 
                     # If DMA fails or is not present, try more direct scraping (less reliable)
-                    self.logger.info(
-                        f"DMA not available or failed for {course_id}. Attempting direct scrape selectors."
-                    )
+                    self.logger.info(f"DMA not available or failed for {course_id}. Attempting direct scrape selectors.")
 
                     if not details.get("title"):
-                        title_tag = soup.select_one(
-                            'h1[data-purpose="lead-title"], .clp-lead__title, .course-header__title h1'
-                        )
+                        title_tag = soup.select_one('h1[data-purpose="lead-title"], .clp-lead__title, .course-header__title h1')
                         if title_tag:
                             details["title"] = title_tag.get_text(strip=True)
 
                     if not details.get("headline"):
-                        headline_tag = soup.select_one(
-                            'div[data-purpose="lead-headline"], .clp-lead__headline'
-                        )
+                        headline_tag = soup.select_one('div[data-purpose="lead-headline"], .clp-lead__headline')
                         if headline_tag:
                             details["headline"] = headline_tag.get_text(strip=True)
 
                     if not details.get("rating"):
-                        rating_tag = soup.select_one(
-                            'span[data-purpose="rating-number"], span.tooltip-container span.sr-only'
-                        )
+                        rating_tag = soup.select_one('span[data-purpose="rating-number"], span.tooltip-container span.sr-only')
                         if rating_tag:
                             rating_text = rating_tag.get_text(strip=True)
                             match = re.search(r"([0-9\\\\.]+)", rating_text)
@@ -3941,28 +3357,20 @@ class Udemy:
                                 details["rating"] = float(match.group(1))
 
                     if not details.get("num_students"):
-                        students_tag = soup.select_one(
-                            'div[data-purpose="enrollment"], .course-header__details-text:-soup-contains("students"), .clp-lead__element-item:-soup-contains("students") span'
-                        )
+                        students_tag = soup.select_one('div[data-purpose="enrollment"], .course-header__details-text:-soup-contains("students"), .clp-lead__element-item:-soup-contains("students") span')
                         if students_tag:
-                            students_text = students_tag.get_text(strip=True).replace(
-                                ",", ""
-                            )
+                            students_text = students_tag.get_text(strip=True).replace(",", "")
                             match = re.search(r"(\\\\d+)", students_text)
                             if match:
                                 details["num_students"] = int(match.group(1))
 
                     if not details.get("description"):
-                        desc_tag = soup.select_one(
-                            'div[data-purpose="description"], div.ud-component--course-landing-page-udlite--description, .course-description'
-                        )
+                        desc_tag = soup.select_one('div[data-purpose="description"], div.ud-component--course-landing-page-udlite--description, .course-description')
                         if desc_tag:
                             details["description"] = str(desc_tag)
 
                     if not details.get("instructors"):
-                        instructor_elements = soup.select(
-                            'div[data-purpose="instructor-name-top"] a, .instructor--instructor__title--32R_P a'
-                        )
+                        instructor_elements = soup.select('div[data-purpose="instructor-name-top"] a, .instructor--instructor__title--32R_P a')
                         temp_instructors = []
                         for el in instructor_elements:
                             name = el.get_text(strip=True)
@@ -3971,11 +3379,7 @@ class Udemy:
                                 temp_instructors.append(
                                     {
                                         "name": name,
-                                        "url": (
-                                            f"https://{self.domain}{url_path}"
-                                            if url_path.startswith("/")
-                                            else url_path
-                                        ),
+                                        "url": (f"https://{self.domain}{url_path}" if url_path.startswith("/") else url_path),
                                         "title": None,
                                         "image": None,
                                     }
@@ -3984,15 +3388,9 @@ class Udemy:
                             details["instructors"] = temp_instructors
 
                     if not details.get("last_update_date"):
-                        last_update_tag = soup.select_one(
-                            'div[data-purpose="last-update-date"] span, .course-header__details-text:-soup-contains("Last updated")'
-                        )
+                        last_update_tag = soup.select_one('div[data-purpose="last-update-date"] span, .course-header__details-text:-soup-contains("Last updated")')
                         if last_update_tag:
-                            date_text = (
-                                last_update_tag.get_text(strip=True)
-                                .replace("Last updated", "")
-                                .strip()
-                            )
+                            date_text = last_update_tag.get_text(strip=True).replace("Last updated", "").strip()
                             try:
                                 parsed_date = None
                                 if re.match(r"\\\\d{1,2}/\\\\d{4}", date_text):
@@ -4004,44 +3402,26 @@ class Udemy:
                                 if parsed_date:
                                     details["last_update_date"] = parsed_date
                             except ValueError:
-                                self.logger.warning(
-                                    f"Could not parse last update date string: {date_text} for course {course_id}"
-                                )
+                                self.logger.warning(f"Could not parse last update date string: {date_text} for course {course_id}")
 
                     if not details.get("curriculum_sections"):
                         curriculum_sections_scrape = []
-                        section_elements = soup.select(
-                            'div[data-purpose^="course-curriculum-section-"], .curriculum--section--1J_z1'
-                        )
+                        section_elements = soup.select('div[data-purpose^="course-curriculum-section-"], .curriculum--section--1J_z1')
                         for sec_el in section_elements:
-                            title_el = sec_el.select_one(
-                                'div[data-purpose="section-title"] span, .section--section-title--1v4gJ'
-                            )
-                            meta_el = sec_el.select_one(
-                                'div[data-purpose="section-meta"] span, .section--section-meta--2Q0N0 span'
-                            )
-                            lectures_el = sec_el.select(
-                                'div[data-purpose="lecture-title"], .lecture--lecture-title--3VZz-'
-                            )
+                            title_el = sec_el.select_one('div[data-purpose="section-title"] span, .section--section-title--1v4gJ')
+                            meta_el = sec_el.select_one('div[data-purpose="section-meta"] span, .section--section-meta--2Q0N0 span')
+                            lectures_el = sec_el.select('div[data-purpose="lecture-title"], .lecture--lecture-title--3VZz-')
 
                             lecture_count = len(lectures_el)
                             content_length_text = None
                             if meta_el:  # Try to get lectures count and time from meta
                                 meta_text = meta_el.get_text(strip=True)
-                                count_match = re.search(
-                                    r"(\d+)\s*lectures", meta_text, re.IGNORECASE
-                                )
+                                count_match = re.search(r"(\d+)\s*lectures", meta_text, re.IGNORECASE)
                                 if count_match:
                                     lecture_count = int(count_match.group(1))
-                                time_match = re.search(
-                                    r"([\d\w\s]+total length)", meta_text, re.IGNORECASE
-                                )  # e.g. "12 lectures • 1h 30m total length"
+                                time_match = re.search(r"([\d\w\s]+total length)", meta_text, re.IGNORECASE)  # e.g. "12 lectures • 1h 30m total length"
                                 if time_match:
-                                    content_length_text = (
-                                        time_match.group(1)
-                                        .replace(" total length", "")
-                                        .strip()
-                                    )
+                                    content_length_text = time_match.group(1).replace(" total length", "").strip()
 
                             if title_el:
                                 curriculum_sections_scrape.append(
@@ -4061,16 +3441,12 @@ class Udemy:
                         if curriculum_sections_scrape:
                             details["curriculum_sections"] = curriculum_sections_scrape
 
-                    self.logger.info(
-                        f"Successfully scraped details for course {course_id} from HTML."
-                    )
+                    self.logger.info(f"Successfully scraped details for course {course_id} from HTML.")
                     details["error"] = None
                     return details
 
                 except requests.exceptions.HTTPError as http_err:
-                    self.logger.warning(
-                        f"Scrape HTTP error for course {course_id} (attempt {attempt + 1}): {http_err}"
-                    )
+                    self.logger.warning(f"Scrape HTTP error for course {course_id} (attempt {attempt + 1}): {http_err}")
                     if http_err.response.status_code == 404:
                         details["error"] = "Course landing page not found (404)."
                         break
@@ -4078,9 +3454,7 @@ class Udemy:
                         details["error"] = "Access forbidden to course page (403)."
                         break
                 except requests.RequestException as e:
-                    self.logger.warning(
-                        f"Scrape request error for course {course_id} (attempt {attempt + 1}): {e}"
-                    )
+                    self.logger.warning(f"Scrape request error for course {course_id} (attempt {attempt + 1}): {e}")
                 except Exception as e_scrape:
                     self.logger.error(
                         f"General error during scraping course {course_id} (attempt {attempt + 1}): {e_scrape}",
@@ -4090,26 +3464,18 @@ class Udemy:
                 if attempt < max_retries - 1:
                     time.sleep(base_delay * (2**attempt))
                 else:
-                    self.logger.error(
-                        f"Scraping failed after {max_retries} attempts for course {course_id}."
-                    )
+                    self.logger.error(f"Scraping failed after {max_retries} attempts for course {course_id}.")
                     if not details["error"]:
-                        details["error"] = (
-                            "Failed to fetch details by scraping after multiple retries."
-                        )
+                        details["error"] = "Failed to fetch details by scraping after multiple retries."
 
         # Final check and return
         if not details.get("title") and not details.get("error"):
             details["error"] = "Failed to retrieve any course details despite attempts."
         elif details.get("title") and details.get("error"):
-            self.logger.warning(
-                f"Returning partial details for {course_id} despite error: {details['error']}"
-            )
+            self.logger.warning(f"Returning partial details for {course_id} despite error: {details['error']}")
             # Keep the error message to indicate partial data, but we have a title.
         elif not details.get("title") and details.get("error"):
-            self.logger.error(
-                f"Failed to get title for {course_id}. Error: {details['error']}"
-            )
+            self.logger.error(f"Failed to get title for {course_id}. Error: {details['error']}")
 
         return details
 
@@ -4127,20 +3493,14 @@ class Udemy:
         Returns:
             True if the course should be excluded, False otherwise.
         """
-        instructors = [
-            i["absolute_url"].split("/")[-2]
-            for i in dma["serverSideProps"]["course"]["instructors"]["instructors_info"]
-            if i["absolute_url"]
-        ]
+        instructors = [i["absolute_url"].split("/")[-2] for i in dma["serverSideProps"]["course"]["instructors"]["instructors_info"] if i["absolute_url"]]
         lang = dma["serverSideProps"]["course"]["localeSimpleEnglishTitle"]
         cat = dma["serverSideProps"]["topicMenu"]["breadcrumbs"][0]["title"]
         rating = dma["serverSideProps"]["course"]["rating"]
         last_update = dma["serverSideProps"]["course"]["lastUpdateDate"]
 
         if not self.is_course_updated(last_update):
-            self.print(
-                f"Course excluded: Last updated {last_update}", color="light blue"
-            )
+            self.print(f"Course excluded: Last updated {last_update}", color="light blue")
         elif self.is_instructor_excluded(instructors):
             self.print(f"Instructor excluded: {instructors[0]}", color="light blue")
         elif self.is_keyword_excluded(self.title):

@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""
-Games Functionality Validation Script.
+"""Games Functionality Validation Script.
 Tests core functionality and data quality without complex mocking.
 """
 
-import unittest
-import sys
-import os
-from datetime import datetime
 import json
+import os
+import sys
+import unittest
+from datetime import datetime
 
 # Add project root to sys.path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -28,9 +27,7 @@ def run_core_validation():
     from Tests.test_games_data_quality import TestGamesDataQuality
 
     test_suite = unittest.TestSuite()
-    test_suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(TestGamesDataQuality)
-    )
+    test_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestGamesDataQuality))
 
     runner = unittest.TextTestRunner(verbosity=2, stream=sys.stdout)
     result = runner.run(test_suite)
@@ -68,7 +65,7 @@ def validate_real_data():
 
         if os.path.exists(filepath):
             try:
-                with open(filepath, "r") as f:
+                with open(filepath) as f:
                     data = json.load(f)
 
                 if isinstance(data, list):
@@ -129,8 +126,8 @@ def test_components_integration():
         # Test data loading (without full execution)
         print("\nTesting component import...")
         from src.web.dashboard.components.games_tab import (
-            load_deals_data,
             load_bundles_data,
+            load_deals_data,
         )
 
         print("✅ Games tab components can be imported")
@@ -166,7 +163,7 @@ def check_etl_integration():
         if os.path.exists(script_path):
             try:
                 # Check syntax by compiling
-                with open(script_path, "r") as f:
+                with open(script_path) as f:
                     compile(f.read(), script_path, "exec")
                 print(f"✅ {script_name}: Syntax OK")
             except SyntaxError as e:
@@ -183,7 +180,7 @@ def check_etl_integration():
         script_path = os.path.join(project_root, run_script)
 
         if os.path.exists(script_path):
-            with open(script_path, "r") as f:
+            with open(script_path) as f:
                 content = f.read()
 
             games_scripts_included = [
@@ -237,7 +234,7 @@ if __name__ == "__main__":
         print("   🚀 Ready for production use")
         exit_code = 0
     else:
-        print(f"\n⚠️  GAMES FUNCTIONALITY HAS ISSUES")
+        print("\n⚠️  GAMES FUNCTIONALITY HAS ISSUES")
         if not tests_passed:
             print("   ❌ Core tests failed")
         if not data_good:

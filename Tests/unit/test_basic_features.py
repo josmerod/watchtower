@@ -48,7 +48,6 @@ def test_exceptions():
     print("\nTesting Exception Handling...")
     try:
         from exceptions.base import WatchtowerError
-        from exceptions.watcher import WatcherTimeoutError
 
         # Test basic exception
         try:

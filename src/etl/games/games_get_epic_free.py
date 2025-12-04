@@ -14,15 +14,11 @@ from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 
 logger = get_logger("Epic_Free_Games_ETL")
-EPIC_API_URL = (
-    "https://store-site-backend-static.ak.epicgames.com"
-    "/freeGamesPromotions?locale=es-ES&country=ES"
-)
+EPIC_API_URL = "https://store-site-backend-static.ak.epicgames.com" "/freeGamesPromotions?locale=es-ES&country=ES"
 
 
 def get_epic_free_games() -> None:
-    """
-    Fetches current free games from Epic Games Store and saves them as JSON and CSV.
+    """Fetches current free games from Epic Games Store and saves them as JSON and CSV.
 
     Extracted values:
     - title: game title
@@ -41,32 +37,19 @@ def get_epic_free_games() -> None:
         logger.error(f"Error fetching Epic Games promotions: {e}")
         return
 
-    elements = (
-        data.get("data", {})
-        .get("Catalog", {})
-        .get("searchStore", {})
-        .get("elements", [])
-    )
+    elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", [])
     free_games: list[dict[str, str]] = []
     now = datetime.now(timezone.utc)
 
     for elem in elements:
         promotions = elem.get("promotions") or {}
-        offers = promotions.get("promotionalOffers", []) + promotions.get(
-            "upcomingPromotionalOffers", []
-        )
+        offers = promotions.get("promotionalOffers", []) + promotions.get("upcomingPromotionalOffers", [])
         for offer_group in offers:
             for offer in offer_group.get("promotionalOffers", []):
-                start = datetime.fromisoformat(
-                    offer.get("startDate").replace("Z", "+00:00")
-                )
-                end = datetime.fromisoformat(
-                    offer.get("endDate").replace("Z", "+00:00")
-                )
+                start = datetime.fromisoformat(offer.get("startDate").replace("Z", "+00:00"))
+                end = datetime.fromisoformat(offer.get("endDate").replace("Z", "+00:00"))
                 if start <= now <= end:
-                    game_url = (
-                        f"https://www.epicgames.com/store/p/{elem.get('productSlug')}"
-                    )
+                    game_url = f"https://www.epicgames.com/store/p/{elem.get('productSlug')}"
                     free_games.append(
                         {
                             "title": elem.get("title"),

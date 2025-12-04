@@ -39,9 +39,7 @@ class HuggingFaceETL(BaseETL):
             "api": "https://huggingface.co/api",
         }
 
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
+        self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
     def extract(self) -> list[dict[str, Any]]:
         """Extract data from HuggingFace platform."""
@@ -395,16 +393,12 @@ class HuggingFaceETL(BaseETL):
             # Save latest data
             with open(latest_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, default=str)
-            self.logger.info(
-                f"Successfully updated latest HuggingFace data at {latest_file}"
-            )
+            self.logger.info(f"Successfully updated latest HuggingFace data at {latest_file}")
 
             self.metrics.records_loaded = len(data)
 
-        except (IOError, OSError) as e:
-            self.logger.error(
-                f"Failed to save HuggingFace data to {output_file} or {latest_file}: {e}"
-            )
+        except OSError as e:
+            self.logger.error(f"Failed to save HuggingFace data to {output_file} or {latest_file}: {e}")
             raise LoadError(
                 f"Failed to save HuggingFace data: {e}",
                 destination=str(output_file),

@@ -196,7 +196,7 @@ External APIs/RSS ──▶ ETL Pipelines ──▶ JSON Storage ──▶ Dashb
 - **ArXiv ETL** (`src/etl/arxiv/`): RSS parsing, NLP classification, research trend analysis
 - **News ETL** (`src/etl/news/`): Multi-source aggregation (HackerNews, Reddit, Medium, etc.)
 - **Games ETL** (`src/etl/games/`): Deal aggregation, free games, new releases
-- **Course ETL** (`src/etl/goldigging/`): Udemy, Coursera, educational content mining  
+- **Course ETL** (`src/etl/goldigging/`): Udemy, Coursera, educational content mining
 - **AI Platforms ETL** (`src/etl/ai_platforms/`): OpenAI, Anthropic, HuggingFace monitoring
 - **Entertainment ETL** (`src/etl/entertainment/`): Cinema listings, meme economics
 - **Deal Aggregation** (`src/etl/deals/`): Comprehensive deal tracking across multiple categories

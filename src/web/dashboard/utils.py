@@ -1,6 +1,4 @@
-"""
-Shared utilities for the Dashboard.
-"""
+"""Shared utilities for the Dashboard."""
 
 import os
 from datetime import datetime, timezone
@@ -9,8 +7,7 @@ import pandas as pd
 
 
 def get_project_root():
-    """
-    Get the project root directory from any component file's location.
+    """Get the project root directory from any component file's location.
 
     Assumes the calling file is in src/web/dashboard/components/
     and needs to go up 4 levels to reach the project root.
@@ -18,15 +15,12 @@ def get_project_root():
     # Get the directory of this utils.py file
     current_file = os.path.abspath(__file__)
     # From src/web/dashboard/utils.py, go up 3 levels to reach project root
-    project_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
-    )
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file))))
     return project_root
 
 
 def get_data_path(*path_parts):
-    """
-    Get a path within the data directory.
+    """Get a path within the data directory.
 
     Args:
         *path_parts: Path components to join (e.g., 'youtube', 'channel_name')
@@ -48,8 +42,7 @@ def dir_exists(dirpath):
 
 
 def parse_date_universal(date_str, component_name="Unknown"):
-    """
-    Universal date parsing function for all dashboard components.
+    """Universal date parsing function for all dashboard components.
 
     Args:
         date_str: Date string to parse
@@ -58,11 +51,7 @@ def parse_date_universal(date_str, component_name="Unknown"):
     Returns:
         datetime: Parsed datetime object in UTC, or None if parsing fails
     """
-    if (
-        pd.isna(date_str)
-        or not date_str
-        or str(date_str).strip() in ("", "N/A", "null", "None", "undefined")
-    ):
+    if pd.isna(date_str) or not date_str or str(date_str).strip() in ("", "N/A", "null", "None", "undefined"):
         return None
 
     date_str = str(date_str).strip()
@@ -109,11 +98,7 @@ def parse_date_universal(date_str, component_name="Unknown"):
     for fmt in common_formats:
         try:
             dt = datetime.strptime(date_str, fmt)
-            return (
-                dt.astimezone(timezone.utc)
-                if dt.tzinfo
-                else dt.replace(tzinfo=timezone.utc)
-            )
+            return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
         except ValueError:
             continue
 
@@ -128,15 +113,12 @@ def parse_date_universal(date_str, component_name="Unknown"):
 
     # Only show debug message for non-trivial date strings to reduce noise
     if len(date_str) > 3 and date_str not in ("N/A", "null", "None", "undefined"):
-        print(
-            f"Debug ({component_name}): Could not parse date: '{date_str[:50]}{'...' if len(date_str) > 50 else ''}'"
-        )
+        print(f"Debug ({component_name}): Could not parse date: '{date_str[:50]}{'...' if len(date_str) > 50 else ''}'")
     return None
 
 
 def log_missing_file(file_path, component_name, is_optional=True):
-    """
-    Log missing file warnings in a consistent, less noisy way.
+    """Log missing file warnings in a consistent, less noisy way.
 
     Args:
         file_path: Path to the missing file
@@ -154,8 +136,7 @@ def log_missing_file(file_path, component_name, is_optional=True):
 
 
 def handle_data_loading_error(e, component_name, file_path):
-    """
-    Handle data loading errors in a consistent way.
+    """Handle data loading errors in a consistent way.
 
     Args:
         e: Exception that occurred

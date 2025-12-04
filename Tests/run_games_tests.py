@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""
-Dedicated test runner for Games functionality.
+"""Dedicated test runner for Games functionality.
 Runs ETL tests, component tests, and data quality validation.
 """
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 from datetime import datetime
 
 # Add project root to sys.path
@@ -29,16 +28,12 @@ def run_games_tests():
     # Import and add ETL tests
     try:
         from Tests.etl.test_games_etl_comprehensive import (
-            TestGamesETLComprehensive,
             TestGamesDataQuality,
+            TestGamesETLComprehensive,
         )
 
-        test_suite.addTest(
-            unittest.TestLoader().loadTestsFromTestCase(TestGamesETLComprehensive)
-        )
-        test_suite.addTest(
-            unittest.TestLoader().loadTestsFromTestCase(TestGamesDataQuality)
-        )
+        test_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestGamesETLComprehensive))
+        test_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestGamesDataQuality))
         print("✅ Loaded ETL tests")
     except ImportError as e:
         print(f"⚠️  Could not load ETL tests: {e}")
@@ -46,16 +41,12 @@ def run_games_tests():
     # Import and add component tests
     try:
         from Tests.web.fullstreamlit.components.test_games_tab import (
-            TestGamesTabComponent,
             TestGamesDataIntegration,
+            TestGamesTabComponent,
         )
 
-        test_suite.addTest(
-            unittest.TestLoader().loadTestsFromTestCase(TestGamesTabComponent)
-        )
-        test_suite.addTest(
-            unittest.TestLoader().loadTestsFromTestCase(TestGamesDataIntegration)
-        )
+        test_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestGamesTabComponent))
+        test_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestGamesDataIntegration))
         print("✅ Loaded component tests")
     except ImportError as e:
         print(f"⚠️  Could not load component tests: {e}")
@@ -64,9 +55,7 @@ def run_games_tests():
     try:
         from Tests.etl.test_new_game_releases_etl import TestNewGameReleasesETL
 
-        test_suite.addTest(
-            unittest.TestLoader().loadTestsFromTestCase(TestNewGameReleasesETL)
-        )
+        test_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestNewGameReleasesETL))
         print("✅ Loaded existing new releases tests")
     except ImportError as e:
         print(f"⚠️  Could not load existing new releases tests: {e}")
@@ -76,9 +65,7 @@ def run_games_tests():
     print("-" * 60)
 
     # Run tests with detailed output
-    runner = unittest.TextTestRunner(
-        verbosity=2, stream=sys.stdout, descriptions=True, failfast=False
-    )
+    runner = unittest.TextTestRunner(verbosity=2, stream=sys.stdout, descriptions=True, failfast=False)
 
     result = runner.run(test_suite)
 
@@ -101,15 +88,7 @@ def run_games_tests():
         for test, traceback in result.errors:
             print(f"  - {test}: {traceback.split(chr(10))[0]}")
 
-    success_rate = (
-        (
-            (result.testsRun - len(result.failures) - len(result.errors))
-            / result.testsRun
-            * 100
-        )
-        if result.testsRun > 0
-        else 0
-    )
+    success_rate = ((result.testsRun - len(result.failures) - len(result.errors)) / result.testsRun * 100) if result.testsRun > 0 else 0
     print(f"\n🎯 Success Rate: {success_rate:.1f}%")
 
     if result.wasSuccessful():
@@ -152,7 +131,7 @@ def validate_data_quality():
             try:
                 import json
 
-                with open(filepath, "r") as f:
+                with open(filepath) as f:
                     data = json.load(f)
 
                 if isinstance(data, list):
@@ -180,9 +159,7 @@ def validate_data_quality():
         if age_hours < 24:
             print(f"✅ Data freshness: Updated {age_hours:.1f} hours ago")
         else:
-            print(
-                f"⚠️  Data freshness: Updated {age_hours:.1f} hours ago (consider refreshing)"
-            )
+            print(f"⚠️  Data freshness: Updated {age_hours:.1f} hours ago (consider refreshing)")
 
     return all_good
 

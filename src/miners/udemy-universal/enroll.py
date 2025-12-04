@@ -12,12 +12,9 @@ import sys
 import time
 import traceback
 
-from base import (
-    VERSION,
-    LoginException,
-    Udemy,
-    scraper_dict,
-)  # Import Udemy and LoginException
+from base import VERSION, LoginException, Udemy, scraper_dict
+
+# Import Udemy and LoginException
 from logger import LoggerAdapter, get_logger
 
 # DUCE-CLI Enroller - Discounted Udemy Course Enroller (Enrollment Part)
@@ -35,9 +32,7 @@ def handle_login(udemy):
     Returns:
         bool: True if login successful, False otherwise
     """
-    login_logger = LoggerAdapter(
-        get_logger("login"), {"user": getattr(udemy, "display_name", None)}
-    )
+    login_logger = LoggerAdapter(get_logger("login"), {"user": getattr(udemy, "display_name", None)})
     max_attempts = 3
     attempts = 0
 
@@ -50,15 +45,9 @@ def handle_login(udemy):
                     udemy.fetch_cookies()
                     login_method = "Browser Cookies"
                 except Exception as cookie_error:
-                    login_logger.error(
-                        f"Failed to load browser cookies: {cookie_error}"
-                    )
-                    login_logger.warning(
-                        "Ensure browser is supported and cookies exist. Trying other methods..."
-                    )
-                    udemy.settings["use_browser_cookies"] = (
-                        False  # Disable for this run
-                    )
+                    login_logger.error(f"Failed to load browser cookies: {cookie_error}")
+                    login_logger.warning("Ensure browser is supported and cookies exist. Trying other methods...")
+                    udemy.settings["use_browser_cookies"] = False  # Disable for this run
                     attempts += 1  # Count as an attempt
                     if attempts >= max_attempts:
                         return False
@@ -82,14 +71,10 @@ def handle_login(udemy):
             # Save credentials if login successful and they were entered manually
             if "Manual Email" in login_method:
                 # Ask user if they want to save credentials
-                save_choice = input(
-                    f"Login successful as {udemy.display_name}. Save credentials? (y/n): "
-                ).lower()
+                save_choice = input(f"Login successful as {udemy.display_name}. Save credentials? (y/n): ").lower()
                 if save_choice == "y":
                     udemy.settings["email"] = email
-                    udemy.settings["password"] = (
-                        password  # Consider security implications of saving passwords
-                    )
+                    udemy.settings["password"] = password  # Consider security implications of saving passwords
                     udemy.save_settings()
                     login_logger.info("Credentials saved.")
                 else:
@@ -108,34 +93,24 @@ def handle_login(udemy):
 
             # Handle specific login method failures
             if "Browser" in login_method:
-                login_logger.warning(
-                    "Login via browser cookies failed. Trying credential login if available."
-                )
-                udemy.settings["use_browser_cookies"] = (
-                    False  # Don't retry cookies this session
-                )
+                login_logger.warning("Login via browser cookies failed. Trying credential login if available.")
+                udemy.settings["use_browser_cookies"] = False  # Don't retry cookies this session
             elif "Email" in login_method:
                 # Clear potentially incorrect saved credentials
                 login_logger.warning("Login via saved/manual credentials failed.")
                 udemy.settings["email"], udemy.settings["password"] = "", ""
 
             if attempts < max_attempts:
-                login_logger.info(
-                    f"Retrying... (Attempt {attempts + 1}/{max_attempts})"
-                )
+                login_logger.info(f"Retrying... (Attempt {attempts + 1}/{max_attempts})")
             else:
                 login_logger.error("Maximum login attempts reached.")
 
         except Exception as e:
             attempts += 1
             login_logger.error(f"An unexpected error occurred during login: {e}")
-            login_logger.debug(
-                traceback.format_exc()
-            )  # Log full traceback at debug level
+            login_logger.debug(traceback.format_exc())  # Log full traceback at debug level
             if attempts < max_attempts:
-                login_logger.info(
-                    f"Retrying... (Attempt {attempts + 1}/{max_attempts})"
-                )
+                login_logger.info(f"Retrying... (Attempt {attempts + 1}/{max_attempts})")
             else:
                 login_logger.error("Maximum login attempts reached due to errors.")
 
@@ -148,15 +123,11 @@ def display_results(udemy):
     Args:
         udemy: The Udemy client instance
     """
-    results_logger = LoggerAdapter(
-        get_logger("results"), {"user": getattr(udemy, "display_name", None)}
-    )
+    results_logger = LoggerAdapter(get_logger("results"), {"user": getattr(udemy, "display_name", None)})
 
     results_logger.info("--- Enrollment Summary ---")
     results_logger.info(f"Successfully Enrolled: {udemy.successfully_enrolled_c}")
-    results_logger.info(
-        f"Amount Saved: {round(udemy.amount_saved_c, 2)} {udemy.currency.upper() if hasattr(udemy, 'currency') else 'N/A'}"
-    )
+    results_logger.info(f"Amount Saved: {round(udemy.amount_saved_c, 2)} {udemy.currency.upper() if hasattr(udemy, 'currency') else 'N/A'}")
     results_logger.info(f"Already Enrolled: {udemy.already_enrolled_c}")
     results_logger.info(f"Excluded Courses: {udemy.excluded_c}")
     results_logger.info(f"Expired/Failed Courses: {udemy.expired_c}")
@@ -164,13 +135,9 @@ def display_results(udemy):
     # Calculate total enrolled ONLY if login was successful and courses were processed
     if hasattr(udemy, "enrolled_courses"):
         total_courses = len(udemy.enrolled_courses)
-        results_logger.info(
-            f"Total Enrolled Courses (including previously owned): {total_courses}"
-        )
+        results_logger.info(f"Total Enrolled Courses (including previously owned): {total_courses}")
     else:
-        results_logger.warning(
-            "Could not determine total enrolled courses (Login might have failed)."
-        )
+        results_logger.warning("Could not determine total enrolled courses (Login might have failed).")
 
 
 def main_enroll():
@@ -195,9 +162,7 @@ def main_enroll():
         logger.warning("Please run the extractor script (cli.py) first.")
         return
     except json.JSONDecodeError:
-        logger.error(
-            f"Error: Could not decode JSON from '{INPUT_FILE}'. It might be corrupted."
-        )
+        logger.error(f"Error: Could not decode JSON from '{INPUT_FILE}'. It might be corrupted.")
         return
     except Exception as e:
         logger.error(f"Error loading courses file: {e}")
@@ -214,25 +179,13 @@ def main_enroll():
         # Log important settings for debugging
         log_settings = {
             "use_browser_cookies": udemy.settings.get("use_browser_cookies", False),
-            "has_saved_credentials": bool(
-                udemy.settings.get("email") and udemy.settings.get("password")
-            ),
-            "enabled_sites": [
-                site
-                for site, enabled in udemy.settings.get("sites", {}).items()
-                if enabled
-            ],
-            "enabled_languages": [
-                lang
-                for lang, enabled in udemy.settings.get("languages", {}).items()
-                if enabled
-            ],
+            "has_saved_credentials": bool(udemy.settings.get("email") and udemy.settings.get("password")),
+            "enabled_sites": [site for site, enabled in udemy.settings.get("sites", {}).items() if enabled],
+            "enabled_languages": [lang for lang, enabled in udemy.settings.get("languages", {}).items() if enabled],
             "min_rating": udemy.settings.get("min_rating", 0),
             "save_txt": udemy.settings.get("save_txt", True),
             "discounted_only": udemy.settings.get("discounted_only", False),
-            "course_update_threshold_months": udemy.settings.get(
-                "course_update_threshold_months", 24
-            ),
+            "course_update_threshold_months": udemy.settings.get("course_update_threshold_months", 24),
         }
         logger.info(f"Active settings: {json.dumps(log_settings, indent=2)}")
 
@@ -246,9 +199,7 @@ def main_enroll():
                 "email": "",
                 "password": "",
                 "use_browser_cookies": False,
-                "sites": dict.fromkeys(
-                    scraper_dict.keys(), True
-                ),  # Default all sites enabled in settings context
+                "sites": dict.fromkeys(scraper_dict.keys(), True),  # Default all sites enabled in settings context
                 "categories": {},
                 "languages": {"en": True},  # Example defaults
                 "min_rating": 0,
@@ -293,18 +244,14 @@ def main_enroll():
     # Check user settings for validity (e.g., selected categories/languages)
     # This uses the loaded settings, not the sites from scraping phase
     if udemy.is_user_dumb():  # Checks categories, languages etc.
-        logger.error(
-            "Invalid configuration detected in settings (e.g., no languages or categories selected). Please check your settings file!"
-        )
+        logger.error("Invalid configuration detected in settings (e.g., no languages or categories selected). Please check your settings file!")
         logger.warning("Enrollment might skip many courses based on current settings.")
         # Decide whether to proceed or exit
         proceed = input("Proceed anyway? (y/n): ").lower()
         if proceed != "y":
             logger.info("User chose not to proceed with potentially invalid settings.")
             return
-        logger.warning(
-            "Proceeding with potentially invalid settings as per user's request."
-        )
+        logger.warning("Proceeding with potentially invalid settings as per user's request.")
 
     # Set the loaded data for enrollment processing
     udemy.scraped_data = scraped_data
@@ -320,16 +267,9 @@ def main_enroll():
 
         # Log performance metrics
         elapsed_time = time.time() - start_time
-        courses_processed = (
-            udemy.successfully_enrolled_c
-            + udemy.already_enrolled_c
-            + udemy.excluded_c
-            + udemy.expired_c
-        )
+        courses_processed = udemy.successfully_enrolled_c + udemy.already_enrolled_c + udemy.excluded_c + udemy.expired_c
         logger.info(f"Enrollment process completed in {elapsed_time:.2f} seconds")
-        logger.info(
-            f"Average processing time per course: {elapsed_time / max(1, courses_processed):.2f} seconds"
-        )
+        logger.info(f"Average processing time per course: {elapsed_time / max(1, courses_processed):.2f} seconds")
 
         # Display results
         display_results(udemy)

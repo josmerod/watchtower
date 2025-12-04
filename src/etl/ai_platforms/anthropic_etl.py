@@ -37,9 +37,7 @@ class AnthropicETL(BaseETL):
             "claude": "https://claude.ai",
         }
 
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
+        self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
     def extract(self) -> list[dict[str, Any]]:
         """Extract data from Anthropic platform."""
@@ -162,9 +160,7 @@ class AnthropicETL(BaseETL):
                 # Add Anthropic-specific intelligence
                 transformed_record = {
                     **record,
-                    "constitutional_ai_focus": self._assess_constitutional_ai_focus(
-                        record
-                    ),
+                    "constitutional_ai_focus": self._assess_constitutional_ai_focus(record),
                     "safety_emphasis": self._assess_safety_emphasis(record),
                     "research_impact": self._assess_research_impact(record),
                 }
@@ -255,16 +251,12 @@ class AnthropicETL(BaseETL):
             # Save latest data
             with open(latest_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, default=str)
-            self.logger.info(
-                f"Successfully updated latest Anthropic data at {latest_file}"
-            )
+            self.logger.info(f"Successfully updated latest Anthropic data at {latest_file}")
 
             self.metrics.records_loaded = len(data)
 
-        except (IOError, OSError) as e:
-            self.logger.error(
-                f"Failed to save Anthropic data to {output_file} or {latest_file}: {e}"
-            )
+        except OSError as e:
+            self.logger.error(f"Failed to save Anthropic data to {output_file} or {latest_file}: {e}")
             raise LoadError(
                 f"Failed to save Anthropic data: {e}",
                 destination=str(output_file),

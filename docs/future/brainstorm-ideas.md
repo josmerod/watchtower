@@ -3,7 +3,7 @@
 
 - Limpieza de logs de forma automática (mantener 5,6 versiones de logs, limpiar los más antiguos. Correr automáticamente cada ejecución de la etl).
 - Rutas de senderismo en Valencia y alrededores, quizás con un mapa o indicadores para ir a google maps
-- Planes de turismo (en valencia y alrededores), quizás usando alguna api de turismo pública de la generalitat o similares, puede ser que la tengan en turismovirtual??? (esto lo dijo la IA) o algo por el estilo 
+- Planes de turismo (en valencia y alrededores), quizás usando alguna api de turismo pública de la generalitat o similares, puede ser que la tengan en turismovirtual??? (esto lo dijo la IA) o algo por el estilo
 - Buscador de ayudas públicas, gubernamentales para personas, fuentes del gobierno, otras fuentes de ayudas, etc...
 - Nuevos datasets publicos expuestos por el gobierno español, tipo datos.gob.es, etc... ver los nuevos y explotar la metadata para ver si hay algo útil.
 - Datasets o modelos que sean trending en hugginface, kaggle o plataformas similares. Mejorar lo ya existente.
@@ -15,7 +15,7 @@
 - Novedades de productos de Ikea? Por los loles. Que solo sea en España.
 - Lanzamientos de videojuegos? No todo todo, pero que sean mínimamente decentes. Alguna API o algo de una página que ya lo cure?
 - Directorio recetas de cocina (batch cooking? una web que tenga directorio y sean decentes? algo?)
-- Refinar / añadir categorías a la parte de Youtube. (Audiolibros? Podcasts?) 
+- Refinar / añadir categorías a la parte de Youtube. (Audiolibros? Podcasts?)
 - Feed de z-library o algo similar? Un rss o algo, para temas relevantes.
 - Goodreads non-fiction top (RSS o similar, api?). Recientes...
 - Mejor refinamiento de medium, nuevas categorías, algo de prefiltrado?
@@ -42,7 +42,7 @@
 - Exponer API?
 - Anime Calendar + watchlist. Algo relevante mediante API? Persistencia para saber cuando llegan los siguientes capítulos. Posiblemente enlazar con un traker como nyaa.si o algo similar.
 - ADHD Toolbox (como la web, scrappearla o similar, hay una de How to ADHD).
-- Friki news, noticias frikis y similar. 
+- Friki news, noticias frikis y similar.
 - Gemas ocultas en sitios de deals, bajo precio, buena nota. Quizás sacando su metascore de algun sitio y o ver si hay alguna api.
 - Script o algo siimlar para el Stream Farmer para añadir free packages https://steamdb.info/freepackages/
 - Laptop friendly coffee shops in Valencia and around. Platforms offor i
@@ -268,7 +268,7 @@
 
 ### 1. **Academic Research Intelligence System**
 - **Uso**: Monitoreo de múltiples fuentes académicas (arXiv, DBLP, ResearchGate, Google Scholar)
-- **Características**: 
+- **Características**:
   - Cross-citation analysis para identificar papers influyentes
   - Trend detection en areas de investigación emergentes
   - Author collaboration network analysis
@@ -2097,7 +2097,7 @@ Esta expansión masiva de casos de uso convierte a Watchtower en una plataforma 
 **IMPORTANTE**: This platform is designed for:
 - **Educational research** into digital rights and information systems
 - **Legal alternatives** to expensive proprietary software
-- **Privacy protection** from corporate and government surveillance  
+- **Privacy protection** from corporate and government surveillance
 - **Digital preservation** of cultural heritage
 - **Academic research** into information access and digital rights
 - **Supporting creators** through direct funding when possible

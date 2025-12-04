@@ -87,9 +87,7 @@ class EnhancedArxivETL(BaseETL):
             try:
                 self.pwc_client = PapersWithCodeClient()
             except Exception as e:
-                self.logger.warning(
-                    f"Failed to initialize Papers With Code client: {e}"
-                )
+                self.logger.warning(f"Failed to initialize Papers With Code client: {e}")
 
         # Industry impact keywords with weights
         self.impact_keywords = {
@@ -270,9 +268,7 @@ class EnhancedArxivETL(BaseETL):
             if isinstance(watcher_data, dict) and "papers" in watcher_data:
                 papers = watcher_data["papers"]
                 metadata = watcher_data.get("metadata", {})
-                self.logger.info(
-                    f"Loaded {len(papers)} papers with metadata: {metadata.get('average_relevance_score', 'N/A')} avg relevance"
-                )
+                self.logger.info(f"Loaded {len(papers)} papers with metadata: {metadata.get('average_relevance_score', 'N/A')} avg relevance")
             else:
                 papers = watcher_data
                 self.logger.info(f"Loaded {len(papers)} papers from watcher")
@@ -300,9 +296,7 @@ class EnhancedArxivETL(BaseETL):
             return []
 
         try:
-            self.logger.info(
-                f"Starting enhanced transformation of {len(papers)} papers"
-            )
+            self.logger.info(f"Starting enhanced transformation of {len(papers)} papers")
 
             # Prepare text for classification if needed
             if self.enable_advanced_scoring:
@@ -313,16 +307,12 @@ class EnhancedArxivETL(BaseETL):
 
             for i, paper_data in enumerate(papers):
                 try:
-                    enhanced_paper = self._transform_single_paper(
-                        paper_data, i, github_token
-                    )
+                    enhanced_paper = self._transform_single_paper(paper_data, i, github_token)
                     if enhanced_paper:
                         enhanced_papers.append(enhanced_paper)
 
                 except Exception as e:
-                    self.logger.error(
-                        f"Failed to transform paper {paper_data.get('id', 'unknown')}: {e!s}"
-                    )
+                    self.logger.error(f"Failed to transform paper {paper_data.get('id', 'unknown')}: {e!s}")
                     self.metrics.records_failed += 1
                     continue
 
@@ -335,9 +325,7 @@ class EnhancedArxivETL(BaseETL):
                 context={"total_papers": len(papers)},
             )
 
-    def _transform_single_paper(
-        self, paper_data: dict[str, Any], index: int, github_token: str | None
-    ) -> EnhancedArxivPaperModel | None:
+    def _transform_single_paper(self, paper_data: dict[str, Any], index: int, github_token: str | None) -> EnhancedArxivPaperModel | None:
         """Transform a single paper with all intelligence features."""
         # Extract basic paper information
         paper_id = paper_data.get("id", "")
@@ -391,12 +379,8 @@ class EnhancedArxivETL(BaseETL):
 
         # Parse datetime fields
         try:
-            published = datetime.fromisoformat(
-                paper_data["published"].replace("Z", "+00:00")
-            )
-            updated = datetime.fromisoformat(
-                paper_data["updated"].replace("Z", "+00:00")
-            )
+            published = datetime.fromisoformat(paper_data["published"].replace("Z", "+00:00"))
+            updated = datetime.fromisoformat(paper_data["updated"].replace("Z", "+00:00"))
         except (ValueError, KeyError) as e:
             self.logger.warning(f"Failed to parse dates for paper {paper_id}: {e}")
             published = datetime.now()
@@ -445,35 +429,25 @@ class EnhancedArxivETL(BaseETL):
             return enhanced_paper
 
         except Exception as e:
-            self.logger.error(
-                f"Failed to create enhanced paper model for {paper_id}: {e!s}"
-            )
+            self.logger.error(f"Failed to create enhanced paper model for {paper_id}: {e!s}")
             return None
 
     def _ensure_classifier_ready(self, papers: list[dict[str, Any]]):
         """Ensure the NLP classifier is ready for use."""
-        texts_for_classification = [
-            f"{paper.get('title', '')} {paper.get('summary', '')}" for paper in papers
-        ]
+        texts_for_classification = [f"{paper.get('title', '')} {paper.get('summary', '')}" for paper in papers]
 
         model_path = os.path.join(self.classifier.models_dir, "model.pkl")
         if not os.path.exists(model_path):
             self.logger.info("Training new classifier for enhanced features")
-            self.classifier.train_classifier(
-                texts_for_classification, n_clusters=self.n_clusters
-            )
+            self.classifier.train_classifier(texts_for_classification, n_clusters=self.n_clusters)
             self.classifier.save_model()
         else:
             if not self.classifier.load_model():
                 self.logger.info("Retraining classifier (failed to load existing)")
-                self.classifier.train_classifier(
-                    texts_for_classification, n_clusters=self.n_clusters
-                )
+                self.classifier.train_classifier(texts_for_classification, n_clusters=self.n_clusters)
                 self.classifier.save_model()
 
-    def _get_cluster_info(
-        self, paper_data: dict[str, Any], index: int
-    ) -> dict[str, Any]:
+    def _get_cluster_info(self, paper_data: dict[str, Any], index: int) -> dict[str, Any]:
         """Get clustering information for a paper."""
         if self.enable_advanced_scoring:
             text = f"{paper_data.get('title', '')} {paper_data.get('summary', '')}"
@@ -517,18 +491,14 @@ class EnhancedArxivETL(BaseETL):
         impact_score += relevance_score * 0.3
 
         # GitHub integration boost
-        if paper_data.get("found_keywords") and any(
-            "github" in kw.lower() for kw in paper_data.get("found_keywords", [])
-        ):
+        if paper_data.get("found_keywords") and any("github" in kw.lower() for kw in paper_data.get("found_keywords", [])):
             impact_score += 1.0
 
         # Normalize to 0-10 scale
         normalized_score = min(impact_score / 3.0, 10.0)
         return round(normalized_score, 2)
 
-    def _assess_technology_readiness(
-        self, paper_data: dict[str, Any]
-    ) -> TechnologyReadinessLevel | None:
+    def _assess_technology_readiness(self, paper_data: dict[str, Any]) -> TechnologyReadinessLevel | None:
         """Assess technology readiness level based on content analysis."""
         title = paper_data.get("title", "").lower()
         summary = paper_data.get("summary", "").lower()
@@ -550,9 +520,7 @@ class EnhancedArxivETL(BaseETL):
         best_trl = max(trl_scores.items(), key=lambda x: x[1])[0]
         return best_trl
 
-    def _assess_commercial_potential(
-        self, paper_data: dict[str, Any]
-    ) -> CommercialPotential:
+    def _assess_commercial_potential(self, paper_data: dict[str, Any]) -> CommercialPotential:
         """Assess commercial viability potential."""
         title = paper_data.get("title", "").lower()
         summary = paper_data.get("summary", "").lower()
@@ -851,9 +819,7 @@ class EnhancedArxivETL(BaseETL):
 
         return found_methodologies
 
-    def _classify_research_categories(
-        self, paper_data: dict[str, Any]
-    ) -> list[ResearchCategory]:
+    def _classify_research_categories(self, paper_data: dict[str, Any]) -> list[ResearchCategory]:
         """Classify papers into research categories."""
         categories = paper_data.get("categories", [])
         keywords = paper_data.get("found_keywords", [])
@@ -912,29 +878,21 @@ class EnhancedArxivETL(BaseETL):
 
         return list(set(research_categories))  # Remove duplicates
 
-    def _get_github_info(
-        self, paper_data: dict[str, Any], github_token: str | None
-    ) -> GitHubRepositoryModel | None:
+    def _get_github_info(self, paper_data: dict[str, Any], github_token: str | None) -> GitHubRepositoryModel | None:
         """Get GitHub repository information."""
         try:
-            text_to_search = (
-                f"{paper_data.get('summary', '')} {paper_data.get('comment', '')}"
-            )
+            text_to_search = f"{paper_data.get('summary', '')} {paper_data.get('comment', '')}"
             github_urls = find_github_links_in_text(text_to_search)
 
             if github_urls:
-                repo_info = get_github_repo_info(
-                    github_urls[0], github_token=github_token
-                )
+                repo_info = get_github_repo_info(github_urls[0], github_token=github_token)
                 if repo_info:
                     return GitHubRepositoryModel(**repo_info)
 
             return None
 
         except Exception as e:
-            self.logger.warning(
-                f"Failed to get GitHub info for paper {paper_data.get('id')}: {e}"
-            )
+            self.logger.warning(f"Failed to get GitHub info for paper {paper_data.get('id')}: {e}")
             return None
 
     def _get_pwc_info(self, paper_data: dict[str, Any]) -> PapersWithCodeModel | None:
@@ -955,14 +913,10 @@ class EnhancedArxivETL(BaseETL):
             return None
 
         except Exception as e:
-            self.logger.warning(
-                f"Failed to get PWC info for paper {paper_data.get('id')}: {e}"
-            )
+            self.logger.warning(f"Failed to get PWC info for paper {paper_data.get('id')}: {e}")
             return None
 
-    def _calculate_quality_indicators(
-        self, paper_data: dict[str, Any]
-    ) -> dict[str, float]:
+    def _calculate_quality_indicators(self, paper_data: dict[str, Any]) -> dict[str, float]:
         """Calculate various quality indicators."""
         indicators = {}
 
@@ -1067,9 +1021,7 @@ class EnhancedArxivETL(BaseETL):
             }
 
             # Save to various locations
-            json_file = os.path.join(
-                self.output_dir, f"enhanced_papers_{timestamp}.json"
-            )
+            json_file = os.path.join(self.output_dir, f"enhanced_papers_{timestamp}.json")
             with open(json_file, "w", encoding="utf-8") as f:
                 json.dump(enhanced_data, f, ensure_ascii=False, indent=2, default=str)
             self.logger.info(f"Saved enhanced JSON to {json_file}")
@@ -1107,27 +1059,13 @@ class EnhancedArxivETL(BaseETL):
                 # Flatten complex fields
                 paper_dict["authors"] = ", ".join(paper_dict.get("authors", []))
                 paper_dict["categories"] = ", ".join(paper_dict.get("categories", []))
-                paper_dict["research_categories"] = ", ".join(
-                    [cat.value for cat in paper_dict.get("research_categories", [])]
-                )
-                paper_dict["related_technologies"] = ", ".join(
-                    paper_dict.get("related_technologies", [])
-                )
-                paper_dict["potential_applications"] = ", ".join(
-                    paper_dict.get("potential_applications", [])
-                )
-                paper_dict["technical_concepts"] = ", ".join(
-                    paper_dict.get("technical_concepts", [])
-                )
-                paper_dict["methodologies"] = ", ".join(
-                    paper_dict.get("methodologies", [])
-                )
-                paper_dict["cluster_keywords"] = ", ".join(
-                    paper_dict.get("cluster_keywords", [])
-                )
-                paper_dict["extracted_keywords"] = ", ".join(
-                    paper_dict.get("extracted_keywords", [])
-                )
+                paper_dict["research_categories"] = ", ".join([cat.value for cat in paper_dict.get("research_categories", [])])
+                paper_dict["related_technologies"] = ", ".join(paper_dict.get("related_technologies", []))
+                paper_dict["potential_applications"] = ", ".join(paper_dict.get("potential_applications", []))
+                paper_dict["technical_concepts"] = ", ".join(paper_dict.get("technical_concepts", []))
+                paper_dict["methodologies"] = ", ".join(paper_dict.get("methodologies", []))
+                paper_dict["cluster_keywords"] = ", ".join(paper_dict.get("cluster_keywords", []))
+                paper_dict["extracted_keywords"] = ", ".join(paper_dict.get("extracted_keywords", []))
 
                 # Flatten nested models
                 if paper_dict.get("github_info"):
@@ -1166,9 +1104,7 @@ class EnhancedArxivETL(BaseETL):
         except Exception as e:
             self.logger.error(f"Failed to save enhanced CSV: {e!s}")
 
-    def _generate_enhanced_statistics(
-        self, papers: list[EnhancedArxivPaperModel]
-    ) -> dict[str, Any]:
+    def _generate_enhanced_statistics(self, papers: list[EnhancedArxivPaperModel]) -> dict[str, Any]:
         """Generate comprehensive statistics for enhanced papers."""
         if not papers:
             return {}
@@ -1176,50 +1112,34 @@ class EnhancedArxivETL(BaseETL):
         stats = {
             "total_papers": len(papers),
             "average_scores": {
-                "industry_impact": sum(p.industry_impact_score for p in papers)
-                / len(papers),
+                "industry_impact": sum(p.industry_impact_score for p in papers) / len(papers),
                 "innovation": sum(p.innovation_score for p in papers) / len(papers),
-                "citation_potential": sum(p.citation_potential for p in papers)
-                / len(papers),
-                "reproducibility": sum(p.reproducibility_score for p in papers)
-                / len(papers),
-                "overall_significance": sum(
-                    p.overall_significance_score for p in papers
-                )
-                / len(papers),
+                "citation_potential": sum(p.citation_potential for p in papers) / len(papers),
+                "reproducibility": sum(p.reproducibility_score for p in papers) / len(papers),
+                "overall_significance": sum(p.overall_significance_score for p in papers) / len(papers),
             },
             "trl_distribution": {},
             "commercial_potential_distribution": {},
             "research_categories_distribution": {},
             "breakthrough_papers": sum(1 for p in papers if p.is_breakthrough),
             "github_integration": sum(1 for p in papers if p.github_info is not None),
-            "pwc_integration": sum(
-                1 for p in papers if p.papers_with_code_info is not None
-            ),
+            "pwc_integration": sum(1 for p in papers if p.papers_with_code_info is not None),
         }
 
         # Calculate TRL distribution
-        trl_counts = Counter(
-            p.technology_readiness_level for p in papers if p.technology_readiness_level
-        )
-        stats["trl_distribution"] = {
-            str(trl): count for trl, count in trl_counts.items()
-        }
+        trl_counts = Counter(p.technology_readiness_level for p in papers if p.technology_readiness_level)
+        stats["trl_distribution"] = {str(trl): count for trl, count in trl_counts.items()}
 
         # Calculate commercial potential distribution
         commercial_counts = Counter(p.commercial_potential for p in papers)
-        stats["commercial_potential_distribution"] = {
-            cp.value: count for cp, count in commercial_counts.items()
-        }
+        stats["commercial_potential_distribution"] = {cp.value: count for cp, count in commercial_counts.items()}
 
         # Calculate research categories distribution
         all_categories = []
         for paper in papers:
             all_categories.extend([cat.value for cat in paper.research_categories])
         category_counts = Counter(all_categories)
-        stats["research_categories_distribution"] = dict(
-            category_counts.most_common(10)
-        )
+        stats["research_categories_distribution"] = dict(category_counts.most_common(10))
 
         return stats
 
@@ -1229,23 +1149,15 @@ class EnhancedArxivETL(BaseETL):
             # High-impact papers report
             high_impact_papers = [p for p in papers if p.industry_impact_score >= 7.0]
             if high_impact_papers:
-                report_file = os.path.join(
-                    self.output_dir, "high_impact_papers_report.json"
-                )
+                report_file = os.path.join(self.output_dir, "high_impact_papers_report.json")
                 with open(report_file, "w", encoding="utf-8") as f:
-                    json.dump(
-                        [p.dict() for p in high_impact_papers], f, indent=2, default=str
-                    )
-                self.logger.info(
-                    f"Generated high-impact papers report with {len(high_impact_papers)} papers"
-                )
+                    json.dump([p.dict() for p in high_impact_papers], f, indent=2, default=str)
+                self.logger.info(f"Generated high-impact papers report with {len(high_impact_papers)} papers")
 
             # Breakthrough papers report
             breakthrough_papers = [p for p in papers if p.is_breakthrough]
             if breakthrough_papers:
-                report_file = os.path.join(
-                    self.output_dir, "breakthrough_papers_report.json"
-                )
+                report_file = os.path.join(self.output_dir, "breakthrough_papers_report.json")
                 with open(report_file, "w", encoding="utf-8") as f:
                     json.dump(
                         [p.dict() for p in breakthrough_papers],
@@ -1253,28 +1165,15 @@ class EnhancedArxivETL(BaseETL):
                         indent=2,
                         default=str,
                     )
-                self.logger.info(
-                    f"Generated breakthrough papers report with {len(breakthrough_papers)} papers"
-                )
+                self.logger.info(f"Generated breakthrough papers report with {len(breakthrough_papers)} papers")
 
             # Commercial potential report
-            commercial_papers = [
-                p
-                for p in papers
-                if p.commercial_potential
-                in [CommercialPotential.HIGH, CommercialPotential.MEDIUM]
-            ]
+            commercial_papers = [p for p in papers if p.commercial_potential in [CommercialPotential.HIGH, CommercialPotential.MEDIUM]]
             if commercial_papers:
-                report_file = os.path.join(
-                    self.output_dir, "commercial_potential_report.json"
-                )
+                report_file = os.path.join(self.output_dir, "commercial_potential_report.json")
                 with open(report_file, "w", encoding="utf-8") as f:
-                    json.dump(
-                        [p.dict() for p in commercial_papers], f, indent=2, default=str
-                    )
-                self.logger.info(
-                    f"Generated commercial potential report with {len(commercial_papers)} papers"
-                )
+                    json.dump([p.dict() for p in commercial_papers], f, indent=2, default=str)
+                self.logger.info(f"Generated commercial potential report with {len(commercial_papers)} papers")
 
         except Exception as e:
             self.logger.error(f"Failed to generate intelligence reports: {e!s}")

@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""
-Simplified Tab Customization Validation Script
-"""
+"""Simplified Tab Customization Validation Script"""
 
 import asyncio
 import sys
+
 from playwright.async_api import async_playwright, expect
 
 
 async def run_tests():
     """Run tab customization validation tests"""
-
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False, slow_mo=500)
         page = await browser.new_page()
@@ -39,17 +37,17 @@ async def run_tests():
             print("✅ Modal opened successfully")
 
             # Test 2: Check modal content
-            await expect(page.locator('text=Customize Dashboard Tabs')).to_be_visible()
+            await expect(page.locator("text=Customize Dashboard Tabs")).to_be_visible()
             print("✅ Modal title displayed")
 
             # Wait for tabs to load
-            await page.wait_for_selector('.customize-tab-item', timeout=10000)
-            tab_items = page.locator('.customize-tab-item')
+            await page.wait_for_selector(".customize-tab-item", timeout=10000)
+            tab_items = page.locator(".customize-tab-item")
             tab_count = await tab_items.count()
             print(f"✅ {tab_count} tab items loaded")
 
             # Test 3: Tab visibility toggle
-            news_tab = tab_items.filter(has_text='News')
+            news_tab = tab_items.filter(has_text="News")
             news_toggle = news_tab.locator('input[type="checkbox"]')
             initial_state = await news_toggle.is_checked()
 
@@ -64,11 +62,11 @@ async def run_tests():
             save_button = page.locator('button[id*="save-tabs-btn"]')
             await save_button.click()
 
-            await page.wait_for_selector('text=Success!', timeout=5000)
+            await page.wait_for_selector("text=Success!", timeout=5000)
             print("✅ Changes saved successfully")
 
             # Test 5: Close modal
-            close_button = modal.locator('.btn-close')
+            close_button = modal.locator(".btn-close")
             await close_button.click()
             await expect(modal).not_to_be_visible(timeout=3000)
             print("✅ Modal closed")
@@ -76,7 +74,7 @@ async def run_tests():
             # Test 6: Reset functionality
             await customize_button.click()
             await expect(modal).to_be_visible()
-            await page.wait_for_selector('.customize-tab-item', timeout=10000)
+            await page.wait_for_selector(".customize-tab-item", timeout=10000)
 
             reset_button = page.locator('button[id*="reset-tabs-btn"]')
 
@@ -84,14 +82,14 @@ async def run_tests():
             page.on("dialog", lambda dialog: dialog.accept())
             await reset_button.click()
 
-            await page.wait_for_selector('text=Reset!', timeout=5000)
+            await page.wait_for_selector("text=Reset!", timeout=5000)
             print("✅ Reset to default successful")
 
             print("\n🎉 All basic tests passed!")
             return True
 
         except Exception as e:
-            print(f"❌ Test failed: {str(e)}")
+            print(f"❌ Test failed: {e!s}")
             await page.screenshot(path="test_failure.png")
             print("📸 Screenshot saved as test_failure.png")
             return False
@@ -111,7 +109,7 @@ async def main():
             print("\n❌ Tab customization validation failed!")
             sys.exit(1)
     except Exception as e:
-        print(f"\n💥 Critical error: {str(e)}")
+        print(f"\n💥 Critical error: {e!s}")
         sys.exit(1)
 
 

@@ -19,7 +19,7 @@ def load_crypto_sentiment():
         return []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
             if isinstance(data, list):
                 return data
@@ -75,9 +75,7 @@ def create_crypto_cards(data):
                 dbc.CardBody(
                     [
                         html.H4("No Data", className="card-title"),
-                        html.P(
-                            "No crypto sentiment data available", className="card-text"
-                        ),
+                        html.P("No crypto sentiment data available", className="card-text"),
                     ]
                 ),
                 color="warning",
@@ -102,16 +100,10 @@ def create_crypto_cards(data):
             coin_mentions[coin] = coin_mentions.get(coin, 0) + 1
 
     # Most mentioned coin
-    top_coin = (
-        max(coin_mentions.items(), key=lambda x: x[1]) if coin_mentions else ("N/A", 0)
-    )
+    top_coin = max(coin_mentions.items(), key=lambda x: x[1]) if coin_mentions else ("N/A", 0)
 
     # Dominant sentiment
-    dominant_sentiment = (
-        max(sentiment_counts.items(), key=lambda x: x[1])
-        if sentiment_counts
-        else ("N/A", 0)
-    )
+    dominant_sentiment = max(sentiment_counts.items(), key=lambda x: x[1]) if sentiment_counts else ("N/A", 0)
 
     cards = [
         dbc.Card(
@@ -143,9 +135,7 @@ def create_crypto_cards(data):
                         f"{dominant_sentiment[0].title()}",
                         className="card-title text-info",
                     ),
-                    html.P(
-                        f"{dominant_sentiment[1]} occurrences", className="card-text"
-                    ),
+                    html.P(f"{dominant_sentiment[1]} occurrences", className="card-text"),
                 ]
             ),
             color="info",
@@ -190,9 +180,7 @@ def create_crypto_sentiment_table(data):
         coins_text = ", ".join(coins[:3]) + ("..." if len(coins) > 3 else "")
 
         source = item.get("source", "Unknown")
-        content = item.get("content", item.get("text", ""))[:200] + (
-            "..." if len(item.get("content", item.get("text", ""))) > 200 else ""
-        )
+        content = item.get("content", item.get("text", ""))[:200] + ("..." if len(item.get("content", item.get("text", ""))) > 200 else "")
 
         row = html.Tr(
             [
@@ -246,9 +234,7 @@ def crypto_tab():
                 [
                     dbc.Col(
                         [
-                            html.H2(
-                                "🪙 Crypto & Financial Intelligence", className="mb-3"
-                            ),
+                            html.H2("🪙 Crypto & Financial Intelligence", className="mb-3"),
                             html.P(
                                 "Real-time cryptocurrency sentiment analysis and market intelligence",
                                 className="text-muted mb-4",
@@ -274,9 +260,7 @@ def crypto_tab():
                                         [
                                             dcc.Graph(
                                                 id="crypto-sentiment-chart",
-                                                figure=create_sentiment_chart(
-                                                    crypto_data
-                                                ),
+                                                figure=create_sentiment_chart(crypto_data),
                                             )
                                         ]
                                     ),
@@ -307,9 +291,7 @@ def crypto_tab():
                                             ),
                                         ]
                                     ),
-                                    dbc.CardBody(
-                                        [create_crypto_sentiment_table(crypto_data)]
-                                    ),
+                                    dbc.CardBody([create_crypto_sentiment_table(crypto_data)]),
                                 ]
                             )
                         ]

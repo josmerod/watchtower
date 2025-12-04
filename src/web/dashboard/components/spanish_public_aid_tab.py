@@ -2,7 +2,6 @@
 
 import json
 from datetime import datetime
-from typing import Dict, List, Optional
 
 import dash
 import dash_bootstrap_components as dbc
@@ -18,23 +17,19 @@ from src.web.dashboard.utils import file_exists, get_data_path, parse_date_unive
 
 def load_spanish_aid_data():
     """Load Spanish public aid data from JSON files."""
-    data_path = get_data_path(
-        "spanish_public_aid", "output", "spanish_public_aid_latest.json"
-    )
-    stats_path = get_data_path(
-        "spanish_public_aid", "output", "spanish_public_aid_stats_latest.json"
-    )
+    data_path = get_data_path("spanish_public_aid", "output", "spanish_public_aid_latest.json")
+    stats_path = get_data_path("spanish_public_aid", "output", "spanish_public_aid_stats_latest.json")
 
     aids_data = []
     stats_data = {}
 
     try:
         if file_exists(data_path):
-            with open(data_path, "r", encoding="utf-8") as f:
+            with open(data_path, encoding="utf-8") as f:
                 aids_data = json.load(f)
 
         if file_exists(stats_path):
-            with open(stats_path, "r", encoding="utf-8") as f:
+            with open(stats_path, encoding="utf-8") as f:
                 stats_data = json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError) as e:
@@ -43,7 +38,7 @@ def load_spanish_aid_data():
     return aids_data, stats_data
 
 
-def parse_aid_date(date_str: str) -> Optional[datetime]:
+def parse_aid_date(date_str: str) -> datetime | None:
     """Parse date strings from aid data."""
     if not date_str:
         return None
@@ -62,27 +57,17 @@ def parse_aid_date(date_str: str) -> Optional[datetime]:
 # --- Component Creation Functions ---
 
 
-def create_aid_summary_cards(aids_data: List[Dict], stats_data: Dict) -> html.Div:
+def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Div:
     """Create summary cards with key statistics."""
-
     total_aids = len(aids_data)
     active_aids = len([aid for aid in aids_data if aid.get("status") == "abierta"])
     closing_soon = len(
-        [
-            aid
-            for aid in aids_data
-            if aid.get("status") == "abierta"
-            and aid.get("closing_date")
-            and parse_aid_date(aid["closing_date"])
-            and (parse_aid_date(aid["closing_date"]) - datetime.now()).days <= 7
-        ]
+        [aid for aid in aids_data if aid.get("status") == "abierta" and aid.get("closing_date") and parse_aid_date(aid["closing_date"]) and (parse_aid_date(aid["closing_date"]) - datetime.now()).days <= 7]
     )
 
     # Get most common category
     categories = [aid.get("category", "otros") for aid in aids_data]
-    most_common_category = (
-        max(set(categories), key=categories.count) if categories else "N/A"
-    )
+    most_common_category = max(set(categories), key=categories.count) if categories else "N/A"
 
     cards = [
         dbc.Card(
@@ -137,13 +122,10 @@ def create_aid_summary_cards(aids_data: List[Dict], stats_data: Dict) -> html.Di
     return dbc.Row([dbc.Col(card, width=3) for card in cards])
 
 
-def create_category_chart(aids_data: List[Dict]) -> dcc.Graph:
+def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
     """Create a pie chart showing aids by category."""
-
     if not aids_data:
-        return dcc.Graph(
-            figure={"data": [], "layout": {"title": "No hay datos disponibles"}}
-        )
+        return dcc.Graph(figure={"data": [], "layout": {"title": "No hay datos disponibles"}})
 
     # Count aids by category
     category_counts = {}
@@ -164,13 +146,10 @@ def create_category_chart(aids_data: List[Dict]) -> dcc.Graph:
     return dcc.Graph(figure=fig)
 
 
-def create_scope_chart(aids_data: List[Dict]) -> dcc.Graph:
+def create_scope_chart(aids_data: list[dict]) -> dcc.Graph:
     """Create a bar chart showing aids by geographic scope."""
-
     if not aids_data:
-        return dcc.Graph(
-            figure={"data": [], "layout": {"title": "No hay datos disponibles"}}
-        )
+        return dcc.Graph(figure={"data": [], "layout": {"title": "No hay datos disponibles"}})
 
     # Count aids by scope
     scope_counts = {}
@@ -199,13 +178,10 @@ def create_scope_chart(aids_data: List[Dict]) -> dcc.Graph:
     return dcc.Graph(figure=fig)
 
 
-def create_status_timeline(aids_data: List[Dict]) -> dcc.Graph:
+def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
     """Create a timeline showing aids closing dates."""
-
     if not aids_data:
-        return dcc.Graph(
-            figure={"data": [], "layout": {"title": "No hay datos disponibles"}}
-        )
+        return dcc.Graph(figure={"data": [], "layout": {"title": "No hay datos disponibles"}})
 
     # Filter aids with closing dates
     aids_with_dates = []
@@ -270,7 +246,6 @@ def create_status_timeline(aids_data: List[Dict]) -> dcc.Graph:
 
 def create_aids_filter_controls() -> html.Div:
     """Create filter controls for aids."""
-
     return html.Div(
         [
             dbc.Row(
@@ -356,9 +331,8 @@ def create_aids_filter_controls() -> html.Div:
     )
 
 
-def create_aids_table(aids_data: List[Dict]) -> html.Div:
+def create_aids_table(aids_data: list[dict]) -> html.Div:
     """Create a table showing aids with filtering capabilities."""
-
     if not aids_data:
         return dbc.Alert("No hay datos de ayudas disponibles.", color="info")
 
@@ -447,13 +421,7 @@ def create_aids_table(aids_data: List[Dict]) -> html.Div:
                 "color": "gray",
             },
         ],
-        tooltip_data=[
-            {
-                column: {"value": str(row[column]), "type": "markdown"}
-                for column in row.keys()
-            }
-            for row in table_data
-        ],
+        tooltip_data=[{column: {"value": str(row[column]), "type": "markdown"} for column in row.keys()} for row in table_data],
         css=[
             {
                 "selector": ".dash-table-tooltip",
@@ -467,7 +435,6 @@ def create_aids_table(aids_data: List[Dict]) -> html.Div:
 
 def create_search_component() -> html.Div:
     """Create search component for aids."""
-
     return html.Div(
         [
             dbc.Row(
@@ -528,7 +495,6 @@ def create_search_component() -> html.Div:
 
 def render_spanish_public_aid_tab():
     """Render the main Spanish Public Aid tab."""
-
     # Load data
     aids_data, stats_data = load_spanish_aid_data()
 
@@ -544,9 +510,7 @@ def render_spanish_public_aid_tab():
                             "Asegúrate de ejecutar el ETL de ayudas públicas españolas primero:",
                             className="mb-0",
                         ),
-                        html.Code(
-                            "uv run python src/etl/spanish_public_aid/spanish_public_aid_etl.py"
-                        ),
+                        html.Code("uv run python src/etl/spanish_public_aid/spanish_public_aid_etl.py"),
                     ],
                     color="warning",
                     className="mt-3",
@@ -643,7 +607,6 @@ def register_spanish_aid_callbacks(app):
         refresh_clicks,
     ):
         """Update the aids table based on filters."""
-
         # Load fresh data
         aids_data, _ = load_spanish_aid_data()
 
@@ -655,23 +618,15 @@ def register_spanish_aid_callbacks(app):
 
         # Category filter
         if category_filter and category_filter != "all":
-            filtered_data = [
-                aid for aid in filtered_data if aid.get("category") == category_filter
-            ]
+            filtered_data = [aid for aid in filtered_data if aid.get("category") == category_filter]
 
         # Status filter
         if status_filter and status_filter != "all":
-            filtered_data = [
-                aid for aid in filtered_data if aid.get("status") == status_filter
-            ]
+            filtered_data = [aid for aid in filtered_data if aid.get("status") == status_filter]
 
         # Scope filter
         if scope_filter and scope_filter != "all":
-            filtered_data = [
-                aid
-                for aid in filtered_data
-                if aid.get("scope", {}).get("scope") == scope_filter
-            ]
+            filtered_data = [aid for aid in filtered_data if aid.get("scope", {}).get("scope") == scope_filter]
 
         # Urgent filter
         if "urgent" in (urgent_filter or []):
@@ -688,14 +643,7 @@ def register_spanish_aid_callbacks(app):
             search_lower = search_text.lower()
             search_filtered = []
             for aid in filtered_data:
-                if (
-                    search_lower in aid.get("title", "").lower()
-                    or search_lower in aid.get("description", "").lower()
-                    or any(
-                        search_lower in keyword.lower()
-                        for keyword in aid.get("keywords", [])
-                    )
-                ):
+                if search_lower in aid.get("title", "").lower() or search_lower in aid.get("description", "").lower() or any(search_lower in keyword.lower() for keyword in aid.get("keywords", [])):
                     search_filtered.append(aid)
             filtered_data = search_filtered
 

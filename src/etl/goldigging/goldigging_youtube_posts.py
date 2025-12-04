@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import pandas as pd
 import yt_dlp
@@ -25,8 +25,8 @@ DEFAULT_DAYS_LOOKBACK = 42  # 6 weeks
 MAX_WORKERS_PER_CHANNEL = 8  # Max concurrent video fetches per channel
 RATE_LIMIT_DELAY = 0.1  # Delay between API calls in seconds
 CACHE_TTL = 300  # Cache TTL in seconds (5 minutes)
-CHANNEL_CACHE: Dict[str, Tuple[dict, float]] = {}  # Cache for channel info
-VIDEO_CACHE: Dict[str, Tuple[dict, float]] = {}  # Cache for video details
+CHANNEL_CACHE: dict[str, tuple[dict, float]] = {}  # Cache for channel info
+VIDEO_CACHE: dict[str, tuple[dict, float]] = {}  # Cache for video details
 
 
 # Load channel topics from JSON file
@@ -44,7 +44,7 @@ def load_channel_topics() -> dict[str, Any]:
 CHANNEL_TOPICS = load_channel_topics()
 
 
-def get_cached_channel_info(channel_handle: str, ydl: yt_dlp.YoutubeDL) -> Optional[dict]:
+def get_cached_channel_info(channel_handle: str, ydl: yt_dlp.YoutubeDL) -> dict | None:
     """Get cached channel info or fetch fresh data with caching."""
     current_time = time.time()
 
@@ -78,7 +78,7 @@ def get_cached_channel_info(channel_handle: str, ydl: yt_dlp.YoutubeDL) -> Optio
     return None
 
 
-def get_cached_video_info(video_id: str, ydl: yt_dlp.YoutubeDL) -> Optional[dict]:
+def get_cached_video_info(video_id: str, ydl: yt_dlp.YoutubeDL) -> dict | None:
     """Get cached video info or fetch fresh data with caching."""
     current_time = time.time()
 
@@ -91,9 +91,7 @@ def get_cached_video_info(video_id: str, ydl: yt_dlp.YoutubeDL) -> Optional[dict
 
     # Fetch fresh data
     try:
-        video_info = ydl.extract_info(
-            f"https://www.youtube.com/watch?v={video_id}", download=False
-        )
+        video_info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
         if video_info:
             # Cache the result
             VIDEO_CACHE[video_id] = (video_info, current_time)
@@ -105,7 +103,7 @@ def get_cached_video_info(video_id: str, ydl: yt_dlp.YoutubeDL) -> Optional[dict
     return None
 
 
-def rate_limited_fetch(url: str, ydl: yt_dlp.YoutubeDL, delay: float = RATE_LIMIT_DELAY) -> Optional[dict]:
+def rate_limited_fetch(url: str, ydl: yt_dlp.YoutubeDL, delay: float = RATE_LIMIT_DELAY) -> dict | None:
     """Fetch data with rate limiting."""
     try:
         result = ydl.extract_info(url, download=False)
@@ -123,16 +121,14 @@ def process_video_batch(video_ids: list[str], ydl: yt_dlp.YoutubeDL) -> list[dic
     """Process a batch of videos concurrently."""
     video_data_list = []
 
-    def fetch_video_details(video_id: str) -> Optional[dict]:
+    def fetch_video_details(video_id: str) -> dict | None:
         """Fetch detailed information for a single video."""
         video_info = get_cached_video_info(video_id, ydl)
         if not video_info:
             return None
 
         # Convert timestamp to ISO format
-        published_at = (
-            datetime.fromtimestamp(video_info.get("timestamp", 0)).isoformat() + "Z"
-        )
+        published_at = datetime.fromtimestamp(video_info.get("timestamp", 0)).isoformat() + "Z"
 
         return {
             "title": video_info.get("title", ""),
@@ -159,10 +155,7 @@ def process_video_batch(video_ids: list[str], ydl: yt_dlp.YoutubeDL) -> list[dic
     # Use ThreadPoolExecutor for concurrent video processing
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS_PER_CHANNEL) as executor:
         # Submit all video fetch tasks
-        future_to_video_id = {
-            executor.submit(fetch_video_details, video_id): video_id
-            for video_id in video_ids
-        }
+        future_to_video_id = {executor.submit(fetch_video_details, video_id): video_id for video_id in video_ids}
 
         # Collect results as they complete
         for future in concurrent.futures.as_completed(future_to_video_id):
@@ -182,9 +175,7 @@ def process_video_batch(video_ids: list[str], ydl: yt_dlp.YoutubeDL) -> list[dic
 
 def get_channel_videos_by_id(
     channel_handle: str,
-    published_after: str = (
-        datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)
-    ).isoformat(),
+    published_after: str = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat(),
 ) -> list[dict]:
     """Fetch videos from a channel using yt-dlp with optimized parallel processing."""
     try:
@@ -246,9 +237,7 @@ def get_channel_videos_by_id(
         return []
 
 
-def process_youtube_channels(
-    channel_handles: list[str], published_after: str = None
-) -> list[dict]:
+def process_youtube_channels(channel_handles: list[str], published_after: str = None) -> list[dict]:
     """Process multiple YouTube channels concurrently and combine their videos."""
     all_videos = []
     # Determine a reasonable number of workers, e.g., based on CPU cores or a fixed number
@@ -257,10 +246,7 @@ def process_youtube_channels(
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Create a future for each channel processing task
-        future_to_channel = {
-            executor.submit(get_channel_videos_by_id, handle, published_after): handle
-            for handle in channel_handles
-        }
+        future_to_channel = {executor.submit(get_channel_videos_by_id, handle, published_after): handle for handle in channel_handles}
 
         for future in concurrent.futures.as_completed(future_to_channel):
             handle = future_to_channel[future]
@@ -268,18 +254,14 @@ def process_youtube_channels(
                 channel_videos = future.result()
                 if channel_videos:
                     all_videos.extend(channel_videos)
-                    logger.info(
-                        f"Processed successfully {len(channel_videos)} videos from {handle}"
-                    )
+                    logger.info(f"Processed successfully {len(channel_videos)} videos from {handle}")
                 else:
                     logger.info(f"No new videos found for {handle}")
             except Exception as e:
                 logger.error(f"Error processing channel {handle}: {e!s}")
                 continue  # Continue with other channels even if one fails
 
-    logger.info(
-        f"Finished processing all channels. Total videos collected: {len(all_videos)}"
-    )
+    logger.info(f"Finished processing all channels. Total videos collected: {len(all_videos)}")
     return all_videos
 
 
@@ -296,15 +278,11 @@ def process_topic(topic: str, channels: list[str], published_after: str = None):
     processed_videos = process_youtube_channels(channels, published_after)
 
     if not processed_videos:
-        logger.warning(
-            f"No se recuperaron videos para el tema {topic}, el proceso ETL no puede continuar"
-        )
+        logger.warning(f"No se recuperaron videos para el tema {topic}, el proceso ETL no puede continuar")
         return
 
     # Order by published_at descending (newest first)
-    processed_videos = sorted(
-        processed_videos, key=lambda x: x["published_at"], reverse=True
-    )
+    processed_videos = sorted(processed_videos, key=lambda x: x["published_at"], reverse=True)
 
     # Save to JSON file
     json_file = os.path.join(output_dir, "youtube_videos.json")
@@ -314,14 +292,10 @@ def process_topic(topic: str, channels: list[str], published_after: str = None):
 
     # Also save as CSV for easier viewing (drop description to avoid CSV formatting issues)
     csv_file = os.path.join(output_dir, "youtube_videos.csv")
-    pd.DataFrame(processed_videos).drop(columns=["description"]).to_csv(
-        csv_file, index=False
-    )
+    pd.DataFrame(processed_videos).drop(columns=["description"]).to_csv(csv_file, index=False)
     logger.debug(f"Datos CSV guardados en {csv_file}")
 
-    logger.info(
-        f"Guardados {len(processed_videos)} videos del tema {topic} en {json_file} y {csv_file}"
-    )
+    logger.info(f"Guardados {len(processed_videos)} videos del tema {topic} en {json_file} y {csv_file}")
 
 
 def main(topics: list[str] = None):
@@ -333,9 +307,7 @@ def main(topics: list[str] = None):
         ensure_directories([BASE_OUTPUT_DIR])
 
         # Define date range for videos
-        published_after = (
-            datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)
-        ).isoformat()
+        published_after = (datetime.now() - timedelta(days=DEFAULT_DAYS_LOOKBACK)).isoformat()
 
         # If topics is None or empty, process all topics
         if not topics:

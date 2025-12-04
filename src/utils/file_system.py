@@ -3,7 +3,6 @@
 import os
 import shutil
 from pathlib import Path
-from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, validator
 
@@ -22,8 +21,8 @@ class DirectoryInfo(BaseModel):
     path: Path = Field(..., description="Directory path")
     exists: bool = Field(description="Whether directory exists")
     is_writable: bool = Field(description="Whether directory is writable")
-    size_bytes: Optional[int] = Field(None, description="Directory size in bytes")
-    file_count: Optional[int] = Field(None, description="Number of files in directory")
+    size_bytes: int | None = Field(None, description="Directory size in bytes")
+    file_count: int | None = Field(None, description="Number of files in directory")
 
     @validator("path", pre=True)
     def convert_to_path(cls, v):
@@ -39,15 +38,13 @@ class DirectoryInfo(BaseModel):
 class FileSystemManager:
     """Enhanced file system manager with validation and error handling."""
 
-    def __init__(self, project_root: Optional[Union[str, Path]] = None):
+    def __init__(self, project_root: str | Path | None = None):
         """Initialize file system manager.
 
         Args:
             project_root: Project root directory. If None, auto-detects.
         """
-        self.project_root = (
-            self._find_project_root() if project_root is None else Path(project_root)
-        )
+        self.project_root = self._find_project_root() if project_root is None else Path(project_root)
 
     def _find_project_root(self) -> Path:
         """Find the project root directory."""
@@ -63,7 +60,7 @@ class FileSystemManager:
         # Fallback to current working directory
         return Path.cwd()
 
-    def get_absolute_path(self, relative_path: Union[str, Path]) -> Path:
+    def get_absolute_path(self, relative_path: str | Path) -> Path:
         """Get absolute path from relative path.
 
         Args:
@@ -77,9 +74,7 @@ class FileSystemManager:
             return path
         return self.project_root / path
 
-    def ensure_directory(
-        self, directory: Union[str, Path], mode: int = 0o755
-    ) -> DirectoryInfo:
+    def ensure_directory(self, directory: str | Path, mode: int = 0o755) -> DirectoryInfo:
         """Ensure directory exists, creating it if necessary.
 
         Args:
@@ -108,9 +103,7 @@ class FileSystemManager:
             if info.exists:
                 try:
                     info.file_count = len(list(abs_path.iterdir()))
-                    info.size_bytes = sum(
-                        f.stat().st_size for f in abs_path.rglob("*") if f.is_file()
-                    )
+                    info.size_bytes = sum(f.stat().st_size for f in abs_path.rglob("*") if f.is_file())
                 except (OSError, PermissionError):
                     # Continue without size/count info if access denied
                     pass
@@ -124,9 +117,7 @@ class FileSystemManager:
                 context={"directory": str(abs_path), "error": str(e)},
             ) from e
 
-    def ensure_directories(
-        self, directories: List[Union[str, Path]], mode: int = 0o755
-    ) -> List[DirectoryInfo]:
+    def ensure_directories(self, directories: list[str | Path], mode: int = 0o755) -> list[DirectoryInfo]:
         """Ensure multiple directories exist.
 
         Args:
@@ -138,9 +129,7 @@ class FileSystemManager:
         """
         return [self.ensure_directory(directory, mode) for directory in directories]
 
-    def clean_directory(
-        self, directory: Union[str, Path], keep_directory: bool = True
-    ) -> bool:
+    def clean_directory(self, directory: str | Path, keep_directory: bool = True) -> bool:
         """Clean directory contents.
 
         Args:
@@ -177,9 +166,7 @@ class FileSystemManager:
                 context={"directory": str(abs_path), "error": str(e)},
             ) from e
 
-    def copy_file(
-        self, source: Union[str, Path], destination: Union[str, Path]
-    ) -> bool:
+    def copy_file(self, source: str | Path, destination: str | Path) -> bool:
         """Copy file with error handling.
 
         Args:
@@ -213,7 +200,7 @@ class FileSystemManager:
                 },
             ) from e
 
-    def get_directory_info(self, directory: Union[str, Path]) -> DirectoryInfo:
+    def get_directory_info(self, directory: str | Path) -> DirectoryInfo:
         """Get information about a directory.
 
         Args:
@@ -234,9 +221,7 @@ class FileSystemManager:
         if info.exists:
             try:
                 info.file_count = len(list(abs_path.iterdir()))
-                info.size_bytes = sum(
-                    f.stat().st_size for f in abs_path.rglob("*") if f.is_file()
-                )
+                info.size_bytes = sum(f.stat().st_size for f in abs_path.rglob("*") if f.is_file())
             except (OSError, PermissionError):
                 # Continue without size/count info if access denied
                 pass
@@ -269,7 +254,7 @@ def get_project_root() -> str:
     return str(get_file_system_manager().project_root)
 
 
-def ensure_directories(directories: List[str]) -> None:
+def ensure_directories(directories: list[str]) -> None:
     """Ensure that the specified directories exist, creating them if necessary.
 
     All paths are relative to the project root.
@@ -283,7 +268,7 @@ def ensure_directories(directories: List[str]) -> None:
     get_file_system_manager().ensure_directories(directories)
 
 
-def ensure_directory(directory: Union[str, Path], mode: int = 0o755) -> DirectoryInfo:
+def ensure_directory(directory: str | Path, mode: int = 0o755) -> DirectoryInfo:
     """Ensure directory exists, creating it if necessary.
 
     Args:
@@ -296,7 +281,7 @@ def ensure_directory(directory: Union[str, Path], mode: int = 0o755) -> Director
     return get_file_system_manager().ensure_directory(directory, mode)
 
 
-def read_json_file(file_path: Union[str, Path]):
+def read_json_file(file_path: str | Path):
     """Read JSON file.
 
     Args:
@@ -306,12 +291,13 @@ def read_json_file(file_path: Union[str, Path]):
         Parsed JSON data.
     """
     import json
+
     path = Path(file_path)
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
-def write_json_file(file_path: Union[str, Path], data, indent: Optional[int] = None) -> None:
+def write_json_file(file_path: str | Path, data, indent: int | None = None) -> None:
     """Write data to JSON file.
 
     Args:
@@ -320,12 +306,13 @@ def write_json_file(file_path: Union[str, Path], data, indent: Optional[int] = N
         indent: Indentation level.
     """
     import json
+
     path = Path(file_path)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=indent, ensure_ascii=False)
 
 
-def backup_file(file_path: Union[str, Path]) -> Path:
+def backup_file(file_path: str | Path) -> Path:
     """Create a backup of a file.
 
     Args:
@@ -335,17 +322,18 @@ def backup_file(file_path: Union[str, Path]) -> Path:
         Path to backup file.
     """
     import datetime
+
     path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
-    
+
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = path.with_name(f"{path.stem}_{timestamp}_backup{path.suffix}")
     shutil.copy2(path, backup_path)
     return backup_path
 
 
-def get_file_size(file_path: Union[str, Path]) -> int:
+def get_file_size(file_path: str | Path) -> int:
     """Get file size in bytes.
 
     Args:
@@ -370,12 +358,13 @@ def clean_filename(filename: str) -> str:
         Cleaned filename.
     """
     import re
+
     # Remove invalid chars: < > : " / \ | ? *
-    cleaned = re.sub(r'[<>:"/\\|?*]', '', filename)
+    cleaned = re.sub(r'[<>:"/\\|?*]', "", filename)
     return cleaned
 
 
-def batch_process_files(files: List[Union[str, Path]], process_func):
+def batch_process_files(files: list[str | Path], process_func):
     """Process a batch of files.
 
     Args:

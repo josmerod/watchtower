@@ -32,9 +32,7 @@ class Settings(BaseSettings):
     # Application settings
     app_name: str = Field(default="Watchtower", description="Application name")
     app_version: str = Field(default="0.1.0", description="Application version")
-    environment: Environment = Field(
-        default=Environment.DEVELOPMENT, description="Application environment"
-    )
+    environment: Environment = Field(default=Environment.DEVELOPMENT, description="Application environment")
     debug: bool = Field(default=False, description="Enable debug mode")
 
     # Project paths
@@ -55,9 +53,7 @@ class Settings(BaseSettings):
     watchers: WatcherConfig = Field(default_factory=WatcherConfig)
     etl: ETLConfig = Field(default_factory=ETLConfig)
     google_drive: GoogleDriveConfig = Field(default_factory=GoogleDriveConfig)
-    spanish_public_aid: SpanishPublicAidConfig = Field(
-        default_factory=SpanishPublicAidConfig
-    )
+    spanish_public_aid: SpanishPublicAidConfig = Field(default_factory=SpanishPublicAidConfig)
 
     class Config:
         """Pydantic configuration."""
@@ -166,7 +162,7 @@ class Settings(BaseSettings):
 
         def _flatten_dict(d: dict, parent_key: str = "", sep: str = "__") -> dict:
             """Flatten nested dictionary with separator."""
-            items = []
+            items: list[tuple[str, str]] = []
             for k, v in d.items():
                 new_key = f"{parent_key}{sep}{k}" if parent_key else k
                 if isinstance(v, dict):

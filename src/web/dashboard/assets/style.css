@@ -1,4 +1,4 @@
-/* 
+/*
  * Watchtower Dashboard - Enhanced Dark Theme CSS
  * Modern, responsive design with smooth animations and improved UX
  */
@@ -729,35 +729,35 @@ a:hover, .btn-link:hover {
         padding: 8px 12px !important;
         font-size: 0.9rem !important;
     }
-    
+
     .table {
         font-size: 0.9rem !important;
     }
-    
+
     .table td, .table th {
         padding: 8px 10px !important;
     }
-    
+
     .card {
         margin-bottom: 1rem !important;
     }
-    
+
     .table-controls {
         flex-direction: column !important;
         align-items: stretch !important;
     }
-    
+
     .table-controls .form-control,
     .table-controls .form-select {
         min-width: auto !important;
     }
-    
+
     .table-stats {
         flex-direction: column !important;
         align-items: stretch !important;
         text-align: center !important;
     }
-    
+
     .table-actions {
         justify-content: center !important;
         flex-wrap: wrap !important;
@@ -769,15 +769,15 @@ a:hover, .btn-link:hover {
         padding: 6px 8px !important;
         font-size: 0.8rem !important;
     }
-    
+
     .table {
         font-size: 0.8rem !important;
     }
-    
+
     .table td, .table th {
         padding: 6px 8px !important;
     }
-    
+
     .table-pagination-wrapper {
         flex-direction: column !important;
         gap: 0.5rem !important;
@@ -795,7 +795,7 @@ a:hover, .btn-link:hover {
 }
 
 /* Force dark backgrounds on any missed containers */
-.row, .col, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, 
+.row, .col, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6,
 .col-7, .col-8, .col-9, .col-10, .col-11, .col-12,
 .col-sm, .col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6,
 .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12,
@@ -886,8 +886,8 @@ a:hover, .btn-link:hover {
 }
 
 /* Final catch-all for any stubborn white backgrounds */
-[style*="background-color: white"], 
-[style*="background-color: #ffffff"], 
+[style*="background-color: white"],
+[style*="background-color: #ffffff"],
 [style*="background-color: #FFFFFF"],
 [style*="background-color: #fff"],
 [style*="background-color: #FFF"],
@@ -1116,19 +1116,19 @@ h1::after, .h1::after {
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
-    
+
     .card {
         margin-bottom: 1rem !important;
     }
-    
+
     h1, .h1 {
         font-size: 1.8rem !important;
     }
-    
+
     .nav-tabs {
         padding: 4px 4px 0 4px !important;
     }
-    
+
     .nav-tabs .nav-item .nav-link {
         padding: 6px 10px !important;
         font-size: 0.85rem !important;
@@ -1140,11 +1140,11 @@ h1::after, .h1::after {
     h1, .h1 {
         font-size: 1.5rem !important;
     }
-    
+
     .card-body h4 {
         font-size: 1.2rem !important;
     }
-    
+
     .nav-tabs .nav-item .nav-link {
         padding: 4px 8px !important;
         font-size: 0.75rem !important;

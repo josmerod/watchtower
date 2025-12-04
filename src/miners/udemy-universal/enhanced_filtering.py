@@ -188,9 +188,7 @@ class EnhancedFilter:
 
         # Language filters
         if "languages" in self.settings:
-            enabled_languages = [
-                lang for lang, enabled in self.settings["languages"].items() if enabled
-            ]
+            enabled_languages = [lang for lang, enabled in self.settings["languages"].items() if enabled]
             if enabled_languages:
                 self.rules.append(
                     FilterRule(
@@ -205,9 +203,7 @@ class EnhancedFilter:
 
         # Category filters
         if "categories" in self.settings:
-            enabled_categories = [
-                cat for cat, enabled in self.settings["categories"].items() if enabled
-            ]
+            enabled_categories = [cat for cat, enabled in self.settings["categories"].items() if enabled]
             if enabled_categories:
                 self.rules.append(
                     FilterRule(
@@ -251,13 +247,8 @@ class EnhancedFilter:
                 )
 
         # Course update threshold
-        if (
-            "filters" in self.settings
-            and "course_update_threshold_months" in self.settings["filters"]
-        ):
-            threshold_months = self.settings["filters"][
-                "course_update_threshold_months"
-            ]
+        if "filters" in self.settings and "course_update_threshold_months" in self.settings["filters"]:
+            threshold_months = self.settings["filters"]["course_update_threshold_months"]
             if threshold_months > 0:
                 self.rules.append(
                     FilterRule(
@@ -271,10 +262,7 @@ class EnhancedFilter:
                 )
 
         # Title exclusions
-        if (
-            "exclusions" in self.settings
-            and "title_exclude" in self.settings["exclusions"]
-        ):
+        if "exclusions" in self.settings and "title_exclude" in self.settings["exclusions"]:
             title_exclude = self.settings["exclusions"]["title_exclude"]
             if title_exclude:
                 self.rules.append(
@@ -289,10 +277,7 @@ class EnhancedFilter:
                 )
 
         # Instructor exclusions
-        if (
-            "exclusions" in self.settings
-            and "instructor_exclude" in self.settings["exclusions"]
-        ):
+        if "exclusions" in self.settings and "instructor_exclude" in self.settings["exclusions"]:
             instructor_exclude = self.settings["exclusions"]["instructor_exclude"]
             if instructor_exclude:
                 self.rules.append(
@@ -307,10 +292,7 @@ class EnhancedFilter:
                 )
 
         # Keyword exclusions
-        if (
-            "exclusions" in self.settings
-            and "keyword_exclude" in self.settings["exclusions"]
-        ):
+        if "exclusions" in self.settings and "keyword_exclude" in self.settings["exclusions"]:
             keyword_exclude = self.settings["exclusions"]["keyword_exclude"]
             if keyword_exclude:
                 self.rules.append(
@@ -451,15 +433,10 @@ class EnhancedFilter:
             if isinstance(rule_value, str) and not rule.case_sensitive:
                 rule_value = rule_value.lower()
             elif isinstance(rule_value, list):
-                rule_value = [
-                    v.lower() if isinstance(v, str) and not rule.case_sensitive else v
-                    for v in rule_value
-                ]
+                rule_value = [v.lower() if isinstance(v, str) and not rule.case_sensitive else v for v in rule_value]
 
             # Apply operator
-            result = self._apply_operator(
-                field_value, rule.operator, rule_value, course
-            )
+            result = self._apply_operator(field_value, rule.operator, rule_value, course)
 
             # Return result based on action
             if rule.action == FilterAction.INCLUDE:
@@ -471,9 +448,7 @@ class EnhancedFilter:
             self.logger.warning(f"Error applying filter rule '{rule.name}': {e}")
             return True, f"Error in {rule.name}: {e!s}"
 
-    def _apply_operator(
-        self, field_value: Any, operator: str, rule_value: Any, course: CourseData
-    ) -> bool:
+    def _apply_operator(self, field_value: Any, operator: str, rule_value: Any, course: CourseData) -> bool:
         """Apply a specific operator.
 
         Args:
@@ -490,21 +465,13 @@ class EnhancedFilter:
         elif operator == "ne":
             return field_value != rule_value
         elif operator == "lt":
-            return field_value < (
-                rule_value(course) if callable(rule_value) else rule_value
-            )
+            return field_value < (rule_value(course) if callable(rule_value) else rule_value)
         elif operator == "gt":
-            return field_value > (
-                rule_value(course) if callable(rule_value) else rule_value
-            )
+            return field_value > (rule_value(course) if callable(rule_value) else rule_value)
         elif operator == "le":
-            return field_value <= (
-                rule_value(course) if callable(rule_value) else rule_value
-            )
+            return field_value <= (rule_value(course) if callable(rule_value) else rule_value)
         elif operator == "ge":
-            return field_value >= (
-                rule_value(course) if callable(rule_value) else rule_value
-            )
+            return field_value >= (rule_value(course) if callable(rule_value) else rule_value)
         elif operator == "contains":
             return rule_value in str(field_value)
         elif operator == "not_contains":
@@ -521,26 +488,16 @@ class EnhancedFilter:
                 return True
             # Try normalized versions
             if isinstance(field_value, str):
-                normalized = (
-                    self.normalize_category(field_value)
-                    if hasattr(self, "normalize_category")
-                    else field_value
-                )
+                normalized = self.normalize_category(field_value) if hasattr(self, "normalize_category") else field_value
                 return normalized in rule_value
             return False
         elif operator == "not_in":
-            normalized = (
-                self.normalize_category(field_value)
-                if hasattr(self, "normalize_category")
-                else field_value
-            )
+            normalized = self.normalize_category(field_value) if hasattr(self, "normalize_category") else field_value
             return normalized not in rule_value
         elif operator == "custom":
             # Custom operators for specific fields
             if hasattr(self, f"_custom_{field_value}"):
-                return getattr(self, f"_custom_{field_value}")(
-                    field_value, rule_value, course
-                )
+                return getattr(self, f"_custom_{field_value}")(field_value, rule_value, course)
             # Default custom handling for course update
             if "last_updated" in str(field_value):
                 return self._is_course_updated(field_value, rule_value)
@@ -584,9 +541,7 @@ class EnhancedFilter:
             return update_date >= threshold_date
 
         except Exception as e:
-            self.logger.warning(
-                f"Error parsing last_updated date '{last_updated}': {e}"
-            )
+            self.logger.warning(f"Error parsing last_updated date '{last_updated}': {e}")
             return False
 
     def filter_course(self, course: CourseData) -> tuple[bool, list[str]]:
@@ -618,9 +573,7 @@ class EnhancedFilter:
 
         return True, reasons
 
-    def filter_courses(
-        self, courses: list[CourseData]
-    ) -> tuple[list[CourseData], dict[str, int]]:
+    def filter_courses(self, courses: list[CourseData]) -> tuple[list[CourseData], dict[str, int]]:
         """Filter a list of courses.
 
         Args:
@@ -649,9 +602,7 @@ class EnhancedFilter:
                 for reason in reasons:
                     if "Failed" in reason:
                         filter_name = reason.split("Failed ")[-1]
-                        filter_stats["filter_reasons"][filter_name] = (
-                            filter_stats["filter_reasons"].get(filter_name, 0) + 1
-                        )
+                        filter_stats["filter_reasons"][filter_name] = filter_stats["filter_reasons"].get(filter_name, 0) + 1
 
         return filtered_courses, filter_stats
 
@@ -663,12 +614,8 @@ class EnhancedFilter:
         """
         summary = {
             "total_rules": len(self.rules),
-            "include_rules": [
-                r.name for r in self.rules if r.action == FilterAction.INCLUDE
-            ],
-            "exclude_rules": [
-                r.name for r in self.rules if r.action == FilterAction.EXCLUDE
-            ],
+            "include_rules": [r.name for r in self.rules if r.action == FilterAction.INCLUDE],
+            "exclude_rules": [r.name for r in self.rules if r.action == FilterAction.EXCLUDE],
             "settings": self.settings,
         }
 

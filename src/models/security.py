@@ -73,18 +73,12 @@ class VulnerabilitySourceModel(TimestampedModel):
 
     # Configuration
     active: bool = Field(default=True, description="Whether source is active")
-    fetch_interval: int = Field(
-        default=3600, ge=300, le=86400, description="Fetch interval in seconds"
-    )
+    fetch_interval: int = Field(default=3600, ge=300, le=86400, description="Fetch interval in seconds")
 
     # Metadata
-    last_fetched_at: datetime | None = Field(
-        default=None, description="Last successful fetch timestamp"
-    )
+    last_fetched_at: datetime | None = Field(default=None, description="Last successful fetch timestamp")
     last_error: str | None = Field(default=None, description="Last error message")
-    total_vulnerabilities_fetched: int = Field(
-        default=0, ge=0, description="Total vulnerabilities fetched from this source"
-    )
+    total_vulnerabilities_fetched: int = Field(default=0, ge=0, description="Total vulnerabilities fetched from this source")
 
     @field_validator("url")
     @classmethod
@@ -118,95 +112,51 @@ class VulnerabilityModel(TimestampedModel):
     source_id: str | None = Field(default=None, description="Source-specific ID")
 
     # CVSS Scoring
-    cvss_version: str | None = Field(
-        default=None, description="CVSS version (e.g., '3.1')"
-    )
+    cvss_version: str | None = Field(default=None, description="CVSS version (e.g., '3.1')")
     cvss_vector: str | None = Field(default=None, description="CVSS vector string")
-    cvss_base_score: float | None = Field(
-        default=None, ge=0.0, le=10.0, description="CVSS base score"
-    )
-    cvss_temporal_score: float | None = Field(
-        default=None, ge=0.0, le=10.0, description="CVSS temporal score"
-    )
-    cvss_environmental_score: float | None = Field(
-        default=None, ge=0.0, le=10.0, description="CVSS environmental score"
-    )
+    cvss_base_score: float | None = Field(default=None, ge=0.0, le=10.0, description="CVSS base score")
+    cvss_temporal_score: float | None = Field(default=None, ge=0.0, le=10.0, description="CVSS temporal score")
+    cvss_environmental_score: float | None = Field(default=None, ge=0.0, le=10.0, description="CVSS environmental score")
 
     # CVSS Metrics
-    attack_vector: AttackVector | None = Field(
-        default=None, description="CVSS attack vector"
-    )
-    attack_complexity: AttackComplexity | None = Field(
-        default=None, description="CVSS attack complexity"
-    )
-    privileges_required: PrivilegesRequired | None = Field(
-        default=None, description="CVSS privileges required"
-    )
-    user_interaction: UserInteraction | None = Field(
-        default=None, description="CVSS user interaction"
-    )
+    attack_vector: AttackVector | None = Field(default=None, description="CVSS attack vector")
+    attack_complexity: AttackComplexity | None = Field(default=None, description="CVSS attack complexity")
+    privileges_required: PrivilegesRequired | None = Field(default=None, description="CVSS privileges required")
+    user_interaction: UserInteraction | None = Field(default=None, description="CVSS user interaction")
 
     # Watchtower-specific scoring
-    severity_score: float = Field(
-        ge=0.0, le=10.0, description="Watchtower calculated severity score"
-    )
+    severity_score: float = Field(ge=0.0, le=10.0, description="Watchtower calculated severity score")
     risk_level: RiskLevel = Field(description="Risk level classification")
 
     # Affected components
-    affected_packages: list[str] = Field(
-        default=[], description="List of affected packages/components"
-    )
-    affected_versions: list[str] = Field(
-        default=[], description="List of affected versions"
-    )
-    technology_stack: list[str] = Field(
-        default=[], description="Technology stack categories"
-    )
+    affected_packages: list[str] = Field(default=[], description="List of affected packages/components")
+    affected_versions: list[str] = Field(default=[], description="List of affected versions")
+    technology_stack: list[str] = Field(default=[], description="Technology stack categories")
 
     # Patch and mitigation info
-    patch_available: bool = Field(
-        default=False, description="Whether patch is available"
-    )
+    patch_available: bool = Field(default=False, description="Whether patch is available")
     patch_version: str | None = Field(default=None, description="Version with patch")
     patch_url: HttpUrl | None = Field(default=None, description="Patch download URL")
-    estimated_fix_time: str | None = Field(
-        default=None, description="Estimated time to fix (e.g., '24h', '1w')"
-    )
-    mitigation_strategies: list[str] = Field(
-        default=[], description="List of mitigation strategies"
-    )
+    estimated_fix_time: str | None = Field(default=None, description="Estimated time to fix (e.g., '24h', '1w')")
+    mitigation_strategies: list[str] = Field(default=[], description="List of mitigation strategies")
 
     # Publication info
     published_date: datetime = Field(description="Vulnerability publication date")
-    disclosed_date: datetime | None = Field(
-        default=None, description="Vulnerability disclosure date"
-    )
-    modified_date: datetime | None = Field(
-        default=None, description="Last modification date"
-    )
+    disclosed_date: datetime | None = Field(default=None, description="Vulnerability disclosure date")
+    modified_date: datetime | None = Field(default=None, description="Last modification date")
 
     # Status and tracking
-    status: VulnerabilityStatus = Field(
-        default=VulnerabilityStatus.ACTIVE, description="Vulnerability status"
-    )
-    exploitability: str | None = Field(
-        default=None, description="Exploitability assessment"
-    )
-    exploit_available: bool = Field(
-        default=False, description="Whether public exploit is available"
-    )
+    status: VulnerabilityStatus = Field(default=VulnerabilityStatus.ACTIVE, description="Vulnerability status")
+    exploitability: str | None = Field(default=None, description="Exploitability assessment")
+    exploit_available: bool = Field(default=False, description="Whether public exploit is available")
 
     # Reference links
     references: list[HttpUrl] = Field(default=[], description="Reference URLs")
-    advisory_urls: list[HttpUrl] = Field(
-        default=[], description="Security advisory URLs"
-    )
+    advisory_urls: list[HttpUrl] = Field(default=[], description="Security advisory URLs")
 
     # Additional metadata
     tags: list[str] = Field(default=[], description="Vulnerability tags")
-    metadata: dict[str, Any] | None = Field(
-        default=None, description="Additional vulnerability metadata"
-    )
+    metadata: dict[str, Any] | None = Field(default=None, description="Additional vulnerability metadata")
 
     @computed_field
     @property
@@ -230,12 +180,7 @@ class VulnerabilityModel(TimestampedModel):
     @property
     def needs_urgent_attention(self) -> bool:
         """Check if vulnerability needs urgent attention."""
-        return (
-            self.is_critical
-            and self.exploit_available
-            and not self.patch_available
-            and self.days_since_published <= 7
-        )
+        return self.is_critical and self.exploit_available and not self.patch_available and self.days_since_published <= 7
 
     @field_validator("cve_id")
     @classmethod
@@ -339,38 +284,24 @@ class ThreatIntelligenceModel(TimestampedModel):
     # Threat characteristics
     severity: RiskLevel = Field(description="Threat severity")
     confidence: float = Field(ge=0.0, le=1.0, description="Confidence level (0-1)")
-    probability: float = Field(
-        ge=0.0, le=1.0, description="Probability of occurrence (0-1)"
-    )
+    probability: float = Field(ge=0.0, le=1.0, description="Probability of occurrence (0-1)")
 
     # Affected systems
-    affected_technologies: list[str] = Field(
-        default=[], description="Affected technologies"
-    )
+    affected_technologies: list[str] = Field(default=[], description="Affected technologies")
     affected_platforms: list[str] = Field(default=[], description="Affected platforms")
 
     # Timeline
     first_observed: datetime = Field(description="First observation date")
-    last_observed: datetime | None = Field(
-        default=None, description="Last observation date"
-    )
-    estimated_timeline: str | None = Field(
-        default=None, description="Estimated timeline for threat"
-    )
+    last_observed: datetime | None = Field(default=None, description="Last observation date")
+    estimated_timeline: str | None = Field(default=None, description="Estimated timeline for threat")
 
     # Mitigation
-    mitigation_strategies: list[str] = Field(
-        default=[], description="Recommended mitigation strategies"
-    )
-    indicators_of_compromise: list[str] = Field(
-        default=[], description="Indicators of compromise"
-    )
+    mitigation_strategies: list[str] = Field(default=[], description="Recommended mitigation strategies")
+    indicators_of_compromise: list[str] = Field(default=[], description="Indicators of compromise")
 
     # References
     sources: list[str] = Field(default=[], description="Intelligence sources")
     references: list[HttpUrl] = Field(default=[], description="Reference URLs")
 
     # Additional data
-    metadata: dict[str, Any] | None = Field(
-        default=None, description="Additional threat metadata"
-    )
+    metadata: dict[str, Any] | None = Field(default=None, description="Additional threat metadata")

@@ -16,15 +16,13 @@ import os
 import re
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -103,7 +101,7 @@ class BundleDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract bundle deals from multiple sources."""
         logger.info("Starting bundle deals extraction...")
 
@@ -136,7 +134,7 @@ class BundleDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} bundle deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _extract_steam_deals(self) -> List[Dict[str, Any]]:
+    def _extract_steam_deals(self) -> list[dict[str, Any]]:
         """Extract current deals from Steam."""
         try:
             logger.info("Extracting deals from Steam...")
@@ -169,7 +167,7 @@ class BundleDealsETL(BaseETL):
             logger.error(f"Error extracting from Steam: {e}")
             return []
 
-    def _extract_epic_games_deals(self) -> List[Dict[str, Any]]:
+    def _extract_epic_games_deals(self) -> list[dict[str, Any]]:
         """Extract current deals from Epic Games Store."""
         try:
             logger.info("Extracting deals from Epic Games Store...")
@@ -201,7 +199,7 @@ class BundleDealsETL(BaseETL):
             logger.error(f"Error extracting from Epic Games Store: {e}")
             return []
 
-    def _extract_gog_deals(self) -> List[Dict[str, Any]]:
+    def _extract_gog_deals(self) -> list[dict[str, Any]]:
         """Extract current deals from GOG."""
         try:
             logger.info("Extracting deals from GOG...")
@@ -233,7 +231,7 @@ class BundleDealsETL(BaseETL):
             logger.error(f"Error extracting from GOG: {e}")
             return []
 
-    def _extract_itchio_bundles(self) -> List[Dict[str, Any]]:
+    def _extract_itchio_bundles(self) -> list[dict[str, Any]]:
         """Extract current bundles from itch.io."""
         try:
             logger.info("Extracting bundles from itch.io...")
@@ -265,7 +263,7 @@ class BundleDealsETL(BaseETL):
             logger.error(f"Error extracting from itch.io: {e}")
             return []
 
-    def _extract_humble_bundle(self) -> List[Dict[str, Any]]:
+    def _extract_humble_bundle(self) -> list[dict[str, Any]]:
         """Extract current bundles from Humble Bundle."""
         try:
             logger.info("Extracting bundles from Humble Bundle RSS...")
@@ -284,11 +282,7 @@ class BundleDealsETL(BaseETL):
                 try:
                     title = item.find("title").text if item.find("title") else ""
                     link = item.find("link").text if item.find("link") else ""
-                    description = (
-                        item.find("description").text
-                        if item.find("description")
-                        else ""
-                    )
+                    description = item.find("description").text if item.find("description") else ""
                     pub_date = item.find("pubdate").text if item.find("pubdate") else ""
 
                     # Only include items that look like bundles/deals
@@ -319,34 +313,23 @@ class BundleDealsETL(BaseETL):
                             pass
 
                         # Extract price info from description
-                        price_info = self._extract_price_from_text(
-                            description + " " + title
-                        )
+                        price_info = self._extract_price_from_text(description + " " + title)
 
                         deals.append(
                             {
                                 "title": title,
-                                "description": BeautifulSoup(
-                                    description, "html.parser"
-                                ).get_text()[:500],
+                                "description": BeautifulSoup(description, "html.parser").get_text()[:500],
                                 "url": link,
                                 "platform": "Humble Bundle",
                                 "category": "games",
-                                "deal_type": self._determine_deal_type(
-                                    title, description
-                                ),
+                                "deal_type": self._determine_deal_type(title, description),
                                 "original_price": price_info.get("original_price", 0),
                                 "current_price": price_info.get("current_price", 0),
                                 "savings": price_info.get("savings", 0),
-                                "discount_percentage": price_info.get(
-                                    "discount_percentage", 0
-                                ),
+                                "discount_percentage": price_info.get("discount_percentage", 0),
                                 "tier_pricing": price_info.get("tier_pricing", False),
-                                "items_count": self._extract_items_count(
-                                    title + " " + description
-                                ),
-                                "charity_included": "charity"
-                                in (title + description).lower(),
+                                "items_count": self._extract_items_count(title + " " + description),
+                                "charity_included": "charity" in (title + description).lower(),
                                 "time_remaining": None,
                                 "tags": self._extract_bundle_tags(title, description),
                                 "created_date": created_date,
@@ -366,7 +349,7 @@ class BundleDealsETL(BaseETL):
             logger.error(f"Error extracting from Humble Bundle: {e}")
             return []
 
-    def _get_curated_bundle_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_bundle_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of current major bundle deals."""
         curated = [
             {
@@ -474,7 +457,7 @@ class BundleDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated bundle deals")
         return curated
 
-    def _extract_price_from_text(self, text: str) -> Dict[str, Any]:
+    def _extract_price_from_text(self, text: str) -> dict[str, Any]:
         """Extract pricing information from text."""
         price_info = {
             "original_price": 0,
@@ -505,23 +488,17 @@ class BundleDealsETL(BaseETL):
                 if len(prices) >= 2:
                     price_info["current_price"] = min(prices)
                     price_info["original_price"] = max(prices)
-                    price_info["savings"] = (
-                        price_info["original_price"] - price_info["current_price"]
-                    )
+                    price_info["savings"] = price_info["original_price"] - price_info["current_price"]
                     if price_info["original_price"] > 0:
                         price_info["discount_percentage"] = round(
-                            (price_info["savings"] / price_info["original_price"])
-                            * 100,
+                            (price_info["savings"] / price_info["original_price"]) * 100,
                             2,
                         )
                 else:
                     price_info["current_price"] = prices[0]
 
             # Check for tier pricing indicators
-            if any(
-                keyword in text.lower()
-                for keyword in ["pay more than", "beat the average", "tier", "level"]
-            ):
+            if any(keyword in text.lower() for keyword in ["pay more than", "beat the average", "tier", "level"]):
                 price_info["tier_pricing"] = True
 
         except Exception as e:
@@ -535,9 +512,7 @@ class BundleDealsETL(BaseETL):
         description_safe = description or ""
         text = (title_safe + " " + description_safe).lower()
 
-        if any(
-            keyword in text for keyword in ["humble choice", "monthly", "subscription"]
-        ):
+        if any(keyword in text for keyword in ["humble choice", "monthly", "subscription"]):
             return "subscription_bundle"
         elif any(keyword in text for keyword in ["daily", "flash", "star deal"]):
             return "daily_deal"
@@ -572,7 +547,7 @@ class BundleDealsETL(BaseETL):
         except:
             return 1
 
-    def _extract_bundle_tags(self, title: str, description: str) -> List[str]:
+    def _extract_bundle_tags(self, title: str, description: str) -> list[str]:
         """Extract relevant tags from bundle title and description."""
         title_safe = title or ""
         description_safe = description or ""
@@ -602,7 +577,7 @@ class BundleDealsETL(BaseETL):
 
         return tags[:5]  # Limit to 5 tags
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform bundle deals data."""
         logger.info("Starting bundle deals transformation...")
 
@@ -627,9 +602,7 @@ class BundleDealsETL(BaseETL):
 
                 transformed_deal = {
                     "title": title,
-                    "description": deal.get("description", "")[
-                        :500
-                    ],  # Limit description
+                    "description": deal.get("description", "")[:500],  # Limit description
                     "url": deal["url"],
                     "platform": deal["platform"],
                     "category": deal["category"],
@@ -657,14 +630,12 @@ class BundleDealsETL(BaseETL):
                 continue
 
         # Sort by value score and savings
-        transformed_deals.sort(
-            key=lambda x: (x["value_score"], x["savings"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["value_score"], x["savings"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} bundle deals")
         return transformed_deals
 
-    def _calculate_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate value score for ranking deals."""
         score = 0.0
 
@@ -721,30 +692,21 @@ class BundleDealsETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_urgency(self, deal: Dict[str, Any]) -> str:
+    def _determine_urgency(self, deal: dict[str, Any]) -> str:
         """Determine urgency level of the deal."""
         time_remaining = (deal.get("time_remaining") or "").lower()
         deal_type = deal.get("deal_type") or ""
 
-        if any(
-            keyword in time_remaining
-            for keyword in ["hours", "ending soon", "expires today"]
-        ):
+        if any(keyword in time_remaining for keyword in ["hours", "ending soon", "expires today"]):
             return "high"
-        elif any(
-            keyword in time_remaining for keyword in ["1 day", "24 hours", "tomorrow"]
-        ):
+        elif any(keyword in time_remaining for keyword in ["1 day", "24 hours", "tomorrow"]) or deal_type == "daily_deal":
             return "medium"
-        elif deal_type == "daily_deal":
-            return "medium"
-        elif any(
-            keyword in time_remaining for keyword in ["limited time", "week", "days"]
-        ):
+        elif any(keyword in time_remaining for keyword in ["limited time", "week", "days"]):
             return "low"
         else:
             return "none"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed bundle deals data to files."""
         try:
             # Ensure output directory exists
@@ -764,9 +726,7 @@ class BundleDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} bundle deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} bundle deals to {output_dir}")
             return True
 
         except Exception as e:

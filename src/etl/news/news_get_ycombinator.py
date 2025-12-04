@@ -15,9 +15,7 @@ from src.utils.logging import get_logger
 logger = get_logger("YCombinatorETL")
 
 
-def get_ycombinator_data(
-    max_retries: int = 3, retry_delay: int = 5
-) -> list[dict[str, Any]]:
+def get_ycombinator_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str, Any]]:
     """Fetches news articles from Hacker News by parsing RSS feeds from hnrss.org.
 
     Args:
@@ -40,9 +38,7 @@ def get_ycombinator_data(
                     logger.warning(f"No entries found in RSS feed from {url}")
                     break
 
-                logger.debug(
-                    f"Found {len(feed.entries)} entries in RSS feed from {url}"
-                )
+                logger.debug(f"Found {len(feed.entries)} entries in RSS feed from {url}")
 
                 for entry in feed.entries:
                     try:
@@ -113,9 +109,7 @@ def get_ycombinator_data(
                     logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                 else:
-                    logger.error(
-                        f"Error fetching data from RSS feed after {max_retries} attempts: {e!s}"
-                    )
+                    logger.error(f"Error fetching data from RSS feed after {max_retries} attempts: {e!s}")
 
         # Add a small delay between RSS feed requests to be respectful to the server
         time.sleep(1)
@@ -170,9 +164,7 @@ def main():
         # Ensure output directory exists
         project_root = get_project_root()
         output_dir = os.path.join(project_root, "data/hackernews")
-        ensure_directories(
-            ["data/hackernews"]
-        )  # This should create /app/data/hackernews
+        ensure_directories(["data/hackernews"])  # This should create /app/data/hackernews
 
         # Create a simple test file to verify directory creation and write access
         test_file_path = os.path.join(output_dir, "test_output.txt")
@@ -206,9 +198,7 @@ def main():
         pd.DataFrame(processed_articles).to_csv(csv_file, index=False)
         logger.debug(f"Saved CSV data to {csv_file}")
 
-        logger.info(
-            f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}"
-        )
+        logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
 
     except Exception as e:
         logger.error(f"Error in Hacker News ETL process: {e!s}", exc_info=True)

@@ -10,13 +10,12 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("MetacriticGamesETL")
 
@@ -50,9 +49,9 @@ def _extract_score(text: str) -> int | None:
     return None
 
 
-def fetch_metacritic_games() -> List[Dict[str, Any]]:
+def fetch_metacritic_games() -> list[dict[str, Any]]:
     logger.info(f"Fetching Metacritic Games RSS: {FEED_URL}")
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(FEED_URL)
     except Exception as e:
@@ -91,7 +90,7 @@ def fetch_metacritic_games() -> List[Dict[str, Any]]:
     return entries
 
 
-def save_metacritic(entries: List[Dict[str, Any]]) -> None:
+def save_metacritic(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No Metacritic entries to save")
         return
@@ -114,7 +113,7 @@ def save_metacritic(entries: List[Dict[str, Any]]) -> None:
     if entries:
         import csv
 
-        flat: List[Dict[str, Any]] = []
+        flat: list[dict[str, Any]] = []
         for e in entries:
             r = e.copy()
             if isinstance(r.get("categories"), list):
@@ -140,5 +139,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

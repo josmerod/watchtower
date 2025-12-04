@@ -1,7 +1,7 @@
 """Test script for Architecture Intelligence."""
 
-from src.models.user_profile_model import UserProfile, SkillLevel, ResearchDomain
 from src.intelligence.architecture_recommender import ArchitectureRecommender
+from src.models.user_profile_model import SkillLevel, UserProfile
 
 print("=" * 70)
 print("Testing Architecture Intelligence (Story 8.7)")
@@ -29,11 +29,11 @@ profile_a = UserProfile(
     username="Cloud Architect",
     skill_level=SkillLevel.EXPERT,
     tech_stack=["Python", "AWS Lambda", "DynamoDB", "Docker"],
-    team_size="Large (20+)"
+    team_size="Large (20+)",
 )
 
 recs_a = recommender.recommend_patterns(profile_a, top_n=3)
-print(f"   Top 3 Recommendations:")
+print("   Top 3 Recommendations:")
 for p, score, breakdown in recs_a:
     print(f"   - {p.name} (Score: {score:.2f})")
     print(f"     Explanation: {recommender.explain_recommendation(p, breakdown)}")
@@ -51,11 +51,11 @@ profile_b = UserProfile(
     username="Indie Hacker",
     skill_level=SkillLevel.BEGINNER,
     tech_stack=["Django", "PostgreSQL"],
-    team_size="Solo"
+    team_size="Solo",
 )
 
 recs_b = recommender.recommend_patterns(profile_b, top_n=3)
-print(f"   Top 3 Recommendations:")
+print("   Top 3 Recommendations:")
 for p, score, breakdown in recs_b:
     print(f"   - {p.name} (Score: {score:.2f})")
     print(f"     Explanation: {recommender.explain_recommendation(p, breakdown)}")

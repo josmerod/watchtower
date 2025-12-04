@@ -1,5 +1,4 @@
-"""
-Watchtower Launcher Module
+"""Watchtower Launcher Module
 
 Unified launcher for ETL processes, dashboard, and system management.
 Provides cross-platform service management and intelligent scheduling.

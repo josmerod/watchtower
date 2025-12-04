@@ -13,13 +13,12 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("PapersWithCodeETL")
 
@@ -27,12 +26,12 @@ logger = get_logger("PapersWithCodeETL")
 BASE_URL = "https://paperswithcode.com/api/v1/"
 
 
-def fetch_recent_papers(page_size: int = 50) -> List[Dict[str, Any]]:
+def fetch_recent_papers(page_size: int = 50) -> list[dict[str, Any]]:
     url = f"{BASE_URL}papers/"
     params = {"items_per_page": page_size, "page": 1, "ordering": "-published"}
     headers = {"User-Agent": "Watchtower/1.0 (ETL)"}
 
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     try:
         resp = requests.get(url, params=params, headers=headers, timeout=30)
         if resp.status_code != 200:
@@ -66,7 +65,7 @@ def fetch_recent_papers(page_size: int = 50) -> List[Dict[str, Any]]:
     return results
 
 
-def save_papers(entries: List[Dict[str, Any]]) -> None:
+def save_papers(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No Papers with Code entries to save")
         return
@@ -97,5 +96,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

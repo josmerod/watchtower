@@ -8,7 +8,7 @@ It extracts paper metadata and saves information about new or updated papers.
 import json
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
@@ -16,8 +16,7 @@ from src.watchers.base_watcher import BaseWatcher
 
 
 class ArxivWatcher(BaseWatcher):
-    """
-    Watcher for ArXiv papers related to AI/ML, Programming, Cloud Architecture, and Enterprise Architecture.
+    """Watcher for ArXiv papers related to AI/ML, Programming, Cloud Architecture, and Enterprise Architecture.
 
     This watcher monitors ArXiv for new papers in AI/ML categories and related computer science
     domains including programming languages, software engineering, distributed computing,
@@ -25,7 +24,7 @@ class ArxivWatcher(BaseWatcher):
     """
 
     # ArXiv API URL with AI/ML categories
-    ARXIV_API_BASE = "http://export.arxiv.org/api/query"
+    ARXIV_API_BASE = "https://export.arxiv.org/api/query"
 
     # AI, ML, Programming, Cloud Architecture, and Enterprise Architecture related categories
     AI_ML_CATEGORIES = [
@@ -65,8 +64,7 @@ class ArxivWatcher(BaseWatcher):
         max_results: int = 50,
         days_back: int = 7,
     ):
-        """
-        Initialize the ArXiv watcher.
+        """Initialize the ArXiv watcher.
 
         Args:
             name (str): Unique name for this watcher
@@ -78,12 +76,10 @@ class ArxivWatcher(BaseWatcher):
         categories = " OR ".join(self.AI_ML_CATEGORIES)
 
         # Calculate date for papers published since days_back
-        date_since = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        date_since = (datetime.now() - timedelta(days=days_back)).strftime("%Y%m%d")
 
         # Build the complete search URL
-        search_query = (
-            f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
-        )
+        search_query = f"cat:({categories}) AND submittedDate:[{date_since}0000 TO 999912312359]"
         self.api_url = f"{self.ARXIV_API_BASE}?search_query={search_query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
 
         self.max_results = max_results
@@ -92,9 +88,8 @@ class ArxivWatcher(BaseWatcher):
         # Initialize the base watcher
         super().__init__(name, self.api_url, check_interval)
 
-    def extract_value(self, xml_content: str) -> List[Dict[str, Any]]:
-        """
-        Extract papers from the ArXiv API response.
+    def extract_value(self, xml_content: str) -> list[dict[str, Any]]:
+        """Extract papers from the ArXiv API response.
 
         Args:
             xml_content (str): XML response from ArXiv API
@@ -111,9 +106,7 @@ class ArxivWatcher(BaseWatcher):
             authors = [author.name for author in entry.authors]
 
             # Extract categories
-            categories = (
-                [tag.term for tag in entry.tags] if hasattr(entry, "tags") else []
-            )
+            categories = [tag.term for tag in entry.tags] if hasattr(entry, "tags") else []
 
             # Create paper entry
             paper = {
@@ -126,11 +119,7 @@ class ArxivWatcher(BaseWatcher):
                 "updated": entry.updated,
                 "link": entry.link,
                 "pdf_url": next(
-                    (
-                        link.href
-                        for link in entry.links
-                        if link.rel == "alternate" and link.type == "application/pdf"
-                    ),
+                    (link.href for link in entry.links if link.rel == "alternate" and link.type == "application/pdf"),
                     None,
                 ),
             }
@@ -140,11 +129,8 @@ class ArxivWatcher(BaseWatcher):
         self.logger.info(f"Found {len(papers)} papers")
         return papers
 
-    def has_changed(
-        self, old_papers: List[Dict[str, Any]], new_papers: List[Dict[str, Any]]
-    ) -> bool:
-        """
-        Determine if there are new papers or changes in the papers.
+    def has_changed(self, old_papers: list[dict[str, Any]], new_papers: list[dict[str, Any]]) -> bool:
+        """Determine if there are new papers or changes in the papers.
 
         Args:
             old_papers: Previously fetched papers
@@ -179,11 +165,8 @@ class ArxivWatcher(BaseWatcher):
         self.logger.info("No changes detected in ArXiv papers")
         return False
 
-    def trigger_alarm(
-        self, old_papers: List[Dict[str, Any]], new_papers: List[Dict[str, Any]]
-    ):
-        """
-        Process new papers when detected.
+    def trigger_alarm(self, old_papers: list[dict[str, Any]], new_papers: list[dict[str, Any]]):
+        """Process new papers when detected.
 
         Args:
             old_papers: Previously fetched papers
@@ -219,9 +202,7 @@ class ArxivWatcher(BaseWatcher):
                 self._save_paper_detail(paper, paper_id)
 
         if updated_ids:
-            self.logger.warning(
-                f"UPDATED PAPERS DETECTED: {len(updated_ids)} papers updated"
-            )
+            self.logger.warning(f"UPDATED PAPERS DETECTED: {len(updated_ids)} papers updated")
 
         # Record the event with details about changes
         event_details = {
@@ -240,28 +221,24 @@ class ArxivWatcher(BaseWatcher):
         # Save all papers for reference
         self._save_papers(new_papers, "latest_papers")
 
-    def _save_papers(self, papers: List[Dict[str, Any]], filename: str):
-        """
-        Save papers to a JSON file.
+    def _save_papers(self, papers: list[dict[str, Any]], filename: str):
+        """Save papers to a JSON file.
 
         Args:
             papers (List[Dict[str, Any]]): Papers to save
             filename (str): Filename without extension
         """
-        self.logger.info(
-            f"Attempting to save papers to {filename}.json in {self.data_dir}"
-        )
+        self.logger.info(f"Attempting to save papers to {filename}.json in {self.data_dir}")
         filepath = os.path.join(self.data_dir, f"{filename}.json")
         try:
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(papers, f, ensure_ascii=False, indent=2)
             self.logger.info(f"Saved {len(papers)} papers to {filepath}")
         except Exception as e:
-            self.logger.error(f"Error saving papers to {filepath}: {str(e)}")
+            self.logger.error(f"Error saving papers to {filepath}: {e!s}")
 
-    def _save_paper_detail(self, paper: Dict[str, Any], paper_id: str):
-        """
-        Save detailed information for a single paper.
+    def _save_paper_detail(self, paper: dict[str, Any], paper_id: str):
+        """Save detailed information for a single paper.
 
         Args:
             paper (Dict[str, Any]): Paper data
@@ -277,11 +254,10 @@ class ArxivWatcher(BaseWatcher):
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(paper, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            self.logger.error(f"Error saving paper detail to {filepath}: {str(e)}")
+            self.logger.error(f"Error saving paper detail to {filepath}: {e!s}")
 
     def fetch_page(self) -> str:
-        """
-        Fetch the ArXiv API response.
+        """Fetch the ArXiv API response.
 
         Overrides the base method to use the API URL that may change based on dates.
 
@@ -289,15 +265,73 @@ class ArxivWatcher(BaseWatcher):
             str: XML content from ArXiv API
         """
         # Update the date range to always be relative to current time
-        date_since = (datetime.now() - timedelta(days=self.days_back)).strftime(
-            "%Y-%m-%d"
-        )
+        date_since = (datetime.now() - timedelta(days=self.days_back)).strftime("%Y%m%d")
         categories = " OR ".join(self.AI_ML_CATEGORIES)
-        search_query = (
-            f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
-        )
+        search_query = f"cat:({categories}) AND submittedDate:[{date_since}0000 TO 999912312359]"
 
         current_url = f"{self.ARXIV_API_BASE}?search_query={search_query}&sortBy=submittedDate&sortOrder=descending&max_results={self.max_results}"
         self.url = current_url
 
         return super().fetch_page()
+
+    def fetch_and_extract_all(self, max_total_results: int = None) -> list[dict[str, Any]]:
+        """Fetch and extract papers with pagination support.
+
+        Args:
+            max_total_results (int): Maximum number of papers to retrieve.
+                                     If None, uses self.max_results.
+
+        Returns:
+            List[Dict[str, Any]]: List of extracted papers
+        """
+        target_count = max_total_results or self.max_results
+        all_papers = []
+        start = 0
+        page_size = 100  # Fetch 100 at a time
+
+        # Update date range once
+        date_since = (datetime.now() - timedelta(days=self.days_back)).strftime("%Y%m%d")
+        categories = " OR ".join(self.AI_ML_CATEGORIES)
+        search_query = f"cat:({categories}) AND submittedDate:[{date_since}0000 TO 999912312359]"
+
+        while len(all_papers) < target_count:
+            # Calculate how many to fetch in this batch
+            remaining = target_count - len(all_papers)
+            current_max = min(page_size, remaining)
+
+            # Construct URL with pagination
+            current_url = f"{self.ARXIV_API_BASE}?search_query={search_query}" f"&sortBy=submittedDate&sortOrder=descending" f"&start={start}&max_results={current_max}"
+
+            self.logger.info(f"Fetching batch: start={start}, max_results={current_max}")
+
+            try:
+                # Use requests directly or self.fetch_page logic but we need to override self.url temporarily
+                # or just use requests here to avoid side effects on self.url
+                import time
+
+                import requests
+
+                response = requests.get(current_url, timeout=30)
+                response.raise_for_status()
+                xml_content = response.text
+
+                # Extract papers from this batch
+                batch_papers = self.extract_value(xml_content)
+
+                if not batch_papers:
+                    self.logger.info("No more papers found in this batch.")
+                    break
+
+                all_papers.extend(batch_papers)
+                self.logger.info(f"Retrieved {len(batch_papers)} papers. Total: {len(all_papers)}")
+
+                start += len(batch_papers)
+
+                # Respect API rate limits
+                time.sleep(3)
+
+            except Exception as e:
+                self.logger.error(f"Error fetching batch at start={start}: {e}")
+                break
+
+        return all_papers[:target_count]

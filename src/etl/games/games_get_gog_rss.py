@@ -10,13 +10,12 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("GOGRSSETL")
 
@@ -48,9 +47,9 @@ def _extract_price(text: str) -> float | None:
     return None
 
 
-def fetch_gog() -> List[Dict[str, Any]]:
+def fetch_gog() -> list[dict[str, Any]]:
     logger.info(f"Fetching GOG RSS: {FEED_URL}")
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(FEED_URL)
     except Exception as e:
@@ -80,7 +79,7 @@ def fetch_gog() -> List[Dict[str, Any]]:
     return entries
 
 
-def save_gog(entries: List[Dict[str, Any]]) -> None:
+def save_gog(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No GOG entries to save")
         return
@@ -111,4 +110,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

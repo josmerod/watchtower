@@ -275,15 +275,11 @@ def generate_mock_stackoverflow_data() -> list[dict[str, Any]]:
                 ("SQL and NoSQL", "databases"),
             ]
             concept_pair = random.choice(concepts)
-            title = title.replace("{concept1}", concept_pair[0]).replace(
-                "{concept2}", concept_pair[1]
-            )
+            title = title.replace("{concept1}", concept_pair[0]).replace("{concept2}", concept_pair[1])
         if "{environment}" in title:
             title = title.replace(
                 "{environment}",
-                random.choice(
-                    ["Docker", "Kubernetes", "AWS", "local development", "production"]
-                ),
+                random.choice(["Docker", "Kubernetes", "AWS", "local development", "production"]),
             )
         if "{feature}" in title:
             title = title.replace(
@@ -301,9 +297,7 @@ def generate_mock_stackoverflow_data() -> list[dict[str, Any]]:
         if "{service}" in title:
             title = title.replace(
                 "{service}",
-                random.choice(
-                    ["Stripe", "PayPal", "AWS S3", "Google Maps", "Twilio", "SendGrid"]
-                ),
+                random.choice(["Stripe", "PayPal", "AWS S3", "Google Maps", "Twilio", "SendGrid"]),
             )
         if "{application_type}" in title:
             title = title.replace(
@@ -334,12 +328,8 @@ def generate_mock_stackoverflow_data() -> list[dict[str, Any]]:
 
         # Generate question metrics
         hours_ago = random.randint(1, 72)
-        creation_timestamp = int(
-            (datetime.now() - timedelta(hours=hours_ago)).timestamp()
-        )
-        last_activity_timestamp = int(
-            (datetime.now() - timedelta(hours=random.randint(0, hours_ago))).timestamp()
-        )
+        creation_timestamp = int((datetime.now() - timedelta(hours=hours_ago)).timestamp())
+        last_activity_timestamp = int((datetime.now() - timedelta(hours=random.randint(0, hours_ago))).timestamp())
 
         # Generate tags based on title content
         tags = template["tags"].copy()
@@ -354,9 +344,7 @@ def generate_mock_stackoverflow_data() -> list[dict[str, Any]]:
         # Add framework tags
         for framework in frameworks:
             if framework.lower().replace(".", "") in title_lower.replace(".", ""):
-                tags.append(
-                    framework.lower().replace(".js", "").replace(" on rails", "")
-                )
+                tags.append(framework.lower().replace(".js", "").replace(" on rails", ""))
                 break
 
         # Add specific technology tags
@@ -418,20 +406,12 @@ def process_stackoverflow_data(questions: list[dict[str, Any]]) -> list[dict[str
         try:
             # Parse creation time
             creation_timestamp = question.get("creation_date", 0)
-            creation_date = (
-                datetime.fromtimestamp(creation_timestamp)
-                if creation_timestamp
-                else current_time
-            )
+            creation_date = datetime.fromtimestamp(creation_timestamp) if creation_timestamp else current_time
             hours_since_created = (current_time - creation_date).total_seconds() / 3600
 
             # Parse last activity time
             activity_timestamp = question.get("last_activity_date", creation_timestamp)
-            last_activity = (
-                datetime.fromtimestamp(activity_timestamp)
-                if activity_timestamp
-                else creation_date
-            )
+            last_activity = datetime.fromtimestamp(activity_timestamp) if activity_timestamp else creation_date
             hours_since_activity = (current_time - last_activity).total_seconds() / 3600
 
             # Extract metrics
@@ -441,26 +421,15 @@ def process_stackoverflow_data(questions: list[dict[str, Any]]) -> list[dict[str
             comment_count = question.get("comment_count", 0)
 
             # Calculate engagement metrics
-            engagement_score = (
-                score + (answer_count * 3) + (comment_count * 1) + (view_count / 100)
-            )
+            engagement_score = score + (answer_count * 3) + (comment_count * 1) + (view_count / 100)
 
             # Determine question difficulty
             title = question.get("title", "").lower()
-            if any(
-                word in title
-                for word in ["beginner", "basic", "simple", "how to start"]
-            ):
+            if any(word in title for word in ["beginner", "basic", "simple", "how to start"]):
                 difficulty = "beginner"
-            elif any(
-                word in title
-                for word in ["advanced", "complex", "optimize", "performance"]
-            ):
+            elif any(word in title for word in ["advanced", "complex", "optimize", "performance"]):
                 difficulty = "advanced"
-            elif any(
-                word in title
-                for word in ["best practice", "architecture", "design pattern"]
-            ):
+            elif any(word in title for word in ["best practice", "architecture", "design pattern"]):
                 difficulty = "intermediate"
             else:
                 difficulty = "intermediate"
@@ -496,10 +465,7 @@ def process_stackoverflow_data(questions: list[dict[str, Any]]) -> list[dict[str
                 ]
             ):
                 tech_category = "frontend"
-            elif any(
-                tech in combined_text
-                for tech in ["python", "django", "flask", "fastapi", "node", "express"]
-            ):
+            elif any(tech in combined_text for tech in ["python", "django", "flask", "fastapi", "node", "express"]):
                 tech_category = "backend"
             elif any(
                 tech in combined_text
@@ -524,20 +490,11 @@ def process_stackoverflow_data(questions: list[dict[str, Any]]) -> list[dict[str
                 ]
             ):
                 tech_category = "ai_ml"
-            elif any(
-                tech in combined_text
-                for tech in ["docker", "kubernetes", "aws", "azure", "devops", "ci-cd"]
-            ):
+            elif any(tech in combined_text for tech in ["docker", "kubernetes", "aws", "azure", "devops", "ci-cd"]):
                 tech_category = "devops"
-            elif any(
-                tech in combined_text
-                for tech in ["sql", "database", "mysql", "postgresql", "mongodb"]
-            ):
+            elif any(tech in combined_text for tech in ["sql", "database", "mysql", "postgresql", "mongodb"]):
                 tech_category = "database"
-            elif any(
-                tech in combined_text
-                for tech in ["security", "authentication", "encryption", "oauth"]
-            ):
+            elif any(tech in combined_text for tech in ["security", "authentication", "encryption", "oauth"]):
                 tech_category = "security"
             else:
                 tech_category = "general"
@@ -583,8 +540,7 @@ def process_stackoverflow_data(questions: list[dict[str, Any]]) -> list[dict[str
                 "freshness": freshness,
                 "trending_score": round(trending_score, 2),
                 "is_trending": trending_score >= 20,
-                "needs_attention": answer_status == "unanswered"
-                and hours_since_created <= 48,
+                "needs_attention": answer_status == "unanswered" and hours_since_created <= 48,
                 "platform": "stackoverflow",
                 "tag_count": len(tags),
                 "owner_reputation": question.get("owner", {}).get("reputation", 0),
@@ -593,17 +549,13 @@ def process_stackoverflow_data(questions: list[dict[str, Any]]) -> list[dict[str
             processed_questions.append(processed_question)
 
         except Exception as e:
-            logger.warning(
-                f"Error processing question {question.get('question_id', 'unknown')}: {e}"
-            )
+            logger.warning(f"Error processing question {question.get('question_id', 'unknown')}: {e}")
             continue
 
     # Sort by trending score
     processed_questions.sort(key=lambda x: x.get("trending_score", 0), reverse=True)
 
-    logger.info(
-        f"Successfully processed {len(processed_questions)} Stack Overflow questions"
-    )
+    logger.info(f"Successfully processed {len(processed_questions)} Stack Overflow questions")
     return processed_questions
 
 
@@ -700,15 +652,9 @@ def main():
 
         # Summary
         total_questions = len(processed_data)
-        trending_questions = len(
-            [q for q in processed_data if q.get("is_trending", False)]
-        )
-        unanswered_questions = len(
-            [q for q in processed_data if q.get("answer_status") == "unanswered"]
-        )
-        urgent_questions = len(
-            [q for q in processed_data if q.get("has_urgency", False)]
-        )
+        trending_questions = len([q for q in processed_data if q.get("is_trending", False)])
+        unanswered_questions = len([q for q in processed_data if q.get("answer_status") == "unanswered"])
+        urgent_questions = len([q for q in processed_data if q.get("has_urgency", False)])
 
         logger.info("Stack Overflow Trends ETL completed successfully!")
         logger.info(f"Total questions: {total_questions}")
@@ -719,9 +665,7 @@ def main():
 
         # Print technology distribution
         if processed_data:
-            tech_categories = [
-                q.get("tech_category", "Unknown") for q in processed_data
-            ]
+            tech_categories = [q.get("tech_category", "Unknown") for q in processed_data]
             from collections import Counter
 
             top_categories = Counter(tech_categories).most_common(10)

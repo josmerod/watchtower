@@ -27,7 +27,7 @@ def load_crypto_sentiment():
     for file_path in file_paths:
         if file_exists(file_path):
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
+                with open(file_path, encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, list):
                         return data
@@ -43,9 +43,7 @@ def load_crypto_sentiment():
                             if key in data and isinstance(data[key], list):
                                 return data[key]
                         # Single item
-                        if any(
-                            k in data for k in ["sentiment", "coin", "text", "content"]
-                        ):
+                        if any(k in data for k in ["sentiment", "coin", "text", "content"]):
                             return [data]
                     return []
             except Exception as e:
@@ -71,27 +69,17 @@ def process_crypto_data(data):
             "sentiment": item.get("sentiment", "neutral").lower(),
             "content": item.get("content", item.get("text", item.get("message", ""))),
             "source": item.get("source", item.get("platform", "Unknown")),
-            "coins_mentioned": item.get(
-                "coins_mentioned", item.get("coins", item.get("symbols", []))
-            ),
+            "coins_mentioned": item.get("coins_mentioned", item.get("coins", item.get("symbols", []))),
             "confidence": item.get("confidence", item.get("score", 0.5)),
             "url": item.get("url", item.get("link", "")),
             "author": item.get("author", item.get("username", "Anonymous")),
-            "engagement": item.get(
-                "engagement", item.get("likes", item.get("upvotes", 0))
-            ),
+            "engagement": item.get("engagement", item.get("likes", item.get("upvotes", 0))),
             "price_mentioned": item.get("price_mentioned", item.get("price", None)),
             "market_cap": item.get("market_cap", None),
             "volume": item.get("volume", None),
-            "keywords": extract_crypto_keywords(
-                item.get("content", item.get("text", ""))
-            ),
-            "emotional_intensity": calculate_emotional_intensity(
-                item.get("content", item.get("text", ""))
-            ),
-            "urgency_level": calculate_urgency_level(
-                item.get("content", item.get("text", ""))
-            ),
+            "keywords": extract_crypto_keywords(item.get("content", item.get("text", ""))),
+            "emotional_intensity": calculate_emotional_intensity(item.get("content", item.get("text", ""))),
+            "urgency_level": calculate_urgency_level(item.get("content", item.get("text", ""))),
         }
 
         # Ensure coins_mentioned is a list
@@ -269,9 +257,7 @@ def create_sentiment_timeline(data):
 
     # Confidence distribution
     fig.add_trace(
-        go.Histogram(
-            x=df["confidence"], name="Confidence", marker_color="blue", opacity=0.7
-        ),
+        go.Histogram(x=df["confidence"], name="Confidence", marker_color="blue", opacity=0.7),
         row=1,
         col=2,
     )
@@ -313,9 +299,7 @@ def create_sentiment_timeline(data):
         col=2,
     )
 
-    fig.update_layout(
-        height=800, showlegend=True, title_text="Crypto Sentiment Analytics Dashboard"
-    )
+    fig.update_layout(height=800, showlegend=True, title_text="Crypto Sentiment Analytics Dashboard")
     return fig
 
 
@@ -351,12 +335,8 @@ def create_coin_analysis_chart(data):
     coin_data = []
     for coin, count in top_coins.items():
         sentiments = coin_sentiments[coin]
-        positive_ratio = (
-            sentiments.count("positive") / len(sentiments) if sentiments else 0
-        )
-        negative_ratio = (
-            sentiments.count("negative") / len(sentiments) if sentiments else 0
-        )
+        positive_ratio = sentiments.count("positive") / len(sentiments) if sentiments else 0
+        negative_ratio = sentiments.count("negative") / len(sentiments) if sentiments else 0
 
         coin_data.append(
             {
@@ -448,9 +428,7 @@ def create_coin_analysis_chart(data):
         col=2,
     )
 
-    fig.update_layout(
-        height=800, showlegend=True, title_text="Comprehensive Coin Analysis"
-    )
+    fig.update_layout(height=800, showlegend=True, title_text="Comprehensive Coin Analysis")
     return fig
 
 
@@ -462,9 +440,7 @@ def create_advanced_metrics_cards(data):
                 dbc.CardBody(
                     [
                         html.H4("No Data", className="card-title"),
-                        html.P(
-                            "No crypto sentiment data available", className="card-text"
-                        ),
+                        html.P("No crypto sentiment data available", className="card-text"),
                     ]
                 ),
                 color="warning",
@@ -487,9 +463,7 @@ def create_advanced_metrics_cards(data):
 
     # Sentiment distribution
     sentiment_counts = df["sentiment"].value_counts()
-    dominant_sentiment = (
-        sentiment_counts.index[0] if len(sentiment_counts) > 0 else "Unknown"
-    )
+    dominant_sentiment = sentiment_counts.index[0] if len(sentiment_counts) > 0 else "Unknown"
 
     # Top coin
     all_coins = [coin for coins in df["coins_mentioned"] for coin in coins if coin]
@@ -503,9 +477,7 @@ def create_advanced_metrics_cards(data):
 
     # Engagement metrics
     avg_engagement = df["engagement"].mean() if not df["engagement"].isna().all() else 0
-    total_engagement = (
-        df["engagement"].sum() if not df["engagement"].isna().all() else 0
-    )
+    total_engagement = df["engagement"].sum() if not df["engagement"].isna().all() else 0
 
     # Emotional intensity
     # avg_intensity reserved for future metrics
@@ -599,11 +571,7 @@ def create_advanced_metrics_cards(data):
                     html.Small(
                         [
                             html.I(className="fas fa-exclamation-triangle me-1"),
-                            (
-                                f"{(high_urgency / total_mentions * 100):.1f}% of total"
-                                if total_mentions > 0
-                                else "0%"
-                            ),
+                            (f"{(high_urgency / total_mentions * 100):.1f}% of total" if total_mentions > 0 else "0%"),
                         ],
                         className="text-muted",
                     ),
@@ -667,8 +635,7 @@ def create_advanced_data_table(data):
                 "urgency": item["urgency_level"].title(),
                 "intensity": f"{item['emotional_intensity']:.1f}",
                 "keywords": keywords_str,
-                "content": item["content"][:150]
-                + ("..." if len(item["content"]) > 150 else ""),
+                "content": item["content"][:150] + ("..." if len(item["content"]) > 150 else ""),
                 "url": item["url"],
             }
         )
@@ -712,13 +679,7 @@ def create_advanced_data_table(data):
             },
             {"if": {"filter_query": "{urgency} = High"}, "fontWeight": "bold"},
         ],
-        tooltip_data=[
-            {
-                column: {"value": str(row[column]), "type": "markdown"}
-                for column in ["content", "url"]
-            }
-            for row in table_data
-        ],
+        tooltip_data=[{column: {"value": str(row[column]), "type": "markdown"} for column in ["content", "url"]} for row in table_data],
         tooltip_duration=None,
     )
 
@@ -749,9 +710,7 @@ def crypto_tab():
                             html.P(
                                 [
                                     "Advanced cryptocurrency sentiment analysis, market intelligence, and trend monitoring. ",
-                                    html.Strong(
-                                        f"Analyzing {len(processed_data):,} data points "
-                                    ),
+                                    html.Strong(f"Analyzing {len(processed_data):,} data points "),
                                     "from multiple sources with real-time insights.",
                                 ],
                                 className="text-muted mb-4",
@@ -787,10 +746,7 @@ def crypto_tab():
             ),
             # Advanced Summary Cards
             dbc.Row(
-                [
-                    dbc.Col(card, md=4, lg=2)
-                    for card in create_advanced_metrics_cards(processed_data)
-                ],
+                [dbc.Col(card, md=4, lg=2) for card in create_advanced_metrics_cards(processed_data)],
                 className="mb-4",
             ),
             # Advanced Charts Section
@@ -804,9 +760,7 @@ def crypto_tab():
                                         [
                                             html.H5(
                                                 [
-                                                    html.I(
-                                                        className="fas fa-chart-line me-2"
-                                                    ),
+                                                    html.I(className="fas fa-chart-line me-2"),
                                                     "Sentiment Analytics Dashboard",
                                                 ],
                                                 className="mb-0",
@@ -821,14 +775,10 @@ def crypto_tab():
                                         [
                                             dcc.Graph(
                                                 id="crypto-sentiment-timeline",
-                                                figure=create_sentiment_timeline(
-                                                    processed_data
-                                                ),
+                                                figure=create_sentiment_timeline(processed_data),
                                                 config={
                                                     "displayModeBar": True,
-                                                    "toImageButtonOptions": {
-                                                        "format": "png"
-                                                    },
+                                                    "toImageButtonOptions": {"format": "png"},
                                                 },
                                             )
                                         ]
@@ -851,9 +801,7 @@ def crypto_tab():
                                         [
                                             html.H5(
                                                 [
-                                                    html.I(
-                                                        className="fas fa-coins me-2"
-                                                    ),
+                                                    html.I(className="fas fa-coins me-2"),
                                                     "Comprehensive Coin Analysis",
                                                 ],
                                                 className="mb-0",
@@ -868,9 +816,7 @@ def crypto_tab():
                                         [
                                             dcc.Graph(
                                                 id="crypto-coin-analysis",
-                                                figure=create_coin_analysis_chart(
-                                                    processed_data
-                                                ),
+                                                figure=create_coin_analysis_chart(processed_data),
                                                 config={"displayModeBar": True},
                                             )
                                         ]
@@ -896,9 +842,7 @@ def crypto_tab():
                                                 [
                                                     dbc.Col(
                                                         [
-                                                            html.Label(
-                                                                "Sentiment Filter:"
-                                                            ),
+                                                            html.Label("Sentiment Filter:"),
                                                             dcc.Dropdown(
                                                                 id="sentiment-filter",
                                                                 options=[
@@ -927,9 +871,7 @@ def crypto_tab():
                                                     ),
                                                     dbc.Col(
                                                         [
-                                                            html.Label(
-                                                                "Urgency Level:"
-                                                            ),
+                                                            html.Label("Urgency Level:"),
                                                             dcc.Dropdown(
                                                                 id="urgency-filter",
                                                                 options=[
@@ -958,9 +900,7 @@ def crypto_tab():
                                                     ),
                                                     dbc.Col(
                                                         [
-                                                            html.Label(
-                                                                "Source Filter:"
-                                                            ),
+                                                            html.Label("Source Filter:"),
                                                             dcc.Dropdown(
                                                                 id="source-filter",
                                                                 options=[
@@ -974,10 +914,7 @@ def crypto_tab():
                                                                         "label": source,
                                                                         "value": source,
                                                                     }
-                                                                    for source in set(
-                                                                        item["source"]
-                                                                        for item in processed_data
-                                                                    )
+                                                                    for source in {item["source"] for item in processed_data}
                                                                 ],
                                                                 value="all",
                                                                 clearable=False,
@@ -987,9 +924,7 @@ def crypto_tab():
                                                     ),
                                                     dbc.Col(
                                                         [
-                                                            html.Label(
-                                                                "Search Keywords:"
-                                                            ),
+                                                            html.Label("Search Keywords:"),
                                                             dcc.Input(
                                                                 id="keyword-search",
                                                                 type="text",
@@ -1021,9 +956,7 @@ def crypto_tab():
                                         [
                                             html.H5(
                                                 [
-                                                    html.I(
-                                                        className="fas fa-table me-2"
-                                                    ),
+                                                    html.I(className="fas fa-table me-2"),
                                                     "Interactive Data Explorer",
                                                 ],
                                                 className="mb-0",

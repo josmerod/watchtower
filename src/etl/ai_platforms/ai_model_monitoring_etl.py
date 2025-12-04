@@ -72,31 +72,13 @@ class AIModelMonitoringETL:
         rss_tasks = []
 
         # OpenAI RSS feeds
-        rss_tasks.append(
-            self._fetch_rss_feed("openai_blog", self.sources["openai"]["blog_rss"])
-        )
-        rss_tasks.append(
-            self._fetch_rss_feed(
-                "openai_research", self.sources["openai"]["research_rss"]
-            )
-        )
+        rss_tasks.append(self._fetch_rss_feed("openai_blog", self.sources["openai"]["blog_rss"]))
+        rss_tasks.append(self._fetch_rss_feed("openai_research", self.sources["openai"]["research_rss"]))
 
         # Google RSS feeds
-        rss_tasks.append(
-            self._fetch_rss_feed(
-                "google_ai_blog", self.sources["google"]["ai_blog_rss"]
-            )
-        )
-        rss_tasks.append(
-            self._fetch_rss_feed(
-                "google_cloud_ai", self.sources["google"]["cloud_ai_blog"]
-            )
-        )
-        rss_tasks.append(
-            self._fetch_rss_feed(
-                "google_developers", self.sources["google"]["developers_blog"]
-            )
-        )
+        rss_tasks.append(self._fetch_rss_feed("google_ai_blog", self.sources["google"]["ai_blog_rss"]))
+        rss_tasks.append(self._fetch_rss_feed("google_cloud_ai", self.sources["google"]["cloud_ai_blog"]))
+        rss_tasks.append(self._fetch_rss_feed("google_developers", self.sources["google"]["developers_blog"]))
 
         # Execute RSS fetches concurrently
         rss_results = await asyncio.gather(*rss_tasks, return_exceptions=True)
@@ -116,9 +98,7 @@ class AIModelMonitoringETL:
 
         return model_updates
 
-    async def _fetch_rss_feed(
-        self, source_name: str, rss_url: str
-    ) -> list[dict[str, Any]]:
+    async def _fetch_rss_feed(self, source_name: str, rss_url: str) -> list[dict[str, Any]]:
         """Fetch and parse RSS feed.
 
         Args:
@@ -135,9 +115,7 @@ class AIModelMonitoringETL:
             response = requests.get(
                 rss_url,
                 timeout=30,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                },
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
             )
             response.raise_for_status()
 
@@ -158,11 +136,7 @@ class AIModelMonitoringETL:
                     "url": getattr(entry, "link", ""),
                     "published_at": getattr(entry, "published", ""),
                     "summary": getattr(entry, "summary", ""),
-                    "content": (
-                        getattr(entry, "content", [{}])[0].get("value", "")
-                        if hasattr(entry, "content")
-                        else ""
-                    ),
+                    "content": (getattr(entry, "content", [{}])[0].get("value", "") if hasattr(entry, "content") else ""),
                     "source": source_name,
                     "source_type": "rss",
                     "provider": self._get_provider_from_source(source_name),
@@ -171,9 +145,7 @@ class AIModelMonitoringETL:
                 }
                 entries.append(parsed_entry)
 
-            logger.info(
-                f"Successfully fetched {len(entries)} entries from {source_name}"
-            )
+            logger.info(f"Successfully fetched {len(entries)} entries from {source_name}")
             return entries
 
         except Exception as e:
@@ -214,9 +186,7 @@ class AIModelMonitoringETL:
             response = requests.get(
                 self.sources["openai"]["changelog_url"],
                 timeout=30,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                },
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
             )
             response.raise_for_status()
 
@@ -225,35 +195,25 @@ class AIModelMonitoringETL:
             updates = []
 
             # Look for changelog entries - these vary by site structure
-            changelog_sections = soup.find_all(
-                ["section", "div"], class_=re.compile(r"changelog|update|release")
-            )
+            changelog_sections = soup.find_all(["section", "div"], class_=re.compile(r"changelog|update|release"))
 
             if not changelog_sections:
                 # Try alternative selectors
                 changelog_sections = soup.find_all(
                     ["h2", "h3", "div"],
-                    string=re.compile(
-                        r"202[3-9]|January|February|March|April|May|June|July|August|September|October|November|December"
-                    ),
+                    string=re.compile(r"202[3-9]|January|February|March|April|May|June|July|August|September|October|November|December"),
                 )
 
             for section in changelog_sections[:20]:  # Limit to recent entries
                 title_elem = section.find(["h1", "h2", "h3", "h4"])
-                title = (
-                    title_elem.get_text(strip=True)
-                    if title_elem
-                    else "OpenAI Platform Update"
-                )
+                title = title_elem.get_text(strip=True) if title_elem else "OpenAI Platform Update"
 
                 # Extract date
                 date_match = re.search(
                     r"(202[3-9]-\d{2}-\d{2}|\w+ \d{1,2}, 202[3-9])",
                     title + " " + section.get_text(),
                 )
-                published_at = (
-                    date_match.group(1) if date_match else datetime.now().isoformat()
-                )
+                published_at = date_match.group(1) if date_match else datetime.now().isoformat()
 
                 # Extract content
                 content_elem = section.find_next(["p", "div", "ul"])
@@ -265,9 +225,7 @@ class AIModelMonitoringETL:
                             "title": title,
                             "url": self.sources["openai"]["changelog_url"],
                             "published_at": published_at,
-                            "summary": (
-                                content[:500] + "..." if len(content) > 500 else content
-                            ),
+                            "summary": (content[:500] + "..." if len(content) > 500 else content),
                             "content": content,
                             "source": "openai_changelog",
                             "source_type": "scraped",
@@ -302,57 +260,37 @@ class AIModelMonitoringETL:
                     response = requests.get(
                         url,
                         timeout=30,
-                        headers={
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                        },
+                        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
                     )
                     response.raise_for_status()
 
                     soup = BeautifulSoup(response.content, "html.parser")
 
                     # Look for news/blog articles
-                    articles = soup.find_all(
-                        ["article", "div"], class_=re.compile(r"post|article|news|blog")
-                    )
+                    articles = soup.find_all(["article", "div"], class_=re.compile(r"post|article|news|blog"))
 
                     if not articles:
                         # Try alternative selectors for links
-                        articles = soup.find_all(
-                            "a", href=re.compile(r"/news/|/blog/|/research/")
-                        )
+                        articles = soup.find_all("a", href=re.compile(r"/news/|/blog/|/research/"))
 
                     for article in articles[:15]:  # Limit to recent entries
                         title_elem = article.find(["h1", "h2", "h3", "h4"]) or article
                         title = title_elem.get_text(strip=True) if title_elem else ""
 
                         # Get article URL
-                        link_elem = (
-                            article.find("a") if article.name != "a" else article
-                        )
-                        article_url = (
-                            urljoin(url, link_elem.get("href", ""))
-                            if link_elem
-                            else url
-                        )
+                        link_elem = article.find("a") if article.name != "a" else article
+                        article_url = urljoin(url, link_elem.get("href", "")) if link_elem else url
 
                         # Extract date
-                        date_elem = article.find(
-                            ["time", "span"], class_=re.compile(r"date|time")
-                        )
-                        published_at = (
-                            date_elem.get_text(strip=True)
-                            if date_elem
-                            else datetime.now().isoformat()
-                        )
+                        date_elem = article.find(["time", "span"], class_=re.compile(r"date|time"))
+                        published_at = date_elem.get_text(strip=True) if date_elem else datetime.now().isoformat()
 
                         # Extract summary
                         summary_elem = article.find(
                             ["p", "div"],
                             class_=re.compile(r"summary|excerpt|description"),
                         )
-                        summary = (
-                            summary_elem.get_text(strip=True) if summary_elem else title
-                        )
+                        summary = summary_elem.get_text(strip=True) if summary_elem else title
 
                         if title and self._is_model_related(title + " " + summary):
                             updates.append(
@@ -360,11 +298,7 @@ class AIModelMonitoringETL:
                                     "title": title,
                                     "url": article_url,
                                     "published_at": published_at,
-                                    "summary": (
-                                        summary[:500] + "..."
-                                        if len(summary) > 500
-                                        else summary
-                                    ),
+                                    "summary": (summary[:500] + "..." if len(summary) > 500 else summary),
                                     "content": summary,
                                     "source": f"anthropic_{url_key}",
                                     "source_type": "scraped",
@@ -396,9 +330,7 @@ class AIModelMonitoringETL:
             response = requests.get(
                 self.sources["google"]["gemini_changelog"],
                 timeout=30,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                },
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
             )
             response.raise_for_status()
 
@@ -407,38 +339,22 @@ class AIModelMonitoringETL:
             updates = []
 
             # Look for changelog sections
-            changelog_sections = soup.find_all(
-                ["section", "div"], class_=re.compile(r"changelog|release|update")
-            )
+            changelog_sections = soup.find_all(["section", "div"], class_=re.compile(r"changelog|release|update"))
 
             if not changelog_sections:
                 # Try finding by date headers
                 changelog_sections = soup.find_all(
                     ["h2", "h3"],
-                    string=re.compile(
-                        r"202[3-9]|January|February|March|April|May|June|July|August|September|October|November|December"
-                    ),
+                    string=re.compile(r"202[3-9]|January|February|March|April|May|June|July|August|September|October|November|December"),
                 )
 
             for section in changelog_sections[:20]:  # Limit to recent entries
-                title_elem = (
-                    section
-                    if section.name in ["h2", "h3"]
-                    else section.find(["h1", "h2", "h3", "h4"])
-                )
-                title = (
-                    title_elem.get_text(strip=True)
-                    if title_elem
-                    else "Gemini API Update"
-                )
+                title_elem = section if section.name in ["h2", "h3"] else section.find(["h1", "h2", "h3", "h4"])
+                title = title_elem.get_text(strip=True) if title_elem else "Gemini API Update"
 
                 # Extract date
-                date_match = re.search(
-                    r"(202[3-9]-\d{2}-\d{2}|\w+ \d{1,2}, 202[3-9])", title
-                )
-                published_at = (
-                    date_match.group(1) if date_match else datetime.now().isoformat()
-                )
+                date_match = re.search(r"(202[3-9]-\d{2}-\d{2}|\w+ \d{1,2}, 202[3-9])", title)
+                published_at = date_match.group(1) if date_match else datetime.now().isoformat()
 
                 # Extract content
                 content_elem = section.find_next(["p", "div", "ul"])
@@ -450,9 +366,7 @@ class AIModelMonitoringETL:
                             "title": title,
                             "url": self.sources["google"]["gemini_changelog"],
                             "published_at": published_at,
-                            "summary": (
-                                content[:500] + "..." if len(content) > 500 else content
-                            ),
+                            "summary": (content[:500] + "..." if len(content) > 500 else content),
                             "content": content,
                             "source": "gemini_changelog",
                             "source_type": "scraped",
@@ -543,16 +457,12 @@ class AIModelMonitoringETL:
                 ]
             )
         elif provider == "google":
-            model_keywords.extend(
-                ["gemini pro", "gemini ultra", "palm", "bard", "vertex ai", "ai studio"]
-            )
+            model_keywords.extend(["gemini pro", "gemini ultra", "palm", "bard", "vertex ai", "ai studio"])
 
         # Check if any model keywords are present
         return any(keyword in text_lower for keyword in model_keywords)
 
-    def _filter_model_updates(
-        self, updates: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def _filter_model_updates(self, updates: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Filter updates to only include model-related content.
 
         Args:
@@ -570,9 +480,7 @@ class AIModelMonitoringETL:
             if self._is_model_related(text_content, provider):
                 filtered.append(update)
 
-        logger.info(
-            f"Filtered {len(filtered)} model-related updates from {len(updates)} total updates"
-        )
+        logger.info(f"Filtered {len(filtered)} model-related updates from {len(updates)} total updates")
         return filtered
 
     def process_updates(self, updates: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -677,9 +585,7 @@ async def main():
         # Save results
         etl.save_updates(processed_updates)
 
-        logger.info(
-            f"AI Model Monitoring ETL completed successfully. Processed {len(processed_updates)} updates."
-        )
+        logger.info(f"AI Model Monitoring ETL completed successfully. Processed {len(processed_updates)} updates.")
 
     except Exception as e:
         logger.error(f"Error in AI Model Monitoring ETL process: {e}", exc_info=True)

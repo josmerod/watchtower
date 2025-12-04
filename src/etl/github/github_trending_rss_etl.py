@@ -15,7 +15,8 @@ Output:
 import json
 import re
 from datetime import datetime
-from typing import Any, List
+from typing import Any
+
 import urllib3
 
 # Disable SSL warnings
@@ -43,7 +44,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
     """ETL for GitHub trending repository RSS feeds."""
 
     # RSS feed configurations
-    TRENDING_FEEDS: List[GitHubTrendingFeed] = [
+    TRENDING_FEEDS: list[GitHubTrendingFeed] = [
         # All languages
         GitHubTrendingFeed(
             name="Daily Trending - All Languages",
@@ -153,15 +154,13 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
 
         return session
 
-    def extract(self) -> List[GitHubTrendingFeed]:
+    def extract(self) -> list[GitHubTrendingFeed]:
         """Extract feed configurations."""
-        self.logger.info(
-            f"Extracting {len(self.TRENDING_FEEDS)} GitHub trending RSS feeds"
-        )
+        self.logger.info(f"Extracting {len(self.TRENDING_FEEDS)} GitHub trending RSS feeds")
         self.metrics.records_extracted = len(self.TRENDING_FEEDS)
         return self.TRENDING_FEEDS
 
-    def transform(self, feeds: List[GitHubTrendingFeed]) -> List[GitHubRepositoryModel]:
+    def transform(self, feeds: list[GitHubTrendingFeed]) -> list[GitHubRepositoryModel]:
         """Transform RSS feed data into repository models."""
         all_repositories = []
 
@@ -170,9 +169,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
                 self.logger.info(f"Processing feed: {feed.name}")
                 repositories = self._process_feed(feed)
                 all_repositories.extend(repositories)
-                self.logger.info(
-                    f"Processed {len(repositories)} repositories from {feed.name}"
-                )
+                self.logger.info(f"Processed {len(repositories)} repositories from {feed.name}")
 
             except Exception as e:
                 self.logger.error(f"Error processing feed {feed.name}: {e}")
@@ -183,7 +180,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
         self.logger.info(f"Total repositories processed: {len(all_repositories)}")
         return all_repositories
 
-    def _process_feed(self, feed: GitHubTrendingFeed) -> List[GitHubRepositoryModel]:
+    def _process_feed(self, feed: GitHubTrendingFeed) -> list[GitHubRepositoryModel]:
         """Process a single RSS feed."""
         try:
             # Fetch RSS feed
@@ -195,9 +192,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
             parsed_feed = feedparser.parse(response.content)
 
             if parsed_feed.bozo:
-                self.logger.warning(
-                    f"RSS feed parsing warning for {feed.url}: {parsed_feed.bozo_exception}"
-                )
+                self.logger.warning(f"RSS feed parsing warning for {feed.url}: {parsed_feed.bozo_exception}")
 
             repositories = []
 
@@ -221,9 +216,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
             self.logger.error(f"Error processing RSS feed {feed.url}: {e}")
             raise
 
-    def _parse_rss_entry(
-        self, entry: Any, feed: GitHubTrendingFeed
-    ) -> GitHubRepositoryModel | None:
+    def _parse_rss_entry(self, entry: Any, feed: GitHubTrendingFeed) -> GitHubRepositoryModel | None:
         """Parse individual RSS entry into repository model."""
         try:
             # Extract basic RSS information
@@ -240,32 +233,22 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
             repo_info = self._extract_repo_info_from_rss(title, link, summary)
 
             if not repo_info:
-                self.logger.warning(
-                    f"Could not extract repository info from RSS entry: {title}"
-                )
+                self.logger.warning(f"Could not extract repository info from RSS entry: {title}")
                 return None
 
             # Parse published date
             published_date = None
             if published:
                 try:
-                    published_date = datetime(
-                        *feedparser.parse(published).published_parsed[:6]
-                    )
+                    published_date = datetime(*feedparser.parse(published).published_parsed[:6])
                 except:
                     try:
-                        published_date = datetime.fromisoformat(
-                            published.replace("Z", "+00:00")
-                        )
+                        published_date = datetime.fromisoformat(published.replace("Z", "+00:00"))
                     except:
-                        self.logger.warning(
-                            f"Could not parse published date: {published}"
-                        )
+                        self.logger.warning(f"Could not parse published date: {published}")
 
             # Set language from feed context if not detected in content
-            language = repo_info.get("language") or (
-                feed.language if feed.language != RepositoryLanguage.ALL else None
-            )
+            language = repo_info.get("language") or (feed.language if feed.language != RepositoryLanguage.ALL else None)
 
             # Create repository model
             repository = GitHubRepositoryModel(
@@ -300,9 +283,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
             self.logger.error(f"Error parsing RSS entry: {e}")
             return None
 
-    def _extract_repo_info_from_rss(
-        self, title: str, link: str, summary: str
-    ) -> dict[str, Any] | None:
+    def _extract_repo_info_from_rss(self, title: str, link: str, summary: str) -> dict[str, Any] | None:
         """Extract repository information from RSS entry data."""
         try:
             # Parse GitHub URL to get owner and repo name
@@ -321,9 +302,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
 
             # Debug logging for description extraction
             if not description:
-                self.logger.debug(
-                    f"No description extracted for {full_name}, summary length: {len(summary) if summary else 0}"
-                )
+                self.logger.debug(f"No description extracted for {full_name}, summary length: {len(summary) if summary else 0}")
 
             # Language will be set from the feed context in _parse_rss_entry
             language = None
@@ -387,19 +366,11 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
                     description = " ".join(description.split())
 
                     # Check if we have meaningful content (not just symbols or very short text)
-                    if (
-                        description
-                        and len(description) > 15
-                        and not description.isspace()
-                    ):
+                    if description and len(description) > 15 and not description.isspace():
                         # Remove common HTML artifacts
                         description = description.replace("&nbsp;", " ").strip()
                         if description:
-                            return (
-                                description[:200] + "..."
-                                if len(description) > 200
-                                else description
-                            )
+                            return description[:200] + "..." if len(description) > 200 else description
 
             # Strategy 2: Extract text from the beginning, skipping HTML structure elements
             # Remove script and style tags first
@@ -439,7 +410,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
             self.logger.warning(f"Error extracting description from HTML: {e}")
             return None
 
-    def load(self, repositories: List[GitHubRepositoryModel] | List[dict]) -> None:
+    def load(self, repositories: list[GitHubRepositoryModel] | list[dict]) -> None:
         """Load data into JSON files.
 
         Args:
@@ -459,7 +430,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
                     self.logger.error(f"Failed to convert dict to model: {e}")
             else:
                 models.append(repo)
-        
+
         repositories = models
 
         # Create output directory
@@ -514,9 +485,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
         all_files.append(str(metadata_file))
 
         self.metrics.records_loaded = len(repositories)
-        self.logger.info(
-            f"Successfully loaded {len(repositories)} repositories to {len(all_files)} files"
-        )
+        self.logger.info(f"Successfully loaded {len(repositories)} repositories to {len(all_files)} files")
 
 
 def main():

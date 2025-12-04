@@ -7,13 +7,11 @@ for the content deduplication and analytics system.
 from __future__ import annotations
 
 import json
-import logging
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
-from src.web.dashboard.utils import get_data_path
 from src.utils.logging import get_logger
+from src.web.dashboard.utils import get_data_path
 
 logger = get_logger(__name__)
 
@@ -46,7 +44,7 @@ class TrendScheduler:
         self.trends_data_path = get_data_path("analytics", "trends")
         self.trends_data_path.mkdir(parents=True, exist_ok=True)
 
-    def run_daily_trend_analysis(self) -> Dict[str, Any]:
+    def run_daily_trend_analysis(self) -> dict[str, Any]:
         """Execute daily trend analysis for all content categories.
 
         Returns:
@@ -96,13 +94,10 @@ class TrendScheduler:
                 "average_confidence": trend_analysis.average_confidence,
                 "significant_trends": trend_analysis.significant_trends,
                 "success": True,
-                "message": "Daily trend analysis completed successfully"
+                "message": "Daily trend analysis completed successfully",
             }
 
-            logger.info(
-                f"Daily trend analysis completed: {results['trends_detected']} trends detected "
-                f"({results['rising_trends']} rising, {results['falling_trends']} falling)"
-            )
+            logger.info(f"Daily trend analysis completed: {results['trends_detected']} trends detected " f"({results['rising_trends']} rising, {results['falling_trends']} falling)")
 
             return results
 
@@ -112,10 +107,10 @@ class TrendScheduler:
                 "analysis_date": datetime.utcnow().isoformat(),
                 "success": False,
                 "error": str(e),
-                "message": "Daily trend analysis failed"
+                "message": "Daily trend analysis failed",
             }
 
-    def get_latest_trends(self) -> Dict[str, Any]:
+    def get_latest_trends(self) -> dict[str, Any]:
         """Get the most recent trend analysis results.
 
         Returns:
@@ -130,14 +125,14 @@ class TrendScheduler:
             # Sort by date (most recent first)
             latest_file = max(trend_files, key=lambda f: f.stat().st_mtime)
 
-            with open(latest_file, 'r', encoding='utf-8') as f:
+            with open(latest_file, encoding="utf-8") as f:
                 return json.load(f)
 
         except Exception as e:
             logger.error(f"Error loading latest trends: {e}")
             return {"trends": [], "error": str(e)}
 
-    def _load_all_content_data(self) -> List[Dict[str, Any]]:
+    def _load_all_content_data(self) -> list[dict[str, Any]]:
         """Load all available content data from various sources.
 
         Returns:
@@ -164,7 +159,7 @@ class TrendScheduler:
                     continue
 
                 # Handle patterns and single files
-                if '*' in pattern:
+                if "*" in pattern:
                     files = list(source_path.glob(pattern))
                 else:
                     file_path = source_path / pattern
@@ -173,22 +168,22 @@ class TrendScheduler:
                 # Load content from files
                 for file_path in files:
                     try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
+                        with open(file_path, encoding="utf-8") as f:
                             data = json.load(f)
                             if isinstance(data, list):
                                 # Add source metadata
                                 for item in data:
-                                    item['data_source'] = source_dir
-                                    item['file_source'] = file_path.name
+                                    item["data_source"] = source_dir
+                                    item["file_source"] = file_path.name
                                 all_content.extend(data)
-                            elif isinstance(data, dict) and 'items' in data:
+                            elif isinstance(data, dict) and "items" in data:
                                 # Handle nested data structures
-                                for item in data['items']:
-                                    item['data_source'] = source_dir
-                                    item['file_source'] = file_path.name
-                                all_content.extend(data['items'])
+                                for item in data["items"]:
+                                    item["data_source"] = source_dir
+                                    item["file_source"] = file_path.name
+                                all_content.extend(data["items"])
 
-                    except (json.JSONDecodeError, IOError) as e:
+                    except (OSError, json.JSONDecodeError) as e:
                         logger.warning(f"Error loading {file_path}: {e}")
 
             except Exception as e:
@@ -224,19 +219,16 @@ class TrendScheduler:
                 "metadata": {
                     "analyzer_version": "1.0",
                     "generated_at": datetime.utcnow().isoformat(),
-                    "data_sources_count": len(set(
-                        item.get('data_source', 'unknown')
-                        for item in self._load_all_content_data()
-                    ))
-                }
+                    "data_sources_count": len({item.get("data_source", "unknown") for item in self._load_all_content_data()}),
+                },
             }
 
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(trend_data, f, indent=2, ensure_ascii=False)
 
             # Also store as latest for quick access
             latest_path = self.trends_data_path / "latest_trends.json"
-            with open(latest_path, 'w', encoding='utf-8') as f:
+            with open(latest_path, "w", encoding="utf-8") as f:
                 json.dump(trend_data, f, indent=2, ensure_ascii=False)
 
             logger.info(f"Trend results stored to {filename}")
@@ -244,7 +236,7 @@ class TrendScheduler:
         except Exception as e:
             logger.error(f"Error storing trend results: {e}")
 
-    def _store_content_snapshot(self, content: List[Dict[str, Any]], analysis_date: datetime) -> None:
+    def _store_content_snapshot(self, content: list[dict[str, Any]], analysis_date: datetime) -> None:
         """Store content snapshot for future trend comparison.
 
         Args:
@@ -263,11 +255,11 @@ class TrendScheduler:
                 "metadata": {
                     "stored_items": min(len(content), 1000),
                     "total_items_available": len(content),
-                    "generated_at": datetime.utcnow().isoformat()
-                }
+                    "generated_at": datetime.utcnow().isoformat(),
+                },
             }
 
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(snapshot_data, f, indent=2, ensure_ascii=False)
 
             logger.info(f"Content snapshot stored to {filename}")
@@ -291,8 +283,8 @@ class TrendScheduler:
                     if file_path.name.startswith("latest_"):
                         continue  # Keep latest file
 
-                    date_str = file_path.name.split('_')[0]
-                    file_date = datetime.strptime(date_str, '%Y-%m-%d')
+                    date_str = file_path.name.split("_")[0]
+                    file_date = datetime.strptime(date_str, "%Y-%m-%d")
 
                     if file_date < cutoff_date:
                         file_path.unlink()
@@ -305,7 +297,7 @@ class TrendScheduler:
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
 
-    def _create_empty_result(self, analysis_date: datetime) -> Dict[str, Any]:
+    def _create_empty_result(self, analysis_date: datetime) -> dict[str, Any]:
         """Create empty result for when no data is available.
 
         Args:
@@ -324,12 +316,12 @@ class TrendScheduler:
             "average_confidence": 0.0,
             "significant_trends": 0,
             "success": True,
-            "message": "No content data available for analysis"
+            "message": "No content data available for analysis",
         }
 
 
 # Convenience function for running analysis
-def run_daily_trend_analysis() -> Dict[str, Any]:
+def run_daily_trend_analysis() -> dict[str, Any]:
     """Run daily trend analysis with default settings.
 
     Returns:
@@ -343,7 +335,7 @@ if __name__ == "__main__":
     # Run analysis when script is executed directly
     result = run_daily_trend_analysis()
     print(f"Trend analysis completed: {result['message']}")
-    if result['success']:
+    if result["success"]:
         print(f"Trends detected: {result.get('trends_detected', 0)}")
         print(f"Items analyzed: {result.get('total_items_analyzed', 0)}")
     else:

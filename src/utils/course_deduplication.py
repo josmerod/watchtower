@@ -6,18 +6,14 @@ or title, ensuring that the dataset only contains unique course entries.
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # Set up logging
 logger = logging.getLogger("course_deduplication")
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
-def deduplicate_courses(
-    courses: List[Dict[str, Any]], key_field: str = "url", prefer_newer: bool = True
-) -> Tuple[List[Dict[str, Any]], int]:
+def deduplicate_courses(courses: list[dict[str, Any]], key_field: str = "url", prefer_newer: bool = True) -> tuple[list[dict[str, Any]], int]:
     """Remove duplicate courses based on a specified key field.
 
     Args:
@@ -35,29 +31,25 @@ def deduplicate_courses(
     # Check if the key field exists in at least one course
     key_exists = any(key_field in course for course in courses)
     if not key_exists:
-        logger.warning(
-            f"Key field '{key_field}' not found in any course. Cannot deduplicate."
-        )
+        logger.warning(f"Key field '{key_field}' not found in any course. Cannot deduplicate.")
         return courses, 0
 
     # Function to get a comparable key from a course
-    def get_key(course: Dict[str, Any]) -> str:
+    def get_key(course: dict[str, Any]) -> str:
         # Get the key, defaulting to empty string if not present
         key = course.get(key_field, "")
         # Normalize to lowercase for case-insensitive comparison (especially for titles)
         return key.lower() if isinstance(key, str) else str(key)
 
     # To track unique courses
-    unique_courses: Dict[str, Dict[str, Any]] = {}
+    unique_courses: dict[str, dict[str, Any]] = {}
     duplicate_count = 0
 
     # Sort by scraped_at if prefer_newer is True and scraped_at exists
     if prefer_newer and any("scraped_at" in course for course in courses):
         sorted_courses = sorted(
             courses,
-            key=lambda c: c.get(
-                "scraped_at", ""
-            ),  # Default to empty string if not present
+            key=lambda c: c.get("scraped_at", ""),  # Default to empty string if not present
             reverse=True,  # Newer entries first
         )
     else:
@@ -86,8 +78,8 @@ def deduplicate_courses_file(
     file_path: str,
     key_field: str = "url",
     prefer_newer: bool = True,
-    output_path: Optional[str] = None,
-) -> Tuple[str, int]:
+    output_path: str | None = None,
+) -> tuple[str, int]:
     """Deduplicate courses in a JSON file and save the result.
 
     Args:
@@ -106,7 +98,7 @@ def deduplicate_courses_file(
 
     try:
         # Read courses from file
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             courses = json.load(f)
 
         if not isinstance(courses, list):
@@ -114,9 +106,7 @@ def deduplicate_courses_file(
             return file_path, 0
 
         # Deduplicate courses
-        deduplicated_courses, removed_count = deduplicate_courses(
-            courses, key_field, prefer_newer
-        )
+        deduplicated_courses, removed_count = deduplicate_courses(courses, key_field, prefer_newer)
 
         # Save deduplicated courses
         with open(output_path, "w", encoding="utf-8") as f:
@@ -161,6 +151,4 @@ if __name__ == "__main__":
         output_path=args.output_file,
     )
 
-    print(
-        f"Removed {removed_count} duplicates. Deduplicated courses saved to {output_file}"
-    )
+    print(f"Removed {removed_count} duplicates. Deduplicated courses saved to {output_file}")

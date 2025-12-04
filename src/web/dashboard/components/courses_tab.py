@@ -20,7 +20,12 @@ ALL_COURSES_DATA = {
     "pluralsight": pd.DataFrame(),
     "khan": pd.DataFrame(),
 }
-COURSES_DATA_LOADED = {"coursera": False, "udemy": False, "pluralsight": False, "khan": False}
+COURSES_DATA_LOADED = {
+    "coursera": False,
+    "udemy": False,
+    "pluralsight": False,
+    "khan": False,
+}
 # Page size for tables
 PAGE_SIZE = 15
 
@@ -120,9 +125,7 @@ def load_coursera_data():
             df[col] = None
 
     df["start_date"] = df["start_date_str"].apply(lambda x: parse_course_date(x))
-    df["scraped_at"] = df["scraped_at_str"].apply(
-        lambda x: parse_course_date(x)
-    )  # This is likely the "added" date
+    df["scraped_at"] = df["scraped_at_str"].apply(lambda x: parse_course_date(x))  # This is likely the "added" date
 
     # Sort by scraped_at (added date) or start_date if available
     sort_col = "scraped_at" if "scraped_at" in df.columns else "start_date"
@@ -326,9 +329,7 @@ def create_coursera_table(df_subset):
 
 
 def render_coursera_courses_sub_tab(df):
-    if not COURSES_DATA_LOADED[
-        "coursera"
-    ]:  # Check if loading was even attempted and successful
+    if not COURSES_DATA_LOADED["coursera"]:  # Check if loading was even attempted and successful
         return dbc.Alert(
             "Coursera courses data failed to load. Check logs.",
             color="danger",
@@ -343,24 +344,8 @@ def render_coursera_courses_sub_tab(df):
 
     # Prepare filter options
     # For simplicity, using unique values directly. For very long lists, consider pre-filtering or search in dropdown.
-    subject_options = (
-        [
-            {"label": i, "value": i}
-            for i in df["subject"].dropna().unique().tolist()
-            if i
-        ]
-        if "subject" in df.columns
-        else []
-    )
-    language_options = (
-        [
-            {"label": i, "value": i}
-            for i in df["language"].dropna().unique().tolist()
-            if i
-        ]
-        if "language" in df.columns
-        else []
-    )
+    subject_options = [{"label": i, "value": i} for i in df["subject"].dropna().unique().tolist() if i] if "subject" in df.columns else []
+    language_options = [{"label": i, "value": i} for i in df["language"].dropna().unique().tolist() if i] if "language" in df.columns else []
 
     return html.Div(
         [
@@ -393,9 +378,7 @@ def render_coursera_courses_sub_tab(df):
                         className="mb-2",
                     ),
                     dbc.Col(
-                        dbc.Checkbox(
-                            id="coursera-free-checkbox", label="Only Free Courses"
-                        ),
+                        dbc.Checkbox(id="coursera-free-checkbox", label="Only Free Courses"),
                         md=2,
                         className="mb-2 align-self-center",
                     ),
@@ -430,9 +413,7 @@ def render_coursera_courses_sub_tab(df):
                                 size="sm",
                             ),
                             html.Span("of", className="mx-2 text-muted"),
-                            html.Span(
-                                id="coursera-total-pages", className="text-muted"
-                            ),
+                            html.Span(id="coursera-total-pages", className="text-muted"),
                             dbc.Button(
                                 "Next »",
                                 id="coursera-next-btn",
@@ -469,9 +450,7 @@ def render_udemy_courses_sub_tab(df):
             dbc.Row(
                 [
                     dbc.Col(
-                        dbc.Input(
-                            id="udemy-search-input", placeholder="Search by title..."
-                        ),
+                        dbc.Input(id="udemy-search-input", placeholder="Search by title..."),
                         md=12,
                         className="mb-2",
                     ),
@@ -528,12 +507,7 @@ def render_udemy_courses_sub_tab(df):
 def render_courses_tab():
     # Initial check if any data was loaded to provide a general message
     # More specific messages are handled by individual sub-tab render functions
-    if (
-        not COURSES_DATA_LOADED["coursera"]
-        and not COURSES_DATA_LOADED["udemy"]
-        and not COURSES_DATA_LOADED["pluralsight"]
-        and not COURSES_DATA_LOADED["khan"]
-    ):
+    if not COURSES_DATA_LOADED["coursera"] and not COURSES_DATA_LOADED["udemy"] and not COURSES_DATA_LOADED["pluralsight"] and not COURSES_DATA_LOADED["khan"]:
         return dbc.Alert(
             "All course data failed to load. Please check data sources and ETLs.",
             color="danger",
@@ -553,30 +527,22 @@ def render_courses_tab():
                     dbc.Tab(
                         label="Coursera",
                         tab_id="tab-coursera",
-                        children=render_coursera_courses_sub_tab(
-                            ALL_COURSES_DATA["coursera"]
-                        ),
+                        children=render_coursera_courses_sub_tab(ALL_COURSES_DATA["coursera"]),
                     ),
                     dbc.Tab(
                         label="Udemy",
                         tab_id="tab-udemy",
-                        children=render_udemy_courses_sub_tab(
-                            ALL_COURSES_DATA["udemy"]
-                        ),
+                        children=render_udemy_courses_sub_tab(ALL_COURSES_DATA["udemy"]),
                     ),
                     dbc.Tab(
                         label="Pluralsight",
                         tab_id="tab-pluralsight",
-                        children=render_pluralsight_courses_sub_tab(
-                            ALL_COURSES_DATA["pluralsight"]
-                        ),
+                        children=render_pluralsight_courses_sub_tab(ALL_COURSES_DATA["pluralsight"]),
                     ),
                     dbc.Tab(
                         label="Khan Academy",
                         tab_id="tab-khan",
-                        children=render_khan_courses_sub_tab(
-                            ALL_COURSES_DATA["khan"]
-                        ),
+                        children=render_khan_courses_sub_tab(ALL_COURSES_DATA["khan"]),
                     ),
                 ],
             ),
@@ -597,9 +563,7 @@ def register_courses_callbacks(app):
         Input("coursera-search-input", "value"),
         Input("coursera-subject-dropdown", "value"),
         Input("coursera-language-dropdown", "value"),
-        Input(
-            "coursera-free-checkbox", "value"
-        ),  # This is a list if checked, e.g. [True] or empty []
+        Input("coursera-free-checkbox", "value"),  # This is a list if checked, e.g. [True] or empty []
         Input("coursera-page-input", "value"),
         Input("coursera-prev-btn", "n_clicks"),
         Input("coursera-next-btn", "n_clicks"),
@@ -641,20 +605,12 @@ def register_courses_callbacks(app):
             if search_term:
                 search_lower = search_term.lower()
                 # Assuming description might be NaN, fill with empty string for search
-                df_filtered = df_filtered[
-                    df_filtered["title"].str.lower().contains(search_lower, na=False)
-                    | df_filtered["description"]
-                    .fillna("")
-                    .str.lower()
-                    .contains(search_lower, na=False)
-                ]
+                df_filtered = df_filtered[df_filtered["title"].str.lower().contains(search_lower, na=False) | df_filtered["description"].fillna("").str.lower().contains(search_lower, na=False)]
             if subject:
                 df_filtered = df_filtered[df_filtered["subject"] == subject]
             if language:
                 df_filtered = df_filtered[df_filtered["language"] == language]
-            if (
-                free_only_checked
-            ):  # Checkbox value is a list, [True] if checked, else None or empty list
+            if free_only_checked:  # Checkbox value is a list, [True] if checked, else None or empty list
                 # is_free column should be boolean True/False after loading.
                 # If it can be None/NaN, handle that: df_filtered['is_free'].fillna(False) == True
                 df_filtered = df_filtered[df_filtered["is_free"] == True]
@@ -710,7 +666,7 @@ def register_courses_callbacks(app):
         except Exception as e:
             print(f"Error in coursera table update: {e}")
             return (
-                dbc.Alert(f"Error loading Coursera data: {str(e)}", color="danger"),
+                dbc.Alert(f"Error loading Coursera data: {e!s}", color="danger"),
                 "",
                 "1",
                 1,
@@ -773,9 +729,7 @@ def register_courses_callbacks(app):
 
             if search_term:
                 search_lower = search_term.lower()
-                df_filtered = df_filtered[
-                    df_filtered["title"].str.lower().contains(search_lower, na=False)
-                ]
+                df_filtered = df_filtered[df_filtered["title"].str.lower().contains(search_lower, na=False)]
 
             if df_filtered.empty:
                 return (
@@ -807,9 +761,7 @@ def register_courses_callbacks(app):
             df_paginated = df_filtered.iloc[start_idx:end_idx]
 
             # Need a create_udemy_table helper
-            table_header = [
-                html.Thead(html.Tr([html.Th("Title")]))
-            ]
+            table_header = [html.Thead(html.Tr([html.Th("Title")]))]
             table_body_rows = []
             for _, row in df_paginated.iterrows():
                 table_body_rows.append(
@@ -857,7 +809,7 @@ def register_courses_callbacks(app):
         except Exception as e:
             print(f"Error in udemy table update: {e}")
             return (
-                dbc.Alert(f"Error loading Udemy data: {str(e)}", color="danger"),
+                dbc.Alert(f"Error loading Udemy data: {e!s}", color="danger"),
                 "",
                 "1",
                 1,
@@ -890,9 +842,7 @@ def register_courses_callbacks(app):
         Input("pluralsight-next-btn", "n_clicks"),
         prevent_initial_call=False,
     )
-    def update_pluralsight_table(
-        search_term, instructor_filter, current_page, prev_clicks, next_clicks
-    ):
+    def update_pluralsight_table(search_term, instructor_filter, current_page, prev_clicks, next_clicks):
         try:
             if not COURSES_DATA_LOADED["pluralsight"]:
                 return (
@@ -919,23 +869,15 @@ def register_courses_callbacks(app):
 
             if search_term:
                 search_lower = search_term.lower()
-                df_filtered = df_filtered[
-                    df_filtered["title"].str.lower().contains(search_lower, na=False)
-                ]
+                df_filtered = df_filtered[df_filtered["title"].str.lower().contains(search_lower, na=False)]
 
             if instructor_filter:
                 instructor_lower = instructor_filter.lower()
-                df_filtered = df_filtered[
-                    df_filtered["instructor"]
-                    .str.lower()
-                    .contains(instructor_lower, na=False)
-                ]
+                df_filtered = df_filtered[df_filtered["instructor"].str.lower().contains(instructor_lower, na=False)]
 
             if df_filtered.empty:
                 return (
-                    dbc.Alert(
-                        "No Pluralsight courses match your filters.", color="info"
-                    ),
+                    dbc.Alert("No Pluralsight courses match your filters.", color="info"),
                     "",
                     "1",
                     1,
@@ -985,11 +927,7 @@ def register_courses_callbacks(app):
                                     target="_blank",
                                 )
                             ),
-                            html.Td(
-                                str(row.get("instructor", "N/A"))
-                                if row.get("instructor") != "false"
-                                else "N/A"
-                            ),
+                            html.Td(str(row.get("instructor", "N/A")) if row.get("instructor") != "false" else "N/A"),
                         ]
                     )
                 )
@@ -1025,7 +963,7 @@ def register_courses_callbacks(app):
         except Exception as e:
             print(f"Error in pluralsight table update: {e}")
             return (
-                dbc.Alert(f"Error loading Pluralsight data: {str(e)}", color="danger"),
+                dbc.Alert(f"Error loading Pluralsight data: {e!s}", color="danger"),
                 "",
                 "1",
                 1,
@@ -1058,30 +996,38 @@ def register_courses_callbacks(app):
                 return dbc.Alert("No Khan Academy data available.", color="warning")
             if search_term:
                 s = str(search_term).lower()
-                df = df[
-                    df["title"].str.lower().str.contains(s, na=False)
-                    | df["subject_path"].str.lower().str.contains(s, na=False)
-                ]
+                df = df[df["title"].str.lower().str.contains(s, na=False) | df["subject_path"].str.lower().str.contains(s, na=False)]
             # Build simple table
-            header = [
-                html.Thead(html.Tr([html.Th("Title"), html.Th("Type"), html.Th("Subject")]))
-            ]
+            header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Type"), html.Th("Subject")]))]
             rows = []
             for _, row in df.head(50).iterrows():
                 rows.append(
                     html.Tr(
                         [
                             html.Td(
-                                html.A(row.get("title", "N/A"), href=row.get("url"), target="_blank")
+                                html.A(
+                                    row.get("title", "N/A"),
+                                    href=row.get("url"),
+                                    target="_blank",
+                                )
                             ),
                             html.Td(row.get("type", "N/A")),
                             html.Td(row.get("subject_path", "")),
                         ]
                     )
                 )
-            return dbc.Table(header + [html.Tbody(rows)], bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive")
+            return dbc.Table(
+                header + [html.Tbody(rows)],
+                bordered=True,
+                hover=True,
+                responsive=True,
+                striped=True,
+                size="sm",
+                color="dark",
+                className="table-responsive",
+            )
         except Exception as e:
-            return dbc.Alert(f"Error loading Khan Academy data: {str(e)}", color="danger")
+            return dbc.Alert(f"Error loading Khan Academy data: {e!s}", color="danger")
 
 
 def render_pluralsight_courses_sub_tab(df):
@@ -1149,9 +1095,7 @@ def render_pluralsight_courses_sub_tab(df):
                                 size="sm",
                             ),
                             html.Span("of", className="mx-2 text-muted"),
-                            html.Span(
-                                id="pluralsight-total-pages", className="text-muted"
-                            ),
+                            html.Span(id="pluralsight-total-pages", className="text-muted"),
                             dbc.Button(
                                 "Next »",
                                 id="pluralsight-next-btn",
@@ -1187,7 +1131,10 @@ def render_khan_courses_sub_tab(df):
             dbc.Row(
                 [
                     dbc.Col(
-                        dbc.Input(id="khan-search-input", placeholder="Search by title/subject..."),
+                        dbc.Input(
+                            id="khan-search-input",
+                            placeholder="Search by title/subject...",
+                        ),
                         md=12,
                         className="mb-2",
                     )
@@ -1203,10 +1150,6 @@ if __name__ == "__main__":
     app_test = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     app_test.layout = dbc.Container(render_courses_tab(), fluid=True, className="py-4")
     register_courses_callbacks(app_test)  # Register callbacks
-    print(
-        f"Coursera data loaded: {COURSES_DATA_LOADED['coursera']}, Count: {len(ALL_COURSES_DATA['coursera'])}"
-    )
-    print(
-        f"Udemy data loaded: {COURSES_DATA_LOADED['udemy']}, Count: {len(ALL_COURSES_DATA['udemy'])}"
-    )
+    print(f"Coursera data loaded: {COURSES_DATA_LOADED['coursera']}, Count: {len(ALL_COURSES_DATA['coursera'])}")
+    print(f"Udemy data loaded: {COURSES_DATA_LOADED['udemy']}, Count: {len(ALL_COURSES_DATA['udemy'])}")
     app_test.run_server(debug=True, port=8059)

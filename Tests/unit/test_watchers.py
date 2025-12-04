@@ -1,16 +1,11 @@
-"""
-Comprehensive unit tests for the watcher system.
+"""Comprehensive unit tests for the watcher system.
 Tests base watcher functionality and specialized watchers.
 """
 
-import json
+import os
 import tempfile
 import unittest
-import os
-from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-from typing import Dict, List, Any
 
 from src.watchers.base_watcher import BaseWatcher
 
@@ -34,9 +29,7 @@ class TestBaseWatcher(unittest.TestCase):
                 """Mock implementation."""
                 return old_value != new_value
 
-        self.test_watcher = TestWatcher(
-            name="test_watcher", url="https://example.com", check_interval=60
-        )
+        self.test_watcher = TestWatcher(name="test_watcher", url="https://example.com", check_interval=60)
 
     def tearDown(self):
         """Clean up test environment."""

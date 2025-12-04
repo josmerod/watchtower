@@ -9,13 +9,12 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("WootETL")
 
@@ -23,8 +22,8 @@ logger = get_logger("WootETL")
 RSS_URL = "https://www.woot.com/rss/"
 
 
-def _parse_price(text: str) -> Dict[str, Any]:
-    info: Dict[str, Any] = {"has_price": False, "prices": []}
+def _parse_price(text: str) -> dict[str, Any]:
+    info: dict[str, Any] = {"has_price": False, "prices": []}
     if not text:
         return info
     prices = re.findall(r"\$(\d+(?:\.\d{2})?)", text)
@@ -46,9 +45,9 @@ def _parse_date(date_str: str | None) -> str | None:
             return date_str
 
 
-def fetch_woot() -> List[Dict[str, Any]]:
+def fetch_woot() -> list[dict[str, Any]]:
     logger.info(f"Fetching Woot RSS: {RSS_URL}")
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(RSS_URL)
     except Exception as e:
@@ -85,7 +84,7 @@ def fetch_woot() -> List[Dict[str, Any]]:
     return entries
 
 
-def save_woot(entries: List[Dict[str, Any]]) -> None:
+def save_woot(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No Woot entries to save")
         return
@@ -108,7 +107,7 @@ def save_woot(entries: List[Dict[str, Any]]) -> None:
     if entries:
         import csv
 
-        flat: List[Dict[str, Any]] = []
+        flat: list[dict[str, Any]] = []
         for e in entries:
             r = e.copy()
             if isinstance(r.get("categories"), list):
@@ -136,5 +135,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

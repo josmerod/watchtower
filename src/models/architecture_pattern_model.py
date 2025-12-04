@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import Field, HttpUrl
 
@@ -12,6 +11,7 @@ from src.models.base import TimestampedModel
 
 class ArchitecturalStyle(str, Enum):
     """Architectural style categories."""
+
     MICROSERVICES = "Microservices"
     EVENT_DRIVEN = "Event-Driven"
     SERVERLESS = "Serverless"
@@ -26,6 +26,7 @@ class ArchitecturalStyle(str, Enum):
 
 class TeamSize(str, Enum):
     """Team size categories."""
+
     SOLO = "Solo"
     SMALL = "Small (2-5)"
     MEDIUM = "Medium (6-20)"
@@ -34,6 +35,7 @@ class TeamSize(str, Enum):
 
 class ComplexityLevel(str, Enum):
     """Pattern complexity levels."""
+
     LOW = "Low"
     MEDIUM = "Medium"
     HIGH = "High"
@@ -42,72 +44,51 @@ class ComplexityLevel(str, Enum):
 
 class ArchitecturePattern(TimestampedModel):
     """Model for software architecture patterns."""
-    
+
     # Identity
     pattern_id: str = Field(description="Unique pattern identifier")
     name: str = Field(description="Pattern name")
     style: ArchitecturalStyle = Field(description="Architectural style category")
-    
+
     # Core Information
     description: str = Field(description="Pattern description")
     summary: str = Field(default="", description="One-line summary")
-    
+
     # Use Case Guidance
-    when_to_use: List[str] = Field(default=[], description="Scenarios where pattern is appropriate")
-    when_not_to_use: List[str] = Field(default=[], description="Scenarios where pattern should be avoided")
-    
+    when_to_use: list[str] = Field(default=[], description="Scenarios where pattern is appropriate")
+    when_not_to_use: list[str] = Field(default=[], description="Scenarios where pattern should be avoided")
+
     # Benefits & Trade-offs
-    benefits: List[str] = Field(default=[], description="Key benefits of the pattern")
-    trade_offs: List[str] = Field(default=[], description="Trade-offs and challenges")
-    
+    benefits: list[str] = Field(default=[], description="Key benefits of the pattern")
+    trade_offs: list[str] = Field(default=[], description="Trade-offs and challenges")
+
     # Implementation
-    implementation_guidance: List[str] = Field(default=[], description="Step-by-step implementation guidance")
-    best_practices: List[str] = Field(default=[], description="Best practices to follow")
-    common_pitfalls: List[str] = Field(default=[], description="Common mistakes to avoid")
-    
+    implementation_guidance: list[str] = Field(default=[], description="Step-by-step implementation guidance")
+    best_practices: list[str] = Field(default=[], description="Best practices to follow")
+    common_pitfalls: list[str] = Field(default=[], description="Common mistakes to avoid")
+
     # Technology
-    compatible_technologies: List[str] = Field(
-        default=[],
-        description="Technologies commonly used with this pattern"
-    )
-    required_technologies: List[str] = Field(
-        default=[],
-        description="Technologies required for this pattern"
-    )
-    
+    compatible_technologies: list[str] = Field(default=[], description="Technologies commonly used with this pattern")
+    required_technologies: list[str] = Field(default=[], description="Technologies required for this pattern")
+
     # Requirements
-    recommended_team_size: Optional[TeamSize] = Field(
-        default=None,
-        description="Recommended team size for this pattern"
-    )
-    complexity: ComplexityLevel = Field(
-        default=ComplexityLevel.MEDIUM,
-        description="Implementation complexity"
-    )
+    recommended_team_size: TeamSize | None = Field(default=None, description="Recommended team size for this pattern")
+    complexity: ComplexityLevel = Field(default=ComplexityLevel.MEDIUM, description="Implementation complexity")
     scalability_level: str = Field(
         default="Medium",
-        description="Scalability characteristics (Low, Medium, High, Very High)"
+        description="Scalability characteristics (Low, Medium, High, Very High)",
     )
-    
+
     # Examples
-    real_world_examples: List[str] = Field(
-        default=[],
-        description="Companies/projects using this pattern"
-    )
-    example_urls: List[HttpUrl] = Field(
-        default=[],
-        description="Links to example implementations"
-    )
-    
+    real_world_examples: list[str] = Field(default=[], description="Companies/projects using this pattern")
+    example_urls: list[HttpUrl] = Field(default=[], description="Links to example implementations")
+
     # References
-    reference_urls: List[HttpUrl] = Field(
-        default=[],
-        description="Links to detailed articles/documentation"
-    )
-    
+    reference_urls: list[HttpUrl] = Field(default=[], description="Links to detailed articles/documentation")
+
     # Metadata
-    tags: List[str] = Field(default=[], description="Additional tags for categorization")
-    
+    tags: list[str] = Field(default=[], description="Additional tags for categorization")
+
     class Config:
         json_schema_extra = {
             "examples": [
@@ -122,7 +103,7 @@ class ArchitecturePattern(TimestampedModel):
                     "compatible_technologies": ["Docker", "Kubernetes", "REST", "gRPC"],
                     "recommended_team_size": "Medium (6-20)",
                     "complexity": "High",
-                    "real_world_examples": ["Netflix", "Amazon", "Uber"]
+                    "real_world_examples": ["Netflix", "Amazon", "Uber"],
                 }
             ]
         }

@@ -35,9 +35,7 @@ def check_python_version():
     print("🐍 Checking Python version...")
     version = sys.version_info
     if version.major < 3 or (version.major == 3 and version.minor < 8):
-        print(
-            f"❌ Python {version.major}.{version.minor} detected. Python 3.8+ required."
-        )
+        print(f"❌ Python {version.major}.{version.minor} detected. Python 3.8+ required.")
         print("   Please upgrade Python and try again.")
         return False
     else:
@@ -99,9 +97,7 @@ def check_playwright_browsers():
             return True
         except Exception as e:
             print(f"❌ Playwright browsers not installed or not working: {e}")
-            print(
-                "   This will affect Real Discount, Udemy Freebies, and Udemy Free Courses scrapers"
-            )
+            print("   This will affect Real Discount, Udemy Freebies, and Udemy Free Courses scrapers")
             return False
     except ImportError:
         print("⚠️  Playwright not installed - browser check skipped")
@@ -162,9 +158,7 @@ def setup_dependencies():
 
     # Offer to install optional dependencies
     if optional_missing:
-        response = input(
-            f"\nInstall optional dependencies ({', '.join(optional_missing)})? [Y/n]: "
-        )
+        response = input(f"\nInstall optional dependencies ({', '.join(optional_missing)})? [Y/n]: ")
         if response.lower() in ["", "y", "yes"]:
             install_dependencies(optional_missing, optional=True)
 
@@ -212,9 +206,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument(
-        "--setup-only", action="store_true", help="Only check and setup dependencies"
-    )
+    parser.add_argument("--setup-only", action="store_true", help="Only check and setup dependencies")
     parser.add_argument(
         "--run-only",
         action="store_true",

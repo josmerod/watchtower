@@ -4,21 +4,22 @@ This module tests the integration between BaseWatcher and the alert system.
 """
 
 import json
-import pytest
 from datetime import datetime
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
-from src.watchers.base_watcher import BaseWatcher
+import pytest
+
 from src.alerts.models import AlertRule, KeywordMatchCondition, NotificationChannel
+from src.watchers.base_watcher import BaseWatcher
 
 
 class TestBaseWatcherIntegration:
     """Test BaseWatcher integration with alert system."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_watcher(self):
         """Create a mock BaseWatcher for testing."""
+
         class MockWatcher(BaseWatcher):
             def extract_value(self, html_content: str):
                 return f"Extracted value from {self.name}"
@@ -32,23 +33,21 @@ class TestBaseWatcherIntegration:
         return MockWatcher(
             name="test_watcher",
             url="https://example.com/test",
-            check_interval=1  # 1 second for testing
+            check_interval=1,  # 1 second for testing
         )
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_alert_rule(self):
         """Create a sample alert rule for testing."""
         return AlertRule(
             id="test_rule",
             name="Test Watcher Alert",
             user_id="default_user",
-            conditions=[
-                KeywordMatchCondition(value="extracted value", operator="contains")
-            ],
-            notification_channels=[NotificationChannel.BROWSER]
+            conditions=[KeywordMatchCondition(value="extracted value", operator="contains")],
+            notification_channels=[NotificationChannel.BROWSER],
         )
 
-    @pytest.fixture
+    @pytest.fixture()
     def rules_file_data(self, sample_alert_rule):
         """Create rules file data for mocking."""
         return json.dumps([sample_alert_rule.dict()], indent=2, default=str)
@@ -56,13 +55,13 @@ class TestBaseWatcherIntegration:
     def test_watcher_initialization_without_alert_engine(self, mock_watcher):
         """Test watcher initialization when AlertEngine is not available."""
         # Mock the import failure
-        with patch('src.watchers.base_watcher.AlertEngine', None):
-            with patch('src.alerts.engine.AlertEngine', side_effect=ImportError("Module not found")):
+        with patch("src.watchers.base_watcher.AlertEngine", None):
+            with patch(
+                "src.alerts.engine.AlertEngine",
+                side_effect=ImportError("Module not found"),
+            ):
                 # Re-initialize watcher to trigger the import error
-                watcher = MockWatcher(
-                    name="test_watcher_no_alerts",
-                    url="https://example.com/test"
-                )
+                watcher = MockWatcher(name="test_watcher_no_alerts", url="https://example.com/test")
                 assert watcher.alert_engine is None
 
     def test_watcher_initialization_with_alert_engine(self, mock_watcher):
@@ -77,36 +76,45 @@ class TestBaseWatcherIntegration:
         # Should not raise an exception
         mock_watcher.trigger_alarm("old_value", "new_value")
 
-    @patch('src.alerts.engine.ensure_directories')
-    @patch('builtins.open')
-    @patch('json.dump')
-    @patch('pathlib.Path.exists')
-    def test_trigger_alarm_with_alert_engine(self, mock_path_exists, mock_json_dump, mock_open, mock_ensure_dirs, mock_watcher, rules_file_data):
+    @patch("src.alerts.engine.ensure_directories")
+    @patch("builtins.open")
+    @patch("json.dump")
+    @patch("pathlib.Path.exists")
+    def test_trigger_alarm_with_alert_engine(
+        self,
+        mock_path_exists,
+        mock_json_dump,
+        mock_open,
+        mock_ensure_dirs,
+        mock_watcher,
+        rules_file_data,
+    ):
         """Test trigger_alarm with AlertEngine integration."""
         # Setup mocks
         mock_path_exists.return_value = True
         mock_ensure_dirs.return_value = None
 
         # Mock the rule loading
-        with patch.object(mock_watcher.alert_engine, '_load_user_rules') as mock_load_rules:
-            with patch.object(mock_watcher.alert_engine, 'evaluate_content') as mock_evaluate:
+        with patch.object(mock_watcher.alert_engine, "_load_user_rules") as mock_load_rules:
+            with patch.object(mock_watcher.alert_engine, "evaluate_content") as mock_evaluate:
                 # Setup rule data
                 mock_path_instance = Mock()
                 mock_path_instance.exists.return_value = True
                 mock_path_instance.open = mock_open(read_data=rules_file_data)
 
-                with patch('pathlib.Path', return_value=mock_path_instance):
+                with patch("pathlib.Path", return_value=mock_path_instance):
                     # Mock rules loading
                     sample_rule = AlertRule(
                         id="test_rule",
                         name="Test Rule",
                         user_id="default_user",
-                        conditions=[KeywordMatchCondition(value="value")]
+                        conditions=[KeywordMatchCondition(value="value")],
                     )
                     mock_load_rules.return_value = [sample_rule]
 
                     # Mock evaluation to return events
                     from src.alerts.models import AlertEvent
+
                     mock_events = [
                         AlertEvent(
                             rule_id="test_rule",
@@ -114,7 +122,7 @@ class TestBaseWatcherIntegration:
                             user_id="default_user",
                             content_id="test_content",
                             content={"title": "Test"},
-                            content_hash="hash123"
+                            content_hash="hash123",
                         )
                     ]
                     mock_evaluate.return_value = mock_events
@@ -153,6 +161,7 @@ class TestBaseWatcherIntegration:
 
     def test_prepare_content_for_alerts_with_object_value(self, mock_watcher):
         """Test content preparation when new_value is an object."""
+
         class TestObject:
             def __init__(self):
                 self.title = "Test Title"
@@ -174,7 +183,7 @@ class TestBaseWatcherIntegration:
     def test_prepare_content_for_alerts_error_handling(self, mock_watcher):
         """Test error handling in content preparation."""
         # Mock datetime.now() to raise an exception
-        with patch('src.watchers.base_watcher.datetime', side_effect=Exception("Time error")):
+        with patch("src.watchers.base_watcher.datetime", side_effect=Exception("Time error")):
             content = mock_watcher._prepare_content_for_alerts("old", "new")
             assert content is None
 
@@ -195,11 +204,11 @@ class TestBaseWatcherIntegration:
             "first_seen": datetime.now().isoformat(),
         }
 
-        with patch.object(mock_watcher, '_load_state', return_value=initial_state):
-            with patch.object(mock_watcher, '_save_state'):
-                with patch.object(mock_watcher.alert_engine, '_load_user_rules', return_value=[]):
-                    with patch.object(mock_watcher, 'fetch_page', return_value="<html>test</html>"):
-                        with patch.object(mock_watcher, 'extract_value', return_value="test_value"):
+        with patch.object(mock_watcher, "_load_state", return_value=initial_state):
+            with patch.object(mock_watcher, "_save_state"):
+                with patch.object(mock_watcher.alert_engine, "_load_user_rules", return_value=[]):
+                    with patch.object(mock_watcher, "fetch_page", return_value="<html>test</html>"):
+                        with patch.object(mock_watcher, "extract_value", return_value="test_value"):
                             # First check (no previous value)
                             mock_watcher.check()
 
@@ -214,6 +223,7 @@ class TestBaseWatcherIntegration:
         """Test watcher triggering multiple alert events."""
         # Mock multiple alert events
         from src.alerts.models import AlertEvent
+
         mock_events = [
             AlertEvent(
                 rule_id=f"rule_{i}",
@@ -221,13 +231,13 @@ class TestBaseWatcherIntegration:
                 user_id="default_user",
                 content_id=f"content_{i}",
                 content={"title": f"Test {i}"},
-                content_hash=f"hash_{i}"
+                content_hash=f"hash_{i}",
             )
             for i in range(3)
         ]
 
-        with patch.object(mock_watcher.alert_engine, 'evaluate_content', return_value=mock_events):
-            with patch.object(mock_watcher.alert_engine, '_load_user_rules', return_value=[]):
+        with patch.object(mock_watcher.alert_engine, "evaluate_content", return_value=mock_events):
+            with patch.object(mock_watcher.alert_engine, "_load_user_rules", return_value=[]):
                 mock_watcher._trigger_alert_evaluation("old", "new")
 
                 # Should generate 3 events

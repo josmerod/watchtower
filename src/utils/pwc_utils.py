@@ -8,7 +8,7 @@ and polite request delays.
 
 import asyncio  # Added for sleep
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 try:
     from paperswithcode import PapersWithCodeClient
@@ -32,9 +32,8 @@ RETRY_DELAY_SECONDS = 5  # Delay before retrying a failed call
 MAX_RETRIES = 3
 
 
-def _extract_arxiv_id_from_url(arxiv_url: str) -> Optional[str]:
-    """
-    Extracts the ArXiv ID from an ArXiv URL (e.g., http://arxiv.org/abs/1234.5678v1 -> 1234.5678).
+def _extract_arxiv_id_from_url(arxiv_url: str) -> str | None:
+    """Extracts the ArXiv ID from an ArXiv URL (e.g., http://arxiv.org/abs/1234.5678v1 -> 1234.5678).
 
     Args:
         arxiv_url (str): The ArXiv URL.
@@ -57,12 +56,11 @@ def _extract_arxiv_id_from_url(arxiv_url: str) -> Optional[str]:
 
 
 async def get_pwc_details_for_paper(
-    arxiv_id_url: Optional[str] = None,
-    title: Optional[str] = None,
-    pwc_client: Optional[PapersWithCodeClient] = None,
-) -> Optional[Dict[str, Any]]:
-    """
-    Fetches paper details from PapersWithCode using ArXiv ID or title with retries.
+    arxiv_id_url: str | None = None,
+    title: str | None = None,
+    pwc_client: PapersWithCodeClient | None = None,
+) -> dict[str, Any] | None:
+    """Fetches paper details from PapersWithCode using ArXiv ID or title with retries.
 
     Args:
         arxiv_id_url (Optional[str]): The ArXiv ID (e.g., '1706.03762') or full ArXiv URL.
@@ -74,58 +72,40 @@ async def get_pwc_details_for_paper(
         Optional[Dict[str, Any]]: A dictionary with PapersWithCode details or None if not found or error.
     """
     if not HAS_PWC:
-        logger.warning(
-            "PapersWithCode client not available. Install with: pip install paperswithcode-client"
-        )
+        logger.warning("PapersWithCode client not available. Install with: pip install paperswithcode-client")
         return None
 
     client = pwc_client if pwc_client else PapersWithCodeClient()
 
-    pwc_paper_obj: Optional[Paper] = None
-    pwc_id: Optional[str] = None
+    pwc_paper_obj: Paper | None = None
+    pwc_id: str | None = None
     last_error = None
     # TODO: Add unit tests for input parsing (_extract_arxiv_id_from_url)
     cleaned_arxiv_id = None
     if arxiv_id_url:
-        cleaned_arxiv_id = (
-            _extract_arxiv_id_from_url(arxiv_id_url)
-            if "arxiv.org" in arxiv_id_url
-            else arxiv_id_url
-        )
+        cleaned_arxiv_id = _extract_arxiv_id_from_url(arxiv_id_url) if "arxiv.org" in arxiv_id_url else arxiv_id_url
 
     # --- Find PwC Paper ID (with retries) ---
     for attempt in range(MAX_RETRIES):
         try:
             if cleaned_arxiv_id:
-                logger.debug(
-                    f"Searching PwC for ArXiv ID: {cleaned_arxiv_id} (Attempt {attempt + 1})"
-                )
-                papers_list = client.paper_list(
-                    arxiv_id=cleaned_arxiv_id, items_per_page=1
-                )
+                logger.debug(f"Searching PwC for ArXiv ID: {cleaned_arxiv_id} (Attempt {attempt + 1})")
+                papers_list = client.paper_list(arxiv_id=cleaned_arxiv_id, items_per_page=1)
                 if papers_list.results:
                     pwc_paper_obj = papers_list.results[0]
                     pwc_id = pwc_paper_obj.id
-                    logger.info(
-                        f"Found PwC paper {pwc_id} for ArXiv ID {cleaned_arxiv_id}"
-                    )
+                    logger.info(f"Found PwC paper {pwc_id} for ArXiv ID {cleaned_arxiv_id}")
                     last_error = None
                     break  # Found paper, exit retry loop
                 else:
                     # Not found is not necessarily an error to retry, but log it.
-                    logger.info(
-                        f"No PwC paper found for ArXiv ID {cleaned_arxiv_id} on attempt {attempt + 1}"
-                    )
+                    logger.info(f"No PwC paper found for ArXiv ID {cleaned_arxiv_id} on attempt {attempt + 1}")
                     # We might still try searching by title below if ID search fails
 
             # If no paper found by ID, or no ID provided, try title (only if title available)
             if not pwc_paper_obj and title:
-                logger.debug(
-                    f"Searching PwC for title: {title} (Attempt {attempt + 1})"
-                )
-                await asyncio.sleep(
-                    REQUEST_DELAY_SECONDS
-                )  # Add delay if trying title after ID failed
+                logger.debug(f"Searching PwC for title: {title} (Attempt {attempt + 1})")
+                await asyncio.sleep(REQUEST_DELAY_SECONDS)  # Add delay if trying title after ID failed
                 papers_list_title = client.paper_list(q=title, items_per_page=1)
                 if papers_list_title.results:
                     pwc_paper_obj = papers_list_title.results[0]  # Take the first match
@@ -134,47 +114,35 @@ async def get_pwc_details_for_paper(
                     last_error = None
                     break  # Found paper, exit retry loop
                 else:
-                    logger.info(
-                        f"No PwC paper found for title '{title}' on attempt {attempt + 1}"
-                    )
+                    logger.info(f"No PwC paper found for title '{title}' on attempt {attempt + 1}")
 
             # If we found the paper by ID or title, break the loop
             if pwc_paper_obj:
                 break
             # If not found by either and it was the last attempt, log and exit loop
             elif attempt == MAX_RETRIES - 1:
-                logger.warning(
-                    f"Could not find PwC paper for arXiv '{cleaned_arxiv_id}' or title '{title}' after {MAX_RETRIES} attempts."
-                )
+                logger.warning(f"Could not find PwC paper for arXiv '{cleaned_arxiv_id}' or title '{title}' after {MAX_RETRIES} attempts.")
                 return None
 
-        except (
-            Exception
-        ) as e:  # Catch generic exceptions which might indicate API issues
+        except Exception as e:  # Catch generic exceptions which might indicate API issues
             # Consider catching more specific client exceptions if available e.g., RateLimitError, ServerError
             last_error = e
-            logger.warning(
-                f"Error finding PwC paper (Attempt {attempt + 1}/{MAX_RETRIES}): {e}"
-            )
+            logger.warning(f"Error finding PwC paper (Attempt {attempt + 1}/{MAX_RETRIES}): {e}")
             if attempt < MAX_RETRIES - 1:
                 logger.info(f"Retrying after {RETRY_DELAY_SECONDS} seconds...")
                 await asyncio.sleep(RETRY_DELAY_SECONDS)
             else:
-                logger.error(
-                    f"Failed to find PwC paper after {MAX_RETRIES} attempts due to error: {e}"
-                )
+                logger.error(f"Failed to find PwC paper after {MAX_RETRIES} attempts due to error: {e}")
                 return None  # Failed after retries
 
     # If paper wasn't found even without errors (e.g., search returned empty)
     if not pwc_paper_obj or not pwc_id:
-        logger.info(
-            f"PwC paper not found for arXiv '{cleaned_arxiv_id}' or title '{title}'."
-        )
+        logger.info(f"PwC paper not found for arXiv '{cleaned_arxiv_id}' or title '{title}'.")
         return None
 
     # --- Fetch Details for the found Paper ID (with retries for each part) ---
     # TODO: Add unit tests for PwC data extraction logic below
-    details: Dict[str, Any] = {
+    details: dict[str, Any] = {
         "pwc_id": pwc_id,
         "pwc_url": pwc_paper_obj.url_abs,
         "pwc_title": pwc_paper_obj.title,
@@ -195,25 +163,19 @@ async def get_pwc_details_for_paper(
                 return result
             except Exception as e:
                 last_call_error = e
-                logger.warning(
-                    f"Error in API call {api_call.__name__} (Attempt {attempt + 1}): {e}"
-                )
+                logger.warning(f"Error in API call {api_call.__name__} (Attempt {attempt + 1}): {e}")
                 if attempt < MAX_RETRIES - 1:
                     logger.info(f"Retrying after {RETRY_DELAY_SECONDS} seconds...")
                     await asyncio.sleep(RETRY_DELAY_SECONDS)
                 else:
-                    logger.error(
-                        f"Failed API call {api_call.__name__} after {MAX_RETRIES} attempts: {e}"
-                    )
+                    logger.error(f"Failed API call {api_call.__name__} after {MAX_RETRIES} attempts: {e}")
                     return None  # Indicate failure
         return None  # Should not be reached if MAX_RETRIES > 0
 
     try:
         # Get repositories
         await asyncio.sleep(REQUEST_DELAY_SECONDS)  # Polite delay
-        repositories_list = await fetch_with_retry(
-            client.paper_repository_list, paper_id=pwc_id
-        )
+        repositories_list = await fetch_with_retry(client.paper_repository_list, paper_id=pwc_id)
         if repositories_list and repositories_list.results:
             details["pwc_repositories"] = [
                 {
@@ -227,15 +189,11 @@ async def get_pwc_details_for_paper(
                 for repo in repositories_list.results
             ]
         elif not repositories_list:
-            details["error"] = (
-                details.get("error", "") + "Failed to fetch repositories; "
-            )
+            details["error"] = details.get("error", "") + "Failed to fetch repositories; "
 
         # Get datasets
         await asyncio.sleep(REQUEST_DELAY_SECONDS)
-        datasets_list = await fetch_with_retry(
-            client.paper_dataset_list, paper_id=pwc_id
-        )
+        datasets_list = await fetch_with_retry(client.paper_dataset_list, paper_id=pwc_id)
         if datasets_list and datasets_list.results:
             details["pwc_datasets"] = [
                 {
@@ -307,16 +265,12 @@ if __name__ == "__main__":
         for key, value in pwc_data_from_url.items():
             if isinstance(value, list):
                 logger.info(f"  {key}: ({len(value)} items)")
-                for item_idx, item in enumerate(
-                    value[:2]
-                ):  # Log first 2 items for brevity
+                for item_idx, item in enumerate(value[:2]):  # Log first 2 items for brevity
                     logger.info(f"    Item {item_idx + 1}: {item}")
             else:
                 logger.info(f"  {key}: {value}")
     else:
-        logger.warning(
-            f"Could not fetch PwC details for {arxiv_url_to_test} (from URL)"
-        )
+        logger.warning(f"Could not fetch PwC details for {arxiv_url_to_test} (from URL)")
 
     # Example: Search by title (might be less reliable)
     time.sleep(REQUEST_DELAY_SECONDS)  # Wait before next API call if any

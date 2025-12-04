@@ -1,22 +1,21 @@
-"""
-Unit tests for search utility functions
-"""
+"""Unit tests for search utility functions"""
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.web.dashboard.utils.search_utils import (
-    highlight_matches,
+    cached_filter_content,
+    create_search_input,
     filter_content,
     get_common_searchable_fields,
-    create_search_input,
+    highlight_matches,
     validate_search_performance,
-    cached_filter_content
 )
 
 
@@ -75,7 +74,7 @@ class TestFilterContent:
         """Test basic content filtering"""
         content = [
             {"title": "Test Article", "description": "A test description"},
-            {"title": "Other Article", "description": "Something else"}
+            {"title": "Other Article", "description": "Something else"},
         ]
         query = "test"
         result = filter_content(query, content)
@@ -86,7 +85,7 @@ class TestFilterContent:
         """Test case-insensitive content filtering"""
         content = [
             {"title": "Test Article", "description": "A test description"},
-            {"title": "test article", "description": "Something else"}
+            {"title": "test article", "description": "Something else"},
         ]
         query = "TEST"
         result = filter_content(query, content)
@@ -96,7 +95,7 @@ class TestFilterContent:
         """Test filtering with custom searchable fields"""
         content = [
             {"title": "Test Article", "category": "tech"},
-            {"title": "Other Article", "category": "test"}
+            {"title": "Other Article", "category": "test"},
         ]
         query = "test"
         searchable_fields = ["title", "category"]
@@ -121,7 +120,7 @@ class TestFilterContent:
         """Test filtering with missing fields"""
         content = [
             {"title": "Test Article"},  # missing description
-            {"description": "Test description"}  # missing title
+            {"description": "Test description"},  # missing title
         ]
         query = "test"
         result = filter_content(query, content)
@@ -129,9 +128,7 @@ class TestFilterContent:
 
     def test_no_matches(self):
         """Test filtering with no matches"""
-        content = [
-            {"title": "Other Article", "description": "Something else"}
-        ]
+        content = [{"title": "Other Article", "description": "Something else"}]
         query = "test"
         result = filter_content(query, content)
         assert len(result) == 0
@@ -142,32 +139,38 @@ class TestGetCommonSearchableFields:
 
     def test_videos_fields(self):
         """Test videos content type fields"""
-        fields = get_common_searchable_fields('videos')
-        expected = ['title', 'description', 'channel', 'published_at']
+        fields = get_common_searchable_fields("videos")
+        expected = ["title", "description", "channel", "published_at"]
         assert fields == expected
 
     def test_news_fields(self):
         """Test news content type fields"""
-        fields = get_common_searchable_fields('news')
-        expected = ['title', 'description', 'source', 'summary', 'source_display_name']
+        fields = get_common_searchable_fields("news")
+        expected = ["title", "description", "source", "summary", "source_display_name"]
         assert fields == expected
 
     def test_deals_fields(self):
         """Test deals content type fields"""
-        fields = get_common_searchable_fields('deals')
-        expected = ['title', 'description', 'platform', 'source_category', 'source_name']
+        fields = get_common_searchable_fields("deals")
+        expected = [
+            "title",
+            "description",
+            "platform",
+            "source_category",
+            "source_name",
+        ]
         assert fields == expected
 
     def test_arxiv_fields(self):
         """Test arxiv content type fields"""
-        fields = get_common_searchable_fields('arxiv')
-        expected = ['title', 'summary', 'authors_display', 'primary_category_display']
+        fields = get_common_searchable_fields("arxiv")
+        expected = ["title", "summary", "authors_display", "primary_category_display"]
         assert fields == expected
 
     def test_default_fields(self):
         """Test default content type fields"""
-        fields = get_common_searchable_fields('unknown')
-        expected = ['title', 'description', 'summary', 'content', 'source', 'name']
+        fields = get_common_searchable_fields("unknown")
+        expected = ["title", "description", "summary", "content", "source", "name"]
         assert fields == expected
 
 
@@ -211,9 +214,7 @@ class TestCachedFilterContent:
 
     def test_caching_functionality(self):
         """Test that caching works"""
-        content = [
-            {"title": "Test Article", "description": "A test description"}
-        ]
+        content = [{"title": "Test Article", "description": "A test description"}]
 
         # First call should compute result
         result1 = cached_filter_content("test", content, "hash1")

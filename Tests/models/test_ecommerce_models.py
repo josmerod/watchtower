@@ -1,17 +1,16 @@
 # Tests/models/test_ecommerce_models.py
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Add project root to Python path
 project_root = Path(__file__).resolve().parent.parent.parent
 try:
     from pydantic import ValidationError
+
     from src.models.ecommerce import ShoppyProduct, ShoppyRawData
 except ImportError as e:
-    print(
-        f"Error importing modules: {e}. Ensure PYTHONPATH is set correctly or run from project root."
-    )
+    print(f"Error importing modules: {e}. Ensure PYTHONPATH is set correctly or run from project root.")
     sys.exit(1)
 
 
@@ -39,12 +38,8 @@ def test_shoppy_product_invalid_data():
     try:
         # Missing required fields
         try:
-            ShoppyProduct(
-                product_id="incomplete"
-            )  # name, price, url, fetched_at, parsed_at are missing
-            print(
-                "ShoppyProduct Invalid Data: FAILED - ValidationError not raised for missing fields"
-            )
+            ShoppyProduct(product_id="incomplete")  # name, price, url, fetched_at, parsed_at are missing
+            print("ShoppyProduct Invalid Data: FAILED - ValidationError not raised for missing fields")
             return False
         except ValidationError:
             pass  # Expected
@@ -60,9 +55,7 @@ def test_shoppy_product_invalid_data():
                 fetched_at=now,
                 parsed_at=now,
             )
-            print(
-                "ShoppyProduct Invalid Data: FAILED - ValidationError not raised for invalid URL"
-            )
+            print("ShoppyProduct Invalid Data: FAILED - ValidationError not raised for invalid URL")
             return False
         except ValidationError:
             pass  # Expected
@@ -79,9 +72,7 @@ def test_shoppy_product_invalid_data():
                 parsed_at=now,
                 rating="not-a-float",
             )
-            print(
-                "ShoppyProduct Invalid Data: FAILED - ValidationError not raised for invalid rating type"
-            )
+            print("ShoppyProduct Invalid Data: FAILED - ValidationError not raised for invalid rating type")
             return False
         except ValidationError:
             pass  # Expected

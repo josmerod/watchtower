@@ -52,26 +52,14 @@ class BaseModel(PydanticBaseModel):
 class TimestampedModel(BaseModel):
     """Base model with automatic timestamp fields."""
 
-    id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()), description="Unique identifier"
-    )
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
-    updated_at: datetime | None = Field(
-        default=None, description="Last update timestamp"
-    )
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Unique identifier")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: datetime | None = Field(default=None, description="Last update timestamp")
 
     # Deduplication fields
-    duplicate_group_id: str | None = Field(
-        default=None, description="ID of duplicate group if item is a duplicate"
-    )
-    is_duplicate: bool = Field(
-        default=False, description="Whether this item is marked as a duplicate"
-    )
-    quality_score: float | None = Field(
-        default=None, description="Quality score (0.0-100.0) for prioritization"
-    )
+    duplicate_group_id: str | None = Field(default=None, description="ID of duplicate group if item is a duplicate")
+    is_duplicate: bool = Field(default=False, description="Whether this item is marked as a duplicate")
+    quality_score: float | None = Field(default=None, description="Quality score (0.0-100.0) for prioritization")
 
     @field_validator("updated_at", mode="before")
     @classmethod
@@ -92,12 +80,8 @@ class StatusModel(BaseModel):
 
     status: str = Field(description="Status value")
     message: str | None = Field(default=None, description="Status message")
-    details: dict[str, Any] | None = Field(
-        default=None, description="Additional status details"
-    )
-    timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="Status timestamp"
-    )
+    details: dict[str, Any] | None = Field(default=None, description="Additional status details")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Status timestamp")
 
 
 class ErrorModel(BaseModel):
@@ -107,12 +91,8 @@ class ErrorModel(BaseModel):
     error_message: str = Field(description="Error message")
     error_type: str = Field(description="Error type/class")
     traceback: str | None = Field(default=None, description="Error traceback")
-    context: dict[str, Any] | None = Field(
-        default=None, description="Additional error context"
-    )
-    timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="Error timestamp"
-    )
+    context: dict[str, Any] | None = Field(default=None, description="Additional error context")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
 
 
 class PaginationModel(BaseModel):
@@ -184,6 +164,4 @@ class PaginatedResponse(BaseModel):
 
     items: list = Field(description="List of items")
     pagination: PaginationModel = Field(description="Pagination information")
-    metadata: dict[str, Any] | None = Field(
-        default=None, description="Additional response metadata"
-    )
+    metadata: dict[str, Any] | None = Field(default=None, description="Additional response metadata")

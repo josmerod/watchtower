@@ -1,16 +1,13 @@
-"""
-Unit tests for file system utilities.
-"""
+"""Unit tests for file system utilities."""
 
-import json
 import tempfile
 import unittest
 from pathlib import Path
 
 from src.utils.file_system import (
     FileSystemManager,
-    get_project_root,
     ensure_directories,
+    get_project_root,
 )
 
 

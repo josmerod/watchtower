@@ -1,11 +1,10 @@
-import json
 import os
 import shutil
-import unittest
-from unittest.mock import MagicMock, mock_open, patch
 
 # Ensure the src directory is in the Python path
 import sys
+import unittest
+from unittest.mock import MagicMock, mock_open, patch
 
 # project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 # if project_root not in sys.path:
@@ -17,11 +16,11 @@ import sys
 # Dynamically adjust path for tests if running from root or specific test directory
 try:
     from src.etl.youtube_shorts_ocr_etl import (
-        get_short_video_urls,
         download_video,
         extract_text_from_video_frames,
-        main as etl_main,
+        get_short_video_urls,
     )
+    from src.etl.youtube_shorts_ocr_etl import main as etl_main
     from src.utils.file_system import get_project_root
 except ImportError:
     # This is a fallback if the test is run in a way that src is not directly discoverable
@@ -31,18 +30,16 @@ except ImportError:
     if project_root_for_test not in sys.path:
         sys.path.insert(0, project_root_for_test)
     from src.etl.youtube_shorts_ocr_etl import (
-        get_short_video_urls,
         download_video,
         extract_text_from_video_frames,
-        main as etl_main,
+        get_short_video_urls,
     )
+    from src.etl.youtube_shorts_ocr_etl import main as etl_main
     from src.utils.file_system import get_project_root
 
 
 # Define global constants for cleaner test structure
-TEST_OUTPUT_DIR = os.path.join(
-    get_project_root(), "Tests", "temp_test_output", "youtube_shorts_ocr"
-)
+TEST_OUTPUT_DIR = os.path.join(get_project_root(), "Tests", "temp_test_output", "youtube_shorts_ocr")
 TEST_TEMP_VIDEO_DIR = os.path.join(TEST_OUTPUT_DIR, "temp_videos")
 TARGET_CHANNEL_URL_FOR_TEST = "https://youtube.com/@testchannel/shorts"
 
@@ -54,7 +51,6 @@ def cleanup_test_dirs():
 
 
 class TestYoutubeShortsOCRETL(unittest.TestCase):
-
     def setUp(self):
         cleanup_test_dirs()  # Clean before each test
         os.makedirs(TEST_TEMP_VIDEO_DIR, exist_ok=True)
@@ -76,9 +72,7 @@ class TestYoutubeShortsOCRETL(unittest.TestCase):
             ]
         }
 
-        videos = get_short_video_urls(
-            TARGET_CHANNEL_URL_FOR_TEST, limit=5, lookback_days=30
-        )
+        videos = get_short_video_urls(TARGET_CHANNEL_URL_FOR_TEST, limit=5, lookback_days=30)
         self.assertEqual(len(videos), 2)
         self.assertEqual(videos[0]["id"], "short1")
         self.assertEqual(videos[0]["title"], "First Short")
@@ -90,9 +84,7 @@ class TestYoutubeShortsOCRETL(unittest.TestCase):
         mock_instance = mock_yt_dlp.return_value.__enter__.return_value
         mock_instance.extract_info.return_value = {"entries": []}
 
-        videos = get_short_video_urls(
-            TARGET_CHANNEL_URL_FOR_TEST, limit=5, lookback_days=30
-        )
+        videos = get_short_video_urls(TARGET_CHANNEL_URL_FOR_TEST, limit=5, lookback_days=30)
         self.assertEqual(len(videos), 0)
 
     @patch("src.etl.youtube_shorts_ocr_etl.yt_dlp.YoutubeDL")
@@ -101,9 +93,7 @@ class TestYoutubeShortsOCRETL(unittest.TestCase):
         mock_instance = mock_yt_dlp.return_value.__enter__.return_value
         mock_instance.extract_info.side_effect = Exception("yt-dlp failed")
 
-        videos = get_short_video_urls(
-            TARGET_CHANNEL_URL_FOR_TEST, limit=5, lookback_days=30
-        )
+        videos = get_short_video_urls(TARGET_CHANNEL_URL_FOR_TEST, limit=5, lookback_days=30)
         self.assertEqual(len(videos), 0)
 
     @patch("src.etl.youtube_shorts_ocr_etl.yt_dlp.YoutubeDL")
@@ -111,9 +101,7 @@ class TestYoutubeShortsOCRETL(unittest.TestCase):
     def test_download_video_success(self, mock_path_exists, mock_yt_dlp):
         """Test successful video download."""
         mock_downloader_instance = mock_yt_dlp.return_value.__enter__.return_value
-        mock_downloader_instance.download.return_value = (
-            None  # download() usually returns None on success
-        )
+        mock_downloader_instance.download.return_value = None  # download() usually returns None on success
 
         video_id = "testvideo1"
         expected_path = os.path.join(TEST_TEMP_VIDEO_DIR, video_id, f"{video_id}.mp4")
@@ -124,9 +112,7 @@ class TestYoutubeShortsOCRETL(unittest.TestCase):
         result_path = download_video(video_id, TEST_TEMP_VIDEO_DIR)
 
         self.assertEqual(result_path, expected_path)
-        mock_downloader_instance.download.assert_called_once_with(
-            [f"https://www.youtube.com/shorts/{video_id}"]
-        )
+        mock_downloader_instance.download.assert_called_once_with([f"https://www.youtube.com/shorts/{video_id}"])
 
     @patch("src.etl.youtube_shorts_ocr_etl.yt_dlp.YoutubeDL")
     def test_download_video_failure(self, mock_yt_dlp):
@@ -140,15 +126,11 @@ class TestYoutubeShortsOCRETL(unittest.TestCase):
     @patch("src.etl.youtube_shorts_ocr_etl.VideoFileClip")
     @patch("src.etl.youtube_shorts_ocr_etl.pytesseract.image_to_string")
     @patch("src.etl.youtube_shorts_ocr_etl.Image.fromarray")
-    def test_extract_text_from_video_frames_success(
-        self, mock_fromarray, mock_image_to_string, mock_video_file_clip
-    ):
+    def test_extract_text_from_video_frames_success(self, mock_fromarray, mock_image_to_string, mock_video_file_clip):
         """Test successful OCR text extraction."""
         mock_clip_instance = mock_video_file_clip.return_value
         mock_clip_instance.duration = 2  # 2 seconds long video
-        mock_clip_instance.get_frame.return_value = (
-            MagicMock()
-        )  # Mock frame data (e.g. numpy array)
+        mock_clip_instance.get_frame.return_value = MagicMock()  # Mock frame data (e.g. numpy array)
 
         mock_pil_image = MagicMock()
         mock_fromarray.return_value = mock_pil_image
@@ -163,13 +145,9 @@ class TestYoutubeShortsOCRETL(unittest.TestCase):
         with open(dummy_video_path, "w") as f:
             f.write("dummy_content")
 
-        text = extract_text_from_video_frames(
-            dummy_video_path, frame_interval_seconds=1
-        )
+        text = extract_text_from_video_frames(dummy_video_path, frame_interval_seconds=1)
 
-        self.assertEqual(
-            text, "Hello World"
-        )  # Texts are joined with space, unique and sorted
+        self.assertEqual(text, "Hello World")  # Texts are joined with space, unique and sorted
         self.assertEqual(mock_image_to_string.call_count, 2)
         mock_video_file_clip.assert_called_once_with(dummy_video_path)
 
@@ -241,7 +219,6 @@ class TestYoutubeShortsOCRETL(unittest.TestCase):
                 TARGET_CHANNEL_URL_FOR_TEST,
             ),
         ):
-
             etl_main(mock_args)
 
         # Assertions
@@ -254,20 +231,14 @@ class TestYoutubeShortsOCRETL(unittest.TestCase):
         mock_extract_text.assert_any_call(dummy_video_path_1, frame_interval_seconds=1)
         mock_extract_text.assert_any_call(dummy_video_path_2, frame_interval_seconds=1)
 
-        expected_output_file = os.path.join(
-            TEST_OUTPUT_DIR, "youtube_shorts_ocr_results.json"
-        )
-        mock_file_open.assert_called_once_with(
-            expected_output_file, "w", encoding="utf-8"
-        )
+        expected_output_file = os.path.join(TEST_OUTPUT_DIR, "youtube_shorts_ocr_results.json")
+        mock_file_open.assert_called_once_with(expected_output_file, "w", encoding="utf-8")
 
         expected_json_data = [
             {"url": "url1", "title": "Video 1", "ocr_description": "OCR text for vid1"},
             {"url": "url2", "title": "Video 2", "ocr_description": "OCR text for vid2"},
         ]
-        mock_json_dump.assert_called_once_with(
-            expected_json_data, mock_file_open(), indent=4, ensure_ascii=False
-        )
+        mock_json_dump.assert_called_once_with(expected_json_data, mock_file_open(), indent=4, ensure_ascii=False)
 
         # Check cleanup calls for video folders
         # shutil.rmtree is called for each video's folder and then for TEMP_VIDEO_DIR

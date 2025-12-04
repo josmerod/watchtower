@@ -1,36 +1,33 @@
-"""
-End-to-end tests for shortcuts drag-and-drop functionality
+"""End-to-end tests for shortcuts drag-and-drop functionality
 Tests drag-and-drop reordering, domain switching, and visual feedback
 """
 
+import re
+
 import pytest
-import asyncio
 from playwright.async_api import async_playwright, expect
 
 
 class TestShortcutsDragDrop:
     """E2E tests for shortcuts drag-and-drop functionality"""
 
-    @pytest.fixture
+    @pytest.fixture()
     async def browser_context(self):
         """Setup browser context for testing"""
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context(
-                viewport={'width': 1920, 'height': 1080},
-                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            )
+            context = await browser.new_context(viewport={"width": 1920, "height": 1080}, user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
             yield context
             await browser.close()
 
-    @pytest.fixture
+    @pytest.fixture()
     async def page(self, browser_context):
         """Setup page for testing"""
         page = await browser_context.new_page()
         yield page
         await page.close()
 
-    @pytest.fixture
+    @pytest.fixture()
     def dashboard_url(self):
         """Dashboard URL for testing"""
         return "http://localhost:7777"
@@ -39,42 +36,45 @@ class TestShortcutsDragDrop:
         """Setup test shortcuts in localStorage for drag-drop testing"""
         test_shortcuts = [
             {
-                'id': 'test_shortcut_1',
-                'name': 'Test Paper 1',
-                'domain': 'Papers',
-                'source_filter': {'source': 'arxiv', 'title': 'Test Paper 1'},
-                'order': 0,
-                'created_at': '2025-01-16T00:00:00.000Z',
-                'updated_at': '2025-01-16T00:00:00.000Z'
+                "id": "test_shortcut_1",
+                "name": "Test Paper 1",
+                "domain": "Papers",
+                "source_filter": {"source": "arxiv", "title": "Test Paper 1"},
+                "order": 0,
+                "created_at": "2025-01-16T00:00:00.000Z",
+                "updated_at": "2025-01-16T00:00:00.000Z",
             },
             {
-                'id': 'test_shortcut_2',
-                'name': 'Test News 1',
-                'domain': 'News',
-                'source_filter': {'source': 'reddit', 'title': 'Test News 1'},
-                'order': 1,
-                'created_at': '2025-01-16T00:00:00.000Z',
-                'updated_at': '2025-01-16T00:00:00.000Z'
+                "id": "test_shortcut_2",
+                "name": "Test News 1",
+                "domain": "News",
+                "source_filter": {"source": "reddit", "title": "Test News 1"},
+                "order": 1,
+                "created_at": "2025-01-16T00:00:00.000Z",
+                "updated_at": "2025-01-16T00:00:00.000Z",
             },
             {
-                'id': 'test_shortcut_3',
-                'name': 'Test Paper 2',
-                'domain': 'Papers',
-                'source_filter': {'source': 'pubmed', 'title': 'Test Paper 2'},
-                'order': 2,
-                'created_at': '2025-01-16T00:00:00.000Z',
-                'updated_at': '2025-01-16T00:00:00.000Z'
-            }
+                "id": "test_shortcut_3",
+                "name": "Test Paper 2",
+                "domain": "Papers",
+                "source_filter": {"source": "pubmed", "title": "Test Paper 2"},
+                "order": 2,
+                "created_at": "2025-01-16T00:00:00.000Z",
+                "updated_at": "2025-01-16T00:00:00.000Z",
+            },
         ]
 
         # Set up test data in localStorage
-        await page.evaluate("""
+        await page.evaluate(
+            """
             (shortcuts) => {
                 localStorage.setItem('watchtower_source_shortcuts', JSON.stringify({
                     shortcuts: shortcuts
                 }));
             }
-        """, test_shortcuts)
+        """,
+            test_shortcuts,
+        )
 
     async def test_drag_drop_visual_feedback(self, page, dashboard_url):
         """Test that drag-drop shows proper visual feedback"""
@@ -98,7 +98,7 @@ class TestShortcutsDragDrop:
         await page.mouse.down()
 
         # Check for visual feedback (should have dragging class)
-        await expect(shortcut_card).to_have_class(/dragging/)
+        await expect(shortcut_card).to_have_class(re.compile(r"dragging"))
 
         # Move mouse slightly to trigger drag state
         await page.mouse.move(100, 100)
@@ -107,7 +107,7 @@ class TestShortcutsDragDrop:
         await page.mouse.up()
 
         # Check that dragging class is removed
-        await expect(shortcut_card).not_to_have_class(/dragging/)
+        await expect(shortcut_card).not_to_have_class(re.compile(r"dragging"))
 
     async def test_drag_drop_reordering_within_domain(self, page, dashboard_url):
         """Test reordering shortcuts within the same domain"""
@@ -247,7 +247,7 @@ class TestShortcutsDragDrop:
         await page.mouse.move(50, 50)
 
         # Press Escape to cancel drag (if implemented)
-        await page.keyboard.press('Escape')
+        await page.keyboard.press("Escape")
 
         # Or simply release mouse without dropping on valid target
         await page.mouse.up()
@@ -279,11 +279,11 @@ class TestShortcutsDragDrop:
             card = shortcut_cards.nth(i)
 
             # Check for draggable attribute
-            draggable = await card.get_attribute('draggable')
-            assert draggable == 'true', f"Shortcut card {i} should have draggable='true'"
+            draggable = await card.get_attribute("draggable")
+            assert draggable == "true", f"Shortcut card {i} should have draggable='true'"
 
             # Check for ARIA labels (if implemented)
-            aria_label = await card.get_attribute('aria-label')
+            aria_label = await card.get_attribute("aria-label")
             # ARIA labels are optional but good for accessibility
 
             # Check that action buttons are accessible
@@ -291,8 +291,8 @@ class TestShortcutsDragDrop:
             await expect(remove_button).to_be_visible()
 
             # Check button has proper attributes
-            button_aria_label = await remove_button.get_attribute('aria-label')
-            button_title = await remove_button.get_attribute('title')
+            button_aria_label = await remove_button.get_attribute("aria-label")
+            button_title = await remove_button.get_attribute("title")
             # Either aria-label or title should be present for accessibility
 
     async def test_drag_drop_performance(self, page, dashboard_url):

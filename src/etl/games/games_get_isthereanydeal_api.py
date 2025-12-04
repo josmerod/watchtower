@@ -9,13 +9,12 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("IsThereAnyDealETL")
 
@@ -24,7 +23,7 @@ API_URL = "https://api.isthereanydeal.com/v01/deals/list/"
 ENV_KEY = "API_ITAD_KEY"
 
 
-def fetch_itad_deals(limit: int = 50) -> List[Dict[str, Any]]:
+def fetch_itad_deals(limit: int = 50) -> list[dict[str, Any]]:
     api_key = os.getenv(ENV_KEY)
     if not api_key:
         logger.info("IsThereAnyDeal API key not set; skipping.")
@@ -50,8 +49,8 @@ def fetch_itad_deals(limit: int = 50) -> List[Dict[str, Any]]:
         logger.error(f"Failed to fetch ITAD deals: {e}")
         return []
 
-    deals: List[Dict[str, Any]] = []
-    for d in (data.get("data", {}).get("list", []) or []):
+    deals: list[dict[str, Any]] = []
+    for d in data.get("data", {}).get("list", []) or []:
         try:
             deals.append(
                 {
@@ -73,7 +72,7 @@ def fetch_itad_deals(limit: int = 50) -> List[Dict[str, Any]]:
     return deals
 
 
-def save_itad(deals: List[Dict[str, Any]]) -> None:
+def save_itad(deals: list[dict[str, Any]]) -> None:
     if not deals:
         logger.info("No ITAD deals to save")
         return
@@ -100,4 +99,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

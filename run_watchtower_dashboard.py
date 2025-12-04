@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""
-Watchtower Dashboard Launcher
+"""Watchtower Dashboard Launcher
 Main entry point for the Watchtower intelligence platform dashboard.
 Works with UV environment management.
 """
 
 import sys
+
 
 def main():
     """Launch the Watchtower Dashboard with proper imports."""
@@ -41,6 +41,7 @@ def main():
         print(f"Failed to start Watchtower Dashboard: {e}")
         print("Check logs for detailed error information")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

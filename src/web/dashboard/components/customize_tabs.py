@@ -1,13 +1,13 @@
-"""
-Customize Tabs Component
+"""Customize Tabs Component
 Provides modal interface for customizing dashboard tab visibility and order
 """
 
-import dash
-from dash import html, dcc, callback, Input, Output, State, clientside_callback
-import dash_bootstrap_components as dbc
 import uuid
-from typing import Dict, List, Any
+from typing import Any
+
+import dash
+import dash_bootstrap_components as dbc
+from dash import Input, Output, State, clientside_callback, dcc, html
 
 
 class CustomizeTabs:
@@ -35,7 +35,7 @@ class CustomizeTabs:
             size="sm",
             className="me-2",
             n_clicks=0,
-            title="Customize which tabs appear and their order"
+            title="Customize which tabs appear and their order",
         )
 
     def create_modal(self):
@@ -45,48 +45,48 @@ class CustomizeTabs:
                 dbc.ModalHeader(
                     [
                         html.I(className="fas fa-sliders-h me-2"),
-                        "Customize Dashboard Tabs"
+                        "Customize Dashboard Tabs",
                     ],
                     close_button=True,
-                    className="border-bottom"
+                    className="border-bottom",
                 ),
                 dbc.ModalBody(
                     [
                         # Instructions
                         dbc.Alert(
                             [
-                                html.H6("How to customize your dashboard:", className="alert-heading mb-2"),
+                                html.H6(
+                                    "How to customize your dashboard:",
+                                    className="alert-heading mb-2",
+                                ),
                                 html.Ul(
                                     [
                                         html.Li("Toggle the switch next to each tab to show or hide it"),
                                         html.Li("Drag tabs up or down to reorder them"),
                                         html.Li("Click 'Save' to apply changes immediately"),
-                                        html.Li("Use 'Reset' to restore default settings")
+                                        html.Li("Use 'Reset' to restore default settings"),
                                     ],
-                                    className="mb-0"
+                                    className="mb-0",
                                 ),
                             ],
                             color="info",
-                            className="mb-3"
+                            className="mb-3",
                         ),
-
                         # Statistics
                         html.Div(
                             id=self.stats_id,
                             className="text-center text-muted mb-3",
-                            children=["Loading tab statistics..."]
+                            children=["Loading tab statistics..."],
                         ),
-
                         # Tabs container for reordering
                         html.Div(
                             id=self.tabs_container_id,
                             children=[
                                 # Loading placeholder
                                 dbc.Spinner(size="sm", spinner_class_name="d-block"),
-                                html.Small("Loading tab options...")
-                            ]
+                                html.Small("Loading tab options..."),
+                            ],
                         ),
-
                         # Action buttons
                         html.Div(
                             [
@@ -95,41 +95,41 @@ class CustomizeTabs:
                                     id=self.reset_btn_id,
                                     color="outline-warning",
                                     size="sm",
-                                    className="me-2"
+                                    className="me-2",
                                 ),
                                 dbc.Button(
                                     "Cancel",
                                     id=self.cancel_btn_id,
                                     color="outline-secondary",
                                     size="sm",
-                                    className="me-2"
+                                    className="me-2",
                                 ),
                                 dbc.Button(
                                     "Save Changes",
                                     id=self.save_btn_id,
                                     color="primary",
-                                    size="sm"
-                                )
+                                    size="sm",
+                                ),
                             ],
-                            className="d-flex justify-content-end mt-4"
-                        )
+                            className="d-flex justify-content-end mt-4",
+                        ),
                     ],
-                    className="p-0"
-                )
+                    className="p-0",
+                ),
             ],
             id=self.modal_id,
             size="lg",  # Large modal for better tab management
             is_open=False,
             scrollable=True,
             backdrop=True,
-            keyboard=True
+            keyboard=True,
         )
 
-    def create_tab_item(self, tab_info: Dict[str, Any], is_visible: bool, index: int) -> html.Div:
+    def create_tab_item(self, tab_info: dict[str, Any], is_visible: bool, index: int) -> html.Div:
         """Create a single tab item for the customization interface"""
-        tab_id = tab_info.get('id', '')
-        tab_label = tab_info.get('label', 'Unknown Tab')
-        tab_icon = tab_info.get('icon', 'fa-tab')
+        tab_id = tab_info.get("id", "")
+        tab_label = tab_info.get("label", "Unknown Tab")
+        tab_icon = tab_info.get("icon", "fa-tab")
 
         return html.Div(
             [
@@ -137,29 +137,27 @@ class CustomizeTabs:
                 html.Div(
                     [
                         html.I(className="fas fa-grip-vertical me-2 text-muted"),
-                        f"{index + 1}."
+                        f"{index + 1}.",
                     ],
                     className="d-flex align-items-center me-3",
-                    style={"cursor": "grab", "userSelect": "none"}
+                    style={"cursor": "grab", "userSelect": "none"},
                 ),
-
                 # Tab info
                 html.Div(
                     [
                         html.I(className=f"fas {tab_icon} me-2 text-muted"),
-                        html.Span(tab_label, className="fw-medium")
+                        html.Span(tab_label, className="fw-medium"),
                     ],
-                    className="flex-grow-1"
+                    className="flex-grow-1",
                 ),
-
                 # Visibility toggle
                 dbc.Switch(
                     id=f"{self.domain_prefix}{tab_id}-visibility",
                     label="",
                     value=is_visible,
                     className="ms-auto",
-                    size="sm"
-                )
+                    size="sm",
+                ),
             ],
             className=[
                 "d-flex",
@@ -169,29 +167,25 @@ class CustomizeTabs:
                 "bg-light",
                 "rounded",
                 "border",
-                "customize-tab-item"
+                "customize-tab-item",
             ],
-            **{
-                "data-tab-id": tab_id,
-                "data-tab-index": str(index)
-            }
+            **{"data-tab-id": tab_id, "data-tab-index": str(index)},
         )
 
     def get_layout(self) -> html.Div:
         """Get the complete customize tabs layout"""
-        return html.Div([
-            # Toggle button (placed in main layout)
-            self.create_toggle_button(),
-
-            # Modal component
-            self.create_modal(),
-
-            # Hidden div for triggering updates
-            html.Div(id="customize-tabs-trigger", style={"display": "none"}),
-
-            # Store for clientside callbacks
-            dcc.Store(id="customize-tabs-data-store", data={}),
-        ])
+        return html.Div(
+            [
+                # Toggle button (placed in main layout)
+                self.create_toggle_button(),
+                # Modal component
+                self.create_modal(),
+                # Hidden div for triggering updates
+                html.Div(id="customize-tabs-trigger", style={"display": "none"}),
+                # Store for clientside callbacks
+                dcc.Store(id="customize-tabs-data-store", data={}),
+            ]
+        )
 
 
 # Instantiate component
@@ -217,7 +211,7 @@ clientside_callback(
     Output(f"{customize_tabs.modal_id}", "is_open", allow_duplicate=True),
     Input(f"{customize_tabs.toggle_button_id}", "n_clicks"),
     State(f"{customize_tabs.modal_id}", "is_open"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 
 
@@ -266,10 +260,11 @@ clientside_callback(
             return [];
         }
     }
-    """ % {"stats_id": customize_tabs.stats_id},
+    """
+    % {"stats_id": customize_tabs.stats_id},
     Output("customize-tabs-data-store", "data"),
     Input("customize-tabs-trigger", "children"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 
 
@@ -279,19 +274,21 @@ clientside_callback(
     Input("customize-tabs-data-store", "data"),
     prevent_initial_call=True,
 )
-def render_customize_tabs(tab_data: List[Dict[str, Any]]):
+def render_customize_tabs(tab_data: list[dict[str, Any]]):
     """Render customization tabs from data"""
     if not tab_data:
-        return html.Div([
-            dbc.Spinner(size="sm", spinner_class_name="d-block mx-auto"),
-            html.Small("No tab data available")
-        ])
+        return html.Div(
+            [
+                dbc.Spinner(size="sm", spinner_class_name="d-block mx-auto"),
+                html.Small("No tab data available"),
+            ]
+        )
 
     return [
         customize_tabs.create_tab_item(
             tab_info=item,
-            is_visible=item.get('is_visible', False),
-            index=item.get('index', 0)
+            is_visible=item.get("is_visible", False),
+            index=item.get("index", 0),
         )
         for item in tab_data
     ]
@@ -444,11 +441,12 @@ clientside_callback(
 
         return is_open;
     }
-    """ % {
+    """
+    % {
         "save_btn_id": customize_tabs.save_btn_id,
         "reset_btn_id": customize_tabs.reset_btn_id,
         "cancel_btn_id": customize_tabs.cancel_btn_id,
-        "domain_prefix": customize_tabs.domain_prefix
+        "domain_prefix": customize_tabs.domain_prefix,
     },
     Output(f"{customize_tabs.modal_id}", "is_open"),
     [
@@ -456,8 +454,6 @@ clientside_callback(
         Input(f"{customize_tabs.reset_btn_id}", "n_clicks"),
         Input(f"{customize_tabs.cancel_btn_id}", "n_clicks"),
     ],
-    [
-        State(f"{customize_tabs.modal_id}", "is_open")
-    ],
-    prevent_initial_call=True
+    [State(f"{customize_tabs.modal_id}", "is_open")],
+    prevent_initial_call=True,
 )

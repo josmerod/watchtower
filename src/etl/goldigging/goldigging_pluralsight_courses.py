@@ -93,9 +93,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                     timeout=10000,
                 )
             except:
-                self.logger.warning(
-                    f"No course selectors found on page {page_num}, continuing anyway"
-                )
+                self.logger.warning(f"No course selectors found on page {page_num}, continuing anyway")
 
             # Debug: Save HTML for inspection on first page
             if page_num == 1:
@@ -128,20 +126,14 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                 try:
                     elements = await page.query_selector_all(selector)
                     if elements:
-                        self.logger.info(
-                            f"Found {len(elements)} elements with selector: {selector}"
-                        )
+                        self.logger.info(f"Found {len(elements)} elements with selector: {selector}")
                         # Extract data directly from Playwright elements
                         for element in elements[:20]:  # Limit to first 20
                             # Get href and text content directly from Playwright element
                             try:
                                 href = await element.get_attribute("href")
                                 text_content = await element.text_content()
-                                inner_text = (
-                                    await element.inner_text()
-                                    if hasattr(element, "inner_text")
-                                    else ""
-                                )
+                                inner_text = await element.inner_text() if hasattr(element, "inner_text") else ""
 
                                 if href and "/courses/" in href:
                                     # Create a simple dict to pass to extraction
@@ -161,24 +153,16 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
 
             # If no elements found with Playwright selectors, fall back to BeautifulSoup parsing
             if not course_elements:
-                self.logger.info(
-                    "No elements found with Playwright selectors, trying BeautifulSoup parsing"
-                )
+                self.logger.info("No elements found with Playwright selectors, trying BeautifulSoup parsing")
                 # Try finding course links in the rendered HTML
                 all_links = soup.find_all("a", href=True)
-                course_links = [
-                    link for link in all_links if "/courses/" in link.get("href", "")
-                ]
+                course_links = [link for link in all_links if "/courses/" in link.get("href", "")]
 
                 if course_links:
                     course_elements = course_links[:20]
-                    self.logger.info(
-                        f"Found {len(course_elements)} course links via BeautifulSoup"
-                    )
+                    self.logger.info(f"Found {len(course_elements)} course links via BeautifulSoup")
 
-            self.logger.info(
-                f"Found {len(course_elements)} course elements on page {page_num}"
-            )
+            self.logger.info(f"Found {len(course_elements)} course elements on page {page_num}")
 
             # Extract course data from elements
             for i, element in enumerate(course_elements):
@@ -186,13 +170,9 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                 course_data = self._extract_course_from_element(element)
                 if course_data:
                     courses.append(course_data)
-                    self.logger.info(
-                        f"Successfully extracted course: {course_data.get('title', 'No title')}"
-                    )
+                    self.logger.info(f"Successfully extracted course: {course_data.get('title', 'No title')}")
                 else:
-                    self.logger.debug(
-                        f"Failed to extract course data from element {i + 1}"
-                    )
+                    self.logger.debug(f"Failed to extract course data from element {i + 1}")
 
             return courses
 
@@ -206,10 +186,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
             course_data = {}
 
             # Handle different element types
-            if (
-                isinstance(element, dict)
-                and element.get("type") == "playwright_element"
-            ):
+            if isinstance(element, dict) and element.get("type") == "playwright_element":
                 # Playwright-extracted element
                 course_data["url"] = self._build_full_url(element.get("href", ""))
                 full_text = element.get("text", "").strip()
@@ -219,22 +196,12 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                 if " by " in full_text:
                     parts = full_text.split(" by ")
                     if len(parts) > 1:
-                        instructor_part = (
-                            parts[1].split(" Libraries:")[0]
-                            if " Libraries:" in parts[1]
-                            else parts[1]
-                        )
-                        instructor_part = instructor_part.split(" Core Tech")[
-                            0
-                        ]  # Remove category info
-                        instructor_part = instructor_part.split(" Data ")[
-                            0
-                        ]  # Remove data category
+                        instructor_part = parts[1].split(" Libraries:")[0] if " Libraries:" in parts[1] else parts[1]
+                        instructor_part = instructor_part.split(" Core Tech")[0]  # Remove category info
+                        instructor_part = instructor_part.split(" Data ")[0]  # Remove data category
                         course_data["instructor"] = instructor_part.strip()
 
-                self.logger.debug(
-                    f"Playwright element: {course_data['url'][:50]}, title: {course_data['title'][:50]}"
-                )
+                self.logger.debug(f"Playwright element: {course_data['url'][:50]}, title: {course_data['title'][:50]}")
 
             elif hasattr(element, "get") and hasattr(element, "get_text"):
                 # This is a BeautifulSoup element
@@ -242,18 +209,12 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                     # Direct link element
                     course_data["url"] = self._build_full_url(element.get("href"))
                     course_data["title"] = element.get_text(strip=True)
-                    self.logger.debug(
-                        f"Direct link: {course_data['url'][:50]}, title: {course_data['title'][:50]}"
-                    )
+                    self.logger.debug(f"Direct link: {course_data['url'][:50]}, title: {course_data['title'][:50]}")
                 else:
                     # Container element - find course link and title
-                    link_element = element.find(
-                        "a", href=lambda x: x and "/courses/" in str(x)
-                    )
+                    link_element = element.find("a", href=lambda x: x and "/courses/" in str(x))
                     if link_element:
-                        course_data["url"] = self._build_full_url(
-                            link_element.get("href")
-                        )
+                        course_data["url"] = self._build_full_url(link_element.get("href"))
 
                     # Try to find title in headers or in the link text
                     title_element = element.find(["h1", "h2", "h3", "h4", "h5", "h6"])
@@ -265,19 +226,12 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                 # Extract additional metadata for BeautifulSoup elements
                 if hasattr(element, "get_text"):
                     all_text = element.get_text()
-                    text_parts = [
-                        part.strip() for part in all_text.split("\n") if part.strip()
-                    ]
+                    text_parts = [part.strip() for part in all_text.split("\n") if part.strip()]
 
                     # Look for instructor info
                     for part in text_parts:
-                        if any(
-                            keyword in part.lower()
-                            for keyword in ["by ", "instructor", "author"]
-                        ):
-                            course_data["instructor"] = (
-                                part.replace("by ", "").replace("By ", "").strip()
-                            )
+                        if any(keyword in part.lower() for keyword in ["by ", "instructor", "author"]):
+                            course_data["instructor"] = part.replace("by ", "").replace("By ", "").strip()
                             break
 
                     # Look for duration
@@ -288,10 +242,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
 
                     # Look for level
                     for part in text_parts:
-                        if any(
-                            level in part.lower()
-                            for level in ["beginner", "intermediate", "advanced"]
-                        ):
+                        if any(level in part.lower() for level in ["beginner", "intermediate", "advanced"]):
                             course_data["level"] = part.strip()
                             break
 
@@ -313,9 +264,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
 
             # Basic validation
             if not course_data.get("title") or not course_data.get("url"):
-                self.logger.debug(
-                    f"Missing title or URL: title={course_data.get('title')}, url={course_data.get('url')}"
-                )
+                self.logger.debug(f"Missing title or URL: title={course_data.get('title')}, url={course_data.get('url')}")
                 return None
 
             # Skip if title is too short or seems invalid
@@ -365,9 +314,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                 if item.get("published_date"):
                     try:
                         if isinstance(item["published_date"], str):
-                            item["published_date"] = datetime.fromisoformat(
-                                item["published_date"].replace("Z", "+00:00")
-                            )
+                            item["published_date"] = datetime.fromisoformat(item["published_date"].replace("Z", "+00:00"))
                     except (ValueError, TypeError):
                         item["published_date"] = None
 
@@ -410,11 +357,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
 
         for course in all_courses:
             url = course.get("url")
-            if url and (
-                url not in unique_courses
-                or str(course.get("scraped_at", ""))
-                > str(unique_courses[url].get("scraped_at", ""))
-            ):
+            if url and (url not in unique_courses or str(course.get("scraped_at", "")) > str(unique_courses[url].get("scraped_at", ""))):
                 unique_courses[url] = course
 
         final_courses = list(unique_courses.values())
@@ -428,9 +371,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(final_courses, f, ensure_ascii=False, indent=2, default=str)
 
-            self.logger.info(
-                f"Saved {len(final_courses)} unique courses to {output_file}"
-            )
+            self.logger.info(f"Saved {len(final_courses)} unique courses to {output_file}")
 
             # Also save to CSV for easier viewing
             csv_file = self.output_dir / "pluralsight_courses.csv"
@@ -458,11 +399,7 @@ def main():
     etl = PluralsightETL(max_pages=3)  # Start with fewer pages for testing
     metrics = etl.run()
 
-    print(
-        f"ETL completed. Extracted: {metrics.records_extracted}, "
-        f"Transformed: {metrics.records_transformed}, "
-        f"Loaded: {metrics.records_loaded}"
-    )
+    print(f"ETL completed. Extracted: {metrics.records_extracted}, " f"Transformed: {metrics.records_transformed}, " f"Loaded: {metrics.records_loaded}")
 
 
 if __name__ == "__main__":

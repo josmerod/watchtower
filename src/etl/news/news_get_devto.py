@@ -41,9 +41,7 @@ def get_devto_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str,
                     logger.warning(f"No entries found in RSS feed from {url}")
                     break
 
-                logger.debug(
-                    f"Found {len(feed.entries)} entries in RSS feed from {url}"
-                )
+                logger.debug(f"Found {len(feed.entries)} entries in RSS feed from {url}")
 
                 for entry in feed.entries:
                     try:
@@ -77,9 +75,7 @@ def get_devto_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str,
                         # Extract categories/tags
                         tags = []
                         if hasattr(entry, "tags"):
-                            tags = [
-                                tag.term for tag in entry.tags if hasattr(tag, "term")
-                            ]
+                            tags = [tag.term for tag in entry.tags if hasattr(tag, "term")]
 
                         # Extract description/summary (clean HTML)
                         description = ""
@@ -119,9 +115,7 @@ def get_devto_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str,
                     logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                 else:
-                    logger.error(
-                        f"Error fetching data from RSS feed after {max_retries} attempts: {e!s}"
-                    )
+                    logger.error(f"Error fetching data from RSS feed after {max_retries} attempts: {e!s}")
 
         # Add a small delay between RSS feed requests to be respectful to the server
         time.sleep(1)
@@ -134,9 +128,7 @@ def get_devto_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str,
             unique_articles.append(article)
             seen_ids.add(article["article_id"])
 
-    logger.info(
-        f"Retrieved {len(unique_articles)} unique articles from Dev.to RSS feeds"
-    )
+    logger.info(f"Retrieved {len(unique_articles)} unique articles from Dev.to RSS feeds")
     return unique_articles
 
 
@@ -221,9 +213,7 @@ def main():
         pd.DataFrame(processed_articles).to_csv(csv_file, index=False)
         logger.debug(f"Saved CSV data to {csv_file}")
 
-        logger.info(
-            f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}"
-        )
+        logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
 
     except Exception as e:
         logger.error(f"Error in Dev.to ETL process: {e!s}", exc_info=True)

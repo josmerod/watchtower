@@ -1,10 +1,8 @@
-import sys
 import os
-from pathlib import Path
-import unittest
-from unittest.mock import patch, MagicMock
+import sys
 from datetime import datetime, timezone
-import json
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 # Add project root to sys.path to allow importing project modules
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -12,49 +10,51 @@ project_root = Path(__file__).resolve().parent.parent.parent
 from src.etl.news.news_get_newsapi import (
     create_session,
     get_newsapi_articles,
-    transform_articles_to_model,
     process_articles,
-    save_data, # We will mock this
+    save_data,  # We will mock this
+    transform_articles_to_model,
 )
-from src.models.news import NewsArticleModel # For type checking if needed
 
 # Sample NewsAPI JSON response
 SAMPLE_NEWSAPI_RESPONSE = {
-
-
-
+    "status": "ok",
+    "totalResults": 2,
+    "articles": [
         {
-
-
-
-
-
-
-
-            "content": "Full content of the first test article."
+            "source": {"id": "test-source", "name": "Test Source"},
+            "author": "Test Author",
+            "title": "Test Article 1",
+            "description": "Description 1",
+            "url": "http://example.com/1",
+            "urlToImage": "http://example.com/image1.jpg",
+            "publishedAt": "2023-10-26T10:00:00Z",
+            "content": "Full content of the first test article.",
         },
         {
-
-
-
-
-
-
-
-            "content": "Full content of the second test article. This one has more words."
-        }
-    ]
+            "source": {"id": "test-source", "name": "Test Source"},
+            "author": "Test Author",
+            "title": "Test Article 2",
+            "description": "Description 2",
+            "url": "http://example.com/2",
+            "urlToImage": "http://example.com/image2.jpg",
+            "publishedAt": "2023-10-26T11:00:00Z",
+            "content": "Full content of the second test article. This one has more words.",
+        },
+    ],
 }
+
 
 # A minimal settings mock
 class MockSettings:
     class MockAPI:
         news_api_key = "test_dummy_key"
+
     api = MockAPI()
 
-@patch('src.etl.news.news_get_newsapi.save_data') # Mock save_data to prevent file writes
-@patch('requests.Session.get') # Mock requests.get
-@patch('src.etl.news.news_get_newsapi.get_settings') # Mock get_settings
+
+@patch("src.etl.news.news_get_newsapi.save_data")  # Mock save_data to prevent file writes
+@patch("requests.Session.get")  # Mock requests.get
+@patch("src.etl.news.news_get_newsapi.get_settings")  # Mock get_settings
 def main_test_logic(mock_get_settings, mock_requests_get, mock_save_data):
     print("Starting NewsAPI ETL test logic...")
 
@@ -64,10 +64,10 @@ def main_test_logic(mock_get_settings, mock_requests_get, mock_save_data):
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = SAMPLE_NEWSAPI_RESPONSE
-    mock_response.raise_for_status = MagicMock() # Does nothing
+    mock_response.raise_for_status = MagicMock()  # Does nothing
     mock_requests_get.return_value = mock_response
 
-    mock_save_data.return_value = {"json_file": "dummy.json"} # Simulate return value
+    mock_save_data.return_value = {"json_file": "dummy.json"}  # Simulate return value
 
     test_passed = True
     error_messages = []
@@ -140,35 +140,35 @@ def main_test_logic(mock_get_settings, mock_requests_get, mock_save_data):
         # Check if 'published_at' in processed dict is an ISO string (after model_dump)
         published_at_processed_str = first_processed_article.get("published_at")
         if not published_at_processed_str:
-             test_passed = False
+            test_passed = False
         else:
             try:
                 # Ensure it's the correct ISO format string that model_dump produces
                 # Compare string value if needed, e.g. ensure it matches original input if timezone handling is consistent
                 # Expected: "2023-10-26T10:00:00Z" or "2023-10-26T10:00:00+00:00"
-                if not (published_at_processed_str == raw_published_at_str or published_at_processed_str == raw_published_at_str.replace('Z', '+00:00')):
+                if not (published_at_processed_str == raw_published_at_str or published_at_processed_str == raw_published_at_str.replace("Z", "+00:00")):
                     # This check might be too strict if model_dump slightly changes format but is still valid ISO
-                    pass # Loosening this specific string comparison for now as long as it's valid ISO
+                    pass  # Loosening this specific string comparison for now as long as it's valid ISO
             except ValueError:
                 test_passed = False
-
 
         print(f"Step 4: process_articles() - OK, processed {len(processed_articles_list)} articles.")
 
         # 5. Save data (mocked)
         file_paths = save_data(processed_articles_list, "dummy_output_dir", source_name="test_newsapi")
         mock_save_data.assert_called_once_with(processed_articles_list, "dummy_output_dir", source_name="test_newsapi")
-        if not file_paths or file_paths["json_file"] != "dummy.json": # Check if mock return value is received
-             test_passed = False
-             error_messages.append("Failed: save_data mock not called as expected or return value incorrect.")
+        if not file_paths or file_paths["json_file"] != "dummy.json":  # Check if mock return value is received
+            test_passed = False
+            error_messages.append("Failed: save_data mock not called as expected or return value incorrect.")
         print("Step 5: save_data() (mocked) - OK, assertion passed.")
 
-    except AssertionError as e: # Catch assertion errors from test steps
+    except AssertionError as e:  # Catch assertion errors from test steps
         print(f"AssertionError during test: {e}")
         # test_passed is already False if an assertion error is raised from within the try block.
-    except Exception as e:
+    except Exception:
         test_passed = False
         import traceback
+
         error_messages.append(traceback.format_exc())
 
     if test_passed:
@@ -187,8 +187,10 @@ if __name__ == "__main__":
     try:
         test_successful = main_test_logic()
         if not test_successful:
+            sys.exit(1)
     except Exception as e:
         print(f"Critical error during test execution: {e}")
         import traceback
+
         print(traceback.format_exc())
         sys.exit(1)

@@ -4,7 +4,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
@@ -16,7 +16,7 @@ class SimpleValenciaEventsETL:
     def __init__(self):
         self.output_dir = Path("data/valencia_events")
 
-    def get_months_to_fetch(self) -> List[str]:
+    def get_months_to_fetch(self) -> list[str]:
         """Get current month and next two months in YYYY-MM format."""
         now = datetime.now()
         months = []
@@ -44,7 +44,7 @@ class SimpleValenciaEventsETL:
         print(f"Fetching events for months: {months}")
         return months
 
-    def fetch_events_for_month(self, month: str) -> List[Dict[str, Any]]:
+    def fetch_events_for_month(self, month: str) -> list[dict[str, Any]]:
         """Fetch events for a specific month from visitvalencia.com."""
         url = f"https://www.visitvalencia.com/agenda-valencia?date={month}"
         print(f"Fetching events from {url}")
@@ -60,20 +60,21 @@ class SimpleValenciaEventsETL:
         events = []
 
         # Look for event cards - based on the HTML structure
-        event_cards = soup.find_all('div', class_=lambda x: x and 'event-card' in str(x).lower())
+        event_cards = soup.find_all("div", class_=lambda x: x and "event-card" in str(x).lower())
 
         if not event_cards:
             # Fallback: look for any div with event-like content
-            event_cards = soup.find_all('div', class_=lambda x: x and any(
-                term in str(x).lower() for term in ['event', 'card', 'evento']
-            ))
+            event_cards = soup.find_all(
+                "div",
+                class_=lambda x: x and any(term in str(x).lower() for term in ["event", "card", "evento"]),
+            )
 
         print(f"Found {len(event_cards)} potential event cards")
 
         for card in event_cards:
             try:
                 # Extract title - look for h2, h3, h4
-                title_element = card.find(['h2', 'h3', 'h4'])
+                title_element = card.find(["h2", "h3", "h4"])
                 title = title_element.text.strip() if title_element else ""
 
                 if not title:
@@ -81,39 +82,37 @@ class SimpleValenciaEventsETL:
 
                 # Extract date - look for date patterns
                 date_text = ""
-                date_element = card.find(string=lambda t: t and isinstance(t, str) and (
-                    "Del" in t or "al" in t or re.search(r'\d{1,2}/\d{1,2}/\d{4}', t)
-                ))
+                date_element = card.find(string=lambda t: t and isinstance(t, str) and ("Del" in t or "al" in t or re.search(r"\d{1,2}/\d{1,2}/\d{4}", t)))
 
                 if date_element:
                     date_text = date_element.strip()
 
                 # Extract URL
-                link = card.find('a')
+                link = card.find("a")
                 event_url = ""
-                if link and link.get('href'):
-                    href = link['href']
-                    if href.startswith('/'):
+                if link and link.get("href"):
+                    href = link["href"]
+                    if href.startswith("/"):
                         event_url = f"https://www.visitvalencia.com{href}"
-                    elif href.startswith('http'):
+                    elif href.startswith("http"):
                         event_url = href
 
                 # Extract description
-                desc_element = card.find('p')
+                desc_element = card.find("p")
                 description = desc_element.text.strip() if desc_element else ""
 
                 # Determine category
                 category = "general"
                 title_lower = title.lower()
-                if any(word in title_lower for word in ['exposición', 'exposicion']):
+                if any(word in title_lower for word in ["exposición", "exposicion"]):
                     category = "exposición"
-                elif any(word in title_lower for word in ['concierto', 'música', 'music']):
+                elif any(word in title_lower for word in ["concierto", "música", "music"]):
                     category = "música"
-                elif any(word in title_lower for word in ['festival']):
+                elif any(word in title_lower for word in ["festival"]):
                     category = "festival"
-                elif any(word in title_lower for word in ['teatro', 'espectáculo']):
+                elif any(word in title_lower for word in ["teatro", "espectáculo"]):
                     category = "espectáculo"
-                elif any(word in title_lower for word in ['deporte', 'sports']):
+                elif any(word in title_lower for word in ["deporte", "sports"]):
                     category = "deporte"
 
                 if title:
@@ -124,7 +123,7 @@ class SimpleValenciaEventsETL:
                         "category": category,
                         "description": description,
                         "source": "visitvalencia.com",
-                        "month": month
+                        "month": month,
                     }
                     events.append(event)
                     print(f"Extracted event: {title[:50]}...")
@@ -136,7 +135,7 @@ class SimpleValenciaEventsETL:
         print(f"Found {len(events)} events for month {month}")
         return events
 
-    def extract(self) -> List[dict]:
+    def extract(self) -> list[dict]:
         """Extract events from visitvalencia.com for current and next two months."""
         all_events = []
         months = self.get_months_to_fetch()
@@ -151,7 +150,7 @@ class SimpleValenciaEventsETL:
         print(f"Total events extracted: {len(all_events)}")
         return all_events
 
-    def process_events(self, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def process_events(self, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Process and clean the events data."""
         processed_events = []
 
@@ -163,14 +162,18 @@ class SimpleValenciaEventsETL:
                 end_date = ""
 
                 # Pattern: "Del DD/MM/YYYY al DD/MM/YYYY"
-                del_al_pattern = re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})\s*al\s+(\d{1,2}/\d{1,2}/\d{4})', date_text, re.IGNORECASE)
+                del_al_pattern = re.search(
+                    r"Del\s+(\d{1,2}/\d{1,2}/\d{4})\s*al\s+(\d{1,2}/\d{1,2}/\d{4})",
+                    date_text,
+                    re.IGNORECASE,
+                )
                 if del_al_pattern:
                     start_date = del_al_pattern.group(1)
                     end_date = del_al_pattern.group(2)
 
                 # Pattern: "Del DD/MM/YYYY"
-                elif re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})', date_text, re.IGNORECASE):
-                    del_pattern = re.search(r'Del\s+(\d{1,2}/\d{1,2}/\d{4})', date_text, re.IGNORECASE)
+                elif re.search(r"Del\s+(\d{1,2}/\d{1,2}/\d{4})", date_text, re.IGNORECASE):
+                    del_pattern = re.search(r"Del\s+(\d{1,2}/\d{1,2}/\d{4})", date_text, re.IGNORECASE)
                     start_date = del_pattern.group(1) if del_pattern else ""
 
                 processed_event = {
@@ -196,7 +199,7 @@ class SimpleValenciaEventsETL:
 
         return processed_events
 
-    def remove_duplicates(self, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def remove_duplicates(self, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Remove duplicate events based on title."""
         seen_titles = set()
         unique_events = []
@@ -210,7 +213,7 @@ class SimpleValenciaEventsETL:
         print(f"Removed {len(events) - len(unique_events)} duplicate events")
         return unique_events
 
-    def transform(self, data: List[dict]) -> List[dict]:
+    def transform(self, data: list[dict]) -> list[dict]:
         """Transform events data."""
         if not data:
             return []
@@ -220,7 +223,7 @@ class SimpleValenciaEventsETL:
 
         return unique_events
 
-    def load(self, data: List[dict]) -> None:
+    def load(self, data: list[dict]) -> None:
         """Save events to JSON file."""
         if not data:
             print("No data to load")
@@ -251,7 +254,7 @@ class SimpleValenciaEventsETL:
             "records_extracted": len(raw_events),
             "records_transformed": len(processed_events),
             "records_loaded": len(processed_events),
-            "success": True
+            "success": True,
         }
 
 

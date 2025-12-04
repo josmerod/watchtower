@@ -1,31 +1,28 @@
 #!/usr/bin/env python3
-"""
-Watchtower Unified CLI Launcher
+"""Watchtower Unified CLI Launcher
 
 Command-line interface for easy deployment and management of the Watchtower platform.
 Supports multiple execution modes and deployment strategies.
 """
 
 import argparse
-import asyncio
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
 
 try:
-    from .main import WatchtowerLauncher, ExecutionMode
+    from .main import ExecutionMode, WatchtowerLauncher
 except ImportError:
     try:
         # Handle case when run as script from src/launcher directory
-        from main import WatchtowerLauncher, ExecutionMode
+        from main import ExecutionMode, WatchtowerLauncher
     except ImportError:
         # Handle case when run from project root
         import sys
         from pathlib import Path
+
         sys.path.insert(0, str(Path(__file__).parent))
-        from main import WatchtowerLauncher, ExecutionMode
 
 
 class WatchtowerCLI:
@@ -44,12 +41,14 @@ class WatchtowerCLI:
         print("=" * 60)
 
         env = os.environ.copy()
-        env.update({
-            'WATCHTOWER_MODE': 'development',
-            'WATCHTOWER_ETL_INTERVAL': '1800',  # 30 minutes for dev
-            'WATCHTOWER_HOT_RELOAD': 'true',
-            'WATCHTOWER_LOG_LEVEL': 'DEBUG',
-        })
+        env.update(
+            {
+                "WATCHTOWER_MODE": "development",
+                "WATCHTOWER_ETL_INTERVAL": "1800",  # 30 minutes for dev
+                "WATCHTOWER_HOT_RELOAD": "true",
+                "WATCHTOWER_LOG_LEVEL": "DEBUG",
+            }
+        )
 
         self._run_launcher(env, args.background)
 
@@ -62,12 +61,14 @@ class WatchtowerCLI:
         print("=" * 60)
 
         env = os.environ.copy()
-        env.update({
-            'WATCHTOWER_MODE': 'production',
-            'WATCHTOWER_ETL_INTERVAL': '3600',  # 1 hour for production
-            'WATCHTOWER_HOT_RELOAD': 'false',
-            'WATCHTOWER_LOG_LEVEL': 'INFO',
-        })
+        env.update(
+            {
+                "WATCHTOWER_MODE": "production",
+                "WATCHTOWER_ETL_INTERVAL": "3600",  # 1 hour for production
+                "WATCHTOWER_HOT_RELOAD": "false",
+                "WATCHTOWER_LOG_LEVEL": "INFO",
+            }
+        )
 
         self._run_launcher(env, args.background)
 
@@ -79,11 +80,13 @@ class WatchtowerCLI:
         print("=" * 60)
 
         env = os.environ.copy()
-        env.update({
-            'WATCHTOWER_MODE': 'etl_only',
-            'WATCHTOWER_ETL_INTERVAL': str(args.interval or 3600),
-            'WATCHTOWER_LOG_LEVEL': args.log_level or 'INFO',
-        })
+        env.update(
+            {
+                "WATCHTOWER_MODE": "etl_only",
+                "WATCHTOWER_ETL_INTERVAL": str(args.interval or 3600),
+                "WATCHTOWER_LOG_LEVEL": args.log_level or "INFO",
+            }
+        )
 
         self._run_launcher(env, args.background)
 
@@ -95,11 +98,13 @@ class WatchtowerCLI:
         print("=" * 60)
 
         env = os.environ.copy()
-        env.update({
-            'WATCHTOWER_MODE': 'dashboard_only',
-            'WATCHTOWER_DASHBOARD_PORT': str(args.port or 7777),
-            'WATCHTOWER_LOG_LEVEL': args.log_level or 'INFO',
-        })
+        env.update(
+            {
+                "WATCHTOWER_MODE": "dashboard_only",
+                "WATCHTOWER_DASHBOARD_PORT": str(args.port or 7777),
+                "WATCHTOWER_LOG_LEVEL": args.log_level or "INFO",
+            }
+        )
 
         self._run_launcher(env, args.background)
 
@@ -157,7 +162,7 @@ class WatchtowerCLI:
                     subprocess.run(
                         ["podman-compose", "-f", str(compose_file), "down"],
                         cwd=self.project_root,
-                        check=True
+                        check=True,
                     )
                 except subprocess.CalledProcessError:
                     pass  # Ignore errors if containers aren't running
@@ -190,12 +195,13 @@ class WatchtowerCLI:
         # Check if processes are running
         try:
             import psutil
+
             watchtower_processes = []
 
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            for proc in psutil.process_iter(["pid", "name", "cmdline"]):
                 try:
-                    cmdline = proc.info.get('cmdline', [])
-                    if cmdline and any('watchtower' in str(cmd).lower() for cmd in cmdline):
+                    cmdline = proc.info.get("cmdline", [])
+                    if cmdline and any("watchtower" in str(cmd).lower() for cmd in cmdline):
                         watchtower_processes.append(proc)
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     pass
@@ -216,11 +222,11 @@ class WatchtowerCLI:
                 ["podman-compose", "ps", "-q"],
                 cwd=self.project_root,
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             if result.returncode == 0 and result.stdout.strip():
-                containers = result.stdout.strip().split('\n')
+                containers = result.stdout.strip().split("\n")
                 print(f"Podman containers: {len(containers)} running")
 
                 # Get container status
@@ -228,7 +234,7 @@ class WatchtowerCLI:
                     ["podman-compose", "ps"],
                     cwd=self.project_root,
                     capture_output=True,
-                    text=True
+                    text=True,
                 )
 
                 if status_result.returncode == 0:
@@ -274,7 +280,7 @@ class WatchtowerCLI:
                     env=env,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
-                    preexec_fn=os.setsid if os.name != 'nt' else None
+                    preexec_fn=os.setsid if os.name != "nt" else None,
                 )
                 print("Watchtower started in background")
                 print("Check logs for status: logs/launcher.log")
@@ -319,67 +325,84 @@ Examples:
 
   # Status check
   python src/launcher/cli.py status
-            """
+            """,
         )
 
-        subparsers = parser.add_subparsers(dest='command', help='Available commands')
+        subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
         # Development mode
-        dev_parser = subparsers.add_parser('dev', help='Development mode with hot reload')
-        dev_parser.add_argument('--background', '-b', action='store_true',
-                              help='Run in background')
+        dev_parser = subparsers.add_parser("dev", help="Development mode with hot reload")
+        dev_parser.add_argument("--background", "-b", action="store_true", help="Run in background")
         dev_parser.set_defaults(func=self.run_development)
 
         # Production mode
-        prod_parser = subparsers.add_parser('prod', help='Production mode')
-        prod_parser.add_argument('--background', '-b', action='store_true',
-                               help='Run in background')
+        prod_parser = subparsers.add_parser("prod", help="Production mode")
+        prod_parser.add_argument("--background", "-b", action="store_true", help="Run in background")
         prod_parser.set_defaults(func=self.run_production)
 
         # ETL only mode
-        etl_parser = subparsers.add_parser('etl', help='ETL processes only')
-        etl_parser.add_argument('--interval', '-i', type=int, default=3600,
-                              help='ETL interval in seconds (default: 3600)')
-        etl_parser.add_argument('--background', '-b', action='store_true',
-                              help='Run in background')
-        etl_parser.add_argument('--log-level', '-l', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-                              default='INFO', help='Log level')
+        etl_parser = subparsers.add_parser("etl", help="ETL processes only")
+        etl_parser.add_argument(
+            "--interval",
+            "-i",
+            type=int,
+            default=3600,
+            help="ETL interval in seconds (default: 3600)",
+        )
+        etl_parser.add_argument("--background", "-b", action="store_true", help="Run in background")
+        etl_parser.add_argument(
+            "--log-level",
+            "-l",
+            choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+            default="INFO",
+            help="Log level",
+        )
         etl_parser.set_defaults(func=self.run_etl_only)
 
         # Dashboard only mode
-        dashboard_parser = subparsers.add_parser('dashboard', help='Dashboard only')
-        dashboard_parser.add_argument('--port', '-p', type=int, default=7777,
-                                    help='Dashboard port (default: 7777)')
-        dashboard_parser.add_argument('--background', '-b', action='store_true',
-                                    help='Run in background')
-        dashboard_parser.add_argument('--log-level', '-l', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-                                    default='INFO', help='Log level')
+        dashboard_parser = subparsers.add_parser("dashboard", help="Dashboard only")
+        dashboard_parser.add_argument(
+            "--port",
+            "-p",
+            type=int,
+            default=7777,
+            help="Dashboard port (default: 7777)",
+        )
+        dashboard_parser.add_argument("--background", "-b", action="store_true", help="Run in background")
+        dashboard_parser.add_argument(
+            "--log-level",
+            "-l",
+            choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+            default="INFO",
+            help="Log level",
+        )
         dashboard_parser.set_defaults(func=self.run_dashboard_only)
 
         # Podman development
-        docker_dev_parser = subparsers.add_parser('podman-dev', help='Podman development mode')
-        docker_dev_parser.add_argument('--build', action='store_true',
-                                     help='Build images before starting')
+        docker_dev_parser = subparsers.add_parser("podman-dev", help="Podman development mode")
+        docker_dev_parser.add_argument("--build", action="store_true", help="Build images before starting")
         docker_dev_parser.set_defaults(func=self.run_docker_dev)
 
         # Podman production
-        docker_prod_parser = subparsers.add_parser('podman-prod', help='Podman production mode')
-        docker_prod_parser.add_argument('--build', action='store_true',
-                                      help='Build images before starting')
+        docker_prod_parser = subparsers.add_parser("podman-prod", help="Podman production mode")
+        docker_prod_parser.add_argument("--build", action="store_true", help="Build images before starting")
         docker_prod_parser.set_defaults(func=self.run_docker_prod)
 
         # Podman stop
-        docker_stop_parser = subparsers.add_parser('podman-stop', help='Stop Podman containers')
+        docker_stop_parser = subparsers.add_parser("podman-stop", help="Stop Podman containers")
         docker_stop_parser.set_defaults(func=self.stop_docker)
 
         # Service management
-        service_parser = subparsers.add_parser('service', help='System service management')
-        service_parser.add_argument('action', choices=['install', 'uninstall', 'start', 'stop', 'status'],
-                                  help='Service action')
+        service_parser = subparsers.add_parser("service", help="System service management")
+        service_parser.add_argument(
+            "action",
+            choices=["install", "uninstall", "start", "stop", "status"],
+            help="Service action",
+        )
         service_parser.set_defaults(func=self.manage_service)
 
         # Status check
-        status_parser = subparsers.add_parser('status', help='Show current status')
+        status_parser = subparsers.add_parser("status", help="Show current status")
         status_parser.set_defaults(func=self.show_status)
 
         return parser
@@ -389,7 +412,7 @@ Examples:
         parser = self.setup_parser()
         args = parser.parse_args()
 
-        if not hasattr(args, 'func'):
+        if not hasattr(args, "func"):
             parser.print_help()
             return
 

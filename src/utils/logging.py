@@ -6,7 +6,7 @@ import logging.handlers
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 def _get_settings():
@@ -60,7 +60,7 @@ class StructuredFormatter(logging.Formatter):
 class WatchtowerLogger:
     """Enhanced logger for Watchtower with better configuration and features."""
 
-    _loggers: Dict[str, logging.Logger] = {}
+    _loggers: dict[str, logging.Logger] = {}
     _configured = False
 
     @classmethod
@@ -129,9 +129,7 @@ class WatchtowerLogger:
         cls._configured = True
 
     @classmethod
-    def get_logger(
-        cls, name: Optional[str] = None, extra_fields: Optional[Dict[str, Any]] = None
-    ) -> logging.Logger:
+    def get_logger(cls, name: str | None = None, extra_fields: dict[str, Any] | None = None) -> logging.Logger:
         """Get a logger with optional extra fields.
 
         Args:
@@ -169,7 +167,7 @@ class WatchtowerLogger:
 class LoggerAdapter(logging.LoggerAdapter):
     """Logger adapter that adds extra fields to log records."""
 
-    def __init__(self, logger: logging.Logger, extra_fields: Dict[str, Any]):
+    def __init__(self, logger: logging.Logger, extra_fields: dict[str, Any]):
         """Initialize the adapter.
 
         Args:
@@ -179,7 +177,7 @@ class LoggerAdapter(logging.LoggerAdapter):
         super().__init__(logger, {})
         self.extra_fields = extra_fields
 
-    def process(self, msg: str, kwargs: Dict[str, Any]) -> tuple:
+    def process(self, msg: str, kwargs: dict[str, Any]) -> tuple:
         """Process the log record to add extra fields.
 
         Args:
@@ -219,9 +217,7 @@ class PerformanceLogger:
         self.operation = operation
         self.logger.info(f"Starting operation: {operation}")
 
-    def end(
-        self, success: bool = True, extra_data: Optional[Dict[str, Any]] = None
-    ) -> None:
+    def end(self, success: bool = True, extra_data: dict[str, Any] | None = None) -> None:
         """End timing an operation.
 
         Args:
@@ -253,9 +249,7 @@ class PerformanceLogger:
         self.start_time = None
 
 
-def get_logger(
-    name: Optional[str] = None, extra_fields: Optional[Dict[str, Any]] = None
-) -> logging.Logger:
+def get_logger(name: str | None = None, extra_fields: dict[str, Any] | None = None) -> logging.Logger:
     """Get a configured logger instance.
 
     This is the main function to use for getting loggers in the application.
@@ -270,7 +264,7 @@ def get_logger(
     return WatchtowerLogger.get_logger(name, extra_fields)
 
 
-def get_performance_logger(name: Optional[str] = None) -> PerformanceLogger:
+def get_performance_logger(name: str | None = None) -> PerformanceLogger:
     """Get a performance logger for timing operations.
 
     Args:

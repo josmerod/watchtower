@@ -1,22 +1,24 @@
 import json
 import logging
-from datetime import datetime, timezone
-
-import dash
-import dash_bootstrap_components as dbc
-from dash import Input, Output, State, html
 
 # Import shared utilities
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
+
+import dash
+import dash_bootstrap_components as dbc
+from dash import ALL, Input, Output, State, html
+
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.web.dashboard.utils import get_data_path, parse_date_universal
+from src.web.dashboard.components.recommendations_tab import recommendations_manager
 from src.web.dashboard.search_utils import (
     create_search_input,
     filter_content,
     get_common_searchable_fields,
 )
+from src.web.dashboard.utils import get_data_path, parse_date_universal
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -121,29 +123,21 @@ def load_news_from_file(file_path):
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
             # Ensure data is a list of records
-            if isinstance(
-                data, dict
-            ):  # Handle cases where JSON might be a dict with a key containing the list
+            if isinstance(data, dict):  # Handle cases where JSON might be a dict with a key containing the list
                 if "articles" in data and isinstance(data["articles"], list):
                     return data["articles"]
                 elif "items" in data and isinstance(data["items"], list):
                     return data["items"]
                 # Add more checks if other common patterns are found
                 else:  # If it's a dictionary but not a recognized pattern, wrap it in a list if it looks like a single item
-                    if all(
-                        k in data for k in ["title", "url"]
-                    ):  # Heuristic for a single item
+                    if all(k in data for k in ["title", "url"]):  # Heuristic for a single item
                         return [data]
-                    print(
-                        f"Warning: Data in {file_path} is a dict but not a recognized list structure. Returning empty."
-                    )
+                    print(f"Warning: Data in {file_path} is a dict but not a recognized list structure. Returning empty.")
                     return []
             elif isinstance(data, list):
                 return data
             else:
-                print(
-                    f"Warning: Data in {file_path} is not a list or recognized dict structure. Type: {type(data)}. Returning empty."
-                )
+                print(f"Warning: Data in {file_path} is not a list or recognized dict structure. Type: {type(data)}. Returning empty.")
                 return []
     except FileNotFoundError:
         print(f"Warning: News file not found at {file_path}")
@@ -171,10 +165,7 @@ def get_all_news_data():
     except NameError:
         pass
 
-    data = {
-        source_key: load_news_from_file(config["path"])
-        for source_key, config in NEWS_SOURCES_CONFIG.items()
-    }
+    data = {source_key: load_news_from_file(config["path"]) for source_key, config in NEWS_SOURCES_CONFIG.items()}
     _NEWS_CACHE = {"ts": now, "data": data}
     return data
 
@@ -206,11 +197,7 @@ def parse_date(date_str):
     try:
         # Ensure 'Z' is converted to +00:00 for fromisoformat
         dt = datetime.fromisoformat(s_date.replace("Z", "+00:00"))
-        return (
-            dt.astimezone(timezone.utc)
-            if dt.tzinfo
-            else dt.replace(tzinfo=timezone.utc)
-        )
+        return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     except (ValueError, TypeError):
         pass  # Continue to other formats
 
@@ -219,11 +206,7 @@ def parse_date(date_str):
         try:
             dt = datetime.strptime(s_date, fmt)
             # If parsing succeeds but dt is naive, assume UTC. If tz-aware, convert to UTC.
-            return (
-                dt.astimezone(timezone.utc)
-                if dt.tzinfo
-                else dt.replace(tzinfo=timezone.utc)
-            )
+            return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
         except (ValueError, TypeError):
             continue  # Try next format
 
@@ -297,21 +280,13 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         # Add source name to each article for display in the table
         for article in articles_from_source:
             # Use 'source_display' to ensure we have a consistent field for the table
-            article["source_display_name"] = article.get(
-                "source", NEWS_SOURCES_CONFIG[key]["name"]
-            )
+            article["source_display_name"] = article.get("source", NEWS_SOURCES_CONFIG[key]["name"])
         all_articles_for_tab.extend(articles_from_source)
 
     # Sort all articles by date (descending)
     def get_sortable_date(article):
         date_str = (
-            article.get("published_at")
-            or article.get("published_date")
-            or article.get("created_at")
-            or article.get("updated_at")
-            or article.get("updated")
-            or article.get("time")
-            or article.get("pubDate")
+            article.get("published_at") or article.get("published_date") or article.get("created_at") or article.get("updated_at") or article.get("updated") or article.get("time") or article.get("pubDate")
         )
         parsed = parse_date(date_str)
         return parsed if parsed else datetime.min.replace(tzinfo=timezone.utc)
@@ -322,44 +297,46 @@ def create_news_source_tab_content(source_keys, combined_name=None):
     articles_data = html.Div(
         all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE],
         id=f"{tab_search_id}-data",
-        style={"display": "none"}
+        style={"display": "none"},
     )
 
     if not all_articles_for_tab:
-        return dbc.Alert(
-            f"No news items available for {source_display_name}.", color="info"
-        )
+        return dbc.Alert(f"No news items available for {source_display_name}.", color="info")
 
     # Create table header
     table_header = [
-        html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")]))
+        html.Thead(
+            html.Tr(
+                [
+                    html.Th("Title"),
+                    html.Th("Source"),
+                    html.Th("Date"),
+                    html.Th("Actions"),
+                ]
+            )
+        )
     ]
 
     # Load trend data
-    from src.web.dashboard.trend_utils import get_trending_items_map, render_trend_badge, is_item_trending
+    from src.web.dashboard.trend_utils import (
+        get_trending_items_map,
+        is_item_trending,
+        render_trend_badge,
+    )
+
     trending_map = get_trending_items_map()
 
     # Create table body with robust field fallbacks for heterogeneous sources
     table_body_rows = []
-    for article in all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]:
+    for i, article in enumerate(all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]):
         # Check trend status
         is_trending = is_item_trending(article, trending_map)
-        trend_badge = render_trend_badge(trending_map.get(f"category:{article.get('source')}") or trending_map.get(article.get('id'))) if is_trending else None
+        trend_badge = render_trend_badge(trending_map.get(f"category:{article.get('source')}") or trending_map.get(article.get("id"))) if is_trending else None
 
         # Title fallbacks: common across Product Hunt/GitHub Trends/others
-        title = (
-            article.get("title")
-            or article.get("name")
-            or article.get("full_name")
-            or "No Title"
-        )
+        title = article.get("title") or article.get("name") or article.get("full_name") or "No Title"
         # URL fallbacks
-        url = (
-            article.get("url")
-            or article.get("link")
-            or article.get("html_url")
-            or article.get("website")
-        )
+        url = article.get("url") or article.get("link") or article.get("html_url") or article.get("website")
         # Use the 'source_display_name' we added earlier
         source_for_display = article.get("source_display_name", source_display_name)
         date_display = format_article_date(article)
@@ -370,16 +347,35 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         table_body_rows.append(
             html.Tr(
                 [
-                    html.Td([
-                        html.A(title, href=url, target="_blank") if url else title,
-                        trend_badge
-                    ]),
+                    html.Td(
+                        [
+                            html.A(title, href=url, target="_blank") if url else title,
+                            trend_badge,
+                        ]
+                    ),
                     html.Td(source_for_display),
                     html.Td(date_display),
+                    html.Td(
+                        dbc.Button(
+                            "Related",
+                            id={
+                                "type": "related-btn",
+                                "tab_id": tab_search_id,
+                                "index": i,
+                            },
+                            color="link",
+                            size="sm",
+                            className="p-0 text-decoration-none",
+                        )
+                    ),
                     # Hidden cell for trend filtering
-                    html.Td(str(is_trending).lower(), style={"display": "none"}, className="is-trending-data") 
+                    html.Td(
+                        str(is_trending).lower(),
+                        style={"display": "none"},
+                        className="is-trending-data",
+                    ),
                 ],
-                className=row_class
+                className=row_class,
             )
         )
 
@@ -396,37 +392,62 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         color="dark",
         className="table-responsive mb-0",  # Remove default bottom margin if wrapped in Div with padding
     )
-    
+
     from src.web.dashboard.components.trend_filter import render_trend_filter
 
     # Return search input and table container
-    return html.Div([
-        dbc.Row([
-            dbc.Col(
-                # Search input
-                create_search_input(
-                    input_id=tab_search_id,
-                    placeholder=f"Search {source_display_name}...",
-                    clear_button=True
-                ),
-                width=True
+    return html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        # Search input
+                        create_search_input(
+                            input_id=tab_search_id,
+                            placeholder=f"Search {source_display_name}...",
+                            clear_button=True,
+                        ),
+                        width=True,
+                    ),
+                    dbc.Col(
+                        render_trend_filter(f"{tab_search_id}-trend-filter"),
+                        width="auto",
+                    ),
+                ],
+                className="mb-3 align-items-center",
             ),
-            dbc.Col(
-                render_trend_filter(f"{tab_search_id}-trend-filter"),
-                width="auto"
-            )
-        ], className="mb-3 align-items-center"),
-
-        # Hidden data storage for search filtering
-        articles_data,
-
-        # Container for filtered results
-        html.Div(
-            table,
-            id=f"{tab_search_id}-results",
-            style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"}
-        ),
-    ])
+            # Hidden data storage for search filtering
+            articles_data,
+            # Container for filtered results
+            html.Div(
+                table,
+                id=f"{tab_search_id}-results",
+                style={
+                    "maxHeight": "800px",
+                    "overflowY": "auto",
+                    "paddingRight": "15px",
+                },
+            ),
+            # Modal for related content
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle("Related Content")),
+                    dbc.ModalBody(id=f"{tab_search_id}-related-content"),
+                    dbc.ModalFooter(
+                        dbc.Button(
+                            "Close",
+                            id=f"{tab_search_id}-related-close",
+                            className="ms-auto",
+                            n_clicks=0,
+                        )
+                    ),
+                ],
+                id=f"{tab_search_id}-related-modal",
+                size="lg",
+                is_open=False,
+            ),
+        ]
+    )
 
 
 def register_news_search_callbacks(app):
@@ -453,16 +474,16 @@ def register_news_search_callbacks(app):
         "news-search-kagi_gaming",
         "news-search-kagi_ai",
         "news-search-kagi_europe",
-        "news-search-kagi_spain"
+        "news-search-kagi_spain",
     ]
 
     for search_id in search_ids:
+
         @app.callback(
             Output(f"{search_id}-results", "children"),
-            [Input(search_id, "value"),
-             Input(f"{search_id}-trend-filter", "value")],
+            [Input(search_id, "value"), Input(f"{search_id}-trend-filter", "value")],
             State(f"{search_id}-data", "children"),
-            prevent_initial_call=True
+            prevent_initial_call=True,
         )
         def update_news_search(search_term, show_trending, articles_data, current_search_id=search_id):
             """Update news display based on search term and trend filter."""
@@ -472,7 +493,7 @@ def register_news_search_callbacks(app):
                     return html.Div("No data available")
 
                 # Get searchable fields for news content
-                searchable_fields = get_common_searchable_fields('news')
+                searchable_fields = get_common_searchable_fields("news")
 
                 # Filter articles based on search term
                 filtered_articles = filter_content(search_term, articles_data, searchable_fields)
@@ -482,12 +503,13 @@ def register_news_search_callbacks(app):
                     # We need to re-check trending status or use the hidden data
                     # Since we don't have the hidden data easily accessible here without parsing HTML,
                     # we'll re-use the utility. Ideally, we should store this in the data store.
-                    from src.web.dashboard.trend_utils import get_trending_items_map, is_item_trending
+                    from src.web.dashboard.trend_utils import (
+                        get_trending_items_map,
+                        is_item_trending,
+                    )
+
                     trending_map = get_trending_items_map()
-                    filtered_articles = [
-                        a for a in filtered_articles 
-                        if is_item_trending(a, trending_map)
-                    ]
+                    filtered_articles = [a for a in filtered_articles if is_item_trending(a, trending_map)]
 
                 if not filtered_articles:
                     msg = f"No articles found matching '{search_term}'" if search_term else "No articles found"
@@ -497,37 +519,41 @@ def register_news_search_callbacks(app):
 
                 # Create table for filtered results
                 table_header = [
-                    html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")]))
+                    html.Thead(
+                        html.Tr(
+                            [
+                                html.Th("Title"),
+                                html.Th("Source"),
+                                html.Th("Date"),
+                                html.Th("Actions"),
+                            ]
+                        )
+                    )
                 ]
-                
+
                 # Load trend data for rendering badges
-                from src.web.dashboard.trend_utils import get_trending_items_map, render_trend_badge, is_item_trending
+                from src.web.dashboard.trend_utils import (
+                    get_trending_items_map,
+                    is_item_trending,
+                    render_trend_badge,
+                )
+
                 trending_map = get_trending_items_map()
 
                 table_body_rows = []
-                for article in filtered_articles:
+                for i, article in enumerate(filtered_articles):
                     # Check trend status
                     is_trending = is_item_trending(article, trending_map)
-                    trend_badge = render_trend_badge(trending_map.get(f"category:{article.get('source')}") or trending_map.get(article.get('id'))) if is_trending else None
-                    
+                    trend_badge = render_trend_badge(trending_map.get(f"category:{article.get('source')}") or trending_map.get(article.get("id"))) if is_trending else None
+
                     # Title fallbacks: common across news sources
-                    title = (
-                        article.get("title")
-                        or article.get("name")
-                        or article.get("full_name")
-                        or "No Title"
-                    )
+                    title = article.get("title") or article.get("name") or article.get("full_name") or "No Title"
                     # URL fallbacks
-                    url = (
-                        article.get("url")
-                        or article.get("link")
-                        or article.get("html_url")
-                        or article.get("website")
-                    )
+                    url = article.get("url") or article.get("link") or article.get("html_url") or article.get("website")
                     # Use the 'source_display_name' if available
                     source_for_display = article.get("source_display_name", "Unknown")
                     date_display = format_article_date(article)
-                    
+
                     # Add trending class
                     row_class = "trending-item" if is_trending else ""
 
@@ -536,18 +562,27 @@ def register_news_search_callbacks(app):
                             [
                                 html.Td(
                                     [
-                                        html.A(
-                                            title,
-                                            href=url,
-                                            target="_blank"
-                                        ) if url else title,
-                                        trend_badge
+                                        (html.A(title, href=url, target="_blank") if url else title),
+                                        trend_badge,
                                     ]
                                 ),
                                 html.Td(source_for_display),
                                 html.Td(date_display),
+                                html.Td(
+                                    dbc.Button(
+                                        "Related",
+                                        id={
+                                            "type": "related-btn",
+                                            "tab_id": current_search_id,
+                                            "index": i,
+                                        },
+                                        color="link",
+                                        size="sm",
+                                        className="p-0 text-decoration-none",
+                                    )
+                                ),
                             ],
-                            className=row_class
+                            className=row_class,
                         )
                     )
 
@@ -572,29 +607,121 @@ def register_news_search_callbacks(app):
                             color="success",
                             className="mb-3",
                         ),
-                        table
+                        table,
                     ],
-                    style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"}
+                    style={
+                        "maxHeight": "800px",
+                        "overflowY": "auto",
+                        "paddingRight": "15px",
+                    },
                 )
 
             except Exception as e:
                 logger.error(f"Error in news search callback for {current_search_id}: {e}")
-                return dbc.Alert(
-                    f"Error searching articles: {e}",
-                    color="danger"
-                )
+                return dbc.Alert(f"Error searching articles: {e}", color="danger")
 
         # Clear search callback
         @app.callback(
             Output(search_id, "value", allow_duplicate=True),
             Input(f"{search_id}-clear", "n_clicks"),
-            prevent_initial_call=True
+            prevent_initial_call=True,
         )
         def clear_news_search(n_clicks):
             """Clear search input."""
             if n_clicks:
                 return ""
             return dash.no_update
+
+        # Callback for related content modal
+        @app.callback(
+            [
+                Output(f"{search_id}-related-modal", "is_open"),
+                Output(f"{search_id}-related-content", "children"),
+            ],
+            [
+                Input(
+                    {"type": "related-btn", "tab_id": search_id, "index": ALL},
+                    "n_clicks",
+                ),
+                Input(f"{search_id}-related-close", "n_clicks"),
+            ],
+            [
+                State(f"{search_id}-related-modal", "is_open"),
+                State(f"{search_id}-data", "children"),
+            ],
+            prevent_initial_call=True,
+        )
+        def toggle_related_modal(n_clicks_related, n_clicks_close, is_open, articles_data):
+            ctx = dash.callback_context
+            if not ctx.triggered:
+                return is_open, dash.no_update
+
+            trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+            if "related-close" in trigger_id:
+                return False, dash.no_update
+
+            if "related-btn" in trigger_id:
+                # Extract index from trigger_id which is a JSON string
+                try:
+                    # Get the item index directly from the structured ID
+                    list_index = ctx.triggered_id["index"]
+
+                    if isinstance(articles_data, list) and 0 <= list_index < len(articles_data):
+                        target_article = articles_data[list_index]
+                    else:
+                        logger.warning(f"Invalid article index: {list_index}")
+                        target_article = None
+
+                    if target_article:
+                        title = target_article.get("title")
+                        content_type = target_article.get("type", "news_article")  # Default to news_article
+
+                        related_items = recommendations_manager.recommendation_engine.get_related_content(title, content_type)
+
+                        if not related_items:
+                            return True, html.P("No related content found.")
+
+                        # Render related items
+                        items_list = []
+                        for item in related_items:
+                            items_list.append(
+                                dbc.ListGroupItem(
+                                    [
+                                        html.Div(
+                                            [
+                                                html.H6(item.get("title"), className="mb-1"),
+                                                html.Small(
+                                                    f"Similarity: {item.get('similarity_score', 0):.2f}",
+                                                    className="text-muted",
+                                                ),
+                                            ],
+                                            className="d-flex w-100 justify-content-between",
+                                        ),
+                                        html.P(
+                                            item.get("description", ""),
+                                            className="mb-1",
+                                        ),
+                                        html.Small(
+                                            html.A(
+                                                "Read more",
+                                                href=item.get("url", "#"),
+                                                target="_blank",
+                                            )
+                                        ),
+                                    ]
+                                )
+                            )
+
+                        return True, dbc.ListGroup(items_list)
+
+                    return True, html.P("Article details not found.")
+
+                except Exception as e:
+                    logger.error(f"Error in related content callback: {e}")
+                    return True, html.P(f"Error loading related content: {e}")
+
+            return is_open, dash.no_update
 
 
 # Main function to render the news tab
@@ -607,7 +734,11 @@ def render_news_tab():
         {"label": "Google AI Blog", "keys": "google_ai_blog", "id": "gaib"},
         {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"},
         {"label": "Ars Technica", "keys": "arstechnica", "id": "ars"},
-        {"label": "FutureTools & Ben's Bites", "keys": ["futuretools", "bensbites"], "id": "ft-bb"},
+        {
+            "label": "FutureTools & Ben's Bites",
+            "keys": ["futuretools", "bensbites"],
+            "id": "ft-bb",
+        },
         {"label": "Hacker News", "keys": "hackernews", "id": "hn"},
         {"label": "Medium GenAI", "keys": "medium_genai", "id": "med_genai"},
         {"label": "KDnuggets", "keys": "kdnuggets", "id": "kdn"},
@@ -628,9 +759,7 @@ def render_news_tab():
     tabs_children = []
     for tab_def in tab_definitions:
         tab_id = f"news-tab-{tab_def['id']}"
-        content = create_news_source_tab_content(
-            tab_def["keys"], combined_name=tab_def["label"]
-        )
+        content = create_news_source_tab_content(tab_def["keys"], combined_name=tab_def["label"])
         tabs_children.append(
             dbc.Tab(
                 label=tab_def["label"],
@@ -668,10 +797,6 @@ if __name__ == "__main__":
 
     print("Running standalone test for news_tab.py...")
     print(f"Displaying max {MAX_ARTICLES_PER_SOURCE} articles per tab, sorted by date.")
-    print(
-        "Expected news JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json"
-    )
-    print(
-        "Check console for warnings about missing files or parsing errors, especially date parsing."
-    )
+    print("Expected news JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json")
+    print("Check console for warnings about missing files or parsing errors, especially date parsing.")
     app_test.run(debug=True, port=8052)

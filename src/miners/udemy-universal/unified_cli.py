@@ -95,18 +95,14 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
         subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
         # Extract command
-        extract_parser = subparsers.add_parser(
-            "extract", help="Extract courses from scraping sites"
-        )
+        extract_parser = subparsers.add_parser("extract", help="Extract courses from scraping sites")
         extract_parser.add_argument(
             "--sites",
             nargs="+",
             choices=list(scraper_dict.keys()),
             help="Specific sites to scrape",
         )
-        extract_parser.add_argument(
-            "--max-pages", type=int, default=5, help="Maximum pages to scrape per site"
-        )
+        extract_parser.add_argument("--max-pages", type=int, default=5, help="Maximum pages to scrape per site")
         extract_parser.add_argument(
             "--output",
             default="courses_to_enroll.json",
@@ -114,9 +110,7 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
         )
 
         # Enroll command
-        enroll_parser = subparsers.add_parser(
-            "enroll", help="Enroll in extracted courses"
-        )
+        enroll_parser = subparsers.add_parser("enroll", help="Enroll in extracted courses")
         enroll_parser.add_argument(
             "--input",
             default="courses_to_enroll.json",
@@ -136,9 +130,7 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
             choices=list(scraper_dict.keys()),
             help="Specific sites to scrape",
         )
-        run_parser.add_argument(
-            "--max-pages", type=int, default=5, help="Maximum pages to scrape per site"
-        )
+        run_parser.add_argument("--max-pages", type=int, default=5, help="Maximum pages to scrape per site")
         run_parser.add_argument(
             "--dry-run",
             action="store_true",
@@ -153,24 +145,14 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
             default="duce-cli-settings.json",
         )
         parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-        parser.add_argument(
-            "--verbose", "-v", action="store_true", help="Enable verbose output"
-        )
-        parser.add_argument(
-            "--quiet", "-q", action="store_true", help="Suppress output"
-        )
-        parser.add_argument(
-            "--version", action="version", version=f"%(prog)s {VERSION}"
-        )
+        parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
+        parser.add_argument("--quiet", "-q", action="store_true", help="Suppress output")
+        parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
 
         # Enhanced features (only if available)
         if self.enhanced_features:
-            parser.add_argument(
-                "--update-check", action="store_true", help="Check for updates and exit"
-            )
-            parser.add_argument(
-                "--stats", action="store_true", help="Show enrollment statistics"
-            )
+            parser.add_argument("--update-check", action="store_true", help="Check for updates and exit")
+            parser.add_argument("--stats", action="store_true", help="Show enrollment statistics")
             parser.add_argument(
                 "--days",
                 type=int,
@@ -202,9 +184,7 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
                 action="store_true",
                 help="Enable structured JSON logging",
             )
-            parser.add_argument(
-                "--metrics", action="store_true", help="Enable metrics collection"
-            )
+            parser.add_argument("--metrics", action="store_true", help="Enable metrics collection")
 
         return parser
 
@@ -239,9 +219,7 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
                         is_valid, config, results = load_and_validate_config(path)
                         if not is_valid:
                             logger.error(f"Configuration validation failed for {path}")
-                            logger.error(
-                                self.config_validator.format_validation_results(results)
-                            )
+                            logger.error(self.config_validator.format_validation_results(results))
                             return False
                         self.config = config
                     else:
@@ -376,24 +354,16 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
             logger.info("🍪 Cookie Extraction Test Results")
             logger.info("=" * 40)
             logger.info(f"Detected Browsers: {len(test_results['browsers'])}")
-            logger.info(
-                f"Successful Extractions: {test_results['summary']['successful']}"
-            )
+            logger.info(f"Successful Extractions: {test_results['summary']['successful']}")
             logger.info(f"Failed Extractions: {test_results['summary']['failed']}")
             logger.info("")
 
             for browser_name, results in test_results["browsers"].items():
                 status = "✅" if results["overall_success"] else "❌"
                 logger.info(f"{status} {browser_name}")
-                logger.info(
-                    f"  Browser Cookie3: {'✅' if results['browser_cookie3']['success'] else '❌'}"
-                )
-                logger.info(
-                    f"  SQLite Method: {'✅' if results['sqlite']['success'] else '❌'}"
-                )
-                logger.info(
-                    f"  Required Cookies: {'✅' if results['browser_cookie3']['has_required'] or results['sqlite']['has_required'] else '❌'}"
-                )
+                logger.info(f"  Browser Cookie3: {'✅' if results['browser_cookie3']['success'] else '❌'}")
+                logger.info(f"  SQLite Method: {'✅' if results['sqlite']['success'] else '❌'}")
+                logger.info(f"  Required Cookies: {'✅' if results['browser_cookie3']['has_required'] or results['sqlite']['has_required'] else '❌'}")
 
             return 0
         except Exception as e:
@@ -438,9 +408,7 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
             scraper = Scraper(sites_to_scrape, debug=args.debug)
 
             # Get courses
-            scraped_data = scraper.get_scraped_courses(
-                lambda site: create_scraping_thread(site, scraper)
-            )
+            scraped_data = scraper.get_scraped_courses(lambda site: create_scraping_thread(site, scraper))
 
             # Save results
             output_file = args.output
@@ -459,12 +427,8 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
                 with open(output_file, "w", encoding="utf-8") as f:
                     json.dump(successful_data, f, indent=2, ensure_ascii=False)
 
-                total_courses = sum(
-                    len(courses) for courses in successful_data.values()
-                )
-                logger.info(
-                    f"Extracted {total_courses} courses from {len(successful_data)} sites"
-                )
+                total_courses = sum(len(courses) for courses in successful_data.values())
+                logger.info(f"Extracted {total_courses} courses from {len(successful_data)} sites")
                 logger.info(f"Results saved to {output_file}")
             else:
                 logger.warning("No courses extracted")
@@ -517,9 +481,7 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
             # Dry run check
             if args.dry_run:
                 total_courses = sum(len(courses) for courses in scraped_data.values())
-                logger.info(
-                    f"DRY RUN: Would attempt to enroll in {total_courses} courses"
-                )
+                logger.info(f"DRY RUN: Would attempt to enroll in {total_courses} courses")
                 for site, courses in scraped_data.items():
                     logger.info(f"  {site}: {len(courses)} courses")
                 return 0
@@ -551,9 +513,7 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
             if self.enhanced_features:
                 if args.metrics:
                     self.metrics_logger.end_timer("enrollment")
-                    self.metrics_logger.log_metric(
-                        "courses_enrolled", udemy.successfully_enrolled_c
-                    )
+                    self.metrics_logger.log_metric("courses_enrolled", udemy.successfully_enrolled_c)
 
                 if session_id:
                     end_session()
@@ -623,9 +583,7 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
                     return self.handle_config_validation(parsed_args.validate_config)
 
                 if parsed_args.create_default_config:
-                    return self.handle_create_default_config(
-                        parsed_args.create_default_config
-                    )
+                    return self.handle_create_default_config(parsed_args.create_default_config)
 
                 if parsed_args.test_cookies:
                     return self.handle_test_cookies(parsed_args.browser)

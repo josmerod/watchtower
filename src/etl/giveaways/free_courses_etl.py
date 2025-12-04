@@ -14,15 +14,13 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -64,7 +62,7 @@ class FreeCoursesETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract free courses from multiple sources."""
         logger.info("Starting free courses extraction...")
 
@@ -81,7 +79,7 @@ class FreeCoursesETL(BaseETL):
         logger.info(f"Total extracted {len(all_courses)} free courses")
         return {"courses": all_courses, "total_count": len(all_courses)}
 
-    def _extract_freecodecamp(self) -> List[Dict[str, Any]]:
+    def _extract_freecodecamp(self) -> list[dict[str, Any]]:
         """Extract recent courses from FreeCodeCamp RSS."""
         try:
             logger.info("Extracting courses from FreeCodeCamp RSS...")
@@ -100,11 +98,7 @@ class FreeCoursesETL(BaseETL):
                 try:
                     title = item.find("title").text if item.find("title") else "Unknown"
                     link = item.find("link").text if item.find("link") else ""
-                    description = (
-                        item.find("description").text
-                        if item.find("description")
-                        else ""
-                    )
+                    description = item.find("description").text if item.find("description") else ""
                     pub_date = item.find("pubDate").text if item.find("pubDate") else ""
 
                     # Only include items that look like courses/tutorials
@@ -135,9 +129,7 @@ class FreeCoursesETL(BaseETL):
                         courses.append(
                             {
                                 "title": title,
-                                "description": BeautifulSoup(
-                                    description, "html.parser"
-                                ).get_text()[:500],
+                                "description": BeautifulSoup(description, "html.parser").get_text()[:500],
                                 "url": link,
                                 "platform": "FreeCodeCamp",
                                 "category": "programming",
@@ -165,7 +157,7 @@ class FreeCoursesETL(BaseETL):
             logger.error(f"Error extracting from FreeCodeCamp: {e}")
             return []
 
-    def _get_curated_free_courses(self) -> List[Dict[str, Any]]:
+    def _get_curated_free_courses(self) -> list[dict[str, Any]]:
         """Get manually curated list of high-quality free courses."""
         curated = [
             {
@@ -258,7 +250,7 @@ class FreeCoursesETL(BaseETL):
         logger.info(f"Added {len(curated)} curated free courses")
         return curated
 
-    def _extract_course_tags(self, title: str, description: str) -> List[str]:
+    def _extract_course_tags(self, title: str, description: str) -> list[str]:
         """Extract relevant tags from course title and description."""
         text = f"{title} {description}".lower()
 
@@ -297,7 +289,7 @@ class FreeCoursesETL(BaseETL):
 
         return tags[:5]  # Limit to 5 tags
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform free courses data."""
         logger.info("Starting free courses transformation...")
 
@@ -319,17 +311,14 @@ class FreeCoursesETL(BaseETL):
 
                 transformed_course = {
                     "title": title,
-                    "description": course.get("description", "")[
-                        :400
-                    ],  # Limit description
+                    "description": course.get("description", "")[:400],  # Limit description
                     "url": course["url"],
                     "platform": course["platform"],
                     "category": course["category"],
                     "course_type": course.get("course_type", "course"),
                     "original_price": course.get("original_price", 0),
                     "current_price": course.get("current_price", 0),
-                    "savings": course.get("original_price", 0)
-                    - course.get("current_price", 0),
+                    "savings": course.get("original_price", 0) - course.get("current_price", 0),
                     "duration": course.get("duration", "Not specified"),
                     "level": course.get("level", "All Levels"),
                     "language": course.get("language", "English"),
@@ -348,14 +337,12 @@ class FreeCoursesETL(BaseETL):
                 continue
 
         # Sort by relevance score and value rating
-        transformed_courses.sort(
-            key=lambda x: (x["relevance_score"], x["value_rating"]), reverse=True
-        )
+        transformed_courses.sort(key=lambda x: (x["relevance_score"], x["value_rating"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_courses)} free courses")
         return transformed_courses
 
-    def _calculate_course_relevance_score(self, course: Dict[str, Any]) -> float:
+    def _calculate_course_relevance_score(self, course: dict[str, Any]) -> float:
         """Calculate relevance score for ranking courses."""
         score = 0.0
 
@@ -401,7 +388,7 @@ class FreeCoursesETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_course_value(self, course: Dict[str, Any]) -> str:
+    def _determine_course_value(self, course: dict[str, Any]) -> str:
         """Determine course value rating."""
         original_price = course.get("original_price", 0)
         platform = course.get("platform", "").lower()
@@ -416,7 +403,7 @@ class FreeCoursesETL(BaseETL):
         else:
             return "standard"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed free courses data to files."""
         try:
             # Ensure output directory exists
@@ -436,9 +423,7 @@ class FreeCoursesETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} free courses to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} free courses to {output_dir}")
             return True
 
         except Exception as e:

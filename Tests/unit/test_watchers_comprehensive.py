@@ -1,5 +1,4 @@
-"""
-Comprehensive unit tests for the watcher system.
+"""Comprehensive unit tests for the watcher system.
 Tests base watcher functionality and specialized watchers.
 """
 
@@ -8,13 +7,12 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
-from typing import Dict, List, Any
+from unittest.mock import MagicMock, patch
 
-from src.watchers.base_watcher import BaseWatcher, WatcherState, WatcherEvent
 from src.watchers.arxiv_watcher import ArxivWatcher
-from src.watchers.enhanced_watcher import EnhancedWatcher
+from src.watchers.base_watcher import BaseWatcher, WatcherEvent, WatcherState
 from src.watchers.content_watcher import ContentWatcher
+from src.watchers.enhanced_watcher import EnhancedWatcher
 from src.watchers.news_watcher import NewsWatcher
 from src.watchers.technology_watcher import TechnologyWatcher
 
@@ -30,7 +28,7 @@ class TestBaseWatcher(unittest.TestCase):
         class TestWatcher(BaseWatcher):
             """Test implementation of BaseWatcher."""
 
-            def check_for_changes(self) -> List[WatcherEvent]:
+            def check_for_changes(self) -> list[WatcherEvent]:
                 """Mock implementation."""
                 return [
                     WatcherEvent(
@@ -44,9 +42,7 @@ class TestBaseWatcher(unittest.TestCase):
                 """Mock implementation."""
                 return True
 
-        self.test_watcher = TestWatcher(
-            name="test_watcher", state_file=str(self.state_file), check_interval=60
-        )
+        self.test_watcher = TestWatcher(name="test_watcher", state_file=str(self.state_file), check_interval=60)
 
     def tearDown(self):
         """Clean up test environment."""
@@ -422,9 +418,7 @@ class TestContentWatcher(unittest.TestCase):
         filtered = self.content_watcher.filter_by_content_type(content_items)
 
         self.assertEqual(len(filtered), 3)  # 2 articles + 1 blog_post
-        self.assertTrue(
-            all(item["type"] in ["article", "blog_post"] for item in filtered)
-        )
+        self.assertTrue(all(item["type"] in ["article", "blog_post"] for item in filtered))
 
     def test_extract_content_metadata(self):
         """Test extract_content_metadata extracts metadata."""
@@ -572,9 +566,7 @@ class TestTechnologyWatcher(unittest.TestCase):
 
     def test_technology_watcher_initialization(self):
         """Test TechnologyWatcher initialization."""
-        self.assertEqual(
-            self.tech_watcher.technologies, ["Python", "JavaScript", "React"]
-        )
+        self.assertEqual(self.tech_watcher.technologies, ["Python", "JavaScript", "React"])
         self.assertEqual(len(self.tech_watcher.sources), 2)
 
     def test_track_technology_trends(self):
@@ -596,12 +588,8 @@ class TestTechnologyWatcher(unittest.TestCase):
         positive_text = "Python is amazing and easy to use for development"
         negative_text = "Python is slow and difficult to deploy in production"
 
-        positive_sentiment = self.tech_watcher.analyze_technology_sentiment(
-            positive_text
-        )
-        negative_sentiment = self.tech_watcher.analyze_technology_sentiment(
-            negative_text
-        )
+        positive_sentiment = self.tech_watcher.analyze_technology_sentiment(positive_text)
+        negative_sentiment = self.tech_watcher.analyze_technology_sentiment(negative_text)
 
         self.assertIsInstance(positive_sentiment, str)
         self.assertIsInstance(negative_sentiment, str)

@@ -54,9 +54,7 @@ class ADHDPublicationETL(BaseETL):
         pmids = [id_elem.text for id_elem in esearch_root.findall(".//IdList/Id")]
 
         if not pmids or not web_env or not query_key:
-            self.logger.warning(
-                "No PMIDs found or WebEnv/QueryKey missing from eSearch response."
-            )
+            self.logger.warning("No PMIDs found or WebEnv/QueryKey missing from eSearch response.")
             return []
 
         self.logger.info(f"Found {len(pmids)} PMIDs. Fetching details...")
@@ -130,9 +128,7 @@ class ADHDPublicationETL(BaseETL):
                 journal_title = article_elem.findtext(".//Journal/Title")
 
                 doi = None
-                for article_id_elem in article_elem.findall(
-                    ".//PubmedData/ArticleIdList/ArticleId"
-                ):
+                for article_id_elem in article_elem.findall(".//PubmedData/ArticleIdList/ArticleId"):
                     if article_id_elem.get("IdType") == "doi":
                         doi = article_id_elem.text
                         break
@@ -167,21 +163,13 @@ class ADHDPublicationETL(BaseETL):
         for paper_data in data:
             try:
                 authors_list = paper_data.get("authors", [])
-                if not isinstance(authors_list, list) or not all(
-                    isinstance(author, str) for author in authors_list
-                ):
-                    self.logger.warning(
-                        f"Authors format incorrect for paper, using default: {paper_data.get('title')}"
-                    )
+                if not isinstance(authors_list, list) or not all(isinstance(author, str) for author in authors_list):
+                    self.logger.warning(f"Authors format incorrect for paper, using default: {paper_data.get('title')}")
                     authors_list = ["Unknown Author"]
 
                 publication_date_str = paper_data.get("publication_date", "")
                 if not isinstance(publication_date_str, str):
-                    publication_date_str = (
-                        str(publication_date_str)
-                        if publication_date_str is not None
-                        else None
-                    )
+                    publication_date_str = str(publication_date_str) if publication_date_str is not None else None
 
                 url = paper_data.get("url")
                 if not url and paper_data.get("pmid"):
@@ -203,9 +191,7 @@ class ADHDPublicationETL(BaseETL):
                     exc_info=True,
                 )
 
-        self.logger.info(
-            f"Successfully transformed {len(transformed_publications)} articles."
-        )
+        self.logger.info(f"Successfully transformed {len(transformed_publications)} articles.")
         return transformed_publications
 
     def load(self, data: list[ADHDPublication]):
@@ -220,29 +206,21 @@ class ADHDPublicationETL(BaseETL):
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         papers_dict_list = [paper.model_dump() for paper in data]
-        latest_json_file_path = (
-            ""  # Initialize to prevent reference before assignment in final log
-        )
-        latest_csv_file_path = (
-            ""  # Initialize to prevent reference before assignment in final log
-        )
+        latest_json_file_path = ""  # Initialize to prevent reference before assignment in final log
+        latest_csv_file_path = ""  # Initialize to prevent reference before assignment in final log
 
         # JSON Saving
         try:
             json_file_path = os.path.join(json_dir, f"papers_{timestamp}.json")
             with open(json_file_path, "w", encoding="utf-8") as f:
                 json.dump(papers_dict_list, f, ensure_ascii=False, indent=4)
-            self.logger.info(
-                f"Successfully saved {len(papers_dict_list)} papers to {json_file_path}"
-            )
+            self.logger.info(f"Successfully saved {len(papers_dict_list)} papers to {json_file_path}")
 
             latest_json_file_path = os.path.join(json_dir, "latest_papers.json")
             with open(latest_json_file_path, "w", encoding="utf-8") as f:
                 json.dump(papers_dict_list, f, ensure_ascii=False, indent=4)
-            self.logger.info(
-                f"Successfully updated latest_papers.json at {latest_json_file_path}"
-            )
-        except IOError as e:
+            self.logger.info(f"Successfully updated latest_papers.json at {latest_json_file_path}")
+        except OSError as e:
             self.logger.error(f"Error saving JSON file: {e}")
         except Exception as e:
             self.logger.error(f"An unexpected error occurred during JSON saving: {e}")
@@ -251,9 +229,7 @@ class ADHDPublicationETL(BaseETL):
         try:
             df = pd.DataFrame(papers_dict_list)
             if "authors" in df.columns:
-                df["authors"] = df["authors"].apply(
-                    lambda x: ", ".join(x) if isinstance(x, list) else x
-                )
+                df["authors"] = df["authors"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
 
             csv_file_path = os.path.join(csv_dir, f"papers_{timestamp}.csv")
             df.to_csv(csv_file_path, index=False, encoding="utf-8")
@@ -261,33 +237,25 @@ class ADHDPublicationETL(BaseETL):
 
             latest_csv_file_path = os.path.join(csv_dir, "latest_papers.csv")
             df.to_csv(latest_csv_file_path, index=False, encoding="utf-8")
-            self.logger.info(
-                f"Successfully updated latest_papers.csv at {latest_csv_file_path}"
-            )
+            self.logger.info(f"Successfully updated latest_papers.csv at {latest_csv_file_path}")
         except pd.errors.PandasError as e:
             self.logger.error(f"Pandas DataFrame error during CSV saving: {e}")
-        except IOError as e:
+        except OSError as e:
             self.logger.error(f"Error saving CSV file: {e}")
         except Exception as e:
             self.logger.error(f"An unexpected error occurred during CSV saving: {e}")
 
         if latest_json_file_path and latest_csv_file_path:
-            self.logger.info(
-                f"Load process completed for {len(data)} papers. Latest files are at: {latest_json_file_path} and {latest_csv_file_path}"
-            )
+            self.logger.info(f"Load process completed for {len(data)} papers. Latest files are at: {latest_json_file_path} and {latest_csv_file_path}")
         else:
-            self.logger.warning(
-                f"Load process completed for {len(data)} papers, but one or both latest file paths were not set due to errors."
-            )
+            self.logger.warning(f"Load process completed for {len(data)} papers, but one or both latest file paths were not set due to errors.")
 
     def run(self):
         self.logger.info(f"Starting ETL pipeline: {self.name}")
         try:
             extracted_data = self.extract()
             if not extracted_data:
-                self.logger.warning(
-                    "Extraction yielded no data. Skipping transform and load."
-                )
+                self.logger.warning("Extraction yielded no data. Skipping transform and load.")
                 return
 
             transformed_data = self.transform(extracted_data)
@@ -298,9 +266,7 @@ class ADHDPublicationETL(BaseETL):
             self.load(transformed_data)
             self.logger.info(f"ETL pipeline: {self.name} completed successfully.")
         except Exception as e:
-            self.logger.error(
-                f"Error during ETL pipeline: {self.name}: {e}", exc_info=True
-            )
+            self.logger.error(f"Error during ETL pipeline: {self.name}: {e}", exc_info=True)
             # Depending on desired behavior, you might re-raise or handle specific exceptions differently
             # For now, just logging and exiting the run method
 

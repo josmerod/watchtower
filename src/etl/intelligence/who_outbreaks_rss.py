@@ -10,13 +10,12 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("WHOOutbreaksETL")
 
@@ -36,9 +35,9 @@ def _parse_date(date_str: str | None) -> str | None:
             return date_str
 
 
-def fetch_who_outbreaks() -> List[Dict[str, Any]]:
+def fetch_who_outbreaks() -> list[dict[str, Any]]:
     logger.info(f"Fetching WHO Outbreaks RSS: {FEED_URL}")
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(FEED_URL)
     except Exception as e:
@@ -67,7 +66,7 @@ def fetch_who_outbreaks() -> List[Dict[str, Any]]:
     return entries
 
 
-def save_who(entries: List[Dict[str, Any]]) -> None:
+def save_who(entries: list[dict[str, Any]]) -> None:
     if not entries:
         logger.info("No WHO outbreak entries to save")
         return
@@ -98,4 +97,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

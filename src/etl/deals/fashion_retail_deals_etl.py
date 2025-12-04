@@ -15,12 +15,10 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -141,7 +139,7 @@ class FashionRetailDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract fashion and retail deals from multiple sources."""
         logger.info("Starting fashion & retail deals extraction...")
 
@@ -154,7 +152,7 @@ class FashionRetailDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} fashion & retail deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _get_curated_fashion_retail_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_fashion_retail_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of fashion and retail deals."""
         curated = [
             # European Fashion Deals
@@ -646,7 +644,7 @@ class FashionRetailDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated fashion & retail deals")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform fashion and retail deals data."""
         logger.info("Starting fashion & retail deals transformation...")
 
@@ -701,14 +699,12 @@ class FashionRetailDealsETL(BaseETL):
                 continue
 
         # Sort by fashion score and discount percentage
-        transformed_deals.sort(
-            key=lambda x: (x["fashion_score"], x["discount_percentage"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["fashion_score"], x["discount_percentage"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} fashion & retail deals")
         return transformed_deals
 
-    def _calculate_fashion_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_fashion_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate fashion value score for ranking deals."""
         score = 0.0
 
@@ -812,7 +808,7 @@ class FashionRetailDealsETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_shopping_tier(self, deal: Dict[str, Any]) -> str:
+    def _determine_shopping_tier(self, deal: dict[str, Any]) -> str:
         """Determine shopping tier based on brand, platform, and value."""
         brand_tier = deal.get("brand_tier", "").lower()
         platform = deal.get("platform", "").lower()
@@ -820,30 +816,19 @@ class FashionRetailDealsETL(BaseETL):
         quality = deal.get("quality_grade", "").lower()
 
         # Luxury tier indicators
-        if brand_tier == "luxury" and savings > 75:
-            return "luxury_deal"
-        elif (
-            any(name in platform for name in ["nordstrom", "rue la la"])
-            and brand_tier == "luxury"
-        ):
+        if brand_tier == "luxury" and savings > 75 or (any(name in platform for name in ["nordstrom", "rue la la"]) and brand_tier == "luxury"):
             return "luxury_deal"
 
         # Premium tier indicators
-        if brand_tier in ["designer", "premium"] and savings > 50:
-            return "premium_deal"
-        elif quality == "premium" and savings > 100:
+        if brand_tier in ["designer", "premium"] and savings > 50 or quality == "premium" and savings > 100:
             return "premium_deal"
 
         # Value tier indicators
-        if any(name in platform for name in ["tjx", "nordstrom rack", "6pm"]):
-            return "value_deal"
-        elif savings > 50 and deal.get("discount_percentage", 0) > 50:
+        if any(name in platform for name in ["tjx", "nordstrom rack", "6pm"]) or savings > 50 and deal.get("discount_percentage", 0) > 50:
             return "value_deal"
 
         # Fast fashion tier
-        if brand_tier == "fast_fashion" or any(
-            name in platform for name in ["zara", "h&m", "uniqlo"]
-        ):
+        if brand_tier == "fast_fashion" or any(name in platform for name in ["zara", "h&m", "uniqlo"]):
             return "trend_deal"
 
         # Budget tier
@@ -852,7 +837,7 @@ class FashionRetailDealsETL(BaseETL):
 
         return "standard_deal"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed fashion and retail deals data to files."""
         try:
             # Ensure output directory exists
@@ -872,9 +857,7 @@ class FashionRetailDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} fashion & retail deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} fashion & retail deals to {output_dir}")
             return True
 
         except Exception as e:

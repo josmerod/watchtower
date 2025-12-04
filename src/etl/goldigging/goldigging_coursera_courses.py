@@ -15,9 +15,7 @@ from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
 logger = logging.getLogger("classcentral_scraper")
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 # Constants
 BASE_OUTPUT_DIR = "data/coursera"
@@ -64,14 +62,10 @@ class CourseraScraper:
         # Set max pages based on whether this is first run
         if self.max_pages is None:
             if self.is_first_run:
-                logger.info(
-                    f"First run detected, will scrape {MAX_PAGES_FIRST_RUN} pages"
-                )
+                logger.info(f"First run detected, will scrape {MAX_PAGES_FIRST_RUN} pages")
                 self.max_pages = MAX_PAGES_FIRST_RUN
             else:
-                logger.info(
-                    f"Not first run, using default of {MAX_PAGES_SUBSEQUENT_RUN} pages"
-                )
+                logger.info(f"Not first run, using default of {MAX_PAGES_SUBSEQUENT_RUN} pages")
                 self.max_pages = MAX_PAGES_SUBSEQUENT_RUN
 
     async def scrape_courses(self) -> list[dict[str, Any]]:
@@ -93,9 +87,7 @@ class CourseraScraper:
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
                 )
                 # Stealth: mask automation to bypass Cloudflare detection
-                await context.add_init_script(
-                    "() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }"
-                )
+                await context.add_init_script("() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }")
                 page = await context.new_page()
 
                 # Visit the main site first to establish cookies
@@ -109,86 +101,55 @@ class CourseraScraper:
 
                     try:
                         await page.goto(url, timeout=60000)
-                        await page.wait_for_timeout(
-                            random.randint(5000, 8000)
-                        )  # Wait with random delay to avoid detection
+                        await page.wait_for_timeout(random.randint(5000, 8000))  # Wait with random delay to avoid detection
 
                         # Save debug info for the first page
                         if page_num == 1:
-                            debug_file = os.path.join(
-                                self.debug_dir, f"page_{page_num}.html"
-                            )
-                            debug_screenshot = os.path.join(
-                                self.debug_dir, f"page_{page_num}.png"
-                            )
+                            debug_file = os.path.join(self.debug_dir, f"page_{page_num}.html")
+                            debug_screenshot = os.path.join(self.debug_dir, f"page_{page_num}.png")
                             content = await page.content()
                             with open(debug_file, "w", encoding="utf-8") as f:
                                 f.write(content)
                             await page.screenshot(path=debug_screenshot)
-                            logger.info(
-                                f"Saved debug info to {debug_file} and {debug_screenshot}"
-                            )
+                            logger.info(f"Saved debug info to {debug_file} and {debug_screenshot}")
 
                         # Extract page content, fallback to cloudscraper if Cloudflare challenge
                         content = await page.content()
                         # Detect Cloudflare challenge page
-                        if (
-                            "Just a moment" in content
-                            or "needs to review the security" in content
-                        ):
-                            logger.warning(
-                                f"Cloudflare challenge detected on page {page_num}, falling back to cloudscraper"
-                            )
+                        if "Just a moment" in content or "needs to review the security" in content:
+                            logger.warning(f"Cloudflare challenge detected on page {page_num}, falling back to cloudscraper")
                             try:
                                 import cloudscraper
 
                                 scraper = cloudscraper.create_scraper()
                                 resp = scraper.get(
                                     url,
-                                    headers={
-                                        "User-Agent": context._options.get(
-                                            "user_agent", ""
-                                        )
-                                    },
+                                    headers={"User-Agent": context._options.get("user_agent", "")},
                                 )  # reuse UA
                                 content = resp.text
                             except ImportError:
-                                logger.error(
-                                    "cloudscraper not installed; install via 'pip install cloudscraper'"
-                                )
+                                logger.error("cloudscraper not installed; install via 'pip install cloudscraper'")
                         # Parse content
                         soup = BeautifulSoup(content, "html.parser")
 
                         # Find all course listings - they're in a list structure
-                        course_elements = soup.find_all(
-                            "li", class_="course-list-course"
-                        )
+                        course_elements = soup.find_all("li", class_="course-list-course")
 
                         if not course_elements:
                             # Try alternative selector
-                            course_elements = soup.select(
-                                "div.catalog-grid__results li"
-                            )
+                            course_elements = soup.select("div.catalog-grid__results li")
 
                         if not course_elements:
                             # Save debug info
-                            debug_file = os.path.join(
-                                self.debug_dir, f"page_{page_num}_failed.html"
-                            )
-                            debug_screenshot = os.path.join(
-                                self.debug_dir, f"page_{page_num}_failed.png"
-                            )
+                            debug_file = os.path.join(self.debug_dir, f"page_{page_num}_failed.html")
+                            debug_screenshot = os.path.join(self.debug_dir, f"page_{page_num}_failed.png")
                             with open(debug_file, "w", encoding="utf-8") as f:
                                 f.write(content)
                             await page.screenshot(path=debug_screenshot)
-                            logger.error(
-                                f"No courses found on page {page_num}, saved debug info"
-                            )
+                            logger.error(f"No courses found on page {page_num}, saved debug info")
                             break
 
-                        logger.info(
-                            f"Found {len(course_elements)} course elements on page {page_num}"
-                        )
+                        logger.info(f"Found {len(course_elements)} course elements on page {page_num}")
 
                         # Process courses
                         for course_element in course_elements:
@@ -228,9 +189,7 @@ class CourseraScraper:
                     course_data["url"] = f"https://www.classcentral.com{relative_url}"
 
             # Extract institution
-            institution_element = course_element.find(
-                "a", href=lambda x: x and "/institution/" in x
-            )
+            institution_element = course_element.find("a", href=lambda x: x and "/institution/" in x)
             if institution_element:
                 course_data["institution"] = institution_element.text.strip()
 
@@ -255,19 +214,14 @@ class CourseraScraper:
                         course_data["duration"] = text_content
                     elif "icon-calendar-charcoal" in icon_class:
                         course_data["start_date"] = text_content
-                    elif (
-                        "icon-tag-red" in icon_class
-                        or "icon-tag-charcoal" in icon_class
-                    ):
+                    elif "icon-tag-red" in icon_class or "icon-tag-charcoal" in icon_class:
                         course_data["cost"] = text_content
                         course_data["is_free"] = "Free" in text_content
 
             # Extract rating
             rating_element = course_element.find("span", class_="cmpt-rating-medium")
             if rating_element:
-                filled_stars = rating_element.find_all(
-                    "i", class_=lambda c: c and "icon-star-" in c and "empty" not in c
-                )
+                filled_stars = rating_element.find_all("i", class_=lambda c: c and "icon-star-" in c and "empty" not in c)
                 course_data["rating"] = len(filled_stars)
 
             # Extract subject and language from track props
@@ -277,9 +231,7 @@ class CourseraScraper:
                     props = json.loads(track_props["data-track-props"])
                     course_data["subject"] = props.get("course_subject", "")
                     course_data["language"] = props.get("course_language", "")
-                    course_data["certificate_offered"] = props.get(
-                        "course_certificate", False
-                    )
+                    course_data["certificate_offered"] = props.get("course_certificate", False)
                 except json.JSONDecodeError:
                     pass
 
@@ -304,9 +256,7 @@ class CourseraScraper:
         try:
             # Ensure we have at least some data before saving
             if len(courses) < 3:
-                logger.warning(
-                    f"Found only {len(courses)} courses, which is suspiciously low. Check scraping."
-                )
+                logger.warning(f"Found only {len(courses)} courses, which is suspiciously low. Check scraping.")
 
             # If the file already exists, we don't delete it, we update the contents
             all_courses = courses
@@ -315,34 +265,24 @@ class CourseraScraper:
                     with open(self.courses_file, encoding="utf-8") as f:
                         existing_courses = json.load(f)
                         all_courses = existing_courses + courses
-                        logger.info(
-                            f"Combined {len(courses)} new courses with {len(existing_courses)} existing courses"
-                        )
+                        logger.info(f"Combined {len(courses)} new courses with {len(existing_courses)} existing courses")
                 except json.JSONDecodeError:
-                    logger.warning(
-                        "Error reading existing courses file. Starting fresh."
-                    )
+                    logger.warning("Error reading existing courses file. Starting fresh.")
 
             # Deduplicate courses before saving
-            deduplicated_courses, removed_count = deduplicate_courses(
-                all_courses, key_field="url", prefer_newer=True
-            )
+            deduplicated_courses, removed_count = deduplicate_courses(all_courses, key_field="url", prefer_newer=True)
             if removed_count > 0:
                 logger.info(f"Removed {removed_count} duplicate courses")
 
             # Sort courses by scraped_at date in descending order (newest first)
             if deduplicated_courses and "scraped_at" in deduplicated_courses[0]:
-                deduplicated_courses.sort(
-                    key=lambda x: x.get("scraped_at", ""), reverse=True
-                )
+                deduplicated_courses.sort(key=lambda x: x.get("scraped_at", ""), reverse=True)
                 logger.info("Sorted courses by newest first before saving")
 
             # Save courses as JSON
             with open(self.courses_file, "w", encoding="utf-8") as f:
                 json.dump(deduplicated_courses, f, ensure_ascii=False, indent=2)
-            logger.info(
-                f"Saved {len(deduplicated_courses)} unique courses to {self.courses_file}"
-            )
+            logger.info(f"Saved {len(deduplicated_courses)} unique courses to {self.courses_file}")
 
             # Update last run information
             last_run_info = {
@@ -423,12 +363,8 @@ if __name__ == "__main__":
     # Parse command line arguments
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Scrape Coursera courses from classcentral.com provider page"
-    )
-    parser.add_argument(
-        "--max-pages", type=int, help="Maximum number of pages to scrape", default=10
-    )
+    parser = argparse.ArgumentParser(description="Scrape Coursera courses from classcentral.com provider page")
+    parser.add_argument("--max-pages", type=int, help="Maximum number of pages to scrape", default=10)
     args = parser.parse_args()
 
     main(max_pages=args.max_pages)

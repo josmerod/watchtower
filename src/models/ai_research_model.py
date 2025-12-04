@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, List
 
 from pydantic import Field, HttpUrl
 
@@ -13,6 +12,7 @@ from src.models.base import TimestampedModel
 
 class ResearchDomain(str, Enum):
     """AI Research Domains."""
+
     NLP = "Natural Language Processing"
     CV = "Computer Vision"
     RL = "Reinforcement Learning"
@@ -25,6 +25,7 @@ class ResearchDomain(str, Enum):
 
 class ImplementationComplexity(str, Enum):
     """Implementation complexity levels."""
+
     LOW = "Low"
     MEDIUM = "Medium"
     HIGH = "High"
@@ -36,36 +37,41 @@ class AIResearchPaper(TimestampedModel):
 
     # Core Metadata
     title: str = Field(description="Paper title")
-    authors: List[str] = Field(default=[], description="List of authors")
+    authors: list[str] = Field(default=[], description="List of authors")
     published_at: datetime = Field(description="Publication date")
     url: HttpUrl = Field(description="Link to the paper (e.g., arXiv)")
     pdf_url: HttpUrl | None = Field(default=None, description="Link to PDF")
     source: str = Field(description="Source name (e.g., arXiv, PapersWithCode)")
-    
+
     # Content
     abstract: str = Field(description="Paper abstract")
     summary: str | None = Field(default=None, description="AI-generated summary")
-    key_takeaways: List[str] = Field(default=[], description="Key takeaways")
-    
+    key_takeaways: list[str] = Field(default=[], description="Key takeaways")
+
     # Classification
     primary_domain: ResearchDomain = Field(default=ResearchDomain.OTHER, description="Primary AI domain")
-    tags: List[str] = Field(default=[], description="Research tags")
-    
+    tags: list[str] = Field(default=[], description="Research tags")
+
     # Intelligence Metrics
     trend_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Trend momentum score")
     complexity: ImplementationComplexity = Field(default=ImplementationComplexity.MEDIUM, description="Implementation complexity")
     complexity_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Numeric complexity score")
     industry_impact: str = Field(default="Pending Analysis", description="Qualitative industry impact assessment")
     industry_impact_score: float = Field(default=0.0, ge=0.0, le=100.0, description="Potential industry impact")
-    implementation_probability: float = Field(default=0.0, ge=0.0, le=100.0, description="Implementation probability percentage")
-    
+    implementation_probability: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=100.0,
+        description="Implementation probability percentage",
+    )
+
     # Implementation details
     code_url: HttpUrl | None = Field(default=None, description="Link to code repository")
-    frameworks: List[str] = Field(default=[], description="Frameworks used (PyTorch, TensorFlow, etc.)")
-    
+    frameworks: list[str] = Field(default=[], description="Frameworks used (PyTorch, TensorFlow, etc.)")
+
     # Opportunities
-    implementation_opportunities: List[str] = Field(default=[], description="Identified implementation opportunities")
-    
+    implementation_opportunities: list[str] = Field(default=[], description="Identified implementation opportunities")
+
     class Config:
         json_schema_extra = {
             "examples": [
@@ -78,7 +84,7 @@ class AIResearchPaper(TimestampedModel):
                     "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks...",
                     "primary_domain": "Natural Language Processing",
                     "trend_score": 98.5,
-                    "complexity": "High"
+                    "complexity": "High",
                 }
             ]
         }

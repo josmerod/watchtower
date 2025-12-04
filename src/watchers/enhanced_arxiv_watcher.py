@@ -3,7 +3,7 @@
 import json
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from typing import Any
 
 import feedparser
 
@@ -11,8 +11,7 @@ from src.watchers.base_watcher import BaseWatcher
 
 
 class EnhancedArxivWatcher(BaseWatcher):
-    """
-    Enhanced watcher for ArXiv papers with expanded topic coverage.
+    """Enhanced watcher for ArXiv papers with expanded topic coverage.
 
     This watcher monitors ArXiv for papers in AI/ML, software engineering,
     data engineering, architecture, and related technical fields.
@@ -221,8 +220,7 @@ class EnhancedArxivWatcher(BaseWatcher):
         days_back: int = 7,
         enable_keyword_filtering: bool = True,
     ):
-        """
-        Initialize the Enhanced ArXiv watcher.
+        """Initialize the Enhanced ArXiv watcher.
 
         Args:
             name (str): Unique name for this watcher
@@ -238,16 +236,12 @@ class EnhancedArxivWatcher(BaseWatcher):
         date_since = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
         # Build the complete search URL with expanded categories
-        search_query = (
-            f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
-        )
+        search_query = f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
 
         # Add keyword-based search if enabled
         if enable_keyword_filtering:
             # Create keyword search for titles and abstracts
-            keyword_query = " OR ".join(
-                [f'"{keyword}"' for keyword in self.RELEVANT_KEYWORDS[:20]]
-            )  # Limit to avoid URL length issues
+            keyword_query = " OR ".join([f'"{keyword}"' for keyword in self.RELEVANT_KEYWORDS[:20]])  # Limit to avoid URL length issues
             search_query += f" AND (ti:({keyword_query}) OR abs:({keyword_query}))"
 
         self.api_url = f"{self.ARXIV_API_BASE}?search_query={search_query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
@@ -259,9 +253,8 @@ class EnhancedArxivWatcher(BaseWatcher):
         # Initialize the base watcher
         super().__init__(name, self.api_url, check_interval)
 
-    def extract_value(self, xml_content: str) -> List[Dict[str, Any]]:
-        """
-        Extract papers from the ArXiv API response with enhanced metadata.
+    def extract_value(self, xml_content: str) -> list[dict[str, Any]]:
+        """Extract papers from the ArXiv API response with enhanced metadata.
 
         Args:
             xml_content (str): XML response from ArXiv API
@@ -283,9 +276,7 @@ class EnhancedArxivWatcher(BaseWatcher):
             if hasattr(entry, "tags"):
                 for tag in entry.tags:
                     categories.append(tag.term)
-                    category_descriptions.append(
-                        self.TECHNICAL_CATEGORIES.get(tag.term, tag.term)
-                    )
+                    category_descriptions.append(self.TECHNICAL_CATEGORIES.get(tag.term, tag.term))
 
             # Extract and process summary for keyword presence
             summary = entry.summary
@@ -293,16 +284,10 @@ class EnhancedArxivWatcher(BaseWatcher):
             combined_text = f"{title.lower()} {summary.lower()}"
 
             # Identify relevant keywords present in the paper
-            found_keywords = [
-                keyword
-                for keyword in self.RELEVANT_KEYWORDS
-                if keyword.lower() in combined_text
-            ]
+            found_keywords = [keyword for keyword in self.RELEVANT_KEYWORDS if keyword.lower() in combined_text]
 
             # Calculate relevance score based on keyword matches and categories
-            relevance_score = self._calculate_relevance_score(
-                categories, found_keywords, title, summary
-            )
+            relevance_score = self._calculate_relevance_score(categories, found_keywords, title, summary)
 
             # Extract technical concepts
             technical_concepts = self._extract_technical_concepts(combined_text)
@@ -323,11 +308,7 @@ class EnhancedArxivWatcher(BaseWatcher):
                 "updated": entry.updated,
                 "link": entry.link,
                 "pdf_url": next(
-                    (
-                        link.href
-                        for link in entry.links
-                        if link.rel == "alternate" and link.type == "application/pdf"
-                    ),
+                    (link.href for link in entry.links if link.rel == "alternate" and link.type == "application/pdf"),
                     None,
                 ),
                 "comment": getattr(entry, "arxiv_comment", None),
@@ -337,24 +318,11 @@ class EnhancedArxivWatcher(BaseWatcher):
                 "technical_concepts": technical_concepts,
                 "research_areas": research_areas,
                 "primary_category": categories[0] if categories else None,
-                "is_ai_ml": any(
-                    cat.startswith(
-                        ("cs.AI", "cs.LG", "cs.CL", "cs.CV", "cs.NE", "stat.ML")
-                    )
-                    for cat in categories
-                ),
-                "is_software_engineering": any(
-                    cat.startswith(("cs.SE", "cs.PL", "cs.SY")) for cat in categories
-                ),
-                "is_data_engineering": any(
-                    cat.startswith(("cs.DB", "cs.DS", "cs.IR")) for cat in categories
-                ),
-                "is_architecture": any(
-                    cat.startswith(("cs.DC", "cs.AR", "cs.NI")) for cat in categories
-                ),
-                "is_security": any(
-                    cat.startswith(("cs.CR", "cs.CY")) for cat in categories
-                ),
+                "is_ai_ml": any(cat.startswith(("cs.AI", "cs.LG", "cs.CL", "cs.CV", "cs.NE", "stat.ML")) for cat in categories),
+                "is_software_engineering": any(cat.startswith(("cs.SE", "cs.PL", "cs.SY")) for cat in categories),
+                "is_data_engineering": any(cat.startswith(("cs.DB", "cs.DS", "cs.IR")) for cat in categories),
+                "is_architecture": any(cat.startswith(("cs.DC", "cs.AR", "cs.NI")) for cat in categories),
+                "is_security": any(cat.startswith(("cs.CR", "cs.CY")) for cat in categories),
                 # Processing metadata
                 "extraction_timestamp": datetime.now().isoformat(),
                 "watcher_version": "enhanced_v1.0",
@@ -367,15 +335,11 @@ class EnhancedArxivWatcher(BaseWatcher):
 
         self.logger.info(f"Found {len(papers)} enhanced papers")
         if papers:
-            self.logger.info(
-                f"Top relevance scores: {[p['relevance_score'] for p in papers[:5]]}"
-            )
+            self.logger.info(f"Top relevance scores: {[p['relevance_score'] for p in papers[:5]]}")
 
         return papers
 
-    def _calculate_relevance_score(
-        self, categories: List[str], keywords: List[str], title: str, summary: str
-    ) -> float:
+    def _calculate_relevance_score(self, categories: list[str], keywords: list[str], title: str, summary: str) -> float:
         """Calculate relevance score based on multiple factors."""
         score = 0.0
 
@@ -422,7 +386,7 @@ class EnhancedArxivWatcher(BaseWatcher):
 
         return round(score, 2)
 
-    def _extract_technical_concepts(self, text: str) -> List[str]:
+    def _extract_technical_concepts(self, text: str) -> list[str]:
         """Extract technical concepts from paper text."""
         concepts = []
 
@@ -477,9 +441,7 @@ class EnhancedArxivWatcher(BaseWatcher):
 
         return list(set(concepts))  # Remove duplicates
 
-    def _classify_research_areas(
-        self, categories: List[str], keywords: List[str]
-    ) -> List[str]:
+    def _classify_research_areas(self, categories: list[str], keywords: list[str]) -> list[str]:
         """Classify papers into research areas based on categories and keywords."""
         areas = []
 
@@ -530,26 +492,19 @@ class EnhancedArxivWatcher(BaseWatcher):
         return areas
 
     def fetch_page(self) -> str:
-        """
-        Fetch the ArXiv API response with dynamic date updates.
+        """Fetch the ArXiv API response with dynamic date updates.
 
         Returns:
             str: XML content from ArXiv API
         """
         # Update the date range to always be relative to current time
-        date_since = (datetime.now() - timedelta(days=self.days_back)).strftime(
-            "%Y-%m-%d"
-        )
+        date_since = (datetime.now() - timedelta(days=self.days_back)).strftime("%Y-%m-%d")
         categories = " OR ".join(self.TECHNICAL_CATEGORIES.keys())
-        search_query = (
-            f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
-        )
+        search_query = f"cat:({categories}) AND submittedDate:[{date_since}000000 TO 999999999999]"
 
         # Add keyword filtering if enabled
         if self.enable_keyword_filtering:
-            keyword_query = " OR ".join(
-                [f'"{keyword}"' for keyword in self.RELEVANT_KEYWORDS[:20]]
-            )
+            keyword_query = " OR ".join([f'"{keyword}"' for keyword in self.RELEVANT_KEYWORDS[:20]])
             search_query += f" AND (ti:({keyword_query}) OR abs:({keyword_query}))"
 
         current_url = f"{self.ARXIV_API_BASE}?search_query={search_query}&sortBy=submittedDate&sortOrder=descending&max_results={self.max_results}"
@@ -557,11 +512,8 @@ class EnhancedArxivWatcher(BaseWatcher):
 
         return super().fetch_page()
 
-    def trigger_alarm(
-        self, old_papers: List[Dict[str, Any]], new_papers: List[Dict[str, Any]]
-    ):
-        """
-        Enhanced alarm processing for new papers.
+    def trigger_alarm(self, old_papers: list[dict[str, Any]], new_papers: list[dict[str, Any]]):
+        """Enhanced alarm processing for new papers.
 
         Args:
             old_papers: Previously fetched papers
@@ -574,30 +526,20 @@ class EnhancedArxivWatcher(BaseWatcher):
         old_ids = {paper["id"] for paper in old_papers} if old_papers else set()
 
         # Identify high-impact new papers
-        new_high_impact_papers = [
-            paper
-            for paper in new_papers
-            if paper["id"] not in old_ids and paper.get("relevance_score", 0) >= 5.0
-        ]
+        new_high_impact_papers = [paper for paper in new_papers if paper["id"] not in old_ids and paper.get("relevance_score", 0) >= 5.0]
 
         if new_high_impact_papers:
-            self.logger.warning(
-                f"HIGH-IMPACT PAPERS DETECTED: {len(new_high_impact_papers)} papers with high relevance scores"
-            )
+            self.logger.warning(f"HIGH-IMPACT PAPERS DETECTED: {len(new_high_impact_papers)} papers with high relevance scores")
 
             # Save high-impact papers separately
             self._save_papers(new_high_impact_papers, "high_impact_papers")
 
             # Log details about high-impact papers
             for paper in new_high_impact_papers:
-                self.logger.info(
-                    f"High-impact paper: {paper['title'][:100]}... "
-                    f"(Score: {paper['relevance_score']}, Areas: {paper['research_areas']})"
-                )
+                self.logger.info(f"High-impact paper: {paper['title'][:100]}... " f"(Score: {paper['relevance_score']}, Areas: {paper['research_areas']})")
 
-    def _save_papers(self, papers: List[Dict[str, Any]], filename: str):
-        """
-        Save papers to a JSON file with enhanced metadata.
+    def _save_papers(self, papers: list[dict[str, Any]], filename: str):
+        """Save papers to a JSON file with enhanced metadata.
 
         Args:
             papers (List[Dict[str, Any]]): Papers to save
@@ -613,14 +555,8 @@ class EnhancedArxivWatcher(BaseWatcher):
                 "watcher_name": self.name,
                 "categories_covered": list(self.TECHNICAL_CATEGORIES.keys()),
                 "keyword_filtering_enabled": self.enable_keyword_filtering,
-                "average_relevance_score": (
-                    sum(p.get("relevance_score", 0) for p in papers) / len(papers)
-                    if papers
-                    else 0
-                ),
-                "research_areas_distribution": self._calculate_area_distribution(
-                    papers
-                ),
+                "average_relevance_score": (sum(p.get("relevance_score", 0) for p in papers) / len(papers) if papers else 0),
+                "research_areas_distribution": self._calculate_area_distribution(papers),
             },
             "papers": papers,
         }
@@ -630,11 +566,9 @@ class EnhancedArxivWatcher(BaseWatcher):
                 json.dump(enhanced_data, f, ensure_ascii=False, indent=2)
             self.logger.info(f"Saved {len(papers)} enhanced papers to {filepath}")
         except Exception as e:
-            self.logger.error(f"Error saving enhanced papers to {filepath}: {str(e)}")
+            self.logger.error(f"Error saving enhanced papers to {filepath}: {e!s}")
 
-    def _calculate_area_distribution(
-        self, papers: List[Dict[str, Any]]
-    ) -> Dict[str, int]:
+    def _calculate_area_distribution(self, papers: list[dict[str, Any]]) -> dict[str, int]:
         """Calculate distribution of papers across research areas."""
         distribution = {}
         for paper in papers:
@@ -643,8 +577,7 @@ class EnhancedArxivWatcher(BaseWatcher):
         return distribution
 
     def has_changed(self, old_value: Any, new_value: Any) -> bool:
-        """
-        Determine if the ArXiv papers have changed significantly enough to trigger an alarm.
+        """Determine if the ArXiv papers have changed significantly enough to trigger an alarm.
 
         Args:
             old_value: Previously extracted papers (can be None for first run)
@@ -666,16 +599,8 @@ class EnhancedArxivWatcher(BaseWatcher):
             return True
 
         # Create sets of paper IDs for comparison
-        old_ids = {
-            paper["id"]
-            for paper in old_papers
-            if isinstance(paper, dict) and "id" in paper
-        }
-        new_ids = {
-            paper["id"]
-            for paper in new_papers
-            if isinstance(paper, dict) and "id" in paper
-        }
+        old_ids = {paper["id"] for paper in old_papers if isinstance(paper, dict) and "id" in paper}
+        new_ids = {paper["id"] for paper in new_papers if isinstance(paper, dict) and "id" in paper}
 
         # Check for new papers (papers in new_papers but not in old_papers)
         new_paper_ids = new_ids - old_ids
@@ -689,23 +614,13 @@ class EnhancedArxivWatcher(BaseWatcher):
 
         if has_new_papers:
             # Check if any new papers have high relevance scores
-            high_relevance_new_papers = [
-                paper
-                for paper in new_papers
-                if isinstance(paper, dict)
-                and paper.get("id") in new_paper_ids
-                and paper.get("relevance_score", 0) >= 4.0
-            ]
+            high_relevance_new_papers = [paper for paper in new_papers if isinstance(paper, dict) and paper.get("id") in new_paper_ids and paper.get("relevance_score", 0) >= 4.0]
 
             # Log information about changes
-            self.logger.info(
-                f"Paper comparison: {len(old_papers)} old vs {len(new_papers)} new papers"
-            )
+            self.logger.info(f"Paper comparison: {len(old_papers)} old vs {len(new_papers)} new papers")
             self.logger.info(f"New papers detected: {len(new_paper_ids)}")
             if high_relevance_new_papers:
-                self.logger.info(
-                    f"High-relevance new papers: {len(high_relevance_new_papers)}"
-                )
+                self.logger.info(f"High-relevance new papers: {len(high_relevance_new_papers)}")
 
             # Trigger alarm if there are new papers (any new papers are interesting for ArXiv monitoring)
             return True
@@ -713,14 +628,10 @@ class EnhancedArxivWatcher(BaseWatcher):
         # Check for significant changes in paper count (might indicate API issues or major events)
         old_count = len(old_papers)
         new_count = len(new_papers)
-        count_change_percentage = (
-            abs(new_count - old_count) / old_count if old_count > 0 else 0
-        )
+        count_change_percentage = abs(new_count - old_count) / old_count if old_count > 0 else 0
 
         if count_change_percentage > 0.5:  # More than 50% change in paper count
-            self.logger.info(
-                f"Significant change in paper count: {old_count} -> {new_count} ({count_change_percentage:.1%})"
-            )
+            self.logger.info(f"Significant change in paper count: {old_count} -> {new_count} ({count_change_percentage:.1%})")
             return True
 
         # No significant changes detected

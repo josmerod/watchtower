@@ -14,9 +14,7 @@ from src.utils.logging import get_logger
 logger = get_logger("MeneameETL")
 
 
-def get_meneame_articles(
-    max_retries: int = 3, retry_delay: int = 5
-) -> dict[str, list[dict[str, Any]]]:
+def get_meneame_articles(max_retries: int = 3, retry_delay: int = 5) -> dict[str, list[dict[str, Any]]]:
     """Fetches articles from Meneame RSS feeds for general and tecnologia sections.
 
     Args:
@@ -65,9 +63,7 @@ def get_meneame_articles(
 
                         # Handle tags/categories if available
                         if hasattr(entry, "tags"):
-                            article["tags"] = [
-                                tag.term for tag in entry.tags if hasattr(tag, "term")
-                            ]
+                            article["tags"] = [tag.term for tag in entry.tags if hasattr(tag, "term")]
                         else:
                             article["tags"] = []
 
@@ -78,30 +74,20 @@ def get_meneame_articles(
 
                 break
             except Exception as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e}"
-                )
+                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e}")
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                 else:
-                    logger.error(
-                        f"Error fetching data from RSS feed {rss_url} after {max_retries} attempts: {e}"
-                    )
+                    logger.error(f"Error fetching data from RSS feed {rss_url} after {max_retries} attempts: {e}")
 
         # Remove duplicates based on article_id and title
         unique_articles: dict[str, dict[str, Any]] = {}
         unique_titles: set = set()
         for art in feed_articles:
             title = art.get("title", "").strip()
-            identifier = (
-                art.get("article_id") if art.get("article_id") else art.get("url", "")
-            )
-            if (
-                title
-                and title not in unique_titles
-                and identifier not in unique_articles
-            ):
+            identifier = art.get("article_id") if art.get("article_id") else art.get("url", "")
+            if title and title not in unique_titles and identifier not in unique_articles:
                 unique_titles.add(title)
                 unique_articles[identifier] = art
 
@@ -164,9 +150,7 @@ def main():
 
         for feed_type, articles in articles_by_feed.items():
             if not articles:
-                logger.warning(
-                    f"No articles retrieved for Meneame {feed_type}, skipping ETL for this feed"
-                )
+                logger.warning(f"No articles retrieved for Meneame {feed_type}, skipping ETL for this feed")
                 continue
 
             # Process articles
@@ -174,9 +158,7 @@ def main():
 
             # Save processed data as JSON and CSV
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            json_file = os.path.join(
-                output_dir, f"meneame_{feed_type}_{timestamp}.json"
-            )
+            json_file = os.path.join(output_dir, f"meneame_{feed_type}_{timestamp}.json")
             with open(json_file, "w") as f:
                 json.dump(processed_articles, f, indent=2)
             latest_json = os.path.join(output_dir, f"meneame_{feed_type}_latest.json")
@@ -191,9 +173,7 @@ def main():
             latest_csv = os.path.join(output_dir, f"meneame_{feed_type}_latest.csv")
             pd.DataFrame(processed_articles).to_csv(latest_csv, index=False)
 
-            logger.info(
-                f"Saved {len(processed_articles)} processed articles for {feed_type} to {json_file} and {csv_file}"
-            )
+            logger.info(f"Saved {len(processed_articles)} processed articles for {feed_type} to {json_file} and {csv_file}")
 
     except Exception as e:
         logger.error(f"Error in Meneame ETL process: {e}", exc_info=True)

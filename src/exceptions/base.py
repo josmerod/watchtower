@@ -245,9 +245,7 @@ class ResourceNotFoundError(WatchtowerError):
 
         kwargs["context"] = context
         kwargs["error_code"] = kwargs.get("error_code", "WT_RESOURCE_NOT_FOUND")
-        kwargs["user_message"] = (
-            f"The requested {resource_type or 'resource'} was not found."
-        )
+        kwargs["user_message"] = f"The requested {resource_type or 'resource'} was not found."
         super().__init__(message, **kwargs)
 
 

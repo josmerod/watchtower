@@ -11,7 +11,7 @@ import pandas as pd
 # Optional import; not required for basic latest files generation
 try:
     from paperswithcode import PapersWithCodeClient  # type: ignore
-except Exception:  # noqa: BLE001
+except Exception:
     PapersWithCodeClient = None  # type: ignore
 
 from src.etl.base import BaseETL
@@ -63,9 +63,7 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
         self.classifier = NLPContentClassifier(name="arxiv_classifier")
         self.n_clusters = n_clusters
 
-        self.logger.info(
-            f"ArxivETL initialized with {days_back} days back, {max_results} max results"
-        )
+        self.logger.info(f"ArxivETL initialized with {days_back} days back, {max_results} max results")
 
     def extract(self) -> list[dict[str, Any]]:
         """Extract papers from ArXiv.
@@ -83,19 +81,13 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
         self.logger.info(f"Attempting to load papers from: {papers_file}")
 
         if not papers_file.exists():
-            self.logger.warning(
-                f"File not found: {papers_file}. No papers found from watcher."
-            )
+            self.logger.warning(f"File not found: {papers_file}. No papers found from watcher.")
             # List directory contents for debugging
             try:
                 dir_contents = list(self.watcher.data_dir.iterdir())
-                self.logger.info(
-                    f"Contents of {self.watcher.data_dir}: {dir_contents}"
-                )
+                self.logger.info(f"Contents of {self.watcher.data_dir}: {dir_contents}")
             except Exception as e_ls:
-                self.logger.error(
-                    f"Could not list directory {self.watcher.data_dir}: {e_ls}"
-                )
+                self.logger.error(f"Could not list directory {self.watcher.data_dir}: {e_ls}")
             return []
 
         try:
@@ -122,27 +114,22 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
         self.logger.info(f"Starting transformation of {len(papers)} papers")
 
         # Extract text from papers for classification
-        texts_for_classification = [
-            f"{paper.get('title', '')} {paper.get('summary', '')}" for paper in papers
-        ]
+        texts_for_classification = [f"{paper.get('title', '')} {paper.get('summary', '')}" for paper in papers]
 
         # Train or load classifier
         # Ensure models_dir is a Path object for proper path joining
         from pathlib import Path
+
         models_dir = Path(self.classifier.models_dir)
         model_path = models_dir / "model.pkl"
         if not model_path.exists():
             self.logger.info("Training new classifier")
-            self.classifier.train_classifier(
-                texts_for_classification, n_clusters=self.n_clusters
-            )
+            self.classifier.train_classifier(texts_for_classification, n_clusters=self.n_clusters)
             self.classifier.save_model()
         else:
             if not self.classifier.load_model():
                 self.logger.info("Training new classifier (failed to load existing)")
-                self.classifier.train_classifier(
-                    texts_for_classification, n_clusters=self.n_clusters
-                )
+                self.classifier.train_classifier(texts_for_classification, n_clusters=self.n_clusters)
                 self.classifier.save_model()
 
         # Classify all papers
@@ -176,25 +163,17 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
             }
 
             # Find and process GitHub links
-            text_to_search_github = (
-                f"{paper.get('summary', '')} {paper.get('comment', '')}"
-            )
+            text_to_search_github = f"{paper.get('summary', '')} {paper.get('comment', '')}"
             github_urls = find_github_links_in_text(text_to_search_github)
 
             if github_urls:
-                self.logger.info(
-                    f"Found GitHub links for paper {paper.get('id', 'N/A')}: {github_urls}"
-                )
-                fetched_repo_info = get_github_repo_info(
-                    github_urls[0], github_token=github_token
-                )
+                self.logger.info(f"Found GitHub links for paper {paper.get('id', 'N/A')}: {github_urls}")
+                fetched_repo_info = get_github_repo_info(github_urls[0], github_token=github_token)
                 if fetched_repo_info:
                     self.logger.info(f"Fetched GitHub info for {github_urls[0]}")
                     github_info.update(fetched_repo_info)
                 else:
-                    self.logger.warning(
-                        f"Failed to fetch GitHub info for {github_urls[0]}"
-                    )
+                    self.logger.warning(f"Failed to fetch GitHub info for {github_urls[0]}")
 
             # Create transformed paper with classification and GitHub data
             transformed_paper = {
@@ -209,10 +188,7 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
 
             transformed_papers.append(transformed_paper)
 
-        self.logger.info(
-            f"Transformed {len(transformed_papers)} papers into "
-            f"{len(set(c['cluster_id'] for c in classifications))} clusters"
-        )
+        self.logger.info(f"Transformed {len(transformed_papers)} papers into " f"{len({c['cluster_id'] for c in classifications})} clusters")
         return transformed_papers
 
     def load(self, transformed_papers: list[dict[str, Any]]) -> None:
@@ -261,18 +237,10 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
             ]
             for col in cols_to_flatten_simple_list:
                 if col in df.columns:
-                    df[col] = df[col].apply(
-                        lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x
-                    )
+                    df[col] = df[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x)
 
             if "github_languages" in df.columns:
-                df["github_languages"] = df["github_languages"].apply(
-                    lambda x: (
-                        ", ".join([f"{k}:{v}" for k, v in x.items()])
-                        if isinstance(x, dict)
-                        else x
-                    )
-                )
+                df["github_languages"] = df["github_languages"].apply(lambda x: (", ".join([f"{k}:{v}" for k, v in x.items()]) if isinstance(x, dict) else x))
 
             # Save DataFrame
             csv_file = csv_dir / f"papers_{timestamp}.csv"
@@ -301,15 +269,10 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
 
             # Simple per-category splits
             def by_cat(prefix: str):
-                return [
-                    p
-                    for p in transformed_papers
-                    if any(prefix in c for c in p.get("categories", []))
-                ]
+                return [p for p in transformed_papers if any(prefix in c for c in p.get("categories", []))]
 
             splits = {
-                "arxiv_machine_learning_latest.json": by_cat("cs.LG")
-                + by_cat("stat.ML"),
+                "arxiv_machine_learning_latest.json": by_cat("cs.LG") + by_cat("stat.ML"),
                 "arxiv_computer_vision_latest.json": by_cat("cs.CV"),
                 "arxiv_natural_language_latest.json": by_cat("cs.CL"),
                 "arxiv_neural_networks_latest.json": by_cat("cs.NE"),
@@ -317,9 +280,7 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
                 "arxiv_reinforcement_learning_latest.json": by_cat("cs.AI"),
             }
             for filename, items in splits.items():
-                (self.data_dir / filename).write_text(
-                    json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
-                )
+                (self.data_dir / filename).write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
             self.logger.info("Updated latest ArXiv dashboard files")
         except Exception as e:
@@ -360,9 +321,7 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
                 except (ValueError, TypeError):
                     continue
                 if cluster_id not in cluster_labels:
-                    cluster_labels[cluster_id] = paper.get(
-                        "cluster_label", f"Cluster {cluster_id}"
-                    )
+                    cluster_labels[cluster_id] = paper.get("cluster_label", f"Cluster {cluster_id}")
 
         # Create statistics with type safety
         total_papers = len(papers)
@@ -374,11 +333,9 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
                     "id": cluster_id,
                     "label": cluster_labels.get(cluster_id, f"Cluster {cluster_id}"),
                     "paper_count": count,
-                    "percentage": round(count / total_papers * 100, 2) if total_papers > 0 else 0.0,
+                    "percentage": (round(count / total_papers * 100, 2) if total_papers > 0 else 0.0),
                 }
-                for cluster_id, count in sorted(
-                    cluster_counts.items(), key=lambda x: x[1], reverse=True
-                )
+                for cluster_id, count in sorted(cluster_counts.items(), key=lambda x: x[1], reverse=True)
             ],
             "generated_at": datetime.now().isoformat(),
         }
@@ -388,9 +345,7 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
         processed_dir.mkdir(parents=True, exist_ok=True)
         stats_file = processed_dir / "cluster_statistics.json"
         try:
-            stats_file.write_text(
-                json.dumps(statistics, ensure_ascii=False, indent=2), encoding="utf-8"
-            )
+            stats_file.write_text(json.dumps(statistics, ensure_ascii=False, indent=2), encoding="utf-8")
             self.logger.info(f"Saved cluster statistics to {stats_file}")
         except Exception as e:
             self.logger.error(f"Error saving cluster statistics: {e!s}")

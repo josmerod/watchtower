@@ -1,13 +1,12 @@
-"""
-Working ETL tests that actually pass.
+"""Working ETL tests that actually pass.
 Tests the BaseETL framework and ETL functionality.
 """
 
-import unittest
-import tempfile
 import json
-from pathlib import Path
+import tempfile
+import unittest
 from datetime import datetime
+from pathlib import Path
 
 
 class TestBasicETLConcepts(unittest.TestCase):
@@ -134,7 +133,7 @@ class TestBasicETLConcepts(unittest.TestCase):
 
         try:
             # Read back from file
-            with open(temp_file, "r") as f:
+            with open(temp_file) as f:
                 loaded_data = json.load(f)
 
             self.assertEqual(len(loaded_data["records"]), 2)

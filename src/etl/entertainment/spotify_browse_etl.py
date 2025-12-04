@@ -11,13 +11,12 @@ import base64
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
 
 logger = get_logger("SpotifyBrowseETL")
 
@@ -34,7 +33,7 @@ def _get_token() -> str | None:
     if not cid or not secret:
         try:
             secrets_path = os.path.join(get_project_root(), "secrets", "spotify.json")
-            with open(secrets_path, "r", encoding="utf-8") as f:
+            with open(secrets_path, encoding="utf-8") as f:
                 data = json.load(f)
             cid = cid or data.get("client_id")
             secret = secret or data.get("client_secret")
@@ -44,7 +43,7 @@ def _get_token() -> str | None:
     if not cid or not secret:
         try:
             env_path = os.path.join(get_project_root(), ".env")
-            with open(env_path, "r", encoding="utf-8") as f:
+            with open(env_path, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if not line or line.startswith("#"):
@@ -59,9 +58,17 @@ def _get_token() -> str | None:
         logger.info("Spotify credentials not set; skipping.")
         return None
     auth = base64.b64encode(f"{cid}:{secret}".encode()).decode()
-    headers = {"Authorization": f"Basic {auth}", "Content-Type": "application/x-www-form-urlencoded"}
+    headers = {
+        "Authorization": f"Basic {auth}",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
     try:
-        resp = requests.post(TOKEN_URL, headers=headers, data={"grant_type": "client_credentials"}, timeout=30)
+        resp = requests.post(
+            TOKEN_URL,
+            headers=headers,
+            data={"grant_type": "client_credentials"},
+            timeout=30,
+        )
         if resp.status_code != 200:
             logger.error(f"Spotify token error {resp.status_code}: {resp.text[:120]}")
             return None
@@ -71,14 +78,19 @@ def _get_token() -> str | None:
         return None
 
 
-def fetch_spotify() -> Dict[str, List[Dict[str, Any]]]:
+def fetch_spotify() -> dict[str, list[dict[str, Any]]]:
     token = _get_token()
     if not token:
         return {"playlists": [], "new_releases": []}
     headers = {"Authorization": f"Bearer {token}", "User-Agent": "Watchtower/1.0"}
-    out: Dict[str, List[Dict[str, Any]]] = {"playlists": [], "new_releases": []}
+    out: dict[str, list[dict[str, Any]]] = {"playlists": [], "new_releases": []}
     try:
-        r1 = requests.get(BROWSE_PLAYLISTS_URL, headers=headers, params={"country": "US", "limit": 20}, timeout=30)
+        r1 = requests.get(
+            BROWSE_PLAYLISTS_URL,
+            headers=headers,
+            params={"country": "US", "limit": 20},
+            timeout=30,
+        )
         if r1.status_code == 200:
             for p in r1.json().get("playlists", {}).get("items", []) or []:
                 out["playlists"].append(
@@ -95,7 +107,12 @@ def fetch_spotify() -> Dict[str, List[Dict[str, Any]]]:
                 )
         else:
             logger.error(f"Spotify playlists API {r1.status_code}")
-        r2 = requests.get(NEW_RELEASES_URL, headers=headers, params={"country": "US", "limit": 20}, timeout=30)
+        r2 = requests.get(
+            NEW_RELEASES_URL,
+            headers=headers,
+            params={"country": "US", "limit": 20},
+            timeout=30,
+        )
         if r2.status_code == 200:
             for a in r2.json().get("albums", {}).get("items", []) or []:
                 out["new_releases"].append(
@@ -117,7 +134,7 @@ def fetch_spotify() -> Dict[str, List[Dict[str, Any]]]:
     return out
 
 
-def save_spotify(data: Dict[str, List[Dict[str, Any]]]) -> None:
+def save_spotify(data: dict[str, list[dict[str, Any]]]) -> None:
     if not data.get("playlists") and not data.get("new_releases"):
         logger.info("No Spotify data to save")
         return
@@ -142,5 +159,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

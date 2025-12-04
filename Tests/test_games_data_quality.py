@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-"""
-Simple Games Data Quality Tests.
+"""Simple Games Data Quality Tests.
 Focuses on real data validation without complex mocking.
 """
 
-import unittest
+import json
 import os
 import sys
-import json
-import pandas as pd
-from datetime import datetime
+import unittest
 
 # Add project root to sys.path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -27,9 +24,7 @@ class TestGamesDataQuality(unittest.TestCase):
 
     def test_data_directory_exists(self):
         """Test that games data directory exists"""
-        self.assertTrue(
-            os.path.exists(self.data_dir), "Games data directory should exist"
-        )
+        self.assertTrue(os.path.exists(self.data_dir), "Games data directory should exist")
 
     def test_json_files_structure(self):
         """Test that JSON files have proper structure"""
@@ -47,13 +42,11 @@ class TestGamesDataQuality(unittest.TestCase):
             if os.path.exists(filepath):
                 with self.subTest(file=filename):
                     try:
-                        with open(filepath, "r") as f:
+                        with open(filepath) as f:
                             data = json.load(f)
 
                         # Should be a list
-                        self.assertIsInstance(
-                            data, list, f"{filename} should contain a list"
-                        )
+                        self.assertIsInstance(data, list, f"{filename} should contain a list")
 
                         # If not empty, check first item structure
                         if data:
@@ -91,9 +84,7 @@ class TestGamesDataQuality(unittest.TestCase):
             for price_str, expected in test_cases:
                 with self.subTest(price=price_str):
                     result = parse_price(price_str)
-                    self.assertEqual(
-                        result, expected, f"Failed to parse price: {price_str}"
-                    )
+                    self.assertEqual(result, expected, f"Failed to parse price: {price_str}")
 
         except ImportError:
             self.skipTest("Could not import parse_price function")
@@ -105,7 +96,7 @@ class TestGamesDataQuality(unittest.TestCase):
         if not os.path.exists(deals_file):
             self.skipTest("Deals file does not exist")
 
-        with open(deals_file, "r") as f:
+        with open(deals_file) as f:
             deals_data = json.load(f)
 
         if not deals_data:
@@ -123,16 +114,14 @@ class TestGamesDataQuality(unittest.TestCase):
         self.assertTrue(first_deal["title"], "Deal title should not be empty")
 
         # Link should be a valid URL format
-        self.assertTrue(
-            first_deal["link"].startswith("http"), "Deal link should be a URL"
-        )
+        self.assertTrue(first_deal["link"].startswith("http"), "Deal link should be a URL")
 
     def test_games_tab_component_exists(self):
         """Test that games tab component exists and can be imported"""
         try:
             from src.web.dashboard.components.games_tab import (
-                parse_price,
                 parse_game_date,
+                parse_price,
             )
 
             # Basic functionality test

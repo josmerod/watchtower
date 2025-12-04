@@ -31,7 +31,7 @@ def load_travel_data(source_key):
         return []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
             if isinstance(data, list):
                 return data
@@ -114,9 +114,7 @@ def create_travel_table(source_key):
     table_rows = []
     for item in recent_data:
         # Extract common fields
-        title = item.get(
-            "title", item.get("name", item.get("product_name", "Untitled"))
-        )
+        title = item.get("title", item.get("name", item.get("product_name", "Untitled")))
 
         url = item.get("url", item.get("link", "#"))
 
@@ -124,10 +122,7 @@ def create_travel_table(source_key):
         price = item.get("price", item.get("cost", item.get("value", "N/A")))
         if isinstance(price, (int, float)):
             price = f"${price:.2f}"
-        elif (
-            price
-            and str(price).replace(".", "").replace("$", "").replace(",", "").isdigit()
-        ):
+        elif price and str(price).replace(".", "").replace("$", "").replace(",", "").isdigit():
             price = f"${float(str(price).replace('$', '').replace(',', '')):.2f}"
 
         # Date handling
@@ -202,7 +197,6 @@ def create_travel_table(source_key):
 
 def travel_tab():
     """Main travel/deals tab function."""
-
     return dbc.Container(
         [
             # Header
@@ -247,12 +241,8 @@ def travel_tab():
                         [
                             dbc.Card(
                                 [
-                                    dbc.CardHeader(
-                                        "🏴‍☠️ Viajeros Piratas - Travel Deals"
-                                    ),
-                                    dbc.CardBody(
-                                        [create_travel_table("viajeros_piratas")]
-                                    ),
+                                    dbc.CardHeader("🏴‍☠️ Viajeros Piratas - Travel Deals"),
+                                    dbc.CardBody([create_travel_table("viajeros_piratas")]),
                                 ]
                             )
                         ],

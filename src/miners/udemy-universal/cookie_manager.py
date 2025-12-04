@@ -83,93 +83,53 @@ class CookieManager:
         if self.system == "windows":
             return {
                 BrowserType.CHROME: {
-                    "cookies": os.path.expandvars(
-                        r"%LOCALAPPDATA%\Google\Chrome\User Data\Default\Cookies"
-                    ),
-                    "profile": os.path.expandvars(
-                        r"%LOCALAPPDATA%\Google\Chrome\User Data\Default"
-                    ),
+                    "cookies": os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\User Data\Default\Cookies"),
+                    "profile": os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\User Data\Default"),
                 },
                 BrowserType.FIREFOX: {
-                    "cookies": os.path.expandvars(
-                        r"%APPDATA%\Mozilla\Firefox\Profiles"
-                    ),
-                    "profile": os.path.expandvars(
-                        r"%APPDATA%\Mozilla\Firefox\Profiles"
-                    ),
+                    "cookies": os.path.expandvars(r"%APPDATA%\Mozilla\Firefox\Profiles"),
+                    "profile": os.path.expandvars(r"%APPDATA%\Mozilla\Firefox\Profiles"),
                 },
                 BrowserType.EDGE: {
-                    "cookies": os.path.expandvars(
-                        r"%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\Cookies"
-                    ),
-                    "profile": os.path.expandvars(
-                        r"%LOCALAPPDATA%\Microsoft\Edge\User Data\Default"
-                    ),
+                    "cookies": os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\Cookies"),
+                    "profile": os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\User Data\Default"),
                 },
                 BrowserType.BRAVE: {
-                    "cookies": os.path.expandvars(
-                        r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\Cookies"
-                    ),
-                    "profile": os.path.expandvars(
-                        r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default"
-                    ),
+                    "cookies": os.path.expandvars(r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\Cookies"),
+                    "profile": os.path.expandvars(r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default"),
                 },
                 BrowserType.OPERA: {
-                    "cookies": os.path.expandvars(
-                        r"%APPDATA%\Opera Software\Opera Stable\Cookies"
-                    ),
-                    "profile": os.path.expandvars(
-                        r"%APPDATA%\Opera Software\Opera Stable"
-                    ),
+                    "cookies": os.path.expandvars(r"%APPDATA%\Opera Software\Opera Stable\Cookies"),
+                    "profile": os.path.expandvars(r"%APPDATA%\Opera Software\Opera Stable"),
                 },
             }
         elif self.system == "darwin":  # macOS
             return {
                 BrowserType.CHROME: {
-                    "cookies": os.path.expanduser(
-                        "~/Library/Application Support/Google/Chrome/Default/Cookies"
-                    ),
-                    "profile": os.path.expanduser(
-                        "~/Library/Application Support/Google/Chrome/Default"
-                    ),
+                    "cookies": os.path.expanduser("~/Library/Application Support/Google/Chrome/Default/Cookies"),
+                    "profile": os.path.expanduser("~/Library/Application Support/Google/Chrome/Default"),
                 },
                 BrowserType.FIREFOX: {
-                    "cookies": os.path.expanduser(
-                        "~/Library/Application Support/Firefox/Profiles"
-                    ),
-                    "profile": os.path.expanduser(
-                        "~/Library/Application Support/Firefox/Profiles"
-                    ),
+                    "cookies": os.path.expanduser("~/Library/Application Support/Firefox/Profiles"),
+                    "profile": os.path.expanduser("~/Library/Application Support/Firefox/Profiles"),
                 },
                 BrowserType.SAFARI: {
-                    "cookies": os.path.expanduser(
-                        "~/Library/Cookies/Cookies.binarycookies"
-                    ),
+                    "cookies": os.path.expanduser("~/Library/Cookies/Cookies.binarycookies"),
                     "profile": os.path.expanduser("~/Library/Safari"),
                 },
                 BrowserType.EDGE: {
-                    "cookies": os.path.expanduser(
-                        "~/Library/Application Support/Microsoft Edge/Default/Cookies"
-                    ),
-                    "profile": os.path.expanduser(
-                        "~/Library/Application Support/Microsoft Edge/Default"
-                    ),
+                    "cookies": os.path.expanduser("~/Library/Application Support/Microsoft Edge/Default/Cookies"),
+                    "profile": os.path.expanduser("~/Library/Application Support/Microsoft Edge/Default"),
                 },
                 BrowserType.BRAVE: {
-                    "cookies": os.path.expanduser(
-                        "~/Library/Application Support/BraveSoftware/Brave-Browser/Default/Cookies"
-                    ),
-                    "profile": os.path.expanduser(
-                        "~/Library/Application Support/BraveSoftware/Brave-Browser/Default"
-                    ),
+                    "cookies": os.path.expanduser("~/Library/Application Support/BraveSoftware/Brave-Browser/Default/Cookies"),
+                    "profile": os.path.expanduser("~/Library/Application Support/BraveSoftware/Brave-Browser/Default"),
                 },
             }
         else:  # Linux
             return {
                 BrowserType.CHROME: {
-                    "cookies": os.path.expanduser(
-                        "~/.config/google-chrome/Default/Cookies"
-                    ),
+                    "cookies": os.path.expanduser("~/.config/google-chrome/Default/Cookies"),
                     "profile": os.path.expanduser("~/.config/google-chrome/Default"),
                 },
                 BrowserType.FIREFOX: {
@@ -181,12 +141,8 @@ class CookieManager:
                     "profile": os.path.expanduser("~/.config/chromium/Default"),
                 },
                 BrowserType.BRAVE: {
-                    "cookies": os.path.expanduser(
-                        "~/.config/BraveSoftware/Brave-Browser/Default/Cookies"
-                    ),
-                    "profile": os.path.expanduser(
-                        "~/.config/BraveSoftware/Brave-Browser/Default"
-                    ),
+                    "cookies": os.path.expanduser("~/.config/BraveSoftware/Brave-Browser/Default/Cookies"),
+                    "profile": os.path.expanduser("~/.config/BraveSoftware/Brave-Browser/Default"),
                 },
             }
 
@@ -228,11 +184,7 @@ class CookieManager:
                 # For Firefox, check profiles directory
                 if browser == BrowserType.FIREFOX and os.path.exists(path):
                     try:
-                        profiles = [
-                            d
-                            for d in os.listdir(path)
-                            if d.endswith(".default") or d.endswith(".default-release")
-                        ]
+                        profiles = [d for d in os.listdir(path) if d.endswith(".default") or d.endswith(".default-release")]
                         return len(profiles) > 0
                     except (OSError, PermissionError):
                         # Failed to list directory, browser not accessible
@@ -267,9 +219,7 @@ class CookieManager:
             elif browser == BrowserType.OPERA:
                 cj = browser_cookie3.opera(domain_name=self.domain)
             else:
-                self.logger.warning(
-                    f"Unsupported browser for browser_cookie3: {browser}"
-                )
+                self.logger.warning(f"Unsupported browser for browser_cookie3: {browser}")
                 return None
 
             cookies = {}
@@ -279,18 +229,14 @@ class CookieManager:
 
             # Check if we have required cookies
             if self._validate_cookies(cookies):
-                self.logger.info(
-                    f"Successfully extracted cookies from {browser} using browser_cookie3"
-                )
+                self.logger.info(f"Successfully extracted cookies from {browser} using browser_cookie3")
                 return cookies
             else:
                 self.logger.warning(f"Required cookies not found in {browser}")
                 return None
 
         except Exception as e:
-            self.logger.warning(
-                f"Failed to extract cookies from {browser} using browser_cookie3: {e}"
-            )
+            self.logger.warning(f"Failed to extract cookies from {browser} using browser_cookie3: {e}")
             return None
 
     def get_cookies_sqlite(self, browser: str = None) -> dict[str, str] | None:
@@ -316,9 +262,7 @@ class CookieManager:
             self.logger.warning(f"Failed to extract cookies from {browser} SQLite: {e}")
             return None
 
-    def _extract_cookies_from_sqlite(
-        self, cookie_path: str, browser: str
-    ) -> dict[str, str] | None:
+    def _extract_cookies_from_sqlite(self, cookie_path: str, browser: str) -> dict[str, str] | None:
         """Extract cookies from SQLite database.
 
         Args:
@@ -416,11 +360,7 @@ class CookieManager:
 
         # Find profile directories
         try:
-            profiles = [
-                d
-                for d in os.listdir(profile_path)
-                if d.endswith(".default") or d.endswith(".default-release")
-            ]
+            profiles = [d for d in os.listdir(profile_path) if d.endswith(".default") or d.endswith(".default-release")]
             if not profiles:
                 return None
 
@@ -434,9 +374,7 @@ class CookieManager:
             # Create temporary copy
             temp_path = None
             try:
-                with tempfile.NamedTemporaryFile(
-                    delete=False, suffix=".db"
-                ) as temp_file:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as temp_file:
                     temp_path = temp_file.name
 
                 shutil.copy2(cookie_file, temp_path)
@@ -534,9 +472,7 @@ class CookieManager:
 
         return None
 
-    def save_cookies(
-        self, cookies: dict[str, str], filename: str = "udemy_cookies.json"
-    ):
+    def save_cookies(self, cookies: dict[str, str], filename: str = "udemy_cookies.json"):
         """Save cookies to file for later use.
 
         Args:
@@ -558,9 +494,7 @@ class CookieManager:
         except Exception as e:
             self.logger.error(f"Failed to save cookies: {e}")
 
-    def load_cookies(
-        self, filename: str = "udemy_cookies.json"
-    ) -> dict[str, str] | None:
+    def load_cookies(self, filename: str = "udemy_cookies.json") -> dict[str, str] | None:
         """Load cookies from file.
 
         Args:
@@ -632,9 +566,7 @@ class CookieManager:
             results["browsers"][browser]["browser_cookie3"] = {
                 "success": cookies_bc3 is not None,
                 "cookie_count": len(cookies_bc3) if cookies_bc3 else 0,
-                "has_required": (
-                    self._validate_cookies(cookies_bc3) if cookies_bc3 else False
-                ),
+                "has_required": (self._validate_cookies(cookies_bc3) if cookies_bc3 else False),
             }
 
             # Test SQLite extraction
@@ -642,9 +574,7 @@ class CookieManager:
             results["browsers"][browser]["sqlite"] = {
                 "success": cookies_sqlite is not None,
                 "cookie_count": len(cookies_sqlite) if cookies_sqlite else 0,
-                "has_required": (
-                    self._validate_cookies(cookies_sqlite) if cookies_sqlite else False
-                ),
+                "has_required": (self._validate_cookies(cookies_sqlite) if cookies_sqlite else False),
             }
 
             # Overall success for this browser
@@ -706,9 +636,7 @@ if __name__ == "__main__":
         cookies = get_cookies(browsers[0])
         if cookies:
             print(f"Successfully extracted {len(cookies)} cookies")
-            print(
-                f"Required cookies present: {cookie_manager._validate_cookies(cookies)}"
-            )
+            print(f"Required cookies present: {cookie_manager._validate_cookies(cookies)}")
         else:
             print("Failed to extract cookies")
 

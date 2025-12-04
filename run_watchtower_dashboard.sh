@@ -7,14 +7,14 @@ echo "========================================================"
 echo ""
 
 # Change to the project root directory
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 # Check if UV is available
 if ! command -v uv &> /dev/null; then
     echo "[ERROR] UV not found. Please install UV first:"
     echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
     echo ""
-    read -p "Press Enter to exit..." dummy # Pause before exit, similar to .bat
+    read -r -p "Press Enter to exit..." # Pause before exit, similar to .bat
     exit 1
 fi
 
@@ -51,4 +51,4 @@ else
 fi
 
 echo ""
-read -p "Press Enter to continue..." dummy
+read -r -p "Press Enter to continue..."

@@ -3,7 +3,7 @@ import json
 import os
 import time
 from datetime import datetime
-from typing import Any, Dict, List  # Added typing imports
+from typing import Any  # Added typing imports
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -43,13 +43,9 @@ def get_newsapi_articles(
     language: str = "en",
     page_size: int = 100,
     max_articles_to_fetch: int = 200,
-) -> List[Dict[str, Any]]:  # Return type updated for raw articles
-    """
-    Fetches articles from NewsAPI.
-    """
-    logger.info(
-        f"Fetching articles from NewsAPI for query: '{query}', language: '{language}'"
-    )
+) -> list[dict[str, Any]]:  # Return type updated for raw articles
+    """Fetches articles from NewsAPI."""
+    logger.info(f"Fetching articles from NewsAPI for query: '{query}', language: '{language}'")
     base_url = "https://newsapi.org/v2/everything"
     headers = {"X-Api-Key": api_key}
 
@@ -61,9 +57,7 @@ def get_newsapi_articles(
         params = {
             "q": query,
             "language": language,
-            "pageSize": min(
-                page_size, max_articles_to_fetch - fetched_count
-            ),  # Adjust page size if near max
+            "pageSize": min(page_size, max_articles_to_fetch - fetched_count),  # Adjust page size if near max
             "page": page,
             "sortBy": "publishedAt",
         }
@@ -83,59 +77,41 @@ def get_newsapi_articles(
 
             all_articles.extend(articles_on_page)
             fetched_count += len(articles_on_page)
-            logger.info(
-                f"Fetched {len(articles_on_page)} articles from page {page}. Total fetched so far: {fetched_count}/{max_articles_to_fetch} (Total available for query: {total_results})"
-            )
+            logger.info(f"Fetched {len(articles_on_page)} articles from page {page}. Total fetched so far: {fetched_count}/{max_articles_to_fetch} (Total available for query: {total_results})")
 
             if fetched_count >= total_results or fetched_count >= max_articles_to_fetch:
-                logger.info(
-                    "Reached max articles to fetch or no more results available."
-                )
+                logger.info("Reached max articles to fetch or no more results available.")
                 break
 
             page += 1
-            time.sleep(
-                1
-            )  # Respect API rate limits if any (NewsAPI developer plan has no strict per-second limit but good practice)
+            time.sleep(1)  # Respect API rate limits if any (NewsAPI developer plan has no strict per-second limit but good practice)
 
         except requests.exceptions.HTTPError as e:
             logger.error(f"HTTP error occurred: {e} - Response: {e.response.text}")
             if e.response.status_code == 401:  # Unauthorized
-                logger.error(
-                    "NewsAPI key is invalid or unauthorized. Please check your API key."
-                )
+                logger.error("NewsAPI key is invalid or unauthorized. Please check your API key.")
                 return []  # Stop trying if API key is bad
             elif e.response.status_code == 429:  # Rate limited
-                logger.warning(
-                    "Rate limited by NewsAPI. Consider increasing delay between requests or reducing page_size/max_articles."
-                )
+                logger.warning("Rate limited by NewsAPI. Consider increasing delay between requests or reducing page_size/max_articles.")
             break
         except requests.exceptions.RequestException as e:
             logger.error(f"Request failed: {e}")
             break
         except json.JSONDecodeError as e:
-            logger.error(
-                f"Failed to decode JSON response: {e} - Response text: {response.text}"
-            )
+            logger.error(f"Failed to decode JSON response: {e} - Response text: {response.text}")
             break
 
     logger.info(f"Finished fetching. Total articles retrieved: {len(all_articles)}")
     return all_articles[:max_articles_to_fetch]
 
 
-def transform_articles_to_model(
-    raw_articles: List[Dict[str, Any]], query_source: str, language_code: str = "en"
-) -> List[NewsArticleModel]:
-    """
-    Transforms raw article data from NewsAPI into a list of NewsArticleModel objects.
-    """
+def transform_articles_to_model(raw_articles: list[dict[str, Any]], query_source: str, language_code: str = "en") -> list[NewsArticleModel]:
+    """Transforms raw article data from NewsAPI into a list of NewsArticleModel objects."""
     transformed_articles = []
     if not raw_articles:
         return transformed_articles
 
-    logger.info(
-        f"Transforming {len(raw_articles)} raw articles. Query source: '{query_source}', Language code: '{language_code}'"
-    )
+    logger.info(f"Transforming {len(raw_articles)} raw articles. Query source: '{query_source}', Language code: '{language_code}'")
 
     for raw_article in raw_articles:
         try:
@@ -143,9 +119,7 @@ def transform_articles_to_model(
             url = raw_article.get("url")
 
             if not title or not url:
-                logger.warning(
-                    f"Skipping article due to missing title or URL: {raw_article.get('source', {}).get('name')} - {title[:50] if title else 'N/A'}"
-                )
+                logger.warning(f"Skipping article due to missing title or URL: {raw_article.get('source', {}).get('name')} - {title[:50] if title else 'N/A'}")
                 continue
 
             content = raw_article.get("content")
@@ -167,9 +141,7 @@ def transform_articles_to_model(
                         published_at_str = published_at_str[:-1] + "+00:00"
                     published_at_dt = datetime.fromisoformat(published_at_str)
                 except ValueError as e:
-                    logger.warning(
-                        f"Could not parse publishedAt date '{published_at_str}' for article '{title}': {e}"
-                    )
+                    logger.warning(f"Could not parse publishedAt date '{published_at_str}' for article '{title}': {e}")
                     # Fallback or skip: For now, allow None, but it might be an issue for DB constraints
 
             author = raw_article.get("author")
@@ -215,20 +187,16 @@ def transform_articles_to_model(
                 exc_info=True,
             )
 
-    logger.info(
-        f"Successfully transformed {len(transformed_articles)} articles out of {len(raw_articles)} raw articles."
-    )
+    logger.info(f"Successfully transformed {len(transformed_articles)} articles out of {len(raw_articles)} raw articles.")
     return transformed_articles
 
 
-def process_articles(articles: List[NewsArticleModel]) -> List[Dict[str, Any]]:
+def process_articles(articles: list[NewsArticleModel]) -> list[dict[str, Any]]:
     logger.info(f"Processing {len(articles)} articles.")
     processed_data = []
     current_time_iso = datetime.utcnow().isoformat()
     for article_model in articles:
-        article_dict = article_model.model_dump(
-            mode="json"
-        )  # Ensures datetime is ISO string
+        article_dict = article_model.model_dump(mode="json")  # Ensures datetime is ISO string
         article_dict["platform"] = "newsapi"
         article_dict["data_source"] = "NewsAPI.org"
         article_dict["fetched_at"] = current_time_iso
@@ -240,9 +208,7 @@ def process_articles(articles: List[NewsArticleModel]) -> List[Dict[str, Any]]:
     return processed_data
 
 
-def save_data(
-    data: List[Dict[str, Any]], output_dir: str, source_name: str = "newsapi"
-):
+def save_data(data: list[dict[str, Any]], output_dir: str, source_name: str = "newsapi"):
     ensure_directories([output_dir])
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -272,9 +238,7 @@ def save_data(
                 csv_item = item.copy()
                 for key, value in csv_item.items():
                     if isinstance(value, list):
-                        csv_item[key] = ", ".join(
-                            map(str, value)
-                        )  # Simple list to string
+                        csv_item[key] = ", ".join(map(str, value))  # Simple list to string
                     elif isinstance(value, dict):
                         # For simplicity, convert dicts to JSON strings for CSV
                         csv_item[key] = json.dumps(value)
@@ -300,19 +264,15 @@ def save_data(
         else:
             logger.info("No data provided to save_data function.")
 
-    except IOError as e:
+    except OSError as e:
         logger.error(f"IOError saving data: {e}")
     except Exception as e:
-        logger.error(
-            f"Unexpected error saving data: {e}", exc_info=True
-        )  # Added exc_info for better debugging
+        logger.error(f"Unexpected error saving data: {e}", exc_info=True)  # Added exc_info for better debugging
         # Consider re-raising critical errors if needed, or handle more gracefully
         # For now, we log and continue, but for critical save operations, re-raising might be better.
 
     return {
-        "json_file": (
-            json_file_path if "json_file_path" in locals() else None
-        ),  # Ensure paths are defined
+        "json_file": (json_file_path if "json_file_path" in locals() else None),  # Ensure paths are defined
         "csv_file": csv_file_path if "csv_file_path" in locals() else None,
         "latest_json": latest_json_path if "latest_json_path" in locals() else None,
         "latest_csv": latest_csv_path if "latest_csv_path" in locals() else None,
@@ -323,18 +283,14 @@ def main():
     logger.info("Starting NewsAPI ETL process")
 
     project_root = get_project_root()
-    output_dir = os.path.join(
-        project_root, "data", "raw", "newsapi"
-    )  # Adjusted path to include "raw"
+    output_dir = os.path.join(project_root, "data", "raw", "newsapi")  # Adjusted path to include "raw"
     ensure_directories([output_dir])  # Ensure base output directory exists
 
     settings = get_settings()
     api_key = settings.api.news_api_key
     if not api_key:
         logger.warning(
-            "NewsAPI key not found in settings (checked API_NEWS_API_KEY). "
-            "NewsAPI data collection will be skipped. "
-            "To enable NewsAPI: set API_NEWS_API_KEY in your .env file or environment variables."
+            "NewsAPI key not found in settings (checked API_NEWS_API_KEY). " "NewsAPI data collection will be skipped. " "To enable NewsAPI: set API_NEWS_API_KEY in your .env file or environment variables."
         )
         # Create empty output files to maintain consistency in data structure
         empty_data = []
@@ -349,9 +305,7 @@ def main():
     language = "en"
     max_articles = 100  # For testing
 
-    logger.info(
-        f"Attempting to fetch up to {max_articles} articles for query: '{query}' in language '{language}'."
-    )
+    logger.info(f"Attempting to fetch up to {max_articles} articles for query: '{query}' in language '{language}'.")
 
     raw_articles = get_newsapi_articles(
         session,
@@ -364,30 +318,20 @@ def main():
 
     if raw_articles:
         logger.info(f"Fetched {len(raw_articles)} raw articles from NewsAPI.")
-        transformed_articles = transform_articles_to_model(
-            raw_articles, query_source="AI", language_code=language
-        )
+        transformed_articles = transform_articles_to_model(raw_articles, query_source="AI", language_code=language)
 
         if transformed_articles:
-            logger.info(
-                f"Successfully transformed {len(transformed_articles)} articles into NewsArticleModel."
-            )
+            logger.info(f"Successfully transformed {len(transformed_articles)} articles into NewsArticleModel.")
             processed_articles_list = process_articles(transformed_articles)
             if processed_articles_list:
-                file_paths = save_data(
-                    processed_articles_list, output_dir, source_name="newsapi"
-                )
+                file_paths = save_data(processed_articles_list, output_dir, source_name="newsapi")
                 logger.info(f"NewsAPI ETL completed. Data saved to: {file_paths}")
             else:
                 logger.info("No articles were processed after transformation.")
         else:
-            logger.warning(
-                "No articles were successfully transformed, though raw articles were fetched."
-            )
+            logger.warning("No articles were successfully transformed, though raw articles were fetched.")
     else:
-        logger.info(
-            "No articles fetched from NewsAPI. This could be due to the query, API limits, or an error during fetching."
-        )
+        logger.info("No articles fetched from NewsAPI. This could be due to the query, API limits, or an error during fetching.")
 
     logger.info("NewsAPI ETL process finished.")  # Adjusted final log message
 

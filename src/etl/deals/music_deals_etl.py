@@ -15,12 +15,10 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -66,7 +64,7 @@ class MusicDealsETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract music deals from multiple sources."""
         logger.info("Starting music deals extraction...")
 
@@ -82,7 +80,7 @@ class MusicDealsETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} music deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _get_curated_music_deals(self) -> List[Dict[str, Any]]:
+    def _get_curated_music_deals(self) -> list[dict[str, Any]]:
         """Get manually curated list of music deals and free sources."""
         curated = [
             {
@@ -468,7 +466,7 @@ class MusicDealsETL(BaseETL):
         logger.info(f"Added {len(curated)} curated music deals")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform music deals data."""
         logger.info("Starting music deals transformation...")
 
@@ -519,14 +517,12 @@ class MusicDealsETL(BaseETL):
                 continue
 
         # Sort by music score and savings
-        transformed_deals.sort(
-            key=lambda x: (x["music_score"], x["savings"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["music_score"], x["savings"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} music deals")
         return transformed_deals
 
-    def _calculate_music_value_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_music_value_score(self, deal: dict[str, Any]) -> float:
         """Calculate music value score for ranking deals."""
         score = 0.0
 
@@ -575,7 +571,7 @@ class MusicDealsETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_quality_rating(self, deal: Dict[str, Any]) -> str:
+    def _determine_quality_rating(self, deal: dict[str, Any]) -> str:
         """Determine quality rating of the music deal."""
         download_formats = deal.get("download_format", [])
         platform = deal.get("platform", "").lower()
@@ -589,22 +585,16 @@ class MusicDealsETL(BaseETL):
                 return "high"
 
         # High quality indicators
-        if drm_free and any(
-            platform_name in platform
-            for platform_name in ["bandcamp", "archive.org", "free music archive"]
-        ):
+        if drm_free and any(platform_name in platform for platform_name in ["bandcamp", "archive.org", "free music archive"]):
             return "high"
 
         # Good quality indicators
-        if any(
-            platform_name in platform
-            for platform_name in ["spotify", "youtube music", "humble"]
-        ):
+        if any(platform_name in platform for platform_name in ["spotify", "youtube music", "humble"]):
             return "good"
 
         return "standard"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed music deals data to files."""
         try:
             # Ensure output directory exists
@@ -624,9 +614,7 @@ class MusicDealsETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} music deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} music deals to {output_dir}")
             return True
 
         except Exception as e:

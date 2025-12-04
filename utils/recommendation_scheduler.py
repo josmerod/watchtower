@@ -145,7 +145,7 @@ class RecommendationScheduler:
                 "queue_size": len(self._user_queue),
                 "queued_users": self._user_queue.copy(),
                 "processed_users_count": len(self._processed_users),
-                "last_processed": dict(list(self._processed_users.items())[-10:]) if self._processed_users else {},
+                "last_processed": (dict(list(self._processed_users.items())[-10:]) if self._processed_users else {}),
             }
 
     def cleanup_old_processed_users(self, days: int = 7) -> None:
@@ -158,10 +158,7 @@ class RecommendationScheduler:
             cutoff_date = datetime.now() - timedelta(days=days)
 
             with self._lock:
-                old_users = [
-                    user_id for user_id, processed_date in self._processed_users.items()
-                    if processed_date < cutoff_date
-                ]
+                old_users = [user_id for user_id, processed_date in self._processed_users.items() if processed_date < cutoff_date]
 
                 for user_id in old_users:
                     del self._processed_users[user_id]

@@ -5,14 +5,14 @@ from pathlib import Path
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, dcc, html, clientside_callback
+from dash import Input, Output, dcc, html
 
-from src.web.dashboard.utils import get_data_path
 from src.web.dashboard.components.items_per_page_selector import (
     create_items_per_page_selector,
-    register_items_per_page_callback,
     load_initial_preference,
+    register_items_per_page_callback,
 )
+from src.web.dashboard.utils import get_data_path
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -71,9 +71,7 @@ class VideoManager:
                 if processed_videos:
                     df = pd.DataFrame(processed_videos)
                     # Parse dates properly
-                    df["published_date"] = pd.to_datetime(
-                        df["published_at"], errors="coerce", utc=True
-                    )
+                    df["published_date"] = pd.to_datetime(df["published_at"], errors="coerce", utc=True)
                     df = df.dropna(subset=["published_date"])
                     df = df.sort_values("published_date", ascending=False)
 
@@ -127,11 +125,7 @@ class VideoManager:
                 title = video.get("title", "").lower()
                 description = video.get("description", "").lower()
                 ch = video.get("channel", "").lower()
-                if (
-                    search_lower in title
-                    or search_lower in description
-                    or search_lower in ch
-                ):
+                if search_lower in title or search_lower in description or search_lower in ch:
                     filtered_videos.append(video)
             all_videos = filtered_videos
             logger.debug(f"After search filter: {len(all_videos)} videos")
@@ -153,9 +147,7 @@ class VideoManager:
 
         # Sort by date (newest first)
         all_videos.sort(
-            key=lambda x: x.get(
-                "published_date", datetime.min.replace(tzinfo=timezone.utc)
-            ),
+            key=lambda x: x.get("published_date", datetime.min.replace(tzinfo=timezone.utc)),
             reverse=True,
         )
 
@@ -239,11 +231,7 @@ def create_video_card(video):
                                 style={"fontSize": "0.8rem", "marginBottom": "0.25rem"},
                             ),
                             html.P(
-                                (
-                                    video.get("published_at", "")[:10]
-                                    if video.get("published_at")
-                                    else "Unknown date"
-                                ),
+                                (video.get("published_at", "")[:10] if video.get("published_at") else "Unknown date"),
                                 className="card-text text-muted",
                                 style={"fontSize": "0.8rem", "marginBottom": "0"},
                             ),
@@ -284,16 +272,12 @@ def get_initial_video_display(limit=48):
                             [
                                 dbc.CardBody(
                                     [
-                                        html.H6(
-                                            "Video Load Error", className="card-title"
-                                        ),
+                                        html.H6("Video Load Error", className="card-title"),
                                         html.P(
                                             f"Failed to load: {video.get('title', 'Unknown')}",
                                             className="card-text",
                                         ),
-                                        html.Small(
-                                            f"Error: {e}", className="text-danger"
-                                        ),
+                                        html.Small(f"Error: {e}", className="text-danger"),
                                     ]
                                 )
                             ],
@@ -415,9 +399,7 @@ def render_videos_tab():
                 children=get_initial_video_display(),
             ),
             # Pagination info
-            html.Div(
-                id="videos-pagination", className="d-flex justify-content-center mt-3"
-            ),
+            html.Div(id="videos-pagination", className="d-flex justify-content-center mt-3"),
             # Script to initialize items-per-page selector from localStorage
             html.Script(load_initial_preference("videos")),
         ]
@@ -446,17 +428,13 @@ def register_video_callbacks(app):
             videos = video_manager.get_videos(channel=selected_channel, limit=items_per_page)
 
             if not videos:
-                return [
-                    dbc.Alert(f"No videos found for '{selected_channel}'", color="info")
-                ]
+                return [dbc.Alert(f"No videos found for '{selected_channel}'", color="info")]
 
             # Create video cards
             video_cards = [create_video_card(video) for video in videos]
 
             # Format channel name for display
-            channel_display = (
-                "all channels" if selected_channel == "all" else f"'{selected_channel}'"
-            )
+            channel_display = "all channels" if selected_channel == "all" else f"'{selected_channel}'"
 
             content = [
                 dbc.Alert(

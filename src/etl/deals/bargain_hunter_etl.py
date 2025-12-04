@@ -15,14 +15,12 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
 # Add the project root to the path
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
@@ -96,7 +94,7 @@ class BargainHunterETL(BaseETL):
             },
         }
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Extract bargain deals from multiple sources."""
         logger.info("Starting bargain hunter extraction...")
 
@@ -133,7 +131,7 @@ class BargainHunterETL(BaseETL):
         logger.info(f"Total extracted {len(all_deals)} bargain deals")
         return {"deals": all_deals, "total_count": len(all_deals)}
 
-    def _extract_cheapshark_deals(self) -> List[Dict[str, Any]]:
+    def _extract_cheapshark_deals(self) -> list[dict[str, Any]]:
         """Extract current deals from CheapShark API."""
         try:
             logger.info("Extracting deals from CheapShark API...")
@@ -224,7 +222,7 @@ class BargainHunterETL(BaseETL):
         }
         return store_map.get(store_id, f"Store {store_id}")
 
-    def _extract_game_tags(self, deal: Dict[str, Any]) -> List[str]:
+    def _extract_game_tags(self, deal: dict[str, Any]) -> list[str]:
         """Extract tags for game deals."""
         tags = []
 
@@ -254,7 +252,7 @@ class BargainHunterETL(BaseETL):
 
         return tags
 
-    def _extract_gamesplanet_deals(self) -> List[Dict[str, Any]]:
+    def _extract_gamesplanet_deals(self) -> list[dict[str, Any]]:
         """Extract current deals from GamesPlanet."""
         try:
             logger.info("Extracting deals from GamesPlanet...")
@@ -287,7 +285,7 @@ class BargainHunterETL(BaseETL):
             logger.error(f"Error extracting from GamesPlanet: {e}")
             return []
 
-    def _extract_green_man_gaming_deals(self) -> List[Dict[str, Any]]:
+    def _extract_green_man_gaming_deals(self) -> list[dict[str, Any]]:
         """Extract current deals from Green Man Gaming."""
         try:
             logger.info("Extracting deals from Green Man Gaming...")
@@ -320,7 +318,7 @@ class BargainHunterETL(BaseETL):
             logger.error(f"Error extracting from Green Man Gaming: {e}")
             return []
 
-    def _extract_dlgamer_deals(self) -> List[Dict[str, Any]]:
+    def _extract_dlgamer_deals(self) -> list[dict[str, Any]]:
         """Extract current deals from DLGamer."""
         try:
             logger.info("Extracting deals from DLGamer...")
@@ -338,7 +336,11 @@ class BargainHunterETL(BaseETL):
                     "savings": 0,
                     "discount_percentage": 0,
                     "store_name": "DLGamer",
-                    "features": ["European store", "competitive pricing", "wide selection"],
+                    "features": [
+                        "European store",
+                        "competitive pricing",
+                        "wide selection",
+                    ],
                     "tags": ["games", "european", "competitive"],
                     "created_date": datetime.now(timezone.utc).isoformat(),
                     "fetched_at": datetime.now(timezone.utc).isoformat(),
@@ -353,7 +355,7 @@ class BargainHunterETL(BaseETL):
             logger.error(f"Error extracting from DLGamer: {e}")
             return []
 
-    def _extract_wingamestore_deals(self) -> List[Dict[str, Any]]:
+    def _extract_wingamestore_deals(self) -> list[dict[str, Any]]:
         """Extract current deals from WinGameStore."""
         try:
             logger.info("Extracting deals from WinGameStore...")
@@ -386,7 +388,7 @@ class BargainHunterETL(BaseETL):
             logger.error(f"Error extracting from WinGameStore: {e}")
             return []
 
-    def _extract_gamersgate_deals(self) -> List[Dict[str, Any]]:
+    def _extract_gamersgate_deals(self) -> list[dict[str, Any]]:
         """Extract current deals from GamersGate."""
         try:
             logger.info("Extracting deals from GamersGate...")
@@ -419,7 +421,7 @@ class BargainHunterETL(BaseETL):
             logger.error(f"Error extracting from GamersGate: {e}")
             return []
 
-    def _get_curated_bargain_sources(self) -> List[Dict[str, Any]]:
+    def _get_curated_bargain_sources(self) -> list[dict[str, Any]]:
         """Get manually curated list of bargain hunting sources."""
         curated = [
             {
@@ -594,7 +596,7 @@ class BargainHunterETL(BaseETL):
         logger.info(f"Added {len(curated)} curated bargain sources")
         return curated
 
-    def transform(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(self, raw_data: dict[str, Any]) -> list[dict[str, Any]]:
         """Transform bargain deals data."""
         logger.info("Starting bargain deals transformation...")
 
@@ -644,14 +646,12 @@ class BargainHunterETL(BaseETL):
                 continue
 
         # Sort by bargain score and savings
-        transformed_deals.sort(
-            key=lambda x: (x["bargain_score"], x["savings"]), reverse=True
-        )
+        transformed_deals.sort(key=lambda x: (x["bargain_score"], x["savings"]), reverse=True)
 
         logger.info(f"Transformed {len(transformed_deals)} bargain deals")
         return transformed_deals
 
-    def _calculate_bargain_score(self, deal: Dict[str, Any]) -> float:
+    def _calculate_bargain_score(self, deal: dict[str, Any]) -> float:
         """Calculate bargain score for ranking deals."""
         score = 0.0
 
@@ -714,7 +714,7 @@ class BargainHunterETL(BaseETL):
 
         return round(score, 2)
 
-    def _determine_deal_urgency(self, deal: Dict[str, Any]) -> str:
+    def _determine_deal_urgency(self, deal: dict[str, Any]) -> str:
         """Determine urgency level of the deal."""
         deal_type = deal.get("deal_type", "")
         platform = deal.get("platform", "").lower()
@@ -728,7 +728,7 @@ class BargainHunterETL(BaseETL):
         else:
             return "none"
 
-    def load(self, transformed_data: List[Dict[str, Any]]) -> bool:
+    def load(self, transformed_data: list[dict[str, Any]]) -> bool:
         """Load transformed bargain deals data to files."""
         try:
             # Ensure output directory exists
@@ -748,9 +748,7 @@ class BargainHunterETL(BaseETL):
                 df = pd.DataFrame(transformed_data)
                 df.to_csv(csv_path, index=False, encoding="utf-8")
 
-            logger.info(
-                f"Successfully saved {len(transformed_data)} bargain deals to {output_dir}"
-            )
+            logger.info(f"Successfully saved {len(transformed_data)} bargain deals to {output_dir}")
             return True
 
         except Exception as e:

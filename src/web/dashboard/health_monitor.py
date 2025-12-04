@@ -1,13 +1,17 @@
 """Health monitoring utilities for Watchtower dashboard."""
 
 import json
-import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from src.web.dashboard.models import ETLHealthMetrics, HealthStatus, MetricsSummary, MetricsCacheEntry
+from src.web.dashboard.models import (
+    ETLHealthMetrics,
+    HealthStatus,
+    MetricsCacheEntry,
+    MetricsSummary,
+)
 
 
 class HealthMonitor:
@@ -22,13 +26,13 @@ class HealthMonitor:
         self.data_dir = Path(data_dir)
         self.metrics_dir = self.data_dir / "metrics"
         self.start_time = time.time()
-        self._cache: Dict[str, MetricsCacheEntry] = {}
+        self._cache: dict[str, MetricsCacheEntry] = {}
 
     def get_uptime_seconds(self) -> float:
         """Get server uptime in seconds."""
         return time.time() - self.start_time
 
-    def read_latest_etl_metrics(self) -> Dict[str, Any]:
+    def read_latest_etl_metrics(self) -> dict[str, Any]:
         """Read latest ETL metrics from aggregated metrics file.
 
         Returns:
@@ -39,14 +43,14 @@ class HealthMonitor:
             if not latest_metrics_file.exists():
                 return {}
 
-            with open(latest_metrics_file, 'r', encoding='utf-8') as f:
+            with open(latest_metrics_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             return data.get("runs", {})
         except Exception:
             return {}
 
-    def read_per_etl_metrics(self, etl_name: str) -> Optional[Dict[str, Any]]:
+    def read_per_etl_metrics(self, etl_name: str) -> dict[str, Any] | None:
         """Read latest metrics for a specific ETL.
 
         Args:
@@ -60,7 +64,7 @@ class HealthMonitor:
             if not latest_file.exists():
                 return None
 
-            with open(latest_file, 'r', encoding='utf-8') as f:
+            with open(latest_file, encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             return None
@@ -83,7 +87,7 @@ class HealthMonitor:
                 status="unknown",
                 error_rate=100.0,
                 error_count=0,
-                total_runs=0
+                total_runs=0,
             )
 
         # Extract basic metrics
@@ -93,7 +97,7 @@ class HealthMonitor:
 
         if latest_metrics.get("end_time"):
             try:
-                last_run_time = datetime.fromisoformat(latest_metrics["end_time"].replace('Z', '+00:00'))
+                last_run_time = datetime.fromisoformat(latest_metrics["end_time"].replace("Z", "+00:00"))
             except (ValueError, AttributeError):
                 pass
 
@@ -111,7 +115,7 @@ class HealthMonitor:
             success_rate=success_rate,
             error_count=error_count,
             total_runs=1,  # We're looking at latest run
-            status=status
+            status=status,
         )
 
     def calculate_overall_health(self) -> HealthStatus:
@@ -127,7 +131,7 @@ class HealthMonitor:
                 status="down",
                 timestamp=datetime.utcnow(),
                 uptime_seconds=self.get_uptime_seconds(),
-                details={"reason": "No ETL metrics available"}
+                details={"reason": "No ETL metrics available"},
             )
 
         # Analyze recent ETL runs
@@ -163,7 +167,7 @@ class HealthMonitor:
             "failed_runs": failed_runs,
             "degraded_runs": degraded_runs,
             "failure_percentage": failure_percentage,
-            "can_read_data_files": self._can_read_data_files()
+            "can_read_data_files": self._can_read_data_files(),
         }
 
         return HealthStatus(
@@ -171,7 +175,7 @@ class HealthMonitor:
             timestamp=datetime.utcnow(),
             version="1.0.0",
             uptime_seconds=self.get_uptime_seconds(),
-            details=details
+            details=details,
         )
 
     def _can_read_data_files(self) -> bool:
@@ -184,14 +188,14 @@ class HealthMonitor:
             # Check a few critical data files
             critical_files = [
                 self.data_dir / "metrics" / "etl_runs_latest.json",
-                self.data_dir / "shortcuts" / "predefined_shortcuts.json"
+                self.data_dir / "shortcuts" / "predefined_shortcuts.json",
             ]
 
             readable_count = 0
             for file_path in critical_files:
                 if file_path.exists():
                     try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
+                        with open(file_path, encoding="utf-8") as f:
                             json.load(f)
                         readable_count += 1
                     except Exception:
@@ -230,7 +234,7 @@ class HealthMonitor:
             end_time = metrics_data.get("end_time")
             if end_time:
                 try:
-                    last_etl_run_times[etl_name] = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
+                    last_etl_run_times[etl_name] = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
                 except (ValueError, AttributeError):
                     last_etl_run_times[etl_name] = None
             else:
@@ -249,7 +253,7 @@ class HealthMonitor:
             "healthy_etl_count": sum(1 for health in etl_health if health.status == "healthy"),
             "degraded_etl_count": sum(1 for health in etl_health if health.status == "degraded"),
             "failed_etl_count": sum(1 for health in etl_health if health.status == "failed"),
-            "server_uptime_seconds": self.get_uptime_seconds()
+            "server_uptime_seconds": self.get_uptime_seconds(),
         }
 
         return MetricsSummary(
@@ -259,10 +263,10 @@ class HealthMonitor:
             last_etl_run_times=last_etl_run_times,
             error_rates_per_source=error_rates_per_source,
             etl_health=etl_health,
-            performance_metrics=performance_metrics
+            performance_metrics=performance_metrics,
         )
 
-    def get_cached_response(self, cache_key: str) -> Optional[Dict[str, Any]]:
+    def get_cached_response(self, cache_key: str) -> dict[str, Any] | None:
         """Get cached response if available and not expired.
 
         Args:
@@ -281,7 +285,7 @@ class HealthMonitor:
 
         return cache_entry.data
 
-    def set_cached_response(self, cache_key: str, data: Dict[str, Any], ttl_minutes: int = 5) -> None:
+    def set_cached_response(self, cache_key: str, data: dict[str, Any], ttl_minutes: int = 5) -> None:
         """Cache response data with TTL.
 
         Args:
@@ -289,11 +293,7 @@ class HealthMonitor:
             data: Response data to cache
             ttl_minutes: Time to live in minutes
         """
-        self._cache[cache_key] = MetricsCacheEntry(
-            data=data,
-            timestamp=datetime.utcnow(),
-            ttl_minutes=ttl_minutes
-        )
+        self._cache[cache_key] = MetricsCacheEntry(data=data, timestamp=datetime.utcnow(), ttl_minutes=ttl_minutes)
 
     def clear_cache(self) -> None:
         """Clear all cached responses."""

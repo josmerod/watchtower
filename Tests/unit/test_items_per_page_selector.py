@@ -1,14 +1,13 @@
-"""
-Unit tests for Items Per Page Selector component
-"""
+"""Unit tests for Items Per Page Selector component"""
+
+from unittest.mock import Mock, patch
 
 import pytest
-import json
-from unittest.mock import Mock, patch
+
 from src.web.dashboard.components.items_per_page_selector import (
     create_items_per_page_selector,
+    load_initial_preference,
     register_items_per_page_callback,
-    load_initial_preference
 )
 
 
@@ -20,17 +19,17 @@ class TestItemsPerPageSelector:
         selector = create_items_per_page_selector("videos", default_value=48)
 
         # Check that it's a Bootstrap Col component
-        assert hasattr(selector, 'children')
+        assert hasattr(selector, "children")
 
         # Check that it contains the expected components
-        children = selector.children if hasattr(selector, 'children') else []
-        labels = [child for child in children if hasattr(child, 'children') and 'Items per page:' in str(child.children)]
+        children = selector.children if hasattr(selector, "children") else []
+        labels = [child for child in children if hasattr(child, "children") and "Items per page:" in str(child.children)]
 
         # Should contain the label
         assert len(labels) > 0, "Should contain 'Items per page:' label"
 
         # Should have proper width configuration
-        assert hasattr(selector, 'width')
+        assert hasattr(selector, "width")
         assert selector.width == 12
         assert selector.md == 2
         assert selector.lg == 2
@@ -58,7 +57,7 @@ class TestItemsPerPageSelector:
         script = load_initial_preference("videos")
 
         # Should be a script component
-        assert hasattr(script, 'children')
+        assert hasattr(script, "children")
 
         # Should contain the tab name
         script_content = str(script.children)
@@ -66,7 +65,7 @@ class TestItemsPerPageSelector:
         assert "itemsPerPageManager" in script_content
         assert "getPreference" in script_content
 
-    @patch('src.web.dashboard.components.items_per_page_selector.clientside_callback')
+    @patch("src.web.dashboard.components.items_per_page_selector.clientside_callback")
     def test_register_items_per_page_callback(self, mock_clientside_callback):
         """Test registration of client-side callback"""
         # Mock app object
@@ -86,9 +85,9 @@ class TestItemsPerPageSelector:
         assert "videos" in callback_function
 
         # Check output and input parameters
-        assert "videos-items-per-page-select" in kwargs['Output']
-        assert "videos-items-per-page-select" in kwargs['Input']
-        assert kwargs['prevent_initial_call'] is True
+        assert "videos-items-per-page-select" in kwargs["Output"]
+        assert "videos-items-per-page-select" in kwargs["Input"]
+        assert kwargs["prevent_initial_call"] is True
 
 
 class TestItemsPerPageSelectorIntegration:
@@ -130,7 +129,7 @@ class TestItemsPerPageSelectorIntegration:
             "getElementById",
             "test-tab-items-per-page-select",
             ".querySelector",
-            ".value"
+            ".value",
         ]
 
         for element in required_elements:

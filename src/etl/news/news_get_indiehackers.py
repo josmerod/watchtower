@@ -28,9 +28,7 @@ from src.utils.logging import get_logger
 logger = get_logger("IndieHackersRedditETL")
 
 
-def get_reddit_posts(
-    subreddits: list[str] = None, limit: int = 25
-) -> list[dict[str, Any]]:
+def get_reddit_posts(subreddits: list[str] = None, limit: int = 25) -> list[dict[str, Any]]:
     """Fetch posts from entrepreneur/startup-focused subreddits.
 
     Args:
@@ -76,10 +74,7 @@ def get_reddit_posts(
                     post = post_data.get("data", {})
 
                     # Skip removed/deleted posts
-                    if (
-                        post.get("removed_by_category")
-                        or post.get("title") == "[deleted]"
-                    ):
+                    if post.get("removed_by_category") or post.get("title") == "[deleted]":
                         continue
 
                     # Create standardized post object
@@ -93,11 +88,7 @@ def get_reddit_posts(
                         "score": post.get("score", 0),
                         "num_comments": post.get("num_comments", 0),
                         "created_utc": post.get("created_utc", 0),
-                        "selftext": (
-                            post.get("selftext", "")[:500] + "..."
-                            if len(post.get("selftext", "")) > 500
-                            else post.get("selftext", "")
-                        ),
+                        "selftext": (post.get("selftext", "")[:500] + "..." if len(post.get("selftext", "")) > 500 else post.get("selftext", "")),
                         "is_self": post.get("is_self", False),
                         "over_18": post.get("over_18", False),
                         "locked": post.get("locked", False),
@@ -110,9 +101,7 @@ def get_reddit_posts(
                     # Convert timestamp to readable format
                     if processed_post["created_utc"]:
                         try:
-                            published_dt = datetime.fromtimestamp(
-                                processed_post["created_utc"], tz=timezone.utc
-                            )
+                            published_dt = datetime.fromtimestamp(processed_post["created_utc"], tz=timezone.utc)
                             processed_post["published_at"] = published_dt.isoformat()
                         except (ValueError, OSError):
                             processed_post["published_at"] = ""
@@ -153,11 +142,7 @@ def process_indie_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "url": post.get("url", ""),
                 "source": post.get("source", "reddit"),
                 "published_at": post.get("published_at", ""),
-                "description": (
-                    post.get("selftext", "")[:300] + "..."
-                    if len(post.get("selftext", "")) > 300
-                    else post.get("selftext", "")
-                ),
+                "description": (post.get("selftext", "")[:300] + "..." if len(post.get("selftext", "")) > 300 else post.get("selftext", "")),
                 "metadata": {
                     "api_source": "reddit_indie_hackers",
                     "processed_at": datetime.now().isoformat(),
@@ -178,9 +163,7 @@ def process_indie_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
 
     # Sort by score (upvotes) to get most popular content first
-    processed_posts.sort(
-        key=lambda x: x.get("metadata", {}).get("score", 0), reverse=True
-    )
+    processed_posts.sort(key=lambda x: x.get("metadata", {}).get("score", 0), reverse=True)
 
     logger.info(f"Successfully processed {len(processed_posts)} posts")
     return processed_posts
@@ -219,9 +202,7 @@ def main():
         pd.DataFrame(processed_posts).to_csv(csv_file, index=False, encoding="utf-8")
         logger.info(f"Saved CSV data to {csv_file}")
 
-        logger.info(
-            f"Saved {len(processed_posts)} processed posts to {output_file} and {csv_file}"
-        )
+        logger.info(f"Saved {len(processed_posts)} processed posts to {output_file} and {csv_file}")
 
     except Exception as e:
         logger.error(f"Error in Indie Hackers Reddit ETL process: {e!s}", exc_info=True)

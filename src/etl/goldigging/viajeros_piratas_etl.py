@@ -1,5 +1,4 @@
-"""
-Viajeros Piratas Travel Deals Scraper ETL
+"""Viajeros Piratas Travel Deals Scraper ETL
 
 This ETL scrapes travel deals from Viajeros Piratas website using Playwright.
 It handles pagination and extracts deal information including price, destination, and type.
@@ -10,17 +9,11 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import urljoin
 
-from playwright.async_api import (
-    Browser,
-    Page,
-    async_playwright,
-)
-from playwright.async_api import (
-    TimeoutError as PlaywrightTimeoutError,
-)
+from playwright.async_api import Browser, Page, async_playwright
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from src.etl.base import BaseETL
 from src.models.ecommerce import TravelDeal, TravelDealRawData
@@ -30,13 +23,10 @@ logger = get_logger("ViajerosPrivatasETL")
 
 
 class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
-    """
-    ETL class for scraping travel deals from Viajeros Piratas using Playwright.
-    """
+    """ETL class for scraping travel deals from Viajeros Piratas using Playwright."""
 
     def __init__(self, max_pages: int = 10):
-        """
-        Initialize the Viajeros Piratas scraper.
+        """Initialize the Viajeros Piratas scraper.
 
         Args:
             max_pages: Maximum number of pages to scrape (default: 10)
@@ -57,9 +47,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
         self.page_timeout = 30000  # 30 seconds
         self.wait_timeout = 10000  # 10 seconds
 
-        self.logger.info(
-            f"Initialized Viajeros Piratas scraper for {self.max_pages} pages max"
-        )
+        self.logger.info(f"Initialized Viajeros Piratas scraper for {self.max_pages} pages max")
 
     def _build_url(self, page_num: int = 1) -> str:
         """Build the URL for a specific page."""
@@ -132,7 +120,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
 
         return now
 
-    def _extract_price(self, price_text: str) -> Dict[str, Any]:
+    def _extract_price(self, price_text: str) -> dict[str, Any]:
         """Extract price information from text."""
         if not price_text:
             return {"raw_price": "", "amount": 0.0, "currency": "EUR"}
@@ -153,19 +141,14 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             return "hotel"
         elif any(word in text for word in ["vuelo", "vuelos", "flight"]):
             return "flight"
-        elif any(
-            word in text
-            for word in ["vacaciones", "viaje", "escapada", "ruta", "tour", "circuito"]
-        ):
+        elif any(word in text for word in ["vacaciones", "viaje", "escapada", "ruta", "tour", "circuito"]):
             return "vacation"
         elif any(word in text for word in ["entrada", "parque", "attraction"]):
             return "attraction"
         else:
             return "other"
 
-    async def _extract_deal_data(
-        self, page: Page, page_num: int
-    ) -> List[TravelDealRawData]:
+    async def _extract_deal_data(self, page: Page, page_num: int) -> list[TravelDealRawData]:
         """Extract deal data from a page."""
         deals = []
 
@@ -186,9 +169,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
 
             # Wait for deal elements to be present
             try:
-                await page.wait_for_selector(
-                    "article, .deal, .offer, .post", timeout=self.wait_timeout
-                )
+                await page.wait_for_selector("article, .deal, .offer, .post", timeout=self.wait_timeout)
             except Exception as e:
                 self.logger.warning(f"Timeout waiting for selectors: {e}")
                 # Continue to try parsing anyway, as content might be there just not matching selectors exactly
@@ -215,12 +196,10 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                         text = await el.inner_text()
                         if len(text) > 20:
                             valid_elements.append(el)
-                    
+
                     if valid_elements:
                         deal_elements = valid_elements
-                        self.logger.info(
-                            f"Found {len(valid_elements)} elements with selector: {selector}"
-                        )
+                        self.logger.info(f"Found {len(valid_elements)} elements with selector: {selector}")
                         break
 
             if not deal_elements:
@@ -235,9 +214,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                         deals.append(deal_data)
 
                 except Exception as e:
-                    self.logger.warning(
-                        f"Error extracting deal {idx} on page {page_num}: {e}"
-                    )
+                    self.logger.warning(f"Error extracting deal {idx} on page {page_num}: {e}")
                     continue
 
             self.logger.info(f"Extracted {len(deals)} deals from page {page_num}")
@@ -247,9 +224,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
 
         return deals
 
-    async def _extract_single_deal(
-        self, element, page_num: int, position: int
-    ) -> Optional[TravelDealRawData]:
+    async def _extract_single_deal(self, element, page_num: int, position: int) -> TravelDealRawData | None:
         """Extract data from a single deal element."""
         try:
             # Get all text content from the element
@@ -261,18 +236,18 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             # Extract title
             # Try to find the title element specifically
             title = ""
-            
+
             # Strategy 1: Look for specific classes (if known/stable)
             # Strategy 2: Look for the largest text or specific structure
-            
+
             # Try to find title by excluding price and time
             lines = text_content.split("\n")
             clean_lines = [l.strip() for l in lines if l.strip()]
-            
+
             # Usually title is the first or second meaningful line
             # Skip "Vacaciones", "Hoteles" etc if they appear first
             categories = ["Vacaciones", "Hoteles", "Vuelos", "Cruceros", "Viajes"]
-            
+
             for line in clean_lines:
                 if line in categories:
                     continue
@@ -282,7 +257,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                     continue
                 title = line
                 break
-            
+
             if not title and clean_lines:
                 title = clean_lines[0]
 
@@ -351,7 +326,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             self.logger.warning(f"Error extracting single deal: {e}")
             return None
 
-    async def _extract_async(self) -> List[TravelDealRawData]:
+    async def _extract_async(self) -> list[TravelDealRawData]:
         """Async extraction method to handle Playwright operations."""
         all_deals = []
 
@@ -410,9 +385,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                             continue
 
                         all_deals.extend(page_deals)
-                        self.logger.info(
-                            f"Extracted {len(page_deals)} deals from page {page_num}"
-                        )
+                        self.logger.info(f"Extracted {len(page_deals)} deals from page {page_num}")
 
                         # Update checkpoint
                         if self.enable_checkpointing:
@@ -443,12 +416,10 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                 if browser:
                     await browser.close()
 
-        self.logger.info(
-            f"Extracted {len(all_deals)} total deals from {self.max_pages} pages"
-        )
+        self.logger.info(f"Extracted {len(all_deals)} total deals from {self.max_pages} pages")
         return all_deals
 
-    def extract(self) -> List[TravelDealRawData]:
+    def extract(self) -> list[TravelDealRawData]:
         """Extract raw deal data from Viajeros Piratas using Playwright."""
         try:
             loop = asyncio.get_event_loop()
@@ -471,7 +442,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
         except RuntimeError:
             return asyncio.run(self._extract_async())
 
-    def transform(self, data: List[TravelDealRawData]) -> List[TravelDeal]:
+    def transform(self, data: list[TravelDealRawData]) -> list[TravelDeal]:
         """Transform raw deal data into structured TravelDeal objects."""
         transformed_deals = []
 
@@ -488,7 +459,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
         self.logger.info(f"Transformed {len(transformed_deals)} deals")
         return transformed_deals
 
-    def _parse_deal_data(self, raw_deal: TravelDealRawData) -> Optional[TravelDeal]:
+    def _parse_deal_data(self, raw_deal: TravelDealRawData) -> TravelDeal | None:
         """Parse raw deal data into structured format."""
         try:
             # Extract price information
@@ -504,9 +475,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             description = raw_deal.text_content.strip()
             lines = description.split("\n")
             # Remove empty lines and duplicate content
-            clean_lines = [
-                line.strip() for line in lines if line.strip() and len(line.strip()) > 3
-            ]
+            clean_lines = [line.strip() for line in lines if line.strip() and len(line.strip()) > 3]
             description = "\n".join(clean_lines[:5])  # Take first 5 meaningful lines
 
             return TravelDeal(
@@ -530,7 +499,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             self.logger.error(f"Error parsing deal data for {raw_deal.deal_id}: {e}")
             return None
 
-    def load(self, data: List[TravelDeal]) -> None:
+    def load(self, data: list[TravelDeal]) -> None:
         """Load the transformed deals into JSON and CSV files."""
         if not data:
             self.logger.warning("No deals to load")
@@ -579,20 +548,13 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             )
 
         # Save in scavenging format
-        scavenging_file = Path(
-            self.data_dir.parent.parent
-            / "data"
-            / "scavenging"
-            / "viajeros_piratas_deals.json"
-        )
+        scavenging_file = Path(self.data_dir.parent.parent / "data" / "scavenging" / "viajeros_piratas_deals.json")
         scavenging_file.parent.mkdir(parents=True, exist_ok=True)
 
         try:
             with open(scavenging_file, "w", encoding="utf-8") as f:
                 json.dump(scavenging_data, f, indent=2, ensure_ascii=False, default=str)
-            self.logger.info(
-                f"Saved {len(scavenging_data)} deals in scavenging format to {scavenging_file}"
-            )
+            self.logger.info(f"Saved {len(scavenging_data)} deals in scavenging format to {scavenging_file}")
         except Exception as e:
             self.logger.error(f"Error saving scavenging format file: {e}")
 
@@ -601,12 +563,8 @@ def main():
     """Main function to run the Viajeros Piratas scraper."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Viajeros Piratas Travel Deals Scraper"
-    )
-    parser.add_argument(
-        "--max-pages", type=int, default=10, help="Maximum pages to scrape"
-    )
+    parser = argparse.ArgumentParser(description="Viajeros Piratas Travel Deals Scraper")
+    parser.add_argument("--max-pages", type=int, default=10, help="Maximum pages to scrape")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     args = parser.parse_args()

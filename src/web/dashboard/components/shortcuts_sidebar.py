@@ -1,22 +1,13 @@
-"""
-Shortcuts Sidebar Component
+"""Shortcuts Sidebar Component
 Provides a collapsible sidebar for managing personal source shortcuts
 """
 
-import dash
-from dash import (
-    html,
-    dcc,
-    callback,
-    Input,
-    Output,
-    State,
-    clientside_callback,
-    ClientsideFunction,
-)
-import dash_bootstrap_components as dbc
 import uuid
-from typing import Dict, List, Any
+from typing import Any
+
+import dash
+import dash_bootstrap_components as dbc
+from dash import Input, Output, State, clientside_callback, dcc, html
 
 
 class ShortcutsSidebar:
@@ -35,9 +26,7 @@ class ShortcutsSidebar:
             [
                 html.I(className="fas fa-star me-2"),
                 "Shortcuts",
-                html.Span(
-                    id=self.stats_id, className="badge bg-secondary ms-2", children="0"
-                ),
+                html.Span(id=self.stats_id, className="badge bg-secondary ms-2", children="0"),
             ],
             id=self.toggle_btn_id,
             color="outline-primary",
@@ -53,16 +42,19 @@ class ShortcutsSidebar:
                 html.Div(
                     [
                         html.H5(
-                            [html.I(className="fas fa-star me-2"), "My Source Shortcuts"],
-                            className="offcanvas-title"
+                            [
+                                html.I(className="fas fa-star me-2"),
+                                "My Source Shortcuts",
+                            ],
+                            className="offcanvas-title",
                         ),
                         html.Button(
                             type="button",
                             className="btn-close text-reset",
-                            **{"data-bs-dismiss": "offcanvas", "aria-label": "Close"}
+                            **{"data-bs-dismiss": "offcanvas", "aria-label": "Close"},
                         ),
                     ],
-                    className="offcanvas-header border-bottom"
+                    className="offcanvas-header border-bottom",
                 ),
                 html.Div(
                     [
@@ -124,7 +116,7 @@ class ShortcutsSidebar:
             style={"width": "320px"},
         )
 
-    def create_shortcut_card(self, shortcut_data: Dict[str, Any]) -> dbc.Card:
+    def create_shortcut_card(self, shortcut_data: dict[str, Any]) -> dbc.Card:
         """Create a card for a single shortcut"""
         shortcut_id = shortcut_data.get("id", "")
         shortcut_name = shortcut_data.get("name", "Unknown")
@@ -210,9 +202,7 @@ class ShortcutsSidebar:
             },
         )
 
-    def create_domain_section(
-        self, domain: str, shortcuts: List[Dict[str, Any]]
-    ) -> html.Div:
+    def create_domain_section(self, domain: str, shortcuts: list[dict[str, Any]]) -> html.Div:
         """Create a section for a specific domain"""
         if not shortcuts:
             return html.Div()
@@ -253,14 +243,7 @@ class ShortcutsSidebar:
                     className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2",
                 ),
                 # Shortcuts in this domain
-                html.Div(
-                    [
-                        self.create_shortcut_card(shortcut)
-                        for shortcut in sorted(
-                            shortcuts, key=lambda x: x.get("order", 0)
-                        )
-                    ]
-                ),
+                html.Div([self.create_shortcut_card(shortcut) for shortcut in sorted(shortcuts, key=lambda x: x.get("order", 0))]),
             ],
             className="mb-4",
             id=f"{self.domain_prefix}{domain.lower().replace(' ', '-')}",
@@ -340,7 +323,7 @@ clientside_callback(
     Input("shortcuts-data-store", "data"),
     prevent_initial_call=True,
 )
-def render_shortcuts(grouped_data: Dict[str, List[Dict[str, Any]]]):
+def render_shortcuts(grouped_data: dict[str, list[dict[str, Any]]]):
     """Render shortcuts from grouped data"""
     if not grouped_data:
         return html.Div(
@@ -404,9 +387,7 @@ clientside_callback(
         return window.dash_clientside.no_update;
     }
     """,
-    Output(
-        f"{shortcuts_sidebar.shortcuts_container_id}", "data-dummy2"
-    ),  # Dummy output
+    Output(f"{shortcuts_sidebar.shortcuts_container_id}", "data-dummy2"),  # Dummy output
     Input({"type": "remove-shortcut", "index": dash.ALL}, "n_clicks"),
     prevent_initial_call=True,
 )
@@ -415,49 +396,49 @@ clientside_callback(
 # JavaScript to inject for handling shortcut interactions
 def get_shortcuts_clientside_script():
     """Return JavaScript code for handling shortcut interactions"""
-    return """
+    return f"""
     // Handle shortcut navigation
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function(e) {{
         const target = e.target.closest('a[id^="shortcut-link-"]');
-        if (target) {
+        if (target) {{
             e.preventDefault();
             const shortcutId = target.getAttribute('data-shortcut-id');
             const domain = target.getAttribute('data-domain');
 
-            if (shortcutId) {
+            if (shortcutId) {{
                 navigateWithShortcut(shortcutId, domain);
-            }
-        }
+            }}
+        }}
 
         // Handle remove shortcut
         const removeBtn = e.target.closest('button[id^="remove-shortcut-"]');
-        if (removeBtn) {
+        if (removeBtn) {{
             e.preventDefault();
             const shortcutId = removeBtn.getAttribute('data-shortcut-id');
             const shortcutName = removeBtn.getAttribute('data-shortcut-name');
 
-            if (shortcutId && confirm(`Remove shortcut "${shortcutName}"?`)) {
+            if (shortcutId && confirm(`Remove shortcut "${{shortcutName}}"?`)) {{
                 removeShortcut(shortcutId);
-            }
-        }
-    });
+            }}
+        }}
+    }});
 
-    function navigateWithShortcut(shortcutId, domain) {
-        try {
+    function navigateWithShortcut(shortcutId, domain) {{
+        try {{
             const shortcutsManager = window.shortcutsManager;
             const shortcut = shortcutsManager.getShortcut(shortcutId);
 
-            if (!shortcut) {
+            if (!shortcut) {{
                 console.error('Shortcut not found:', shortcutId);
                 return;
-            }
+            }}
 
             // Apply source filter and navigate to appropriate tab
             const sourceFilter = shortcut.source_filter;
 
             // Trigger navigation based on domain
             let targetTab = '';
-            switch (domain) {
+            switch (domain) {{
                 case 'Papers':
                     targetTab = 'arxiv';
                     break;
@@ -472,59 +453,59 @@ def get_shortcuts_clientside_script():
                     break;
                 default:
                     targetTab = 'news'; // Default fallback
-            }
+            }}
 
             // Navigate to tab and apply filter
             // This would need to be integrated with the specific tab callbacks
             console.log('Navigating to tab:', targetTab, 'with filter:', sourceFilter);
 
             // Close sidebar
-            const sidebar = document.getElementById('%(sidebar_id)s');
-            if (sidebar && sidebar.classList) {
+            const sidebar = document.getElementById('{shortcuts_sidebar.sidebar_id}');
+            if (sidebar && sidebar.classList) {{
                 const offcanvas = bootstrap.Offcanvas.getInstance(sidebar);
-                if (offcanvas) {
+                if (offcanvas) {{
                     offcanvas.hide();
-                }
-            }
+                }}
+            }}
 
-        } catch (error) {
+        }} catch (error) {{
             console.error('Error navigating with shortcut:', error);
-        }
-    }
+        }}
+    }}
 
-    function removeShortcut(shortcutId) {
-        try {
+    function removeShortcut(shortcutId) {{
+        try {{
             const shortcutsManager = window.shortcutsManager;
             const success = shortcutsManager.removeShortcut(shortcutId);
 
-            if (success) {
+            if (success) {{
                 // Trigger shortcuts refresh
                 const trigger = document.getElementById('shortcuts-updates-trigger');
-                if (trigger) {
+                if (trigger) {{
                     trigger.innerHTML = Date.now(); // Trigger change
-                }
+                }}
 
                 // Show success message (optional)
                 console.log('Shortcut removed successfully');
-            } else {
+            }} else {{
                 alert('Failed to remove shortcut');
-            }
-        } catch (error) {
+            }}
+        }} catch (error) {{
             console.error('Error removing shortcut:', error);
             alert('Error removing shortcut: ' + error.message);
-        }
-    }
+        }}
+    }}
 
     // Initialize drag and drop for shortcuts (future enhancement)
-    function initializeDragDrop() {
+    function initializeDragDrop() {{
         // TODO: Implement drag and drop functionality
         console.log('Drag and drop not yet implemented');
-    }
+    }}
 
     // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
+    if (document.readyState === 'loading') {{
         document.addEventListener('DOMContentLoaded', initializeDragDrop);
-    } else {
+    }} else {{
         initializeDragDrop();
-    }
-    """ % {"sidebar_id": shortcuts_sidebar.sidebar_id}
+    }}
+    """

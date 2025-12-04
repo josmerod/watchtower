@@ -1,5 +1,4 @@
-"""
-Museums Dashboard Tab
+"""Museums Dashboard Tab
 Cultural institutions and museum data integration
 """
 
@@ -35,13 +34,11 @@ def load_museums_data(file_path):
             logger.warning(f"Museums data file not found: {file_path}")
             return []
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
 
         if isinstance(data, list):
-            return [
-                process_museum_item(item) for item in data if process_museum_item(item)
-            ]
+            return [process_museum_item(item) for item in data if process_museum_item(item)]
         elif isinstance(data, dict):
             processed_item = process_museum_item(data)
             return [processed_item] if processed_item else []
@@ -57,17 +54,13 @@ def process_museum_item(item):
     try:
         return {
             "name": item.get("name", item.get("title", "Unknown Museum")),
-            "description": item.get(
-                "description", item.get("summary", "No description available")
-            ),
+            "description": item.get("description", item.get("summary", "No description available")),
             "location": item.get("location", item.get("address", "Unknown Location")),
             "type": item.get("type", item.get("category", "Museum")),
             "website": item.get("website", item.get("url", "#")),
             "rating": float(item.get("rating", 0)) if item.get("rating") else 0,
             "hours": item.get("hours", item.get("opening_hours", "Contact for hours")),
-            "admission": item.get(
-                "admission", item.get("price", "Contact for pricing")
-            ),
+            "admission": item.get("admission", item.get("price", "Contact for pricing")),
             "exhibitions": item.get("exhibitions", item.get("current_exhibitions", [])),
             "raw_data": item,
         }
@@ -84,17 +77,11 @@ logger.info(f"Loaded {len(MUSEUMS_DATA)} museums")
 def create_museums_table():
     """Create table for museums data"""
     if not MUSEUMS_DATA:
-        return dbc.Alert(
-            "No museums data available.", color="info", className="text-center"
-        )
+        return dbc.Alert("No museums data available.", color="info", className="text-center")
 
     df_data = []
     for museum in MUSEUMS_DATA:
-        exhibitions_str = (
-            ", ".join(museum["exhibitions"][:3])
-            if museum["exhibitions"]
-            else "None listed"
-        )
+        exhibitions_str = ", ".join(museum["exhibitions"][:3]) if museum["exhibitions"] else "None listed"
         if len(museum["exhibitions"]) > 3:
             exhibitions_str += f" +{len(museum['exhibitions']) - 3} more"
 
@@ -106,11 +93,7 @@ def create_museums_table():
             "Hours": museum["hours"],
             "Admission": museum["admission"],
             "Current Exhibitions": exhibitions_str,
-            "Description": (
-                museum["description"][:150] + "..."
-                if len(museum["description"]) > 150
-                else museum["description"]
-            ),
+            "Description": (museum["description"][:150] + "..." if len(museum["description"]) > 150 else museum["description"]),
             "Website": museum["website"],
         }
         df_data.append(row)
@@ -164,21 +147,14 @@ def create_museums_table():
             "whiteSpace": "normal",
             "height": "auto",
         },
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#252343"}
-        ],
+        style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "#252343"}],
     )
 
 
 def render_museums_tab():
     """Main render function for Museums tab"""
     museum_count = len(MUSEUMS_DATA)
-    avg_rating = (
-        sum(m["rating"] for m in MUSEUMS_DATA if m["rating"] > 0)
-        / len([m for m in MUSEUMS_DATA if m["rating"] > 0])
-        if any(m["rating"] > 0 for m in MUSEUMS_DATA)
-        else 0
-    )
+    avg_rating = sum(m["rating"] for m in MUSEUMS_DATA if m["rating"] > 0) / len([m for m in MUSEUMS_DATA if m["rating"] > 0]) if any(m["rating"] > 0 for m in MUSEUMS_DATA) else 0
 
     return html.Div(
         [
@@ -223,11 +199,7 @@ def render_museums_tab():
                                                     dbc.CardBody(
                                                         [
                                                             html.H4(
-                                                                (
-                                                                    f"{avg_rating:.1f}/5"
-                                                                    if avg_rating > 0
-                                                                    else "N/A"
-                                                                ),
+                                                                (f"{avg_rating:.1f}/5" if avg_rating > 0 else "N/A"),
                                                                 className="text-success mb-0",
                                                             ),
                                                             html.P(

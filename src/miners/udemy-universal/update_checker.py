@@ -229,9 +229,7 @@ class UpdateChecker:
             update_info: Update information dictionary
         """
         if not update_info["available"]:
-            self.logger.info(
-                f"You are using the latest version: v{update_info['current_version']}"
-            )
+            self.logger.info(f"You are using the latest version: v{update_info['current_version']}")
             return
 
         self.logger.info("=" * 60)
@@ -248,9 +246,7 @@ class UpdateChecker:
             for item in update_info["changelog"][:5]:  # Show first 5 items
                 self.logger.info(f"  • {item}")
             if len(update_info["changelog"]) > 5:
-                self.logger.info(
-                    f"  ... and {len(update_info['changelog']) - 5} more changes"
-                )
+                self.logger.info(f"  ... and {len(update_info['changelog']) - 5} more changes")
 
         self.logger.info("\nTo update, visit: " + GITHUB_RELEASES_URL)
         self.logger.info("=" * 60)
@@ -267,9 +263,7 @@ class UpdateChecker:
         return False
 
 
-def check_for_updates(
-    current_version: str = CURRENT_VERSION, force: bool = False
-) -> tuple[str, str]:
+def check_for_updates(current_version: str = CURRENT_VERSION, force: bool = False) -> tuple[str, str]:
     """Convenience function to check for updates.
 
     Args:

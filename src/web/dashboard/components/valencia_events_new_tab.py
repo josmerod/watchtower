@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -17,14 +17,14 @@ logger = logging.getLogger(__name__)
 VALENCIA_EVENTS_FILE = Path("data/valencia_events/valencia_events.json")
 
 
-def load_valencia_events() -> List[Dict[str, Any]]:
+def load_valencia_events() -> list[dict[str, Any]]:
     """Load Valencia events data from JSON files"""
     try:
         if not VALENCIA_EVENTS_FILE.exists():
             logger.warning(f"Valencia events file not found: {VALENCIA_EVENTS_FILE}")
             return []
 
-        with open(VALENCIA_EVENTS_FILE, "r", encoding="utf-8") as f:
+        with open(VALENCIA_EVENTS_FILE, encoding="utf-8") as f:
             events = json.load(f)
 
         logger.info(f"Loaded {len(events)} Valencia events from {VALENCIA_EVENTS_FILE}")
@@ -34,7 +34,7 @@ def load_valencia_events() -> List[Dict[str, Any]]:
         return []
 
 
-def create_event_card(event: Dict[str, Any]) -> dbc.Card:
+def create_event_card(event: dict[str, Any]) -> dbc.Card:
     """Create a card component for a single event"""
     try:
         title = event.get("title", "Sin título")
@@ -47,17 +47,7 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
         source = event.get("source", "Valencia")
 
         # Format dates
-        date_display = (
-            date_text
-            if date_text
-            else (
-                f"{start_date} - {end_date}"
-                if start_date and end_date
-                else start_date
-                if start_date
-                else "Fecha por confirmar"
-            )
-        )
+        date_display = date_text if date_text else (f"{start_date} - {end_date}" if start_date and end_date else start_date if start_date else "Fecha por confirmar")
 
         # Determine event type badge color
         badge_color = "primary"
@@ -77,9 +67,7 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
                         html.H5(title, className="mb-1"),
                         html.Div(
                             [
-                                dbc.Badge(
-                                    category, color=badge_color, className="me-2"
-                                ),
+                                dbc.Badge(category, color=badge_color, className="me-2"),
                             ]
                         ),
                     ]
@@ -89,9 +77,7 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
 
         card_body_content = [
             html.P(description, className="card-text mb-3"),
-            html.Div(
-                [html.Strong("📅 Fecha: "), html.Span(date_display)], className="mb-2"
-            ),
+            html.Div([html.Strong("📅 Fecha: "), html.Span(date_display)], className="mb-2"),
             html.Div([html.Strong("🏷️ Fuente: "), html.Span(source)], className="mb-3"),
             # Action button
             (
@@ -108,9 +94,7 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
             ),
         ]
 
-        return dbc.Card(
-            [card_header, dbc.CardBody(card_body_content)], className="mb-3 h-100"
-        )
+        return dbc.Card([card_header, dbc.CardBody(card_body_content)], className="mb-3 h-100")
 
     except Exception as e:
         logger.error(f"Error creating event card: {e}")
@@ -118,14 +102,14 @@ def create_event_card(event: Dict[str, Any]) -> dbc.Card:
             dbc.CardBody(
                 [
                     html.H4("Error Loading Event", className="card-title"),
-                    html.P(f"Error: {str(e)}", className="card-text"),
+                    html.P(f"Error: {e!s}", className="card-text"),
                 ]
             ),
             className="mb-3",
         )
 
 
-def create_events_table(events: List[Dict[str, Any]]) -> dash_table.DataTable:
+def create_events_table(events: list[dict[str, Any]]) -> dash_table.DataTable:
     """Create a table view of events"""
     try:
         if not events:
@@ -171,27 +155,19 @@ def create_events_table(events: List[Dict[str, Any]]) -> dash_table.DataTable:
                 "whiteSpace": "normal",
                 "height": "auto",
             },
-            style_data_conditional=[
-                {"if": {"row_index": "odd"}, "backgroundColor": "rgb(255, 255, 255)"}
-            ],
+            style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "rgb(255, 255, 255)"}],
             sort_action="native",
             filter_action="native",
             page_action="native",
             page_current=0,
             page_size=15,
-            tooltip_data=[
-                {
-                    column: {"value": str(value), "type": "text"}
-                    for column, value in row.items()
-                }
-                for row in df_display.to_dict("records")
-            ],
+            tooltip_data=[{column: {"value": str(value), "type": "text"} for column, value in row.items()} for row in df_display.to_dict("records")],
             tooltip_duration=None,
         )
 
     except Exception as e:
         logger.error(f"Error creating events table: {e}")
-        return html.Div(f"Error creando tabla: {str(e)}")
+        return html.Div(f"Error creando tabla: {e!s}")
 
 
 def render_valencia_events_tab() -> html.Div:
@@ -208,9 +184,7 @@ def render_valencia_events_tab() -> html.Div:
                                 "No hay eventos de Valencia disponibles",
                                 className="alert-heading",
                             ),
-                            html.P(
-                                "No se encontraron datos de eventos. Ejecuta el ETL de Valencia para poblar los datos."
-                            ),
+                            html.P("No se encontraron datos de eventos. Ejecuta el ETL de Valencia para poblar los datos."),
                             html.Hr(),
                             html.P(
                                 f"Ubicación esperada: {VALENCIA_EVENTS_FILE}",
@@ -224,21 +198,13 @@ def render_valencia_events_tab() -> html.Div:
             )
 
         # Filter data for different views
-        tech_events_data = [
-            e for e in events_data
-            if "tech" in e.get("category", "").lower()
-            or "tecnología" in e.get("category", "").lower()
-        ]
+        tech_events_data = [e for e in events_data if "tech" in e.get("category", "").lower() or "tecnología" in e.get("category", "").lower()]
 
-        upcoming_events_data = [
-            e for e in events_data
-            if e.get("start_date")
-            and _is_upcoming_event(e.get("start_date", ""), datetime.now() + timedelta(days=30))
-        ]
+        upcoming_events_data = [e for e in events_data if e.get("start_date") and _is_upcoming_event(e.get("start_date", ""), datetime.now() + timedelta(days=30))]
 
         # Statistics
         total_events = len(events_data)
-        categories = set(event.get("category", "General") for event in events_data)
+        categories = {event.get("category", "General") for event in events_data}
         tech_events_count = len(tech_events_data)
         upcoming_events_count = len(upcoming_events_data)
         free_events = len([e for e in events_data if e.get("cost", 0) == 0])
@@ -251,9 +217,7 @@ def render_valencia_events_tab() -> html.Div:
                             [
                                 dbc.CardBody(
                                     [
-                                        html.H4(
-                                            str(total_events), className="card-title"
-                                        ),
+                                        html.H4(str(total_events), className="card-title"),
                                         html.P("Total Eventos", className="card-text"),
                                     ]
                                 )
@@ -268,9 +232,7 @@ def render_valencia_events_tab() -> html.Div:
                             [
                                 dbc.CardBody(
                                     [
-                                        html.H4(
-                                            str(len(categories)), className="card-title"
-                                        ),
+                                        html.H4(str(len(categories)), className="card-title"),
                                         html.P("Categorías", className="card-text"),
                                     ]
                                 )
@@ -286,7 +248,8 @@ def render_valencia_events_tab() -> html.Div:
                                 dbc.CardBody(
                                     [
                                         html.H4(
-                                            str(tech_events_count), className="card-title"
+                                            str(tech_events_count),
+                                            className="card-title",
                                         ),
                                         html.P("Eventos Tech", className="card-text"),
                                     ]
@@ -302,12 +265,8 @@ def render_valencia_events_tab() -> html.Div:
                             [
                                 dbc.CardBody(
                                     [
-                                        html.H4(
-                                            str(free_events), className="card-title"
-                                        ),
-                                        html.P(
-                                            "Eventos Gratuitos", className="card-text"
-                                        ),
+                                        html.H4(str(free_events), className="card-title"),
+                                        html.P("Eventos Gratuitos", className="card-text"),
                                     ]
                                 )
                             ]
@@ -340,7 +299,10 @@ def render_valencia_events_tab() -> html.Div:
                                             outline=True,
                                         ),
                                         dbc.Button(
-                                            "Vista de Tabla", id="all-table-view-btn", color="primary", outline=True
+                                            "Vista de Tabla",
+                                            id="all-table-view-btn",
+                                            color="primary",
+                                            outline=True,
                                         ),
                                     ],
                                     className="mb-4",
@@ -352,14 +314,8 @@ def render_valencia_events_tab() -> html.Div:
                                         html.Div(
                                             [
                                                 dbc.Row(
-                                                    [
-                                                        dbc.Col(card, width=4)
-                                                        for card in [
-                                                            create_event_card(event)
-                                                            for event in events_data[:12]
-                                                        ]
-                                                    ],
-                                                    className="mb-4"
+                                                    [dbc.Col(card, width=4) for card in [create_event_card(event) for event in events_data[:12]]],
+                                                    className="mb-4",
                                                 )
                                             ],
                                             id="all-cards-container",
@@ -376,7 +332,7 @@ def render_valencia_events_tab() -> html.Div:
                                 ),
                             ]
                         )
-                    ]
+                    ],
                 ),
                 dbc.Tab(
                     label="Eventos Tecnológicos",
@@ -393,40 +349,44 @@ def render_valencia_events_tab() -> html.Div:
                                             outline=True,
                                         ),
                                         dbc.Button(
-                                            "Vista de Tabla", id="tech-table-view-btn", color="primary", outline=True
+                                            "Vista de Tabla",
+                                            id="tech-table-view-btn",
+                                            color="primary",
+                                            outline=True,
                                         ),
                                     ],
                                     className="mb-4",
                                 ),
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            [
-                                                dbc.Row(
-                                                    [
-                                                        dbc.Col(card, width=4)
-                                                        for card in [
-                                                            create_event_card(event)
-                                                            for event in tech_events_data[:12]
-                                                        ]
-                                                    ],
-                                                    className="mb-4"
-                                                )
-                                            ],
-                                            id="tech-cards-container",
-                                            style={"display": "block"},
-                                        ),
-                                        html.Div(
-                                            create_events_table(tech_events_data),
-                                            id="tech-table-container",
-                                            style={"display": "none"},
-                                        ),
-                                    ],
-                                    id="tech-events-content",
-                                ) if tech_events_data else html.Div("No hay eventos tecnológicos disponibles", className="text-center p-4")
+                                (
+                                    html.Div(
+                                        [
+                                            html.Div(
+                                                [
+                                                    dbc.Row(
+                                                        [dbc.Col(card, width=4) for card in [create_event_card(event) for event in tech_events_data[:12]]],
+                                                        className="mb-4",
+                                                    )
+                                                ],
+                                                id="tech-cards-container",
+                                                style={"display": "block"},
+                                            ),
+                                            html.Div(
+                                                create_events_table(tech_events_data),
+                                                id="tech-table-container",
+                                                style={"display": "none"},
+                                            ),
+                                        ],
+                                        id="tech-events-content",
+                                    )
+                                    if tech_events_data
+                                    else html.Div(
+                                        "No hay eventos tecnológicos disponibles",
+                                        className="text-center p-4",
+                                    )
+                                ),
                             ]
                         )
-                    ]
+                    ],
                 ),
                 dbc.Tab(
                     label="Próximos Eventos",
@@ -443,40 +403,44 @@ def render_valencia_events_tab() -> html.Div:
                                             outline=True,
                                         ),
                                         dbc.Button(
-                                            "Vista de Tabla", id="upcoming-table-view-btn", color="primary", outline=True
+                                            "Vista de Tabla",
+                                            id="upcoming-table-view-btn",
+                                            color="primary",
+                                            outline=True,
                                         ),
                                     ],
                                     className="mb-4",
                                 ),
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            [
-                                                dbc.Row(
-                                                    [
-                                                        dbc.Col(card, width=4)
-                                                        for card in [
-                                                            create_event_card(event)
-                                                            for event in upcoming_events_data[:12]
-                                                        ]
-                                                    ],
-                                                    className="mb-4"
-                                                )
-                                            ],
-                                            id="upcoming-cards-container",
-                                            style={"display": "block"},
-                                        ),
-                                        html.Div(
-                                            create_events_table(upcoming_events_data),
-                                            id="upcoming-table-container",
-                                            style={"display": "none"},
-                                        ),
-                                    ],
-                                    id="upcoming-events-content",
-                                ) if upcoming_events_data else html.Div("No hay eventos próximos disponibles", className="text-center p-4")
+                                (
+                                    html.Div(
+                                        [
+                                            html.Div(
+                                                [
+                                                    dbc.Row(
+                                                        [dbc.Col(card, width=4) for card in [create_event_card(event) for event in upcoming_events_data[:12]]],
+                                                        className="mb-4",
+                                                    )
+                                                ],
+                                                id="upcoming-cards-container",
+                                                style={"display": "block"},
+                                            ),
+                                            html.Div(
+                                                create_events_table(upcoming_events_data),
+                                                id="upcoming-table-container",
+                                                style={"display": "none"},
+                                            ),
+                                        ],
+                                        id="upcoming-events-content",
+                                    )
+                                    if upcoming_events_data
+                                    else html.Div(
+                                        "No hay eventos próximos disponibles",
+                                        className="text-center p-4",
+                                    )
+                                ),
                             ]
                         )
-                    ]
+                    ],
                 ),
             ],
             id="valencia-events-subtabs",
@@ -511,11 +475,7 @@ def render_valencia_events_tab() -> html.Div:
     except Exception as e:
         logger.error(f"Error rendering Valencia events tab: {e}")
         return html.Div(
-            [
-                dbc.Alert(
-                    f"Error cargando eventos de Valencia: {str(e)}", color="danger"
-                )
-            ],
+            [dbc.Alert(f"Error cargando eventos de Valencia: {e!s}", color="danger")],
             className="p-4",
         )
 

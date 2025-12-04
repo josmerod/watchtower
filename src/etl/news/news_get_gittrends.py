@@ -60,9 +60,7 @@ def create_session() -> requests.Session:
     return session
 
 
-def get_trending_repositories(
-    session: requests.Session, language: str = None, since: str = "daily"
-) -> list[dict[str, Any]]:
+def get_trending_repositories(session: requests.Session, language: str = None, since: str = "daily") -> list[dict[str, Any]]:
     """Fetch trending repositories from GitHub.
 
     Args:
@@ -135,11 +133,7 @@ def get_trending_repositories(
                     "size": repo.get("size", 0),
                     "default_branch": repo.get("default_branch"),
                     "topics": repo.get("topics", []),
-                    "license": (
-                        repo.get("license", {}).get("name")
-                        if repo.get("license")
-                        else None
-                    ),
+                    "license": (repo.get("license", {}).get("name") if repo.get("license") else None),
                     "owner": {
                         "login": repo.get("owner", {}).get("login"),
                         "type": repo.get("owner", {}).get("type"),
@@ -183,9 +177,7 @@ def get_trending_repositories(
                         source_url=None,
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"Validation failed for GitHub repo {processed_repo.get('full_name', '')}: {e}"
-                    )
+                    logger.warning(f"Validation failed for GitHub repo {processed_repo.get('full_name', '')}: {e}")
 
                 repositories.append(processed_repo)
 
@@ -252,9 +244,7 @@ def get_github_topics(session: requests.Session) -> list[dict[str, Any]]:
         return []
 
 
-def process_github_data(
-    repositories: list[dict[str, Any]], topics: list[dict[str, Any]]
-) -> list[dict[str, Any]]:
+def process_github_data(repositories: list[dict[str, Any]], topics: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Process and enrich GitHub data with additional metrics and categorization.
 
     Args:
@@ -285,17 +275,13 @@ def process_github_data(
 
             if created_at:
                 created_date = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-                days_since_created = (
-                    current_time.replace(tzinfo=created_date.tzinfo) - created_date
-                ).days
+                days_since_created = (current_time.replace(tzinfo=created_date.tzinfo) - created_date).days
             else:
                 days_since_created = 0
 
             if updated_at:
                 updated_date = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
-                days_since_updated = (
-                    current_time.replace(tzinfo=updated_date.tzinfo) - updated_date
-                ).days
+                days_since_updated = (current_time.replace(tzinfo=updated_date.tzinfo) - updated_date).days
             else:
                 days_since_updated = 999
 
@@ -349,35 +335,17 @@ def process_github_data(
                 ]
             ):
                 category = "ai_ml"
-            elif any(
-                word in description
-                for word in ["web", "frontend", "backend", "api", "server"]
-            ):
+            elif any(word in description for word in ["web", "frontend", "backend", "api", "server"]):
                 category = "web_development"
-            elif any(
-                word in description
-                for word in ["mobile", "ios", "android", "flutter", "react native"]
-            ):
+            elif any(word in description for word in ["mobile", "ios", "android", "flutter", "react native"]):
                 category = "mobile"
-            elif any(
-                word in description
-                for word in ["data", "analytics", "visualization", "dashboard"]
-            ):
+            elif any(word in description for word in ["data", "analytics", "visualization", "dashboard"]):
                 category = "data_tools"
-            elif any(
-                word in description
-                for word in ["devops", "deployment", "ci/cd", "docker", "kubernetes"]
-            ):
+            elif any(word in description for word in ["devops", "deployment", "ci/cd", "docker", "kubernetes"]):
                 category = "devops"
-            elif any(
-                word in description
-                for word in ["game", "gaming", "engine", "unity", "graphics"]
-            ):
+            elif any(word in description for word in ["game", "gaming", "engine", "unity", "graphics"]):
                 category = "gaming"
-            elif any(
-                word in description
-                for word in ["security", "crypto", "blockchain", "vulnerability"]
-            ):
+            elif any(word in description for word in ["security", "crypto", "blockchain", "vulnerability"]):
                 category = "security"
             elif language in ["python", "javascript", "typescript", "rust", "go"]:
                 category = f"{language}_tools"
@@ -411,9 +379,7 @@ def process_github_data(
             processed_repos.append(processed_repo)
 
         except Exception as e:
-            logger.warning(
-                f"Error processing repository {repo.get('full_name', 'unknown')}: {e}"
-            )
+            logger.warning(f"Error processing repository {repo.get('full_name', 'unknown')}: {e}")
             continue
 
     # Sort by trending score
@@ -514,9 +480,7 @@ def main():
         # Summary
         total_repos = len(processed_data)
         trending_repos = len([r for r in processed_data if r.get("is_trending", False)])
-        active_repos = len(
-            [r for r in processed_data if r.get("has_recent_activity", False)]
-        )
+        active_repos = len([r for r in processed_data if r.get("has_recent_activity", False)])
 
         logger.info("GitHub Trends ETL completed successfully!")
         logger.info(f"Total repositories: {total_repos}")
@@ -526,11 +490,7 @@ def main():
 
         # Print language distribution
         if processed_data:
-            languages = [
-                r.get("language", "Unknown")
-                for r in processed_data
-                if r.get("language")
-            ]
+            languages = [r.get("language", "Unknown") for r in processed_data if r.get("language")]
             from collections import Counter
 
             top_languages = Counter(languages).most_common(10)

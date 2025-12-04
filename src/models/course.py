@@ -18,19 +18,13 @@ class CourseModel(TimestampedModel):
     description: str | None = Field(default=None, description="Course description")
     instructor: str | None = Field(default=None, description="Course instructor")
     duration: str | None = Field(default=None, description="Course duration")
-    level: str | None = Field(
-        default=None, description="Course level (Beginner, Intermediate, Advanced)"
-    )
+    level: str | None = Field(default=None, description="Course level (Beginner, Intermediate, Advanced)")
     subject: str | None = Field(default=None, description="Course subject/category")
     rating: float | None = Field(default=None, description="Course rating")
     rating_count: int | None = Field(default=None, description="Number of ratings")
     is_free: bool = Field(default=False, description="Whether the course is free")
-    published_date: datetime | None = Field(
-        default=None, description="Course publication date"
-    )
-    scraped_at: datetime = Field(
-        default_factory=datetime.utcnow, description="When the course was scraped"
-    )
+    published_date: datetime | None = Field(default=None, description="Course publication date")
+    scraped_at: datetime = Field(default_factory=datetime.utcnow, description="When the course was scraped")
 
     @field_validator("rating")
     @classmethod
@@ -53,7 +47,5 @@ class PluralsightCourseModel(CourseModel):
     """Specific model for Pluralsight courses."""
 
     provider: str = Field(default="Pluralsight", description="Always Pluralsight")
-    skill_paths: list[str] | None = Field(
-        default=None, description="Associated skill paths"
-    )
+    skill_paths: list[str] | None = Field(default=None, description="Associated skill paths")
     course_id: str | None = Field(default=None, description="Pluralsight course ID")

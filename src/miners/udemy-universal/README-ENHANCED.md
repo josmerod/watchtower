@@ -388,4 +388,4 @@ This enhanced version maintains the same license as the original Watchtower proj
 
 ---
 
-**Note**: This enhanced version is designed to be backward compatible with existing configurations while providing significant improvements in functionality, reliability, and user experience. 
+**Note**: This enhanced version is designed to be backward compatible with existing configurations while providing significant improvements in functionality, reliability, and user experience.

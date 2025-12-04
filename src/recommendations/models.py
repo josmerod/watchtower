@@ -49,7 +49,7 @@ class ActivityEvent(BaseModel):
     source_category: str | None = Field(None, description="Category of the content source")
     title: str | None = Field(None, description="Title of the content for similarity matching")
 
-    @validator('duration_seconds')
+    @validator("duration_seconds")
     def validate_duration(cls, v):
         """Validate duration is non-negative if provided."""
         if v is not None and v < 0:
@@ -68,7 +68,10 @@ class Recommendation(BaseModel):
     title: str = Field(..., description="Display title of the recommendation")
     description: str = Field(..., description="Why this is recommended to the user")
     score: float = Field(..., ge=0.0, le=1.0, description="Confidence score for this recommendation")
-    generated_at: datetime = Field(default_factory=datetime.now, description="When this recommendation was generated")
+    generated_at: datetime = Field(
+        default_factory=datetime.now,
+        description="When this recommendation was generated",
+    )
     expires_at: datetime | None = Field(None, description="When this recommendation expires")
 
     # Metadata for different recommendation types
@@ -79,11 +82,11 @@ class Recommendation(BaseModel):
     feedback: bool | None = Field(None, description="User feedback (True=helpful, False=not helpful)")
     feedback_timestamp: datetime | None = Field(None, description="When feedback was provided")
 
-    @validator('expires_at')
+    @validator("expires_at")
     def validate_expiry(cls, v, values):
         """Validate expiry date is after generation date."""
-        if v is not None and 'generated_at' in values:
-            if v <= values['generated_at']:
+        if v is not None and "generated_at" in values:
+            if v <= values["generated_at"]:
                 raise ValueError("Expiry date must be after generation date")
         return v
 
@@ -119,7 +122,7 @@ class UserRecommendations(BaseModel):
         self.avg_score = sum(r.score for r in self.recommendations) / len(self.recommendations)
 
         # Calculate content diversity (unique content types / total recommendations)
-        unique_types = len(set(r.content_type for r in self.recommendations))
+        unique_types = len({r.content_type for r in self.recommendations})
         self.diversity_score = unique_types / len(self.recommendations)
 
     def get_active_recommendations(self, max_age_days: int = 7) -> list[Recommendation]:
@@ -127,12 +130,7 @@ class UserRecommendations(BaseModel):
         now = datetime.now()
         cutoff_date = now - timedelta(days=max_age_days)
 
-        return [
-            r for r in self.recommendations
-            if not r.dismissed
-            and (r.expires_at is None or r.expires_at > now)
-            and r.generated_at > cutoff_date
-        ]
+        return [r for r in self.recommendations if not r.dismissed and (r.expires_at is None or r.expires_at > now) and r.generated_at > cutoff_date]
 
 
 class UserActivityProfile(BaseModel):

@@ -34,9 +34,7 @@ KNOWLEDGE_SOURCES_CONFIG = {
         "name": "HN Ask",
     },
     "stackoverflow_trends": {
-        "path": get_data_path(
-            "stackoverflow_trends", "stackoverflow_trends_latest.json"
-        ),
+        "path": get_data_path("stackoverflow_trends", "stackoverflow_trends_latest.json"),
         "name": "Stack Overflow",
     },
     # Unified Reddit sources by category
@@ -71,29 +69,21 @@ def load_knowledge_from_file(file_path):
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
             # Ensure data is a list of records
-            if isinstance(
-                data, dict
-            ):  # Handle cases where JSON might be a dict with a key containing the list
+            if isinstance(data, dict):  # Handle cases where JSON might be a dict with a key containing the list
                 if "articles" in data and isinstance(data["articles"], list):
                     return data["articles"]
                 elif "items" in data and isinstance(data["items"], list):
                     return data["items"]
                 # Add more checks if other common patterns are found
                 else:  # If it's a dictionary but not a recognized pattern, wrap it in a list if it looks like a single item
-                    if all(
-                        k in data for k in ["title", "url"]
-                    ):  # Heuristic for a single item
+                    if all(k in data for k in ["title", "url"]):  # Heuristic for a single item
                         return [data]
-                    print(
-                        f"Warning: Data in {file_path} is a dict but not a recognized list structure. Returning empty."
-                    )
+                    print(f"Warning: Data in {file_path} is a dict but not a recognized list structure. Returning empty.")
                     return []
             elif isinstance(data, list):
                 return data
             else:
-                print(
-                    f"Warning: Data in {file_path} is not a list or recognized dict structure. Type: {type(data)}. Returning empty."
-                )
+                print(f"Warning: Data in {file_path} is not a list or recognized dict structure. Type: {type(data)}. Returning empty.")
                 return []
     except FileNotFoundError:
         print(f"Warning: Knowledge file not found at {file_path}")
@@ -121,10 +111,7 @@ def get_all_knowledge_data():
     except NameError:
         pass
 
-    data = {
-        source_key: load_knowledge_from_file(config["path"])
-        for source_key, config in KNOWLEDGE_SOURCES_CONFIG.items()
-    }
+    data = {source_key: load_knowledge_from_file(config["path"]) for source_key, config in KNOWLEDGE_SOURCES_CONFIG.items()}
     _KNOWLEDGE_CACHE = {"ts": now, "data": data}
     return data
 
@@ -157,11 +144,7 @@ def parse_date(date_str):
     try:
         # Ensure 'Z' is converted to +00:00 for fromisoformat
         dt = datetime.fromisoformat(s_date.replace("Z", "+00:00"))
-        return (
-            dt.astimezone(timezone.utc)
-            if dt.tzinfo
-            else dt.replace(tzinfo=timezone.utc)
-        )
+        return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     except (ValueError, TypeError):
         pass  # Continue to other formats
 
@@ -170,11 +153,7 @@ def parse_date(date_str):
         try:
             dt = datetime.strptime(s_date, fmt)
             # If parsing succeeds but dt is naive, assume UTC. If tz-aware, convert to UTC.
-            return (
-                dt.astimezone(timezone.utc)
-                if dt.tzinfo
-                else dt.replace(tzinfo=timezone.utc)
-            )
+            return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
         except (ValueError, TypeError):
             continue  # Try next format
 
@@ -243,21 +222,13 @@ def create_knowledge_source_tab_content(source_keys, combined_name=None):
         # Add source name to each article for display in the table
         for article in articles_from_source:
             # Use 'source_display' to ensure we have a consistent field for the table
-            article["source_display_name"] = article.get(
-                "source", KNOWLEDGE_SOURCES_CONFIG[key]["name"]
-            )
+            article["source_display_name"] = article.get("source", KNOWLEDGE_SOURCES_CONFIG[key]["name"])
         all_articles_for_tab.extend(articles_from_source)
 
     # Sort all articles by date (descending)
     def get_sortable_date(article):
         date_str = (
-            article.get("published_at")
-            or article.get("published_date")
-            or article.get("created_at")
-            or article.get("updated_at")
-            or article.get("updated")
-            or article.get("time")
-            or article.get("pubDate")
+            article.get("published_at") or article.get("published_date") or article.get("created_at") or article.get("updated_at") or article.get("updated") or article.get("time") or article.get("pubDate")
         )
         parsed = parse_date(date_str)
         return parsed if parsed else datetime.min.replace(tzinfo=timezone.utc)
@@ -267,32 +238,18 @@ def create_knowledge_source_tab_content(source_keys, combined_name=None):
     articles_to_display = all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]
 
     if not articles_to_display:
-        return dbc.Alert(
-            f"No knowledge items available for {source_display_name}.", color="info"
-        )
+        return dbc.Alert(f"No knowledge items available for {source_display_name}.", color="info")
 
     # Create table header
-    table_header = [
-        html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")]))
-    ]
+    table_header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")]))]
 
     # Create table body with robust field fallbacks for heterogeneous sources
     table_body_rows = []
     for article in articles_to_display:
         # Title fallbacks: common across Product Hunt/GitHub Trends/others
-        title = (
-            article.get("title")
-            or article.get("name")
-            or article.get("full_name")
-            or "No Title"
-        )
+        title = article.get("title") or article.get("name") or article.get("full_name") or "No Title"
         # URL fallbacks
-        url = (
-            article.get("url")
-            or article.get("link")
-            or article.get("html_url")
-            or article.get("website")
-        )
+        url = article.get("url") or article.get("link") or article.get("html_url") or article.get("website")
         # Use the 'source_display_name' we added earlier
         source_for_display = article.get("source_display_name", source_display_name)
         date_display = format_article_date(article)
@@ -322,9 +279,7 @@ def create_knowledge_source_tab_content(source_keys, combined_name=None):
     )
 
     # Return the table wrapped in a Div for consistent styling (e.g. maxHeight, overflow)
-    return html.Div(
-        table, style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"}
-    )
+    return html.Div(table, style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"})
 
 
 # Main function to render the knowledge garden tab
@@ -353,9 +308,7 @@ def render_knowledge_garden_tab():
     tabs_children = []
     for tab_def in tab_definitions:
         tab_id = f"knowledge-tab-{tab_def['id']}"
-        content = create_knowledge_source_tab_content(
-            tab_def["keys"], combined_name=tab_def["label"]
-        )
+        content = create_knowledge_source_tab_content(tab_def["keys"], combined_name=tab_def["label"])
         tabs_children.append(
             dbc.Tab(
                 label=tab_def["label"],
@@ -393,10 +346,6 @@ if __name__ == "__main__":
 
     print("Running standalone test for knowledge_garden_tab.py...")
     print(f"Displaying max {MAX_ARTICLES_PER_SOURCE} articles per tab, sorted by date.")
-    print(
-        "Expected knowledge JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json"
-    )
-    print(
-        "Check console for warnings about missing files or parsing errors, especially date parsing."
-    )
+    print("Expected knowledge JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json")
+    print("Check console for warnings about missing files or parsing errors, especially date parsing.")
     app_test.run(debug=True, port=8053)

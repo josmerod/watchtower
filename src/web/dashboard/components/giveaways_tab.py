@@ -6,7 +6,7 @@ software, and other giveaways from multiple sources.
 
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -98,12 +98,8 @@ def create_giveaways_tab():
             # Charts section
             html.Div(
                 [
-                    html.Div(
-                        [dcc.Graph(id="giveaways-category-chart")], className="col-md-6"
-                    ),
-                    html.Div(
-                        [dcc.Graph(id="giveaways-platform-chart")], className="col-md-6"
-                    ),
+                    html.Div([dcc.Graph(id="giveaways-category-chart")], className="col-md-6"),
+                    html.Div([dcc.Graph(id="giveaways-platform-chart")], className="col-md-6"),
                 ],
                 className="row mb-4",
             ),
@@ -135,11 +131,8 @@ def create_giveaways_tab():
         Input("giveaways-interval", "n_intervals"),
     ],
 )
-def update_giveaways_content(
-    category_filter, platform_filter, availability_filter, sort_filter, n_intervals
-):
+def update_giveaways_content(category_filter, platform_filter, availability_filter, sort_filter, n_intervals):
     """Update giveaways content based on filters."""
-
     # Load all giveaway data
     giveaways_data = load_all_giveaways_data()
 
@@ -149,17 +142,11 @@ def update_giveaways_content(
             [{"label": "All Platforms", "value": "all"}],
             create_empty_chart("No Data", "Categories"),
             create_empty_chart("No Data", "Platforms"),
-            [
-                html.Div(
-                    "No giveaways data available.", className="text-center text-muted"
-                )
-            ],
+            [html.Div("No giveaways data available.", className="text-center text-muted")],
         )
 
     # Filter data
-    filtered_data = filter_giveaways_data(
-        giveaways_data, category_filter, platform_filter, availability_filter
-    )
+    filtered_data = filter_giveaways_data(giveaways_data, category_filter, platform_filter, availability_filter)
 
     # Sort data
     sorted_data = sort_giveaways_data(filtered_data, sort_filter)
@@ -186,7 +173,7 @@ def update_giveaways_content(
     )
 
 
-def load_all_giveaways_data() -> List[Dict[str, Any]]:
+def load_all_giveaways_data() -> list[dict[str, Any]]:
     """Load data from all giveaway sources."""
     all_data = []
 
@@ -194,7 +181,7 @@ def load_all_giveaways_data() -> List[Dict[str, Any]]:
     try:
         reddit_path = get_data_path("giveaways", "reddit_giveaways.json")
         if os.path.exists(reddit_path):
-            with open(reddit_path, "r", encoding="utf-8") as f:
+            with open(reddit_path, encoding="utf-8") as f:
                 reddit_data = json.load(f)
                 for item in reddit_data:
                     item["data_source"] = "reddit"
@@ -205,13 +192,9 @@ def load_all_giveaways_data() -> List[Dict[str, Any]]:
     # Load free games (prefer canonical latest file)
     try:
         latest_games_path = get_data_path("giveaways", "free_games_latest.json")
-        games_path = (
-            latest_games_path
-            if os.path.exists(latest_games_path)
-            else get_data_path("giveaways", "free_games.json")
-        )
+        games_path = latest_games_path if os.path.exists(latest_games_path) else get_data_path("giveaways", "free_games.json")
         if os.path.exists(games_path):
-            with open(games_path, "r", encoding="utf-8") as f:
+            with open(games_path, encoding="utf-8") as f:
                 games_data = json.load(f)
                 for item in games_data:
                     item["data_source"] = "free_games"
@@ -225,13 +208,9 @@ def load_all_giveaways_data() -> List[Dict[str, Any]]:
     # Load free courses (prefer canonical latest file if we standardize later)
     try:
         latest_courses_path = get_data_path("giveaways", "free_courses_latest.json")
-        courses_path = (
-            latest_courses_path
-            if os.path.exists(latest_courses_path)
-            else get_data_path("giveaways", "free_courses.json")
-        )
+        courses_path = latest_courses_path if os.path.exists(latest_courses_path) else get_data_path("giveaways", "free_courses.json")
         if os.path.exists(courses_path):
-            with open(courses_path, "r", encoding="utf-8") as f:
+            with open(courses_path, encoding="utf-8") as f:
                 courses_data = json.load(f)
                 for item in courses_data:
                     item["data_source"] = "free_courses"
@@ -243,65 +222,42 @@ def load_all_giveaways_data() -> List[Dict[str, Any]]:
 
 
 def filter_giveaways_data(
-    data: List[Dict],
+    data: list[dict],
     category_filter: str,
     platform_filter: str,
     availability_filter: str,
-) -> List[Dict]:
+) -> list[dict]:
     """Filter giveaways data based on user selections."""
     filtered = data
 
     # Category filter
     if category_filter != "all":
         if category_filter == "games":
-            filtered = [
-                item
-                for item in filtered
-                if item.get("category") == "games"
-                or item.get("giveaway_type") == "free_game"
-            ]
+            filtered = [item for item in filtered if item.get("category") == "games" or item.get("giveaway_type") == "free_game"]
         elif category_filter == "education":
-            filtered = [
-                item
-                for item in filtered
-                if item.get("category")
-                in ["courses", "machine_learning", "programming", "academic"]
-            ]
+            filtered = [item for item in filtered if item.get("category") in ["courses", "machine_learning", "programming", "academic"]]
         elif category_filter == "software":
             filtered = [item for item in filtered if item.get("category") == "software"]
         else:
-            filtered = [
-                item for item in filtered if item.get("category") == category_filter
-            ]
+            filtered = [item for item in filtered if item.get("category") == category_filter]
 
     # Platform filter
     if platform_filter != "all":
-        filtered = [
-            item
-            for item in filtered
-            if item.get("platform", "").lower() == platform_filter.lower()
-        ]
+        filtered = [item for item in filtered if item.get("platform", "").lower() == platform_filter.lower()]
 
     # Availability filter
     if availability_filter != "all":
         if availability_filter == "active":
             filtered = [item for item in filtered if item.get("is_active", True)]
         elif availability_filter == "ending_soon":
-            filtered = [
-                item
-                for item in filtered
-                if item.get("availability")
-                in ["limited_time", "ends_soon", "ends_today"]
-            ]
+            filtered = [item for item in filtered if item.get("availability") in ["limited_time", "ends_soon", "ends_today"]]
         elif availability_filter == "upcoming":
-            filtered = [
-                item for item in filtered if item.get("availability") == "upcoming"
-            ]
+            filtered = [item for item in filtered if item.get("availability") == "upcoming"]
 
     return filtered
 
 
-def sort_giveaways_data(data: List[Dict], sort_by: str) -> List[Dict]:
+def sort_giveaways_data(data: list[dict], sort_by: str) -> list[dict]:
     """Sort giveaways data."""
     if sort_by == "relevance":
         return sorted(
@@ -331,7 +287,7 @@ def sort_giveaways_data(data: List[Dict], sort_by: str) -> List[Dict]:
     return data
 
 
-def create_summary_cards(all_data: List[Dict], filtered_data: List[Dict]) -> html.Div:
+def create_summary_cards(all_data: list[dict], filtered_data: list[dict]) -> html.Div:
     """Create summary statistics cards."""
     total_items = len(all_data)
     filtered_items = len(filtered_data)
@@ -347,9 +303,7 @@ def create_summary_cards(all_data: List[Dict], filtered_data: List[Dict]) -> htm
             active_count += 1
 
     # Calculate total savings
-    total_savings = sum(
-        item.get("savings", 0) for item in all_data if item.get("savings", 0) > 0
-    )
+    total_savings = sum(item.get("savings", 0) for item in all_data if item.get("savings", 0) > 0)
 
     return html.Div(
         [
@@ -357,9 +311,7 @@ def create_summary_cards(all_data: List[Dict], filtered_data: List[Dict]) -> htm
                 [
                     html.Div(
                         [
-                            html.H4(
-                                str(total_items), className="card-title text-primary"
-                            ),
+                            html.H4(str(total_items), className="card-title text-primary"),
                             html.P("Total Giveaways", className="card-text"),
                         ],
                         className="card-body text-center",
@@ -371,9 +323,7 @@ def create_summary_cards(all_data: List[Dict], filtered_data: List[Dict]) -> htm
                 [
                     html.Div(
                         [
-                            html.H4(
-                                str(active_count), className="card-title text-success"
-                            ),
+                            html.H4(str(active_count), className="card-title text-success"),
                             html.P("Active Now", className="card-text"),
                         ],
                         className="card-body text-center",
@@ -385,9 +335,7 @@ def create_summary_cards(all_data: List[Dict], filtered_data: List[Dict]) -> htm
                 [
                     html.Div(
                         [
-                            html.H4(
-                                str(len(categories)), className="card-title text-info"
-                            ),
+                            html.H4(str(len(categories)), className="card-title text-info"),
                             html.P("Categories", className="card-text"),
                         ],
                         className="card-body text-center",
@@ -436,7 +384,7 @@ def create_empty_summary_cards() -> html.Div:
     )
 
 
-def get_platform_options(data: List[Dict]) -> List[Dict]:
+def get_platform_options(data: list[dict]) -> list[dict]:
     """Get platform filter options."""
     platforms = set()
     for item in data:
@@ -451,7 +399,7 @@ def get_platform_options(data: List[Dict]) -> List[Dict]:
     return options
 
 
-def create_category_chart(data: List[Dict]) -> go.Figure:
+def create_category_chart(data: list[dict]) -> go.Figure:
     """Create category distribution chart."""
     if not data:
         return create_empty_chart("No Data", "Giveaways by Category")
@@ -475,7 +423,7 @@ def create_category_chart(data: List[Dict]) -> go.Figure:
     return fig
 
 
-def create_platform_chart(data: List[Dict]) -> go.Figure:
+def create_platform_chart(data: list[dict]) -> go.Figure:
     """Create platform distribution chart."""
     if not data:
         return create_empty_chart("No Data", "Giveaways by Platform")
@@ -489,9 +437,7 @@ def create_platform_chart(data: List[Dict]) -> go.Figure:
         return create_empty_chart("No Platforms", "Giveaways by Platform")
 
     # Show top 10 platforms
-    sorted_platforms = sorted(
-        platform_counts.items(), key=lambda x: x[1], reverse=True
-    )[:10]
+    sorted_platforms = sorted(platform_counts.items(), key=lambda x: x[1], reverse=True)[:10]
 
     fig = px.bar(
         x=[count for _, count in sorted_platforms],
@@ -531,14 +477,10 @@ def create_empty_chart(message: str, title: str) -> go.Figure:
     return fig
 
 
-def create_giveaways_list(data: List[Dict]) -> List[html.Div]:
+def create_giveaways_list(data: list[dict]) -> list[html.Div]:
     """Create list of giveaway cards."""
     if not data:
-        return [
-            html.Div(
-                "No giveaways match your filters.", className="text-center text-muted"
-            )
-        ]
+        return [html.Div("No giveaways match your filters.", className="text-center text-muted")]
 
     cards = []
     for item in data[:50]:  # Limit to 50 items for performance
@@ -548,7 +490,7 @@ def create_giveaways_list(data: List[Dict]) -> List[html.Div]:
     return cards
 
 
-def create_giveaway_card(item: Dict[str, Any]) -> html.Div:
+def create_giveaway_card(item: dict[str, Any]) -> html.Div:
     """Create individual giveaway card."""
     title = item.get("title", "Unknown Title")
     description = item.get("description", "No description available")
@@ -581,9 +523,7 @@ def create_giveaway_card(item: Dict[str, Any]) -> html.Div:
         try:
             from datetime import datetime
 
-            end_date = datetime.fromisoformat(
-                item["promotion_end"].replace("Z", "+00:00")
-            )
+            end_date = datetime.fromisoformat(item["promotion_end"].replace("Z", "+00:00"))
             expiration_info = f"⏰ Ends {end_date.strftime('%b %d, %Y')}"
         except:
             pass
@@ -610,11 +550,7 @@ def create_giveaway_card(item: Dict[str, Any]) -> html.Div:
                                 className="card-title",
                             ),
                             html.P(
-                                (
-                                    description[:150] + "..."
-                                    if len(description) > 150
-                                    else description
-                                ),
+                                (description[:150] + "..." if len(description) > 150 else description),
                                 className="card-text text-muted small",
                             ),
                             html.Div(
@@ -674,21 +610,17 @@ def get_availability_badge(availability: str) -> html.Span:
         "permanent": html.Span("💎 Permanent", className="badge bg-primary"),
     }
 
-    return badges.get(
-        availability, html.Span("🟢 Available", className="badge bg-success")
-    )
+    return badges.get(availability, html.Span("🟢 Available", className="badge bg-success"))
 
 
-def get_price_info(item: Dict[str, Any]) -> html.Span:
+def get_price_info(item: dict[str, Any]) -> html.Span:
     """Get price information display."""
     original_price = item.get("original_price", 0)
     current_price = item.get("current_price", 0)
     discount_percentage = item.get("discount_percentage", 0)
 
     if original_price > 0 and current_price == 0:
-        return html.Span(
-            f"💰 Free (was ${original_price:.2f})", className="badge bg-success"
-        )
+        return html.Span(f"💰 Free (was ${original_price:.2f})", className="badge bg-success")
     elif discount_percentage > 0 and original_price > 0:
         savings = original_price - current_price
         return html.Span(
@@ -698,9 +630,7 @@ def get_price_info(item: Dict[str, Any]) -> html.Span:
     elif current_price == 0:
         return html.Span("🆓 Free", className="badge bg-success")
     elif original_price > 0:
-        return html.Span(
-            f"💵 ${original_price:.2f}", className="badge bg-light text-dark"
-        )
+        return html.Span(f"💵 ${original_price:.2f}", className="badge bg-light text-dark")
     else:
         return html.Span("")
 

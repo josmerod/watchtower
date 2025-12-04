@@ -90,19 +90,11 @@ class GitHubRepositoryModel(TimestampedModel):
     stars: int | None = Field(default=None, ge=0, description="Number of stars")
     forks: int | None = Field(default=None, ge=0, description="Number of forks")
     watchers: int | None = Field(default=None, ge=0, description="Number of watchers")
-    open_issues: int | None = Field(
-        default=None, ge=0, description="Number of open issues"
-    )
-    last_updated: datetime | None = Field(
-        default=None, description="Last update timestamp"
-    )
-    created_at: datetime | None = Field(
-        default=None, description="Repository creation timestamp"
-    )
+    open_issues: int | None = Field(default=None, ge=0, description="Number of open issues")
+    last_updated: datetime | None = Field(default=None, description="Last update timestamp")
+    created_at: datetime | None = Field(default=None, description="Repository creation timestamp")
     language: str | None = Field(default=None, description="Primary language")
-    languages: dict[str, int] | None = Field(
-        default=None, description="Language breakdown"
-    )
+    languages: dict[str, int] | None = Field(default=None, description="Language breakdown")
     topics: list[str] = Field(default=[], description="Repository topics")
     has_issues: bool | None = Field(default=None, description="Has issues enabled")
     has_projects: bool | None = Field(default=None, description="Has projects enabled")
@@ -118,15 +110,9 @@ class PapersWithCodeModel(TimestampedModel):
     pwc_url: HttpUrl | None = Field(default=None, description="Papers With Code URL")
     pwc_title: str | None = Field(default=None, description="Papers With Code title")
     proceeding: str | None = Field(default=None, description="Conference or journal")
-    repositories: list[dict[str, str]] = Field(
-        default=[], description="Associated repositories"
-    )
-    datasets: list[dict[str, str]] = Field(
-        default=[], description="Associated datasets"
-    )
-    tasks_and_metrics: list[dict[str, str]] = Field(
-        default=[], description="Tasks and performance metrics"
-    )
+    repositories: list[dict[str, str]] = Field(default=[], description="Associated repositories")
+    datasets: list[dict[str, str]] = Field(default=[], description="Associated datasets")
+    tasks_and_metrics: list[dict[str, str]] = Field(default=[], description="Tasks and performance metrics")
     methods: list[str] = Field(default=[], description="Methods used in the paper")
 
 
@@ -148,9 +134,7 @@ class ArxivPaperModel(TimestampedModel):
     comment: str | None = Field(default=None, description="Author comments")
 
     # Processing metadata
-    processed_date: datetime = Field(
-        default_factory=datetime.utcnow, description="When this paper was processed"
-    )
+    processed_date: datetime = Field(default_factory=datetime.utcnow, description="When this paper was processed")
 
     @field_validator("title")
     @classmethod
@@ -174,18 +158,10 @@ class EnhancedArxivPaperModel(ArxivPaperModel):
 
     # Classification and clustering
     cluster_id: int | None = Field(default=None, description="Cluster assignment ID")
-    cluster_label: str | None = Field(
-        default=None, description="Human-readable cluster label"
-    )
-    cluster_keywords: list[str] = Field(
-        default=[], description="Keywords from cluster analysis"
-    )
-    extracted_keywords: list[str] = Field(
-        default=[], description="Keywords extracted from paper"
-    )
-    research_categories: list[ResearchCategory] = Field(
-        default=[], description="Research category classifications"
-    )
+    cluster_label: str | None = Field(default=None, description="Human-readable cluster label")
+    cluster_keywords: list[str] = Field(default=[], description="Keywords from cluster analysis")
+    extracted_keywords: list[str] = Field(default=[], description="Keywords extracted from paper")
+    research_categories: list[ResearchCategory] = Field(default=[], description="Research category classifications")
 
     # Intelligence scoring
     industry_impact_score: float = Field(
@@ -194,43 +170,25 @@ class EnhancedArxivPaperModel(ArxivPaperModel):
         le=10.0,
         description="Calculated industry impact score (0-10)",
     )
-    technology_readiness_level: TechnologyReadinessLevel | None = Field(
-        default=None, description="Technology readiness level assessment"
-    )
+    technology_readiness_level: TechnologyReadinessLevel | None = Field(default=None, description="Technology readiness level assessment")
     commercial_potential: CommercialPotential = Field(
         default=CommercialPotential.RESEARCH,
         description="Commercial viability assessment",
     )
-    innovation_score: float = Field(
-        default=0.0, ge=0.0, le=10.0, description="Innovation potential score (0-10)"
-    )
+    innovation_score: float = Field(default=0.0, ge=0.0, le=10.0, description="Innovation potential score (0-10)")
 
     # Technology and application analysis
-    related_technologies: list[str] = Field(
-        default=[], description="Related technologies mentioned"
-    )
-    potential_applications: list[str] = Field(
-        default=[], description="Potential real-world applications"
-    )
-    technical_concepts: list[str] = Field(
-        default=[], description="Key technical concepts"
-    )
-    methodologies: list[str] = Field(
-        default=[], description="Research methodologies used"
-    )
+    related_technologies: list[str] = Field(default=[], description="Related technologies mentioned")
+    potential_applications: list[str] = Field(default=[], description="Potential real-world applications")
+    technical_concepts: list[str] = Field(default=[], description="Key technical concepts")
+    methodologies: list[str] = Field(default=[], description="Research methodologies used")
 
     # External integrations
-    github_info: GitHubRepositoryModel | None = Field(
-        default=None, description="GitHub repository information"
-    )
-    papers_with_code_info: PapersWithCodeModel | None = Field(
-        default=None, description="Papers With Code information"
-    )
+    github_info: GitHubRepositoryModel | None = Field(default=None, description="GitHub repository information")
+    papers_with_code_info: PapersWithCodeModel | None = Field(default=None, description="Papers With Code information")
 
     # Metrics and analytics
-    citation_potential: float = Field(
-        default=0.0, ge=0.0, le=10.0, description="Predicted citation potential (0-10)"
-    )
+    citation_potential: float = Field(default=0.0, ge=0.0, le=10.0, description="Predicted citation potential (0-10)")
     reproducibility_score: float = Field(
         default=0.0,
         ge=0.0,
@@ -239,12 +197,8 @@ class EnhancedArxivPaperModel(ArxivPaperModel):
     )
 
     # Additional metadata
-    quality_indicators: dict[str, float] = Field(
-        default={}, description="Various quality indicators and their scores"
-    )
-    trends_alignment: dict[str, float] = Field(
-        default={}, description="Alignment with current technology trends"
-    )
+    quality_indicators: dict[str, float] = Field(default={}, description="Various quality indicators and their scores")
+    trends_alignment: dict[str, float] = Field(default={}, description="Alignment with current technology trends")
 
     @computed_field
     @property
@@ -281,11 +235,7 @@ class EnhancedArxivPaperModel(ArxivPaperModel):
     @property
     def is_breakthrough(self) -> bool:
         """Determine if this paper represents a potential breakthrough."""
-        return (
-            self.industry_impact_score >= 8.0
-            or self.innovation_score >= 8.0
-            or self.overall_significance_score >= 7.5
-        )
+        return self.industry_impact_score >= 8.0 or self.innovation_score >= 8.0 or self.overall_significance_score >= 7.5
 
     @computed_field
     @property

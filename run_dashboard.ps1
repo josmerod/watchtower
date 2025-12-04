@@ -8,7 +8,7 @@
 
 Write-Host ""
 Write-Host "===========================================" -ForegroundColor Green
-Write-Host " 🏯 Watchtower Dashboard with UV" -ForegroundColor Green  
+Write-Host " 🏯 Watchtower Dashboard with UV" -ForegroundColor Green
 Write-Host "===========================================" -ForegroundColor Green
 Write-Host ""
 
@@ -39,7 +39,7 @@ if (-not (Test-Path "logs")) {
     New-Item -ItemType Directory -Path "logs" | Out-Null
 }
 
-# Clean up incompatible virtual environment if it exists  
+# Clean up incompatible virtual environment if it exists
 if (Test-Path ".venv") {
     Write-Host "🧹 Removing incompatible virtual environment..." -ForegroundColor Yellow
     Remove-Item -Recurse -Force ".venv"

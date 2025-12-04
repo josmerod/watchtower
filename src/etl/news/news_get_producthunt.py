@@ -17,6 +17,7 @@ import os
 import time
 from datetime import datetime, timezone
 from typing import Any
+
 import urllib3
 
 # Disable SSL warnings
@@ -173,9 +174,7 @@ def get_graphql_query() -> str:
     """
 
 
-def fetch_product_hunt_data(
-    session: requests.Session, max_products: int = 500
-) -> list[dict[str, Any]]:
+def fetch_product_hunt_data(session: requests.Session, max_products: int = 500) -> list[dict[str, Any]]:
     """Fetch products from Product Hunt using GraphQL API.
 
     Args:
@@ -189,16 +188,12 @@ def fetch_product_hunt_data(
 
     # Note: Product Hunt requires authentication for full API access
     # For demonstration, we'll use web scraping as fallback
-    logger.info(
-        "Attempting to fetch Product Hunt data via web scraping (GraphQL requires auth)"
-    )
+    logger.info("Attempting to fetch Product Hunt data via web scraping (GraphQL requires auth)")
 
     return scrape_product_hunt_data(session, max_products)
 
 
-def scrape_product_hunt_data(
-    session: requests.Session, max_products: int = 500
-) -> list[dict[str, Any]]:
+def scrape_product_hunt_data(session: requests.Session, max_products: int = 500) -> list[dict[str, Any]]:
     """Scrape Product Hunt data from their public pages.
 
     Args:
@@ -266,9 +261,7 @@ def scrape_product_hunt_data(
         return []
 
 
-def scrape_daily_products(
-    session: requests.Session, base_url: str
-) -> list[dict[str, Any]]:
+def scrape_daily_products(session: requests.Session, base_url: str) -> list[dict[str, Any]]:
     """Scrape today's featured products from Product Hunt.
 
     Args:
@@ -287,7 +280,7 @@ def scrape_daily_products(
 
         # Look for product containers with updated and more flexible selectors
         product_items = []
-        
+
         # Try multiple selector strategies
         selectors_to_try = [
             # Modern Product Hunt selectors (2025)
@@ -295,17 +288,18 @@ def scrape_daily_products(
             ("div", {"data-test": "post-item"}),
             ("li", {"data-test": "post-item"}),
             ("article", None),
-            
             # CSS class-based selectors (more flexible)
             ("div", lambda x: x and "styles_item" in x.lower()),
             ("div", lambda x: x and "post" in x.lower() and "item" in x.lower()),
             ("div", lambda x: x and "product" in x.lower()),
             ("li", lambda x: x and "item" in x.lower()),
-            
             # General structure-based selectors
-            ("div", lambda x: x and any(keyword in x.lower() for keyword in ["card", "tile", "item", "post"]) if x else False),
+            (
+                "div",
+                lambda x: (x and any(keyword in x.lower() for keyword in ["card", "tile", "item", "post"]) if x else False),
+            ),
         ]
-        
+
         for tag, selector in selectors_to_try:
             if selector is None:
                 items = soup.find_all(tag)
@@ -313,12 +307,12 @@ def scrape_daily_products(
                 items = soup.find_all(tag, selector)
             else:
                 items = soup.find_all(tag, class_=selector)
-            
+
             if items:
                 product_items = items
                 logger.info(f"Found {len(items)} potential product items using selector: {tag} with {type(selector).__name__}")
                 break
-        
+
         # If no structured items found, try finding any links that might be products
         if not product_items:
             logger.warning("No structured product items found, trying generic link extraction")
@@ -331,20 +325,20 @@ def scrape_daily_products(
                 if (href.startswith("/posts/") or "product" in href.lower()) and text and len(text) > 5:
                     product_links.append(link.parent if link.parent else link)
             product_items = product_links[:20]  # Limit to prevent over-scraping
-            
+
             if product_items:
                 logger.info(f"Found {len(product_items)} product-like links as fallback")
             else:
                 logger.warning("No product items found at all - website structure may have changed significantly")
-                
+
                 # Debug: Save HTML snippet for investigation (first 5000 chars)
                 html_snippet = str(soup)[:5000]
                 logger.debug(f"HTML structure sample: {html_snippet}")
-                
+
                 # Try to find any meaningful content
                 all_divs = soup.find_all("div")[:50]  # First 50 divs
                 logger.info(f"Found {len(all_divs)} div elements on page")
-                
+
                 # Look for any text that might indicate products
                 page_text = soup.get_text()
                 if any(word in page_text.lower() for word in ["product", "launch", "vote", "maker"]):
@@ -357,14 +351,20 @@ def scrape_daily_products(
                 # Extract product name with more flexible selectors
                 name_elem = (
                     item.find("h3")
-                    or item.find("h2") 
+                    or item.find("h2")
                     or item.find("h4")
                     or item.find("h1")
                     or item.find("a", class_=lambda x: x and "name" in x.lower() if x else False)
-                    or item.find("span", class_=lambda x: x and "name" in x.lower() if x else False)
-                    or item.find("div", class_=lambda x: x and "title" in x.lower() if x else False)
+                    or item.find(
+                        "span",
+                        class_=lambda x: x and "name" in x.lower() if x else False,
+                    )
+                    or item.find(
+                        "div",
+                        class_=lambda x: x and "title" in x.lower() if x else False,
+                    )
                 )
-                
+
                 # If no structured name element, try to get the most prominent text
                 if not name_elem:
                     # Look for the first link with substantial text
@@ -375,20 +375,20 @@ def scrape_daily_products(
                         # Get any significant text from the item
                         texts = [elem for elem in item.find_all(text=True) if len(elem.strip()) > 5]
                         name = texts[0].strip() if texts else "No Title"
-                
-                name = name_elem.get_text(strip=True) if name_elem and hasattr(name_elem, 'get_text') else (name_elem if isinstance(name_elem, str) else "No Title")
+
+                name = name_elem.get_text(strip=True) if name_elem and hasattr(name_elem, "get_text") else (name_elem if isinstance(name_elem, str) else "No Title")
 
                 # Extract link with better fallback logic
                 link_elem = item.find("a", href=True)
-                if not link_elem and hasattr(item, 'get'):
+                if not link_elem and hasattr(item, "get"):
                     # If item itself is a link
                     link = item.get("href", "") if item.name == "a" else ""
                 else:
                     link = link_elem["href"] if link_elem else ""
-                
+
                 if link and not link.startswith("http"):
                     link = base_url + link
-                
+
                 # If no direct link found, try to construct from product name
                 if not link and name and name != "No Title":
                     # Try to find any link in the item that might lead to the product
@@ -400,17 +400,11 @@ def scrape_daily_products(
                             break
 
                 # Extract tagline/description
-                desc_elem = item.find("p") or item.find(
-                    "div", class_=lambda x: x and "tagline" in x.lower() if x else False
-                )
+                desc_elem = item.find("p") or item.find("div", class_=lambda x: x and "tagline" in x.lower() if x else False)
                 tagline = desc_elem.get_text(strip=True) if desc_elem else ""
 
                 # Extract vote count
-                vote_elem = item.find(
-                    "span", class_=lambda x: x and "vote" in x.lower() if x else False
-                ) or item.find(
-                    "div", class_=lambda x: x and "vote" in x.lower() if x else False
-                )
+                vote_elem = item.find("span", class_=lambda x: x and "vote" in x.lower() if x else False) or item.find("div", class_=lambda x: x and "vote" in x.lower() if x else False)
                 votes = 0
                 if vote_elem:
                     vote_text = vote_elem.get_text(strip=True)
@@ -440,9 +434,7 @@ def scrape_daily_products(
                         "topics": ["featured"],
                         "makers": [],
                         "hunters": [],
-                        "product_links": (
-                            [{"type": "website", "url": link}] if link else []
-                        ),
+                        "product_links": ([{"type": "website", "url": link}] if link else []),
                         "category": "featured",
                         "mock_data": False,
                     }
@@ -459,9 +451,7 @@ def scrape_daily_products(
         return []
 
 
-def scrape_topic_products(
-    session: requests.Session, base_url: str, topic: str
-) -> list[dict[str, Any]]:
+def scrape_topic_products(session: requests.Session, base_url: str, topic: str) -> list[dict[str, Any]]:
     """Scrape products from a specific topic page.
 
     Args:
@@ -482,24 +472,25 @@ def scrape_topic_products(
 
         # Look for product containers in topic pages with flexible selectors
         product_items = []
-        
+
         # Try multiple selector strategies for topic pages
         selectors_to_try = [
             # Topic-specific selectors
             ("div", {"data-test": "post-item"}),
             ("li", {"data-test": "post-item"}),
             ("article", None),
-            
             # CSS class-based selectors
             ("div", lambda x: x and "styles_item" in x.lower()),
             ("div", lambda x: x and "post" in x.lower()),
             ("div", lambda x: x and "product" in x.lower()),
             ("li", lambda x: x and "item" in x.lower()),
-            
             # General selectors
-            ("div", lambda x: x and any(keyword in x.lower() for keyword in ["card", "tile", "item"]) if x else False),
+            (
+                "div",
+                lambda x: (x and any(keyword in x.lower() for keyword in ["card", "tile", "item"]) if x else False),
+            ),
         ]
-        
+
         for tag, selector in selectors_to_try:
             if selector is None:
                 items = soup.find_all(tag)
@@ -507,12 +498,12 @@ def scrape_topic_products(
                 items = soup.find_all(tag, selector)
             else:
                 items = soup.find_all(tag, class_=selector)
-            
+
             if items:
                 product_items = items
                 logger.info(f"Found {len(items)} topic product items using selector: {tag}")
                 break
-        
+
         # Fallback for topic pages
         if not product_items:
             logger.warning(f"No structured items found for topic {topic}, trying link extraction")
@@ -524,7 +515,7 @@ def scrape_topic_products(
                 if (href.startswith("/posts/") or "product" in href.lower()) and text and len(text) > 5:
                     product_links.append(link.parent if link.parent else link)
             product_items = product_links[:15]
-            
+
             if product_items:
                 logger.info(f"Found {len(product_items)} product-like links for topic {topic}")
             else:
@@ -533,13 +524,7 @@ def scrape_topic_products(
         for item in product_items[:15]:  # Limit to 15 products per topic
             try:
                 # Extract product name
-                name_elem = (
-                    item.find("h3")
-                    or item.find("h2")
-                    or item.find(
-                        "a", class_=lambda x: x and "name" in x.lower() if x else False
-                    )
-                )
+                name_elem = item.find("h3") or item.find("h2") or item.find("a", class_=lambda x: x and "name" in x.lower() if x else False)
                 name = name_elem.get_text(strip=True) if name_elem else "No Title"
 
                 # Extract link
@@ -549,17 +534,11 @@ def scrape_topic_products(
                     link = base_url + link
 
                 # Extract tagline/description
-                desc_elem = item.find("p") or item.find(
-                    "div", class_=lambda x: x and "tagline" in x.lower() if x else False
-                )
+                desc_elem = item.find("p") or item.find("div", class_=lambda x: x and "tagline" in x.lower() if x else False)
                 tagline = desc_elem.get_text(strip=True) if desc_elem else ""
 
                 # Extract vote count
-                vote_elem = item.find(
-                    "span", class_=lambda x: x and "vote" in x.lower() if x else False
-                ) or item.find(
-                    "div", class_=lambda x: x and "vote" in x.lower() if x else False
-                )
+                vote_elem = item.find("span", class_=lambda x: x and "vote" in x.lower() if x else False) or item.find("div", class_=lambda x: x and "vote" in x.lower() if x else False)
                 votes = 0
                 if vote_elem:
                     vote_text = vote_elem.get_text(strip=True)
@@ -589,9 +568,7 @@ def scrape_topic_products(
                         "topics": [topic],
                         "makers": [],
                         "hunters": [],
-                        "product_links": (
-                            [{"type": "website", "url": link}] if link else []
-                        ),
+                        "product_links": ([{"type": "website", "url": link}] if link else []),
                         "category": topic,
                         "mock_data": False,
                     }
@@ -629,14 +606,10 @@ def process_product_hunt_data(products: list[dict[str, Any]]) -> list[dict[str, 
             created_at = product.get("created_at") or product.get("featured_at")
             if created_at:
                 if isinstance(created_at, str):
-                    created_date = datetime.fromisoformat(
-                        created_at.replace("Z", "+00:00")
-                    )
+                    created_date = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
                 else:
                     created_date = created_at
-                days_since_launch = (
-                    current_time.replace(tzinfo=created_date.tzinfo) - created_date
-                ).days
+                days_since_launch = (current_time.replace(tzinfo=created_date.tzinfo) - created_date).days
             else:
                 days_since_launch = 1  # Default fallback
 
@@ -650,15 +623,11 @@ def process_product_hunt_data(products: list[dict[str, Any]]) -> list[dict[str, 
             engagement_score = votes * 1 + comments * 2 + reviews * 1.5
 
             # Launch success scoring (higher for more recent launches with good metrics)
-            freshness_factor = (
-                max(0, (7 - days_since_launch) / 7) if days_since_launch <= 7 else 0
-            )
+            freshness_factor = max(0, (7 - days_since_launch) / 7) if days_since_launch <= 7 else 0
             launch_success = engagement_score * (1 + freshness_factor)
 
             # Product potential scoring
-            potential_score = (
-                votes * 0.4 + comments * 0.3 + reviews * 0.2 + rating * 20 * 0.1
-            )
+            potential_score = votes * 0.4 + comments * 0.3 + reviews * 0.2 + rating * 20 * 0.1
 
             # Categorize by popularity
             if votes >= 1000:
@@ -723,14 +692,10 @@ def process_product_hunt_data(products: list[dict[str, Any]]) -> list[dict[str, 
             # Soft validation against ProductHuntModel (title/link/published/summary/votes/source)
             try:
                 _ = ProductHuntModel(
-                    title=processed_product.get("name")
-                    or processed_product.get("title", ""),
-                    link=processed_product.get("url")
-                    or processed_product.get("website", ""),
-                    published=processed_product.get("featuredAt")
-                    or processed_product.get("createdAt", ""),
-                    summary=processed_product.get("tagline")
-                    or processed_product.get("description", ""),
+                    title=processed_product.get("name") or processed_product.get("title", ""),
+                    link=processed_product.get("url") or processed_product.get("website", ""),
+                    published=processed_product.get("featuredAt") or processed_product.get("createdAt", ""),
+                    summary=processed_product.get("tagline") or processed_product.get("description", ""),
                     author=processed_product.get("user", {}).get("name", ""),
                     votes=int(processed_product.get("votesCount", 0)),
                 )
@@ -740,19 +705,13 @@ def process_product_hunt_data(products: list[dict[str, Any]]) -> list[dict[str, 
             processed_products.append(processed_product)
 
         except Exception as e:
-            logger.warning(
-                f"Error processing product {product.get('id', 'unknown')}: {e}"
-            )
+            logger.warning(f"Error processing product {product.get('id', 'unknown')}: {e}")
             continue
 
     # Sort by launch success score
-    processed_products.sort(
-        key=lambda x: x.get("launch_success_score", 0), reverse=True
-    )
+    processed_products.sort(key=lambda x: x.get("launch_success_score", 0), reverse=True)
 
-    logger.info(
-        f"Successfully processed {len(processed_products)} Product Hunt products"
-    )
+    logger.info(f"Successfully processed {len(processed_products)} Product Hunt products")
     return processed_products
 
 
@@ -795,18 +754,9 @@ def save_data(data: list[dict[str, Any]], output_dir: str) -> dict[str, str]:
             hunters = flat_item.pop("hunters", [])
             product_links = flat_item.pop("product_links", [])
 
-            flat_item["makers_info"] = ", ".join(
-                [f"{m.get('name', '')} (@{m.get('username', '')})" for m in makers]
-            )
-            flat_item["hunters_info"] = ", ".join(
-                [f"{h.get('name', '')} (@{h.get('username', '')})" for h in hunters]
-            )
-            flat_item["product_links_info"] = ", ".join(
-                [
-                    f"{link.get('type', '')}: {link.get('url', '')}"
-                    for link in product_links
-                ]
-            )
+            flat_item["makers_info"] = ", ".join([f"{m.get('name', '')} (@{m.get('username', '')})" for m in makers])
+            flat_item["hunters_info"] = ", ".join([f"{h.get('name', '')} (@{h.get('username', '')})" for h in hunters])
+            flat_item["product_links_info"] = ", ".join([f"{link.get('type', '')}: {link.get('url', '')}" for link in product_links])
 
             # Convert lists to strings
             if isinstance(flat_item.get("topics"), list):
@@ -861,12 +811,8 @@ def main():
 
         # Summary
         total_products = len(processed_data)
-        viral_products = len(
-            [p for p in processed_data if p.get("popularity_category") == "viral"]
-        )
-        high_potential = len(
-            [p for p in processed_data if p.get("potential_score", 0) >= 100]
-        )
+        viral_products = len([p for p in processed_data if p.get("popularity_category") == "viral"])
+        high_potential = len([p for p in processed_data if p.get("potential_score", 0) >= 100])
 
         logger.info("Product Hunt ETL completed successfully!")
         logger.info(f"Total products: {total_products}")

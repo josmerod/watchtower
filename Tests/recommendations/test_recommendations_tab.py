@@ -2,38 +2,38 @@
 
 from __future__ import annotations
 
-import json
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from dash import Dash, html
 
 from src.web.dashboard.components.recommendations_tab import (
     RecommendationsManager,
-    render_recommendations_tab,
     get_recommendation_icon,
     get_recommendation_type_label,
+    render_recommendations_tab,
 )
 
 
 class TestRecommendationsManager:
     """Test suite for RecommendationsManager functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_data_dir(self):
         """Create a temporary directory for test data."""
         with tempfile.TemporaryDirectory() as temp_dir:
             yield Path(temp_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def recommendations_manager(self, temp_data_dir):
         """Create a RecommendationsManager with mocked dependencies."""
-        with patch('src.web.dashboard.components.recommendations_tab.UserActivityTracker') as mock_tracker, \
-             patch('src.web.dashboard.components.recommendations_tab.RecommendationEngine') as mock_engine:
-
+        with (
+            patch("src.web.dashboard.components.recommendations_tab.UserActivityTracker") as mock_tracker,
+            patch("src.web.dashboard.components.recommendations_tab.RecommendationEngine") as mock_engine,
+        ):
             # Configure mocks
             mock_tracker_instance = MagicMock()
             mock_engine_instance = MagicMock()
@@ -48,9 +48,10 @@ class TestRecommendationsManager:
 
     def test_init(self):
         """Test RecommendationsManager initialization."""
-        with patch('src.web.dashboard.components.recommendations_tab.UserActivityTracker') as mock_tracker, \
-             patch('src.web.dashboard.components.recommendations_tab.RecommendationEngine') as mock_engine:
-
+        with (
+            patch("src.web.dashboard.components.recommendations_tab.UserActivityTracker") as mock_tracker,
+            patch("src.web.dashboard.components.recommendations_tab.RecommendationEngine") as mock_engine,
+        ):
             manager = RecommendationsManager()
 
             mock_tracker.assert_called_once()
@@ -58,23 +59,29 @@ class TestRecommendationsManager:
 
     def test_get_user_recommendations_success(self, recommendations_manager):
         """Test successful retrieval of user recommendations."""
-        from src.recommendations.models import UserRecommendations, Recommendation, RecommendationType
+        from src.recommendations.models import (
+            Recommendation,
+            RecommendationType,
+            UserRecommendations,
+        )
 
         # Mock existing recommendations (recent)
         mock_recommendations = UserRecommendations(
             user_id="test_user",
             generated_at=datetime.now() - timedelta(hours=12),  # Recent
         )
-        mock_recommendations.add_recommendation(Recommendation(
-            id="rec_1",
-            user_id="test_user",
-            type=RecommendationType.TOP_SOURCE,
-            content_id="content_1",
-            content_type="arxiv_paper",
-            title="Test Paper",
-            description="Test description",
-            score=0.85,
-        ))
+        mock_recommendations.add_recommendation(
+            Recommendation(
+                id="rec_1",
+                user_id="test_user",
+                type=RecommendationType.TOP_SOURCE,
+                content_id="content_1",
+                content_type="arxiv_paper",
+                title="Test Paper",
+                description="Test description",
+                score=0.85,
+            )
+        )
 
         recommendations_manager.recommendation_engine.load_user_recommendations.return_value = mock_recommendations
 
@@ -86,7 +93,11 @@ class TestRecommendationsManager:
 
     def test_get_user_recommendations_generate_new(self, recommendations_manager):
         """Test generation of new recommendations when none exist or are old."""
-        from src.recommendations.models import UserRecommendations, Recommendation, RecommendationType
+        from src.recommendations.models import (
+            Recommendation,
+            RecommendationType,
+            UserRecommendations,
+        )
 
         # Mock old recommendations (should trigger new generation)
         old_recommendations = UserRecommendations(
@@ -99,16 +110,18 @@ class TestRecommendationsManager:
             user_id="test_user",
             generated_at=datetime.now(),
         )
-        new_recommendations.add_recommendation(Recommendation(
-            id="rec_new",
-            user_id="test_user",
-            type=RecommendationType.TOP_SOURCE,
-            content_id="content_new",
-            content_type="arxiv_paper",
-            title="New Paper",
-            description="New description",
-            score=0.9,
-        ))
+        new_recommendations.add_recommendation(
+            Recommendation(
+                id="rec_new",
+                user_id="test_user",
+                type=RecommendationType.TOP_SOURCE,
+                content_id="content_new",
+                content_type="arxiv_paper",
+                title="New Paper",
+                description="New description",
+                score=0.9,
+            )
+        )
 
         recommendations_manager.recommendation_engine.load_user_recommendations.return_value = old_recommendations
         recommendations_manager.recommendation_engine.generate_recommendations.return_value = new_recommendations
@@ -130,8 +143,6 @@ class TestRecommendationsManager:
 
     def test_track_interaction_success(self, recommendations_manager):
         """Test successful interaction tracking."""
-        from src.recommendations.models import ActivityType
-
         recommendations_manager.activity_tracker.track_interaction.return_value = True
 
         result = recommendations_manager.track_interaction(
@@ -141,7 +152,7 @@ class TestRecommendationsManager:
             content_type="arxiv_paper",
             duration_seconds=120.0,
             source_category="AI",
-            title="Test Paper"
+            title="Test Paper",
         )
 
         assert result is True
@@ -155,7 +166,7 @@ class TestRecommendationsManager:
             user_id="test_user",
             action="click",
             content_id="content_1",
-            content_type="arxiv_paper"
+            content_type="arxiv_paper",
         )
 
         assert result is False
@@ -164,11 +175,7 @@ class TestRecommendationsManager:
         """Test successful feedback update."""
         recommendations_manager.recommendation_engine.update_recommendation_feedback.return_value = True
 
-        result = recommendations_manager.update_feedback(
-            user_id="test_user",
-            recommendation_id="rec_1",
-            helpful=True
-        )
+        result = recommendations_manager.update_feedback(user_id="test_user", recommendation_id="rec_1", helpful=True)
 
         assert result is True
         recommendations_manager.recommendation_engine.update_recommendation_feedback.assert_called_once_with("test_user", "rec_1", True)
@@ -177,11 +184,7 @@ class TestRecommendationsManager:
         """Test handling of feedback update failure."""
         recommendations_manager.recommendation_engine.update_recommendation_feedback.return_value = False
 
-        result = recommendations_manager.update_feedback(
-            user_id="test_user",
-            recommendation_id="rec_1",
-            helpful=False
-        )
+        result = recommendations_manager.update_feedback(user_id="test_user", recommendation_id="rec_1", helpful=False)
 
         assert result is False
 
@@ -189,10 +192,7 @@ class TestRecommendationsManager:
         """Test successful recommendation dismissal."""
         recommendations_manager.recommendation_engine.dismiss_recommendation.return_value = True
 
-        result = recommendations_manager.dismiss_recommendation(
-            user_id="test_user",
-            recommendation_id="rec_1"
-        )
+        result = recommendations_manager.dismiss_recommendation(user_id="test_user", recommendation_id="rec_1")
 
         assert result is True
         recommendations_manager.recommendation_engine.dismiss_recommendation.assert_called_once_with("test_user", "rec_1")
@@ -201,10 +201,7 @@ class TestRecommendationsManager:
         """Test handling of recommendation dismissal failure."""
         recommendations_manager.recommendation_engine.dismiss_recommendation.return_value = False
 
-        result = recommendations_manager.dismiss_recommendation(
-            user_id="test_user",
-            recommendation_id="rec_1"
-        )
+        result = recommendations_manager.dismiss_recommendation(user_id="test_user", recommendation_id="rec_1")
 
         assert result is False
 
@@ -214,11 +211,11 @@ class TestRecommendationsTab:
 
     def test_render_recommendations_tab(self):
         """Test rendering of the recommendations tab."""
-        with patch('src.web.dashboard.components.recommendations_tab.recommendations_manager') as mock_manager:
+        with patch("src.web.dashboard.components.recommendations_tab.recommendations_manager") as mock_manager:
             tab = render_recommendations_tab("test_user")
 
             # Check that the tab is a Dash component
-            assert hasattr(tab, 'children')
+            assert hasattr(tab, "children")
 
             # Check for key elements
             tab_html = str(tab)
@@ -246,13 +243,13 @@ class TestRecommendationsTab:
 class TestRecommendationsIntegration:
     """Integration tests for the recommendations system."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_data_dir(self):
         """Create a temporary directory for test data."""
         with tempfile.TemporaryDirectory() as temp_dir:
             yield Path(temp_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def dash_app(self):
         """Create a Dash app for testing."""
         app = Dash(__name__)
@@ -262,8 +259,8 @@ class TestRecommendationsIntegration:
     def test_end_to_end_recommendation_flow(self, temp_data_dir):
         """Test end-to-end recommendation generation and display."""
         from src.recommendations.activity_tracker import UserActivityTracker
-        from src.recommendations.recommendation_engine import RecommendationEngine
         from src.recommendations.models import ActivityEvent, ActivityType
+        from src.recommendations.recommendation_engine import RecommendationEngine
 
         # Create real components with temporary directory
         activity_tracker = UserActivityTracker(data_dir=temp_data_dir)
@@ -316,8 +313,12 @@ class TestRecommendationsIntegration:
     def test_feedback_workflow(self, temp_data_dir):
         """Test the complete feedback workflow."""
         from src.recommendations.activity_tracker import UserActivityTracker
+        from src.recommendations.models import (
+            Recommendation,
+            RecommendationType,
+            UserRecommendations,
+        )
         from src.recommendations.recommendation_engine import RecommendationEngine
-        from src.recommendations.models import UserRecommendations, Recommendation, RecommendationType
 
         # Create real components
         activity_tracker = UserActivityTracker(data_dir=temp_data_dir)
@@ -375,7 +376,14 @@ class TestRecommendationsIntegration:
             ("click", "paper_1", "arxiv_paper", "Deep Learning", "AI", 120.0),
             ("view", "news_1", "news_article", "AI News", "technology", 60.0),
             ("search", "query_1", "search", "machine learning", None, None),
-            ("filter", "filter_1", "arxiv_paper", "ML filter", "machine_learning", None),
+            (
+                "filter",
+                "filter_1",
+                "arxiv_paper",
+                "ML filter",
+                "machine_learning",
+                None,
+            ),
         ]
 
         for action, content_id, content_type, title, category, duration in interactions:
@@ -397,7 +405,7 @@ class TestRecommendationsIntegration:
         # Test activity summary
         summary = activity_tracker.get_activity_summary("test_user", days=7)
         assert summary["total_activities"] == len(interactions)
-        assert summary["unique_content_items"] == len(set(content_id for _, content_id, *_ in interactions))
+        assert summary["unique_content_items"] == len({content_id for _, content_id, *_ in interactions})
         assert "click" in summary["activity_types"]
         assert "view" in summary["activity_types"]
 

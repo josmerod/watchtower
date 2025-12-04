@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Watchtower Unified Launcher
+"""Watchtower Unified Launcher
 
 Main entry point for the Watchtower intelligence platform.
 Supports multiple execution modes:
@@ -24,11 +23,9 @@ import signal
 import subprocess
 import sys
 import time
-from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set
 
 import psutil
 from watchdog.events import FileSystemEventHandler
@@ -44,12 +41,14 @@ except ImportError:
         # Handle case when run from project root
         import sys
         from pathlib import Path
+
         sys.path.insert(0, str(Path(__file__).parent.parent))
         from health_monitor import HealthMonitor
 
 
 class ExecutionMode(Enum):
     """Execution modes for the launcher."""
+
     DEVELOPMENT = "development"
     PRODUCTION = "production"
     ETL_ONLY = "etl_only"
@@ -59,6 +58,7 @@ class ExecutionMode(Enum):
 @dataclass
 class ProcessInfo:
     """Information about a running process."""
+
     name: str
     process: psutil.Process
     start_time: float
@@ -81,105 +81,105 @@ class ProcessInfo:
 class ETLScheduler:
     """Intelligent ETL scheduler with parallel execution and monitoring."""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
-        self.etl_processes: Dict[str, ProcessInfo] = {}
+        self.etl_processes: dict[str, ProcessInfo] = {}
         self.running = False
         self.logger = logging.getLogger("ETLScheduler")
 
         # ETL categories for parallel execution
         self.etl_categories = {
-            'news': [
-                'src/etl/news/news_get_ycombinator.py',
-                'src/etl/news/news_get_futuretools.py',
-                'src/etl/news/news_get_genai_medium.py',
-                'src/etl/news/news_get_kdnuggets.py',
-                'src/etl/news/news_get_bensbites.py',
-                'src/etl/news/news_get_planesvalencia.py',
-                'src/etl/news/valencia_events_etl.py',
-                'src/etl/news/news_get_gooddevs.py',
-                'src/etl/news/news_get_podcasts.py',
-                'src/etl/news/news_get_newsapi.py',
-                'src/etl/news/news_get_producthunt.py',
-                'src/etl/news/news_get_indiehackers.py',
-                'src/etl/news/news_get_gittrends.py',
-                'src/etl/github/github_trending_rss_etl.py',
-                'src/etl/news/news_get_hackernews_ask.py',
-                'src/etl/news/news_get_stackoverflow_trends.py',
-                'src/etl/news/news_get_media_rss.py',
-                'src/etl/news/news_get_meneame.py',
-                'src/etl/news/news_get_kagi.py',
-                'src/etl/news/news_get_devto.py',
-                'src/etl/news/news_get_techcrunch.py',
-                'src/etl/news/news_get_venturebeat.py',
-                'src/etl/news/news_get_freecodecamp.py',
-                'src/etl/news/news_get_google_ai_blog.py',
-                'src/etl/news/news_get_lobsters.py',
-                'src/etl/news/news_get_arstechnica.py',
+            "news": [
+                "src/etl/news/news_get_ycombinator.py",
+                "src/etl/news/news_get_futuretools.py",
+                "src/etl/news/news_get_genai_medium.py",
+                "src/etl/news/news_get_kdnuggets.py",
+                "src/etl/news/news_get_bensbites.py",
+                "src/etl/news/news_get_planesvalencia.py",
+                "src/etl/news/valencia_events_etl.py",
+                "src/etl/news/news_get_gooddevs.py",
+                "src/etl/news/news_get_podcasts.py",
+                "src/etl/news/news_get_newsapi.py",
+                "src/etl/news/news_get_producthunt.py",
+                "src/etl/news/news_get_indiehackers.py",
+                "src/etl/news/news_get_gittrends.py",
+                "src/etl/github/github_trending_rss_etl.py",
+                "src/etl/news/news_get_hackernews_ask.py",
+                "src/etl/news/news_get_stackoverflow_trends.py",
+                "src/etl/news/news_get_media_rss.py",
+                "src/etl/news/news_get_meneame.py",
+                "src/etl/news/news_get_kagi.py",
+                "src/etl/news/news_get_devto.py",
+                "src/etl/news/news_get_techcrunch.py",
+                "src/etl/news/news_get_venturebeat.py",
+                "src/etl/news/news_get_freecodecamp.py",
+                "src/etl/news/news_get_google_ai_blog.py",
+                "src/etl/news/news_get_lobsters.py",
+                "src/etl/news/news_get_arstechnica.py",
             ],
-            'reddit': [
-                'src/etl/news/reddit_unified_etl.py',
-                'src/etl/giveaways/reddit_giveaways_etl.py',
+            "reddit": [
+                "src/etl/news/reddit_unified_etl.py",
+                "src/etl/giveaways/reddit_giveaways_etl.py",
             ],
-            'deals': [
-                'src/etl/deals/run_all_deals.py',
-                'src/etl/deals/slickdeals_etl.py',
-                'src/etl/deals/woot_etl.py',
-                'src/etl/deals/isthereanydeal_rss_etl.py',
+            "deals": [
+                "src/etl/deals/run_all_deals.py",
+                "src/etl/deals/slickdeals_etl.py",
+                "src/etl/deals/woot_etl.py",
+                "src/etl/deals/isthereanydeal_rss_etl.py",
             ],
-            'courses': [
-                'src/etl/goldigging/goldigging_coursera_courses.py',
-                'src/etl/goldigging/goldigging_pluralsight_courses.py',
-                'src/etl/goldigging/goldigging_youtube_posts.py',
-                'src/etl/goldigging/goldigging_scavenging_etl.py',
-                'src/etl/goldigging/goldigging_deeplearningai_courses.py',
-                'src/etl/goldigging/gumroad_scraper_etl.py',
-                'src/etl/courses/khan_academy_etl.py',
+            "courses": [
+                "src/etl/goldigging/goldigging_coursera_courses.py",
+                "src/etl/goldigging/goldigging_pluralsight_courses.py",
+                "src/etl/goldigging/goldigging_youtube_posts.py",
+                "src/etl/goldigging/goldigging_scavenging_etl.py",
+                "src/etl/goldigging/goldigging_deeplearningai_courses.py",
+                "src/etl/goldigging/gumroad_scraper_etl.py",
+                "src/etl/courses/khan_academy_etl.py",
             ],
-            'research': [
-                'src/etl/arxiv/arxiv_etl.py',
+            "research": [
+                "src/etl/arxiv/arxiv_etl.py",
             ],
-            'entertainment': [
-                'src/etl/anime/mal_etl.py',
-                'src/etl/entertainment/trakt_trending_etl.py',
-                'src/etl/entertainment/spotify_browse_etl.py',
+            "entertainment": [
+                "src/etl/anime/mal_etl.py",
+                "src/etl/entertainment/trakt_trending_etl.py",
+                "src/etl/entertainment/spotify_browse_etl.py",
             ],
-            'ai_platforms': [
-                'src/etl/ai_platforms/papers_with_code_etl.py',
-                'src/etl/ai_platforms/replicate_models_etl.py',
-                'src/etl/ai_platforms/replicate_explore_playwright_etl.py',
+            "ai_platforms": [
+                "src/etl/ai_platforms/papers_with_code_etl.py",
+                "src/etl/ai_platforms/replicate_models_etl.py",
+                "src/etl/ai_platforms/replicate_explore_playwright_etl.py",
             ],
-            'intelligence': [
-                'src/etl/intelligence/sec_edgar_rss.py',
-                'src/etl/intelligence/who_outbreaks_rss.py',
+            "intelligence": [
+                "src/etl/intelligence/sec_edgar_rss.py",
+                "src/etl/intelligence/who_outbreaks_rss.py",
             ],
-            'games': [
-                'src/etl/games/games_get_deals.py',
-                'src/etl/games/games_get_humblebundles.py',
-                'src/etl/games/games_get_new_releases.py',
-                'src/etl/games/games_get_itchio_trending.py',
-                'src/etl/games/games_get_epic_free.py',
-                'src/etl/games/enhanced_free_games_etl.py',
-                'src/etl/games/games_get_gog_rss.py',
-                'src/etl/games/games_get_isthereanydeal_api.py',
-                'src/etl/games/games_get_metacritic_rss.py',
-                'src/etl/games/games_get_giantbomb.py',
+            "games": [
+                "src/etl/games/games_get_deals.py",
+                "src/etl/games/games_get_humblebundles.py",
+                "src/etl/games/games_get_new_releases.py",
+                "src/etl/games/games_get_itchio_trending.py",
+                "src/etl/games/games_get_epic_free.py",
+                "src/etl/games/enhanced_free_games_etl.py",
+                "src/etl/games/games_get_gog_rss.py",
+                "src/etl/games/games_get_isthereanydeal_api.py",
+                "src/etl/games/games_get_metacritic_rss.py",
+                "src/etl/games/games_get_giantbomb.py",
             ],
-            'watchers': [
-                'src/watchers/ms_skills_watcher.py',
+            "watchers": [
+                "src/watchers/ms_skills_watcher.py",
             ],
-            'media': [
-                'src/etl/youtube_shorts_ocr_etl.py',
+            "media": [
+                "src/etl/youtube_shorts_ocr_etl.py",
             ],
-            'public_aid': [
-                'src/etl/spanish_public_aid/spanish_public_aid_etl.py',
+            "public_aid": [
+                "src/etl/spanish_public_aid/spanish_public_aid_etl.py",
             ],
-            'community': [
-                'src/etl/fourchan/fourchan_generals_etl.py',
-            ]
+            "community": [
+                "src/etl/fourchan/fourchan_generals_etl.py",
+            ],
         }
 
-    def _start_etl_process(self, script_path: str, category: str) -> Optional[ProcessInfo]:
+    def _start_etl_process(self, script_path: str, category: str) -> ProcessInfo | None:
         """Start a single ETL process."""
         try:
             if not os.path.exists(script_path):
@@ -189,17 +189,12 @@ class ETLScheduler:
             # Use uv run for consistent environment
             cmd = [sys.executable, "-m", "uv", "run", "python", script_path]
 
-            process = psutil.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=os.getcwd()
-            )
+            process = psutil.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd())
 
             process_info = ProcessInfo(
                 name=f"{category}_{os.path.basename(script_path)}",
                 process=process,
-                start_time=time.time()
+                start_time=time.time(),
             )
 
             self.etl_processes[process_info.name] = process_info
@@ -211,7 +206,7 @@ class ETLScheduler:
             self.logger.error(f"Failed to start ETL process {script_path}: {e}")
             return None
 
-    async def start_category_processes(self, category: str) -> List[ProcessInfo]:
+    async def start_category_processes(self, category: str) -> list[ProcessInfo]:
         """Start all ETL processes for a category."""
         processes = []
         for script_path in self.etl_categories.get(category, []):
@@ -221,7 +216,7 @@ class ETLScheduler:
 
         return processes
 
-    async def start_all_processes(self) -> Dict[str, List[ProcessInfo]]:
+    async def start_all_processes(self) -> dict[str, list[ProcessInfo]]:
         """Start all ETL processes organized by category."""
         self.logger.info("Starting all ETL processes...")
 
@@ -248,7 +243,7 @@ class ETLScheduler:
                         if process_info.should_restart():
                             self.logger.warning(f"ETL process {name} died, restarting...")
                             # For now, we'll restart the entire category
-                            category = name.split('_')[0]
+                            category = name.split("_")[0]
                             failed_processes.append((name, category))
                         else:
                             self.logger.error(f"ETL process {name} exceeded max restarts, removing")
@@ -258,9 +253,7 @@ class ETLScheduler:
                 for name, category in failed_processes:
                     if category in self.etl_processes:
                         # Remove dead processes from category
-                        self.etl_processes[category] = [
-                            p for p in self.etl_processes[category] if p.is_alive()
-                        ]
+                        self.etl_processes[category] = [p for p in self.etl_processes[category] if p.is_alive()]
 
                     # Restart the category
                     self.logger.info(f"Restarting {category} processes...")
@@ -309,7 +302,7 @@ class HotReloadHandler(FileSystemEventHandler):
             return
 
         # Only reload Python files
-        if event.src_path.endswith('.py'):
+        if event.src_path.endswith(".py"):
             current_time = time.time()
             # Debounce rapid changes
             if current_time - self.last_reload > 2:
@@ -322,18 +315,18 @@ class WatchtowerLauncher:
 
     def __init__(self, mode: ExecutionMode = ExecutionMode.DEVELOPMENT):
         self.mode = mode
-        self.etl_scheduler: Optional[ETLScheduler] = None
-        self.dashboard_process: Optional[ProcessInfo] = None
-        self.hot_reload_observer: Optional[Observer] = None
-        self.health_monitor: Optional[HealthMonitor] = None
+        self.etl_scheduler: ETLScheduler | None = None
+        self.dashboard_process: ProcessInfo | None = None
+        self.hot_reload_observer: Observer | None = None
+        self.health_monitor: HealthMonitor | None = None
         self.running = False
 
         # Configuration
         self.config = {
-            'etl_interval': int(os.getenv('WATCHTOWER_ETL_INTERVAL', '3600')),
-            'dashboard_port': int(os.getenv('WATCHTOWER_DASHBOARD_PORT', '7777')),
-            'log_level': os.getenv('WATCHTOWER_LOG_LEVEL', 'INFO'),
-            'hot_reload': os.getenv('WATCHTOWER_HOT_RELOAD', 'false').lower() == 'true',
+            "etl_interval": int(os.getenv("WATCHTOWER_ETL_INTERVAL", "3600")),
+            "dashboard_port": int(os.getenv("WATCHTOWER_DASHBOARD_PORT", "7777")),
+            "log_level": os.getenv("WATCHTOWER_LOG_LEVEL", "INFO"),
+            "hot_reload": os.getenv("WATCHTOWER_HOT_RELOAD", "false").lower() == "true",
         }
 
         # Setup logging after config is set
@@ -344,15 +337,15 @@ class WatchtowerLauncher:
 
     def setup_logging(self):
         """Setup logging configuration."""
-        log_level = getattr(logging, self.config['log_level'].upper())
+        log_level = getattr(logging, self.config["log_level"].upper())
 
         logging.basicConfig(
             level=log_level,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             handlers=[
                 logging.StreamHandler(),
-                logging.FileHandler('logs/launcher.log')
-            ]
+                logging.FileHandler("logs/launcher.log"),
+            ],
         )
 
     async def start_dashboard(self) -> ProcessInfo:
@@ -361,20 +354,18 @@ class WatchtowerLauncher:
 
         try:
             # Use uv run for consistent environment
-            cmd = [sys.executable, "-m", "uv", "run", "python", "run_watchtower_dashboard.py"]
+            cmd = [
+                sys.executable,
+                "-m",
+                "uv",
+                "run",
+                "python",
+                "run_watchtower_dashboard.py",
+            ]
 
-            process = psutil.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=os.getcwd()
-            )
+            process = psutil.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd())
 
-            process_info = ProcessInfo(
-                name="watchtower_dashboard",
-                process=process,
-                start_time=time.time()
-            )
+            process_info = ProcessInfo(name="watchtower_dashboard", process=process, start_time=time.time())
 
             self.logger.info(f"Dashboard started with PID {process.pid}")
             return process_info
@@ -410,7 +401,7 @@ class WatchtowerLauncher:
 
     def setup_hot_reload(self):
         """Setup hot reload for development mode."""
-        if not self.config['hot_reload'] or self.mode != ExecutionMode.DEVELOPMENT:
+        if not self.config["hot_reload"] or self.mode != ExecutionMode.DEVELOPMENT:
             return
 
         def on_file_change(file_path):
@@ -421,11 +412,10 @@ class WatchtowerLauncher:
 
         event_handler = HotReloadHandler(on_file_change)
         self.hot_reload_observer = Observer()
-        self.hot_reload_observer.schedule(event_handler, 'src', recursive=True)
+        self.hot_reload_observer.schedule(event_handler, "src", recursive=True)
         self.hot_reload_observer.start()
 
         self.logger.info("Hot reload enabled for development mode")
-
 
     async def run(self):
         """Main run loop."""
@@ -458,9 +448,7 @@ class WatchtowerLauncher:
                 current_time = time.time()
 
                 # Run ETL processes periodically (if not in continuous mode)
-                if (self.etl_scheduler and
-                    current_time - last_etl_run > self.config['etl_interval']):
-
+                if self.etl_scheduler and current_time - last_etl_run > self.config["etl_interval"]:
                     self.logger.info("Running scheduled ETL processes...")
                     await self.etl_scheduler.start_all_processes()
                     last_etl_run = current_time
@@ -518,13 +506,13 @@ def main():
         type=str,
         choices=[mode.value for mode in ExecutionMode],
         default=ExecutionMode.DEVELOPMENT.value,
-        help="Execution mode"
+        help="Execution mode",
     )
 
     args = parser.parse_args()
 
     # Determine mode from environment if not specified
-    mode_str = os.getenv('WATCHTOWER_MODE', args.mode)
+    mode_str = os.getenv("WATCHTOWER_MODE", args.mode)
     mode = ExecutionMode(mode_str)
 
     # Create and run launcher

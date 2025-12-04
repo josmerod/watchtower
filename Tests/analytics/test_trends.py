@@ -1,8 +1,8 @@
 """Test cases for trend analysis functionality."""
 
-import pytest
 from datetime import datetime, timedelta
-from typing import Any
+
+import pytest
 
 from src.analytics.models import TrendDirection, TrendIndicator
 from src.analytics.trends import TrendAnalyzer
@@ -21,12 +21,12 @@ class TestContentModel(TimestampedModel):
 class TestTrendAnalyzer:
     """Test cases for TrendAnalyzer class."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def analyzer(self) -> TrendAnalyzer:
         """Create a TrendAnalyzer instance for testing."""
         return TrendAnalyzer(window_days=7, threshold_percentage=30.0, min_confidence=0.5)
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_content(self) -> list[TestContentModel]:
         """Create sample content for trend analysis."""
         now = datetime.utcnow()
@@ -47,7 +47,7 @@ class TestTrendAnalyzer:
                     category="machine-learning",
                     title=f"Machine Learning Paper {i}",
                     content=f"Deep learning neural network transformer model {i % 5}",
-                    source="arxiv"
+                    source="arxiv",
                 )
             elif i < 70:  # 30% emerging category
                 item = TestContentModel(
@@ -57,7 +57,7 @@ class TestTrendAnalyzer:
                     category="blockchain",
                     title=f"Blockchain Research {i}",
                     content=f"DeFi smart contract cryptocurrency {i % 3}",
-                    source="conference"
+                    source="conference",
                 )
             else:  # 30% stable category
                 item = TestContentModel(
@@ -67,7 +67,7 @@ class TestTrendAnalyzer:
                     category="classical-algorithms",
                     title=f"Algorithm Study {i}",
                     content=f"Sorting search optimization {i % 2}",
-                    source="textbook"
+                    source="textbook",
                 )
 
             content.append(item)
@@ -105,7 +105,7 @@ class TestTrendAnalyzer:
                 category="artificial-intelligence",
                 title=f"AI Paper {i}",
                 content="machine learning deep learning",
-                source="arxiv"
+                source="arxiv",
             )
             content.append(item)
 
@@ -117,7 +117,7 @@ class TestTrendAnalyzer:
                 category="artificial-intelligence",
                 title=f"Old AI Paper {i}",
                 content="machine learning",
-                source="arxiv"
+                source="arxiv",
             )
             content.append(item)
 
@@ -142,7 +142,7 @@ class TestTrendAnalyzer:
                 created_at=now - timedelta(hours=i),
                 title=f"Quantum Computing Research {i}",
                 content="quantum computing qubit entanglement",
-                source="research"
+                source="research",
             )
             content.append(item)
 
@@ -153,7 +153,7 @@ class TestTrendAnalyzer:
                 created_at=now - timedelta(days=8, hours=i),
                 title=f"Classical Computing {i}",
                 content="traditional algorithms",
-                source="textbook"
+                source="textbook",
             )
             content.append(item)
 
@@ -177,7 +177,7 @@ class TestTrendAnalyzer:
                 category="social-media",
                 title=f"Tech News {i}",
                 content="latest technology trends",
-                source="twitter"
+                source="twitter",
             )
             content.append(item)
 
@@ -189,7 +189,7 @@ class TestTrendAnalyzer:
                 category="tech",
                 title=f"Blog Post {i}",
                 content="technology discussion",
-                source="blog"
+                source="blog",
             )
             content.append(item)
 
@@ -212,7 +212,7 @@ class TestTrendAnalyzer:
                 category="high-confidence-topic",
                 title=f"Research {i}",
                 content="consistent topic content",
-                source="journal"
+                source="journal",
             )
             high_confidence_content.append(item)
 
@@ -222,7 +222,10 @@ class TestTrendAnalyzer:
         for trend in analysis.trending_items:
             assert 0.0 <= trend.confidence_score <= 1.0
             if trend.confidence_score >= analyzer.min_confidence:
-                assert trend.trend_direction in [TrendDirection.RISING, TrendDirection.FALLING]
+                assert trend.trend_direction in [
+                    TrendDirection.RISING,
+                    TrendDirection.FALLING,
+                ]
 
     def test_trend_filtering(self, analyzer: TrendAnalyzer) -> None:
         """Test trend filtering functionality."""
@@ -239,7 +242,7 @@ class TestTrendAnalyzer:
                 trend_direction=TrendDirection.RISING,
                 percentage_change=50.0,
                 confidence_score=0.8,
-                window_days=7
+                window_days=7,
             ),
             TrendIndicator(
                 item_id="test_2",
@@ -250,7 +253,7 @@ class TestTrendAnalyzer:
                 trend_direction=TrendDirection.RISING,
                 percentage_change=40.0,
                 confidence_score=0.3,  # Below threshold
-                window_days=7
+                window_days=7,
             ),
             TrendIndicator(
                 item_id="test_3",
@@ -261,8 +264,8 @@ class TestTrendAnalyzer:
                 trend_direction=TrendDirection.FALLING,
                 percentage_change=-25.0,
                 confidence_score=0.9,
-                window_days=7
-            )
+                window_days=7,
+            ),
         ]
 
         # Test filtering
@@ -270,7 +273,7 @@ class TestTrendAnalyzer:
             show_trending_only=True,
             min_confidence=0.5,
             include_rising=True,
-            include_falling=False
+            include_falling=False,
         )
 
         filtered_trends = analyzer.filter_trends(trends, filter_config)
@@ -299,7 +302,7 @@ class TestTrendAnalyzer:
                 category="test-category",
                 title="Test Item",
                 content="Test content",
-                source="test-source"
+                source="test-source",
             )
         ]
 
@@ -307,10 +310,7 @@ class TestTrendAnalyzer:
 
         assert analysis.total_items_analyzed == 1
         # Single item should not generate significant trends
-        assert len(analysis.trending_items) == 0 or all(
-            trend.confidence_score < analyzer.min_confidence
-            for trend in analysis.trending_items
-        )
+        assert len(analysis.trending_items) == 0 or all(trend.confidence_score < analyzer.min_confidence for trend in analysis.trending_items)
 
     def test_trend_badge_creation(self, analyzer: TrendAnalyzer) -> None:
         """Test creation of trend badges."""
@@ -323,7 +323,7 @@ class TestTrendAnalyzer:
             trend_direction=TrendDirection.RISING,
             percentage_change=75.0,
             confidence_score=0.85,
-            window_days=7
+            window_days=7,
         )
 
         badge = analyzer.create_trend_badge(trend)
@@ -355,7 +355,7 @@ class TestTrendIntegration:
                 category="nlp",
                 title=f"Transformer Model Analysis {i}",
                 content="attention mechanism transformer architecture neural networks",
-                source="arxiv"
+                source="arxiv",
             )
             content.append(item)
 
@@ -368,7 +368,7 @@ class TestTrendIntegration:
                 category="computer-vision",
                 title=f"CNN Research {i}",
                 content="convolutional neural network image classification",
-                source="arxiv"
+                source="arxiv",
             )
             content.append(item)
 

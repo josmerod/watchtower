@@ -24,4 +24,4 @@ echo.
 
 REM Start Streamlit app using UV
 uv run streamlit run src/web/fullstreamlit/app.py --server.port=8501
-pause 
+pause

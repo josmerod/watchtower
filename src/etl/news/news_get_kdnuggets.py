@@ -27,9 +27,7 @@ from src.utils.logging import get_logger
 logger = get_logger("KDnuggetsETL")
 
 
-def get_kdnuggets_data(
-    max_retries: int = 3, retry_delay: int = 5
-) -> list[dict[str, Any]]:
+def get_kdnuggets_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str, Any]]:
     """Fetches news articles from KDnuggets by parsing the RSS feed.
 
     Args:
@@ -57,9 +55,7 @@ def get_kdnuggets_data(
                 try:
                     title = entry.title if hasattr(entry, "title") else ""
                     url = entry.link if hasattr(entry, "link") else ""
-                    published_at = (
-                        entry.published if hasattr(entry, "published") else ""
-                    )
+                    published_at = entry.published if hasattr(entry, "published") else ""
                     source = "kdnuggets.com"
                     article = {
                         "title": title,
@@ -74,9 +70,7 @@ def get_kdnuggets_data(
 
                     # Add tags if available
                     if hasattr(entry, "tags"):
-                        article["tags"] = [
-                            tag.term for tag in entry.tags if hasattr(tag, "term")
-                        ]
+                        article["tags"] = [tag.term for tag in entry.tags if hasattr(tag, "term")]
 
                     # Add unique id if available
                     if hasattr(entry, "id"):
@@ -94,20 +88,14 @@ def get_kdnuggets_data(
                 logger.info(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
             else:
-                logger.error(
-                    f"Error fetching data from RSS feed after {max_retries} attempts: {e!s}"
-                )
+                logger.error(f"Error fetching data from RSS feed after {max_retries} attempts: {e!s}")
 
     # Deduplicate articles by id or title
     unique_articles: dict[str, dict[str, Any]] = {}
     unique_titles: set = set()
     for article in articles:
         uid = article.get("kdnuggets_id") or article.get("title", "").strip()
-        if (
-            uid
-            and uid not in unique_articles
-            and article.get("title", "").strip() not in unique_titles
-        ):
+        if uid and uid not in unique_articles and article.get("title", "").strip() not in unique_titles:
             unique_articles[uid] = article
             unique_titles.add(article.get("title", "").strip())
 
@@ -187,9 +175,7 @@ def main():
         pd.DataFrame(processed_articles).to_csv(csv_file, index=False)
         logger.debug(f"Saved CSV data to {csv_file}")
 
-        logger.info(
-            f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}"
-        )
+        logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
     except Exception as e:
         logger.error(f"Error in KDnuggets ETL process: {e!s}", exc_info=True)
 

@@ -1,6 +1,6 @@
-"""Intelligence Dashboard Tab
+"""Content Insights Dashboard Tab
 
-Aggregates security/regulatory/health intelligence feeds (e.g., SEC EDGAR, WHO DON).
+Aggregates internal insights (recommendations, trends) and external intelligence feeds.
 """
 
 from __future__ import annotations
@@ -9,20 +9,21 @@ import json
 import logging
 from collections import Counter
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import plotly.express as px
-from dash import Input, Output, callback, dash_table, dcc, html
+from dash import Input, Output, dash_table, dcc, html
 
+from src.web.dashboard.components.recommendations_tab import recommendations_manager
+from src.web.dashboard.trend_utils import load_latest_trends
 from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-INTEL_SOURCES_CONFIG: Dict[str, Dict[str, Any]] = {
+INTEL_SOURCES_CONFIG: dict[str, dict[str, Any]] = {
     "sec_edgar": {
         "path": get_data_path("intelligence", "sec_edgar_latest.json"),
         "name": "SEC EDGAR Filings",
@@ -42,12 +43,12 @@ INTEL_SOURCES_CONFIG: Dict[str, Dict[str, Any]] = {
 }
 
 
-def load_intel_data(file_path: str) -> List[Dict[str, Any]]:
+def load_intel_data(file_path: str) -> list[dict[str, Any]]:
     try:
         if not file_exists(file_path):
             logger.info(f"Intelligence data file not found: {file_path}")
             return []
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, list):
             return [process_intel_item(item) for item in data if process_intel_item(item)]
@@ -57,7 +58,7 @@ def load_intel_data(file_path: str) -> List[Dict[str, Any]]:
         return []
 
 
-def process_intel_item(item: Dict[str, Any]) -> Dict[str, Any] | None:
+def process_intel_item(item: dict[str, Any]) -> dict[str, Any] | None:
     try:
         title = item.get("title", item.get("name", "Untitled"))
         url = item.get("url", item.get("link", "#"))
@@ -82,23 +83,127 @@ def process_intel_item(item: Dict[str, Any]) -> Dict[str, Any] | None:
 
 
 # Load data for all sources
-INTEL_DATA: Dict[str, List[Dict[str, Any]]] = {}
+INTEL_DATA: dict[str, list[dict[str, Any]]] = {}
 for source_id, cfg in INTEL_SOURCES_CONFIG.items():
     data = load_intel_data(cfg["path"])
     INTEL_DATA[source_id] = data
     logger.info(f"Loaded {len(data)} items for {cfg['name']}")
 
 
-def create_intel_summary_cards() -> List[html.Div]:
-    cards: List[html.Div] = []
+def create_recommendations_section() -> html.Div:
+    """Creates the Top Recommendations section."""
+    try:
+        recs = recommendations_manager.get_user_recommendations()
+        if not recs or not recs.recommendations:
+            return html.Div(
+                dbc.Alert(
+                    "No personalized recommendations available yet. Interact with content to generate insights!",
+                    color="info",
+                ),
+                className="mb-4",
+            )
+
+        # Take top 3 recommendations
+        top_recs = recs.recommendations[:3]
+
+        cards = []
+        for rec in top_recs:
+            cards.append(
+                dbc.Col(
+                    dbc.Card(
+                        [
+                            dbc.CardBody(
+                                [
+                                    html.H6(rec.title, className="card-title text-truncate"),
+                                    html.P(
+                                        rec.description,
+                                        className="card-text small text-muted",
+                                        style={"height": "40px", "overflow": "hidden"},
+                                    ),
+                                    dbc.Badge(
+                                        f"{rec.score:.0%} Match",
+                                        color="success" if rec.score > 0.7 else "info",
+                                        className="mb-2",
+                                    ),
+                                    html.Div(
+                                        dbc.Button(
+                                            "View Content",
+                                            href="#",
+                                            color="primary",
+                                            size="sm",
+                                            className="w-100",
+                                        ),  # Placeholder link
+                                    ),
+                                ]
+                            )
+                        ],
+                        className="h-100 shadow-sm",
+                    ),
+                    md=4,
+                    className="mb-3",
+                )
+            )
+
+        return html.Div(
+            [
+                html.H4("🎯 Top Picks for You", className="text-primary mb-3"),
+                dbc.Row(cards),
+            ],
+            className="mb-5",
+        )
+    except Exception as e:
+        logger.error(f"Error creating recommendations section: {e}")
+        return html.Div()
+
+
+def create_trending_section() -> html.Div:
+    """Creates the Trending Topics section."""
+    try:
+        trends = load_latest_trends()
+        if not trends:
+            return html.Div()
+
+        # Filter for high trending score
+        top_trends = sorted(trends, key=lambda x: x.get("trend_score", 0), reverse=True)[:10]
+
+        badges = []
+        for trend in top_trends:
+            badges.append(
+                dbc.Badge(
+                    [
+                        trend.get("title", "Unknown"),
+                        dbc.Badge(
+                            f"{trend.get('trend_score', 0):.1f}",
+                            color="light",
+                            text_color="dark",
+                            className="ms-2",
+                        ),
+                    ],
+                    color="danger",
+                    className="me-2 mb-2 p-2",
+                    pill=True,
+                    href="#",  # Placeholder
+                )
+            )
+
+        return html.Div(
+            [
+                html.H4("🔥 Trending Now", className="text-danger mb-3"),
+                html.Div(badges, className="d-flex flex-wrap"),
+            ],
+            className="mb-5",
+        )
+    except Exception as e:
+        logger.error(f"Error creating trending section: {e}")
+        return html.Div()
+
+
+def create_intel_summary_cards() -> list[html.Div]:
+    cards: list[html.Div] = []
     for source_id, cfg in INTEL_SOURCES_CONFIG.items():
         data = INTEL_DATA[source_id]
         count = len(data)
-        latest = (
-            max((d["published"] for d in data if d.get("published")), default=None)
-            if data
-            else None
-        )
+        latest = max((d["published"] for d in data if d.get("published")), default=None) if data else None
         status_color = cfg["color"] if count > 0 else "secondary"
         cards.append(
             dbc.Col(
@@ -107,26 +212,40 @@ def create_intel_summary_cards() -> List[html.Div]:
                         dbc.CardHeader(
                             [
                                 html.H6(
-                                    [html.Span(cfg["icon"], className="me-2"), cfg["name"]],
+                                    [
+                                        html.Span(cfg["icon"], className="me-2"),
+                                        cfg["name"],
+                                    ],
                                     className="mb-0",
                                 ),
-                                dbc.Badge(f"{count} items", color=status_color, className="float-end"),
+                                dbc.Badge(
+                                    f"{count} items",
+                                    color=status_color,
+                                    className="float-end",
+                                ),
                             ]
                         ),
                         dbc.CardBody(
                             [
-                                html.P(cfg["description"], className="small text-muted mb-2"),
+                                html.P(
+                                    cfg["description"],
+                                    className="small text-muted mb-2",
+                                ),
                                 html.Div(
                                     [
                                         html.Strong("Category: "),
-                                        dbc.Badge(cfg["category"], color="info", className="ms-1"),
+                                        dbc.Badge(
+                                            cfg["category"],
+                                            color="info",
+                                            className="ms-1",
+                                        ),
                                     ]
                                 ),
                                 html.Div(
                                     [
                                         html.Strong("Latest: "),
                                         html.Span(
-                                            latest.strftime("%Y-%m-%d %H:%M UTC") if latest else "N/A",
+                                            (latest.strftime("%Y-%m-%d %H:%M UTC") if latest else "N/A"),
                                             className="text-muted small",
                                         ),
                                     ],
@@ -150,7 +269,7 @@ def create_intel_summary_cards() -> List[html.Div]:
     return cards
 
 
-def create_intel_table(source_id: str, items: List[Dict[str, Any]]) -> html.Div:
+def create_intel_table(source_id: str, items: list[dict[str, Any]]) -> html.Div:
     if not items:
         return dbc.Alert("No intelligence items available for this source.", color="info")
 
@@ -200,13 +319,22 @@ def create_intel_table(source_id: str, items: List[Dict[str, Any]]) -> html.Div:
             "overflow": "hidden",
             "textOverflow": "ellipsis",
         },
-        style_header={"backgroundColor": "#3C3970", "color": "#E2E8F0", "fontWeight": "bold"},
-        style_data={"backgroundColor": "#2D2B55", "color": "#CDD6F4", "whiteSpace": "normal", "height": "auto"},
+        style_header={
+            "backgroundColor": "#3C3970",
+            "color": "#E2E8F0",
+            "fontWeight": "bold",
+        },
+        style_data={
+            "backgroundColor": "#2D2B55",
+            "color": "#CDD6F4",
+            "whiteSpace": "normal",
+            "height": "auto",
+        },
         style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "#252343"}],
     )
 
 
-def create_timeline_chart(items: List[Dict[str, Any]]) -> html.Div:
+def create_timeline_chart(items: list[dict[str, Any]]) -> html.Div:
     dates = [it["published"].strftime("%Y-%m-%d") for it in items if it.get("published")]
     if not dates:
         return html.Div("No date data available for timeline")
@@ -227,16 +355,27 @@ def render_intelligence_tab() -> html.Div:
     total_items = sum(len(v) for v in INTEL_DATA.values())
     return html.Div(
         [
-            html.H3("Intelligence Feeds", className="mb-3"),
+            html.H2("Content Insights Dashboard", className="mb-4 text-center"),
+            # Row 1: Recommendations
+            create_recommendations_section(),
+            # Row 2: Trending
+            create_trending_section(),
+            html.Hr(className="my-5"),
+            html.H3("External Intelligence Feeds", className="mb-3"),
             # Summary stats
             dbc.Row(
                 [
                     dbc.Col(
                         dbc.Card(
-                            dbc.CardBody([
-                                html.H4(total_items, className="text-primary mb-0"),
-                                html.P("Total Items", className="text-muted small mb-0"),
-                            ])
+                            dbc.CardBody(
+                                [
+                                    html.H4(total_items, className="text-primary mb-0"),
+                                    html.P(
+                                        "Total Intelligence Items",
+                                        className="text-muted small mb-0",
+                                    ),
+                                ]
+                            )
                         ),
                         md=3,
                     ),
@@ -254,13 +393,7 @@ def render_intelligence_tab() -> html.Div:
                             dbc.Card(
                                 [
                                     dbc.CardHeader(html.H5("Timeline", className="mb-0")),
-                                    dbc.CardBody(
-                                        [
-                                            create_timeline_chart(
-                                                [it for items in INTEL_DATA.values() for it in items]
-                                            )
-                                        ]
-                                    ),
+                                    dbc.CardBody([create_timeline_chart([it for items in INTEL_DATA.values() for it in items])]),
                                 ]
                             )
                         ],
@@ -278,8 +411,8 @@ def render_intelligence_tab() -> html.Div:
 
 def register_intelligence_callbacks(app):
     # Single callback for all source buttons using app.callback
-    input_list = [Input(f"btn-intel-{source_id}", "n_clicks") for source_id in INTEL_SOURCES_CONFIG.keys()]
-    
+    input_list = [Input(f"btn-intel-{source_id}", "n_clicks") for source_id in INTEL_SOURCES_CONFIG]
+
     @app.callback(
         Output("intelligence-data-display", "children"),
         Output("selected-intel-source", "data"),
@@ -288,14 +421,15 @@ def register_intelligence_callbacks(app):
     )
     def display_intel_data(*n_clicks_list):
         from dash import callback_context
+
         ctx = callback_context
         if not ctx.triggered:
             return html.Div(), None
-            
+
         # Find which button was triggered
-        triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        source_id = triggered_id.replace('btn-intel-', '')
-        
+        triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        source_id = triggered_id.replace("btn-intel-", "")
+
         if source_id in INTEL_SOURCES_CONFIG:
             cfg = INTEL_SOURCES_CONFIG[source_id]
             items = INTEL_DATA[source_id]
@@ -304,7 +438,10 @@ def register_intelligence_callbacks(app):
                     [
                         html.Hr(),
                         html.H4(
-                            [html.Span(cfg["icon"], className="me-2"), f"{cfg['name']} Items"],
+                            [
+                                html.Span(cfg["icon"], className="me-2"),
+                                f"{cfg['name']} Items",
+                            ],
                             className="text-primary mb-3",
                         ),
                         create_intel_table(source_id, items),

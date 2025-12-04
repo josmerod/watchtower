@@ -17,9 +17,7 @@ from src.utils.course_deduplication import deduplicate_courses_file
 
 # Set up logging
 logger = logging.getLogger("deduplicate_courses_cli")
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 def parse_args():
@@ -65,9 +63,7 @@ def parse_args():
         help="Create backup of original files before modifying",
     )
 
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
 
     return parser.parse_args()
 
@@ -95,9 +91,7 @@ def process_single_file(input_file, output_file, key_field, prefer_newer, backup
         )
 
         if removed_count > 0:
-            logger.info(
-                f"Successfully removed {removed_count} duplicates from {input_file}"
-            )
+            logger.info(f"Successfully removed {removed_count} duplicates from {input_file}")
         else:
             logger.info(f"No duplicates found in {input_file}")
 
@@ -125,9 +119,7 @@ def process_directory(directory, key_field, prefer_newer, backup, recursive):
     logger.info(f"Found {len(json_files)} JSON files to process")
 
     for json_file in json_files:
-        if process_single_file(
-            str(json_file), str(json_file), key_field, prefer_newer, backup
-        ):
+        if process_single_file(str(json_file), str(json_file), key_field, prefer_newer, backup):
             success_count += 1
         else:
             error_count += 1
@@ -155,16 +147,12 @@ def main():
             args.backup,
             args.recursive,
         )
-        logger.info(
-            f"Processed {success_count} files successfully, {error_count} files with errors"
-        )
+        logger.info(f"Processed {success_count} files successfully, {error_count} files with errors")
     elif os.path.isfile(input_path):
         # Process single file
         output_file = args.output_file if args.output_file else input_path
         logger.info(f"Processing file: {input_path}")
-        if process_single_file(
-            input_path, output_file, args.key_field, not args.prefer_older, args.backup
-        ):
+        if process_single_file(input_path, output_file, args.key_field, not args.prefer_older, args.backup):
             logger.info("Processing completed successfully")
         else:
             logger.error("Processing failed")

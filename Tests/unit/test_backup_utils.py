@@ -1,29 +1,27 @@
 import datetime
 import logging
-import os
 import shutil
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
+
+from src.config.models import GoogleDriveConfig
+from src.config.settings import Settings  # Assuming Settings can be imported
 
 # Make sure 'src' is in the Python path for imports
 # This might be handled by a pytest configuration (e.g., conftest.py) or environment setup
 # For simplicity in this subtask, we assume direct import will work or path is already set.
 # import sys
 # sys.path.insert(0, str(Path(__file__).resolve().parents[2])) # Add project root to path
-
 from src.utils.backup_utils import BackupManager
-from src.config.models import GoogleDriveConfig
-from src.config.settings import Settings  # Assuming Settings can be imported
 
 # Disable verbose logging from the module under test during unit tests
 logging.getLogger("watchtower.src.utils.backup_utils").setLevel(logging.CRITICAL)
 
 
 class TestBackupManager(unittest.TestCase):
-
     def setUp(self):
         """Set up for each test method."""
         self.test_dir = Path(tempfile.mkdtemp())
@@ -49,9 +47,7 @@ class TestBackupManager(unittest.TestCase):
         self.mock_settings = MagicMock(spec=Settings)
         self.mock_settings.project_root = str(self.project_root)
         self.mock_settings.google_drive = self.mock_gdrive_config
-        self.mock_settings.data_dir = (
-            "data"  # Relative path as BackupManager might expect
-        )
+        self.mock_settings.data_dir = "data"  # Relative path as BackupManager might expect
         self.mock_settings.logs_dir = "logs"  # Relative path
 
         # Patch PyDrive2 classes and GoogleAuth methods
@@ -67,9 +63,7 @@ class TestBackupManager(unittest.TestCase):
         self.mock_google_auth.credentials = MagicMock()  # Simulate existing credentials
 
         # Patch the GoogleAuth constructor to return our mock
-        self.patch_google_auth_constructor = patch(
-            "src.utils.backup_utils.GoogleAuth", return_value=self.mock_google_auth
-        )
+        self.patch_google_auth_constructor = patch("src.utils.backup_utils.GoogleAuth", return_value=self.mock_google_auth)
         # Patch the GoogleDrive constructor to return our mock instance
         self.patch_google_drive_constructor = patch(
             "src.utils.backup_utils.GoogleDrive",
@@ -77,17 +71,13 @@ class TestBackupManager(unittest.TestCase):
         )
 
         self.mock_gauth_constructor_started = self.patch_google_auth_constructor.start()
-        self.mock_gdrive_constructor_started = (
-            self.patch_google_drive_constructor.start()
-        )
+        self.mock_gdrive_constructor_started = self.patch_google_drive_constructor.start()
 
         # Mock PyDrive2 GoogleDriveFile, for when drive.ListFile().GetList() or drive.CreateFile() is called
         self.mock_gdrive_file = MagicMock()
         self.mock_gdrive_file.Upload = MagicMock()
         self.mock_gdrive_file.Delete = MagicMock()
-        self.mock_gdrive_file.__getitem__.side_effect = lambda key: getattr(
-            self.mock_gdrive_file, key, None
-        )
+        self.mock_gdrive_file.__getitem__.side_effect = lambda key: getattr(self.mock_gdrive_file, key, None)
 
     def tearDown(self):
         """Clean up after each test method."""
@@ -106,9 +96,7 @@ class TestBackupManager(unittest.TestCase):
         self.mock_google_auth.LoadCredentialsFile.assert_called_once()
         self.mock_google_auth.LocalWebserverAuth.assert_not_called()  # Should not be called if creds load
         self.mock_google_auth.Refresh.assert_not_called()
-        self.mock_gdrive_constructor_started.assert_called_once_with(
-            self.mock_google_auth
-        )
+        self.mock_gdrive_constructor_started.assert_called_once_with(self.mock_google_auth)
         self.assertEqual(manager.drive, self.mock_google_drive_instance)
 
     def test_init_auth_new_credentials(self):
@@ -134,17 +122,13 @@ class TestBackupManager(unittest.TestCase):
 
     def test_init_missing_credentials_file(self):
         """Test initialization failure if client_secrets.json is missing."""
-        Path(
-            self.mock_settings.google_drive.credentials_file
-        ).unlink()  # Remove the fake file
+        Path(self.mock_settings.google_drive.credentials_file).unlink()  # Remove the fake file
         with self.assertRaisesRegex(FileNotFoundError, "client_secrets file not found"):
             BackupManager(self.mock_settings)
 
     def test_compress_folders_success(self):
         """Test successful compression of folders."""
-        manager = BackupManager(
-            self.mock_settings
-        )  # Init to setup drive mocks, not strictly needed for this test part
+        manager = BackupManager(self.mock_settings)  # Init to setup drive mocks, not strictly needed for this test part
         archive_base_name = "test_backup"
 
         # Folders are relative to project_root in settings
@@ -176,27 +160,16 @@ class TestBackupManager(unittest.TestCase):
         folders_to_backup = ["non_existent_folder", "empty_data"]
         archive_base_name = "test_empty_backup"
 
-        with self.assertLogs(
-            f"watchtower.src.utils.backup_utils", level="WARNING"
-        ) as log_watcher:
-            compressed_path = manager.compress_folders(
-                folders_to_backup, archive_base_name
-            )
+        with self.assertLogs("watchtower.src.utils.backup_utils", level="WARNING") as log_watcher:
+            compressed_path = manager.compress_folders(folders_to_backup, archive_base_name)
 
-        self.assertTrue(
-            any(
-                "Folder" in msg and "non_existent_folder does not exist" in msg
-                for msg in log_watcher.output
-            )
-        )
+        self.assertTrue(any("Folder" in msg and "non_existent_folder does not exist" in msg for msg in log_watcher.output))
 
         self.assertTrue(compressed_path.exists())
         with zipfile.ZipFile(compressed_path, "r") as zf:
             # empty_data/ should not be explicitly in namelist unless it had files,
             # but the zip file itself should be created.
-            self.assertEqual(
-                len(zf.namelist()), 0
-            )  # Or check if it contains the empty_data directory entry
+            self.assertEqual(len(zf.namelist()), 0)  # Or check if it contains the empty_data directory entry
 
         if compressed_path.exists():
             compressed_path.unlink()
@@ -230,18 +203,12 @@ class TestBackupManager(unittest.TestCase):
         }[k]
         mock_new_gdrive_file.id = "new_id"
 
-        self.mock_google_drive_instance.ListFile.return_value.GetList.return_value = [
-            mock_existing_gdrive_file
-        ]
+        self.mock_google_drive_instance.ListFile.return_value.GetList.return_value = [mock_existing_gdrive_file]
         self.mock_google_drive_instance.CreateFile.return_value = mock_new_gdrive_file
 
         uploaded_file_id = manager._upload_single_file(local_file, drive_filename)
 
-        self.mock_google_drive_instance.ListFile.assert_called_once_with(
-            {
-                "q": f"'{self.mock_settings.google_drive.backup_folder_id}' in parents and title='{drive_filename}' and trashed=false"
-            }
-        )
+        self.mock_google_drive_instance.ListFile.assert_called_once_with({"q": f"'{self.mock_settings.google_drive.backup_folder_id}' in parents and title='{drive_filename}' and trashed=false"})
         mock_existing_gdrive_file.Delete.assert_called_once()
 
         self.mock_google_drive_instance.CreateFile.assert_called_once_with(
@@ -254,9 +221,7 @@ class TestBackupManager(unittest.TestCase):
         mock_new_gdrive_file.Upload.assert_called_once_with({"convert": False})
         self.assertEqual(uploaded_file_id, "new_id")
 
-    @patch(
-        "src.utils.backup_utils.datetime"
-    )  # Mock datetime for predictable timestamps
+    @patch("src.utils.backup_utils.datetime")  # Mock datetime for predictable timestamps
     def test_prepare_latest_in_drive_renames_existing(self, mock_datetime):
         """Test that an existing _latest.zip is renamed to a timestamped version."""
         manager = BackupManager(self.mock_settings)
@@ -283,9 +248,7 @@ class TestBackupManager(unittest.TestCase):
         # Mock datetime.datetime.fromisoformat and strftime
         fixed_datetime = datetime.datetime(2023, 1, 1, 10, 0, 0)
         mock_datetime.datetime.fromisoformat.return_value = fixed_datetime
-        mock_datetime.datetime.strptime.return_value = (
-            fixed_datetime  # For strptime fallback
-        )
+        mock_datetime.datetime.strptime.return_value = fixed_datetime  # For strptime fallback
         fixed_timestamp_str = "20230101_100000"
         # Side effect for strftime: first for fromisoformat, then for strptime if needed
         # We directly control fromisoformat return, so strftime on that
@@ -294,21 +257,15 @@ class TestBackupManager(unittest.TestCase):
         # Mock the CreateFile used by _rename_drive_file and _get_drive_file_modified_date
         # Need to handle multiple calls to CreateFile
         def create_file_side_effect(options):
-            file_mock = MagicMock(
-                spec=self.mock_gdrive_file
-            )  # Create a new mock for each call
+            file_mock = MagicMock(spec=self.mock_gdrive_file)  # Create a new mock for each call
             file_id_option = options.get("id")
 
             if file_id_option == "id_old_latest":
                 file_mock.id = "id_old_latest"
-                if (
-                    "fields" in options and options["fields"] == "modifiedDate"
-                ):  # Call from _get_drive_file_modified_date
+                if "fields" in options and options["fields"] == "modifiedDate":  # Call from _get_drive_file_modified_date
                     file_mock.FetchMetadata = MagicMock()
                     # __getitem__ is used by PyDrive2 to access metadata like file_mock['modifiedDate']
-                    file_mock.__getitem__.side_effect = lambda k: (
-                        "2023-01-01T10:00:00.000Z" if k == "modifiedDate" else None
-                    )
+                    file_mock.__getitem__.side_effect = lambda k: ("2023-01-01T10:00:00.000Z" if k == "modifiedDate" else None)
                 else:  # Call from _rename_drive_file
                     file_mock.title = latest_title_on_drive  # Original title before it's changed by SUT
                     file_mock.Upload = MagicMock()  # This is the rename action
@@ -321,11 +278,7 @@ class TestBackupManager(unittest.TestCase):
 
         # Check ListFile calls
         self.assertEqual(self.mock_google_drive_instance.ListFile.call_count, 2)
-        self.mock_google_drive_instance.ListFile.assert_any_call(
-            {
-                "q": f"'{self.mock_settings.google_drive.backup_folder_id}' in parents and title='{latest_title_on_drive}' and trashed=false"
-            }
-        )
+        self.mock_google_drive_instance.ListFile.assert_any_call({"q": f"'{self.mock_settings.google_drive.backup_folder_id}' in parents and title='{latest_title_on_drive}' and trashed=false"})
 
         # Check that the old latest file was "renamed"
         # The mock_gdrive_file.Upload is on the object returned by CreateFile for rename
@@ -335,23 +288,13 @@ class TestBackupManager(unittest.TestCase):
         # And its 'title' attribute should have been updated.
         found_rename_mock = None
         for call_args in self.mock_google_drive_instance.CreateFile.call_args_list:
-            created_mock = self.mock_google_drive_instance.CreateFile.side_effect(
-                call_args[0][0]
-            )  # re-evaluate side_effect to get the mock
-            if (
-                created_mock.id == "id_old_latest"
-                and hasattr(created_mock, "Upload")
-                and created_mock.Upload.called
-            ):
+            created_mock = self.mock_google_drive_instance.CreateFile.side_effect(call_args[0][0])  # re-evaluate side_effect to get the mock
+            if created_mock.id == "id_old_latest" and hasattr(created_mock, "Upload") and created_mock.Upload.called:
                 found_rename_mock = created_mock
                 break
 
-        self.assertIsNotNone(
-            found_rename_mock, "Rename operation mock not found or Upload not called."
-        )
-        self.assertEqual(
-            found_rename_mock.title, f"{latest_filename_base}_{fixed_timestamp_str}.zip"
-        )
+        self.assertIsNotNone(found_rename_mock, "Rename operation mock not found or Upload not called.")
+        self.assertEqual(found_rename_mock.title, f"{latest_filename_base}_{fixed_timestamp_str}.zip")
         found_rename_mock.Upload.assert_called_once()
 
     def test_enforce_retention_policy_deletes_oldest(self):
@@ -388,9 +331,7 @@ class TestBackupManager(unittest.TestCase):
             mf.title = title_val
             # mf['title'] = title_val # PyDrive uses dict access for title
             # mf['id'] = id_val
-            mf.get.side_effect = lambda k, i=id_val, t=title_val: {"id": i, "title": t}[
-                k
-            ]  # Allows mf['id'] or mf['title']
+            mf.get.side_effect = lambda k, i=id_val, t=title_val: {"id": i, "title": t}[k]  # Allows mf['id'] or mf['title']
             mf.__getitem__.side_effect = lambda k, i=id_val, t=title_val: {
                 "id": i,
                 "title": t,
@@ -400,13 +341,9 @@ class TestBackupManager(unittest.TestCase):
             mf.Delete = MagicMock()
             mock_drive_files.append(mf)
 
-        self.mock_google_drive_instance.ListFile.return_value.GetList.return_value = (
-            mock_drive_files
-        )
+        self.mock_google_drive_instance.ListFile.return_value.GetList.return_value = mock_drive_files
 
-        manager._enforce_retention_policy(
-            latest_filename_base, max_historical_copies=max_historical
-        )
+        manager._enforce_retention_policy(latest_filename_base, max_historical_copies=max_historical)
 
         # Check which files were deleted
         # Files are sorted by date derived from title, newest first.
@@ -425,9 +362,7 @@ class TestBackupManager(unittest.TestCase):
         manager.drive = self.mock_google_drive_instance  # Ensure using mock
 
         # Mock manager's own methods that are complex or have external calls
-        manager.compress_folders = MagicMock(
-            return_value=self.project_root / "temp_archive.zip"
-        )
+        manager.compress_folders = MagicMock(return_value=self.project_root / "temp_archive.zip")
         manager._prepare_latest_in_drive = MagicMock()
         manager._upload_single_file = MagicMock(return_value="new_gdrive_file_id")
         manager._enforce_retention_policy = MagicMock()
@@ -439,16 +374,10 @@ class TestBackupManager(unittest.TestCase):
         result = manager.run_backup_process(folders_to_backup)
 
         self.assertTrue(result)
-        manager.compress_folders.assert_called_once_with(
-            folders_to_backup, "backup_data_logs_local_temp"
-        )
+        manager.compress_folders.assert_called_once_with(folders_to_backup, "backup_data_logs_local_temp")
         manager._prepare_latest_in_drive.assert_called_once_with("backup_data_logs")
-        manager._upload_single_file.assert_called_once_with(
-            self.project_root / "temp_archive.zip", "backup_data_logs_latest.zip"
-        )
-        manager._enforce_retention_policy.assert_called_once_with(
-            "backup_data_logs", max_historical_copies=5
-        )
+        manager._upload_single_file.assert_called_once_with(self.project_root / "temp_archive.zip", "backup_data_logs_latest.zip")
+        manager._enforce_retention_policy.assert_called_once_with("backup_data_logs", max_historical_copies=5)
         mock_os_remove.assert_called_once_with(self.project_root / "temp_archive.zip")
 
     @patch("src.utils.backup_utils.os.remove")
@@ -457,9 +386,7 @@ class TestBackupManager(unittest.TestCase):
         manager = BackupManager(self.mock_settings)
         manager.drive = self.mock_google_drive_instance
 
-        manager.compress_folders = MagicMock(
-            side_effect=zipfile.BadZipFile("Compression failed")
-        )
+        manager.compress_folders = MagicMock(side_effect=zipfile.BadZipFile("Compression failed"))
         manager._prepare_latest_in_drive = MagicMock()  # Won't be called
         manager._upload_single_file = MagicMock()  # Won't be called
         manager._enforce_retention_policy = MagicMock()  # Won't be called
@@ -498,17 +425,13 @@ class TestBackupManager(unittest.TestCase):
 
         mock_file_meta = MagicMock(spec=self.mock_gdrive_file)
         # PyDrive file objects behave like dictionaries for metadata
-        mock_file_meta.__getitem__.side_effect = lambda key: (
-            "2023-10-27T10:30:45.123Z" if key == "modifiedDate" else None
-        )
+        mock_file_meta.__getitem__.side_effect = lambda key: ("2023-10-27T10:30:45.123Z" if key == "modifiedDate" else None)
         mock_file_meta.FetchMetadata = MagicMock()
 
         self.mock_google_drive_instance.CreateFile.return_value = mock_file_meta
 
         file_id = "some_file_id"
-        expected_datetime = datetime.datetime(
-            2023, 10, 27, 10, 30, 45, 123000, tzinfo=datetime.timezone.utc
-        )
+        expected_datetime = datetime.datetime(2023, 10, 27, 10, 30, 45, 123000, tzinfo=datetime.timezone.utc)
 
         # Python 3.10 and older fromisoformat doesn't like 'Z' directly
         # The code in backup_utils replaces 'Z' with '+00:00'
@@ -516,13 +439,9 @@ class TestBackupManager(unittest.TestCase):
 
         actual_datetime = manager._get_drive_file_modified_date(file_id)
 
-        self.mock_google_drive_instance.CreateFile.assert_called_once_with(
-            {"id": file_id}
-        )
+        self.mock_google_drive_instance.CreateFile.assert_called_once_with({"id": file_id})
         mock_file_meta.FetchMetadata.assert_called_once_with(fields="modifiedDate")
-        self.assertEqual(
-            actual_datetime.replace(tzinfo=datetime.timezone.utc), expected_datetime
-        )
+        self.assertEqual(actual_datetime.replace(tzinfo=datetime.timezone.utc), expected_datetime)
 
 
 if __name__ == "__main__":

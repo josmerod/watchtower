@@ -59,9 +59,7 @@ def create_session() -> requests.Session:
     return session
 
 
-def fetch_ask_hn_posts(
-    session: requests.Session, max_posts: int = 100
-) -> list[dict[str, Any]]:
+def fetch_ask_hn_posts(session: requests.Session, max_posts: int = 100) -> list[dict[str, Any]]:
     """Fetch Ask HN posts from Hacker News API.
 
     Args:
@@ -91,9 +89,7 @@ def fetch_ask_hn_posts(
 
             try:
                 # Get story details
-                story_response = session.get(
-                    f"{base_url}/item/{story_id}.json", timeout=30
-                )
+                story_response = session.get(f"{base_url}/item/{story_id}.json", timeout=30)
                 story_response.raise_for_status()
                 story_data = story_response.json()
 
@@ -113,13 +109,7 @@ def fetch_ask_hn_posts(
                         "score": story_data.get("score", 0),
                         "comments_count": story_data.get("descendants", 0),
                         "time": story_data.get("time"),
-                        "created_at": (
-                            datetime.fromtimestamp(
-                                story_data.get("time", 0)
-                            ).isoformat()
-                            if story_data.get("time")
-                            else None
-                        ),
+                        "created_at": (datetime.fromtimestamp(story_data.get("time", 0)).isoformat() if story_data.get("time") else None),
                         "type": story_data.get("type"),
                         "kids": story_data.get("kids", []),
                         "fetched_at": datetime.now().isoformat(),
@@ -165,12 +155,8 @@ def process_ask_hn_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
             # Parse creation time
             created_at_str = post.get("created_at")
             if created_at_str:
-                created_at = datetime.fromisoformat(
-                    created_at_str.replace("Z", "+00:00")
-                )
-                hours_since_posted = (
-                    current_time.replace(tzinfo=created_at.tzinfo) - created_at
-                ).total_seconds() / 3600
+                created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                hours_since_posted = (current_time.replace(tzinfo=created_at.tzinfo) - created_at).total_seconds() / 3600
             else:
                 hours_since_posted = 0
 
@@ -246,10 +232,7 @@ def process_ask_hn_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 ]
             ):
                 category = "advice"
-            elif any(
-                word in combined_text
-                for word in ["tool", "app", "service", "platform", "product"]
-            ):
+            elif any(word in combined_text for word in ["tool", "app", "service", "platform", "product"]):
                 category = "tools"
             elif any(
                 word in combined_text
@@ -263,10 +246,7 @@ def process_ask_hn_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 ]
             ):
                 category = "learning"
-            elif any(
-                word in combined_text
-                for word in ["freelance", "remote", "side project", "consulting"]
-            ):
+            elif any(word in combined_text for word in ["freelance", "remote", "side project", "consulting"]):
                 category = "freelance"
             else:
                 category = "general"
@@ -308,9 +288,7 @@ def process_ask_hn_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "when",
                 "who",
             ]
-            has_question = any(
-                indicator in title_lower for indicator in question_indicators
-            )
+            has_question = any(indicator in title_lower for indicator in question_indicators)
 
             processed_post = {
                 **post,
@@ -424,9 +402,7 @@ def main():
 
         # Summary
         total_posts = len(processed_data)
-        high_engagement = len(
-            [p for p in processed_data if p.get("discussion_quality") == "high"]
-        )
+        high_engagement = len([p for p in processed_data if p.get("discussion_quality") == "high"])
         trending_posts = len([p for p in processed_data if p.get("is_trending", False)])
 
         logger.info("HackerNews Ask ETL completed successfully!")

@@ -22,9 +22,7 @@ from src.utils.logging import get_logger
 logger = get_logger("MediumGenAIETL")
 
 
-def get_medium_genai_data(
-    max_retries: int = 3, retry_delay: int = 5
-) -> list[dict[str, Any]]:
+def get_medium_genai_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str, Any]]:
     """Fetches generative AI articles from Medium by parsing multiple RSS feeds.
 
     Args:
@@ -62,9 +60,7 @@ def get_medium_genai_data(
                     logger.warning(f"No entries found in RSS feed from {rss_url}")
                     break
 
-                logger.debug(
-                    f"Found {len(feed.entries)} entries in RSS feed from {rss_url}"
-                )
+                logger.debug(f"Found {len(feed.entries)} entries in RSS feed from {rss_url}")
 
                 for entry in feed.entries:
                     try:
@@ -72,23 +68,17 @@ def get_medium_genai_data(
                         article = {
                             "title": entry.title if hasattr(entry, "title") else "",
                             "url": entry.link if hasattr(entry, "link") else "",
-                            "published_at": (
-                                entry.published if hasattr(entry, "published") else ""
-                            ),
+                            "published_at": (entry.published if hasattr(entry, "published") else ""),
                             "source": "medium.com",
                             "author": entry.author if hasattr(entry, "author") else "",
-                            "summary": (
-                                entry.summary if hasattr(entry, "summary") else ""
-                            ),
+                            "summary": (entry.summary if hasattr(entry, "summary") else ""),
                             "medium_id": entry.id if hasattr(entry, "id") else "",
                             "feed_source": rss_url,
                         }
 
                         # Extract tags/categories if available
                         if hasattr(entry, "tags"):
-                            article["tags"] = [
-                                tag.term for tag in entry.tags if hasattr(tag, "term")
-                            ]
+                            article["tags"] = [tag.term for tag in entry.tags if hasattr(tag, "term")]
 
                         # Extract source domain from entry
                         if hasattr(entry, "link"):
@@ -106,16 +96,12 @@ def get_medium_genai_data(
                 break
 
             except Exception as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e!s}"
-                )
+                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e!s}")
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                 else:
-                    logger.error(
-                        f"Error fetching data from RSS feed {rss_url} after {max_retries} attempts: {e!s}"
-                    )
+                    logger.error(f"Error fetching data from RSS feed {rss_url} after {max_retries} attempts: {e!s}")
 
     # Remove duplicates based on medium_id and title
     unique_articles = {}
@@ -208,9 +194,7 @@ def main():
         pd.DataFrame(processed_articles).to_csv(csv_file, index=False)
         logger.debug(f"Saved CSV data to {csv_file}")
 
-        logger.info(
-            f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}"
-        )
+        logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
 
     except Exception as e:
         logger.error(f"Error in Medium Generative AI ETL process: {e!s}", exc_info=True)

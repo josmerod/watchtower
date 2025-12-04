@@ -1,15 +1,13 @@
-"""
-Working utility tests that are guaranteed to pass.
+"""Working utility tests that are guaranteed to pass.
 Tests utility functions and common patterns.
 """
 
-import unittest
 import json
 import os
 import tempfile
-from pathlib import Path
+import unittest
 from datetime import datetime
-from typing import List, Dict, Any
+from pathlib import Path
 
 
 class TestDataProcessingUtilities(unittest.TestCase):
@@ -52,14 +50,7 @@ class TestDataProcessingUtilities(unittest.TestCase):
         ]
 
         # Filter for active items with good scores and valid names
-        filtered_data = [
-            item
-            for item in sample_data
-            if item["active"]
-            and item["score"] >= 80
-            and item["name"]
-            and len(item["name"]) > 0
-        ]
+        filtered_data = [item for item in sample_data if item["active"] and item["score"] >= 80 and item["name"] and len(item["name"]) > 0]
 
         self.assertEqual(len(filtered_data), 2)
         self.assertEqual(filtered_data[0]["name"], "item1")
@@ -135,7 +126,7 @@ class TestFileUtilities(unittest.TestCase):
 
         try:
             # Read back the data
-            with open(temp_file, "r") as f:
+            with open(temp_file) as f:
                 loaded_data = json.load(f)
 
             self.assertEqual(len(loaded_data["users"]), 2)
