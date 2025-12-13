@@ -9,8 +9,10 @@ import json
 import os
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import quote
 
 import feedparser
+import requests
 
 from src.watchers.base_watcher import BaseWatcher
 
@@ -27,6 +29,8 @@ class ArxivWatcher(BaseWatcher):
     ARXIV_API_BASE = "https://export.arxiv.org/api/query"
 
     # AI, ML, Programming, Cloud Architecture, and Enterprise Architecture related categories
+    # AI, ML, Programming, Cloud Architecture, and Enterprise Architecture related categories
+    # NOTE: Reduced list to avoid ArXiv API Internal Error (Query too complex)
     AI_ML_CATEGORIES = [
         # Core AI/ML Categories
         "cs.AI",  # Artificial Intelligence
@@ -35,26 +39,10 @@ class ArxivWatcher(BaseWatcher):
         "cs.CV",  # Computer Vision
         "cs.NE",  # Neural and Evolutionary Computing
         "stat.ML",  # Statistics - Machine Learning
-        # Programming and Software Engineering
-        "cs.PL",  # Programming Languages
+        # Key Engineering
         "cs.SE",  # Software Engineering
-        "cs.LO",  # Logic in Computer Science
-        "cs.FL",  # Formal Languages and Automata Theory
-        "cs.DS",  # Data Structures and Algorithms
-        # Cloud Architecture and Distributed Systems
-        "cs.DC",  # Distributed, Parallel, and Cluster Computing
-        "cs.NI",  # Networking and Internet Architecture
-        "cs.OS",  # Operating Systems
-        "cs.AR",  # Hardware Architecture
-        "cs.SY",  # Systems and Control
-        "cs.PF",  # Performance
-        # Enterprise Architecture and Related Systems
-        "cs.DB",  # Databases
-        "cs.CY",  # Computers and Society
-        "cs.ET",  # Emerging Technologies
-        "cs.CR",  # Cryptography and Security
-        "cs.SI",  # Social and Information Networks
-        "cs.CE",  # Computational Engineering, Finance, and Science
+        "cs.PL",  # Programming Languages
+        "cs.DC",  # Distributed Computing (Important for Cloud)
     ]
 
     def __init__(
@@ -75,12 +63,15 @@ class ArxivWatcher(BaseWatcher):
         # Construct the API URL with search parameters
         categories = " OR ".join(self.AI_ML_CATEGORIES)
 
-        # Calculate date for papers published since days_back
-        date_since = (datetime.now() - timedelta(days=days_back)).strftime("%Y%m%d")
-
         # Build the complete search URL
-        search_query = f"cat:({categories}) AND submittedDate:[{date_since}0000 TO 999912312359]"
-        self.api_url = f"{self.ARXIV_API_BASE}?search_query={search_query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
+        # We must encode the query parameters to avoid 400 Bad Request
+        
+        # Format: cat:(A OR B)
+        # Note: We removed submittedDate filter as it caused 500 errors.
+        raw_query = f"cat:({categories})"
+        encoded_query = quote(raw_query)
+        
+        self.api_url = f"{self.ARXIV_API_BASE}?search_query={encoded_query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
 
         self.max_results = max_results
         self.days_back = days_back
@@ -264,12 +255,15 @@ class ArxivWatcher(BaseWatcher):
         Returns:
             str: XML content from ArXiv API
         """
-        # Update the date range to always be relative to current time
-        date_since = (datetime.now() - timedelta(days=self.days_back)).strftime("%Y%m%d")
+        # We removed the submittedDate filter because it causes HTTP 500 Internal Errors
+        # with the ArXiv API. We instead rely on sortBy=submittedDate to get the latest.
+        
         categories = " OR ".join(self.AI_ML_CATEGORIES)
-        search_query = f"cat:({categories}) AND submittedDate:[{date_since}0000 TO 999912312359]"
+        
+        raw_query = f"cat:({categories})"
+        encoded_query = quote(raw_query)
 
-        current_url = f"{self.ARXIV_API_BASE}?search_query={search_query}&sortBy=submittedDate&sortOrder=descending&max_results={self.max_results}"
+        current_url = f"{self.ARXIV_API_BASE}?search_query={encoded_query}&sortBy=submittedDate&sortOrder=descending&max_results={self.max_results}"
         self.url = current_url
 
         return super().fetch_page()
@@ -289,10 +283,10 @@ class ArxivWatcher(BaseWatcher):
         start = 0
         page_size = 100  # Fetch 100 at a time
 
-        # Update date range once
-        date_since = (datetime.now() - timedelta(days=self.days_back)).strftime("%Y%m%d")
         categories = " OR ".join(self.AI_ML_CATEGORIES)
-        search_query = f"cat:({categories}) AND submittedDate:[{date_since}0000 TO 999912312359]"
+        # Using simple query to match fetch_page logic and avoid 500 errors
+        raw_query = f"cat:({categories})"
+        encoded_query = quote(raw_query)
 
         while len(all_papers) < target_count:
             # Calculate how many to fetch in this batch
@@ -300,13 +294,11 @@ class ArxivWatcher(BaseWatcher):
             current_max = min(page_size, remaining)
 
             # Construct URL with pagination
-            current_url = f"{self.ARXIV_API_BASE}?search_query={search_query}" f"&sortBy=submittedDate&sortOrder=descending" f"&start={start}&max_results={current_max}"
+            current_url = f"{self.ARXIV_API_BASE}?search_query={encoded_query}&sortBy=submittedDate&sortOrder=descending&start={start}&max_results={current_max}"
 
             self.logger.info(f"Fetching batch: start={start}, max_results={current_max}")
 
             try:
-                # Use requests directly or self.fetch_page logic but we need to override self.url temporarily
-                # or just use requests here to avoid side effects on self.url
                 import time
 
                 import requests

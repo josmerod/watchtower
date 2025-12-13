@@ -124,12 +124,24 @@ def fetch_subreddit_json(subreddit: str, limit: int = 25) -> list[dict[str, Any]
         posts = []
         for child in data.get("data", {}).get("children", []):
             post_data = child.get("data", {})
+            # Quality Filtering
+            score = post_data.get("score", 0)
+            upvote_ratio = post_data.get("upvote_ratio", 1.0)
+            is_stickied = post_data.get("stickied", False)
+
+            # Skip low quality or pinned posts
+            if score < 10 or is_stickied:
+                continue
+
             post = {
                 "subreddit": subreddit,
                 "title": post_data.get("title", "No title"),
                 "url": post_data.get("url", ""),
-                "published": datetime.fromtimestamp(post_data.get("created_utc", 0), tz=timezone.utc).isoformat(),
-                "score": post_data.get("score", 0),
+                "published": datetime.fromtimestamp(
+                    post_data.get("created_utc", 0), tz=timezone.utc
+                ).isoformat(),
+                "score": score,
+                "upvote_ratio": upvote_ratio,
                 "num_comments": post_data.get("num_comments", 0),
                 "author": post_data.get("author", "Anonymous"),
                 "selftext": post_data.get("selftext", ""),
@@ -137,7 +149,7 @@ def fetch_subreddit_json(subreddit: str, limit: int = 25) -> list[dict[str, Any]
             }
             posts.append(post)
 
-        logger.info(f"Fetched {len(posts)} posts from r/{subreddit} via JSON")
+        logger.info(f"Fetched {len(posts)} posts from r/{subreddit} via JSON (filtered from larger set)")
         return posts
 
     except Exception as e:

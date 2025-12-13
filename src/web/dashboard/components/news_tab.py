@@ -393,7 +393,6 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         className="table-responsive mb-0",  # Remove default bottom margin if wrapped in Div with padding
     )
 
-    from src.web.dashboard.components.trend_filter import render_trend_filter
 
     # Return search input and table container
     return html.Div(
@@ -409,10 +408,7 @@ def create_news_source_tab_content(source_keys, combined_name=None):
                         ),
                         width=True,
                     ),
-                    dbc.Col(
-                        render_trend_filter(f"{tab_search_id}-trend-filter"),
-                        width="auto",
-                    ),
+                    # Trend filter button removed
                 ],
                 className="mb-3 align-items-center",
             ),
@@ -481,11 +477,11 @@ def register_news_search_callbacks(app):
 
         @app.callback(
             Output(f"{search_id}-results", "children"),
-            [Input(search_id, "value"), Input(f"{search_id}-trend-filter", "value")],
+            [Input(search_id, "value")],
             State(f"{search_id}-data", "children"),
             prevent_initial_call=True,
         )
-        def update_news_search(search_term, show_trending, articles_data, current_search_id=search_id):
+        def update_news_search(search_term, articles_data, current_search_id=search_id):
             """Update news display based on search term and trend filter."""
             try:
                 # Convert articles data back to list if needed
@@ -498,24 +494,6 @@ def register_news_search_callbacks(app):
                 # Filter articles based on search term
                 filtered_articles = filter_content(search_term, articles_data, searchable_fields)
 
-                # Filter by trending if enabled
-                if show_trending:
-                    # We need to re-check trending status or use the hidden data
-                    # Since we don't have the hidden data easily accessible here without parsing HTML,
-                    # we'll re-use the utility. Ideally, we should store this in the data store.
-                    from src.web.dashboard.trend_utils import (
-                        get_trending_items_map,
-                        is_item_trending,
-                    )
-
-                    trending_map = get_trending_items_map()
-                    filtered_articles = [a for a in filtered_articles if is_item_trending(a, trending_map)]
-
-                if not filtered_articles:
-                    msg = f"No articles found matching '{search_term}'" if search_term else "No articles found"
-                    if show_trending:
-                        msg += " (filtered by trending)"
-                    return dbc.Alert(msg, color="info")
 
                 # Create table for filtered results
                 table_header = [
@@ -603,7 +581,7 @@ def register_news_search_callbacks(app):
                 return html.Div(
                     [
                         dbc.Alert(
-                            f"📰 Found {len(filtered_articles)} articles matching '{search_term}'" + (" (Trending)" if show_trending else ""),
+                            f"📰 Found {len(filtered_articles)} articles matching '{search_term}'",
                             color="success",
                             className="mb-3",
                         ),
@@ -775,28 +753,6 @@ def render_news_tab():
             dbc.Tabs(
                 id="news-source-tabs-main",
                 children=tabs_children,
-                active_tab="news-tab-ft-bb",
-            ),  # Default active tab
+            ),
         ]
     )
-
-
-if __name__ == "__main__":
-    # For testing this component independently
-    app_test = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-    # The render_news_tab now produces the full tabbed layout
-    app_test.layout = dbc.Container(
-        [
-            html.H1("News Tab Test (Standalone)"),
-            render_news_tab(),  # This will include the tabs and initial content
-        ],
-        fluid=True,
-        className="py-4",
-    )
-
-    print("Running standalone test for news_tab.py...")
-    print(f"Displaying max {MAX_ARTICLES_PER_SOURCE} articles per tab, sorted by date.")
-    print("Expected news JSON files relative to project root, e.g., data/futuretools/futuretoolsnews.json")
-    print("Check console for warnings about missing files or parsing errors, especially date parsing.")
-    app_test.run(debug=True, port=8052)
