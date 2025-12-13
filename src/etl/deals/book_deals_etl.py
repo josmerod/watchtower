@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.etl.deals.book_scrapers import HumbleBookScraper
 
 # Initialize logger
 logger = get_logger("BookDealsETL")
@@ -71,6 +72,19 @@ class BookDealsETL(BaseETL):
         # Add curated book deals and free sources
         curated_deals = self._get_curated_book_deals()
         all_deals.extend(curated_deals)
+
+        # Add scraped deals (Humble Bundle)
+        try:
+            logger.info("Scraping Humble Bundle Books...")
+            scraper = HumbleBookScraper()
+            scraped_deals = scraper.scrape()
+            if scraped_deals:
+                all_deals.extend(scraped_deals)
+                logger.info(f"Added {len(scraped_deals)} scraped book deals")
+            else:
+                logger.warning("No book deals scraped from Humble Bundle")
+        except Exception as e:
+            logger.error(f"Failed to scrape book deals: {e}")
 
         logger.info(f"Total extracted {len(all_deals)} book deals")
         return {"deals": all_deals, "total_count": len(all_deals)}

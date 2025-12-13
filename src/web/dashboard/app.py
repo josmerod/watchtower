@@ -11,7 +11,8 @@ from dash import (  # Added Input, Output, dcc, clientside_callback, ALL for Tab
 )
 from flask import jsonify
 
-from src.web.dashboard.components.ai_research_tab import render_ai_research_tab
+# Removed unused intelligence tabs imports as per UI cleanup
+
 from src.web.dashboard.components.anime_tab import (
     register_anime_callbacks,
     render_anime_tab,
@@ -44,29 +45,24 @@ from src.web.dashboard.components.fourchan_tab import (
 from src.web.dashboard.components.games_tab import render_games_tab
 from src.web.dashboard.components.github_trending_tab import render_github_trending_tab
 from src.web.dashboard.components.giveaways_tab import create_giveaways_tab
-from src.web.dashboard.components.intelligence_tab import (
-    register_intelligence_callbacks,
-    render_intelligence_tab,
+
+from src.web.dashboard.components.personalization_tab import (
+    render_personalization_tab,
+    register_personalization_callbacks
 )
+from src.web.dashboard.components.developer_news_tab import render_developer_news_tab
+
 from src.web.dashboard.components.knowledge_garden_tab import (
     render_knowledge_garden_tab,
 )
-from src.web.dashboard.components.metrics_tab import (
-    register_metrics_callbacks,
-    render_metrics_tab,
-)
+
 from src.web.dashboard.components.news_tab import (
     register_news_search_callbacks,
     render_news_tab,
 )
-from src.web.dashboard.components.notifications_tab import (
-    register_notifications_callbacks,
-    render_notifications_tab,
-)
-from src.web.dashboard.components.personalization_tab import (
-    register_personalization_callbacks,
-    render_personalization_tab,
-)
+
+# Removed notifications tab import as per UI cleanup
+
 from src.web.dashboard.components.scavenging_tab import (
     register_scavenging_callbacks,
     render_scavenging_tab,
@@ -149,12 +145,8 @@ app.index_string = """
 # Main layout with Tabs
 app.layout = dbc.Container(
     [
-        # Skip to content link for accessibility
-        html.A(
-            "Skip to main content",
-            href="#dashboard-content",
-            className="skip-to-content",
-        ),
+        # Skip to content link removed
+
         # Header with mobile-responsive layout
         dbc.Row(
             [
@@ -211,11 +203,7 @@ app.layout = dbc.Container(
                             tab_id="tab-news",
                             children=[render_news_tab()],
                         ),
-                        dbc.Tab(
-                            label="🔔 Notifications",
-                            tab_id="tab-notifications",
-                            children=[render_notifications_tab()],
-                        ),
+
                         dbc.Tab(
                             label="🌱 Knowledge Garden",
                             tab_id="tab-knowledge-garden",
@@ -236,20 +224,17 @@ app.layout = dbc.Container(
                             tab_id="tab-games",
                             children=[render_games_tab()],
                         ),
-                        dbc.Tab(
-                            label="Content Insights",
-                            tab_id="tab-intelligence",
-                            children=[render_intelligence_tab()],
-                        ),
-                        dbc.Tab(
-                            label="AI Research Intelligence",
-                            tab_id="tab-ai-research",
-                            children=[render_ai_research_tab()],
-                        ),
+                        # Removed Intelligence and AI Research tabs as per cleanup
+
                         dbc.Tab(
                             label="🎯 My AI Learning",
                             tab_id="tab-personalization",
                             children=[render_personalization_tab()],
+                        ),
+                        dbc.Tab(
+                            label="💻 Developer News",
+                            tab_id="tab-developer-news",
+                            children=[render_developer_news_tab()],
                         ),
                         dbc.Tab(
                             label="🏗️ Architecture",
@@ -306,11 +291,7 @@ app.layout = dbc.Container(
                             tab_id="tab-deals",
                             children=[render_deals_tab()],
                         ),
-                        dbc.Tab(
-                            label="📊 Metrics",
-                            tab_id="tab-metrics",
-                            children=[render_metrics_tab()],
-                        ),
+
                     ],
                 )
             )
@@ -440,11 +421,10 @@ register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
 register_spanish_aid_callbacks(app)
 register_arxiv_callbacks(app)
-register_intelligence_callbacks(app)
+
 register_news_search_callbacks(app)
 register_deals_search_callbacks(app)
-register_metrics_callbacks(app)
-register_notifications_callbacks(app)
+
 
 
 # Clientside callback to dynamically generate tabs based on user preferences
