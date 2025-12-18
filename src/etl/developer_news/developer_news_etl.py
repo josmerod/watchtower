@@ -22,7 +22,8 @@ class DeveloperNewsETL(BaseETL):
     def __init__(self):
         super().__init__(
             name="developer_news",
-            description="Aggregates developer news from HackerNews, Dev.to, and NewsAPI"
+            description="Aggregates developer news from HackerNews, Dev.to, and NewsAPI",
+            enable_enrichment=True
         )
         self.summarizer = NewsSummarizer()
         self.relevance_scorer = RelevanceScorer() # Uses default stack for now

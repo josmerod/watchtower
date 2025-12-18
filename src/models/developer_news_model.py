@@ -6,6 +6,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
+from src.models.base import AIEnhancedModel
 from pydantic import BaseModel, Field, HttpUrl
 
 
@@ -19,7 +20,7 @@ class NewsSourceType(str, Enum):
     OTHER = "Other"
 
 
-class DeveloperNewsItem(BaseModel):
+class DeveloperNewsItem(AIEnhancedModel):
     """Model representing a single developer news item."""
 
     id: str = Field(..., description="Unique identifier for the news item")

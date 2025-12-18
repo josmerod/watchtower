@@ -142,6 +142,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         retry_delay: int = 5,
         enable_deduplication: bool = True,
         title_similarity_threshold: float = 0.8,
+        enable_enrichment: bool = False,
     ):
         self.name = name
         self.description = description or f"ETL process: {name}"
@@ -152,6 +153,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         self.retry_delay = retry_delay
         self.enable_deduplication = enable_deduplication
         self.title_similarity_threshold = title_similarity_threshold
+        self.enable_enrichment = enable_enrichment
         self.logger = get_logger(f"ETL.{name}")
         self.perf_logger = get_performance_logger(f"ETL.{name}")
         self.metrics = ETLMetrics(start_time=datetime.utcnow())
@@ -502,8 +504,19 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             # Story 4.1: Apply deduplication after transformation
             deduplicated = self._apply_deduplication(transformed)
 
-            self._retry_operation("load", lambda: self.load(deduplicated))
-            self.metrics.records_loaded = len(deduplicated)
+            # Story 8.x: Apply AI Enrichment (if enabled)
+            enriched = deduplicated
+            if self.enable_enrichment:
+                try:
+                   from src.intelligence.enrichment import ContentEnricher
+                   enricher = ContentEnricher()
+                   enriched = enricher.enrich_batch(deduplicated)
+                except Exception as e:
+                    self.logger.warning(f"AI Enrichment failed: {e}")
+                    enriched = deduplicated # Fallback to unenriched
+
+            self._retry_operation("load", lambda: self.load(enriched))
+            self.metrics.records_loaded = len(enriched)
             self.logger.info(f"Loaded {self.metrics.records_loaded} records")
 
             if self.enable_checkpointing and self.metrics.is_successful:

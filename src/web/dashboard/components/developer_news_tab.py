@@ -134,24 +134,48 @@ def register_developer_news_callbacks(app):
                     dbc.Badge(f"Trend: {int(item.trend_score * 100)}%", color="info" if item.trend_score > 0.7 else "secondary", className="me-2")
                 ]
                 
+                # Add AI Tags if available
+                if hasattr(item, "ai_tags") and item.ai_tags:
+                    for tag in item.ai_tags[:3]: # Limit to 3 tags
+                        badges.append(dbc.Badge(tag, color="light", text_color="dark", className="me-1 border"))
+
+                # Determine Summary and Insight
+                summary_text = getattr(item, "ai_summary", None) or item.summary
+                insight_text = getattr(item, "ai_insight", None)
+                
                 # Key Points
                 key_points_html = []
                 if item.key_points:
                     key_points_html = [html.Ul([html.Li(kp) for kp in item.key_points], className="small text-muted mt-2")]
                 
+                content_elements = [
+                    html.Div(badges, className="mb-2"),
+                    html.H5(item.title, className="card-title"),
+                    html.P(summary_text, className="card-text"),
+                ]
+                
+                # Add AI Insight Box if available
+                if insight_text:
+                    content_elements.append(
+                        dbc.Alert(
+                            [html.I(className="bi bi-lightbulb-fill me-2"), html.Strong("Insight: "), insight_text],
+                            color="success",
+                            className="p-2 small mb-2"
+                        )
+                    )
+                
+                content_elements.extend(key_points_html)
+                content_elements.append(
+                    html.Div([
+                        html.Small(item.source, className="text-muted me-3"),
+                        html.Small(item.published_at.strftime("%Y-%m-%d"), className="text-muted"),
+                        html.A("Read Full Article", href=item.url, target="_blank", className="btn btn-sm btn-outline-primary float-end")
+                    ], className="mt-3")
+                )
+
                 feed_cards.append(
                     dbc.Card([
-                        dbc.CardBody([
-                            html.Div(badges, className="mb-2"),
-                            html.H5(item.title, className="card-title"),
-                            html.P(item.summary, className="card-text"),
-                            *key_points_html,
-                            html.Div([
-                                html.Small(item.source, className="text-muted me-3"),
-                                html.Small(item.published_at.strftime("%Y-%m-%d"), className="text-muted"),
-                                html.A("Read Full Article", href=item.url, target="_blank", className="btn btn-sm btn-outline-primary float-end")
-                            ], className="mt-3")
-                        ])
+                        dbc.CardBody(content_elements)
                     ], className="mb-3")
                 )
                 
