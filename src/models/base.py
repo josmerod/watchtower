@@ -165,3 +165,12 @@ class PaginatedResponse(BaseModel):
     items: list = Field(description="List of items")
     pagination: PaginationModel = Field(description="Pagination information")
     metadata: dict[str, Any] | None = Field(default=None, description="Additional response metadata")
+
+
+class AIEnhancedModel(BaseModel):
+    """Mixin for models that support AI enrichment."""
+
+    ai_summary: str | None = Field(default=None, description="AI-generated summary")
+    ai_tags: list[str] | None = Field(default=None, description="AI-generated tags")
+    ai_insight: str | None = Field(default=None, description="AI-generated key insight or 'why it matters'")
+    ai_enriched_at: datetime | None = Field(default=None, description="Timestamp of enrichment")

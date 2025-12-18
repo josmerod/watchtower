@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import Field, field_validator
 
-from .base import BaseModel, TimestampedModel
+from .base import AIEnhancedModel, BaseModel, TimestampedModel
 
 
 class TrendingPeriod(str, Enum):
@@ -217,7 +217,7 @@ class GitHubRepositoryOwner(BaseModel):
     avatar_url: str | None = Field(default=None, description="Owner avatar URL")
 
 
-class GitHubRepositoryModel(TimestampedModel):
+class GitHubRepositoryModel(TimestampedModel, AIEnhancedModel):
     """Model for GitHub repository data from RSS feeds."""
 
     # Core repository info
@@ -372,6 +372,10 @@ class GitHubRepositoryModel(TimestampedModel):
             "updated_at": (self.repository_updated_at.isoformat() if self.repository_updated_at else None),
             "fetched_at": self.created_at.isoformat(),
             "rss_published": (self.rss_published.isoformat() if self.rss_published else None),
+            # AI Enrichment Fields
+            "ai_summary": self.ai_summary,
+            "ai_tags": self.ai_tags,
+            "ai_insight": self.ai_insight,
         }
 
 

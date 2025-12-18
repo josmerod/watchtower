@@ -43,7 +43,7 @@ from src.web.dashboard.components.fourchan_tab import (
     render_fourchan_tab,
 )
 from src.web.dashboard.components.games_tab import render_games_tab
-from src.web.dashboard.components.github_trending_tab import render_github_trending_tab
+from src.web.dashboard.components.open_source_tab import render_open_source_tab
 from src.web.dashboard.components.giveaways_tab import create_giveaways_tab
 
 from src.web.dashboard.components.personalization_tab import (
@@ -54,6 +54,11 @@ from src.web.dashboard.components.developer_news_tab import render_developer_new
 
 from src.web.dashboard.components.knowledge_garden_tab import (
     render_knowledge_garden_tab,
+)
+
+from src.web.dashboard.components.startup_tab import (
+    render_startup_intelligence_tab,
+    register_startup_callbacks,
 )
 
 from src.web.dashboard.components.news_tab import (
@@ -115,6 +120,7 @@ app.title = "Watchtower Dashboard"
 register_personalization_callbacks(app)
 register_architecture_callbacks(app)
 register_cloud_callbacks(app)
+register_startup_callbacks(app)
 
 # Add meta tags for better branding
 app.index_string = """
@@ -210,9 +216,9 @@ app.layout = dbc.Container(
                             children=[render_knowledge_garden_tab()],
                         ),
                         dbc.Tab(
-                            label="GitHub Trending",
-                            tab_id="tab-github-trending",
-                            children=[render_github_trending_tab()],
+                            label="Open Source",
+                            tab_id="tab-open-source",
+                            children=[render_open_source_tab()],
                         ),
                         dbc.Tab(
                             label="Videos",
@@ -240,6 +246,11 @@ app.layout = dbc.Container(
                             label="🏗️ Architecture",
                             tab_id="tab-architecture",
                             children=[render_architecture_intelligence_tab()],
+                        ),
+                        dbc.Tab(
+                            label="🚀 Startups",
+                            tab_id="tab-startups",
+                            children=[render_startup_intelligence_tab()],
                         ),
                         dbc.Tab(
                             label="☁️ Cloud",

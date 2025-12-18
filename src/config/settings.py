@@ -23,6 +23,7 @@ from src.config.models import (
     SpanishPublicAidConfig,
     StreamlitConfig,
     WatcherConfig,
+    LLMConfig,
 )
 
 
@@ -54,6 +55,7 @@ class Settings(BaseSettings):
     etl: ETLConfig = Field(default_factory=ETLConfig)
     google_drive: GoogleDriveConfig = Field(default_factory=GoogleDriveConfig)
     spanish_public_aid: SpanishPublicAidConfig = Field(default_factory=SpanishPublicAidConfig)
+    llm: LLMConfig = Field(default_factory=LLMConfig)
 
     class Config:
         """Pydantic configuration."""

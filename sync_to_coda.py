@@ -47,6 +47,42 @@ TASKS_TO_UPDATE = [
         "Priority": "Medium"
     },
     {
+        "ID": "8.11", 
+        "Title": "Epic 8.11: Open Source Intelligence", 
+        "Status": "Done", 
+        "Story Points": "8",
+        "Epic": "Epic 8",
+        "Description": "GitHub Trending aggregation across key languages with AI insights.",
+        "Priority": "High"
+    },
+    {
+        "ID": "8.11.1", 
+        "Title": "Open Source ETL (Playwright)", 
+        "Status": "Done", 
+        "Story Points": "3",
+        "Epic": "Epic 8",
+        "Description": "Implemented Playwright scraper for GitHub Trending (Daily/Weekly).",
+        "Priority": "High"
+    },
+    {
+        "ID": "8.11.2", 
+        "Title": "Open Source Dashboard Tab", 
+        "Status": "Done", 
+        "Story Points": "3",
+        "Epic": "Epic 8",
+        "Description": "Created dashboard tab with language filtering and star sorting.",
+        "Priority": "High"
+    },
+    {
+        "ID": "8.11.3", 
+        "Title": "Open Source AI Enrichment", 
+        "Status": "Done", 
+        "Story Points": "2",
+        "Epic": "Epic 8",
+        "Description": "Automated categorization and summary generation for repos.",
+        "Priority": "Medium"
+    },
+    {
         "ID": "8.9.1", 
         "Title": "Product Hunt ETL (Playwright)", 
         "Status": "Done", 

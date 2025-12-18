@@ -126,6 +126,7 @@ class GitHubTrendingRSSETL(BaseETL[GitHubTrendingFeed, GitHubRepositoryModel]):
         super().__init__(
             name="github_trending_rss",
             description="GitHub Trending RSS Feed ETL",
+            enable_enrichment=True,
             **kwargs,
         )
         self.session = self._create_session()
