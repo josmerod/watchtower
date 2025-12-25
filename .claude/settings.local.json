@@ -93,7 +93,11 @@
       "Bash(move:*)",
       "Bash(dashboard_temp.html)",
       "Bash(if not exist \"data\\deals\" mkdir \"data\\deals\")",
-      "SlashCommand(/bmad:bmm:workflows:create-story)"
+      "SlashCommand(/bmad:bmm:workflows:create-story)",
+      "Skill(glm-plan-usage:usage-query-skill)",
+      "mcp__coda__coda_list_documents",
+      "mcp__coda__coda_list_pages",
+      "mcp__coda__coda_get_page_content"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

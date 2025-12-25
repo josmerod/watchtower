@@ -270,11 +270,20 @@ class HumbleBundleScraper:
             logger.error(f"Error in scrape_bundles main try-block: {e!s}", exc_info=True)
         finally:
             if page:
-                await page.close()
+                try:
+                    await page.close()
+                except Exception:
+                    pass
             if context:
-                await context.close()
+                try:
+                    await context.close()
+                except Exception:
+                    pass
             if browser:
-                await browser.close()
+                try:
+                    await browser.close()
+                except Exception:
+                    pass
 
         if not all_bundles:
             logger.warning("All scraping methods failed. Creating placeholder bundle.")

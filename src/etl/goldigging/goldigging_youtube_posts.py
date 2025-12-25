@@ -128,7 +128,19 @@ def process_video_batch(video_ids: list[str], ydl: yt_dlp.YoutubeDL) -> list[dic
             return None
 
         # Convert timestamp to ISO format
-        published_at = datetime.fromtimestamp(video_info.get("timestamp", 0)).isoformat() + "Z"
+        timestamp = video_info.get("timestamp")
+        if timestamp:
+            published_at = datetime.fromtimestamp(timestamp).isoformat() + "Z"
+        else:
+            # Fallback to upload_date if timestamp is missing
+            upload_date = video_info.get("upload_date")
+            if upload_date:
+                try:
+                    published_at = datetime.strptime(upload_date, "%Y%m%d").isoformat() + "Z"
+                except ValueError:
+                    published_at = datetime.fromtimestamp(0).isoformat() + "Z"
+            else:
+                published_at = datetime.fromtimestamp(0).isoformat() + "Z"
 
         return {
             "title": video_info.get("title", ""),
@@ -204,15 +216,20 @@ def get_channel_videos_by_id(
                     continue
 
                 # Convert timestamp to ISO format for comparison
-                entry_timestamp = entry.get("timestamp", 0)
+                entry_timestamp = entry.get("timestamp")
                 if entry_timestamp:
                     published_at = datetime.fromtimestamp(entry_timestamp).isoformat() + "Z"
 
                     # Skip if video is older than published_after
                     if published_at < published_after:
+                        logger.info(f"Reached old content (published {published_at}), stopping fetch for channel")
                         break
+                else:
+                    # If timestamp is missing, we can't determine age in flat extraction.
+                    # Assume it might be new and verify later during detail fetch.
+                    logger.debug(f"Timestamp missing for {entry.get('id')}, queuing for detail verification")
 
-                    video_ids.append(entry["id"])
+                video_ids.append(entry["id"])
 
             if not video_ids:
                 logger.info(f"No recent videos found for {channel_handle}")

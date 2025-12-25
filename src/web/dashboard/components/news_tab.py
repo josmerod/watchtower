@@ -114,6 +114,10 @@ NEWS_SOURCES_CONFIG = {
         "path": get_data_path("kagi_spain", "kagi_spain.json"),
         "name": "Kagi Spain",
     },
+    "microsiervos": {
+        "path": get_data_path("news", "microsiervos_latest.json"),
+        "name": "Microsiervos",
+    },
 }
 
 
@@ -471,6 +475,7 @@ def register_news_search_callbacks(app):
         "news-search-kagi_ai",
         "news-search-kagi_europe",
         "news-search-kagi_spain",
+        "news-search-microsiervos",
     ]
 
     for search_id in search_ids:
@@ -732,6 +737,7 @@ def render_news_tab():
         {"label": "Kagi AI", "keys": "kagi_ai", "id": "kagi_ai"},
         {"label": "Kagi Europe", "keys": "kagi_europe", "id": "kagi_europe"},
         {"label": "Kagi Spain", "keys": "kagi_spain", "id": "kagi_spain"},
+        {"label": "Microsiervos", "keys": "microsiervos", "id": "microsiervos"},
     ]
 
     tabs_children = []
