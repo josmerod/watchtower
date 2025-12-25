@@ -82,6 +82,10 @@ class ScrapingConfig(BaseModel):
         le=300000,
         description="Playwright timeout in milliseconds",
     )
+    proxies: list[str] = Field(
+        default=[],
+        description="List of proxy URLs for rotation",
+    )
 
 
 class APIConfig(BaseModel):
