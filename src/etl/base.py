@@ -28,6 +28,8 @@ from src.exceptions.base import handle_exception
 from src.exceptions.etl import CheckpointError, ETLError
 from src.models.base import TimestampedModel
 from src.utils.logging import get_logger, get_performance_logger
+from src.etl.circuit_breaker import CircuitBreaker
+from src.etl.proxy_manager import ProxyManager
 
 # Type variables for generic ETL
 InputType = TypeVar("InputType")
@@ -165,6 +167,12 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         # Initialize deduplication engine
         self.deduplication_engine = DeduplicationEngine(title_similarity_threshold=self.title_similarity_threshold) if self.enable_deduplication else None
 
+        # Story 7.1: Initialize Circuit Breaker
+        self.circuit_breaker = CircuitBreaker(etl_name=name, base_path=self.data_dir)
+
+        # Story 7.2: Initialize Proxy Manager
+        self.proxy_manager = ProxyManager()
+
         self._ensure_directories()
 
     def _ensure_directories(self) -> None:
@@ -254,6 +262,11 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 operation="save",
                 etl_name=self.name,
             ) from e
+
+    @property
+    def http_session(self) -> Any: # requests.Session
+        """Get a configured HTTP session (with proxy rotation)."""
+        return self.proxy_manager.get_session(retries=self.max_retries)
 
     def _generate_checksum(self, data: Any) -> str:
         """Generate SHA256 checksum for data integrity verification.
@@ -475,6 +488,18 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         self.logger.info(f"Starting ETL process: {self.name}")
         self.perf_logger.start(f"ETL_{self.name}")
         self.metrics = ETLMetrics(start_time=datetime.utcnow())
+        
+        # Story 7.1: Check Circuit Breaker
+        if not self.circuit_breaker.can_proceed():
+            self.logger.warning(f"ETL {self.name} skipped due to open circuit breaker.")
+            self.metrics.add_error_detail(
+                error_message="Circuit breaker is open. ETL execution skipped.",
+                error_type="CircuitBreakerOpen",
+                context={"recovery_time": str(self.circuit_breaker.state.recovery_time)}
+            )
+            self.metrics.finish()
+            return self.metrics
+
         run_threw_exception = False
         try:
             # Story 1.1: Track checkpoint status
@@ -530,12 +555,18 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
 
             if self.metrics.is_successful:
                 self.logger.info(f"ETL process completed successfully. Success rate: {self.metrics.success_rate:.1f}%")
+                # Story 7.1: Record success
+                self.circuit_breaker.record_success()
             elif self.metrics.error_count == 0:
                 self.logger.info("ETL completed. No records loaded.")
+                self.circuit_breaker.record_success() # Treat no-data as success for stability
             # else: errors occurred and were handled by _retry_operation, ETLError will be raised
-
+            
         except Exception as e:
             run_threw_exception = True
+            
+            # Story 7.1: Record failure
+            self.circuit_breaker.record_failure()
 
             # Story 1.1: Capture detailed error information
             import traceback
