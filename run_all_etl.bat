@@ -63,6 +63,7 @@ start /B %PYTHON_CMD% src/etl/news/news_get_freecodecamp.py
 start /B %PYTHON_CMD% src/etl/news/news_get_google_ai_blog.py
 start /B %PYTHON_CMD% src/etl/news/news_get_lobsters.py
 start /B %PYTHON_CMD% src/etl/news/news_get_arstechnica.py
+start /B %PYTHON_CMD% src/etl/news/lobsters_etl.py
 
 REM Reddit ETL
 start /B %PYTHON_CMD% src/etl/news/reddit_unified_etl.py
@@ -130,6 +131,9 @@ REM 4chan Generals ETL
 start /B %PYTHON_CMD% src/etl/fourchan/fourchan_generals_etl.py
 
 
+REM Open Source Projects ETL
+start /B %PYTHON_CMD% src/etl/opensource/opensource_projects_etl.py
+
 echo All available ETL processes started in parallel using %PYTHON_CMD%
 echo Check logs directory for individual process logs
 echo.
@@ -148,7 +152,9 @@ echo - data/youtube_shorts_ocr/
 echo - data/spanish_public_aid/
 echo - data/reddit_unified/
 echo - data/giveaways/
+echo - data/giveaways/
 echo - data/4chan_generals/
+echo - data/open_source_intelligence/
 echo.
 echo Script completed at %date% %time%
 echo Note: Individual ETL processes may still be running in background
