@@ -82,6 +82,10 @@ from src.web.dashboard.components.spanish_public_aid_tab import (
     register_spanish_aid_callbacks,
     render_spanish_public_aid_tab,
 )
+from src.web.dashboard.components.global_search_tab import (
+    create_global_search_layout,
+    register_global_search_callbacks,
+)
 from src.web.dashboard.components.valencia_events_new_tab import (
     register_valencia_events_callbacks,
     render_valencia_events_tab,
@@ -205,6 +209,11 @@ app.layout = dbc.Container(
                             children=[render_shortcuts_tab()],
                         ),
                         dbc.Tab(
+                            label="🔍 Global Search",
+                            tab_id="tab-global-search",
+                            children=[create_global_search_layout()],
+                        ),
+                        dbc.Tab(
                             label="News",
                             tab_id="tab-news",
                             children=[render_news_tab()],
@@ -215,11 +224,7 @@ app.layout = dbc.Container(
                             tab_id="tab-knowledge-garden",
                             children=[render_knowledge_garden_tab()],
                         ),
-                        dbc.Tab(
-                            label="Open Source",
-                            tab_id="tab-open-source",
-                            children=[render_open_source_tab()],
-                        ),
+                        # Open Source moved to Knowledge Garden subtab
                         dbc.Tab(
                             label="Videos",
                             tab_id="tab-videos",
@@ -431,6 +436,7 @@ register_fourchan_callbacks(app)
 register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
 register_spanish_aid_callbacks(app)
+register_global_search_callbacks(app)
 register_arxiv_callbacks(app)
 
 register_news_search_callbacks(app)
