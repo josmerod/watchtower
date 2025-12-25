@@ -45,13 +45,14 @@ development_status:
   1-4-metrics-dashboard-tab: done
   epic-1-retrospective: optional
 
-  # Epic 2: Personalized Intelligence Hub (5 stories, 4 weeks)
+  # Epic 2: Personalized Intelligence Hub (6 stories, 4 weeks)
   epic-2: backlog
   2-1-saved-filter-presets: done
   2-2-personal-source-shortcuts: done
   2-3-dashboard-tab-customization: cancelled
   2-4-items-per-page-preferences: done
   2-5-mobile-responsive-layout-improvements: done
+  2-6-global-search-dashboard: backlog
   epic-2-retrospective: optional
 
   # Epic 3: Smart Notifications & Alerts (4 stories, 3 weeks)
@@ -97,17 +98,19 @@ development_status:
   6-4-integration-testing-helpers: backlog
   epic-6-retrospective: optional
 
-  # Epic 7: Technical Debt & Performance Sprint (5 stories, 3 weeks)
+  # Epic 7: Technical Debt & Performance Sprint (7 stories, 3 weeks)
   epic-7: backlog
-  7-1-etl-pattern-standardization: backlog
-  7-2-test-coverage-improvements: backlog
-  7-3-dashboard-performance-optimization: backlog
-  7-4-complex-module-refactoring: backlog
-  7-5-etl-performance-profiling: backlog
+  7-1-etl-robustness-circuit-breakers: backlog
+  7-2-etl-robustness-proxy-rotation: backlog
+  7-3-etl-pattern-standardization: backlog
+  7-4-test-coverage-improvements: backlog
+  7-5-dashboard-performance-optimization: backlog
+  7-6-complex-module-refactoring: backlog
+  7-7-etl-performance-profiling: backlog
   epic-7-retrospective: optional
 
   # Epic 8: Complete Intelligence Platform (18 stories, 8 weeks) - ENHANCED
-  epic-8: backlog
+  epic-8: contexted
   # Tier 1: Simple Intelligence Features (Weeks 1-2)
   8-1-usage-based-recommendations: review
   8-2-simple-trend-indicators: review
@@ -118,9 +121,20 @@ development_status:
   8-6-personalized-ai-content-discovery: ready-for-dev
   8-7-software-architecture-patterns-intelligence: ready-for-dev
   8-8-cloud-computing-intelligence-hub: ready-for-dev
-  8-9-developer-news-tips-aggregator: ready-for-dev
-  8-10-technology-startup-intelligence: ready-for-dev
-  8-11-open-source-project-intelligence: ready-for-dev
+  8-9-developer-news-tips-aggregator: done
+  8-9-1-product-hunt-etl-playwright: done
+  8-9-2-reddit-etl-quality-filters: done
+  8-9-3-developer-news-dashboard-tab: done
+  8-9-4-ui-cleanup: done
+  8-9-5-arxiv-watcher-fix: done
+  8-10-technology-startup-intelligence: done
+  8-10-1-startup-intelligence-etl: done
+  8-10-2-startup-intelligence-tab: done
+  8-10-3-startup-ai-enrichment: done
+  8-11-open-source-project-intelligence: done
+  8-11-1-open-source-etl-playwright: done
+  8-11-2-open-source-dashboard-tab: done
+  8-11-3-open-source-ai-enrichment: done
   8-12-developer-tools-software-intelligence: ready-for-dev
   8-13-technical-conference-event-intelligence: ready-for-dev
   8-14-coding-challenge-competition-intelligence: ready-for-dev

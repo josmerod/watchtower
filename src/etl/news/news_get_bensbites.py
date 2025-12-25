@@ -97,8 +97,14 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
                             context.clear_cookies()
                             time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
 
-                        # Navigate to the page and wait for network to be idle
-                        response = page.goto(current_url, wait_until="networkidle", timeout=30000)
+                        # Navigate to the page and wait for content (relaxed condition)
+                        try:
+                            response = page.goto(current_url, wait_until="domcontentloaded", timeout=60000)
+                        except Exception as nav_err:
+                            logger.warning(f"Navigation timeout/error on page {page_num + 1}: {nav_err}")
+                            if attempt < max_retries - 1:
+                                continue
+                            break
 
                         if not response.ok:
                             logger.warning(f"Page {page_num + 1} returned status {response.status}")

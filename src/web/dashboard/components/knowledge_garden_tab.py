@@ -7,11 +7,13 @@ from dash import html
 
 # Import shared utilities
 from src.web.dashboard.utils import get_data_path, parse_date_universal
-
-# --- Data Loading ---
-
 # KNOWLEDGE GARDEN TAB - Reddit, dev communities, and similar sources
 KNOWLEDGE_SOURCES_CONFIG = {
+    # Open Source Projects
+    "opensource": {
+        "path": get_data_path("open_source_intelligence", "output", "latest.json"),
+        "name": "Open Source Projects",
+    },
     "gooddevs": {
         "path": get_data_path("gooddevs", "gooddevs_latest.json"),
         "name": "Good Devs",
@@ -60,6 +62,11 @@ KNOWLEDGE_SOURCES_CONFIG = {
     },
     # Dev.to articles
     "devto": {"path": get_data_path("devto", "devto.json"), "name": "Dev.to"},
+    # HypeURLs (via Reddit)
+    "hypeurls": {
+        "path": get_data_path("reddit_unified", "reddit_news_latest.json"), 
+        "name": "HypeURLs"
+    },
 }
 
 
@@ -228,7 +235,14 @@ def create_knowledge_source_tab_content(source_keys, combined_name=None):
     # Sort all articles by date (descending)
     def get_sortable_date(article):
         date_str = (
-            article.get("published_at") or article.get("published_date") or article.get("created_at") or article.get("updated_at") or article.get("updated") or article.get("time") or article.get("pubDate")
+            article.get("published_at") 
+            or article.get("published") 
+            or article.get("published_date") 
+            or article.get("created_at") 
+            or article.get("updated_at") 
+            or article.get("updated") 
+            or article.get("time") 
+            or article.get("pubDate")
         )
         parsed = parse_date(date_str)
         return parsed if parsed else datetime.min.replace(tzinfo=timezone.utc)
@@ -303,9 +317,13 @@ def render_knowledge_garden_tab():
         {"label": "Product Hunt", "keys": "product_hunt", "id": "ph"},
         # Developer community tab
         {"label": "Dev.to", "keys": "devto", "id": "devto"},
+        {"label": "HypeURLs", "keys": "hypeurls", "id": "hypeurls"},
+        {"label": "Open Source", "keys": "opensource", "id": "opensource"},
     ]
 
     tabs_children = []
+    
+    # 2. Standard Knowledge Sources (Table Layout)
     for tab_def in tab_definitions:
         tab_id = f"knowledge-tab-{tab_def['id']}"
         content = create_knowledge_source_tab_content(tab_def["keys"], combined_name=tab_def["label"])
@@ -315,7 +333,7 @@ def render_knowledge_garden_tab():
                 tab_id=tab_id,
                 children=content,
                 id=tab_id + "-container",
-            )  # Added id to tab for potential future targeting
+            )
         )
 
     return html.Div(
@@ -324,8 +342,8 @@ def render_knowledge_garden_tab():
             dbc.Tabs(
                 id="knowledge-source-tabs-main",
                 children=tabs_children,
-                active_tab="knowledge-tab-ft-bb",
-            ),  # Default active tab
+                active_tab="knowledge-tab-opensource",
+            ),
         ]
     )
 

@@ -17,7 +17,10 @@ import requests
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 
+from pathlib import Path
+
 logger = get_logger("RedditUnifiedETL")
+STATE_FILE = os.path.join(get_project_root(), "data/reddit_unified/etl_state.json")
 
 # Extended list of relevant subreddits for tech/AI/ML/programming content
 SUBREDDITS_CONFIG = {
@@ -60,7 +63,30 @@ SUBREDDITS_CONFIG = {
     "aws": {"type": "json", "category": "devops"},
     "sysadmin": {"type": "json", "category": "devops"},
     "homelab": {"type": "json", "category": "devops"},
+    # News Aggregators
+    "hypeurls": {"type": "json", "category": "news", "pagination": True},
 }
+
+
+def load_state() -> dict:
+    """Load the ETL state (last processed IDs)."""
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading state file: {e}")
+    return {}
+
+
+def save_state(state: dict) -> None:
+    """Save the ETL state."""
+    try:
+        ensure_directories([os.path.dirname(STATE_FILE)])
+        with open(STATE_FILE, "w") as f:
+            json.dump(state, f, indent=2)
+    except Exception as e:
+        logger.error(f"Error saving state file: {e}")
 
 
 def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
@@ -97,7 +123,10 @@ def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
                             time_tuple.tm_hour,
                             time_tuple.tm_min,
                             time_tuple.tm_sec,
-                        ).isoformat()
+                            time_tuple.tm_wday,
+                            time_tuple.tm_yday,
+                            time_tuple.tm_isdst
+                        ).replace(tzinfo=timezone.utc).isoformat()
                 except (TypeError, IndexError, ValueError, AttributeError):
                     post["published"] = ""
 
@@ -111,62 +140,117 @@ def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
         return []
 
 
-def fetch_subreddit_json(subreddit: str, limit: int = 25) -> list[dict[str, Any]]:
-    """Fetch posts from subreddit JSON endpoint."""
-    json_url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
+def fetch_subreddit_json(subreddit: str, limit: int = 25, use_pagination: bool = False, last_known_id: str | None = None) -> list[dict[str, Any]]:
+    """Fetch posts from subreddit JSON endpoint, optionally with pagination."""
     headers = {"User-Agent": "watchtower-bot/1.0"}
+    base_url = f"https://www.reddit.com/r/{subreddit}/hot.json"
+    
+    posts = []
+    after = None
+    fetched_count = 0
+    max_fetch_limit = 100 if use_pagination else limit # Safety cap for pagination
 
-    try:
-        response = requests.get(json_url, headers=headers, timeout=10)
-        response.raise_for_status()
-        data = response.json()
+    while True:
+        try:
+            params = {"limit": limit}
+            if after:
+                params["after"] = after
+                
+            response = requests.get(base_url, headers=headers, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            children = data.get("data", {}).get("children", [])
+            if not children:
+                break
+                
+            batch_posts = []
+            stop_fetching = False
+            
+            for child in children:
+                post_data = child.get("data", {})
+                post_id = post_data.get("name") # format: t3_xxxxx
+                
+                # Incremental stop condition
+                if use_pagination and last_known_id and post_id == last_known_id:
+                    logger.info(f"Reached last known ID {last_known_id} for r/{subreddit}. Stopping incremental fetch.")
+                    stop_fetching = True
+                    break
+                
+                # Quality Filtering
+                score = post_data.get("score", 0)
+                upvote_ratio = post_data.get("upvote_ratio", 1.0)
+                is_stickied = post_data.get("stickied", False)
 
-        posts = []
-        for child in data.get("data", {}).get("children", []):
-            post_data = child.get("data", {})
-            # Quality Filtering
-            score = post_data.get("score", 0)
-            upvote_ratio = post_data.get("upvote_ratio", 1.0)
-            is_stickied = post_data.get("stickied", False)
+                # Skip low quality or pinned posts (except for hypeurls which is an aggregator)
+                min_score = 0 if subreddit == "hypeurls" else 10
+                if score < min_score or is_stickied:
+                    continue
 
-            # Skip low quality or pinned posts
-            if score < 10 or is_stickied:
-                continue
+                post = {
+                    "id": post_id,
+                    "subreddit": subreddit,
+                    "title": post_data.get("title", "No title"),
+                    "url": post_data.get("url", ""),
+                    "published": datetime.fromtimestamp(
+                        post_data.get("created_utc", 0), tz=timezone.utc
+                    ).isoformat(),
+                    "score": score,
+                    "upvote_ratio": upvote_ratio,
+                    "num_comments": post_data.get("num_comments", 0),
+                    "author": post_data.get("author", "Anonymous"),
+                    "selftext": post_data.get("selftext", ""),
+                    "fetch_method": "json",
+                }
+                batch_posts.append(post)
+            
+            posts.extend(batch_posts)
+            fetched_count += len(children) # Count raw items fetched
+            
+            if stop_fetching or not use_pagination or fetched_count >= max_fetch_limit:
+                break
+                
+            after = data.get("data", {}).get("after")
+            if not after:
+                break
+                
+            time.sleep(1) # Polite pagination delay
+            
+        except Exception as e:
+            logger.error(f"Error fetching r/{subreddit} via JSON (page loop): {e}")
+            break
 
-            post = {
-                "subreddit": subreddit,
-                "title": post_data.get("title", "No title"),
-                "url": post_data.get("url", ""),
-                "published": datetime.fromtimestamp(
-                    post_data.get("created_utc", 0), tz=timezone.utc
-                ).isoformat(),
-                "score": score,
-                "upvote_ratio": upvote_ratio,
-                "num_comments": post_data.get("num_comments", 0),
-                "author": post_data.get("author", "Anonymous"),
-                "selftext": post_data.get("selftext", ""),
-                "fetch_method": "json",
-            }
-            posts.append(post)
-
-        logger.info(f"Fetched {len(posts)} posts from r/{subreddit} via JSON (filtered from larger set)")
-        return posts
-
-    except Exception as e:
-        logger.error(f"Error fetching r/{subreddit} via JSON: {e}")
-        return []
+    logger.info(f"Fetched {len(posts)} posts from r/{subreddit} via JSON (Paginated: {use_pagination})")
+    return posts
 
 
 def fetch_all_subreddits() -> dict[str, list[dict[str, Any]]]:
     """Fetch posts from all configured subreddits."""
     all_posts = {}
+    state = load_state()
 
     for subreddit, config in SUBREDDITS_CONFIG.items():
         try:
             if config["type"] == "rss":
                 posts = fetch_subreddit_rss(subreddit)
             else:  # json
-                posts = fetch_subreddit_json(subreddit)
+                use_pagination = config.get("pagination", False)
+                last_id = state.get(subreddit) if use_pagination else None
+                
+                # If paginating, fetch more initially
+                limit = 100 if use_pagination else 25 
+                
+                posts = fetch_subreddit_json(subreddit, limit=limit, use_pagination=use_pagination, last_known_id=last_id)
+                
+                # Update state with newest post ID if available
+                if use_pagination and posts:
+                    # Assuming posts are returned newest first (standard Reddit Hot/New)
+                    # We might want to sort to be sure, but usually 'hot' is roughly temporal or we just take the top one 
+                    # from the first batch as the new marker. 
+                    # Ideally we store the ID of the very first item we encountered (even if filtered out? No, filtered items are fine to skip).
+                    # Actually, we should probably grab the ID from the raw response if possible, but here we only have filtered posts.
+                    # Let's use the first post in our filtered list as the new checkpoint.
+                    state[subreddit] = posts[0].get("id")
 
             # Add category info to each post
             for post in posts:
@@ -180,7 +264,8 @@ def fetch_all_subreddits() -> dict[str, list[dict[str, Any]]]:
         except Exception as e:
             logger.error(f"Error processing r/{subreddit}: {e}")
             all_posts[subreddit] = []
-
+            
+    save_state(state)
     return all_posts
 
 
@@ -239,8 +324,11 @@ def main():
     """Main ETL execution."""
     logger.info("Starting unified Reddit ETL process")
 
-    all_posts = fetch_all_subreddits()
-    save_reddit_data(all_posts)
+    try:
+        all_posts = fetch_all_subreddits()
+        save_reddit_data(all_posts)
+    except Exception as e:
+        logger.exception("Fatal error in Reddit Unified ETL")
 
     logger.info("Unified Reddit ETL process completed")
 

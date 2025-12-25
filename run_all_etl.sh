@@ -116,6 +116,9 @@ run_etl "src/miners/crypto_sentiment_miner.py"
 run_etl "src/etl/goldigging/viajeros_piratas_etl.py"
 
 
+# Open Source Projects ETL
+run_etl "src/etl/opensource/opensource_projects_etl.py"
+
 echo "All ETL processes started in parallel using UV"
 echo "Process PIDs: ${pids[*]}"
 echo "Check logs directory for individual process logs"

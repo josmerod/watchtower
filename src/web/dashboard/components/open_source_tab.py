@@ -1,8 +1,8 @@
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 from src.config.settings import get_settings
-from src.models.github import GitHubRepositoryModel
-import pandas as pd
+from src.models.opensource_model import OpenSourceProjectItem
+from datetime import datetime
 from pathlib import Path
 import json
 
@@ -11,27 +11,28 @@ def render_open_source_tab():
     settings = get_settings()
     data_path = Path(settings.data_dir) / "open_source_intelligence" / "output" / "latest.json"
     
-    repositories = []
+    projects = []
     if data_path.exists():
         try:
             with open(data_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                repositories = [GitHubRepositoryModel(**item) for item in data]
+                projects = [OpenSourceProjectItem(**item) for item in data]
         except Exception as e:
             print(f"Error loading open source data: {e}")
-    else:
-        # Fallback/Empty state
-        pass
-
-    # Unique filtered lists for dropdowns
-    languages = sorted(list(set([r.language for r in repositories if r.language])))
-    if "Python" not in languages: languages = ["Python"] + languages # Ensure default exists if empty
+    
+    # Collect all unique tags for filtering
+    all_tags = set()
+    for p in projects:
+        for tag in p.tags:
+            all_tags.add(tag)
+    
+    sorted_tags = sorted(list(all_tags))
     
     return dbc.Container([
         dbc.Row([
             dbc.Col([
                 html.H2("Open Source Intelligence", className="display-4 text-primary mb-2"),
-                html.P("Trending repositories from GitHub across key ecosystems.", className="lead text-muted"),
+                html.P("Latest open source projects from opensourceprojects.dev.", className="lead text-muted"),
             ], width=12)
         ], className="mb-4"),
         
@@ -40,27 +41,26 @@ def render_open_source_tab():
             dbc.CardBody([
                 dbc.Row([
                     dbc.Col([
-                        html.Label("Language"),
+                        html.Label("Filter by Tag"),
                         dcc.Dropdown(
-                            id="os-language-filter",
-                            options=[{"label": "All", "value": "ALL"}] + [{"label": l, "value": l} for l in languages],
+                            id="os-tag-filter",
+                            options=[{"label": "All Tags", "value": "ALL"}] + [{"label": t, "value": t} for t in sorted_tags],
                             value="ALL",
                             clearable=False
                         )
-                    ], md=4),
+                    ], md=6),
                     dbc.Col([
                         html.Label("Sort By"),
                         dcc.Dropdown(
                             id="os-sort-filter",
                             options=[
-                                {"label": "Trending Stars (Today)", "value": "trending"},
-                                {"label": "Total Stars", "value": "stars"},
-                                {"label": "Forks", "value": "forks"}
+                                {"label": "Newest First", "value": "newest"},
+                                {"label": "Oldest First", "value": "oldest"}
                             ],
-                            value="trending",
+                            value="newest",
                             clearable=False
                         )
-                    ], md=4)
+                    ], md=6)
                 ])
             ])
         ], className="mb-4 shadow-sm"),
@@ -72,10 +72,10 @@ def render_open_source_tab():
 
 @callback(
     Output("os-content-grid", "children"),
-    [Input("os-language-filter", "value"),
+    [Input("os-tag-filter", "value"),
      Input("os-sort-filter", "value")]
 )
-def update_os_grid(language, sort_by):
+def update_os_grid(tag_filter, sort_by):
     settings = get_settings()
     data_path = Path(settings.data_dir) / "open_source_intelligence" / "output" / "latest.json"
     
@@ -85,70 +85,70 @@ def update_os_grid(language, sort_by):
     try:
         with open(data_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Use raw sorting/filtering here for simplicity if model conversion is slow
-            # But safe to use list of dicts for display
+            # Validation optional to speed up, but good for consistency
+            projects = [OpenSourceProjectItem(**item) for item in data]
             
             # Filter
-            filtered = data
-            if language != "ALL":
-                filtered = [r for r in data if r.get("language") == language]
+            if tag_filter != "ALL":
+                projects = [p for p in projects if tag_filter in p.tags]
             
             # Sort
-            if sort_by == "trending":
-                # Assuming scraping creates a 'period_stars' field logic passing through? 
-                # Our model doesn't explicitly have 'period_stars' in the named tuple definition at top, 
-                # but the scraper adds it? Wait, model validation might strip it if not in Pydantic.
-                # Let's check model. github.py -> GitHubRepositoryModel.
-                # It does NOT have period_stars. It will be stripped.
-                # We should use stars_count for now.
-                filtered.sort(key=lambda x: x.get("stars_count", 0), reverse=True)
-            elif sort_by == "stars":
-                filtered.sort(key=lambda x: x.get("stars_count", 0), reverse=True)
-            elif sort_by == "forks":
-                filtered.sort(key=lambda x: x.get("forks_count", 0), reverse=True)
+            if sort_by == "newest":
+                projects.sort(key=lambda x: x.published_at or x.created_at, reverse=True)
+            elif sort_by == "oldest":
+                projects.sort(key=lambda x: x.published_at or x.created_at, reverse=False)
             
-            if not filtered:
-                return dbc.Alert("No repositories found for this filter.", color="info")
+            if not projects:
+                return dbc.Alert("No projects found for this filter.", color="info")
             
             # Create cards
             cards = []
-            for repo in filtered:
-                cards.append(dbc.Col(_create_repo_card(repo), lg=4, md=6, className="mb-4"))
+            for project in projects:
+                cards.append(dbc.Col(_create_project_card(project), lg=4, md=6, className="mb-4"))
                 
             return dbc.Row(cards)
             
     except Exception as e:
         return dbc.Alert(f"Error loading data: {e}", color="danger")
 
-def _create_repo_card(repo_dict):
-    """Create a card for a repository."""
+def _create_project_card(item: OpenSourceProjectItem):
+    """Create a card for a project."""
+    
+    tags_badges = [
+        html.Span(tag, className="badge bg-light text-dark border me-1 mb-1") 
+        for tag in item.tags[:5] # Limit tags
+    ]
+    
+    date_str = item.published_at.strftime("%Y-%m-%d") if item.published_at else "Unknown Date"
+    
     return dbc.Card([
         dbc.CardBody([
             html.Div([
                 html.H5(
-                    html.A(repo_dict.get("full_name"), href=repo_dict.get("url"), target="_blank", className="text-decoration-none text-dark"), 
+                    html.A(item.title, href=item.url, target="_blank", className="text-decoration-none text-dark"), 
                     className="card-title text-truncate"
                 ),
-                html.Span(
-                    repo_dict.get("language") or "Unknown", 
-                    className="badge bg-light text-dark border ms-2"
-                )
-            ], className="d-flex justify-content-between align-items-center mb-2"),
+            ], className="mb-2"),
             
-            html.P(repo_dict.get("description"), className="card-text text-muted small", style={"height": "60px", "overflow": "hidden"}),
+            html.Div(tags_badges, className="mb-2"),
+            
+            html.P(item.description, className="card-text text-muted small", style={"height": "60px", "overflow": "hidden"}),
             
             html.Hr(),
             
             html.Div([
                 html.Small([
-                    html.I(className="bi bi-star-fill text-warning me-1"),
-                    f"{repo_dict.get('stars_count', 0):,}"
+                    html.I(className="bi bi-calendar-event text-secondary me-1"),
+                    date_str
                 ], className="me-3"),
                 
-                html.Small([
-                    html.I(className="bi bi-git text-secondary me-1"),
-                    f"{repo_dict.get('forks_count', 0):,}"
-                ], className="me-3"),
-            ], className="d-flex text-muted")
-        ], className="h-100")
+                # Check for AI summary if available (using AIEnhancedModel fields)
+                # item.ai_summary...
+            ], className="d-flex text-muted justify-content-between align-items-center"),
+            
+            html.Div([
+                 html.A("View Project", href=item.url, target="_blank", className="btn btn-sm btn-outline-primary mt-2 w-100")
+            ])
+            
+        ], className="h-100 d-flex flex-column")
     ], className="h-100 hover-shadow transition-all")

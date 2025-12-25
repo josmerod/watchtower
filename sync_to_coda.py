@@ -10,9 +10,65 @@ BASE_URL = "https://coda.io/apis/v1"
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 
 TASKS_TO_UPDATE = [
+    # Epic 8.9: Developer News Tips Aggregator - COMPLETED ✅
+    {
+        "ID": "8.9",
+        "Title": "Epic 8.9: Developer News Tips Aggregator",
+        "Status": "Done",
+        "Story Points": "5",
+        "Epic": "Epic 8",
+        "Description": "Product Hunt, Reddit quality filters, Developer News tab, UI cleanup, Arxiv fixes.",
+        "Priority": "High"
+    },
+    {
+        "ID": "8.9.1",
+        "Title": "Product Hunt ETL (Playwright)",
+        "Status": "Done",
+        "Story Points": "3",
+        "Epic": "Epic 8",
+        "Description": "Implemented Playwright scraper for Product Hunt to bypass 403 errors.",
+        "Priority": "High"
+    },
+    {
+        "ID": "8.9.2",
+        "Title": "Reddit ETL Quality Filters",
+        "Status": "Done",
+        "Story Points": "2",
+        "Epic": "Epic 8",
+        "Description": "Added score (>=10) and stickied filters to Reddit ETL.",
+        "Priority": "Medium"
+    },
+    {
+        "ID": "8.9.3",
+        "Title": "Developer News Dashboard Tab",
+        "Status": "Done",
+        "Story Points": "5",
+        "Epic": "Epic 8",
+        "Description": "Implemented dedicated tab for developer news (Product Hunt, Reddit, etc.) with search.",
+        "Priority": "High"
+    },
+    {
+        "ID": "8.9.4",
+        "Title": "UI Cleanup",
+        "Status": "Done",
+        "Story Points": "1",
+        "Epic": "Epic 8",
+        "Description": "Removed unused tabs (Intelligence, AI Research) to declutter UI.",
+        "Priority": "Low"
+    },
+    {
+        "ID": "8.9.5",
+        "Title": "Arxiv Watcher Fix",
+        "Status": "Done",
+        "Story Points": "2",
+        "Epic": "Epic 8",
+        "Description": "Fixed Arxiv API query errors by removing submittedDate filter.",
+        "Priority": "High"
+    },
+    # Epic 8.10: Technology Startup Intelligence - COMPLETED ✅
     {
         "ID": "8.10",
-        "Title": "Epic 8.10: Startup Intelligence",
+        "Title": "Epic 8.10: Technology Startup Intelligence",
         "Status": "Done",
         "Story Points": "8",
         "Epic": "Epic 8",
@@ -20,111 +76,115 @@ TASKS_TO_UPDATE = [
         "Priority": "High"
     },
     {
-        "ID": "8.10.1", 
-        "Title": "Startup Intelligence ETL", 
-        "Status": "Done", 
+        "ID": "8.10.1",
+        "Title": "Startup Intelligence ETL",
+        "Status": "Done",
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Implemented StartupIntelligenceETL with TechCrunch and Product Hunt scrapers.",
         "Priority": "High"
     },
     {
-        "ID": "8.10.2", 
-        "Title": "Startup Intelligence Tab", 
-        "Status": "Done", 
+        "ID": "8.10.2",
+        "Title": "Startup Intelligence Tab",
+        "Status": "Done",
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Created dashboard tab for Startups with AI-enriched analysis and filtering.",
         "Priority": "High"
     },
     {
-        "ID": "8.10.3", 
-        "Title": "Startup AI Enrichment", 
-        "Status": "Done", 
+        "ID": "8.10.3",
+        "Title": "Startup AI Enrichment",
+        "Status": "Done",
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Integrated Gemini Flash 2.0 for categorizing and scoring startup news.",
         "Priority": "Medium"
     },
+    # Epic 8.11: Open Source Project Intelligence - COMPLETED ✅
     {
-        "ID": "8.11", 
-        "Title": "Epic 8.11: Open Source Intelligence", 
-        "Status": "Done", 
+        "ID": "8.11",
+        "Title": "Epic 8.11: Open Source Project Intelligence",
+        "Status": "Done",
         "Story Points": "8",
         "Epic": "Epic 8",
         "Description": "GitHub Trending aggregation across key languages with AI insights.",
         "Priority": "High"
     },
     {
-        "ID": "8.11.1", 
-        "Title": "Open Source ETL (Playwright)", 
-        "Status": "Done", 
+        "ID": "8.11.1",
+        "Title": "Open Source ETL (Playwright)",
+        "Status": "Done",
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Implemented Playwright scraper for GitHub Trending (Daily/Weekly).",
         "Priority": "High"
     },
     {
-        "ID": "8.11.2", 
-        "Title": "Open Source Dashboard Tab", 
-        "Status": "Done", 
+        "ID": "8.11.2",
+        "Title": "Open Source Dashboard Tab",
+        "Status": "Done",
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Created dashboard tab with language filtering and star sorting.",
         "Priority": "High"
     },
     {
-        "ID": "8.11.3", 
-        "Title": "Open Source AI Enrichment", 
-        "Status": "Done", 
+        "ID": "8.11.3",
+        "Title": "Open Source AI Enrichment",
+        "Status": "Done",
         "Story Points": "2",
         "Epic": "Epic 8",
         "Description": "Automated categorization and summary generation for repos.",
         "Priority": "Medium"
     },
+    # Epic 7: Technical Debt & Performance - PENDING 📋
     {
-        "ID": "8.9.1", 
-        "Title": "Product Hunt ETL (Playwright)", 
-        "Status": "Done", 
-        "Story Points": "3",
-        "Epic": "Epic 8",
-        "Description": "Implemented Playwright scraper for Product Hunt to bypass 403 errors.",
+        "ID": "7.1",
+        "Title": "ETL Robustness - Circuit Breakers",
+        "Status": "To Do",
+        "Story Points": "5",
+        "Epic": "Epic 7",
+        "Description": "Implement circuit breaker pattern for failing ETLs to prevent resource exhaustion and repeated failures.",
         "Priority": "High"
     },
     {
-        "ID": "8.9.2", 
-        "Title": "Reddit ETL Quality Filters", 
-        "Status": "Done", 
-        "Story Points": "2",
+        "ID": "7.2",
+        "Title": "ETL Robustness - Proxy Rotation",
+        "Status": "To Do",
+        "Story Points": "5",
+        "Epic": "Epic 7",
+        "Description": "Integrate proxy rotation for 403-prone extractors (Podcasts, Humble) to improve reliability.",
+        "Priority": "High"
+    },
+    # Epic 8: Additional Intelligence Sources - PENDING 📋
+    {
+        "ID": "8.12",
+        "Title": "Lobste.rs Intelligence",
+        "Status": "To Do",
+        "Story Points": "3",
         "Epic": "Epic 8",
-        "Description": "Added score (>=10) and stickied filters to Reddit ETL.",
+        "Description": "Add Lobste.rs as a new data source for developer news, similar to HackerNews.",
         "Priority": "Medium"
     },
     {
-        "ID": "8.9.3", 
-        "Title": "Developer News Dashboard Tab", 
-        "Status": "Done", 
+        "ID": "8.13",
+        "Title": "Weekly AI Digest",
+        "Status": "To Do",
         "Story Points": "5",
         "Epic": "Epic 8",
-        "Description": "Implemented dedicated tab for developer news (Product Hunt, Reddit, etc.) with search.",
-        "Priority": "High"
+        "Description": "Generate a weekly summary email of top-rated content using Gemini AI enrichment.",
+        "Priority": "Medium"
     },
+    # Epic 2: Personalized Intelligence Hub - PENDING 📋
     {
-        "ID": "8.9.4", 
-        "Title": "UI Cleanup", 
-        "Status": "Done", 
-        "Story Points": "1",
-        "Epic": "Epic 8",
-        "Description": "Removed unused tabs (Intelligence, AI Research) to declutter UI.",
-        "Priority": "Low"
-    },
-     {
-        "ID": "8.9.5", 
-        "Title": "Arxiv Watcher Fix", 
-        "Status": "Done", 
-        "Story Points": "2",
-        "Epic": "Epic 8",
-        "Description": "Fixed Arxiv API query errors by removing submittedDate filter.",
+        "ID": "2.6",
+        "Title": "Global Search Dashboard",
+        "Status": "To Do",
+        "Story Points": "8",
+        "Epic": "Epic 2",
+        "Description": "Implement unified global search page searching across all intelligence domains (Videos, News, Papers).",
         "Priority": "High"
     }
 ]
@@ -149,6 +209,7 @@ def find_column_mapping(doc_id, table_id, keys):
         return {}
     
     columns = response.json().get("items", [])
+    print(f"DEBUG: Available columns in Coda: {[c['name'] for c in columns]}")
     mapping = {}
     for key in keys:
         for col in columns:
@@ -256,6 +317,8 @@ def main():
     print(f"Using Doc: {target_doc['name']}")
     
     tables = list_tables(target_doc["id"])
+    print(f"DEBUG: All tables: {[t['name'] for t in tables]}")
+    
     target_table = next((t for t in tables if "Tasks" in t["name"] or "Stories" in t["name"]), None)
     
     if not target_table:
@@ -268,10 +331,66 @@ def main():
 
     print(f"Using Table: {target_table['name']}")
     
-    mapping = find_column_mapping(target_doc["id"], target_table["id"], TASKS_TO_UPDATE[0].keys())
-    print(f"Mapped columns: {list(mapping.keys())}")
-    
-    clean_and_sync(target_doc["id"], target_table["id"], TASKS_TO_UPDATE, mapping)
+    # Check if this is the simple "To-do list" table
+    if target_table['name'] == 'To-do list':
+        print("Detected simple 'To-do list' table. Adapting data model...")
+        
+        # Simplified mapping for this specific table
+        # We need to manually map our rich keys to the simple columns: 'Task', '✅', 'Due', 'Assignee'
+        # First, let's find the column IDs for 'Task' and '✅'
+        col_response = requests.get(f"{BASE_URL}/docs/{target_doc['id']}/tables/{target_table['id']}/columns", headers=HEADERS)
+        cols = col_response.json().get("items", [])
+        
+        task_col_id = next((c['id'] for c in cols if c['name'] == 'Task'), None)
+        done_col_id = next((c['id'] for c in cols if c['name'] == '✅'), None)
+        
+        if not task_col_id:
+            print("Error: Could not find 'Task' column.")
+            return
+
+        mapping = {"Task": task_col_id}
+        if done_col_id:
+            mapping["Checkbox"] = done_col_id
+
+        # Transform tasks to match simple table
+        simple_tasks = []
+        for t in TASKS_TO_UPDATE:
+            # Format: "ID: Title (Epic) - Description"
+            task_text = f"{t['ID']}: {t['Title']} [{t['Epic']}] - {t['Description']}"
+            simple_tasks.append({
+                "Task": task_text,
+                "Checkbox": t["Status"] == "Done"
+            })
+            
+        # Custom clean and sync for simple table
+        print("Fetching existing rows...")
+        existing_rows = list_rows(target_doc["id"], target_table["id"])
+        
+        rows_to_delete = []
+        task_ids = {t['ID'] for t in TASKS_TO_UPDATE}
+        
+        for row in existing_rows:
+            if "values" in row and task_col_id in row["values"]:
+                val = row["values"][task_col_id]
+                # Check if this row starts with any of our IDs
+                # We assume format "ID: ..."
+                if isinstance(val, str) and ":" in val:
+                    row_task_id = val.split(":")[0].strip()
+                    if row_task_id in task_ids:
+                        rows_to_delete.append(row["id"])
+        
+        if rows_to_delete:
+            print(f"Deleting {len(rows_to_delete)} existing rows...")
+            delete_rows(target_doc["id"], target_table["id"], rows_to_delete)
+            
+        # Insert
+        upsert_rows(target_doc["id"], target_table["id"], simple_tasks, mapping, ["Task", "Checkbox"])
+
+    else:
+        # Original logic for complex table
+        mapping = find_column_mapping(target_doc["id"], target_table["id"], TASKS_TO_UPDATE[0].keys())
+        print(f"Mapped columns: {list(mapping.keys())}")
+        clean_and_sync(target_doc["id"], target_table["id"], TASKS_TO_UPDATE, mapping)
 
 if __name__ == "__main__":
     main()

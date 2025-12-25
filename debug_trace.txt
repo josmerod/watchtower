@@ -1,0 +1,18 @@
+DEBUG: Starting extract_async at 2025-12-25 05:52:02.683947
+DEBUG: Launching browser...
+DEBUG: Browser launched. New page...
+DEBUG: Page created.
+DEBUG: Initial navigation done.
+DEBUG: Loop start page 1
+DEBUG: Clicking Next on page 1
+DEBUG: Loop start page 2
+DEBUG: Clicking Next on page 2
+DEBUG: Loop start page 3
+DEBUG: Clicking Next on page 3
+DEBUG: Loop start page 4
+DEBUG: Clicking Next on page 4
+DEBUG: Loop start page 5
+DEBUG: Clicking Next on page 5
+DEBUG: Loop start page 6
+DEBUG: Clicking Next on page 6
+DEBUG: Loop start page 7
