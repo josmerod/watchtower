@@ -6,12 +6,50 @@ from dash.dependencies import Input, Output
 import json
 from pathlib import Path
 from datetime import datetime
+from typing import Any
 
 from src.models.developer_news import SmartNewsItem, NewsCategory
 from src.utils.file_system import get_project_root
 from src.utils.logging import get_logger
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 logger = get_logger("DeveloperNewsTab")
+
+# NEW: Repository-based loading (SOLID Pattern)
+class DeveloperNewsRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for developer news data."""
+
+    def __init__(self):
+        """Initialize developer news repository."""
+        project_root = Path(get_project_root())
+        data_file = project_root / "data" / "developer_news" / "output" / "smart_news.json"
+
+        super().__init__(
+            data_path=data_file,
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of news items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of news item dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
+
+# Create singleton instance
+developer_news_repo = DeveloperNewsRepository()
 
 def render_developer_news_tab() -> html.Div:
     """Render the Developer News Intelligence tab.
@@ -98,20 +136,29 @@ def register_developer_news_callbacks(app):
     def update_news_content(category, sort_by):
         """Update news content based on filters."""
         try:
-            # Load data
-            project_root = Path(get_project_root())
-            data_file = project_root / "data" / "developer_news" / "output" / "smart_news.json"
-            
-            if not data_file.exists():
+            # OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+            # project_root = Path(get_project_root())
+            # data_file = project_root / "data" / "developer_news" / "output" / "smart_news.json"
+            #
+            # if not data_file.exists():
+            #     return (
+            #         dbc.Alert("No news data found. Please run the ETL.", color="warning"),
+            #         html.P("No data."),
+            #         html.P("No data.")
+            #     )
+            #
+            # with open(data_file, 'r', encoding='utf-8') as f:
+            #     data = json.load(f)
+
+            # NEW: Repository-based loading with caching
+            if not developer_news_repo.is_available():
                 return (
                     dbc.Alert("No news data found. Please run the ETL.", color="warning"),
                     html.P("No data."),
                     html.P("No data.")
                 )
-                
-            with open(data_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                
+
+            data = developer_news_repo.get()
             items = [SmartNewsItem(**item) for item in data]
             
             # Filter
