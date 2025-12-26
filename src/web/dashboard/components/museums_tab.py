@@ -4,6 +4,8 @@ Cultural institutions and museum data integration
 
 import json
 import logging
+from pathlib import Path
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -11,6 +13,9 @@ from dash import dash_table, html
 
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,26 +31,50 @@ MUSEUMS_CONFIG = {
     }
 }
 
+# NEW: Repository-based loading (SOLID Pattern)
+class MuseumsRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for museums data."""
 
-def load_museums_data(file_path):
-    """Load and parse museums data from JSON file"""
-    try:
-        if not file_exists(file_path):
-            logger.warning(f"Museums data file not found: {file_path}")
+    def __init__(self):
+        """Initialize museums repository."""
+        super().__init__(
+            data_path=Path(MUSEUMS_CONFIG["museums"]["path"]),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of museums.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of museum dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
             return []
 
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
+# Create singleton instance
+museums_repo = MuseumsRepository()
 
+
+def load_museums_data(file_path):
+    """Load and parse museums data using repository pattern (NEW)."""
+    try:
+        data = museums_repo.get()
         if isinstance(data, list):
             return [process_museum_item(item) for item in data if process_museum_item(item)]
         elif isinstance(data, dict):
             processed_item = process_museum_item(data)
             return [processed_item] if processed_item else []
-
         return []
     except Exception as e:
-        logger.error(f"Error loading museums data from {file_path}: {e}")
+        logger.error(f"Error loading museums data: {e}")
         return []
 
 
