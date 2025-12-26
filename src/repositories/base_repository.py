@@ -70,7 +70,6 @@ class BaseRepository(ABC, Generic[T]):
         self._cache: CacheEntry[T] | None = None
         self._logger = logging.getLogger(self.__class__.__name__)
 
-    @abstractmethod
     def load_data(self) -> T:
         """Load data from source.
 
@@ -80,7 +79,8 @@ class BaseRepository(ABC, Generic[T]):
         Raises:
             RepositoryError: If loading fails
         """
-        pass
+        raw_data = self._load_from_file()
+        return self.transform_data(raw_data)
 
     @abstractmethod
     def transform_data(self, raw_data: Any) -> T:
