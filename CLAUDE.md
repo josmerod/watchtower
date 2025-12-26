@@ -7,11 +7,12 @@ This file provides comprehensive guidance to Claude Code (claude.ai/code) when w
 **Watchtower** is a comprehensive data intelligence platform that aggregates, processes, and monitors information from diverse sources including research papers, news feeds, games, courses, AI platforms, and social media. It follows a sophisticated ETL + Watcher + Dashboard architecture with advanced features like NLP classification, GitHub repository analysis, and real-time monitoring.
 
 ### Key Capabilities
-- **Multi-source Data Aggregation**: 50+ different data sources including ArXiv, GitHub, Reddit, YouTube, game stores, course platforms
-- **Advanced ETL Framework**: Template method pattern with metrics collection, checkpointing, and retry mechanisms
+- **Multi-source Data Aggregation**: 60+ different data sources including ArXiv, GitHub, Reddit, YouTube, game stores, course platforms
+- **Advanced ETL Framework**: Template method pattern with metrics collection, checkpointing, retry mechanisms, circuit breakers, and proxy rotation
 - **Real-time Monitoring**: Event-driven watchers with state persistence and change detection
-- **Interactive Dashboards**: Dual dashboard system (Dash + legacy Streamlit) with modular tab architecture
+- **Interactive Dashboards**: Dual dashboard system (Dash + legacy Streamlit) with modular tab architecture and unified global search
 - **NLP Classification**: Automated content categorization and trend analysis
+- **Resilience Features**: Circuit breakers for failure isolation, proxy rotation for rate limit avoidance
 - **Performance Optimization**: File-based JSON storage, caching, and efficient data loading
 
 ## Common Development Commands
@@ -76,7 +77,7 @@ uv run python src/etl/giveaways/run_all_giveaways.py
 ```bash
 # Main Dash-based dashboard (recommended)
 uv run python run_watchtower_dashboard.py
-# Available at http://localhost:7777
+# Available at http://localhost:7778
 
 # Legacy Streamlit dashboard (compatibility mode)
 uv run streamlit run src/web/fullstreamlit/app.py
@@ -115,11 +116,12 @@ Watchtower implements a sophisticated three-layer architecture:
 │   Data Sources  │───▶│  ETL Framework  │───▶│   Dashboard     │
 │                 │    │                 │    │                 │
 │ • ArXiv RSS     │    │ • BaseETL       │    │ • Dash Tabs     │
-│ • GitHub API    │    │ • Checkpointing │    │ • Real-time     │
-│ • Reddit JSON   │    │ • Retry Logic   │    │ • Interactive   │
-│ • News Feeds    │    │ • Metrics       │    │ • Filterable    │
-│ • Game Stores   │    │ • NLP Classify  │    │ • Bootstrap UI  │
-│ • Course APIs   │    │ • Validation    │    │ • Mobile Ready │
+│ • GitHub API    │    │ • Checkpointing │    │ • Global Search │
+│ • Reddit JSON   │    │ • Circuit Break │    │ • Real-time     │
+│ • News Feeds    │    │ • Proxy Rotation│    │ • Interactive   │
+│ • Game Stores   │    │ • Retry Logic   │    │ • Filterable    │
+│ • Course APIs   │    │ • Metrics       │    │ • Bootstrap UI  │
+│ • 60+ Sources   │    │ • NLP Classify  │    │ • Mobile Ready │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
         │                       │                       │
         ▼                       ▼                       ▼
@@ -140,6 +142,8 @@ The cornerstone of the data processing architecture:
 - **Built-in Metrics Collection**: ETLMetrics model tracks performance, success rates, and error counts
 - **Checkpoint System**: Resumable operations with automatic state persistence
 - **Retry Mechanisms**: Exponential backoff for transient failures
+- **Circuit Breakers** (`src/etl/circuit_breaker.py`): Prevents cascading failures by temporarily disabling failing ETLs
+- **Proxy Manager** (`src/etl/proxy_manager.py`): Handles proxy rotation and session creation to avoid IP bans
 - **Error Handling**: Custom exception hierarchy with context preservation
 - **Data Validation**: Pydantic model validation with detailed error reporting
 - **Batch Processing**: Configurable batch sizes for memory efficiency
@@ -167,13 +171,15 @@ Centralized configuration with environment variable support:
 ### 4. Dash Dashboard Architecture (`src/web/dashboard/`)
 Modern web interface with performance focus:
 
-- **Tab-based Components**: Modular architecture with Bootstrap styling
+- **Tab-based Components**: Modular architecture with Bootstrap styling (35+ tabs)
+- **Unified Global Search**: Search across all data sources from a single interface
 - **Single Callback Pattern**: Prevents "Duplicate callback outputs" errors
 - **Real-time Data Loading**: Efficient JSON file reading with caching
 - **VideoManager Pattern**: Centralized data handling for complex components
 - **Error Boundaries**: Graceful degradation with user-friendly error messages
 - **Mobile Responsive**: Bootstrap CSS with fluid containers
 - **Health API Endpoints**: `/health` and `/metrics` for monitoring
+- **Dynamic Tab Loading**: Health checks for each tab with status indicators
 
 ## Data Processing Flow
 
@@ -194,18 +200,26 @@ External APIs/RSS ──▶ ETL Pipelines ──▶ JSON Storage ──▶ Dashb
 
 ### Domain-Specific ETL Modules
 - **ArXiv ETL** (`src/etl/arxiv/`): RSS parsing, NLP classification, research trend analysis
-- **News ETL** (`src/etl/news/`): Multi-source aggregation (HackerNews, Reddit, Medium, etc.)
+- **News ETL** (`src/etl/news/`): Multi-source aggregation (HackerNews, Reddit, Medium, Microsiervos, Lobste.rs)
 - **Games ETL** (`src/etl/games/`): Deal aggregation, free games, new releases
-- **Course ETL** (`src/etl/goldigging/`): Udemy, Coursera, educational content mining
-- **AI Platforms ETL** (`src/etl/ai_platforms/`): OpenAI, Anthropic, HuggingFace monitoring
-- **Entertainment ETL** (`src/etl/entertainment/`): Cinema listings, meme economics
-- **Deal Aggregation** (`src/etl/deals/`): Comprehensive deal tracking across multiple categories
+- **Course ETL** (`src/etl/goldigging/`, `src/etl/courses/`): Udemy, Coursera, Khan Academy, educational content mining
+- **AI Platforms ETL** (`src/etl/ai_platforms/`): OpenAI, Anthropic, HuggingFace, Google Gemini, GitHub Copilot, Replicate monitoring
+- **Entertainment ETL** (`src/etl/entertainment/`): Cinema listings, meme economics, Spotify browse, Trakt trending
+- **Deal Aggregation** (`src/etl/deals/`): Comprehensive deal tracking across 12+ categories (books, software, travel, hardware, etc.)
+- **Giveaways** (`src/etl/giveaways/`): Free games, free courses, Reddit giveaways tracking
 - **Anime ETL** (`src/etl/anime/`): MyAnimeList data aggregation
 - **ADHD Research** (`src/etl/adhd/`): PubMed research paper collection and analysis
 - **4chan ETL** (`src/etl/fourchan/`): General thread monitoring and analysis
 - **Spanish Public Aid** (`src/etl/spanish_public_aid/`): Government aid programs monitoring
 - **Valencia Events** (`src/etl/news/valencia_events_etl.py`): Local event aggregation
-- **Intelligence Mining** (`src/etl/intelligence/`): Advanced data analysis and insights
+- **Intelligence Mining** (`src/etl/intelligence/`): Advanced data analysis (cloud, architecture, AI research, developer news, open source)
+- **GitHub Trending** (`src/etl/github/`): Repository trend monitoring via RSS
+- **Developer News** (`src/etl/developer_news/`): Aggregated developer news from multiple sources
+- **Startup Intelligence** (`src/etl/startup/`): Startup ecosystem monitoring
+- **Open Source Projects** (`src/etl/opensource/`): Open source project tracking
+- **E-Commerce** (`src/etl/ecommerce/`): E-commerce monitoring (Shoppy)
+- **Museums** (`src/etl/museums/`): Museum information aggregation
+- **Neurodivergent** (`src/etl/neurodivergent/`): ADHD-friendly locations tracking
 
 ### Data Models Architecture
 Located in `src/models/`, follows Pydantic BaseModel pattern:
@@ -270,6 +284,8 @@ Located in `src/models/`, follows Pydantic BaseModel pattern:
 
 ### Architecture Patterns in Use
 - **Template Method**: BaseETL.run() orchestrates ETL phases
+- **Circuit Breaker Pattern**: Prevents cascading failures in ETL processes
+- **Proxy Rotation Pattern**: Distributes requests across multiple proxies
 - **Factory Pattern**: get_settings() with @lru_cache singleton
 - **State Pattern**: Watcher state management with JSON persistence
 - **Component Pattern**: Dash modular tab architecture with single-callback design
@@ -379,12 +395,15 @@ uv run pytest Tests/performance/ --benchmark-only
 ### External APIs
 - **ArXiv**: RSS feeds and paper metadata
 - **GitHub**: Repository trends and API monitoring
-- **News Sources**: RSS feeds from multiple tech sites (HackerNews, Reddit, Medium)
-- **Course Platforms**: Udemy, Coursera, DeepLearning.AI APIs
+- **News Sources**: RSS feeds from multiple tech sites (HackerNews, Reddit, Medium, Microsiervos, Lobste.rs)
+- **Course Platforms**: Udemy, Coursera, Khan Academy, DeepLearning.AI APIs
 - **Game Platforms**: Steam, Epic Games, Humble Bundle
-- **AI Platforms**: OpenAI, Anthropic, HuggingFace APIs
-- **Entertainment**: MyAnimeList, Cinema listings
+- **AI Platforms**: OpenAI, Anthropic, HuggingFace, Google Gemini, GitHub Copilot, Replicate APIs
+- **Entertainment**: MyAnimeList, Cinema listings, Spotify, Trakt
 - **Research**: PubMed for ADHD research papers
+- **Developer Resources**: Papers with Code, various developer news sources
+- **E-Commerce**: Shoppy and other e-commerce platforms
+- **Local Services**: Valencia events, Spanish public aid, museums
 
 ## Specialized Components
 
@@ -410,6 +429,12 @@ Shared functionality across the platform:
 - **Logging**: Structured logging with performance metrics
 - **Backup Utils**: Automated backup and recovery systems
 - **GitHub Utils**: Repository analysis and metadata extraction
+- **Course Deduplication**: Advanced course deduplication and management
+- **ETL Sanity**: ETL pipeline validation and health checks
+- **Papers with Code Utils**: Utilities for ML research paper processing
+- **Recommender**: Content recommendation engine
+- **Trend Scheduler**: Scheduling system for trend analysis
+- **YouTube OCR Converter**: Video content extraction and OCR processing
 
 This architecture enables rapid development of new ETL processes and monitoring capabilities while maintaining high code quality and performance standards.
 
@@ -441,10 +466,12 @@ The project is called **Watchtower** (also referenced as MEGALITH in some docume
 
 ### Key Architecture Decisions
 - **UV Package Manager**: Preferred over pip/venv for 10-100x faster dependency management
-- **Dual Dashboard System**: Main Dash dashboard (port 7777) + Legacy Streamlit (port 8501)
+- **Dual Dashboard System**: Main Dash dashboard (port 7778) + Legacy Streamlit (port 8501)
 - **File-based Storage**: JSON files in `data/` directory for performance and simplicity
 - **Pydantic Everything**: Models, configuration, and validation all use Pydantic
 - **Template Method Pattern**: BaseETL and BaseWatcher provide consistent interfaces
+- **Circuit Breaker Pattern**: Failure isolation for resilient ETL operations
+- **Proxy Rotation**: Distributed request handling to avoid rate limits
 
 ### Development Workflow
 1. **Setup**: Always use `uv sync --all-extras` for fastest setup
@@ -470,3 +497,46 @@ The project is called **Watchtower** (also referenced as MEGALITH in some docume
 - **API Key Management**: Secure storage and environment-based configuration
 - **Input Validation**: Pydantic models validate all external data
 - **Path Security**: Secure file path handling prevents traversal attacks
+
+## Advanced Features
+
+### Circuit Breaker Pattern
+Located in `src/etl/circuit_breaker.py`, implements fault tolerance for ETL processes:
+
+- **Failure Threshold**: Configurable failure count before tripping (default: 5)
+- **Recovery Timeout**: Time before attempting recovery (default: 30 minutes)
+- **State Persistence**: JSON-based state tracking across restarts
+- **Automatic Recovery**: Tentative closure after recovery timeout
+- **Trip Counting**: Tracks total circuit breaker trips for monitoring
+
+**Usage**: Automatically integrated into BaseETL, configurable via parameters
+
+### Proxy Manager Pattern
+Located in `src/etl/proxy_manager.py`, handles distributed request handling:
+
+- **Round-Robin Rotation**: Distributes requests across available proxies
+- **Session Management**: Configured requests.Session with retry logic
+- **Retry Strategy**: Configurable retries with exponential backoff
+- **Standard Headers**: User-Agent and standard HTTP headers included
+- **Graceful Fallback**: Direct connection when no proxies available
+
+**Usage**: Automatically used by ETLs that inherit from ProxyManager-enabled BaseETL
+
+### Unified Global Search
+Located in `src/web/dashboard/components/global_search_tab.py`:
+
+- **Cross-Tab Search**: Search across all data sources simultaneously
+- **Fuzzy Matching**: Intelligent search with partial matches
+- **Real-Time Results**: Instant search results as you type
+- **Category Filtering**: Filter results by data source type
+- **Performance Optimized**: Cached search results for speed
+
+### Video Management System
+Located in `src/web/dashboard/components/videos_tab.py`:
+
+- **16+ Channels**: Support for multiple YouTube channels
+- **1,500+ Videos**: Efficient handling of large video catalogs
+- **Channel Organization**: Categories listed first, then alphabetical
+- **Thread-Safe Loading**: Concurrent data access support
+- **Error Recovery**: Graceful handling of individual video failures
+- **48 Videos Per View**: Optimized display capacity for browsing

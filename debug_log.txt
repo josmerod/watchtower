@@ -1,5 +1,0 @@
-Loaded 200 papers from JSON
-Instantiated 200 AIResearchPaper objects
-First paper domain: Natural Language Processing (type: <class 'str'>)
-Profile domains: ['Computer Vision', 'Machine Learning Theory']
-Generated 10 recommendations

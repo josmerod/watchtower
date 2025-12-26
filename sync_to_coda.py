@@ -186,6 +186,34 @@ TASKS_TO_UPDATE = [
         "Epic": "Epic 2",
         "Description": "Implement unified global search page searching across all intelligence domains (Videos, News, Papers).",
         "Priority": "High"
+    },
+    # Epic 9: Maintenance & Cleanup - IN PROGRESS 🏗️
+    {
+        "ID": "9.1",
+        "Title": "Root Directory Cleanup",
+        "Status": "Done",
+        "Story Points": "2",
+        "Epic": "Epic 9",
+        "Description": "Removed temporary debug files, logs, and unused artifacts from project root.",
+        "Priority": "Medium"
+    },
+    {
+        "ID": "9.2",
+        "Title": "Script Organization",
+        "Status": "Done",
+        "Story Points": "2",
+        "Epic": "Epic 9",
+        "Description": "Moved deployment and utility scripts to `scripts/` directory.",
+        "Priority": "Low"
+    },
+    {
+        "ID": "9.3",
+        "Title": "Deprecated Code Removal",
+        "Status": "In Progress",
+        "Story Points": "3",
+        "Epic": "Epic 9",
+        "Description": "Identify and remove unused code in `src` and tests.",
+        "Priority": "Medium"
     }
 ]
 

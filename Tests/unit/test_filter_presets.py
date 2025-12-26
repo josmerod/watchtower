@@ -67,7 +67,8 @@ class TestLocalStorageManager:
         # Check that tab name is correctly embedded in JavaScript
         save_callback = callbacks["save_preset"]
         assert "test_tab" in save_callback
-        assert "window.saveFilterPreset" in save_callback
+        assert "localStorage.setItem" in save_callback
+        assert "localStorage.getItem" in save_callback
 
     def test_preset_controls_validation(self):
         """Test preset control validation and structure"""
@@ -255,15 +256,15 @@ class TestLocalStorageMock:
 
         # Check that JavaScript functions are called correctly
         save_callback = callbacks["save_preset"]
-        assert "window.saveFilterPreset" in save_callback
+        assert "localStorage.setItem" in save_callback
         assert "'test_tab'" in save_callback
 
         load_callback = callbacks["load_presets"]
-        assert "window.getFilterPresetOptions" in load_callback
+        assert "localStorage.getItem" in load_callback
         assert "'test_tab'" in load_callback
 
         delete_callback = callbacks["delete_preset"]
-        assert "window.deleteFilterPreset" in delete_callback
+        assert "localStorage.setItem" in delete_callback
         assert "'test_tab'" in delete_callback
 
 
