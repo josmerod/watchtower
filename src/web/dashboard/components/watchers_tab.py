@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -9,55 +11,112 @@ from dash import dcc, html
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # --- Data Loading ---
 
+# NEW: Repository-based loading (SOLID Pattern)
+class WatcherEventsRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for watcher events data."""
 
-def load_ms_skills_data():
-    """Load Microsoft Skills watcher data."""
-    file_path = get_data_path("watchers", "ms_skills", "events", "latest.json")
-    if not file_exists(file_path):
-        # Try alternative paths
-        alt_paths = [
+    def __init__(self):
+        """Initialize watcher events repository with fallback paths."""
+        # Try multiple paths in order of preference
+        data_path = None
+        file_paths = [
+            get_data_path("watchers", "ms_skills", "events", "latest.json"),
             get_data_path("watchers", "ms_skills", "ms_skills_events.json"),
             get_data_path("ms_skills", "ms_skills_latest.json"),
             get_data_path("watchers", "ms_skills.json"),
         ]
-        for alt_path in alt_paths:
-            if file_exists(alt_path):
-                file_path = alt_path
+
+        for path in file_paths:
+            if file_exists(str(path)):
+                data_path = Path(path)
                 break
 
-    if not file_exists(file_path):
-        return []
+        # If no file exists, use first path as default
+        if not data_path:
+            data_path = Path(file_paths[0])
 
-    try:
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
-            if isinstance(data, list):
-                return data
-            elif isinstance(data, dict):
-                # Try common keys
-                for key in ["events", "items", "data", "skills", "courses"]:
-                    if key in data and isinstance(data[key], list):
-                        return data[key]
-                # Single item
-                if any(k in data for k in ["title", "name", "skill_name"]):
-                    return [data]
+        super().__init__(
+            data_path=data_path,
+            cache_ttl_seconds=600,  # 10 minute cache for watcher data
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of events.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of event dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            # Try common keys
+            for key in ["events", "items", "data", "skills", "courses"]:
+                if key in raw_data and isinstance(raw_data[key], list):
+                    return raw_data[key]
+            # Single item
+            if any(k in raw_data for k in ["title", "name", "skill_name"]):
+                return [raw_data]
             return []
+        else:
+            return []
+
+class WatcherStateRepository(BaseRepository[dict[str, Any]]):
+    """Repository for watcher state data."""
+
+    def __init__(self):
+        """Initialize watcher state repository."""
+        data_path = get_data_path("watchers", "ms_skills", "state.json")
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=600,  # 10 minute cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> dict[str, Any]:
+        """Transform JSON data into state dictionary.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            State dictionary
+        """
+        if isinstance(raw_data, dict):
+            return raw_data
+        elif isinstance(raw_data, list):
+            return {"items": raw_data}
+        else:
+            return {}
+
+# Create singleton instances
+watcher_events_repo = WatcherEventsRepository()
+watcher_state_repo = WatcherStateRepository()
+
+
+def load_ms_skills_data():
+    """Load Microsoft Skills watcher data using repository pattern (NEW)."""
+    try:
+        data = watcher_events_repo.get()
+        return data if data else []
     except Exception as e:
         print(f"Error loading MS Skills data: {e}")
         return []
 
 
 def load_watcher_state():
-    """Load watcher state information."""
-    state_file = get_data_path("watchers", "ms_skills", "state.json")
-    if not file_exists(state_file):
-        return {}
-
+    """Load watcher state information using repository pattern (NEW)."""
     try:
-        with open(state_file, encoding="utf-8") as f:
-            return json.load(f)
+        data = watcher_state_repo.get()
+        return data if data else {}
     except Exception as e:
         print(f"Error loading watcher state: {e}")
         return {}
