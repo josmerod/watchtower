@@ -60,8 +60,8 @@ class TestBaseWatcher(unittest.TestCase):
 
     def test_state_file_path(self):
         """Test state file path is set correctly."""
-        expected_path = os.path.join(self.test_watcher.data_dir, "state.json")
-        self.assertEqual(self.test_watcher.state_file, expected_path)
+        expected_path = str(self.test_watcher.data_dir / "state.json")
+        self.assertEqual(str(self.test_watcher.state_file), expected_path)
 
 
 if __name__ == "__main__":

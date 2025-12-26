@@ -61,6 +61,7 @@ class Settings(BaseSettings):
         """Pydantic configuration."""
 
         env_file = [".env", ".env.local"]
+        env_prefix = "WATCHTOWER_"
         env_file_encoding = "utf-8"
         env_nested_delimiter = "__"
         case_sensitive = False

@@ -9,7 +9,7 @@ import pytest
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.web.dashboard.utils.search_utils import (
+from src.web.dashboard.search_utils import (
     cached_filter_content,
     create_search_input,
     filter_content,
@@ -63,7 +63,7 @@ class TestHighlightMatches:
         text = '<script>alert("xss")</script>'
         query = "script"
         result = highlight_matches(text, query)
-        assert "&lt;script&gt;" in result
+        assert "&lt;<mark>script</mark>&gt;" in result
         assert "<mark>script</mark>" in result
 
 
@@ -79,7 +79,8 @@ class TestFilterContent:
         query = "test"
         result = filter_content(query, content)
         assert len(result) == 1
-        assert result[0]["title"] == "Test Article"
+        # filter_content adds highlighting by default
+        assert result[0]["title"] == "<mark>test</mark> Article"
 
     def test_case_insensitive_filtering(self):
         """Test case-insensitive content filtering"""

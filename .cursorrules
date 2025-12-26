@@ -192,17 +192,20 @@ src/
 - Test with pytest: `uv run pytest --cov=src`
 - Use Ruff for formatting and linting: `uv run ruff check .` and `uv run ruff format .`
 - Dashboard development:
-  - Primary: Dash dashboard at http://localhost:7777 (`uv run python run_watchtower_dashboard.py`)
+  - Primary: Dash dashboard at http://localhost:7778 (`uv run python run_watchtower_dashboard.py`)
   - Legacy: Streamlit at http://localhost:8501 (`uv run streamlit run src/web/fullstreamlit/app.py`)
 
 ## Domain-Specific Best Practices
 - **ArXiv ETL**: Use RSS feeds, implement NLP classification, track research trends
-- **Course ETL**: Handle multiple platforms, deduplicate content, track pricing
-- **News ETL**: Parse RSS feeds, extract metadata, categorize content
-- **Games ETL**: Track deals, releases, bundles across multiple platforms
-- **AI Platforms ETL**: Monitor model releases, API changes, platform updates
-- **Entertainment ETL**: Cinema listings, anime schedules, media trends
-- **Deals ETL**: Aggregate deals across categories (software, books, health, travel)
+- **Course ETL**: Handle multiple platforms (Udemy, Coursera, Khan Academy), deduplicate content, track pricing
+- **News ETL**: Parse RSS feeds from multiple sources (HackerNews, Reddit, Microsiervos, Lobste.rs), extract metadata, categorize content
+- **Games ETL**: Track deals, releases, bundles across multiple platforms (Steam, Epic, Humble Bundle)
+- **AI Platforms ETL**: Monitor model releases, API changes, platform updates (OpenAI, Anthropic, HuggingFace, Google Gemini, GitHub Copilot, Replicate)
+- **Entertainment ETL**: Cinema listings, anime schedules, media trends, Spotify browse, Trakt trending
+- **Deals ETL**: Aggregate deals across 12+ categories (software, books, health, travel, hardware, music, etc.)
+- **Giveaways ETL**: Track free games, free courses, Reddit giveaways
+- **Intelligence ETL**: Monitor cloud services, architecture trends, AI research, developer news, open source projects
+- **GitHub ETL**: Track trending repositories via RSS feeds
 - **Watcher Development**: Implement state persistence, event logging, change detection
 - **Dash Components**:
   - Use data manager classes for loading and filtering
@@ -210,6 +213,7 @@ src/
   - Use Bootstrap components with dbc styling
   - Handle errors gracefully with fallback UI
   - Cache data appropriately for performance
+  - Implement health checks for dynamic tab loading
 - **Streamlit Apps (Legacy)**: Use component pattern, implement caching, handle errors gracefully
 
 ## Technology Adoption Guidelines
@@ -218,10 +222,12 @@ src/
 - **Web Scraping**: requests + BeautifulSoup for simple scraping, Playwright for complex sites
 - **Configuration**: Pydantic Settings with environment variable support
 - **Storage**: JSON files for structured data, CSV for exports and analysis
-- **Dashboard Framework**: Dash with Bootstrap components (primary), Streamlit (legacy)
+- **Dashboard Framework**: Dash with Bootstrap components (primary, port 7778), Streamlit (legacy, port 8501)
 - **Caching**: Dash callback caching and data manager caching for web apps
+- **Resilience**: Circuit breakers for failure isolation, proxy rotation for rate limit avoidance
 - **Async Operations**: Use when dealing with multiple API calls or I/O operations
 - **UI Components**: Bootstrap cards, tabs, and layouts through dash-bootstrap-components
+- **Global Search**: Unified search across all data sources from single interface
 
 ## Quality Assurance (Implementation-Based)
 - Type hints for all functions with Python 3.10+ syntax

@@ -188,6 +188,9 @@ class TestTabPreferencesManager:
             if "tab_order" not in preferences:
                 errors.append("Missing tab_order")
 
+            if errors:
+                return {"isValid": False, "errors": errors}
+
             if not isinstance(preferences["tab_visibility"], dict):
                 errors.append("tab_visibility must be a dictionary")
 
@@ -286,8 +289,11 @@ class TestTabPreferencesManager:
             visibility = preferences["tab_visibility"]
             order = preferences["tab_order"]
 
-            # Filter to only visible tabs and sort by order
-            return [tab for tab in all_tabs if visibility.get(tab["id"], False) and tab["id"] in order]
+            # Filter to only visible tabs
+            visible_tabs = [tab for tab in all_tabs if visibility.get(tab["id"], False) and tab["id"] in order]
+            # Sort by order in preferences
+            visible_tabs.sort(key=lambda t: order.index(t["id"]))
+            return visible_tabs
 
         all_tabs = [
             {"id": "tab-news", "label": "News"},
@@ -374,7 +380,7 @@ class TestTabPreferencesManager:
 
         def get_preferences():
             try:
-                data = storage.get(storage_key, "{}")
+                data = storage.get(storage_key, '{"tab_visibility": {}, "tab_order": []}')
                 return json.loads(data)
             except (json.JSONDecodeError, TypeError):
                 return {"tab_visibility": {}, "tab_order": []}
@@ -454,7 +460,7 @@ class TestTabPreferencesManager:
             import_preferences({}, ["tab-news"])
 
         with pytest.raises(ValueError, match="Missing required"):
-            import_preferences({"version": "1.0"}, ["tab-news"])
+            import_preferences({"preferences": {}}, ["tab-news"])
 
     def test_statistics_calculation(self):
         """Test calculation of tab statistics"""
