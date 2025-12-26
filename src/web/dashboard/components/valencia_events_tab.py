@@ -10,6 +10,9 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, dash_table, html
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -17,37 +20,57 @@ logger = logging.getLogger(__name__)
 VALENCIA_EVENTS_FILE = Path("data/valencia_events/valencia_events.json")
 TECH_EVENTS_FILE = Path("data/tech_events/tech_events_valencia.json")
 
+# NEW: Repository-based loading (SOLID Pattern)
+class ValenciaEventsRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for Valencia events data."""
+
+    def __init__(self, data_path: str):
+        """Initialize Valencia events repository.
+
+        Args:
+            data_path: Path to events data file
+        """
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of events.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of event dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
+
+# Create singleton instances for each source
+valencia_events_repo = ValenciaEventsRepository(str(VALENCIA_EVENTS_FILE))
+tech_events_repo = ValenciaEventsRepository(str(TECH_EVENTS_FILE))
+
 
 def load_valencia_events() -> list[dict[str, Any]]:
-    """Load Valencia events data from JSON files"""
+    """Load Valencia events data using repository pattern (NEW)."""
     try:
         all_events = []
 
         # Load general Valencia events
-        if VALENCIA_EVENTS_FILE.exists():
-            # Get file modification time for debugging
-            file_mtime = VALENCIA_EVENTS_FILE.stat().st_mtime
-            file_time = datetime.fromtimestamp(file_mtime).strftime("%Y-%m-%d %H:%M:%S")
-
-            with open(VALENCIA_EVENTS_FILE, encoding="utf-8") as f:
-                general_events = json.load(f)
-                if isinstance(general_events, list):
-                    all_events.extend(general_events)
-                elif isinstance(general_events, dict):
-                    all_events.append(general_events)
-
-            logger.info(f"✅ Loaded {len(general_events)} Valencia events from {VALENCIA_EVENTS_FILE} (modified: {file_time})")
-        else:
-            logger.warning(f"❌ Valencia events file not found: {VALENCIA_EVENTS_FILE}")
+        general_events = valencia_events_repo.get()
+        if general_events:
+            all_events.extend(general_events)
 
         # Load tech-specific events
-        if TECH_EVENTS_FILE.exists():
-            with open(TECH_EVENTS_FILE, encoding="utf-8") as f:
-                tech_events = json.load(f)
-                if isinstance(tech_events, list):
-                    all_events.extend(tech_events)
-                elif isinstance(tech_events, dict):
-                    all_events.append(tech_events)
+        tech_events = tech_events_repo.get()
+        if tech_events:
+            all_events.extend(tech_events)
 
         logger.info(f"Total loaded {len(all_events)} Valencia events")
         return all_events
