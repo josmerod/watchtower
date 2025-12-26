@@ -2,6 +2,8 @@
 
 import json
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
@@ -12,27 +14,88 @@ from dash import Input, Output, dash_table, dcc, html
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # --- Data Loading ---
+
+# NEW: Repository-based loading (SOLID Pattern)
+class SpanishAidRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for Spanish public aid data."""
+
+    def __init__(self):
+        """Initialize Spanish aid repository."""
+        data_path = get_data_path("spanish_public_aid", "output", "spanish_public_aid_latest.json")
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of aid items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of aid item dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
+
+class SpanishAidStatsRepository(BaseRepository[dict[str, Any]]):
+    """Repository for Spanish public aid statistics data."""
+
+    def __init__(self):
+        """Initialize Spanish aid stats repository."""
+        data_path = get_data_path("spanish_public_aid", "output", "spanish_public_aid_stats_latest.json")
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> dict[str, Any]:
+        """Transform JSON data into stats dictionary.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            Stats dictionary
+        """
+        if isinstance(raw_data, dict):
+            return raw_data
+        elif isinstance(raw_data, list):
+            return {"items": raw_data}
+        else:
+            return {}
+
+# Create singleton instances
+spanish_aid_repo = SpanishAidRepository()
+spanish_aid_stats_repo = SpanishAidStatsRepository()
 
 
 def load_spanish_aid_data():
-    """Load Spanish public aid data from JSON files."""
-    data_path = get_data_path("spanish_public_aid", "output", "spanish_public_aid_latest.json")
-    stats_path = get_data_path("spanish_public_aid", "output", "spanish_public_aid_stats_latest.json")
-
+    """Load Spanish public aid data using repository pattern (NEW)."""
     aids_data = []
     stats_data = {}
 
     try:
-        if file_exists(data_path):
-            with open(data_path, encoding="utf-8") as f:
-                aids_data = json.load(f)
+        aids_data = spanish_aid_repo.get()
+        if not aids_data:
+            aids_data = []
 
-        if file_exists(stats_path):
-            with open(stats_path, encoding="utf-8") as f:
-                stats_data = json.load(f)
+        stats_data = spanish_aid_stats_repo.get()
+        if not stats_data:
+            stats_data = {}
 
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+    except Exception as e:
         print(f"Warning: Could not load Spanish aid data: {e}")
 
     return aids_data, stats_data

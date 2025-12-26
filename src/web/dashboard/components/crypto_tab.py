@@ -2,6 +2,8 @@ import json
 import re
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -12,45 +14,76 @@ from plotly.subplots import make_subplots
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # --- Enhanced Data Loading ---
+
+# NEW: Repository-based loading (SOLID Pattern)
+class CryptoRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for crypto sentiment data."""
+
+    def __init__(self):
+        """Initialize crypto repository with fallback paths."""
+        # Try multiple paths in order of preference
+        data_path = None
+        file_paths = [
+            get_data_path("crypto_sentiment", "crypto_sentiment_latest.json"),
+            get_data_path("crypto_sentiment", "output", "latest.json"),
+            get_data_path("miners", "crypto_sentiment", "output.json"),
+            get_data_path("crypto", "sentiment_data.json"),
+        ]
+
+        for path in file_paths:
+            if file_exists(str(path)):
+                data_path = Path(path)
+                break
+
+        # If no file exists, use first path as default
+        if not data_path:
+            data_path = Path(file_paths[0])
+
+        super().__init__(
+            data_path=data_path,
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of crypto items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of crypto item dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            # Try multiple keys
+            for key in ["sentiment_data", "data", "items", "results", "entries"]:
+                if key in raw_data and isinstance(raw_data[key], list):
+                    return raw_data[key]
+            # Single item
+            if any(k in raw_data for k in ["sentiment", "coin", "text", "content"]):
+                return [raw_data]
+            return []
+        else:
+            return []
+
+# Create singleton instance
+crypto_repo = CryptoRepository()
 
 
 def load_crypto_sentiment():
-    """Load crypto sentiment data with multiple fallback paths."""
-    file_paths = [
-        get_data_path("crypto_sentiment", "crypto_sentiment_latest.json"),
-        get_data_path("crypto_sentiment", "output", "latest.json"),
-        get_data_path("miners", "crypto_sentiment", "output.json"),
-        get_data_path("crypto", "sentiment_data.json"),
-    ]
-
-    for file_path in file_paths:
-        if file_exists(file_path):
-            try:
-                with open(file_path, encoding="utf-8") as f:
-                    data = json.load(f)
-                    if isinstance(data, list):
-                        return data
-                    elif isinstance(data, dict):
-                        # Try multiple keys
-                        for key in [
-                            "sentiment_data",
-                            "data",
-                            "items",
-                            "results",
-                            "entries",
-                        ]:
-                            if key in data and isinstance(data[key], list):
-                                return data[key]
-                        # Single item
-                        if any(k in data for k in ["sentiment", "coin", "text", "content"]):
-                            return [data]
-                    return []
-            except Exception as e:
-                print(f"Error loading crypto sentiment from {file_path}: {e}")
-                continue
-
-    return []
+    """Load crypto sentiment data using repository pattern (NEW)."""
+    try:
+        data = crypto_repo.get()
+        return data if data else []
+    except Exception as e:
+        print(f"Error loading crypto sentiment data: {e}")
+        return []
 
 
 def process_crypto_data(data):
