@@ -6,6 +6,8 @@ import json
 import logging
 from collections import Counter
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -14,6 +16,9 @@ from dash import Input, Output, callback, dash_table, dcc, html
 
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -71,25 +76,69 @@ ENTERTAINMENT_SOURCES_CONFIG = {
     },
 }
 
+# NEW: Repository-based loading (SOLID Pattern)
+class EntertainmentRepository(BaseRepository[dict[str, Any]]):
+    """Repository for entertainment data."""
+
+    def __init__(self, data_path: str):
+        """Initialize entertainment repository.
+
+        Args:
+            data_path: Path to entertainment data file
+        """
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> dict[str, Any]:
+        """Transform JSON data into entertainment dictionary.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            Entertainment data dictionary
+        """
+        if isinstance(raw_data, dict):
+            return raw_data
+        elif isinstance(raw_data, list):
+            return {"items": raw_data}
+        else:
+            return {}
+
+# Create singleton instances for each source
+cinema_ecartelera_repo = EntertainmentRepository(ENTERTAINMENT_SOURCES_CONFIG["cinema_ecartelera"]["path"])
+cinema_ecartelera_improved_repo = EntertainmentRepository(ENTERTAINMENT_SOURCES_CONFIG["cinema_ecartelera_improved"]["path"])
+meme_economics_repo = EntertainmentRepository(ENTERTAINMENT_SOURCES_CONFIG["meme_economics"]["path"])
+trakt_movies_repo = EntertainmentRepository(ENTERTAINMENT_SOURCES_CONFIG["trakt_movies"]["path"])
+trakt_shows_repo = EntertainmentRepository(ENTERTAINMENT_SOURCES_CONFIG["trakt_shows"]["path"])
+spotify_browse_repo = EntertainmentRepository(ENTERTAINMENT_SOURCES_CONFIG["spotify_browse"]["path"])
+
 
 def load_entertainment_data(file_path):
-    """Load and parse entertainment data from JSON file"""
+    """Load entertainment data using repository pattern (NEW)."""
     try:
-        if not file_exists(file_path):
-            logger.warning(f"Entertainment data file not found: {file_path}")
+        # Select appropriate repository based on file path
+        if "cinema_showtimes" in file_path and "improved" not in file_path:
+            data = cinema_ecartelera_repo.get()
+        elif "cinema_improved" in file_path:
+            data = cinema_ecartelera_improved_repo.get()
+        elif "meme_economics" in file_path:
+            data = meme_economics_repo.get()
+        elif "trakt_movies" in file_path:
+            data = trakt_movies_repo.get()
+        elif "trakt_shows" in file_path:
+            data = trakt_shows_repo.get()
+        elif "spotify_browse" in file_path:
+            data = spotify_browse_repo.get()
+        else:
+            logger.info(f"Unknown entertainment data source: {file_path}")
             return []
 
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
-
-        if isinstance(data, list):
-            processed_data = []
-            for item in data:
-                processed_item = process_entertainment_item(item)
-                if processed_item:
-                    processed_data.append(processed_item)
-            return processed_data
-        elif isinstance(data, dict):
+        # Process the loaded data
+        if isinstance(data, dict):
             # Handle structured data formats
             if "movies" in data:
                 # Cinema data structure
@@ -99,11 +148,25 @@ def load_entertainment_data(file_path):
                     if processed_item:
                         processed_data.append(processed_item)
                 return processed_data
+            elif "items" in data:
+                # Generic items structure
+                processed_data = []
+                for item in data["items"]:
+                    processed_item = process_entertainment_item(item)
+                    if processed_item:
+                        processed_data.append(processed_item)
+                return processed_data
             else:
-                # Single item
+                # Single item or different structure
                 processed_item = process_entertainment_item(data)
                 return [processed_item] if processed_item else []
-
+        elif isinstance(data, list):
+            processed_data = []
+            for item in data:
+                processed_item = process_entertainment_item(item)
+                if processed_item:
+                    processed_data.append(processed_item)
+            return processed_data
         return []
     except Exception as e:
         logger.error(f"Error loading entertainment data from {file_path}: {e}")
