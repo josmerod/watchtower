@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback_context, html
 
 from src.alerts.engine import AlertEngine
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
 
 
 class NotificationsManager:
@@ -18,6 +22,8 @@ class NotificationsManager:
         self.alert_engine = AlertEngine()
         self.user_id = "default_user"
         self._ensure_directories()
+        # NEW: Initialize repository
+        self.rules_repo = AlertRulesRepository()
 
     def _ensure_directories(self):
         """Ensure necessary directories exist."""
@@ -28,17 +34,40 @@ class NotificationsManager:
         alerts_dir.mkdir(parents=True, exist_ok=True)
 
     def load_rules(self) -> list[dict[str, Any]]:
-        """Load alert rules from file."""
+        """Load alert rules using repository pattern (NEW)."""
         try:
-            import json
-            from pathlib import Path
-
-            rules_file = Path("data/alerts/rules.json")
-            if rules_file.exists():
-                with open(rules_file) as f:
-                    return json.load(f)
-            return []
+            data = self.rules_repo.get()
+            return data if data else []
         except Exception:
+            return []
+
+
+# NEW: Repository-based loading (SOLID Pattern)
+class AlertRulesRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for alert rules data."""
+
+    def __init__(self):
+        """Initialize alert rules repository."""
+        super().__init__(
+            data_path=Path("data/alerts/rules.json"),
+            cache_ttl_seconds=300,  # 5 minute cache for alerts
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of alert rules.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of alert rule dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
             return []
 
     def save_rule(self, rule: dict[str, Any]) -> bool:
