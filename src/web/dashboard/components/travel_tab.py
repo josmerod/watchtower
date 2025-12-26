@@ -1,10 +1,15 @@
 import json
+from pathlib import Path
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import html
 
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
 
 # --- Data Loading ---
 
@@ -19,31 +24,63 @@ TRAVEL_SOURCES_CONFIG = {
     },
 }
 
+# NEW: Repository-based loading (SOLID Pattern)
+class TravelRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for travel data."""
+
+    def __init__(self, data_path: str):
+        """Initialize travel repository.
+
+        Args:
+            data_path: Path to travel data file
+        """
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of travel items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of travel item dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            # Try common keys
+            for key in ["items", "products", "deals", "data", "results"]:
+                if key in raw_data and isinstance(raw_data[key], list):
+                    return raw_data[key]
+            # If single item
+            if any(k in raw_data for k in ["title", "name", "url"]):
+                return [raw_data]
+            return []
+        else:
+            return []
+
+# Create singleton instances for each source
+gumroad_repo = TravelRepository(TRAVEL_SOURCES_CONFIG["gumroad"]["path"])
+viajeros_piratas_repo = TravelRepository(TRAVEL_SOURCES_CONFIG["viajeros_piratas"]["path"])
+
 
 def load_travel_data(source_key):
-    """Load travel data from a specific source."""
-    config = TRAVEL_SOURCES_CONFIG.get(source_key)
-    if not config:
-        return []
-
-    file_path = config["path"]
-    if not file_exists(file_path):
-        return []
-
+    """Load travel data using repository pattern (NEW)."""
     try:
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
-            if isinstance(data, list):
-                return data
-            elif isinstance(data, dict):
-                # Try common keys
-                for key in ["items", "products", "deals", "data", "results"]:
-                    if key in data and isinstance(data[key], list):
-                        return data[key]
-                # If single item
-                if any(k in data for k in ["title", "name", "url"]):
-                    return [data]
+        # Select appropriate repository based on source key
+        if source_key == "gumroad":
+            data = gumroad_repo.get()
+        elif source_key == "viajeros_piratas":
+            data = viajeros_piratas_repo.get()
+        else:
+            print(f"Unknown travel source: {source_key}")
             return []
+
+        return data if data else []
     except Exception as e:
         print(f"Error loading {source_key} data: {e}")
         return []

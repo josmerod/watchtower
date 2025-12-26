@@ -6,6 +6,7 @@ software, and other giveaways from multiple sources.
 
 import json
 import os
+from pathlib import Path
 from typing import Any
 
 import plotly.express as px
@@ -13,6 +14,46 @@ import plotly.graph_objects as go
 from dash import Input, Output, callback, dcc, html
 
 from src.web.dashboard.utils import get_data_path
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
+# NEW: Repository-based loading (SOLID Pattern)
+class GiveawaysRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for giveaways data."""
+
+    def __init__(self, data_path: str):
+        """Initialize giveaways repository.
+
+        Args:
+            data_path: Path to giveaways data file
+        """
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of giveaway items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of giveaway item dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
+
+# Create singleton instances for each source
+reddit_giveaways_repo = GiveawaysRepository(get_data_path("giveaways", "reddit_giveaways.json"))
+free_games_repo = GiveawaysRepository(get_data_path("giveaways", "free_games_latest.json"))
+free_courses_repo = GiveawaysRepository(get_data_path("giveaways", "free_courses_latest.json"))
 
 
 def create_giveaways_tab():
@@ -174,47 +215,36 @@ def update_giveaways_content(category_filter, platform_filter, availability_filt
 
 
 def load_all_giveaways_data() -> list[dict[str, Any]]:
-    """Load data from all giveaway sources."""
+    """Load data from all giveaway sources using repository pattern (NEW)."""
     all_data = []
 
     # Load Reddit giveaways
     try:
-        reddit_path = get_data_path("giveaways", "reddit_giveaways.json")
-        if os.path.exists(reddit_path):
-            with open(reddit_path, encoding="utf-8") as f:
-                reddit_data = json.load(f)
-                for item in reddit_data:
-                    item["data_source"] = "reddit"
-                all_data.extend(reddit_data)
+        reddit_data = reddit_giveaways_repo.get()
+        for item in reddit_data:
+            item["data_source"] = "reddit"
+        all_data.extend(reddit_data)
     except Exception as e:
         print(f"Error loading Reddit giveaways: {e}")
 
-    # Load free games (prefer canonical latest file)
+    # Load free games
     try:
-        latest_games_path = get_data_path("giveaways", "free_games_latest.json")
-        games_path = latest_games_path if os.path.exists(latest_games_path) else get_data_path("giveaways", "free_games.json")
-        if os.path.exists(games_path):
-            with open(games_path, encoding="utf-8") as f:
-                games_data = json.load(f)
-                for item in games_data:
-                    item["data_source"] = "free_games"
-                    # Normalize fields for consistency
-                    if "title" not in item and "name" in item:
-                        item["title"] = item["name"]
-                all_data.extend(games_data)
+        games_data = free_games_repo.get()
+        for item in games_data:
+            item["data_source"] = "free_games"
+            # Normalize fields for consistency
+            if "title" not in item and "name" in item:
+                item["title"] = item["name"]
+        all_data.extend(games_data)
     except Exception as e:
         print(f"Error loading free games: {e}")
 
-    # Load free courses (prefer canonical latest file if we standardize later)
+    # Load free courses
     try:
-        latest_courses_path = get_data_path("giveaways", "free_courses_latest.json")
-        courses_path = latest_courses_path if os.path.exists(latest_courses_path) else get_data_path("giveaways", "free_courses.json")
-        if os.path.exists(courses_path):
-            with open(courses_path, encoding="utf-8") as f:
-                courses_data = json.load(f)
-                for item in courses_data:
-                    item["data_source"] = "free_courses"
-                all_data.extend(courses_data)
+        courses_data = free_courses_repo.get()
+        for item in courses_data:
+            item["data_source"] = "free_courses"
+        all_data.extend(courses_data)
     except Exception as e:
         print(f"Error loading free courses: {e}")
 
