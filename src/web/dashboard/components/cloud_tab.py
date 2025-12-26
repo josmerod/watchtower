@@ -6,12 +6,50 @@ from dash.dependencies import Input, Output
 import json
 from pathlib import Path
 from datetime import datetime
+from typing import Any
 
 from src.models.cloud import CloudUpdate, CloudProvider, UpdateCategory
 from src.utils.file_system import get_project_root
 from src.utils.logging import get_logger
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 logger = get_logger("CloudTab")
+
+# NEW: Repository-based loading (SOLID Pattern)
+class CloudUpdateRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for cloud update data."""
+
+    def __init__(self):
+        """Initialize cloud update repository."""
+        project_root = Path(get_project_root())
+        data_file = project_root / "data" / "cloud" / "output" / "cloud_updates.json"
+
+        super().__init__(
+            data_path=data_file,
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of cloud updates.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of cloud update dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
+
+# Create singleton instance
+cloud_update_repo = CloudUpdateRepository()
 
 def render_cloud_tab() -> html.Div:
     """Render the Cloud Intelligence tab.
@@ -95,30 +133,39 @@ def register_cloud_callbacks(app):
          Input("cloud-category-filter", "value")]
     )
     def update_cloud_content(provider, category):
-        """Update cloud content based on filters."""
+        """Update cloud content based on filters (NEW - uses repository)."""
         try:
-            # Load data
-            project_root = Path(get_project_root())
-            data_file = project_root / "data" / "cloud" / "output" / "cloud_updates.json"
-            
-            if not data_file.exists():
+            # OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+            # project_root = Path(get_project_root())
+            # data_file = project_root / "data" / "cloud" / "output" / "cloud_updates.json"
+            #
+            # if not data_file.exists():
+            #     return (
+            #         dbc.Alert("No cloud data found. Please run the ETL.", color="warning"),
+            #         html.P("No data."),
+            #         html.P("No data.")
+            #     )
+            #
+            # with open(data_file, 'r', encoding='utf-8') as f:
+            #     data = json.load(f)
+
+            # NEW: Repository-based loading with caching
+            if not cloud_update_repo.is_available():
                 return (
                     dbc.Alert("No cloud data found. Please run the ETL.", color="warning"),
                     html.P("No data."),
                     html.P("No data.")
                 )
-                
-            with open(data_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                
+
+            data = cloud_update_repo.get()
             updates = [CloudUpdate(**u) for u in data]
-            
+
             # Filter
             if provider:
                 updates = [u for u in updates if u.provider.value == provider]
             if category:
                 updates = [u for u in updates if u.category.value == category]
-                
+
             # Sort by date desc
             updates.sort(key=lambda x: x.published_at, reverse=True)
             
