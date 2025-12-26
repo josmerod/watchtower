@@ -9,22 +9,74 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import dash_table, dcc, html
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
 DATA_FILE = Path("data/4chan_generals/output/latest.json")
 
+# NEW: Repository-based loading (SOLID Pattern)
+class FourChanRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for 4chan generals data."""
 
-def load_4chan_data() -> list[dict[str, Any]]:
-    """Load 4chan generals data from JSON file"""
-    try:
-        if not DATA_FILE.exists():
-            logger.warning(f"4chan data file not found: {DATA_FILE}")
+    def __init__(self):
+        """Initialize 4chan repository."""
+        super().__init__(
+            data_path=DATA_FILE,
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of threads.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of thread dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
             return []
 
-        with open(DATA_FILE, encoding="utf-8") as f:
-            data = json.load(f)
+# Create singleton instance
+fourchan_repo = FourChanRepository()
 
+
+# OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+# def load_4chan_data() -> list[dict[str, Any]]:
+#     """Load 4chan generals data from JSON file"""
+#     try:
+#         if not DATA_FILE.exists():
+#             logger.warning(f"4chan data file not found: {DATA_FILE}")
+#             return []
+#
+#         with open(DATA_FILE, encoding="utf-8") as f:
+#             data = json.load(f)
+#
+#         logger.info(f"Loaded {len(data)} 4chan general threads")
+#         return data
+#     except Exception as e:
+#         logger.error(f"Error loading 4chan data: {e}")
+#         return []
+
+
+def load_4chan_data() -> list[dict[str, Any]]:
+    """Load 4chan generals data using repository pattern (NEW).
+
+    Returns:
+        List of 4chan general threads
+
+    This function now uses the repository pattern with built-in caching.
+    """
+    try:
+        data = fourchan_repo.get()
         logger.info(f"Loaded {len(data)} 4chan general threads")
         return data
     except Exception as e:
