@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from typing import Any
+from pathlib import Path
 
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -13,20 +14,73 @@ from dash import dash_table, dcc, html
 from src.models.ai_research_model import ImplementationComplexity
 from src.web.dashboard.utils import file_exists, get_data_path
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 AI_RESEARCH_DATA_PATH = get_data_path("ai_research", "ai_research_latest.json")
 
 
-def load_ai_research_data() -> list[dict[str, Any]]:
-    """Load AI research data from JSON."""
-    try:
-        if not file_exists(AI_RESEARCH_DATA_PATH):
-            logger.info(f"AI Research data file not found: {AI_RESEARCH_DATA_PATH}")
+# OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+# def load_ai_research_data() -> list[dict[str, Any]]:
+#     """Load AI research data from JSON."""
+#     try:
+#         if not file_exists(AI_RESEARCH_DATA_PATH):
+#             logger.info(f"AI Research data file not found: {AI_RESEARCH_DATA_PATH}")
+#             return []
+#         with open(AI_RESEARCH_DATA_PATH, encoding="utf-8") as f:
+#             data = json.load(f)
+#         return data
+#     except Exception as e:
+#         logger.error(f"Error loading AI research data: {e}")
+#         return []
+
+
+# NEW: Repository-based loading (SOLID Pattern)
+class AIResearchRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for AI research data."""
+
+    def __init__(self):
+        """Initialize AI research repository."""
+        super().__init__(
+            data_path=Path(AI_RESEARCH_DATA_PATH),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of research papers.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of research paper dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
             return []
-        with open(AI_RESEARCH_DATA_PATH, encoding="utf-8") as f:
-            data = json.load(f)
+
+# Create singleton instance
+ai_research_repo = AIResearchRepository()
+
+
+def load_ai_research_data() -> list[dict[str, Any]]:
+    """Load AI research data using repository pattern (NEW).
+
+    Returns:
+        List of AI research papers
+
+    This function now uses the repository pattern with built-in caching.
+    """
+    try:
+        # Repository handles file loading and caching
+        data = ai_research_repo.get()
         return data
     except Exception as e:
         logger.error(f"Error loading AI research data: {e}")
