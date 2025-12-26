@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from datetime import datetime
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import html, dcc, Output, Input, State
@@ -8,20 +9,70 @@ import pandas as pd
 
 from src.config.settings import get_settings
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 settings = get_settings()
 
 # Define the data path
 DATA_DIR = Path(settings.data_dir) / "startup_intelligence/output"
 LATEST_DATA_FILE = DATA_DIR / "startup_intelligence_latest.json"
 
+# NEW: Repository-based loading (SOLID Pattern)
+class StartupRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for startup intelligence data."""
+
+    def __init__(self):
+        """Initialize startup repository."""
+        super().__init__(
+            data_path=LATEST_DATA_FILE,
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of startup items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of startup item dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
+
+# Create singleton instance
+startup_repo = StartupRepository()
+
+
+# OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+# def get_startup_data():
+#     """Load startup data from the latest JSON file."""
+#     if not LATEST_DATA_FILE.exists():
+#         return []
+#
+#     try:
+#         data = json.loads(LATEST_DATA_FILE.read_text(encoding="utf-8"))
+#         return data
+#     except Exception as e:
+#         print(f"Error loading startup data: {e}")
+#         return []
+
+
 def get_startup_data():
-    """Load startup data from the latest JSON file."""
-    if not LATEST_DATA_FILE.exists():
-        return []
-    
+    """Load startup data using repository pattern (NEW).
+
+    Returns:
+        List of startup intelligence items
+    """
     try:
-        data = json.loads(LATEST_DATA_FILE.read_text(encoding="utf-8"))
-        return data
+        data = startup_repo.get()
+        return data if data else []
     except Exception as e:
         print(f"Error loading startup data: {e}")
         return []
