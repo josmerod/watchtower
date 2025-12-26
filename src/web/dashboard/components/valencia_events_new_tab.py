@@ -10,23 +10,51 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, dash_table, html
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
 # Data file paths
 VALENCIA_EVENTS_FILE = Path("data/valencia_events/valencia_events.json")
 
+# NEW: Repository-based loading (SOLID Pattern)
+class ValenciaEventsNewRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for Valencia events data (new tab)."""
 
-def load_valencia_events() -> list[dict[str, Any]]:
-    """Load Valencia events data from JSON files"""
-    try:
-        if not VALENCIA_EVENTS_FILE.exists():
-            logger.warning(f"Valencia events file not found: {VALENCIA_EVENTS_FILE}")
+    def __init__(self):
+        """Initialize Valencia events repository (new tab)."""
+        super().__init__(
+            data_path=VALENCIA_EVENTS_FILE,
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of events.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of event dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
             return []
 
-        with open(VALENCIA_EVENTS_FILE, encoding="utf-8") as f:
-            events = json.load(f)
+# Create singleton instance
+valencia_events_new_repo = ValenciaEventsNewRepository()
 
+
+def load_valencia_events() -> list[dict[str, Any]]:
+    """Load Valencia events data using repository pattern (NEW)."""
+    try:
+        events = valencia_events_new_repo.get()
         logger.info(f"Loaded {len(events)} Valencia events from {VALENCIA_EVENTS_FILE}")
         return events
     except Exception as e:
