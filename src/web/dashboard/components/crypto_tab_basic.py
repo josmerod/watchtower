@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -9,24 +11,79 @@ from dash import dcc, html
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # --- Data Loading ---
+
+# NEW: Repository-based loading (SOLID Pattern)
+class CryptoSentimentRepository(BaseRepository[dict[str, Any]]):
+    """Repository for crypto sentiment data."""
+
+    def __init__(self):
+        """Initialize crypto sentiment repository."""
+        file_path = Path(get_data_path("crypto_sentiment", "crypto_sentiment_latest.json"))
+        super().__init__(
+            data_path=file_path,
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> dict[str, Any]:
+        """Transform JSON data into sentiment data structure.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            Dictionary with sentiment_data key or raw data
+        """
+        if isinstance(raw_data, dict) and "sentiment_data" in raw_data:
+            return raw_data
+        elif isinstance(raw_data, list):
+            return {"sentiment_data": raw_data}
+        else:
+            return {"sentiment_data": []}
+
+# Create singleton instance
+crypto_sentiment_repo = CryptoSentimentRepository()
+
+
+# OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+# def load_crypto_sentiment():
+#     """Load crypto sentiment data."""
+#     file_path = get_data_path("crypto_sentiment", "crypto_sentiment_latest.json")
+#     if not file_exists(file_path):
+#         return []
+#
+#     try:
+#         with open(file_path, encoding="utf-8") as f:
+#             data = json.load(f)
+#             if isinstance(data, list):
+#                 return data
+#             elif isinstance(data, dict) and "sentiment_data" in data:
+#                 return data["sentiment_data"]
+#             else:
+#                 return [data] if data else []
+#     except Exception as e:
+#         print(f"Error loading crypto sentiment data: {e}")
+#         return []
 
 
 def load_crypto_sentiment():
-    """Load crypto sentiment data."""
-    file_path = get_data_path("crypto_sentiment", "crypto_sentiment_latest.json")
-    if not file_exists(file_path):
-        return []
+    """Load crypto sentiment data using repository pattern (NEW).
 
+    Returns:
+        List of sentiment data or empty list
+    """
     try:
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
-            if isinstance(data, list):
-                return data
-            elif isinstance(data, dict) and "sentiment_data" in data:
-                return data["sentiment_data"]
-            else:
-                return [data] if data else []
+        data = crypto_sentiment_repo.get()
+        if isinstance(data, dict) and "sentiment_data" in data:
+            return data["sentiment_data"]
+        elif isinstance(data, list):
+            return data
+        else:
+            return []
     except Exception as e:
         print(f"Error loading crypto sentiment data: {e}")
         return []
