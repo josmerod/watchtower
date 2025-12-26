@@ -39,6 +39,7 @@ dependencies = [
     # Web scraping and API interaction
     "requests>=2.32.3",
     "beautifulsoup4>=4.13.3",
+    "html5lib>=1.1",
     "playwright>=1.51.0",
     "feedparser>=6.0.11",
     "aiohttp>=3.11.18",

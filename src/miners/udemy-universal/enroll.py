@@ -12,7 +12,7 @@ import sys
 import time
 import traceback
 
-from base import VERSION, LoginException, Udemy, scraper_dict
+from base import VERSION, LoginError, Udemy, scraper_dict
 
 # Import Udemy and LoginException
 from logger import LoggerAdapter, get_logger
@@ -87,7 +87,7 @@ def handle_login(udemy):
             login_logger.info(f"Login successful for {udemy.display_name}")
             return True  # Login successful
 
-        except LoginException as e:
+        except LoginError as e:
             attempts += 1
             login_logger.error(f"Login failed: {e!s}")
 

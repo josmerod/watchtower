@@ -500,6 +500,47 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
                 logger.error("Login failed")
                 return 1
 
+            # Patch: Flatten configuration for legacy Udemy class compatibility
+            # The ConfigValidator uses a nested structure, but base.py expects a flat structure
+            flat_settings = self.config.copy()
+            
+            # Flatten filters
+            if "filters" in flat_settings:
+                for key, value in flat_settings["filters"].items():
+                    flat_settings[key] = value
+            
+            # Flatten output
+            if "output" in flat_settings:
+                for key, value in flat_settings["output"].items():
+                    flat_settings[key] = value
+            
+            # Flatten exclusions
+            if "exclusions" in flat_settings:
+                for key, value in flat_settings["exclusions"].items():
+                    flat_settings[key] = value
+
+            # Ensure required keys exist (fallback to defaults if missing from both)
+            if "save_txt" not in flat_settings:
+                flat_settings["save_txt"] = True
+            if "course_update_threshold_months" not in flat_settings:
+                flat_settings["course_update_threshold_months"] = 24
+            if "instructor_exclude" not in flat_settings:
+                flat_settings["instructor_exclude"] = []
+            if "title_exclude" not in flat_settings:
+                flat_settings["title_exclude"] = []
+            if "min_rating" not in flat_settings:
+                flat_settings["min_rating"] = 0
+            if "min_reviews" not in flat_settings:
+                flat_settings["min_reviews"] = 0
+            if "discounted_only" not in flat_settings:
+                flat_settings["discounted_only"] = False
+            
+            udemy.settings = flat_settings
+            
+            # Initialize Udemy object attributes (filters, etc.) by calling is_user_dumb
+            # (This method has side effects of setting self.title_exclude, self.sites, etc.)
+            udemy.is_user_dumb()
+
             # Set scraped data
             udemy.scraped_data = scraped_data
 

@@ -4,6 +4,8 @@ Gumroad products, travel deals, and commercial opportunities
 
 import json
 import logging
+from pathlib import Path
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -11,6 +13,9 @@ from dash import Input, Output, callback, dash_table, dcc, html
 
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,16 +39,84 @@ ECOMMERCE_SOURCES_CONFIG = {
     },
 }
 
+# NEW: Repository-based loading (SOLID Pattern)
+class EcommerceRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for e-commerce data."""
 
-def load_ecommerce_data(file_path):
-    """Load and parse e-commerce data from JSON file"""
-    try:
-        if not file_exists(file_path):
-            logger.warning(f"E-commerce data file not found: {file_path}")
+    def __init__(self, data_path: str):
+        """Initialize e-commerce repository.
+
+        Args:
+            data_path: Path to e-commerce data file
+        """
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of e-commerce items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of e-commerce item dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
             return []
 
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
+# Create singleton instances for each source
+gumroad_repo = EcommerceRepository(ECOMMERCE_SOURCES_CONFIG["gumroad_scraper"]["path"])
+viajeros_piratas_repo = EcommerceRepository(ECOMMERCE_SOURCES_CONFIG["viajeros_piratas"]["path"])
+
+
+# OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+# def load_ecommerce_data(file_path):
+#     """Load and parse e-commerce data from JSON file"""
+#     try:
+#         if not file_exists(file_path):
+#             logger.warning(f"E-commerce data file not found: {file_path}")
+#             return []
+#
+#         with open(file_path, encoding="utf-8") as f:
+#             data = json.load(f)
+#
+#         if isinstance(data, list):
+#             return [process_ecommerce_item(item) for item in data if process_ecommerce_item(item)]
+#         elif isinstance(data, dict):
+#             processed_item = process_ecommerce_item(data)
+#             return [processed_item] if processed_item else []
+#
+#         return []
+#     except Exception as e:
+#         logger.error(f"Error loading e-commerce data from {file_path}: {e}")
+#         return []
+
+
+def load_ecommerce_data(file_path):
+    """Load and parse e-commerce data using repository pattern (NEW).
+
+    Args:
+        file_path: Path to e-commerce data file
+
+    Returns:
+        List of processed e-commerce items
+    """
+    try:
+        # Select appropriate repository based on file path
+        if "gumroad" in file_path:
+            data = gumroad_repo.get()
+        elif "viajeros_piratas" in file_path or "travel_deals" in file_path:
+            data = viajeros_piratas_repo.get()
+        else:
+            logger.warning(f"Unknown e-commerce data source: {file_path}")
+            return []
 
         if isinstance(data, list):
             return [process_ecommerce_item(item) for item in data if process_ecommerce_item(item)]

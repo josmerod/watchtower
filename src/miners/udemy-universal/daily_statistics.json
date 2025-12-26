@@ -12,5 +12,14 @@
       "E-next"
     ],
     "avg_session_duration": 480.0339467525482
+  },
+  "2025-12-26": {
+    "date": "2025-12-26",
+    "sessions": 6,
+    "total_enrolled": 0,
+    "total_processed": 0,
+    "total_saved": 0.0,
+    "active_sites": [],
+    "avg_session_duration": 28.797786911328632
   }
 }
