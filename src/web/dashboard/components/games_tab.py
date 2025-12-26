@@ -2,6 +2,8 @@ import json
 import os
 import re  # For parsing prices
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
@@ -11,8 +13,50 @@ from dash import dcc, html
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path, log_missing_file
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # --- Constants ---
 DATA_BASE_PATH = get_data_path("games", "")  # Relative to this file
+
+# NEW: Repository-based loading (SOLID Pattern)
+class GamesRepository(BaseRepository[dict[str, Any]]):
+    """Repository for games data."""
+
+    def __init__(self, data_path: str):
+        """Initialize games repository.
+
+        Args:
+            data_path: Path to games data file
+        """
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> dict[str, Any]:
+        """Transform JSON data into games data structure.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            Games data dictionary
+        """
+        if isinstance(raw_data, dict):
+            return raw_data
+        elif isinstance(raw_data, list):
+            return {"results": raw_data}
+        else:
+            return {}
+
+# Create singleton instances for each games data source
+deals_repo = GamesRepository(get_data_path("games", "deals.json"))
+bundles_repo = GamesRepository(get_data_path("games", "bundles.json"))
+giveaways_repo = GamesRepository(get_data_path("giveaways", "free_games_latest.json"))
+trending_repo = GamesRepository(get_data_path("games", "itchio_trending.json"))
+new_releases_repo = GamesRepository(get_data_path("games", "new_releases.json"))
 ALL_GAMES_DATA = {
     "deals": pd.DataFrame(),
     "bundles": pd.DataFrame(),
@@ -109,78 +153,151 @@ def parse_price(price_str):
         return 0.0
 
 
-# --- Data Loading Functions (to be implemented one by one) ---
-def load_deals_data():
-    global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
-    file_path = get_data_path("games", "deals.json")
+# --- Data Loading Functions (using repositories) ---
+# OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+# def load_deals_data():
+#     global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
+#     file_path = get_data_path("games", "deals.json")
+#
+#     if not file_exists(file_path):
+#         print(f"Warning (Deals): File not found at {file_path}")
+#         ALL_GAMES_DATA["deals"] = pd.DataFrame()
+#         DATA_LOADED_SUCCESSFULLY["deals"] = False  # Explicitly set to false
+#         return
+#
+#     try:
+#         df = pd.read_json(file_path)
+#     except ValueError as e:  # Handles JSON decoding errors in pandas
+#         print(f"Error (Deals): Could not decode JSON from {file_path}. Error: {e}")
+#         ALL_GAMES_DATA["deals"] = pd.DataFrame()
+#         DATA_LOADED_SUCCESSFULLY["deals"] = False
+#         return
+#     except Exception as e:
+#         print(f"Error (Deals): Failed to read or process {file_path}. Error: {e}")
+#         ALL_GAMES_DATA["deals"] = pd.DataFrame()
+#         DATA_LOADED_SUCCESSFULLY["deals"] = False
+#         return
+#
+#     if df.empty:
+#         ALL_GAMES_DATA["deals"] = pd.DataFrame()
+#         DATA_LOADED_SUCCESSFULLY["deals"] = True  # File existed and was valid JSON, but empty
+#         print("Info (Deals): deals.json was empty or resulted in an empty DataFrame.")
+#         return
+#
+#     # Standardize columns - adjust based on actual keys in deals.json
+#     # Common keys might be: 'title', 'url'/'link', 'store', 'newPrice', 'oldPrice', 'discount', 'addedDate'
+#     df.rename(
+#         columns={
+#             "url": "link",  # Assuming 'url' is the direct link to the deal
+#             "newPrice": "price_new",
+#             "oldPrice": "price_old",
+#             "addedDate": "published_date_str",  # Or a similar date field
+#             "name": "title",  # If 'name' is used for title
+#         },
+#         inplace=True,
+#     )
+#
+#     # Ensure essential columns exist, fill with None if not
+#     expected_cols = [
+#         "title",
+#         "link",
+#         "store",
+#         "price_new",
+#         "price_old",
+#         "discount",
+#         "published_date_str",
+#     ]
+#     for col in expected_cols:
+#         if col not in df.columns:
+#             df[col] = None
+#
+#     df["published_date"] = df["published_date_str"].apply(lambda x: parse_game_date(x))  # Assuming a date field exists
+#     df["price_new_numeric"] = df["price_new"].apply(parse_price)
+#     df["price_old_numeric"] = df["price_old"].apply(parse_price)
+#
+#     # Ensure discount is numeric if it's like "75%" -> 75.0 or 0.75
+#     if "discount" in df.columns:
+#         df["discount_numeric"] = df["discount"].astype(str).str.extract(r"(\d+)").astype(float)
+#     else:
+#         df["discount_numeric"] = None
+#
+#     df = df.sort_values(by="published_date", ascending=False, na_position="last")
+#
+#     ALL_GAMES_DATA["deals"] = df
+#     DATA_LOADED_SUCCESSFULLY["deals"] = True
+#     print(f"Info (Deals): Loaded {len(df)} deals.")
 
-    if not file_exists(file_path):
-        print(f"Warning (Deals): File not found at {file_path}")
-        ALL_GAMES_DATA["deals"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["deals"] = False  # Explicitly set to false
-        return
+
+def load_deals_data():
+    """Load deals data using repository pattern (NEW)."""
+    global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
 
     try:
-        df = pd.read_json(file_path)
-    except ValueError as e:  # Handles JSON decoding errors in pandas
-        print(f"Error (Deals): Could not decode JSON from {file_path}. Error: {e}")
-        ALL_GAMES_DATA["deals"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["deals"] = False
-        return
+        data = deals_repo.get()
+
+        if not data:
+            ALL_GAMES_DATA["deals"] = pd.DataFrame()
+            DATA_LOADED_SUCCESSFULLY["deals"] = False
+            return
+
+        # Convert to DataFrame
+        if isinstance(data, dict) and "results" in data:
+            df = pd.json_normalize(data, "results")
+        elif isinstance(data, list):
+            df = pd.DataFrame(data)
+        else:
+            df = pd.DataFrame([data])
+
+        if df.empty:
+            ALL_GAMES_DATA["deals"] = pd.DataFrame()
+            DATA_LOADED_SUCCESSFULLY["deals"] = True
+            return
+
+        # Standardize columns
+        df.rename(
+            columns={
+                "url": "link",
+                "newPrice": "price_new",
+                "oldPrice": "price_old",
+                "addedDate": "published_date_str",
+                "name": "title",
+            },
+            inplace=True,
+        )
+
+        # Ensure essential columns exist
+        expected_cols = [
+            "title",
+            "link",
+            "store",
+            "price_new",
+            "price_old",
+            "discount",
+            "published_date_str",
+        ]
+        for col in expected_cols:
+            if col not in df.columns:
+                df[col] = None
+
+        df["published_date"] = df["published_date_str"].apply(lambda x: parse_game_date(x))
+        df["price_new_numeric"] = df["price_new"].apply(parse_price)
+        df["price_old_numeric"] = df["price_old"].apply(parse_price)
+
+        if "discount" in df.columns:
+            df["discount_numeric"] = df["discount"].astype(str).str.extract(r"(\d+)").astype(float)
+        else:
+            df["discount_numeric"] = None
+
+        df = df.sort_values(by="published_date", ascending=False, na_position="last")
+
+        ALL_GAMES_DATA["deals"] = df
+        DATA_LOADED_SUCCESSFULLY["deals"] = True
+        print(f"Info (Deals): Loaded {len(df)} deals.")
+
     except Exception as e:
-        print(f"Error (Deals): Failed to read or process {file_path}. Error: {e}")
+        print(f"Error (Deals): {e}")
         ALL_GAMES_DATA["deals"] = pd.DataFrame()
         DATA_LOADED_SUCCESSFULLY["deals"] = False
-        return
-
-    if df.empty:
-        ALL_GAMES_DATA["deals"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["deals"] = True  # File existed and was valid JSON, but empty
-        print("Info (Deals): deals.json was empty or resulted in an empty DataFrame.")
-        return
-
-    # Standardize columns - adjust based on actual keys in deals.json
-    # Common keys might be: 'title', 'url'/'link', 'store', 'newPrice', 'oldPrice', 'discount', 'addedDate'
-    df.rename(
-        columns={
-            "url": "link",  # Assuming 'url' is the direct link to the deal
-            "newPrice": "price_new",
-            "oldPrice": "price_old",
-            "addedDate": "published_date_str",  # Or a similar date field
-            "name": "title",  # If 'name' is used for title
-        },
-        inplace=True,
-    )
-
-    # Ensure essential columns exist, fill with None if not
-    expected_cols = [
-        "title",
-        "link",
-        "store",
-        "price_new",
-        "price_old",
-        "discount",
-        "published_date_str",
-    ]
-    for col in expected_cols:
-        if col not in df.columns:
-            df[col] = None
-
-    df["published_date"] = df["published_date_str"].apply(lambda x: parse_game_date(x))  # Assuming a date field exists
-    df["price_new_numeric"] = df["price_new"].apply(parse_price)
-    df["price_old_numeric"] = df["price_old"].apply(parse_price)
-
-    # Ensure discount is numeric if it's like "75%" -> 75.0 or 0.75
-    if "discount" in df.columns:
-        df["discount_numeric"] = df["discount"].astype(str).str.extract(r"(\d+)").astype(float)
-    else:
-        df["discount_numeric"] = None
-
-    df = df.sort_values(by="published_date", ascending=False, na_position="last")
-
-    ALL_GAMES_DATA["deals"] = df
-    DATA_LOADED_SUCCESSFULLY["deals"] = True
-    print(f"Info (Deals): Loaded {len(df)} deals.")
 
 
 def load_bundles_data():

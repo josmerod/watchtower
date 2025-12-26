@@ -4,6 +4,8 @@ Clean, fast interface for discovering ArXiv research papers
 
 import json
 import logging
+from pathlib import Path
+from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
@@ -26,12 +28,46 @@ from src.web.dashboard.trend_utils import (
 # Import shared utilities
 from src.web.dashboard.utils import file_exists, get_data_path
 
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ArXiv data path
 ARXIV_DATA_PATH = get_data_path("arxiv", "arxiv_papers_latest.json")
+
+# NEW: Repository-based loading (SOLID Pattern)
+class ArXivRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for ArXiv research papers data."""
+
+    def __init__(self):
+        """Initialize ArXiv repository."""
+        super().__init__(
+            data_path=Path(ARXIV_DATA_PATH),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of papers.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of paper dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
+
+# Create singleton instance
+arxiv_repo = ArXivRepository()
 
 # ArXiv category mapping for better display
 ARXIV_CATEGORY_MAPPING = {
@@ -60,19 +96,67 @@ ARXIV_DATA_LOADED = False
 DEFAULT_PAGE_SIZE = 24
 
 
+# OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+# def load_arxiv_data():
+#     """Load ArXiv papers data from JSON file"""
+#     global ALL_ARXIV_DATA, ARXIV_DATA_LOADED
+#
+#     if not file_exists(ARXIV_DATA_PATH):
+#         logger.warning(f"ArXiv data file not found: {ARXIV_DATA_PATH}")
+#         ALL_ARXIV_DATA = pd.DataFrame()
+#         ARXIV_DATA_LOADED = True
+#         return
+#
+#     try:
+#         with open(ARXIV_DATA_PATH, encoding="utf-8") as f:
+#             data = json.load(f)
+#
+#         if not data:
+#             logger.warning("ArXiv data file is empty")
+#             ALL_ARXIV_DATA = pd.DataFrame()
+#             ARXIV_DATA_LOADED = True
+#             return
+#
+#         df = pd.DataFrame(data)
+#
+#         # Process data for better display
+#         df["display_title"] = df["title"].str.replace("\n", " ").str.strip()
+#         df["display_summary"] = df["summary"].str.replace("\n", " ").str.strip()
+#         df["summary_preview"] = df["display_summary"].apply(lambda x: x[:200] + "..." if len(str(x)) > 200 else x)
+#
+#         # Process authors
+#         df["authors_display"] = df["authors"].apply(lambda x: (", ".join(x[:3]) + (f" +{len(x)-3} more" if len(x) > 3 else "") if isinstance(x, list) else str(x)))
+#
+#         # Process categories
+#         df["primary_category_display"] = df["categories"].apply(lambda x: (ARXIV_CATEGORY_MAPPING.get(x[0], x[0]) if isinstance(x, list) and x else "Unknown"))
+#
+#         # Process publication date
+#         df["published_date"] = pd.to_datetime(df["published"], errors="coerce")
+#         df["published_display"] = df["published_date"].dt.strftime("%Y-%m-%d")
+#
+#         # Sort by publication date (newest first)
+#         df = df.sort_values("published_date", ascending=False, na_position="last")
+#
+#         ALL_ARXIV_DATA = df
+#         ARXIV_DATA_LOADED = True
+#         logger.info(f"Loaded {len(df)} ArXiv papers")
+#
+#     except Exception as e:
+#         logger.error(f"Error loading ArXiv data: {e}")
+#         ALL_ARXIV_DATA = pd.DataFrame()
+#         ARXIV_DATA_LOADED = True
+
+
 def load_arxiv_data():
-    """Load ArXiv papers data from JSON file"""
+    """Load ArXiv papers data using repository pattern (NEW).
+
+    Returns:
+        List of paper dictionaries
+    """
     global ALL_ARXIV_DATA, ARXIV_DATA_LOADED
 
-    if not file_exists(ARXIV_DATA_PATH):
-        logger.warning(f"ArXiv data file not found: {ARXIV_DATA_PATH}")
-        ALL_ARXIV_DATA = pd.DataFrame()
-        ARXIV_DATA_LOADED = True
-        return
-
     try:
-        with open(ARXIV_DATA_PATH, encoding="utf-8") as f:
-            data = json.load(f)
+        data = arxiv_repo.get()
 
         if not data:
             logger.warning("ArXiv data file is empty")

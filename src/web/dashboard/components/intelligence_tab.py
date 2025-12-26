@@ -9,6 +9,7 @@ import json
 import logging
 from collections import Counter
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import dash_bootstrap_components as dbc
@@ -18,6 +19,9 @@ from dash import Input, Output, dash_table, dcc, html
 from src.web.dashboard.components.recommendations_tab import recommendations_manager
 from src.web.dashboard.trend_utils import load_latest_trends
 from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,14 +46,78 @@ INTEL_SOURCES_CONFIG: dict[str, dict[str, Any]] = {
     },
 }
 
+# NEW: Repository-based loading (SOLID Pattern)
+class IntelligenceRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for intelligence data."""
+
+    def __init__(self, data_path: str):
+        """Initialize intelligence repository.
+
+        Args:
+            data_path: Path to intelligence data file
+        """
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of intelligence items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of intelligence item dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
+
+# Create singleton instances for each source
+sec_edgar_repo = IntelligenceRepository(INTEL_SOURCES_CONFIG["sec_edgar"]["path"])
+who_outbreaks_repo = IntelligenceRepository(INTEL_SOURCES_CONFIG["who_outbreaks"]["path"])
+
+
+# OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+# def load_intel_data(file_path: str) -> list[dict[str, Any]]:
+#     try:
+#         if not file_exists(file_path):
+#             logger.info(f"Intelligence data file not found: {file_path}")
+#             return []
+#         with open(file_path, encoding="utf-8") as f:
+#             data = json.load(f)
+#         if isinstance(data, list):
+#             return [process_intel_item(item) for item in data if process_intel_item(item)]
+#         return []
+#     except Exception as e:
+#         logger.error(f"Error loading intelligence data from {file_path}: {e}")
+#         return []
+
 
 def load_intel_data(file_path: str) -> list[dict[str, Any]]:
+    """Load intelligence data using repository pattern (NEW).
+
+    Args:
+        file_path: Path to intelligence data file
+
+    Returns:
+        List of processed intelligence items
+    """
     try:
-        if not file_exists(file_path):
-            logger.info(f"Intelligence data file not found: {file_path}")
+        # Select appropriate repository based on file path
+        if "sec_edgar" in file_path:
+            data = sec_edgar_repo.get()
+        elif "who_outbreaks" in file_path:
+            data = who_outbreaks_repo.get()
+        else:
+            logger.info(f"Unknown intelligence data source: {file_path}")
             return []
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
+
         if isinstance(data, list):
             return [process_intel_item(item) for item in data if process_intel_item(item)]
         return []

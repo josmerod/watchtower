@@ -267,7 +267,7 @@ class Scraper:
         if self.debug:
             site_logger = LoggerAdapter(get_logger(f"scraper.{site_code}"), {"site_code": site_code})
             site_logger.error(f"Error in {site_code} scraper:")
-            site_logger.debug(error_trace)
+            site_logger.error(error_trace)
 
     def cleanup_link(self, link: str) -> str:
         """Clean up and validate course links."""
@@ -2376,11 +2376,38 @@ class Udemy:
         try:
             settings_file = "duce-cli-settings.json" if self.interface == "cli" else "settings.json"
             with open(settings_file, encoding="utf-8") as f:
-                settings = json.load(f)
-            self.settings = settings
+                loaded_settings = json.load(f)
+            
+            # Default settings
+            default_settings = {
+                "email": "",
+                "password": "",
+                "use_browser_cookies": False,
+                "stay_logged_in": {"auto": False, "manual": False},
+                "categories": {},
+                "languages": {"en": True},
+                "min_rating": 0,
+                "max_price": 0,
+                "min_reviews": 0,
+                "instructor_exclude": [],
+                "title_exclude": [],
+                "save_txt": True,
+                "sites": {site: True for site in scraper_dict.keys()},
+                "discounted_only": False,
+                "course_update_threshold_months": 24,
+            }
+            
+            # Update defaults with loaded settings
+            # We do a deep update for nested dictionaries if needed, but for now top-level merge + manually handling nested might be needed if user config is partial.
+            # Simple update for top level keys:
+            for key, value in loaded_settings.items():
+                default_settings[key] = value
+                
+            self.settings = default_settings
+            
             if self.debug:
                 self.logger.debug("Settings loaded from file")
-            return settings
+            return self.settings
         except FileNotFoundError:
             self.logger.warning(f"Settings file not found: {settings_file}, creating default settings")
             # Create a default settings file if it doesn't exist
@@ -2397,7 +2424,7 @@ class Udemy:
                 "instructor_exclude": [],
                 "title_exclude": [],
                 "save_txt": True,
-                "sites": dict.fromkeys(scraper_dict.keys(), True),
+                "sites": {site: True for site in scraper_dict.keys()},
                 "discounted_only": False,
                 "course_update_threshold_months": 24,
             }
@@ -2672,7 +2699,7 @@ class Udemy:
         return not all([bool(self.sites), bool(self.categories), bool(self.languages)])
 
     def save_course(self):
-        if self.settings["save_txt"]:
+        if self.settings.get("save_txt", True):
             self.txt_file.write(f"{self.title} - {self.link}\n")
             self.txt_file.flush()
             os.fsync(self.txt_file.fileno())
@@ -2875,7 +2902,7 @@ class Udemy:
         self.amount_saved_c = 0
 
     def setup_txt_file(self):
-        if self.settings["save_txt"]:
+        if self.settings.get("save_txt", True):
             os.makedirs("Courses/", exist_ok=True)
             self.txt_file = open(f"Courses/{time.strftime('%Y-%m-%d--%H-%M')}.txt", "w", encoding="utf-8")
 

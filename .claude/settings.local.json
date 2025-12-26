@@ -97,7 +97,10 @@
       "Skill(glm-plan-usage:usage-query-skill)",
       "mcp__coda__coda_list_documents",
       "mcp__coda__coda_list_pages",
-      "mcp__coda__coda_get_page_content"
+      "mcp__coda__coda_get_page_content",
+      "Bash(git checkout:*)",
+      "Bash(done)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
