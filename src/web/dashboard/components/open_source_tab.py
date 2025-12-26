@@ -4,21 +4,68 @@ from src.config.settings import get_settings
 from src.models.opensource_model import OpenSourceProjectItem
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 import json
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
+settings = get_settings()
+
+# NEW: Repository-based loading (SOLID Pattern)
+class OpenSourceRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for open source projects data."""
+
+    def __init__(self):
+        """Initialize open source repository."""
+        data_path = Path(settings.data_dir) / "open_source_intelligence" / "output" / "latest.json"
+        super().__init__(
+            data_path=data_path,
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of projects.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of project dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
+
+# Create singleton instance
+opensource_repo = OpenSourceRepository()
+
 
 def render_open_source_tab():
     """Render the Open Source Intelligence tab."""
     settings = get_settings()
     data_path = Path(settings.data_dir) / "open_source_intelligence" / "output" / "latest.json"
-    
+
     projects = []
-    if data_path.exists():
-        try:
-            with open(data_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                projects = [OpenSourceProjectItem(**item) for item in data]
-        except Exception as e:
-            print(f"Error loading open source data: {e}")
+    # OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+    # if data_path.exists():
+    #     try:
+    #         with open(data_path, "r", encoding="utf-8") as f:
+    #             data = json.load(f)
+    #             projects = [OpenSourceProjectItem(**item) for item in data]
+    #     except Exception as e:
+    #         print(f"Error loading open source data: {e}")
+
+    # NEW: Repository-based loading
+    try:
+        data = opensource_repo.get()
+        projects = [OpenSourceProjectItem(**item) for item in data] if data else []
+    except Exception as e:
+        print(f"Error loading open source data: {e}")
     
     # Collect all unique tags for filtering
     all_tags = set()
@@ -76,27 +123,44 @@ def render_open_source_tab():
      Input("os-sort-filter", "value")]
 )
 def update_os_grid(tag_filter, sort_by):
+    """Update open source grid using repository pattern (NEW)."""
     settings = get_settings()
     data_path = Path(settings.data_dir) / "open_source_intelligence" / "output" / "latest.json"
-    
-    if not data_path.exists():
-        return dbc.Alert("No data available. Run the Open Source ETL first.", color="warning")
-        
+
+    # OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
+    # if not data_path.exists():
+    #     return dbc.Alert("No data available. Run the Open Source ETL first.", color="warning")
+    #
+    # try:
+    #     with open(data_path, "r", encoding="utf-8") as f:
+    #         data = json.load(f)
+    #         # Validation optional to speed up, but good for consistency
+    #         projects = [OpenSourceProjectItem(**item) for item in data]
+    #
+    #         # Filter
+    #         if tag_filter != "ALL":
+    #             projects = [p for p in projects if tag_filter in p.tags]
+    #
+    #         # Sort
+    #         if sort_by == "newest":
+    #             projects.sort(key=lambda x: x.published_at or x.created_at, reverse=True)
+    #         elif sort_by == "oldest":
+    #             projects.sort(key=lambda x: x.published_at or x.created_at, reverse=False)
+
+    # NEW: Repository-based loading
     try:
-        with open(data_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            # Validation optional to speed up, but good for consistency
-            projects = [OpenSourceProjectItem(**item) for item in data]
-            
-            # Filter
-            if tag_filter != "ALL":
-                projects = [p for p in projects if tag_filter in p.tags]
-            
-            # Sort
-            if sort_by == "newest":
-                projects.sort(key=lambda x: x.published_at or x.created_at, reverse=True)
-            elif sort_by == "oldest":
-                projects.sort(key=lambda x: x.published_at or x.created_at, reverse=False)
+        data = opensource_repo.get()
+        projects = [OpenSourceProjectItem(**item) for item in data] if data else []
+
+        # Filter
+        if tag_filter != "ALL":
+            projects = [p for p in projects if tag_filter in p.tags]
+
+        # Sort
+        if sort_by == "newest":
+            projects.sort(key=lambda x: x.published_at or x.created_at, reverse=True)
+        elif sort_by == "oldest":
+            projects.sort(key=lambda x: x.published_at or x.created_at, reverse=False)
             
             if not projects:
                 return dbc.Alert("No projects found for this filter.", color="info")
