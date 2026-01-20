@@ -17,14 +17,14 @@ def main():
         from src.web.dashboard.app import app
 
         print("Successfully loaded Watchtower Dashboard")
-        print("Starting server on http://0.0.0.0:7778")
-        print("Dashboard available at: http://localhost:7778")
+        print("Starting server on http://0.0.0.0:7780")
+        print("Dashboard available at: http://localhost:7780")
         print("Press Ctrl+C to stop the server")
         # Run the app (Dash >=3 uses app.run, older versions use app.run_server)
         if hasattr(app, "run"):
-            app.run(debug=False, port=7778, host="0.0.0.0")
+            app.run(debug=False, port=7780, host="0.0.0.0")
         else:
-            app.run_server(debug=False, port=7778, host="0.0.0.0")
+            app.run_server(debug=False, port=7780, host="0.0.0.0")
     except ModuleNotFoundError as e:
         print(f"Module not found: {e}")
         print("\nTroubleshooting:")

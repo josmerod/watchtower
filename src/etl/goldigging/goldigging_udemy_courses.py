@@ -1,34 +1,43 @@
-"""ETL script to aggregate Udemy Universal course links from miner output files."""
+"""ETL script to aggregate Udemy business courses from a Google Sheet source."""
 
+import csv
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
+from io import StringIO
 from typing import Any
 
-# Add project root to Python path
-global_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 import pandas as pd
+import requests
 
 from src.utils.course_deduplication import deduplicate_courses
 from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
-logger = logging.getLogger("udemy_universal_etl")
+logger = logging.getLogger("udemy_etl")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 # Constants
 BASE_OUTPUT_DIR = "data/udemy"
-SOURCE_RELATIVE_DIR = "src/miners/udemy-universal/Courses"
+GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1AZ3pw48rDAHZM3C_5S-GkKS7t8dkX9PiGLy39VAYe2U/export?format=csv&gid=1969752702"
+CAPGEMINI_UDEMY_BASE_URL = "https://capgemini.udemy.com/"
+
+# Column Mapping
+COL_ID = "Course ID"
+COL_DATE = "Date Added"
+COL_LANG = "Collection Language"
+COL_TITLE = "Course Title"
+COL_CAT = "Category"
+COL_SUBCAT = "Subcategory"
 
 
-class UdemyUniversalCoursesETL:
-    """ETL for extracting and aggregating Udemy Universal courses."""
+class UdemyCoursesETL:
+    """ETL for extracting and aggregating Udemy courses from Google Sheet."""
 
     def __init__(self) -> None:
-        """Initialize source and output directories and ensure output exists."""
+        """Initialize output directories."""
         project_root = get_project_root()
-        self.source_dir = os.path.join(project_root, SOURCE_RELATIVE_DIR)
         self.output_dir = os.path.join(project_root, BASE_OUTPUT_DIR)
         ensure_directories([BASE_OUTPUT_DIR])
 
@@ -36,57 +45,87 @@ class UdemyUniversalCoursesETL:
         self.csv_file = os.path.join(self.output_dir, "udemy_courses.csv")
 
     def extract_courses(self) -> list[dict[str, Any]]:
-        """Extract courses from miner files sorted newest to oldest.
+        """Extract courses from Google Sheet CSV.
 
         Returns:
-            List of course dictionaries with 'title', 'url', and 'scraped_at'.
+            List of course dictionaries.
         """
-        courses: list[dict[str, Any]] = []
+        logger.info(f"Fetching data from Google Sheet: {GOOGLE_SHEET_CSV_URL}")
         try:
-            filenames = sorted(os.listdir(self.source_dir), reverse=True)
-        except FileNotFoundError:
-            logger.error(f"Source directory not found: {self.source_dir}")
-            return courses
+            response = requests.get(GOOGLE_SHEET_CSV_URL, timeout=30)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            logger.error(f"Failed to fetch Google Sheet: {e}")
+            return []
 
-        for filename in filenames:
-            if not filename.lower().endswith(".txt"):
-                continue
-            filepath = os.path.join(self.source_dir, filename)
-            # Parse timestamp from filename
-            name_no_ext, _ = os.path.splitext(filename)
-            try:
-                dt = datetime.strptime(name_no_ext, "%Y-%m-%d--%H-%M")
-                scraped_at = dt.isoformat()
-            except ValueError:
-                scraped_at = datetime.now().isoformat()
-                logger.warning(f"Could not parse timestamp from filename: {filename}, using current time")
+        courses: list[dict[str, Any]] = []
+        
+        # Use csv.DictReader for reliable parsing
+        f = StringIO(response.text)
+        reader = csv.DictReader(f)
+        
+        rows = list(reader)
+        logger.info(f"Fetched {len(rows)} raw rows from sheet")
 
-            try:
-                with open(filepath, encoding="utf-8") as f:
-                    lines = f.readlines()
-            except Exception as e:
-                logger.error(f"Error reading file {filepath}: {e}")
+        for row in rows:
+            # 1. content filtering (en or es only)
+            lang = row.get(COL_LANG, "").strip().lower()
+            if lang not in ["en", "es"]:
                 continue
 
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
+            course_id = row.get(COL_ID, "").strip()
+            if not course_id:
+                continue
+
+            # 2. Extract fields
+            date_added_str = row.get(COL_DATE, "").strip()
+            title = row.get(COL_TITLE, "").strip()
+            category = row.get(COL_CAT, "").strip()
+            subcategory = row.get(COL_SUBCAT, "").strip()
+            
+            # 3. URL Generation
+            # Some IDs might be pure numbers, others might be strings. 
+            # Assuming simple append works as per requirement.
+            url = f"{CAPGEMINI_UDEMY_BASE_URL}{course_id}"
+
+            # 4. Standardize Date
+            # Format in CSV seems to be YYYY-MM-DD based on "2025-01-02" example
+            scraped_at = ""
+            if date_added_str:
                 try:
-                    title, url = line.rsplit(" - ", 1)
+                    dt = datetime.strptime(date_added_str, "%Y-%m-%d")
+                    # Set to UTC
+                    dt = dt.replace(tzinfo=timezone.utc)
+                    scraped_at = dt.isoformat()
                 except ValueError:
-                    logger.warning(f"Could not parse line in {filename}: {line}")
-                    continue
+                    # Try fallback or leave as empty string
+                    # Requirement says "sort by added day desc", so preserving the date is important.
+                    logger.debug(f"Could not parse date: {date_added_str}")
+                    scraped_at = ""
+            
+            # If no date, maybe skip or put at end? 
+            # Let's keep it but it might affect sorting if None. 
+            # We'll handle sorting in valid list.
+            
+            course = {
+                "title": title,
+                "url": url,
+                "scraped_at": scraped_at,
+                "language": lang,
+                "category": category,
+                "subcategory": subcategory,
+                "provider": "Udemy", # Adding static provider for context
+            }
+            courses.append(course)
 
-                courses.append(
-                    {
-                        "title": title.strip(),
-                        "url": url.strip(),
-                        "scraped_at": scraped_at,
-                    }
-                )
+        # 5. Sort by added day desc (newer courses first)
+        # Helper to handle None/Empty dates (put them last)
+        def sort_key(c):
+            return c.get("scraped_at") or ""
 
-        logger.info(f"Extracted {len(courses)} courses from {self.source_dir}")
+        courses.sort(key=sort_key, reverse=True)
+
+        logger.info(f"Processed {len(courses)} valid courses (en/es)")
         return courses
 
     def save_courses(self, courses: list[dict[str, Any]]) -> None:
@@ -96,22 +135,12 @@ class UdemyUniversalCoursesETL:
             courses: List of course dictionaries to save.
         """
         if not courses:
-            logger.warning("No courses to save for Udemy Universal")
+            logger.warning("No courses to save for Udemy")
             return
 
-        # Check if existing courses file exists and combine with new courses
-        all_courses = courses
-        if os.path.exists(self.courses_file):
-            try:
-                with open(self.courses_file, encoding="utf-8") as f:
-                    existing_courses = json.load(f)
-                    all_courses = existing_courses + courses
-                    logger.info(f"Combined {len(courses)} new courses with {len(existing_courses)} existing courses")
-            except json.JSONDecodeError:
-                logger.warning("Error reading existing courses file. Starting fresh.")
-
-        # Deduplicate courses before saving
-        deduplicated_courses, removed_count = deduplicate_courses(all_courses, key_field="url", prefer_newer=True)
+        # Deduplicate courses before saving (though sheet might be unique via ID, good practice)
+        # Key field is URL since we generated unique URLs from IDs
+        deduplicated_courses, removed_count = deduplicate_courses(courses, key_field="url", prefer_newer=True)
         if removed_count > 0:
             logger.info(f"Removed {removed_count} duplicate courses")
 
@@ -133,12 +162,12 @@ class UdemyUniversalCoursesETL:
 
 
 def main() -> None:
-    """Main entry point for Udemy Universal courses ETL."""
-    logger.info("Starting Udemy Universal courses ETL")
-    etl = UdemyUniversalCoursesETL()
+    """Main entry point for Udemy courses ETL."""
+    logger.info("Starting Udemy courses ETL")
+    etl = UdemyCoursesETL()
     courses = etl.extract_courses()
     etl.save_courses(courses)
-    logger.info("Udemy Universal courses ETL completed")
+    logger.info("Udemy courses ETL completed")
 
 
 if __name__ == "__main__":

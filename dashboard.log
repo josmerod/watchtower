@@ -1,0 +1,102 @@
+Starting Watchtower Dashboard...
+Real-time Intelligence & Monitoring Platform
+------------------------------------------------------------
+2026-01-12 22:10:25,872 - ArXivRepository - INFO - Loading data from C:\Users\josem\watchtower\data\arxiv\arxiv_papers_latest.json
+2026-01-12 22:10:26,205 - src.web.dashboard.components.arxiv_research_tab - INFO - Loaded 100 ArXiv papers
+Info (Coursera): Loaded 150 courses.
+DEBUG (Udemy): Attempting to load from C:\Users\josem\watchtower\data\udemy\udemy_courses.json
+Info (Udemy): Loaded 3667 courses.
+Info (Pluralsight): C:\Users\josem\watchtower\data\pluralsight_courses\pluralsight_courses.json was empty.
+Attempted to load all courses data.
+2026-01-12 22:10:26,684 - src.web.dashboard.components.deals_tab - INFO - Loaded 34 deals for Bargain Deals
+2026-01-12 22:10:26,702 - src.web.dashboard.components.deals_tab - INFO - Loaded 14 deals for Software Deals
+2026-01-12 22:10:26,721 - src.web.dashboard.components.deals_tab - INFO - Loaded 18 deals for Book Deals
+2026-01-12 22:10:26,745 - src.web.dashboard.components.deals_tab - INFO - Loaded 12 deals for Educational Deals
+2026-01-12 22:10:26,768 - src.web.dashboard.components.deals_tab - INFO - Loaded 12 deals for Travel Deals
+2026-01-12 22:10:26,790 - src.web.dashboard.components.deals_tab - INFO - Loaded 14 deals for Crypto & Finance
+2026-01-12 22:10:26,808 - src.web.dashboard.components.deals_tab - INFO - Loaded 20 deals for Fashion & Retail
+2026-01-12 22:10:26,832 - src.web.dashboard.components.deals_tab - INFO - Loaded 13 deals for Health & Fitness
+2026-01-12 22:10:26,854 - src.web.dashboard.components.deals_tab - INFO - Loaded 18 deals for Music Deals
+2026-01-12 22:10:26,875 - src.web.dashboard.components.deals_tab - INFO - Loaded 10 deals for Bundle Deals
+2026-01-12 22:10:26,890 - src.web.dashboard.components.deals_tab - INFO - Loaded 10 deals for Hardware & Tech
+2026-01-12 22:10:26,910 - src.web.dashboard.components.deals_tab - INFO - Loaded 150 deals for ITAD Deals
+2026-01-12 22:10:26,925 - src.web.dashboard.components.deals_tab - INFO - Loaded 31 deals for ITAD Bundles
+2026-01-12 22:10:26,946 - src.web.dashboard.components.deals_tab - INFO - Loaded 13 deals for ITAD Giveaways
+2026-01-12 22:10:26,962 - src.web.dashboard.components.deals_tab - INFO - Loaded 100 deals for Slickdeals
+2026-01-12 22:10:26,964 - src.web.dashboard.components.deals_tab - INFO - Loaded 0 deals for Woot!
+2026-01-12 22:10:27,078 - src.web.dashboard.components.videos_tab - INFO - Loading video data...
+2026-01-12 22:10:27,114 - src.web.dashboard.components.videos_tab - INFO - Loaded 350 videos for aa-dev
+2026-01-12 22:10:27,146 - src.web.dashboard.components.videos_tab - INFO - Loaded 109 videos for aa-economics
+2026-01-12 22:10:27,173 - src.web.dashboard.components.videos_tab - INFO - Loaded 56 videos for aa-gen-ai
+2026-01-12 22:10:27,199 - src.web.dashboard.components.videos_tab - INFO - Loaded 44 videos for aa-personal_development
+2026-01-12 22:10:27,228 - src.web.dashboard.components.videos_tab - INFO - Loaded 11 videos for aa-solutions-architecture
+2026-01-12 22:10:27,261 - src.web.dashboard.components.videos_tab - INFO - Loaded 59 videos for z-sleepcore
+2026-01-12 22:10:27,303 - src.web.dashboard.components.videos_tab - INFO - Loaded 313 videos for z-soundtowork
+2026-01-12 22:10:27,339 - src.web.dashboard.components.videos_tab - INFO - Loaded 85 videos for zz-anime
+2026-01-12 22:10:27,368 - src.web.dashboard.components.videos_tab - INFO - Loaded 7 videos for zz-chill
+2026-01-12 22:10:27,404 - src.web.dashboard.components.videos_tab - INFO - Loaded 70 videos for zz-cooking
+2026-01-12 22:10:27,439 - src.web.dashboard.components.videos_tab - INFO - Loaded 95 videos for zz-curiosidades
+2026-01-12 22:10:27,472 - src.web.dashboard.components.videos_tab - INFO - Loaded 48 videos for zz-food_reviews
+2026-01-12 22:10:27,502 - src.web.dashboard.components.videos_tab - INFO - Loaded 174 videos for zz-memes
+2026-01-12 22:10:27,532 - src.web.dashboard.components.videos_tab - INFO - Loaded 113 videos for zz-porros
+2026-01-12 22:10:27,559 - src.web.dashboard.components.videos_tab - INFO - Loaded 76 videos for zz-viajes
+2026-01-12 22:10:27,587 - src.web.dashboard.components.videos_tab - INFO - Loaded 69 videos for zzz-alotof
+2026-01-12 22:10:27,589 - src.web.dashboard.components.videos_tab - INFO - Total channels loaded: 16
+2026-01-12 22:10:27,590 - src.web.dashboard.components.videos_tab - INFO - Available channels: ['aa-dev', 'aa-economics', 'aa-gen-ai', 'aa-personal_development', 'aa-solutions-architecture', 'z-sleepcore', 'z-soundtowork', 'zz-anime', 'zz-chill', 'zz-cooking', 'zz-curiosidades', 'zz-food_reviews', 'zz-memes', 'zz-porros', 'zz-viajes', 'zzz-alotof']
+2026-01-12 22:10:27,951 - UserProfileManager - INFO - UserProfileManager initialized with storage: C:\Users\josem\watchtower\data\user_profiles
+2026-01-12 22:10:27,952 - ArchitectureRecommender - WARNING - Pattern catalog not found at C:\Users\josem\watchtower\data\architecture\output\architecture_patterns.json
+2026-01-12 22:10:27,957 - UserProfileManager - INFO - UserProfileManager initialized with storage: C:\Users\josem\watchtower\data\user_profiles
+2026-01-12 22:10:27,960 - ShortcutsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\shortcuts\predefined_shortcuts.json
+2026-01-12 22:10:28,005 - ShortcutsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\shortcuts\custom_shortcuts.json
+2026-01-12 22:10:28,869 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\open_source_intelligence\output\latest.json
+2026-01-12 22:10:28,892 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\gooddevs\gooddevs_latest.json
+2026-01-12 22:10:29,046 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\podcasts\podcasts_latest.json
+2026-01-12 22:10:29,098 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\product_hunt\product_hunt_latest.json
+2026-01-12 22:10:29,114 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\github_trends\github_trends_latest.json
+2026-01-12 22:10:29,135 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\hackernews_ask\hackernews_ask_latest.json
+2026-01-12 22:10:29,159 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\stackoverflow_trends\stackoverflow_trends_latest.json
+2026-01-12 22:10:29,198 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_unified_latest.json
+2026-01-12 22:10:29,226 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_ai_ml_latest.json
+2026-01-12 22:10:29,248 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_programming_latest.json
+2026-01-12 22:10:29,266 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_tech_latest.json
+2026-01-12 22:10:29,281 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_devops_latest.json
+2026-01-12 22:10:29,300 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\devto\devto.json
+2026-01-12 22:10:29,316 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_news_latest.json
+2026-01-12 22:10:30,523 - GamesRepository - INFO - Loading data from C:\Users\josem\watchtower\data\games\deals.json
+Info (Deals): Loaded 150 deals.
+Info (Bundles): Loaded 32 bundles from bundles.json.
+Info (Bundles): Loaded 27 bundles from humblebundles.json.
+Info (Bundles): Combined total of 59 bundles.
+Info (Giveaways): Loaded 4 giveaways.
+Info (Trending): Loaded 20 trending Itch.io games.
+Info (New Releases): new_releases.json was empty or contained no results.
+Attempted to load all games data.
+2026-01-12 22:10:30,752 - ArchitectureRecommender - WARNING - Pattern catalog not found at C:\Users\josem\watchtower\data\architecture\output\architecture_patterns.json
+DEBUG: render_udemy_courses_sub_tab called with DF shape: (3667, 7)
+2026-01-12 22:10:30,900 - src.web.dashboard.components.anime_tab - INFO - Loaded 470 anime items across 11 categories
+2026-01-12 22:10:30,922 - FourChanRepository - INFO - Loading data from data\4chan_generals\output\latest.json
+2026-01-12 22:10:31,196 - src.web.dashboard.components.fourchan_tab - INFO - Loaded 336 4chan general threads
+2026-01-12 22:10:31,229 - src.web.dashboard.components.scavenging_tab - INFO - Discovered 4 scavenging categories: ['anime', 'audiobooks', 'courses', 'gumroad_free']
+2026-01-12 22:10:31,467 - ValenciaEventsNewRepository - INFO - Loading data from data\valencia_events\valencia_events.json
+2026-01-12 22:10:31,482 - src.web.dashboard.components.valencia_events_new_tab - INFO - Loaded 44 Valencia events from data\valencia_events\valencia_events.json
+2026-01-12 22:10:31,489 - SpanishAidRepository - INFO - Loading data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_latest.json
+2026-01-12 22:10:31,529 - SpanishAidStatsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-12 22:10:31,529 - SpanishAidStatsRepository - ERROR - Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+Warning: Could not load Spanish aid data: Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-12 22:10:33,995 - src.web.dashboard.components.arxiv_research_tab - INFO - Loaded 100 ArXiv papers
+2026-01-12 22:10:34,559 - src.web.dashboard.components.scavenging_tab - INFO - Discovered 4 scavenging categories: ['anime', 'audiobooks', 'courses', 'gumroad_free']
+Successfully loaded Watchtower Dashboard
+Starting server on http://0.0.0.0:7778
+Dashboard available at: http://localhost:7778
+Press Ctrl+C to stop the server
+Dash is running on http://0.0.0.0:7778/
+
+2026-01-12 22:10:34,572 - dash.dash - INFO - Dash is running on http://0.0.0.0:7778/
+
+ * Serving Flask app 'src.web.dashboard.app'
+ * Debug mode: off
+2026-01-12 22:10:35,916 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:7778
+ * Running on http://192.168.31.219:7778
+2026-01-12 22:10:35,917 - werkzeug - INFO - [33mPress CTRL+C to quit[0m

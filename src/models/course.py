@@ -25,6 +25,9 @@ class CourseModel(TimestampedModel):
     is_free: bool = Field(default=False, description="Whether the course is free")
     published_date: datetime | None = Field(default=None, description="Course publication date")
     scraped_at: datetime = Field(default_factory=datetime.utcnow, description="When the course was scraped")
+    language: str | None = Field(default=None, description="Course language")
+    category: str | None = Field(default=None, description="Course category")
+    subcategory: str | None = Field(default=None, description="Course subcategory")
 
     @field_validator("rating")
     @classmethod

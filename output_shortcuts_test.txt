@@ -1,0 +1,75 @@
+INFO:ArXivRepository:Loading data from C:\Users\josem\watchtower\data\arxiv\arxiv_papers_latest.json
+INFO:src.web.dashboard.components.arxiv_research_tab:Loaded 100 ArXiv papers
+Starting Watchtower Dashboard...
+Real-time Intelligence & Monitoring Platform
+------------------------------------------------------------
+Info (Coursera): Loaded 150 courses.
+DEBUG (Udemy): Attempting to load from C:\Users\josem\watchtower\data\udemy\udemy_courses.json
+Info (Udemy): Loaded 3709 courses.
+Info (Pluralsight): C:\Users\josem\watchtower\data\pluralsight_courses\pluralsight_courses.json was empty.
+Attempted to load all courses data.
+2026-01-17 03:08:56,098 - src.web.dashboard.components.videos_tab - INFO - Loading video data...
+2026-01-17 03:08:56,107 - src.web.dashboard.components.videos_tab - INFO - Loaded 350 videos for aa-dev
+2026-01-17 03:08:56,113 - src.web.dashboard.components.videos_tab - INFO - Loaded 109 videos for aa-economics
+2026-01-17 03:08:56,116 - src.web.dashboard.components.videos_tab - INFO - Loaded 56 videos for aa-gen-ai
+2026-01-17 03:08:56,121 - src.web.dashboard.components.videos_tab - INFO - Loaded 44 videos for aa-personal_development
+2026-01-17 03:08:56,126 - src.web.dashboard.components.videos_tab - INFO - Loaded 11 videos for aa-solutions-architecture
+2026-01-17 03:08:56,131 - src.web.dashboard.components.videos_tab - INFO - Loaded 59 videos for z-sleepcore
+2026-01-17 03:08:56,139 - src.web.dashboard.components.videos_tab - INFO - Loaded 313 videos for z-soundtowork
+2026-01-17 03:08:56,145 - src.web.dashboard.components.videos_tab - INFO - Loaded 85 videos for zz-anime
+2026-01-17 03:08:56,149 - src.web.dashboard.components.videos_tab - INFO - Loaded 7 videos for zz-chill
+2026-01-17 03:08:56,156 - src.web.dashboard.components.videos_tab - INFO - Loaded 70 videos for zz-cooking
+2026-01-17 03:08:56,160 - src.web.dashboard.components.videos_tab - INFO - Loaded 95 videos for zz-curiosidades
+2026-01-17 03:08:56,163 - src.web.dashboard.components.videos_tab - INFO - Loaded 48 videos for zz-food_reviews
+2026-01-17 03:08:56,168 - src.web.dashboard.components.videos_tab - INFO - Loaded 174 videos for zz-memes
+2026-01-17 03:08:56,173 - src.web.dashboard.components.videos_tab - INFO - Loaded 113 videos for zz-porros
+2026-01-17 03:08:56,177 - src.web.dashboard.components.videos_tab - INFO - Loaded 76 videos for zz-viajes
+2026-01-17 03:08:56,182 - src.web.dashboard.components.videos_tab - INFO - Loaded 69 videos for zzz-alotof
+2026-01-17 03:08:56,182 - src.web.dashboard.components.videos_tab - INFO - Total channels loaded: 16
+2026-01-17 03:08:56,182 - src.web.dashboard.components.videos_tab - INFO - Available channels: ['aa-dev', 'aa-economics', 'aa-gen-ai', 'aa-personal_development', 'aa-solutions-architecture', 'z-sleepcore', 'z-soundtowork', 'zz-anime', 'zz-chill', 'zz-cooking', 'zz-curiosidades', 'zz-food_reviews', 'zz-memes', 'zz-porros', 'zz-viajes', 'zzz-alotof']
+2026-01-17 03:08:56,421 - ShortcutsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\shortcuts\predefined_shortcuts.json
+2026-01-17 03:08:56,423 - ShortcutsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\shortcuts\custom_shortcuts.json
+2026-01-17 03:08:56,431 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\open_source_intelligence\output\latest.json
+2026-01-17 03:08:56,452 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\gooddevs\gooddevs_latest.json
+2026-01-17 03:08:56,460 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\podcasts\podcasts_latest.json
+2026-01-17 03:08:56,499 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\product_hunt\product_hunt_latest.json
+2026-01-17 03:08:56,557 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\github_trends\github_trends_latest.json
+2026-01-17 03:08:56,558 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\hackernews_ask\hackernews_ask_latest.json
+2026-01-17 03:08:56,574 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\stackoverflow_trends\stackoverflow_trends_latest.json
+2026-01-17 03:08:56,580 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_unified_latest.json
+2026-01-17 03:08:56,611 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_ai_ml_latest.json
+2026-01-17 03:08:56,637 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_programming_latest.json
+2026-01-17 03:08:56,654 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_tech_latest.json
+2026-01-17 03:08:56,669 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_devops_latest.json
+2026-01-17 03:08:56,684 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\devto\devto.json
+2026-01-17 03:08:56,684 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_news_latest.json
+DEBUG: render_courses_tab called. Loaded status: {'coursera': True, 'udemy': True, 'pluralsight': True, 'khan': True}
+DEBUG: render_coursera_courses_sub_tab called. DF Empty=False, Loaded=True
+2026-01-17 03:08:58,024 - src.web.dashboard.components.anime_tab - INFO - Loaded 470 anime items across 11 categories
+2026-01-17 03:08:58,046 - FourChanRepository - INFO - Loading data from data\4chan_generals\output\latest.json
+2026-01-17 03:08:58,051 - src.web.dashboard.components.fourchan_tab - INFO - Loaded 332 4chan general threads
+2026-01-17 03:08:58,088 - src.web.dashboard.components.scavenging_tab - INFO - Discovered 4 scavenging categories: ['anime', 'audiobooks', 'courses', 'gumroad_free']
+2026-01-17 03:08:58,210 - ValenciaEventsNewRepository - INFO - Loading data from data\valencia_events\valencia_events.json
+2026-01-17 03:08:58,213 - src.web.dashboard.components.valencia_events_new_tab - INFO - Loaded 45 Valencia events from data\valencia_events\valencia_events.json
+2026-01-17 03:08:58,219 - SpanishAidRepository - INFO - Loading data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_latest.json
+2026-01-17 03:08:58,224 - SpanishAidStatsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-17 03:08:58,225 - SpanishAidStatsRepository - ERROR - Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+Warning: Could not load Spanish aid data: Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-17 03:08:59,178 - src.web.dashboard.components.arxiv_research_tab - INFO - Loaded 100 ArXiv papers
+DEBUG: register_courses_callbacks called
+2026-01-17 03:08:59,183 - src.web.dashboard.components.scavenging_tab - INFO - Discovered 4 scavenging categories: ['anime', 'audiobooks', 'courses', 'gumroad_free']
+Successfully loaded Watchtower Dashboard
+Starting server on http://0.0.0.0:7780
+Dashboard available at: http://localhost:7780
+Press Ctrl+C to stop the server
+Dash is running on http://0.0.0.0:7780/
+
+2026-01-17 03:08:59,184 - dash.dash - INFO - Dash is running on http://0.0.0.0:7780/
+
+ * Serving Flask app 'src.web.dashboard.app'
+ * Debug mode: off
+2026-01-17 03:09:00,479 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:7780
+ * Running on http://192.168.31.219:7780
+2026-01-17 03:09:00,479 - werkzeug - INFO - [33mPress CTRL+C to quit[0m

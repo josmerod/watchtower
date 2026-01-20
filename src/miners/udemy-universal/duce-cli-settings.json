@@ -1,4 +1,11 @@
 {
+  "email": "josemanuelmejiasrodriguez@gmail.com",
+  "password": "Josele1305!",
+  "use_browser_cookies": false,
+  "stay_logged_in": {
+    "auto": false,
+    "manual": false
+  },
   "categories": {
     "business": true,
     "design": true,
@@ -31,6 +38,12 @@
     "es": true,
     "tr": false
   },
+  "min_rating": 0,
+  "max_price": 0,
+  "min_reviews": 0,
+  "instructor_exclude": [],
+  "title_exclude": [],
+  "save_txt": true,
   "sites": {
     "Real Discount": true,
     "Discudemy": true,
@@ -43,6 +56,8 @@
     "Cursos Dev": true,
     "Udemy Free Courses": true
   },
+  "discounted_only": false,
+  "course_update_threshold_months": 24,
   "filters": {
     "min_rating": 0.0,
     "instructor_exclude": [
@@ -56,8 +71,5 @@
     "discounted_only": false,
     "course_update_threshold_months": 120
   },
-  "email": "josemanuelmejiasrodriguez@gmail.com",
-  "password": "Josele1305!",
-  "browser_type": "chrome",
-  "use_browser_cookies": false
+  "browser_type": "chrome"
 }

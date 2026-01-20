@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     scraping: ScrapingConfig = Field(default_factory=ScrapingConfig)
     api: APIConfig = Field(default_factory=APIConfig)
+    
+    # API Settings
+    API_ENABLED: bool = Field(default=True, description="Enable REST API")
+    API_MASTER_KEY: str = Field(default="watchtower-dev-key", description="Master API Key for access")
+
     streamlit: StreamlitConfig = Field(default_factory=StreamlitConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     monitoring: MonitoringConfig = Field(default_factory=MonitoringConfig)

@@ -103,7 +103,11 @@
       "Bash(xargs:*)",
       "Bash(for:*)",
       "Bash(do if ! grep -q \"BaseRepository\" \"$file\")",
-      "Bash(then echo \"$file\")"
+      "Bash(then echo \"$file\")",
+      "mcp__web-search-prime__webSearchPrime",
+      "Bash(if not exist \"C:\\\\Users\\\\josem\\\\watchtower\\\\src\\\\etl\\\\expanded\" mkdir \"C:\\\\Users\\\\josem\\\\watchtower\\\\src\\\\etl\\\\expanded\")",
+      "mcp__drawio__start_session",
+      "mcp__drawio__create_new_diagram"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

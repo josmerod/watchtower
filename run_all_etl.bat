@@ -130,6 +130,18 @@ start /B %PYTHON_CMD% src/etl/spanish_public_aid/spanish_public_aid_etl.py
 REM 4chan Generals ETL
 start /B %PYTHON_CMD% src/etl/fourchan/fourchan_generals_etl.py
 
+REM Phase 1 Expanded ETLs - New Sources (January 2025)
+start /B %PYTHON_CMD% src/etl/expanded/newsapi_etl.py
+start /B %PYTHON_CMD% src/etl/expanded/rapidapi_etl.py
+start /B %PYTHON_CMD% src/etl/expanded/hashnode_etl.py
+start /B %PYTHON_CMD% src/etl/expanded/github_analytics_etl.py
+start /B %PYTHON_CMD% src/etl/expanded/package_registry_etl.py
+
+REM Phase 2 Expanded ETLs - Strategic Sources (January 2025)
+start /B %PYTHON_CMD% src/etl/expanded/stackexchange_etl.py
+start /B %PYTHON_CMD% src/etl/expanded/openalex_etl.py
+start /B %PYTHON_CMD% src/etl/expanded/kaggle_etl.py
+start /B %PYTHON_CMD% src/etl/expanded/gaming_anime_etl.py
 
 REM Open Source Projects ETL
 start /B %PYTHON_CMD% src/etl/opensource/opensource_projects_etl.py

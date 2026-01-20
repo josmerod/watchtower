@@ -214,9 +214,6 @@ def create_papers_table(df_subset):
                     html.Th("Authors"),
                     html.Th("Category"),
                     html.Th("Published"),
-                    html.Th("Summary"),
-                    html.Th("Trend"),
-                    html.Th("Actions"),
                 ]
             )
         )
@@ -233,78 +230,51 @@ def create_papers_table(df_subset):
 
     table_body_rows = []
     for _, paper in df_subset.iterrows():
+        # Check trend status
+        is_trending = is_item_trending(paper.to_dict(), trending_items)
+        trend_badge = render_trend_badge(trending_items.get(f"category:{paper.get('source')}") or trending_items.get(paper.get("id"))) if is_trending else None
+
         # Create clickable title with ArXiv link
         title_link = html.A(
             paper.get("display_title", "Unknown Title"),
             href=paper.get("link", "#"),
             target="_blank",
-            className="text-decoration-none",
+            className="text-decoration-none fw-bold",
         )
 
         # Add GitHub link if available
         title_cell_content = [title_link]
         if paper.get("github_html_url"):
             github_link = html.A(
-                html.I(className="fab fa-github ms-2"),
+                html.I(className="fab fa-github ms-2 text-dark"),
                 href=paper["github_html_url"],
                 target="_blank",
                 title="View GitHub Repository",
-                className="text-muted",
+                className="text-decoration-none",
             )
             title_cell_content.append(github_link)
 
-        # Add to Shortcuts button
-        shortcut_btn = html.Div(
-            [
-                dbc.Button(
-                    [html.I(className="fas fa-star me-1"), "Add to Shortcuts"],
-                    id=f"add-shortcut-arxiv-{paper.name if hasattr(paper, 'name') else paper.get('link', '')[:50]}",
-                    color="outline-warning",
-                    size="sm",
-                    className="me-1",
-                    **{
-                        "data-source-name": paper.get("display_title", "Unknown Paper"),
-                        "data-source-domain": "Papers",
-                        "data-source-filter": json.dumps(
-                            {
-                                "source": "arxiv",
-                                "title": paper.get("display_title", ""),
-                                "category": paper.get("primary_category_display", ""),
-                                "authors": paper.get("authors_display", ""),
-                                "link": paper.get("link", ""),
-                            }
-                        ),
-                    },
-                )
-            ]
-        )
+        # Add trend badge to title cell
+        if trend_badge:
+            title_cell_content.append(html.Span(trend_badge, className="ms-2"))
 
         table_body_rows.append(
             html.Tr(
                 [
                     html.Td(title_cell_content),
-                    html.Td(paper.get("authors_display", "Unknown"), className="small"),
+                    html.Td(paper.get("authors_display", "Unknown"), className="small text-muted"),
                     html.Td(
                         dbc.Badge(
                             paper.get("primary_category_display", "Unknown"),
-                            color="outline-primary",
+                            color="info",
                             className="small",
+                            outline=True,
                         )
                     ),
                     html.Td(
                         format_date_display(paper.get("published_display")),
                         className="small text-muted",
                     ),
-                    html.Td(
-                        paper.get("summary_preview", "No summary available"),
-                        className="small text-muted",
-                        style={"max-width": "250px"},
-                    ),
-                    html.Td(
-                        (render_trend_badge(trending_items.get(f"category:{paper.get('source')}") or trending_items.get(paper.get("id"))) if is_item_trending(paper.to_dict(), trending_items) else None),
-                        className="text-nowrap",
-                    ),
-                    html.Td(shortcut_btn, className="text-nowrap"),
                 ]
             )
         )
@@ -317,7 +287,8 @@ def create_papers_table(df_subset):
         responsive=True,
         striped=True,
         size="sm",
-        className="table-responsive",
+        className="table-responsive mb-0",
+        color="dark" # Ensure dark mode compatibility if needed, or remove if News tab uses specific style
     )
 
 

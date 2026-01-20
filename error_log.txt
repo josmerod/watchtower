@@ -1,0 +1,2 @@
+INFO:ArXivRepository:Loading data from C:\Users\josem\watchtower\data\arxiv\arxiv_papers_latest.json
+INFO:src.web.dashboard.components.arxiv_research_tab:Loaded 100 ArXiv papers

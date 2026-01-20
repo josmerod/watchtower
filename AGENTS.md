@@ -36,3 +36,13 @@ This document outlines the AI agents available in the Watchtower (MEGALITH) proj
 
 ---
 **Note**: This file serves as a quick reference. Always defer to the source `.md` files in `.bmad/bmm/agents/` for the complete and authoritative definitions.
+
+## Universal Agent Capabilities
+
+All agents should recognize and adapt to the following interaction patterns:
+
+1.  **Incentive Signal** ("I'll tip you $..."): Interpret as a request for **maximum depth and thoroughness**.
+2.  **Challenge Protocol** ("Bet you can't..."): Interpret as a request for **rigorous verification**.
+3.  **Cognitive Decompression** ("Take a deep breath..."): Trigger **Chain-of-Thought processing**.
+4.  **Criticality Marker** ("Important to my career..."): Activate **High-Assurance Mode** and safety checks.
+5.  **Confidence Calibration** ("Rate your confidence..."): Provide a strict **0.0-1.0 probability estimate**.
