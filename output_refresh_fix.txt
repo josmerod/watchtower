@@ -1,0 +1,260 @@
+INFO:ArXivRepository:Loading data from C:\Users\josem\watchtower\data\arxiv\arxiv_papers_latest.json
+INFO:src.web.dashboard.components.arxiv_research_tab:Loaded 100 ArXiv papers
+Starting Watchtower Dashboard...
+Real-time Intelligence & Monitoring Platform
+------------------------------------------------------------
+Info (Coursera): Loaded 150 courses.
+DEBUG (Udemy): Attempting to load from C:\Users\josem\watchtower\data\udemy\udemy_courses.json
+Info (Udemy): Loaded 3709 courses.
+Info (Pluralsight): C:\Users\josem\watchtower\data\pluralsight_courses\pluralsight_courses.json was empty.
+Attempted to load all courses data.
+2026-01-19 22:39:34,451 - src.web.dashboard.components.videos_tab - INFO - Loading video data...
+2026-01-19 22:39:34,486 - src.web.dashboard.components.videos_tab - INFO - Loaded 350 videos for aa-dev
+2026-01-19 22:39:34,505 - src.web.dashboard.components.videos_tab - INFO - Loaded 109 videos for aa-economics
+2026-01-19 22:39:34,522 - src.web.dashboard.components.videos_tab - INFO - Loaded 56 videos for aa-gen-ai
+2026-01-19 22:39:34,544 - src.web.dashboard.components.videos_tab - INFO - Loaded 44 videos for aa-personal_development
+2026-01-19 22:39:34,563 - src.web.dashboard.components.videos_tab - INFO - Loaded 11 videos for aa-solutions-architecture
+2026-01-19 22:39:34,577 - src.web.dashboard.components.videos_tab - INFO - Loaded 59 videos for z-sleepcore
+2026-01-19 22:39:34,595 - src.web.dashboard.components.videos_tab - INFO - Loaded 313 videos for z-soundtowork
+2026-01-19 22:39:34,616 - src.web.dashboard.components.videos_tab - INFO - Loaded 85 videos for zz-anime
+2026-01-19 22:39:34,632 - src.web.dashboard.components.videos_tab - INFO - Loaded 7 videos for zz-chill
+2026-01-19 22:39:34,647 - src.web.dashboard.components.videos_tab - INFO - Loaded 70 videos for zz-cooking
+2026-01-19 22:39:34,665 - src.web.dashboard.components.videos_tab - INFO - Loaded 95 videos for zz-curiosidades
+2026-01-19 22:39:34,681 - src.web.dashboard.components.videos_tab - INFO - Loaded 48 videos for zz-food_reviews
+2026-01-19 22:39:34,703 - src.web.dashboard.components.videos_tab - INFO - Loaded 174 videos for zz-memes
+2026-01-19 22:39:34,719 - src.web.dashboard.components.videos_tab - INFO - Loaded 113 videos for zz-porros
+2026-01-19 22:39:34,734 - src.web.dashboard.components.videos_tab - INFO - Loaded 76 videos for zz-viajes
+2026-01-19 22:39:34,749 - src.web.dashboard.components.videos_tab - INFO - Loaded 69 videos for zzz-alotof
+2026-01-19 22:39:34,749 - src.web.dashboard.components.videos_tab - INFO - Total channels loaded: 16
+2026-01-19 22:39:34,749 - src.web.dashboard.components.videos_tab - INFO - Available channels: ['aa-dev', 'aa-economics', 'aa-gen-ai', 'aa-personal_development', 'aa-solutions-architecture', 'z-sleepcore', 'z-soundtowork', 'zz-anime', 'zz-chill', 'zz-cooking', 'zz-curiosidades', 'zz-food_reviews', 'zz-memes', 'zz-porros', 'zz-viajes', 'zzz-alotof']
+2026-01-19 22:39:34,884 - ShortcutsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\shortcuts\predefined_shortcuts.json
+2026-01-19 22:39:34,886 - ShortcutsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\shortcuts\custom_shortcuts.json
+2026-01-19 22:39:34,891 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\open_source_intelligence\output\latest.json
+2026-01-19 22:39:34,896 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\gooddevs\gooddevs_latest.json
+2026-01-19 22:39:34,903 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\podcasts\podcasts_latest.json
+2026-01-19 22:39:34,923 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\product_hunt\product_hunt_latest.json
+2026-01-19 22:39:34,957 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\github_trends\github_trends_latest.json
+2026-01-19 22:39:34,959 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\hackernews_ask\hackernews_ask_latest.json
+2026-01-19 22:39:34,962 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\stackoverflow_trends\stackoverflow_trends_latest.json
+2026-01-19 22:39:34,965 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_unified_latest.json
+2026-01-19 22:39:34,968 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_ai_ml_latest.json
+2026-01-19 22:39:34,969 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_programming_latest.json
+2026-01-19 22:39:34,971 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_tech_latest.json
+2026-01-19 22:39:34,972 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_devops_latest.json
+2026-01-19 22:39:34,973 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\devto\devto.json
+2026-01-19 22:39:34,974 - KnowledgeGardenRepository - INFO - Loading data from C:\Users\josem\watchtower\data\reddit_unified\reddit_news_latest.json
+DEBUG: render_courses_tab called. Loaded status: {'coursera': True, 'udemy': True, 'pluralsight': True, 'khan': True}
+DEBUG: render_coursera_courses_sub_tab called. DF Empty=False, Loaded=True
+2026-01-19 22:39:35,624 - src.web.dashboard.components.anime_tab - INFO - Loaded 470 anime items across 11 categories
+2026-01-19 22:39:35,636 - FourChanRepository - INFO - Loading data from data\4chan_generals\output\latest.json
+2026-01-19 22:39:35,640 - src.web.dashboard.components.fourchan_tab - INFO - Loaded 332 4chan general threads
+2026-01-19 22:39:35,663 - src.web.dashboard.components.scavenging_tab - INFO - Discovered 4 scavenging categories: ['anime', 'audiobooks', 'courses', 'gumroad_free']
+2026-01-19 22:39:35,729 - ValenciaEventsNewRepository - INFO - Loading data from data\valencia_events\valencia_events.json
+2026-01-19 22:39:35,730 - src.web.dashboard.components.valencia_events_new_tab - INFO - Loaded 45 Valencia events from data\valencia_events\valencia_events.json
+2026-01-19 22:39:35,737 - SpanishAidRepository - INFO - Loading data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_latest.json
+2026-01-19 22:39:35,741 - SpanishAidStatsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-19 22:39:35,741 - SpanishAidStatsRepository - ERROR - Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+Warning: Could not load Spanish aid data: Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-19 22:39:36,661 - src.web.dashboard.components.arxiv_research_tab - INFO - Loaded 100 ArXiv papers
+DEBUG: register_courses_callbacks called
+2026-01-19 22:39:36,666 - src.web.dashboard.components.scavenging_tab - INFO - Discovered 4 scavenging categories: ['anime', 'audiobooks', 'courses', 'gumroad_free']
+Successfully loaded Watchtower Dashboard
+Starting server on http://0.0.0.0:7780
+Dashboard available at: http://localhost:7780
+Press Ctrl+C to stop the server
+Dash is running on http://0.0.0.0:7780/
+
+2026-01-19 22:39:36,667 - dash.dash - INFO - Dash is running on http://0.0.0.0:7780/
+
+ * Serving Flask app 'src.web.dashboard.app'
+ * Debug mode: off
+2026-01-19 22:39:37,968 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:7780
+ * Running on http://192.168.31.219:7780
+2026-01-19 22:39:37,969 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-01-19 22:40:08,555 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET / HTTP/1.1" 200 -
+2026-01-19 22:40:08,555 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET / HTTP/1.1" 200 -
+2026-01-19 22:40:08,665 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/css/shortcuts.css HTTP/1.1" 200 -
+2026-01-19 22:40:08,667 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/css/mobile_responsive.css HTTP/1.1" 200 -
+2026-01-19 22:40:08,668 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/style.css?m=1765649430.1106875 HTTP/1.1" 200 -
+2026-01-19 22:40:08,671 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/css/shortcuts.css?m=1765649430.106631 HTTP/1.1" 200 -
+2026-01-19 22:40:08,672 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/css/mobile_responsive.css?m=1765649430.106631 HTTP/1.1" 200 -
+2026-01-19 22:40:08,679 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/localStorage.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,679 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/items_per_page.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,681 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/mobile_navigation.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,689 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/dragdrop.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,691 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/shortcuts.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,695 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/customize_tabs_dragdrop.js?m=1765649430.106631 HTTP/1.1" 200 -
+2026-01-19 22:40:08,696 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/dragdrop.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 22:40:08,699 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/items_per_page.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 22:40:08,704 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/localStorage.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 22:40:08,706 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/mobile_navigation.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 22:40:08,708 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/shortcuts.js?m=1765649430.1091447 HTTP/1.1" 200 -
+2026-01-19 22:40:08,708 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/tab_preferences.js?m=1765649430.1091447 HTTP/1.1" 200 -
+2026-01-19 22:40:08,718 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/css/shortcuts.css HTTP/1.1" 200 -
+2026-01-19 22:40:08,719 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/css/mobile_responsive.css HTTP/1.1" 200 -
+2026-01-19 22:40:08,721 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/style.css?m=1765649430.1106875 HTTP/1.1" 200 -
+2026-01-19 22:40:08,724 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/css/mobile_responsive.css?m=1765649430.106631 HTTP/1.1" 200 -
+2026-01-19 22:40:08,727 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/css/shortcuts.css?m=1765649430.106631 HTTP/1.1" 200 -
+2026-01-19 22:40:08,728 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/localStorage.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,729 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/items_per_page.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,735 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/mobile_navigation.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,737 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/shortcuts.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,744 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/dragdrop.js HTTP/1.1" 200 -
+2026-01-19 22:40:08,747 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/customize_tabs_dragdrop.js?m=1765649430.106631 HTTP/1.1" 200 -
+2026-01-19 22:40:08,752 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/dragdrop.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 22:40:08,753 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/items_per_page.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 22:40:08,756 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/mobile_navigation.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 22:40:08,758 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/localStorage.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 22:40:08,760 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/shortcuts.js?m=1765649430.1091447 HTTP/1.1" 200 -
+2026-01-19 22:40:08,763 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:08] "GET /assets/js/tab_preferences.js?m=1765649430.1091447 HTTP/1.1" 200 -
+2026-01-19 22:40:09,332 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:09] "[36mGET /assets/js/dragdrop.js HTTP/1.1[0m" 304 -
+2026-01-19 22:40:09,354 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:09] "[36mGET /assets/js/dragdrop.js HTTP/1.1[0m" 304 -
+2026-01-19 22:40:09,409 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:09] "GET /_dash-dependencies HTTP/1.1" 200 -
+2026-01-19 22:40:09,508 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:09] "GET /_dash-dependencies HTTP/1.1" 200 -
+2026-01-19 22:40:09,597 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:09] "GET /assets/watchtower_icon.svg HTTP/1.1" 200 -
+2026-01-19 22:40:09,825 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:09] "GET /_dash-layout HTTP/1.1" 200 -
+2026-01-19 22:40:10,122 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:10] "GET /_dash-layout HTTP/1.1" 200 -
+2026-01-19 22:40:10,174 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:10] "GET /_dash-component-suites/dash/dcc/async-dropdown.js HTTP/1.1" 200 -
+2026-01-19 22:40:10,244 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:10] "GET /_dash-component-suites/dash/dash_table/async-highlight.js HTTP/1.1" 200 -
+2026-01-19 22:40:10,273 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:10] "GET /_dash-component-suites/dash/dcc/async-graph.js HTTP/1.1" 200 -
+2026-01-19 22:40:10,818 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:10] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:10,912 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:10] "[36mGET /_dash-component-suites/dash/dcc/async-dropdown.js HTTP/1.1[0m" 304 -
+2026-01-19 22:40:10,975 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:10] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:10,977 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:10] "[35m[1mPOST /_dash-update-component HTTP/1.1[0m" 204 -
+DEBUG: update_udemy_table called. Search=None, Lang=None, DataLoaded=True
+2026-01-19 22:40:11,022 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+DEBUG: update_coursera_table called. Trigger=trigger, Search=None, Subject=None, DataLoaded=True
+2026-01-19 22:40:11,041 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:11,187 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:11,196 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "[36mGET /_dash-component-suites/dash/dash_table/async-highlight.js HTTP/1.1[0m" 304 -
+2026-01-19 22:40:11,200 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:11,205 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:11,212 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "[36mGET /_dash-component-suites/dash/dcc/async-graph.js HTTP/1.1[0m" 304 -
+2026-01-19 22:40:11,217 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:11,238 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:11,455 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:11,463 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:11,621 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "[36mGET /_dash-component-suites/dash/dash_table/async-table.js HTTP/1.1[0m" 304 -
+2026-01-19 22:40:11,626 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "[36mGET /_dash-component-suites/dash/dash_table/async-table.js HTTP/1.1[0m" 304 -
+2026-01-19 22:40:11,629 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "[36mGET /_dash-component-suites/plotly/package_data/plotly.min.js HTTP/1.1[0m" 304 -
+2026-01-19 22:40:11,637 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "[36mGET /_dash-component-suites/plotly/package_data/plotly.min.js HTTP/1.1[0m" 304 -
+2026-01-19 22:40:11,672 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:12,221 - SpanishAidStatsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-19 22:40:12,221 - SpanishAidStatsRepository - ERROR - Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+Warning: Could not load Spanish aid data: Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-19 22:40:12,223 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:12,347 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:12,496 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:12,524 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:12,637 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:12,652 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:12,784 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:12,850 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "[35m[1mPOST /_dash-update-component HTTP/1.1[0m" 204 -
+2026-01-19 22:40:12,975 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "POST /_dash-update-component HTTP/1.1" 200 -
+DEBUG: update_udemy_table called. Search=None, Lang=None, DataLoaded=True
+2026-01-19 22:40:12,981 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:12] "POST /_dash-update-component HTTP/1.1" 200 -
+DEBUG: update_coursera_table called. Trigger=trigger, Search=None, Subject=None, DataLoaded=True
+2026-01-19 22:40:13,058 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,119 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,258 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,266 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,278 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,337 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,476 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,484 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,525 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,560 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,736 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:13,910 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:14,120 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:14] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:14,128 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:14] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:14,362 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:14] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:14,637 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:14] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:14,688 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:14] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:14,724 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:14] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:14,882 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:14] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:15,043 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:15] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:15,888 - SpanishAidStatsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-19 22:40:15,889 - SpanishAidStatsRepository - ERROR - Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+Warning: Could not load Spanish aid data: Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-19 22:40:15,892 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:15] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:16,169 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:16] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:16,469 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:16] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:16,762 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:16] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:17,074 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:17] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:17,412 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:17] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:17,745 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:17] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:18,023 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:18] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:18,310 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:18] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:18,596 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:18] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:18,847 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:18] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:19,189 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:19] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:19,807 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:19] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:20,114 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:20] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:20,375 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:20] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:20,643 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:20] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 22:40:20,926 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 22:40:20] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:03,456 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET / HTTP/1.1" 200 -
+2026-01-19 23:15:03,571 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/css/mobile_responsive.css HTTP/1.1" 200 -
+2026-01-19 23:15:03,572 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/css/mobile_responsive.css?m=1765649430.106631 HTTP/1.1" 200 -
+2026-01-19 23:15:03,572 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/css/shortcuts.css?m=1765649430.106631 HTTP/1.1" 200 -
+2026-01-19 23:15:03,573 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/css/shortcuts.css HTTP/1.1" 200 -
+2026-01-19 23:15:03,573 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/style.css?m=1765649430.1106875 HTTP/1.1" 200 -
+2026-01-19 23:15:03,595 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/localStorage.js HTTP/1.1" 200 -
+2026-01-19 23:15:03,603 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/items_per_page.js HTTP/1.1" 200 -
+2026-01-19 23:15:03,605 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/shortcuts.js HTTP/1.1" 200 -
+2026-01-19 23:15:03,606 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/mobile_navigation.js HTTP/1.1" 200 -
+2026-01-19 23:15:03,608 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/customize_tabs_dragdrop.js?m=1765649430.106631 HTTP/1.1" 200 -
+2026-01-19 23:15:03,610 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/items_per_page.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 23:15:03,613 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/localStorage.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 23:15:03,619 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/dragdrop.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 23:15:03,621 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/mobile_navigation.js?m=1765649430.1076317 HTTP/1.1" 200 -
+2026-01-19 23:15:03,621 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/dragdrop.js HTTP/1.1" 200 -
+2026-01-19 23:15:03,626 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/shortcuts.js?m=1765649430.1091447 HTTP/1.1" 200 -
+2026-01-19 23:15:03,650 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:03] "GET /assets/js/tab_preferences.js?m=1765649430.1091447 HTTP/1.1" 200 -
+2026-01-19 23:15:04,278 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:04] "[36mGET /assets/js/dragdrop.js HTTP/1.1[0m" 304 -
+2026-01-19 23:15:04,337 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:04] "GET /_dash-dependencies HTTP/1.1" 200 -
+2026-01-19 23:15:04,595 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:04] "GET /assets/watchtower_icon.svg HTTP/1.1" 200 -
+2026-01-19 23:15:04,687 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:04] "GET /_dash-layout HTTP/1.1" 200 -
+2026-01-19 23:15:05,138 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:05] "GET /_dash-component-suites/dash/dcc/async-dropdown.js HTTP/1.1" 200 -
+2026-01-19 23:15:05,202 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:05] "GET /_dash-component-suites/dash/dash_table/async-highlight.js HTTP/1.1" 200 -
+2026-01-19 23:15:05,221 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:05] "GET /_dash-component-suites/dash/dcc/async-graph.js HTTP/1.1" 200 -
+2026-01-19 23:15:06,014 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:06,167 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:06,339 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "[35m[1mPOST /_dash-update-component HTTP/1.1[0m" 204 -
+2026-01-19 23:15:06,402 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "[36mGET /_dash-component-suites/dash/dash_table/async-table.js HTTP/1.1[0m" 304 -
+DEBUG: update_udemy_table called. Search=None, Lang=None, DataLoaded=True
+2026-01-19 23:15:06,421 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "POST /_dash-update-component HTTP/1.1" 200 -
+DEBUG: update_coursera_table called. Trigger=trigger, Search=None, Subject=None, DataLoaded=True
+2026-01-19 23:15:06,496 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:06,624 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:06,668 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:06,775 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:06,827 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:06,904 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:06] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:07,225 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:07] "[36mGET /_dash-component-suites/plotly/package_data/plotly.min.js HTTP/1.1[0m" 304 -
+2026-01-19 23:15:07,436 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:07] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:07,439 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:07] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:07,794 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:07] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:08,660 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:08] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:08,922 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:08] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:09,186 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:09] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:09,461 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:09] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:09,933 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:09] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:10,121 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:10] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:10,406 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:10] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:10,723 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:10] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:11,023 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:11,404 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:11,678 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:11] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:12,103 - SpanishAidStatsRepository - INFO - Loading data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-19 23:15:12,105 - SpanishAidStatsRepository - ERROR - Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+Warning: Could not load Spanish aid data: Failed to load data from C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json: Data file not found: C:\Users\josem\watchtower\data\spanish_public_aid\output\spanish_public_aid_stats_latest.json
+2026-01-19 23:15:12,108 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:12,779 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:12,818 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:12] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:13,150 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:13,617 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:13] "POST /_dash-update-component HTTP/1.1" 200 -
+2026-01-19 23:15:13,883 - werkzeug - INFO - 127.0.0.1 - - [19/Jan/2026 23:15:13] "POST /_dash-update-component HTTP/1.1" 200 -

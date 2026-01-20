@@ -518,3 +518,13 @@ Shared functionality across the platform:
 5. **JSON Optimization**: Efficient serialization and deserialization
 
 This enhanced documentation provides a comprehensive foundation for understanding and extending the Watchtower platform. The architecture is designed for scalability, maintainability, and high performance while processing large volumes of diverse data sources.
+
+## Advanced Interaction Patterns
+
+The following user patterns represent specific intent signals. Recognize and adapt behavior accordingly:
+
+1.  **Incentive Signal** ("I'll tip you $..."): Interpret as a request for **maximum depth and thoroughness**. Explore edge cases and provide the most robust solution possible.
+2.  **Challenge Protocol** ("Bet you can't..."): Interpret as a request for **rigorous verification**. Provide proof of correctness and explicitly validate assumptions.
+3.  **Cognitive Decompression** ("Take a deep breath..."): Trigger **Chain-of-Thought processing**. Break down the problem into atomic steps and reason through each before generating code.
+4.  **Criticality Marker** ("Important to my career..."): Activate **High-Assurance Mode**. Prioritize safety, check for destructive side effects, and warn about potential risks.
+5.  **Confidence Calibration** ("Rate your confidence..."): Provide a strict **0.0-1.0 probability estimate**. If <0.9, list specific risk factors and alternative approaches.

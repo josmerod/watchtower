@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import os
 
 import dash
 import dash_bootstrap_components as dbc
@@ -142,10 +143,12 @@ def load_udemy_data():
     file_path = UDEMY_DATA_PATH
 
     if not file_exists(file_path):
-        print(f"Warning (Udemy): File not found at {file_path}")
+        print(f"Warning (Udemy): File not found at {os.path.abspath(file_path)}")
         ALL_COURSES_DATA["udemy"] = pd.DataFrame()
         COURSES_DATA_LOADED["udemy"] = True
         return
+
+    print(f"DEBUG (Udemy): Attempting to load from {file_path}")
 
     try:
         df = pd.read_json(file_path)
@@ -161,12 +164,14 @@ def load_udemy_data():
         COURSES_DATA_LOADED["udemy"] = True
         return
 
-    # Standardize columns: title, url, scraped_at
+    # Standardize columns: title, url, scraped_at, language, category, subcategory
+    # Note: New ETL produces 'title', 'url', 'scraped_at', 'language', 'category', 'subcategory' directly.
+    # We rename potential legacy columns just in case, but prioritize new ones.
     df.rename(
         columns={
             "course_title": "title",
             "course_url": "url",
-            "created_at": "scraped_at_str",  # Assuming this is the scrape date
+            "created_at": "scraped_at_str",
         },
         inplace=True,
     )
@@ -174,16 +179,26 @@ def load_udemy_data():
     expected_cols = [
         "title",
         "url",
-        "scraped_at_str",
-    ]  # Udemy data is simpler from this source
+        "scraped_at",
+        "language",
+        "category",
+        "subcategory",
+    ]
     for col in expected_cols:
         if col not in df.columns:
             df[col] = None
 
-    df["scraped_at"] = df["scraped_at_str"].apply(lambda x: parse_course_date(x))
+    # Ensure scraped_at is datetime compatible (it should be ISO string from ETL)
+    # If scraped_at is already correct, parse_course_date handles it.
+    df["scraped_at"] = df["scraped_at"].apply(lambda x: parse_course_date(x))
 
     if "scraped_at" in df.columns:
         df = df.sort_values(by="scraped_at", ascending=False, na_position="last")
+    
+    # Fill N/A for display
+    df["language"] = df["language"].fillna("Unknown")
+    df["category"] = df["category"].fillna("Other")
+    df["subcategory"] = df["subcategory"].fillna("Other")
 
     ALL_COURSES_DATA["udemy"] = df
     COURSES_DATA_LOADED["udemy"] = True
@@ -328,7 +343,18 @@ def create_coursera_table(df_subset):
     )
 
 
+def get_initial_coursera_table():
+    """Pre-render initial Coursera table data for layout."""
+    if not COURSES_DATA_LOADED["coursera"] or ALL_COURSES_DATA["coursera"].empty:
+        return dbc.Alert("Loading Coursera data...", color="info")
+    
+    df = ALL_COURSES_DATA["coursera"]
+    df_paginated = df.head(PAGE_SIZE)
+    return create_coursera_table(df_paginated)
+
+
 def render_coursera_courses_sub_tab(df):
+    print(f"DEBUG: render_coursera_courses_sub_tab called. DF Empty={df.empty}, Loaded={COURSES_DATA_LOADED['coursera']}")
     if not COURSES_DATA_LOADED["coursera"]:  # Check if loading was even attempted and successful
         return dbc.Alert(
             "Coursera courses data failed to load. Check logs.",
@@ -385,7 +411,7 @@ def render_coursera_courses_sub_tab(df):
                 ],
                 className="mt-3 mb-3",
             ),
-            html.Div(id="coursera-table-container"),
+            html.Div(id="coursera-table-container", children=get_initial_coursera_table()),
             # Custom pagination with better UX
             html.Div(
                 id="coursera-pagination-wrapper",
@@ -426,9 +452,69 @@ def render_coursera_courses_sub_tab(df):
                     ),
                 ],
             ),
+            dcc.Store(id="coursera-initial-load", data="trigger"),
         ],
         className="mt-3",
     )
+
+
+def create_udemy_table(df_subset):
+    """Create a table component for Udemy courses."""
+    if df_subset.empty:
+        return dbc.Alert("No Udemy courses match your criteria.", color="info")
+
+    table_header = [
+        html.Thead(
+            html.Tr(
+                [
+                    html.Th("Title", style={"width": "50%"}),
+                    html.Th("Language"),
+                    html.Th("Category"),
+                    html.Th("Subcategory"),
+                ]
+            )
+        )
+    ]
+
+    table_body_rows = []
+    for _, row in df_subset.iterrows():
+        table_body_rows.append(
+            html.Tr(
+                [
+                    html.Td(
+                        html.A(
+                            row.get("title", "N/A"),
+                            href=row.get("url", "#"),
+                            target="_blank",
+                        )
+                    ),
+                    html.Td(row.get("language", "N/A")),
+                    html.Td(row.get("category", "N/A")),
+                    html.Td(row.get("subcategory", "N/A")),
+                ]
+            )
+        )
+    table_body = [html.Tbody(table_body_rows)]
+    return dbc.Table(
+        table_header + table_body,
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive",
+    )
+
+
+def get_initial_udemy_table():
+    """Pre-render initial Udemy table data for layout."""
+    if not COURSES_DATA_LOADED["udemy"] or ALL_COURSES_DATA["udemy"].empty:
+        return dbc.Alert("Loading Udemy data...", color="info")
+    
+    df = ALL_COURSES_DATA["udemy"]
+    df_paginated = df.head(PAGE_SIZE)
+    return create_udemy_table(df_paginated)
 
 
 def render_udemy_courses_sub_tab(df):
@@ -444,20 +530,42 @@ def render_udemy_courses_sub_tab(df):
             color="info",
             className="mt-3",
         )
-    # Placeholder for actual layout
+    
+    # Prepare filter options
+    language_options = [{"label": i, "value": i} for i in sorted(df["language"].unique().tolist()) if i] if "language" in df.columns else []
+    category_options = [{"label": i, "value": i} for i in sorted(df["category"].unique().tolist()) if i] if "category" in df.columns else []
+
     return html.Div(
         [
             dbc.Row(
                 [
                     dbc.Col(
                         dbc.Input(id="udemy-search-input", placeholder="Search by title..."),
-                        md=12,
+                        md=4,
+                        className="mb-2",
+                    ),
+                    dbc.Col(
+                        dcc.Dropdown(
+                            id="udemy-language-dropdown",
+                            options=language_options,
+                            placeholder="Filter by language",
+                        ),
+                        md=3,
+                        className="mb-2",
+                    ),
+                    dbc.Col(
+                        dcc.Dropdown(
+                            id="udemy-category-dropdown",
+                            options=category_options,
+                            placeholder="Filter by category",
+                        ),
+                        md=3,
                         className="mb-2",
                     ),
                 ],
                 className="mt-3 mb-3",
             ),
-            html.Div(id="udemy-table-container"),
+            html.Div(id="udemy-table-container", children=get_initial_udemy_table()),
             # Custom pagination with better UX
             html.Div(
                 id="udemy-pagination-wrapper",
@@ -505,6 +613,7 @@ def render_udemy_courses_sub_tab(df):
 
 # --- Main Layout ---
 def render_courses_tab():
+    print(f"DEBUG: render_courses_tab called. Loaded status: {COURSES_DATA_LOADED}")
     # Initial check if any data was loaded to provide a general message
     # More specific messages are handled by individual sub-tab render functions
     if not COURSES_DATA_LOADED["coursera"] and not COURSES_DATA_LOADED["udemy"] and not COURSES_DATA_LOADED["pluralsight"] and not COURSES_DATA_LOADED["khan"]:
@@ -552,6 +661,7 @@ def render_courses_tab():
 
 # --- Callbacks ---
 def register_courses_callbacks(app):
+    print("DEBUG: register_courses_callbacks called")
     @app.callback(
         Output("coursera-table-container", "children"),
         Output("coursera-pagination-info", "children"),
@@ -567,6 +677,7 @@ def register_courses_callbacks(app):
         Input("coursera-page-input", "value"),
         Input("coursera-prev-btn", "n_clicks"),
         Input("coursera-next-btn", "n_clicks"),
+        Input("coursera-initial-load", "data"),
         prevent_initial_call=False,
     )
     def update_coursera_table(
@@ -577,7 +688,9 @@ def register_courses_callbacks(app):
         current_page,
         prev_clicks,
         next_clicks,
+        dummy_trigger,
     ):
+        print(f"DEBUG: update_coursera_table called. Trigger={dummy_trigger}, Search={search_term}, Subject={subject}, DataLoaded={COURSES_DATA_LOADED['coursera']}")
         try:
             if not COURSES_DATA_LOADED["coursera"]:
                 return (
@@ -697,12 +810,15 @@ def register_courses_callbacks(app):
         Output("udemy-prev-btn", "disabled"),
         Output("udemy-next-btn", "disabled"),
         Input("udemy-search-input", "value"),
+        Input("udemy-language-dropdown", "value"),
+        Input("udemy-category-dropdown", "value"),
         Input("udemy-page-input", "value"),
         Input("udemy-prev-btn", "n_clicks"),
         Input("udemy-next-btn", "n_clicks"),
         prevent_initial_call=False,
     )
-    def update_udemy_table(search_term, current_page, prev_clicks, next_clicks):
+    def update_udemy_table(search_term, language_filter, category_filter, current_page, prev_clicks, next_clicks):
+        print(f"DEBUG: update_udemy_table called. Search={search_term}, Lang={language_filter}, DataLoaded={COURSES_DATA_LOADED['udemy']}")
         try:
             if not COURSES_DATA_LOADED["udemy"]:
                 return (
@@ -730,6 +846,12 @@ def register_courses_callbacks(app):
             if search_term:
                 search_lower = search_term.lower()
                 df_filtered = df_filtered[df_filtered["title"].str.lower().contains(search_lower, na=False)]
+            
+            if language_filter:
+                df_filtered = df_filtered[df_filtered["language"] == language_filter]
+                
+            if category_filter:
+                df_filtered = df_filtered[df_filtered["category"] == category_filter]
 
             if df_filtered.empty:
                 return (
@@ -761,9 +883,29 @@ def register_courses_callbacks(app):
             df_paginated = df_filtered.iloc[start_idx:end_idx]
 
             # Need a create_udemy_table helper
-            table_header = [html.Thead(html.Tr([html.Th("Title")]))]
+            table_header = [
+                html.Thead(
+                    html.Tr(
+                        [
+                            html.Th("Title"),
+                            html.Th("Language"),
+                            html.Th("Category"),
+                            html.Th("Subcategory"),
+                            html.Th("Date Added"),
+                        ]
+                    )
+                )
+            ]
             table_body_rows = []
             for _, row in df_paginated.iterrows():
+                # Format Date
+                date_str = "N/A"
+                if pd.notna(row.get("scraped_at")):
+                    try:
+                        date_str = row["scraped_at"].strftime("%Y-%m-%d")
+                    except Exception:
+                        date_str = str(row["scraped_at"])[:10]
+                        
                 table_body_rows.append(
                     html.Tr(
                         [
@@ -774,6 +916,10 @@ def register_courses_callbacks(app):
                                     target="_blank",
                                 )
                             ),
+                            html.Td(row.get("language", "N/A")),
+                            html.Td(row.get("category", "N/A")),
+                            html.Td(row.get("subcategory", "N/A")),
+                            html.Td(date_str),
                         ]
                     )
                 )

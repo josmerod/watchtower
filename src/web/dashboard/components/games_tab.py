@@ -54,18 +54,12 @@ class GamesRepository(BaseRepository[dict[str, Any]]):
 # Create singleton instances for each games data source
 deals_repo = GamesRepository(get_data_path("games", "deals.json"))
 bundles_repo = GamesRepository(get_data_path("games", "bundles.json"))
-giveaways_repo = GamesRepository(get_data_path("giveaways", "free_games_latest.json"))
 trending_repo = GamesRepository(get_data_path("games", "itchio_trending.json"))
-new_releases_repo = GamesRepository(get_data_path("games", "new_releases.json"))
 ALL_GAMES_DATA = {
     "deals": pd.DataFrame(),
     "bundles": pd.DataFrame(),
-    "giveaways": pd.DataFrame(),
-    "trending": pd.DataFrame(),
     "new_releases": pd.DataFrame(),
     "metacritic": pd.DataFrame(),
-    "giantbomb_games": pd.DataFrame(),
-    "giantbomb_reviews": pd.DataFrame(),
 }
 DATA_LOADED_SUCCESSFULLY = {key: False for key in ALL_GAMES_DATA}
 
@@ -417,99 +411,7 @@ def load_bundles_data():
     print(f"Info (Bundles): Combined total of {len(combined_df)} bundles.")
 
 
-def load_giveaways_data():
-    global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
-    # Prefer enhanced free games dataset first, then canonical cross-domain giveaways dataset if present
-    enhanced_latest_path = get_data_path("enhanced_free_games", "output/latest_free_games_recommendations.json")
-    enhanced_latest_dir = get_data_path("enhanced_free_games", "output/enhanced_free_games_20250822_195728.json")
-    latest_path = get_data_path("giveaways", "free_games_latest.json")
-    canonical_path = get_data_path("giveaways", "free_games.json")
-    legacy_path = get_data_path("games", "giveaways.json")
-    epic_free_path = get_data_path("games", "epic_free_games.json")
 
-    if file_exists(enhanced_latest_path):
-        file_path = enhanced_latest_path
-    elif file_exists(enhanced_latest_dir):
-        file_path = enhanced_latest_dir
-    elif file_exists(epic_free_path):
-        file_path = epic_free_path
-    elif file_exists(latest_path):
-        file_path = latest_path
-    elif file_exists(canonical_path):
-        file_path = canonical_path
-    else:
-        file_path = legacy_path
-
-    if not file_exists(file_path):
-        print(f"Warning (Giveaways): File not found at {file_path}")
-        ALL_GAMES_DATA["giveaways"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["giveaways"] = False
-        return
-
-    try:
-        df = pd.read_json(file_path)
-    except ValueError as e:
-        print(f"Error (Giveaways): Could not decode JSON from {file_path}. Error: {e}")
-        ALL_GAMES_DATA["giveaways"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["giveaways"] = False
-        return
-    except Exception as e:
-        print(f"Error (Giveaways): Failed to read or process {file_path}. Error: {e}")
-        ALL_GAMES_DATA["giveaways"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["giveaways"] = False
-        return
-
-    if df.empty:
-        ALL_GAMES_DATA["giveaways"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["giveaways"] = True  # File existed, valid, but empty
-        print("Info (Giveaways): giveaways dataset was empty.")
-        return
-
-    # Standardize columns - e.g., 'title', 'url'/'link', 'store', 'publishedDate', 'expiryDate'
-    df.rename(
-        columns={
-            "url": "link",
-            "publishedDate": "published_date_str",  # Or similar field for when it was posted
-            "expiryDate": "expiry_date_str",  # Or similar field for when it expires
-            "name": "title",
-            "start_date": "published_date_str",  # Epic Games format
-            "end_date": "expiry_date_str",  # Epic Games format
-        },
-        inplace=True,
-    )
-
-    # Map common alternative fields from the new canonical dataset
-    if "store" not in df.columns and "platform" in df.columns:
-        df["store"] = df["platform"]
-    if "store" not in df.columns:
-        # Infer store from filename or set default
-        if "epic" in file_path.lower():
-            df["store"] = "Epic Games Store"
-        else:
-            df["store"] = "Unknown"
-    if "expiry_date_str" not in df.columns or df["expiry_date_str"].isna().all():
-        if "promotion_end" in df.columns:
-            df["expiry_date_str"] = df["promotion_end"]
-    if "published_date_str" not in df.columns or df["published_date_str"].isna().all():
-        if "fetched_at" in df.columns:
-            df["published_date_str"] = df["fetched_at"]
-
-    expected_cols = ["title", "link", "store", "published_date_str", "expiry_date_str"]
-    for col in expected_cols:
-        if col not in df.columns:
-            df[col] = None
-
-    df["published_date"] = df["published_date_str"].apply(lambda x: parse_game_date(x))
-    df["expiry_date"] = df["expiry_date_str"].apply(lambda x: parse_game_date(x))
-
-    # Giveaways are typically free
-    df["price_numeric"] = 0.0
-
-    df = df.sort_values(by="published_date", ascending=False, na_position="last")
-
-    ALL_GAMES_DATA["giveaways"] = df
-    DATA_LOADED_SUCCESSFULLY["giveaways"] = True
-    print(f"Info (Giveaways): Loaded {len(df)} giveaways.")
 
 
 def load_trending_data():
@@ -581,106 +483,16 @@ def load_trending_data():
     print(f"Info (Trending): Loaded {len(df)} trending Itch.io games.")
 
 
-def load_new_releases_data():
-    global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
-    file_path = get_data_path("games", "new_releases.json")
 
-    if not file_exists(file_path):
-        log_missing_file(file_path, "New Releases", is_optional=True)
-        ALL_GAMES_DATA["new_releases"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["new_releases"] = False
-        return
-
-    try:
-        # It's possible new_releases.json is a list of dicts, or a dict with a key like 'results' or 'items'
-        # For now, assume direct list of dicts or pandas handles it.
-        # If it's nested, may need to adjust: data = json.load(f); df = pd.json_normalize(data, 'results')
-        raw_data = []
-        with open(file_path, encoding="utf-8") as f:
-            raw_data = json.load(f)
-
-        if isinstance(raw_data, dict) and "results" in raw_data:  # Common for APIs like RAWG
-            df = pd.json_normalize(raw_data, "results")
-        elif isinstance(raw_data, list):
-            df = pd.DataFrame(raw_data)
-        else:
-            raise ValueError("JSON structure not a list of records or recognized dict like {'results': [...]}")
-
-    except ValueError as e:
-        print(f"Error (New Releases): Could not decode or normalize JSON from {file_path}. Error: {e}")
-        ALL_GAMES_DATA["new_releases"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["new_releases"] = False
-        return
-    except Exception as e:
-        print(f"Error (New Releases): Failed to read or process {file_path}. Error: {e}")
-        ALL_GAMES_DATA["new_releases"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["new_releases"] = False
-        return
-
-    if df.empty:
-        ALL_GAMES_DATA["new_releases"] = pd.DataFrame()
-        DATA_LOADED_SUCCESSFULLY["new_releases"] = True  # File existed, valid, but empty
-        print("Info (New Releases): new_releases.json was empty or contained no results.")
-        return
-
-    # Standardize columns - Example for RAWG API like structure
-    df.rename(
-        columns={
-            "name": "title",
-            "released": "release_date_str",  # RAWG uses 'released'
-            "metacritic": "metacritic_score",
-            "description_raw": "description",  # If 'description_raw' is plain text description
-            "slug": "slug_for_rawg_link",  # To construct link to RAWG page
-            # 'platforms' is often a list of dicts, 'stores' similar
-        },
-        inplace=True,
-    )
-
-    # Ensure essential columns
-    # 'link' will be constructed if 'slug_for_rawg_link' is available
-    expected_cols = [
-        "title",
-        "release_date_str",
-        "metacritic_score",
-        "description",
-        "slug_for_rawg_link",
-        "platforms",
-        "stores",
-    ]
-    for col in expected_cols:
-        if col not in df.columns:
-            df[col] = None
-
-    df["release_date"] = df["release_date_str"].apply(lambda x: parse_game_date(x, source_format="%Y-%m-%d"))
-
-    # Extract platform names
-    def get_platform_names(platforms_list):
-        if isinstance(platforms_list, list):
-            return ", ".join([p["platform"]["name"] for p in platforms_list if "platform" in p and "name" in p["platform"]])
-        return "N/A"
-
-    df["platform_names"] = df["platforms"].apply(get_platform_names)
-
-    # Construct RAWG link
-    df["link"] = df["slug_for_rawg_link"].apply(lambda x: f"https://rawg.io/games/{x}" if x else None)
-
-    # Convert metacritic_score to numeric, coercing errors
-    df["metacritic_score"] = pd.to_numeric(df["metacritic_score"], errors="coerce")
-
-    df = df.sort_values(by="release_date", ascending=False, na_position="last")
-
-    ALL_GAMES_DATA["new_releases"] = df
-    DATA_LOADED_SUCCESSFULLY["new_releases"] = True
-    print(f"Info (New Releases): Loaded {len(df)} new releases.")
 
 
 def load_all_games_data():
     # This will call the individual loaders
     load_deals_data()
     load_bundles_data()
-    load_giveaways_data()
     load_trending_data()
-    load_new_releases_data()
+    # load_giveaways_data() # Removed
+    # load_new_releases_data() # Removed
     # Optional: Metacritic reviews from RSS
     try:
         file_path = get_data_path("games", "metacritic_latest.json")
@@ -704,40 +516,8 @@ def load_all_games_data():
     except Exception as e:
         print(f"Error (Metacritic): {e}")
         DATA_LOADED_SUCCESSFULLY["metacritic"] = False
-    # GiantBomb games
-    try:
-        gb_games = get_data_path("games", "giantbomb_games_latest.json")
-        if file_exists(gb_games):
-            df = pd.read_json(gb_games)
-            df.rename(
-                columns={"title": "name", "release_date": "release_date_str"},
-                inplace=True,
-            )
-            if "release_date_str" in df.columns:
-                df["release_date"] = df["release_date_str"].apply(lambda x: parse_game_date(x))
-            ALL_GAMES_DATA["giantbomb_games"] = df
-            DATA_LOADED_SUCCESSFULLY["giantbomb_games"] = True
-        else:
-            DATA_LOADED_SUCCESSFULLY["giantbomb_games"] = False
-    except Exception as e:
-        print(f"Error (GiantBomb games): {e}")
-        DATA_LOADED_SUCCESSFULLY["giantbomb_games"] = False
-
-    # GiantBomb reviews
-    try:
-        gb_reviews = get_data_path("games", "giantbomb_reviews_latest.json")
-        if file_exists(gb_reviews):
-            df = pd.read_json(gb_reviews)
-            df.rename(columns={"publish_date": "publish_date_str"}, inplace=True)
-            if "publish_date_str" in df.columns:
-                df["publish_date"] = df["publish_date_str"].apply(lambda x: parse_game_date(x))
-            ALL_GAMES_DATA["giantbomb_reviews"] = df
-            DATA_LOADED_SUCCESSFULLY["giantbomb_reviews"] = True
-        else:
-            DATA_LOADED_SUCCESSFULLY["giantbomb_reviews"] = False
-    except Exception as e:
-        print(f"Error (GiantBomb reviews): {e}")
-        DATA_LOADED_SUCCESSFULLY["giantbomb_reviews"] = False
+    # GiantBomb games/reviews removed
+    print("Attempted to load all games data.")
 
     print("Attempted to load all games data.")
 
@@ -753,55 +533,7 @@ def format_display_date(dt_obj):
     return dt_obj.strftime("%Y-%m-%d")  # Simpler date format for tables
 
 
-def render_giveaways_sub_tab(df):
-    if not DATA_LOADED_SUCCESSFULLY.get("giveaways", False) or df.empty:  # Check load status too
-        return dbc.Alert(
-            "No giveaways data currently available or failed to load.",
-            color="info",
-            className="mt-3 alert-info",
-        )
 
-    table_header = [
-        html.Thead(
-            html.Tr(
-                [
-                    html.Th("Title"),
-                    html.Th("Store"),
-                    html.Th("Published Date"),
-                    html.Th("Expires Date"),
-                ]
-            )
-        )
-    ]
-    table_body_rows = []
-    for _, row in df.head(50).iterrows():  # Limit rows for display performance initially
-        table_body_rows.append(
-            html.Tr(
-                [
-                    html.Td(
-                        html.A(
-                            row.get("title", "N/A"),
-                            href=row.get("link"),
-                            target="_blank",
-                        )
-                    ),
-                    html.Td(row.get("store", "N/A")),
-                    html.Td(format_display_date(row.get("published_date"))),
-                    html.Td(format_display_date(row.get("expiry_date"))),
-                ]
-            )
-        )
-    table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(
-        table_header + table_body,
-        bordered=True,
-        hover=True,
-        responsive=True,
-        striped=True,
-        size="sm",
-        color="dark",
-        className="table-responsive mt-3",
-    )
 
 
 def render_bundles_sub_tab(df):
@@ -1010,124 +742,7 @@ def render_metacritic_sub_tab(df):
     )
 
 
-def render_giantbomb_games_sub_tab(df):
-    if not DATA_LOADED_SUCCESSFULLY.get("giantbomb_games", False) or df.empty:
-        return dbc.Alert("No GiantBomb games available.", color="info", className="mt-3")
-    header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Release"), html.Th("Genres")]))]
-    rows = []
-    for _, row in df.head(50).iterrows():
-        title = row.get("name", "N/A")
-        url = row.get("url")
-        rd = row.get("release_date")
-        genres_val = row.get("genres")
-        genres = ", ".join(genres_val) if isinstance(genres_val, list) else (genres_val or "")
-        rows.append(
-            html.Tr(
-                [
-                    html.Td(html.A(title, href=url, target="_blank") if url else title),
-                    html.Td(format_display_date(rd)),
-                    html.Td(genres or "N/A"),
-                ]
-            )
-        )
-    return dbc.Table(
-        header + [html.Tbody(rows)],
-        bordered=True,
-        hover=True,
-        responsive=True,
-        striped=True,
-        size="sm",
-        color="dark",
-        className="table-responsive mt-3",
-    )
 
-
-def render_giantbomb_reviews_sub_tab(df):
-    if not DATA_LOADED_SUCCESSFULLY.get("giantbomb_reviews", False) or df.empty:
-        return dbc.Alert("No GiantBomb reviews available.", color="info", className="mt-3")
-    header = [html.Thead(html.Tr([html.Th("Game"), html.Th("Score"), html.Th("Published")]))]
-    rows = []
-    for _, row in df.head(50).iterrows():
-        game = (row.get("game") or {}).get("name") if isinstance(row.get("game"), dict) else row.get("title", "Review")
-        url = row.get("url")
-        score = row.get("score", "N/A")
-        pd_dt = row.get("publish_date")
-        rows.append(
-            html.Tr(
-                [
-                    html.Td(html.A(game or "Review", href=url, target="_blank") if url else (game or "Review")),
-                    html.Td(str(score) if score is not None else "N/A"),
-                    html.Td(format_display_date(pd_dt)),
-                ]
-            )
-        )
-    return dbc.Table(
-        header + [html.Tbody(rows)],
-        bordered=True,
-        hover=True,
-        responsive=True,
-        striped=True,
-        size="sm",
-        color="dark",
-        className="table-responsive mt-3",
-    )
-
-
-def render_new_releases_sub_tab(df):
-    if not DATA_LOADED_SUCCESSFULLY.get("new_releases", False) or df.empty:
-        return dbc.Alert(
-            "No new releases data currently available or failed to load.",
-            color="info",
-            className="mt-3 alert-info",
-        )
-
-    accordion_items = []
-    for index, row in df.head(30).iterrows():  # Limit for accordion display
-        title_display = row.get("title", "N/A")
-        metacritic_score = row.get("metacritic_score", "N/A")
-        if pd.notna(metacritic_score):
-            metacritic_display = str(int(metacritic_score))
-            color = "success" if metacritic_score >= 75 else ("warning" if metacritic_score >= 50 else "danger")
-            badge = dbc.Badge(metacritic_display, color=color, className="ms-2")
-            title_display = html.Div([title_display, badge])
-
-        accordion_items.append(
-            dbc.AccordionItem(
-                title=title_display,
-                children=[
-                    html.P(f"Release Date: {format_display_date(row.get('release_date'))}"),
-                    html.P(f"Platforms: {row.get('platform_names', 'N/A')}"),
-                    html.P(
-                        html.A(
-                            "View on RAWG.io",
-                            href=row.get("link", "#"),
-                            target="_blank",
-                        )
-                        if row.get("link")
-                        else "No RAWG link"
-                    ),
-                    html.Div(
-                        [
-                            html.H6("Description:", className="mt-2"),
-                            dcc.Markdown(
-                                row.get("description", "No description available."),
-                                className="small",
-                                dangerously_allow_html=False,
-                                link_target="_blank",
-                            ),
-                        ]
-                    ),
-                ],
-                item_id=f"nr-item-{index}",
-            )
-        )
-    return dbc.Accordion(
-        accordion_items,
-        flush=True,
-        always_open=False,
-        active_item=None,
-        className="mt-3",
-    )
 
 
 def render_games_tab():
@@ -1183,45 +798,11 @@ def render_games_tab():
                 id="games-sub-tabs",
                 children=[
                     dbc.Tab(
-                        label="Juegos Gratuitos",
-                        tab_id="subtab-giveaways",
-                        children=render_giveaways_sub_tab(ALL_GAMES_DATA["giveaways"]),
-                    ),
-                    dbc.Tab(
-                        label="Paquetes de Juegos",
-                        tab_id="subtab-bundles",
-                        children=render_bundles_sub_tab(ALL_GAMES_DATA["bundles"]),
-                    ),
-                    dbc.Tab(
-                        label="Ofertas de Juegos",
-                        tab_id="subtab-deals",
-                        children=render_deals_sub_tab(ALL_GAMES_DATA["deals"]),
-                    ),
-                    dbc.Tab(
-                        label="Tendencias Itch.io",
-                        tab_id="subtab-trending",
-                        children=render_trending_sub_tab(ALL_GAMES_DATA["trending"]),
-                    ),
-                    dbc.Tab(
-                        label="Nuevos Lanzamientos",
-                        tab_id="subtab-new-releases",
-                        children=render_new_releases_sub_tab(ALL_GAMES_DATA["new_releases"]),
-                    ),
-                    dbc.Tab(
                         label="Reseñas (Metacritic)",
                         tab_id="subtab-metacritic",
                         children=render_metacritic_sub_tab(ALL_GAMES_DATA["metacritic"]),
                     ),
-                    dbc.Tab(
-                        label="GiantBomb Juegos",
-                        tab_id="subtab-giantbomb-games",
-                        children=render_giantbomb_games_sub_tab(ALL_GAMES_DATA["giantbomb_games"]),
-                    ),
-                    dbc.Tab(
-                        label="GiantBomb Reseñas",
-                        tab_id="subtab-giantbomb-reviews",
-                        children=render_giantbomb_reviews_sub_tab(ALL_GAMES_DATA["giantbomb_reviews"]),
-                    ),
+
                 ],
             ),
         ]

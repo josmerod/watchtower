@@ -21,13 +21,13 @@ run_etl() {
 
     # Check if uv is available, fallback to python3
     if command -v uv &> /dev/null; then
-        uv run python "$script" > "logs/${name}.log" 2>&1 &
+        timeout 1800 uv run python "$script" > "logs/${name}.log" 2>&1 &
     elif command -v python3 &> /dev/null; then
         echo "UV not found, using python3 for $name"
-        python3 "$script" > "logs/${name}.log" 2>&1 &
+        timeout 1800 python3 "$script" > "logs/${name}.log" 2>&1 &
     elif command -v python &> /dev/null; then
         echo "UV not found, using python for $name"
-        python "$script" > "logs/${name}.log" 2>&1 &
+        timeout 1800 python "$script" > "logs/${name}.log" 2>&1 &
     else
         echo "ERROR: No Python interpreter found for $name"
         return 1
@@ -44,6 +44,17 @@ run_etl "src/etl/news/news_get_freecodecamp.py"
 run_etl "src/etl/news/news_get_google_ai_blog.py"
 run_etl "src/etl/news/news_get_lobsters.py"
 run_etl "src/etl/news/news_get_arstechnica.py"
+run_etl "src/etl/news/news_get_techcrunch.py"
+run_etl "src/etl/news/news_get_venturebeat.py"
+run_etl "src/etl/news/news_get_bensbites.py"
+run_etl "src/etl/news/news_get_genai_medium.py"
+run_etl "src/etl/news/news_get_gooddevs.py"
+run_etl "src/etl/news/news_get_indiehackers.py"
+run_etl "src/etl/news/news_get_kagi.py"
+run_etl "src/etl/news/news_get_kdnuggets.py"
+run_etl "src/etl/news/microsiervos_etl.py"
+run_etl "src/etl/news/news_get_meneame.py"
+run_etl "src/etl/news/news_get_podcasts.py"
 
 # Reddit ETL
 run_etl "src/etl/news/reddit_unified_etl.py"
@@ -86,6 +97,7 @@ run_etl "src/etl/courses/khan_academy_etl.py"
 # Intelligence feeds
 run_etl "src/etl/intelligence/sec_edgar_rss.py"
 run_etl "src/etl/intelligence/who_outbreaks_rss.py"
+run_etl "src/etl/intelligence/lesswrong_etl.py"
 
 # Games ETL
 run_etl "src/etl/games/games_get_deals.py"
@@ -108,6 +120,19 @@ run_etl "src/etl/spanish_public_aid/spanish_public_aid_etl.py"
 
 # 4chan Generals ETL
 run_etl "src/etl/fourchan/fourchan_generals_etl.py"
+
+# Phase 1 Expanded ETLs - New Sources (January 2025)
+run_etl "src/etl/expanded/newsapi_etl.py"
+run_etl "src/etl/expanded/rapidapi_etl.py"
+run_etl "src/etl/expanded/hashnode_etl.py"
+run_etl "src/etl/expanded/github_analytics_etl.py"
+run_etl "src/etl/expanded/package_registry_etl.py"
+
+# Phase 2 Expanded ETLs - Strategic Sources (January 2025)
+run_etl "src/etl/expanded/stackexchange_etl.py"
+run_etl "src/etl/expanded/openalex_etl.py"
+run_etl "src/etl/expanded/kaggle_etl.py"
+run_etl "src/etl/expanded/gaming_anime_etl.py"
 
 # Miners
 run_etl "src/miners/crypto_sentiment_miner.py"

@@ -111,6 +111,18 @@
       "url": "https://codesandbox.io/",
       "icon": "📦",
       "description": "Online code editor for rapid development"
+    },
+    {
+      "name": "Ray.so",
+      "url": "https://ray.so/",
+      "icon": "📸",
+      "description": "Create beautiful code images"
+    },
+    {
+      "name": "JSON Hero",
+      "url": "https://jsonhero.io/",
+      "icon": "🦸",
+      "description": "JSON viewer and explorer"
     }
   ],
   "Package Managers & Registries": [
@@ -407,6 +419,24 @@
       "url": "https://replicate.com/",
       "icon": "🔄",
       "description": "Run open-source models with an API"
+    },
+    {
+      "name": "ArXiv Sanity",
+      "url": "http://www.arxiv-sanity.com/",
+      "icon": "🧠",
+      "description": "Curated ArXiv papers"
+    },
+    {
+      "name": "FutureTools",
+      "url": "https://www.futuretools.io/",
+      "icon": "🛠️",
+      "description": "Directory of AI tools"
+    },
+    {
+      "name": "Hugging Face Spaces",
+      "url": "https://huggingface.co/spaces",
+      "icon": "🤗",
+      "description": "Host and demo ML apps"
     }
   ],
   "Documentation & References": [
@@ -543,6 +573,12 @@
       "url": "https://fonts.google.com/",
       "icon": "🔤",
       "description": "Open source fonts"
+    },
+    {
+      "name": "Excalidraw",
+      "url": "https://excalidraw.com/",
+      "icon": "✏️",
+      "description": "Virtual whiteboard"
     }
   ],
   "Development Communities": [
@@ -594,7 +630,7 @@
       "icon": "📝",
       "description": "Developer blogging community"
     },
-     {
+    {
       "name": "Product Hunt",
       "url": "https://www.producthunt.com/",
       "icon": "🚀",
@@ -605,6 +641,12 @@
       "url": "https://www.meetup.com/",
       "icon": "👥",
       "description": "Local tech meetups and events"
+    },
+    {
+      "name": "TLDR Newsletter",
+      "url": "https://tldr.tech/",
+      "icon": "📧",
+      "description": "Daily tech news summary"
     }
   ],
   "Claude Plugins & Extensions": [
@@ -678,7 +720,6 @@
     }
   ],
   "Monitoring & Analytics": [
-
     {
       "name": "Datadog (eval)",
       "url": "https://www.datadoghq.com/",
@@ -691,7 +732,6 @@
       "icon": "📈",
       "description": "Application performance monitoring"
     },
-
     {
       "name": "Grafana (eval)",
       "url": "https://grafana.com/",
@@ -705,7 +745,6 @@
       "description": "Website uptime monitoring"
     }
   ],
-
   "Training": [
     {
       "name": "Desata tu potencial (course)",
@@ -737,15 +776,12 @@
       "icon": "🧑‍💻",
       "description": "Capgemini training platform tenant"
     },
-
     {
       "name": "Pluralsight",
       "url": "https://www.pluralsight.com/",
       "icon": "💻",
       "description": "Tech and creative skills development"
     },
-
-
     {
       "name": "Skillshare",
       "url": "https://www.skillshare.com/",
@@ -764,7 +800,6 @@
       "icon": "🧠",
       "description": "AI education by Andrew Ng"
     }
-
   ],
   "Gaming & Entertainment": [
     {
@@ -888,7 +923,8 @@
       "url": "https://www.pulumi.com/",
       "icon": "🏗️",
       "description": "Modern infrastructure as code"
-    },{
+    },
+    {
       "name": "Consul (eval)",
       "url": "https://www.consul.io/",
       "icon": "🌐",
@@ -936,7 +972,6 @@
     }
   ],
   "Communication & Collaboration": [
-
     {
       "name": "Excalidraw",
       "url": "https://excalidraw.com/",
@@ -950,7 +985,6 @@
       "description": "Online diagramming tool"
     }
   ],
-
   "Learning Resources (extra)": [
     {
       "name": "Boot.dev",
@@ -970,7 +1004,6 @@
       "icon": "⚔️",
       "description": "Free full-stack curriculum"
     },
-
     {
       "name": "LeetCode",
       "url": "https://leetcode.com/",
@@ -1000,6 +1033,40 @@
       "url": "https://adventofcode.com/",
       "icon": "🎄",
       "description": "Annual programming puzzle event"
+    }
+  ],
+  "Productivity": [
+    {
+      "name": "Notion",
+      "url": "https://www.notion.so/",
+      "icon": "📓",
+      "description": "All-in-one workspace"
+    },
+    {
+      "name": "Toggl Track",
+      "url": "https://toggl.com/track/",
+      "icon": "⏱️",
+      "description": "Time tracking tool"
+    },
+    {
+      "name": "TinyWow",
+      "url": "https://tinywow.com/",
+      "icon": "🛠️",
+      "description": "Free PDF, video, image tools"
+    }
+  ],
+  "Valencia Tech": [
+    {
+      "name": "Startup Valencia",
+      "url": "https://startupvalencia.org/",
+      "icon": "🚀",
+      "description": "Local startup ecosystem"
+    },
+    {
+      "name": "VLCTechHub Slack",
+      "url": "https://vlctechhub.org/slack/",
+      "icon": "💬",
+      "description": "Local tech community chat"
     }
   ]
 }

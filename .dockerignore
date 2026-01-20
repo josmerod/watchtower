@@ -1,146 +1,33 @@
-# Virtual environments
-venv_main/
-venv_test/
-.venv/
-venv/
-__pycache__/
+.git
+.venv
+.venv_main
+.venv_test
+__pycache__
 *.pyc
 *.pyo
 *.pyd
 .Python
-
-# Logs and temporary files
-logs/
-*.log
-*.tmp
-*.temp
-
-# Documentation and development files (excluding essential files)
-docs/
-CLAUDE.md
-CLAUDE_ENHANCED.md
-DASHBOARD_OPTIMIZATION_PLAN.md
-
-# Test files
-Tests/
-test_*.py
-*_test.py
-
-# Deployment scripts
-deploy_*.sh
-deploy_*.bat
-run_*.bat
-run_*.sh
-run_*.ps1
-manage_*.bat
-manage_*.sh
-setup_*.bat
-setup_*.sh
-
-# Installation scripts
-install_*.py
-
-# Services (platform specific)
-services/
-
-# Utilities and validation
-utils/
-validate_project.py
-
-# Miners (platform specific binaries)
-src/miners/asf-winonly/
-
-# Git and version control
-.git/
-.gitignore
-
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS specific files
-.DS_Store
-Thumbs.db
-
-# Documentation builds
-docs/_build/
-*.pdf
-
-# Coverage reports
-.coverage
-htmlcov/
-coverage.xml
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# PyInstaller
-*.manifest
-*.spec
-
-# Installer logs
+env/
+venv/
 pip-log.txt
 pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-.tox/
+.tox
+.coverage
 .coverage.*
 .cache
 nosetests.xml
 coverage.xml
 *.cover
-.hypothesis/
-.pytest_cache/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.bmad
+.cursor
+.gemini
+tmp/
+# Exclude local data, we will mount it
+data/
+# Exclude artifacts
+deployment/deploy.ps1

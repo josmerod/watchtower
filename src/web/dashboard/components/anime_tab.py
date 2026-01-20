@@ -114,7 +114,6 @@ def create_anime_card(anime: dict[str, Any], rank_info: dict[str, str], idx: int
                                 )
                                 if image_url
                                 else html.Div(
-                                    "🎌",
                                     style={
                                         "fontSize": "2rem",
                                         "textAlign": "center",
@@ -123,8 +122,9 @@ def create_anime_card(anime: dict[str, Any], rank_info: dict[str, str], idx: int
                                         "display": "flex",
                                         "alignItems": "center",
                                         "justifyContent": "center",
-                                        "backgroundColor": "#f8f9fa",
+                                        "backgroundColor": "#2c2c2c",
                                         "borderRadius": "4px",
+                                        "color": "#6c757d",
                                     },
                                 )
                             )
@@ -189,7 +189,9 @@ def create_anime_card(anime: dict[str, Any], rank_info: dict[str, str], idx: int
         return dbc.Card(
             dbc.CardBody(card_content, className="p-3"),
             className="mb-3 h-100 shadow-sm border-0",
-            style={"backgroundColor": "#fafafa", "minHeight": "140px"},
+            color="dark",
+            inverse=True,
+            style={"minHeight": "140px"},
         )
     except Exception as e:
         logger.error(f"Error creating anime card: {e}")

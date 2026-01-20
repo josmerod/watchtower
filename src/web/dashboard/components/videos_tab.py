@@ -412,33 +412,49 @@ def register_video_callbacks(app):
     @app.callback(
         Output("videos-container", "children"),
         Input("video-channel-dropdown-new", "value"),
+        Input("video-search-input-new", "value"),
+        Input("video-date-filter-new", "value"),
         Input("videos-items-per-page-select", "value"),
-        prevent_initial_call=True,
+        prevent_initial_call=False,
     )
-    def update_videos_on_channel_change(selected_channel, items_per_page):
-        """Update videos when channel selection or items-per-page changes."""
+    def update_videos_combined(selected_channel, search_term, date_filter, items_per_page):
+        """Update videos based on all filters: channel, search, date, and items per page."""
         try:
             if selected_channel is None:
                 selected_channel = "all"
-
+            
             if items_per_page is None:
                 items_per_page = 48  # Default fallback
 
-            # Get videos for selected channel with items-per-page limit
-            videos = video_manager.get_videos(channel=selected_channel, limit=items_per_page)
+            # Get videos for selected channel with filters and limit
+            videos = video_manager.get_videos(
+                channel=selected_channel, 
+                search_term=search_term,
+                days_filter=date_filter,
+                limit=items_per_page
+            )
 
             if not videos:
-                return [dbc.Alert(f"No videos found for '{selected_channel}'", color="info")]
+                return [dbc.Alert(f"No videos found matching your criteria.", color="info")]
 
             # Create video cards
             video_cards = [create_video_card(video) for video in videos]
 
             # Format channel name for display
             channel_display = "all channels" if selected_channel == "all" else f"'{selected_channel}'"
+            
+            # Format other filters for display
+            filters_text = []
+            if search_term:
+                filters_text.append(f"matching '{search_term}'")
+            if date_filter and date_filter != "all":
+                filters_text.append(f"from last {date_filter} days")
+                
+            filter_suffix = f" ({', '.join(filters_text)})" if filters_text else ""
 
             content = [
                 dbc.Alert(
-                    f"📺 Showing {len(video_cards)} videos from {channel_display}",
+                    f"📺 Showing {len(video_cards)} videos from {channel_display}{filter_suffix}",
                     color="success",
                     className="mb-3",
                 ),
@@ -448,6 +464,7 @@ def register_video_callbacks(app):
             return content
 
         except Exception as e:
+            logger.error(f"Error updating videos: {e}")
             return [dbc.Alert(f"Error loading videos: {e}", color="danger")]
 
     # Register client-side callback for items-per-page preference saving

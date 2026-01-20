@@ -471,17 +471,27 @@ def create_aids_table(aids_data: list[dict]) -> html.Div:
             "backgroundColor": "rgb(30, 30, 30)",
             "color": "white",
             "fontWeight": "bold",
+            "border": "1px solid #444",
+        },
+        style_data={
+            "backgroundColor": "#2c2c2c",
+            "color": "white",
+            "border": "1px solid #444",
         },
         style_data_conditional=[
             {
+                "if": {"column_id": "title"},
+                "width": "50%",  # Explicit width for Title
+            },
+            {
                 "if": {"filter_query": "{days_left} <= 7 && {days_left} > 0"},
-                "backgroundColor": "#ffebee",
-                "color": "black",
+                "backgroundColor": "#3e2723", # Dark reddish background for urgency
+                "color": "#ffcdd2", # Light red text
             },
             {
                 "if": {"filter_query": "{status} = Cerrada"},
-                "backgroundColor": "#f5f5f5",
-                "color": "gray",
+                "backgroundColor": "#212121",
+                "color": "#757575",
             },
         ],
         tooltip_data=[{column: {"value": str(row[column]), "type": "markdown"} for column in row.keys()} for row in table_data],

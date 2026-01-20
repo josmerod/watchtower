@@ -1,4 +1,5 @@
-import json
+from pathlib import Path
+from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
@@ -6,6 +7,56 @@ from dash import Input, Output, html
 
 # Import shared utilities
 from src.web.dashboard.utils import get_data_path
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
+
+# NEW: Repository-based loading (SOLID Pattern)
+class ShortcutsRepository(BaseRepository[dict[str, Any]]):
+    """Repository for shortcuts data."""
+
+    def __init__(self, data_path: str):
+        """Initialize shortcuts repository.
+
+        Args:
+            data_path: Path to shortcuts JSON file
+        """
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> dict[str, Any]:
+        """Transform JSON data into shortcuts dictionary.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            Shortcuts dictionary with categories
+        """
+        if isinstance(raw_data, dict):
+            return raw_data
+        elif isinstance(raw_data, list):
+            # List of category objects
+            result = {}
+            for item in raw_data:
+                if isinstance(item, dict) and "category" in item:
+                    category_name = item["category"]
+                    result[category_name] = item.get("items", [])
+            return result
+        else:
+            return {}
+
+# Create singleton instances for each source
+predefined_shortcuts_repo = ShortcutsRepository(
+    get_data_path("shortcuts", "predefined_shortcuts.json")
+)
+custom_shortcuts_repo = ShortcutsRepository(
+    get_data_path("shortcuts", "custom_shortcuts.json")
+)
 
 
 def create_shortcut_button(shortcut_info):
@@ -90,91 +141,62 @@ def render_shortcuts_tab():
 # This needs the 'app' instance, so it will be defined in app.py or a dedicated callbacks file
 # For now, the structure is prepared here.
 
-# def register_shortcuts_callbacks(app):
-#     @app.callback(
-#         Output("shortcuts-cards-container", "children"),
-#         [Input("search-shortcuts-input", "value")]
-#     )
-#     def update_filtered_shortcuts(search_value):
-#         return render_shortcuts_tab_layout(ALL_SHORTCUTS_DATA, search_value)
-
-
-def load_shortcuts_from_file(file_path):
-    """Loads shortcuts from a JSON file."""
-    try:
-        with open(file_path, encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print(f"Warning: Shortcut file not found at {file_path}")
-        return []
-    except json.JSONDecodeError:
-        print(f"Warning: Could not decode JSON from {file_path}")
-        return []
-    except UnicodeDecodeError:
-        print(f"Warning: Could not decode file encoding from {file_path}")
-        return []
+def register_shortcuts_callbacks(app):
+    @app.callback(
+        Output("shortcuts-cards-container", "children"),
+        [Input("search-shortcuts-input", "value")]
+    )
+    def update_filtered_shortcuts(search_value):
+        return render_shortcuts_tab_layout(get_shortcuts_data(), search_value)
 
 
 def get_all_shortcuts():
-    """Loads shortcuts from predefined and custom files."""
-    predefined_path = get_data_path("shortcuts", "predefined_shortcuts.json")
-    custom_path = get_data_path("shortcuts", "custom_shortcuts.json")
-
-    predefined_shortcuts = load_shortcuts_from_file(predefined_path)
-    custom_shortcuts = load_shortcuts_from_file(custom_path)
-
-    # Initialize the final shortcuts dictionary
+    """Loads shortcuts from predefined and custom files using repository pattern (NEW)."""
     shortcuts_by_category = {}
 
-    # Process predefined shortcuts
-    if isinstance(predefined_shortcuts, dict):
-        if "categories" in predefined_shortcuts:
-            # Old format: {"categories": [{"category": "name", "items": [...]}]}
-            for category_data in predefined_shortcuts["categories"]:
-                category_name = category_data.get("category", "Uncategorized")
-                items = category_data.get("items", [])
-                if category_name not in shortcuts_by_category:
-                    shortcuts_by_category[category_name] = []
-                shortcuts_by_category[category_name].extend(items)
-        else:
-            # New format: {"Category Name": [{"name": "...", "url": "..."}]}
-            for category_name, items in predefined_shortcuts.items():
-                if category_name not in shortcuts_by_category:
-                    shortcuts_by_category[category_name] = []
-                shortcuts_by_category[category_name].extend(items)
-    elif isinstance(predefined_shortcuts, list):
-        # List of category objects
-        for category_data in predefined_shortcuts:
-            category_name = category_data.get("category", "Uncategorized")
-            items = category_data.get("items", [])
-            if category_name not in shortcuts_by_category:
-                shortcuts_by_category[category_name] = []
-            shortcuts_by_category[category_name].extend(items)
+    # Load predefined shortcuts using repository
+    try:
+        predefined_shortcuts = predefined_shortcuts_repo.get()
+        if predefined_shortcuts:
+            if isinstance(predefined_shortcuts, dict):
+                if "categories" in predefined_shortcuts:
+                    # Old format: {"categories": [{"category": "name", "items": [...]}]}
+                    for category_data in predefined_shortcuts["categories"]:
+                        category_name = category_data.get("category", "Uncategorized")
+                        items = category_data.get("items", [])
+                        if category_name not in shortcuts_by_category:
+                            shortcuts_by_category[category_name] = []
+                        shortcuts_by_category[category_name].extend(items)
+                else:
+                    # New format: {"Category Name": [{"name": "...", "url": "..."}]}
+                    for category_name, items in predefined_shortcuts.items():
+                        if category_name not in shortcuts_by_category:
+                            shortcuts_by_category[category_name] = []
+                        shortcuts_by_category[category_name].extend(items)
+    except Exception as e:
+        print(f"Warning: Failed to load predefined shortcuts: {e}")
 
-    # Process custom shortcuts (same logic)
-    if isinstance(custom_shortcuts, dict):
-        if "categories" in custom_shortcuts:
-            # Old format: {"categories": [{"category": "name", "items": [...]}]}
-            for category_data in custom_shortcuts["categories"]:
-                category_name = category_data.get("category", "Uncategorized")
-                items = category_data.get("items", [])
-                if category_name not in shortcuts_by_category:
-                    shortcuts_by_category[category_name] = []
-                shortcuts_by_category[category_name].extend(items)
-        else:
-            # New format: {"Category Name": [{"name": "...", "url": "..."}]}
-            for category_name, items in custom_shortcuts.items():
-                if category_name not in shortcuts_by_category:
-                    shortcuts_by_category[category_name] = []
-                shortcuts_by_category[category_name].extend(items)
-    elif isinstance(custom_shortcuts, list):
-        # List of category objects
-        for category_data in custom_shortcuts:
-            category_name = category_data.get("category", "Uncategorized")
-            items = category_data.get("items", [])
-            if category_name not in shortcuts_by_category:
-                shortcuts_by_category[category_name] = []
-            shortcuts_by_category[category_name].extend(items)
+    # Load custom shortcuts using repository
+    try:
+        custom_shortcuts = custom_shortcuts_repo.get()
+        if custom_shortcuts:
+            if isinstance(custom_shortcuts, dict):
+                if "categories" in custom_shortcuts:
+                    # Old format: {"categories": [{"category": "name", "items": [...]}]}
+                    for category_data in custom_shortcuts["categories"]:
+                        category_name = category_data.get("category", "Uncategorized")
+                        items = category_data.get("items", [])
+                        if category_name not in shortcuts_by_category:
+                            shortcuts_by_category[category_name] = []
+                        shortcuts_by_category[category_name].extend(items)
+                else:
+                    # New format: {"Category Name": [{"name": "...", "url": "..."}]}
+                    for category_name, items in custom_shortcuts.items():
+                        if category_name not in shortcuts_by_category:
+                            shortcuts_by_category[category_name] = []
+                        shortcuts_by_category[category_name].extend(items)
+    except Exception as e:
+        print(f"Warning: Failed to load custom shortcuts: {e}")
 
     return shortcuts_by_category
 

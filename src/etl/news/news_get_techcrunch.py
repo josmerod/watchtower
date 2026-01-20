@@ -17,6 +17,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
+import requests
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
@@ -45,10 +46,18 @@ def fetch_techcrunch_feeds() -> list[dict[str, Any]]:
     for source, url in RSS_FEEDS.items():
         logger.info(f"Fetching TechCrunch RSS feed from {source} at {url}")
         try:
-            feed = feedparser.parse(url)
+            # Use requests with User-Agent to avoid blocking
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            feed = feedparser.parse(response.content)
+            
             if feed.bozo:
                 logger.warning(f"Error parsing feed from {source}: {feed.bozo_exception}")
-                continue
+                # Continue anyway as bozo often triggers on minor encoding issues but data is usable
         except Exception as e:
             logger.error(f"Could not fetch or parse feed from {source}: {e}")
             continue

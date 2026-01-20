@@ -1,0 +1,31 @@
+INFO:ArXivRepository:Loading data from C:\Users\josem\watchtower\data\arxiv\arxiv_papers_latest.json
+INFO:src.web.dashboard.components.arxiv_research_tab:Loaded 100 ArXiv papers
+Starting Watchtower Dashboard...
+Real-time Intelligence & Monitoring Platform
+------------------------------------------------------------
+Info (Coursera): Loaded 150 courses.
+DEBUG (Udemy): Attempting to load from C:\Users\josem\watchtower\data\udemy\udemy_courses.json
+Info (Udemy): Loaded 3709 courses.
+Info (Pluralsight): C:\Users\josem\watchtower\data\pluralsight_courses\pluralsight_courses.json was empty.
+Attempted to load all courses data.
+2026-01-16 20:23:16,714 - src.web.dashboard.components.videos_tab - INFO - Loading video data...
+2026-01-16 20:23:16,730 - src.web.dashboard.components.videos_tab - INFO - Loaded 350 videos for aa-dev
+2026-01-16 20:23:16,747 - src.web.dashboard.components.videos_tab - INFO - Loaded 109 videos for aa-economics
+2026-01-16 20:23:16,764 - src.web.dashboard.components.videos_tab - INFO - Loaded 56 videos for aa-gen-ai
+2026-01-16 20:23:16,785 - src.web.dashboard.components.videos_tab - INFO - Loaded 44 videos for aa-personal_development
+2026-01-16 20:23:16,803 - src.web.dashboard.components.videos_tab - INFO - Loaded 11 videos for aa-solutions-architecture
+2026-01-16 20:23:16,818 - src.web.dashboard.components.videos_tab - INFO - Loaded 59 videos for z-sleepcore
+2026-01-16 20:23:16,838 - src.web.dashboard.components.videos_tab - INFO - Loaded 313 videos for z-soundtowork
+2026-01-16 20:23:16,859 - src.web.dashboard.components.videos_tab - INFO - Loaded 85 videos for zz-anime
+2026-01-16 20:23:16,878 - src.web.dashboard.components.videos_tab - INFO - Loaded 7 videos for zz-chill
+2026-01-16 20:23:16,899 - src.web.dashboard.components.videos_tab - INFO - Loaded 70 videos for zz-cooking
+2026-01-16 20:23:16,922 - src.web.dashboard.components.videos_tab - INFO - Loaded 95 videos for zz-curiosidades
+2026-01-16 20:23:16,945 - src.web.dashboard.components.videos_tab - INFO - Loaded 48 videos for zz-food_reviews
+2026-01-16 20:23:16,968 - src.web.dashboard.components.videos_tab - INFO - Loaded 174 videos for zz-memes
+2026-01-16 20:23:16,988 - src.web.dashboard.components.videos_tab - INFO - Loaded 113 videos for zz-porros
+2026-01-16 20:23:17,009 - src.web.dashboard.components.videos_tab - INFO - Loaded 76 videos for zz-viajes
+2026-01-16 20:23:17,025 - src.web.dashboard.components.videos_tab - INFO - Loaded 69 videos for zzz-alotof
+2026-01-16 20:23:17,026 - src.web.dashboard.components.videos_tab - INFO - Total channels loaded: 16
+2026-01-16 20:23:17,026 - src.web.dashboard.components.videos_tab - INFO - Available channels: ['aa-dev', 'aa-economics', 'aa-gen-ai', 'aa-personal_development', 'aa-solutions-architecture', 'z-sleepcore', 'z-soundtowork', 'zz-anime', 'zz-chill', 'zz-cooking', 'zz-curiosidades', 'zz-food_reviews', 'zz-memes', 'zz-porros', 'zz-viajes', 'zzz-alotof']
+Failed to start Watchtower Dashboard: name 'html' is not defined
+Check logs for detailed error information

@@ -1,5 +1,7 @@
 import json
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
@@ -7,6 +9,10 @@ from dash import html
 
 # Import shared utilities
 from src.web.dashboard.utils import get_data_path, parse_date_universal
+
+# Import repository pattern (NEW)
+from src.repositories import BaseRepository
+
 # KNOWLEDGE GARDEN TAB - Reddit, dev communities, and similar sources
 KNOWLEDGE_SOURCES_CONFIG = {
     # Open Source Projects
@@ -64,10 +70,72 @@ KNOWLEDGE_SOURCES_CONFIG = {
     "devto": {"path": get_data_path("devto", "devto.json"), "name": "Dev.to"},
     # HypeURLs (via Reddit)
     "hypeurls": {
-        "path": get_data_path("reddit_unified", "reddit_news_latest.json"), 
+        "path": get_data_path("reddit_unified", "reddit_news_latest.json"),
         "name": "HypeURLs"
     },
+    "lesswrong": {
+        "path": get_data_path("lesswrong", "lesswrong_latest.json"),
+        "name": "LessWrong",
+    },
 }
+
+
+# NEW: Repository-based loading (SOLID Pattern)
+class KnowledgeGardenRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for knowledge garden data."""
+
+    def __init__(self, data_path: str):
+        """Initialize knowledge garden repository.
+
+        Args:
+            data_path: Path to knowledge data file
+        """
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of knowledge items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of knowledge item dictionaries
+        """
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            # Handle cases where JSON might be a dict with a key containing the list
+            if "articles" in raw_data and isinstance(raw_data["articles"], list):
+                return raw_data["articles"]
+            elif "items" in raw_data and isinstance(raw_data["items"], list):
+                return raw_data["items"]
+            # Single item
+            if all(k in raw_data for k in ["title", "url"]):
+                return [raw_data]
+            return []
+        else:
+            return []
+
+# Create singleton instances for each source
+opensource_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["opensource"]["path"])
+gooddevs_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["gooddevs"]["path"])
+podcasts_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["podcasts"]["path"])
+product_hunt_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["product_hunt"]["path"])
+gittrends_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["gittrends"]["path"])
+hackernews_ask_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["hackernews_ask"]["path"])
+stackoverflow_trends_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["stackoverflow_trends"]["path"])
+reddit_unified_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_unified"]["path"])
+reddit_ai_ml_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_ai_ml"]["path"])
+reddit_programming_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_programming"]["path"])
+reddit_tech_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_tech"]["path"])
+reddit_devops_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_devops"]["path"])
+devto_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["devto"]["path"])
+hypeurls_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["hypeurls"]["path"])
+lesswrong_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["lesswrong"]["path"])
 
 
 def load_knowledge_from_file(file_path):
@@ -105,12 +173,12 @@ def load_knowledge_from_file(file_path):
 
 # Load knowledge data dynamically instead of at import time
 def get_all_knowledge_data():
-    """Load fresh knowledge data from all configured sources."""
+    """Load fresh knowledge data from all configured sources using repository pattern (NEW)."""
     # Simple TTL cache to avoid re-reading dozens of files on each tab switch
     # Cache in module state for ~60 seconds
     import time
 
-    global _KNOWLEDGE_CACHE  # type: ignore
+    global _KNOWLEDGE_CACHE
     now = time.time()
     try:
         if _KNOWLEDGE_CACHE and now - _KNOWLEDGE_CACHE.get("ts", 0) < 60:
@@ -118,7 +186,26 @@ def get_all_knowledge_data():
     except NameError:
         pass
 
-    data = {source_key: load_knowledge_from_file(config["path"]) for source_key, config in KNOWLEDGE_SOURCES_CONFIG.items()}
+    # Use repository pattern instead of manual file loading
+    repository_map = {
+        "opensource": opensource_repo,
+        "gooddevs": gooddevs_repo,
+        "podcasts": podcasts_repo,
+        "product_hunt": product_hunt_repo,
+        "gittrends": gittrends_repo,
+        "hackernews_ask": hackernews_ask_repo,
+        "stackoverflow_trends": stackoverflow_trends_repo,
+        "reddit_unified": reddit_unified_repo,
+        "reddit_ai_ml": reddit_ai_ml_repo,
+        "reddit_programming": reddit_programming_repo,
+        "reddit_tech": reddit_tech_repo,
+        "reddit_devops": reddit_devops_repo,
+        "devto": devto_repo,
+        "hypeurls": hypeurls_repo,
+        "lesswrong": lesswrong_repo,
+    }
+
+    data = {source_key: repository_map[source_key].get() for source_key in repository_map}
     _KNOWLEDGE_CACHE = {"ts": now, "data": data}
     return data
 
@@ -300,6 +387,7 @@ def create_knowledge_source_tab_content(source_keys, combined_name=None):
 def render_knowledge_garden_tab():
     """Render the complete knowledge garden tab with all sub-tabs."""
     tab_definitions = [
+        {"label": "LessWrong", "keys": "lesswrong", "id": "lw"},
         {"label": "Good Devs", "keys": "gooddevs", "id": "gd"},
         {"label": "Podcasts", "keys": "podcasts", "id": "pod"},
         {"label": "Reddit AI/ML", "keys": "reddit_ai_ml", "id": "reddit_ai_ml"},

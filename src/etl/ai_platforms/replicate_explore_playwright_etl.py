@@ -44,10 +44,17 @@ def fetch_replicate_explore(max_items: int = 100) -> list[dict[str, Any]]:
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browserless_ws = os.getenv("BROWSERLESS_ENDPOINT")
+            if browserless_ws:
+                logger.info(f"Connecting to remote browser at {browserless_ws}")
+                browser = p.chromium.connect_over_cdp(browserless_ws)
+            else:
+                logger.info("Launching local browser")
+                browser = p.chromium.launch(headless=True)
+                
             context = browser.new_context()
             page = context.new_page()
-            page.goto(EXPLORE_URL, wait_until="networkidle", timeout=45000)
+            page.goto(EXPLORE_URL, wait_until="networkidle", timeout=60000)
 
             # Scroll to load more content
             for _ in range(6):

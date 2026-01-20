@@ -137,65 +137,89 @@ def create_event_card(event: dict[str, Any]) -> dbc.Card:
         )
 
 
-def create_events_table(events: list[dict[str, Any]]) -> dash_table.DataTable:
-    """Create a table view of events"""
+def create_events_table(events: list[dict[str, Any]]) -> dbc.Table:
+    """Create a table view of events (News Tab Style)"""
     try:
         if not events:
-            return html.Div("No hay eventos disponibles")
+            return dbc.Alert("No hay eventos disponibles", color="info")
 
-        # Convert to DataFrame
-        df = pd.DataFrame(events)
+        # Table Header
+        table_header = [
+            html.Thead(
+                html.Tr(
+                    [
+                        html.Th("Título"),
+                        html.Th("Categoría"),
+                        html.Th("Fecha"),
+                        html.Th("Fuente"),
+                        html.Th("Enlace"),
+                    ]
+                )
+            )
+        ]
 
-        # Select and prepare columns for display
-        display_columns = ["title", "category", "date_text", "source"]
-        existing_columns = [col for col in display_columns if col in df.columns]
-        df_display = df[existing_columns].copy()
+        # Table Body
+        table_body_rows = []
+        for event in events:
+            title = event.get("title", "Sin título")
+            description = event.get("description", "")
+            category = event.get("category", "General")
+            date_text = event.get("date_text") or event.get("start_date", "N/A")
+            source = event.get("source", "Valencia")
+            url = event.get("url", "#")
 
-        # Rename columns for Spanish interface
-        rename_map = {
-            "title": "Título",
-            "category": "Categoría",
-            "date_text": "Fecha",
-            "source": "Fuente",
-        }
-        df_display = df_display.rename(columns=rename_map)
+            # Determine badge color
+            badge_color = "primary"
+            cat_lower = category.lower()
+            if "tech" in cat_lower or "tecnología" in cat_lower:
+                badge_color = "info"
+            elif "música" in cat_lower or "music" in cat_lower:
+                badge_color = "success"
+            elif "gastronomía" in cat_lower:
+                badge_color = "warning"
 
-        return dash_table.DataTable(
-            data=df_display.to_dict("records"),
-            columns=[{"name": col, "id": col} for col in df_display.columns],
-            style_cell={
-                "textAlign": "left",
-                "padding": "12px",
-                "fontSize": "14px",
-                "fontFamily": "Arial, sans-serif",
-                "maxWidth": "200px",
-                "overflow": "hidden",
-                "textOverflow": "ellipsis",
-            },
-            style_header={
-                "backgroundColor": "rgb(230, 230, 230)",
-                "fontWeight": "bold",
-                "border": "1px solid #dee2e6",
-            },
-            style_data={
-                "backgroundColor": "rgb(248, 249, 250)",
-                "border": "1px solid #dee2e6",
-                "whiteSpace": "normal",
-                "height": "auto",
-            },
-            style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "rgb(255, 255, 255)"}],
-            sort_action="native",
-            filter_action="native",
-            page_action="native",
-            page_current=0,
-            page_size=15,
-            tooltip_data=[{column: {"value": str(value), "type": "text"} for column, value in row.items()} for row in df_display.to_dict("records")],
-            tooltip_duration=None,
+            table_body_rows.append(
+                html.Tr(
+                    [
+                        html.Td(
+                            [
+                                html.Div(title, className="fw-bold"),
+                                html.Small(description[:100] + "..." if len(description) > 100 else description, className="text-muted")
+                            ]
+                        ),
+                        html.Td(dbc.Badge(category, color=badge_color)),
+                        html.Td(date_text),
+                        html.Td(source),
+                        html.Td(
+                            dbc.Button(
+                                "Ver",
+                                href=url,
+                                target="_blank",
+                                color="link",
+                                size="sm",
+                                className="text-decoration-none"
+                            ) if url else "N/A"
+                        ),
+                    ]
+                )
+            )
+
+        table_body = [html.Tbody(table_body_rows)]
+
+        return dbc.Table(
+            table_header + table_body,
+            bordered=True,
+            hover=True,
+            responsive=True,
+            striped=True,
+            size="sm",
+            color="dark",
+            className="table-responsive mb-0",
         )
 
     except Exception as e:
         logger.error(f"Error creating events table: {e}")
-        return html.Div(f"Error creando tabla: {e!s}")
+        return dbc.Alert(f"Error creando tabla: {e!s}", color="danger")
 
 
 def render_valencia_events_tab() -> html.Div:
@@ -317,100 +341,10 @@ def render_valencia_events_tab() -> html.Div:
                     children=[
                         html.Div(
                             [
-                                # View toggle buttons
-                                dbc.ButtonGroup(
-                                    [
-                                        dbc.Button(
-                                            "Vista de Tarjetas",
-                                            id="all-cards-view-btn",
-                                            color="primary",
-                                            outline=True,
-                                        ),
-                                        dbc.Button(
-                                            "Vista de Tabla",
-                                            id="all-table-view-btn",
-                                            color="primary",
-                                            outline=True,
-                                        ),
-                                    ],
-                                    className="mb-4",
-                                ),
-                                # Content container
                                 html.Div(
-                                    [
-                                        # Cards view (default)
-                                        html.Div(
-                                            [
-                                                dbc.Row(
-                                                    [dbc.Col(card, width=4) for card in [create_event_card(event) for event in events_data[:12]]],
-                                                    className="mb-4",
-                                                )
-                                            ],
-                                            id="all-cards-container",
-                                            style={"display": "block"},
-                                        ),
-                                        # Table view (hidden by default)
-                                        html.Div(
-                                            create_events_table(events_data),
-                                            id="all-table-container",
-                                            style={"display": "none"},
-                                        ),
-                                    ],
-                                    id="all-events-content",
-                                ),
-                            ]
-                        )
-                    ],
-                ),
-                dbc.Tab(
-                    label="Eventos Tecnológicos",
-                    tab_id="tech-events",
-                    children=[
-                        html.Div(
-                            [
-                                dbc.ButtonGroup(
-                                    [
-                                        dbc.Button(
-                                            "Vista de Tarjetas",
-                                            id="tech-cards-view-btn",
-                                            color="primary",
-                                            outline=True,
-                                        ),
-                                        dbc.Button(
-                                            "Vista de Tabla",
-                                            id="tech-table-view-btn",
-                                            color="primary",
-                                            outline=True,
-                                        ),
-                                    ],
-                                    className="mb-4",
-                                ),
-                                (
-                                    html.Div(
-                                        [
-                                            html.Div(
-                                                [
-                                                    dbc.Row(
-                                                        [dbc.Col(card, width=4) for card in [create_event_card(event) for event in tech_events_data[:12]]],
-                                                        className="mb-4",
-                                                    )
-                                                ],
-                                                id="tech-cards-container",
-                                                style={"display": "block"},
-                                            ),
-                                            html.Div(
-                                                create_events_table(tech_events_data),
-                                                id="tech-table-container",
-                                                style={"display": "none"},
-                                            ),
-                                        ],
-                                        id="tech-events-content",
-                                    )
-                                    if tech_events_data
-                                    else html.Div(
-                                        "No hay eventos tecnológicos disponibles",
-                                        className="text-center p-4",
-                                    )
+                                    create_events_table(events_data),
+                                    id="all-table-container",
+                                    className="mt-3"
                                 ),
                             ]
                         )
@@ -422,49 +356,16 @@ def render_valencia_events_tab() -> html.Div:
                     children=[
                         html.Div(
                             [
-                                dbc.ButtonGroup(
-                                    [
-                                        dbc.Button(
-                                            "Vista de Tarjetas",
-                                            id="upcoming-cards-view-btn",
-                                            color="primary",
-                                            outline=True,
-                                        ),
-                                        dbc.Button(
-                                            "Vista de Tabla",
-                                            id="upcoming-table-view-btn",
-                                            color="primary",
-                                            outline=True,
-                                        ),
-                                    ],
-                                    className="mb-4",
-                                ),
-                                (
-                                    html.Div(
-                                        [
-                                            html.Div(
-                                                [
-                                                    dbc.Row(
-                                                        [dbc.Col(card, width=4) for card in [create_event_card(event) for event in upcoming_events_data[:12]]],
-                                                        className="mb-4",
-                                                    )
-                                                ],
-                                                id="upcoming-cards-container",
-                                                style={"display": "block"},
-                                            ),
-                                            html.Div(
-                                                create_events_table(upcoming_events_data),
-                                                id="upcoming-table-container",
-                                                style={"display": "none"},
-                                            ),
-                                        ],
-                                        id="upcoming-events-content",
-                                    )
-                                    if upcoming_events_data
-                                    else html.Div(
-                                        "No hay eventos próximos disponibles",
-                                        className="text-center p-4",
-                                    )
+                                html.Div(
+                                    create_events_table(upcoming_events_data),
+                                    id="upcoming-table-container",
+                                    className="mt-3"
+                                )
+                                if upcoming_events_data
+                                else dbc.Alert(
+                                    "No hay eventos próximos disponibles",
+                                    color="info",
+                                    className="mt-3 text-center"
                                 ),
                             ]
                         )
@@ -529,93 +430,6 @@ def _is_upcoming_event(date_str: str, cutoff_date: datetime) -> bool:
 
 def register_valencia_events_callbacks(app):
     """Register callbacks for Valencia events tab"""
-
-    # All events view toggle
-    @app.callback(
-        [
-            Output("all-cards-container", "style"),
-            Output("all-table-container", "style"),
-            Output("all-cards-view-btn", "outline"),
-            Output("all-table-view-btn", "outline"),
-        ],
-        [
-            Input("all-cards-view-btn", "n_clicks"),
-            Input("all-table-view-btn", "n_clicks"),
-        ],
-    )
-    def toggle_all_events_view(cards_clicks, table_clicks):
-        """Toggle between cards and table view for all events"""
-        if table_clicks and (not cards_clicks or table_clicks > cards_clicks):
-            return (
-                {"display": "none"},
-                {"display": "block"},
-                True,
-                False,
-            )
-        else:
-            return (
-                {"display": "block"},
-                {"display": "none"},
-                False,
-                True,
-            )
-
-    # Tech events view toggle
-    @app.callback(
-        [
-            Output("tech-cards-container", "style"),
-            Output("tech-table-container", "style"),
-            Output("tech-cards-view-btn", "outline"),
-            Output("tech-table-view-btn", "outline"),
-        ],
-        [
-            Input("tech-cards-view-btn", "n_clicks"),
-            Input("tech-table-view-btn", "n_clicks"),
-        ],
-    )
-    def toggle_tech_events_view(cards_clicks, table_clicks):
-        """Toggle between cards and table view for tech events"""
-        if table_clicks and (not cards_clicks or table_clicks > cards_clicks):
-            return (
-                {"display": "none"},
-                {"display": "block"},
-                True,
-                False,
-            )
-        else:
-            return (
-                {"display": "block"},
-                {"display": "none"},
-                False,
-                True,
-            )
-
-    # Upcoming events view toggle
-    @app.callback(
-        [
-            Output("upcoming-cards-container", "style"),
-            Output("upcoming-table-container", "style"),
-            Output("upcoming-cards-view-btn", "outline"),
-            Output("upcoming-table-view-btn", "outline"),
-        ],
-        [
-            Input("upcoming-cards-view-btn", "n_clicks"),
-            Input("upcoming-table-view-btn", "n_clicks"),
-        ],
-    )
-    def toggle_upcoming_events_view(cards_clicks, table_clicks):
-        """Toggle between cards and table view for upcoming events"""
-        if table_clicks and (not cards_clicks or table_clicks > cards_clicks):
-            return (
-                {"display": "none"},
-                {"display": "block"},
-                True,
-                False,
-            )
-        else:
-            return (
-                {"display": "block"},
-                {"display": "none"},
-                False,
-                True,
-            )
+    # No callbacks needed for static sorting in basic version, 
+    # but filter callbacks could be added here if needed.
+    pass

@@ -315,7 +315,6 @@ def create_news_source_tab_content(source_keys, combined_name=None):
                     html.Th("Title"),
                     html.Th("Source"),
                     html.Th("Date"),
-                    html.Th("Actions"),
                 ]
             )
         )
@@ -359,19 +358,6 @@ def create_news_source_tab_content(source_keys, combined_name=None):
                     ),
                     html.Td(source_for_display),
                     html.Td(date_display),
-                    html.Td(
-                        dbc.Button(
-                            "Related",
-                            id={
-                                "type": "related-btn",
-                                "tab_id": tab_search_id,
-                                "index": i,
-                            },
-                            color="link",
-                            size="sm",
-                            className="p-0 text-decoration-none",
-                        )
-                    ),
                     # Hidden cell for trend filtering
                     html.Td(
                         str(is_trending).lower(),
@@ -407,7 +393,7 @@ def create_news_source_tab_content(source_keys, combined_name=None):
                         # Search input
                         create_search_input(
                             input_id=tab_search_id,
-                            placeholder=f"Search {source_display_name}...",
+                            placeholder=f"Filter {source_display_name} by term...",
                             clear_button=True,
                         ),
                         width=True,
@@ -484,20 +470,67 @@ def register_news_search_callbacks(app):
             Output(f"{search_id}-results", "children"),
             [Input(search_id, "value")],
             State(f"{search_id}-data", "children"),
-            prevent_initial_call=True,
+            # prevent_initial_call=False (default), so it runs on load
         )
-        def update_news_search(search_term, articles_data, current_search_id=search_id):
-            """Update news display based on search term and trend filter."""
+        def update_news_search(search_term, _unused_state_data, current_search_id=search_id):
+            """Update news display based on search term. Fetches fresh data on execution."""
             try:
-                # Convert articles data back to list if needed
-                if articles_data is None:
-                    return html.Div("No data available")
+                # 1. Determine Source Keys from Search ID
+                # Format: news-search-{key} or news-search-{key1}-{key2}
+                id_suffix = current_search_id.replace("news-search-", "")
+                if id_suffix == "futuretools-bensbites":
+                     source_keys = ["futuretools", "bensbites"]
+                else:
+                     source_keys = id_suffix.split("-")
+                
+                # 2. Fetch Fresh Data (CACHE HIT usually, unless cleared)
+                all_news_data = get_all_news_data()
+                
+                # 3. Aggregate Data for this Tab
+                articles_data = []
+                for key in source_keys:
+                    # Robust key matching (try exact, then maybe underscore/dash swap if needed)
+                    # Keys in config use underscores. ID uses dashes?
+                    # Let's attempt to access direct key first, then try replace
+                    if key in all_news_data:
+                        source_articles = all_news_data[key]
+                        # Enrich with source display name
+                        for art in source_articles:
+                            art["source_display_name"] = NEWS_SOURCES_CONFIG[key]["name"]
+                        articles_data.extend(source_articles)
+                    else:
+                        # Try swapping dash to underscore just in case
+                        alt_key = key.replace("-", "_")
+                        if alt_key in all_news_data:
+                            source_articles = all_news_data[alt_key]
+                             # Enrich with source display name
+                            for art in source_articles:
+                                art["source_display_name"] = NEWS_SOURCES_CONFIG[alt_key]["name"]
+                            articles_data.extend(source_articles)
+                
+                if not articles_data:
+                     return dbc.Alert("No data available (fetch returned empty)", color="warning")
 
-                # Get searchable fields for news content
-                searchable_fields = get_common_searchable_fields("news")
+                # 4. Sort
+                def get_sortable_date(article):
+                    date_str = (
+                        article.get("published_at") or article.get("published_date") or article.get("created_at") or article.get("updated_at") or article.get("updated") or article.get("time") or article.get("pubDate")
+                    )
+                    parsed = parse_date(date_str)
+                    return parsed if parsed else datetime.min.replace(tzinfo=timezone.utc)
 
-                # Filter articles based on search term
-                filtered_articles = filter_content(search_term, articles_data, searchable_fields)
+                articles_data.sort(key=get_sortable_date, reverse=True)
+                
+                # 5. Filter (Search)
+                if search_term:
+                     searchable_fields = get_common_searchable_fields("news")
+                     filtered_articles = filter_content(search_term, articles_data, searchable_fields)
+                else:
+                     filtered_articles = articles_data[:MAX_ARTICLES_PER_SOURCE] # Limit initial view
+
+
+                # Legacy filtering block removed
+
 
 
                 # Create table for filtered results
@@ -508,7 +541,6 @@ def register_news_search_callbacks(app):
                                 html.Th("Title"),
                                 html.Th("Source"),
                                 html.Th("Date"),
-                                html.Th("Actions"),
                             ]
                         )
                     )
@@ -551,19 +583,6 @@ def register_news_search_callbacks(app):
                                 ),
                                 html.Td(source_for_display),
                                 html.Td(date_display),
-                                html.Td(
-                                    dbc.Button(
-                                        "Related",
-                                        id={
-                                            "type": "related-btn",
-                                            "tab_id": current_search_id,
-                                            "index": i,
-                                        },
-                                        color="link",
-                                        size="sm",
-                                        className="p-0 text-decoration-none",
-                                    )
-                                ),
                             ],
                             className=row_class,
                         )
@@ -583,13 +602,19 @@ def register_news_search_callbacks(app):
                     className="table-responsive mb-0",
                 )
 
+                # Only show alert if a search term is active
+                if search_term:
+                    alert = dbc.Alert(
+                        f"📰 Found {len(filtered_articles)} articles matching '{search_term}'",
+                        color="success",
+                        className="mb-3",
+                    )
+                else:
+                    alert = None
+
                 return html.Div(
                     [
-                        dbc.Alert(
-                            f"📰 Found {len(filtered_articles)} articles matching '{search_term}'",
-                            color="success",
-                            className="mb-3",
-                        ),
+                        alert,
                         table,
                     ],
                     style={
