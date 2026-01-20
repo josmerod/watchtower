@@ -205,6 +205,7 @@
 - Use Pydantic models for all data structures
 - Follow single-callback pattern in Dash components
 - Implement Manager classes for complex data handling
+- Use **Repository Pattern** (`BaseRepository`) for knowledge garden sources
 
 ### For Production Deployment
 
