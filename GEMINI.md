@@ -81,6 +81,7 @@ This project uses the **BMad Method (BMM)** for agile development.
 -   **Framework**: Dash + Bootstrap.
 -   **Key Rule**: **Single Callback Pattern** (one callback per output to avoid conflicts).
 -   **Data**: Loads from JSON files (lazy loading + caching).
+-   **Feature**: **Knowledge Garden** (`knowledge_garden_tab.py`) aggregates dev communities (LessWrong, Reddit, etc.) using Repository pattern.
 
 ## Critical Rules for Gemini
 
