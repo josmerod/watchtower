@@ -1,11 +1,26 @@
+"""Hacker News ETL Module
+
+This module fetches and processes news articles from Hacker News using the official Firebase API.
+It replaces the previous RSS-based implementation for better reliability and data richness.
+
+Usage:
+    python src/etl/news/news_get_ycombinator.py
+
+Output:
+    - JSON file: data/hackernews/hackernews.json
+    - CSV file: data/hackernews/hackernews.csv
+"""
+
+import csv
 import json
 import os
-import re
 import time
 from datetime import datetime
 from typing import Any
 
-import feedparser
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
@@ -15,119 +30,130 @@ from src.utils.logging import get_logger
 logger = get_logger("YCombinatorETL")
 
 
-def get_ycombinator_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str, Any]]:
-    """Fetches news articles from Hacker News by parsing RSS feeds from hnrss.org.
+def create_session() -> requests.Session:
+    """Create a requests session with retry strategy and proper headers."""
+    session = requests.Session()
+
+    # Configure retry strategy
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["HEAD", "GET", "OPTIONS"],
+    )
+
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+
+    # Set headers
+    session.headers.update(
+        {
+            "User-Agent": "Watchtower-ETL/1.0 (HackerNews Main Analytics)",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+    )
+
+    return session
+
+
+def get_ycombinator_data(max_stories: int = 150) -> list[dict[str, Any]]:
+    """Fetches news articles from Hacker News API.
 
     Args:
-        max_retries: Maximum number of retry attempts on connection failure
-        retry_delay: Delay in seconds between retry attempts
+        max_stories: Maximum number of stories to fetch and process
 
     Returns:
         List of news article dictionaries
     """
-    rss_urls = ["https://hnrss.org/frontpage", "https://hnrss.org/best"]
+    base_url = "https://hacker-news.firebaseio.com/v0"
+    session = create_session()
     articles = []
 
-    for url in rss_urls:
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"Fetching RSS feed from {url}")
-                feed = feedparser.parse(url)
-
-                if not feed.entries:
-                    logger.warning(f"No entries found in RSS feed from {url}")
-                    break
-
-                logger.debug(f"Found {len(feed.entries)} entries in RSS feed from {url}")
-
-                for entry in feed.entries:
-                    try:
-                        # Extract story ID from the link or guid
-                        story_id = ""
-                        if hasattr(entry, "id"):
-                            id_match = re.search(r"item\?id=(\d+)", entry.id)
-                            if id_match:
-                                story_id = id_match.group(1)
-
-                        # Extract title
-                        title = entry.title if hasattr(entry, "title") else ""
-
-                        # Extract URL - the first link is usually the article URL
-                        story_url = ""
-                        if hasattr(entry, "link"):
-                            story_url = entry.link
-
-                        # Extract source domain
-                        source = "news.ycombinator.com"
-                        if hasattr(entry, "link"):
-                            # Try to extract domain from the URL
-                            source_match = re.search(r"https?://([^/]+)", entry.link)
-                            if source_match:
-                                source = source_match.group(1)
-
-                        # Extract published date
-                        published_at = ""
-                        if hasattr(entry, "published"):
-                            published_at = entry.published
-
-                        # Create article object with the same structure as before
-                        article = {
-                            "title": title,
-                            "url": story_url,
-                            "published_at": published_at,
-                            "source": source,
-                            "hn_id": story_id,
-                        }
-
-                        # Extract comments URL and points if available
-                        if hasattr(entry, "summary"):
-                            # Parse comments URL from summary
-                            comments_match = re.search(
-                                r"Comments URL: &lt;(https://news.ycombinator.com/item\?id=\d+)&gt;",
-                                entry.summary,
-                            )
-                            if comments_match:
-                                article["comments_url"] = comments_match.group(1)
-
-                            # Parse points from summary
-                            points_match = re.search(r"Points: (\d+)", entry.summary)
-                            if points_match:
-                                article["points"] = int(points_match.group(1))
-
-                        articles.append(article)
-                        logger.debug(f"Extracted article: {title}")
-                    except Exception as e:
-                        logger.error(f"Error parsing RSS entry: {e!s}")
-                        continue
-
-                # Break out of retry loop if successful
+    try:
+        # Get top stories IDs
+        logger.info("Fetching top stories from Hacker News API")
+        response = session.get(f"{base_url}/topstories.json", timeout=30)
+        response.raise_for_status()
+        
+        story_ids = response.json()
+        logger.info(f"Retrieved {len(story_ids)} top story IDs")
+        
+        # Process stories
+        processed_count = 0
+        
+        for story_id in story_ids:
+            if processed_count >= max_stories:
                 break
+                
+            try:
+                # Get story details
+                story_response = session.get(f"{base_url}/item/{story_id}.json", timeout=30)
+                story_response.raise_for_status()
+                story_data = story_response.json()
+                
+                if not story_data:
+                    continue
+                    
+                # Skip if no URL (e.g. Ask HN or text-only posts, unless we want them too? 
+                # The original script prioritized links. We'll keep both but ensure URL field exists)
+                
+                title = story_data.get("title", "")
+                url = story_data.get("url", "")
+                
+                # If no external URL, use the HN item URL
+                if not url:
+                    url = f"https://news.ycombinator.com/item?id={story_id}"
+                
+                published_at = datetime.fromtimestamp(story_data.get("time", 0)).isoformat()
+                
+                article = {
+                    "title": title,
+                    "url": url,
+                    "published_at": published_at,
+                    "source": "news.ycombinator.com",  # Default source
+                    "hn_id": str(story_id),
+                    "points": story_data.get("score", 0),
+                    "comments_url": f"https://news.ycombinator.com/item?id={story_id}",
+                    "comments_count": story_data.get("descendants", 0),
+                    "author": story_data.get("by", "")
+                }
+                
+                # Extract domain for source field if possible
+                if "url" in story_data:
+                    try:
+                        from urllib.parse import urlparse
+                        domain = urlparse(story_data["url"]).netloc
+                        if domain:
+                            article["source"] = domain.replace("www.", "")
+                    except Exception:
+                        pass
 
+                articles.append(article)
+                processed_count += 1
+                logger.debug(f"Processed story: {title}")
+                
+                # Be nice to the API
+                time.sleep(0.05)
+                
             except Exception as e:
-                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {e!s}")
-                if attempt < max_retries - 1:
-                    logger.info(f"Retrying in {retry_delay} seconds...")
-                    time.sleep(retry_delay)
-                else:
-                    logger.error(f"Error fetching data from RSS feed after {max_retries} attempts: {e!s}")
+                logger.warning(f"Error fetching story {story_id}: {e}")
+                continue
 
-        # Add a small delay between RSS feed requests to be respectful to the server
-        time.sleep(1)
+    except Exception as e:
+        logger.error(f"Error fetching data from Hacker News API: {e}", exc_info=True)
+        return []
 
-    logger.info(f"Retrieved {len(articles)} articles from Hacker News RSS feeds")
+    logger.info(f"Retrieved {len(articles)} articles from Hacker News")
     return articles
 
 
-def process_ycombinator_articles(
-    articles: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
+def process_ycombinator_articles(articles: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Process and transform HN articles into a standardized format.
-
-    Args:
-        articles: List of raw article dictionaries from Hacker News
-
-    Returns:
-        List of processed article dictionaries
+    
+    This function primarily adds metadata wrapping as the API extraction 
+    is already cleaner than RSS.
     """
     logger.info(f"Processing {len(articles)} Hacker News articles")
     processed_articles = []
@@ -140,15 +166,16 @@ def process_ycombinator_articles(
                 "source": article.get("source", "news.ycombinator.com"),
                 "published_at": article.get("published_at", ""),
                 "metadata": {
-                    "api_source": "hackernews_rss",
+                    "api_source": "hackernews_api",
                     "processed_at": datetime.now().isoformat(),
                     "hn_id": article.get("hn_id", ""),
                     "points": article.get("points", 0),
                     "comments_url": article.get("comments_url", ""),
+                    "comments_count": article.get("comments_count", 0),
+                    "author": article.get("author", "")
                 },
             }
             processed_articles.append(processed_article)
-            logger.debug(f"Processed article: {processed_article['title']}")
         except Exception as e:
             logger.error(f"Error processing article: {e!s}")
             continue
@@ -159,23 +186,14 @@ def process_ycombinator_articles(
 
 def main():
     """Main function to fetch and process Hacker News articles."""
-    logger.info("Starting Hacker News ETL process")
+    logger.info("Starting Hacker News ETL process (API version)")
     try:
         # Ensure output directory exists
         project_root = get_project_root()
         output_dir = os.path.join(project_root, "data/hackernews")
-        ensure_directories(["data/hackernews"])  # This should create /app/data/hackernews
+        ensure_directories(["data/hackernews"])
 
-        # Create a simple test file to verify directory creation and write access
-        test_file_path = os.path.join(output_dir, "test_output.txt")
-        try:
-            with open(test_file_path, "w") as f_test:
-                f_test.write("Test output from news_get_ycombinator.py main()")
-            logger.info(f"Successfully wrote test file to {test_file_path}")
-        except Exception as e_test:
-            logger.error(f"Failed to write test file to {test_file_path}: {e_test}")
-
-        # Get articles from the RSS feeds
+        # Get articles from the API
         articles = get_ycombinator_data()
 
         if not articles:
@@ -195,7 +213,21 @@ def main():
         csv_file = os.path.join(output_dir, "hackernews.csv")
         import pandas as pd
 
-        pd.DataFrame(processed_articles).to_csv(csv_file, index=False)
+        # Create a flattened version for CSV
+        csv_data = []
+        for item in processed_articles:
+            flat = {
+                "title": item["title"],
+                "url": item["url"],
+                "source": item["source"],
+                "published_at": item["published_at"],
+                "points": item["metadata"]["points"],
+                "comments_count": item["metadata"]["comments_count"],
+                "comments_url": item["metadata"]["comments_url"]
+            }
+            csv_data.append(flat)
+            
+        pd.DataFrame(csv_data).to_csv(csv_file, index=False)
         logger.debug(f"Saved CSV data to {csv_file}")
 
         logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
@@ -206,6 +238,5 @@ def main():
 
 if __name__ == "__main__":
     logger.info("Hacker News ETL script started")
-    # Run the main function
     main()
     logger.info("Hacker News ETL script completed")

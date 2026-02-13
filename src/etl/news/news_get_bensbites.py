@@ -47,8 +47,19 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
 
     try:
         with sync_playwright() as p:
-            # Launch browser with more browser-like settings
-            browser = p.chromium.launch(headless=True)
+            # Try to connect to browserless (remote) or fallback to local
+            browserless_ws = os.getenv("BROWSERLESS_ENDPOINT")
+            if browserless_ws:
+                logger.info(f"Connecting to remote browser at {browserless_ws}")
+                try:
+                    browser = p.chromium.connect_over_cdp(browserless_ws)
+                except Exception as e:
+                    logger.warning(f"Could not connect to remote browser: {e}. Falling back to local launch.")
+                    browser = p.chromium.launch(headless=True)
+            else:
+                 logger.info("No remote browser configured. Launching local browser.")
+                 browser = p.chromium.launch(headless=True)
+
             context = browser.new_context(
                 viewport={"width": 1920, "height": 1080},
                 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",

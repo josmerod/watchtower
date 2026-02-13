@@ -3,7 +3,9 @@ import re
 from datetime import datetime, timedelta
 from typing import List, Optional, Set
 from pathlib import Path
+import os
 import json
+from pathlib import Path
 
 from playwright.async_api import async_playwright, Page
 
@@ -45,7 +47,17 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
         
         async with async_playwright() as p:
             try:
-                browser = await p.chromium.launch(headless=True)
+                browserless_ws = os.getenv("BROWSERLESS_ENDPOINT")
+                if browserless_ws:
+                    self.logger.info(f"Connecting to remote browser at {browserless_ws}")
+                    try:
+                        browser = await p.chromium.connect_over_cdp(browserless_ws)
+                    except Exception as e:
+                        self.logger.warning(f"Could not connect to remote browser: {e}. Falling back to local launch.")
+                        browser = await p.chromium.launch(headless=True)
+                else:
+                     self.logger.info("No remote browser configured. Launching local browser.")
+                     browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page()
                 
                 current_url = self.base_url

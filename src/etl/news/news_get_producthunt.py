@@ -32,12 +32,24 @@ class ProductHuntScraper:
         logger.info("Starting Product Hunt scraper with Playwright...")
         
         with sync_playwright() as p:
-            # Launch browser
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                viewport={"width": 1920, "height": 1080},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            )
+            # Try to connect to browserless (better for anti-bot), fallback to local
+            browserless_ws = os.getenv("BROWSERLESS_ENDPOINT", "ws://localhost:3000")
+            try:
+                logger.info(f"Connecting to remote browser at {browserless_ws}")
+                browser = p.chromium.connect_over_cdp(browserless_ws)
+                # Use a new context with stealthy user agent just in case
+                context = browser.new_context(
+                    viewport={"width": 1920, "height": 1080},
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                )
+            except Exception as e:
+                logger.warning(f"Could not connect to remote browser: {e}. Falling back to local launch.")
+                browser = p.chromium.launch(headless=True)
+                context = browser.new_context(
+                    viewport={"width": 1920, "height": 1080},
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                )
+
             page = context.new_page()
 
             try:
@@ -79,7 +91,7 @@ class ProductHuntScraper:
             (category) => {
                 const products = [];
                 // Target links that look like products (NEW URL STRUCTURE)
-                const links = Array.from(document.querySelectorAll('a[href^="/products/"]'));
+                const links = Array.from(document.querySelectorAll('a[href^="/products/"], a[href^="/posts/"]'));
                 
                 const seenLinks = new Set();
                 
@@ -190,7 +202,7 @@ def process_data(raw_products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 "description": p["tagline"],
                 "url": p["url"],
                 "website": p["url"],
-                "slug": p["url"].split("/products/")[-1] if "/products/" in p["url"] else "unknown",
+                "slug": p["url"].split("/products/")[-1] if "/products/" in p["url"] else p["url"].split("/posts/")[-1] if "/posts/" in p["url"] else "unknown",
                 "votes_count": p["votes"],
                 "comments_count": p["comments"],
                 "reviews_count": 0,
