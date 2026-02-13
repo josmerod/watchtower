@@ -111,7 +111,7 @@ The project exists in the "platform/framework" category - it's as much about cre
 - ✅ **Pydantic Models**: Type-safe data validation across all sources
 
 **Dashboard & Visualization:**
-- ✅ **Dash Dashboard** (port 7777): Modern web interface with Bootstrap styling
+- ✅ **Dash Dashboard** (port 7780): Modern web interface with Bootstrap styling
 - ✅ **Domain Tabs**: Organized navigation by content type (Videos, Papers, News, Deals, etc.)
 - ✅ **Interactive Filtering**: Channel/source selection, date filtering, search capabilities
 - ✅ **Component Architecture**: Modular tab system with data managers
@@ -248,7 +248,7 @@ The project exists in the "platform/framework" category - it's as much about cre
 - UV package manager for fast dependency management
 - `.env` files for local configuration
 - Hot reload for rapid development
-- Port 7777 for main dashboard
+- Port 7780 for main dashboard
 
 **Production Requirements:**
 - Docker support for containerization
@@ -562,12 +562,12 @@ Receive Alert → Open Dashboard → Locate New Deal/News → Take Action
 ### FR-4: Dashboard & Visualization
 
 **FR-4.1: Unified Dashboard**
-- **Requirement**: Single Dash-based web interface on port 7777
+- **Requirement**: Single Dash-based web interface on port 7780
 - **Technology**: Dash + Bootstrap components + Plotly
 - **Acceptance Criteria**:
   - Responsive layout (desktop primary, mobile basic)
   - Dark theme for readability
-  - Accessible via http://localhost:7777
+  - Accessible via http://localhost:7780
 
 **FR-4.2: Domain-Based Navigation**
 - **Requirement**: Tab-based navigation organized by content domain

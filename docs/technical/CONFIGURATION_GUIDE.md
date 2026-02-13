@@ -75,7 +75,7 @@ DATA_DIR=./data
 LOGS_DIR=./logs
 
 # Dashboard
-DASHBOARD_PORT=7777
+DASHBOARD_PORT=7780
 DASHBOARD_DEBUG=True
 ```
 
@@ -215,7 +215,7 @@ WATCHER__NOTIFICATION_EMAIL=alerts@example.com
 class DashboardConfig(BaseModel):
     """Dashboard configuration."""
 
-    port: int = Field(default=7777, ge=1024, le=65535)
+    port: int = Field(default=7780, ge=1024, le=65535)
     host: str = Field(default="127.0.0.1")
     debug: bool = Field(default=False)
     auto_reload: bool = Field(default=False)
@@ -430,7 +430,7 @@ api_key: str = Field(..., env="API_KEY")
 
 ```python
 class Config(BaseModel):
-    port: int = Field(default=7777, ge=1024, le=65535)
+    port: int = Field(default=7780, ge=1024, le=65535)
     batch_size: int = Field(default=100, ge=1, le=10000)
 
     @validator('port')

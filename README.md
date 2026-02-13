@@ -379,7 +379,7 @@ To start the main Watchtower Dashboard (Dash-based):
 -   Windows: `.\run_watchtower_dashboard.bat` or `uv run python run_watchtower_dashboard.py`
 -   macOS/Linux: `bash run_watchtower_dashboard.sh` or `uv run python run_watchtower_dashboard.py`
 
-This will start the main dashboard at `http://localhost:7777`. This is the **primary dashboard** with all the latest features.
+This will start the main dashboard at `http://localhost:7780`. This is the **primary dashboard** with all the latest features.
 
 #### Legacy Streamlit Dashboard (Optional)
 
@@ -408,7 +408,7 @@ docker build -t megalith-app .
 **Run the Docker Container:**
 ```bash
 # Main Watchtower Dashboard
-docker run -p 7777:7777 --env-file .env watchtower-app
+docker run -p 7780:7780 --env-file .env watchtower-app
 
 # Legacy Streamlit Dashboard (if needed)
 docker run -p 8501:8501 --env-file .env watchtower-app
@@ -571,7 +571,7 @@ Thank you for contributing to MEGALITH!
     -   Ensure your virtual environment is clean and activated.
     -   Try recreating the virtual environment and reinstalling dependencies.
 -   **Dashboard Not Loading**:
-    -   **Main Dashboard**: Check console output when running `run_watchtower_dashboard.py`. Default port is 7777.
+    -   **Main Dashboard**: Check console output when running `run_watchtower_dashboard.py`. Default port is 7780.
     -   **Legacy Dashboard**: Check console output when running Streamlit. Default port is 8501.
     -   Ensure the correct port is not blocked by a firewall or used by another application.
     -   Try UV command: `uv run python run_watchtower_dashboard.py`
@@ -689,7 +689,7 @@ Watchtower Solution Quality Assessment
 
   # docker-compose.yml structure:
   services:
-    - watchtower-dashboard  # Port 7777
+    - watchtower-dashboard  # Port 7780
     - watchtower-etl        # Scheduled jobs
     - watchtower-watchers   # Monitoring services
     - nginx                 # Reverse proxy

@@ -172,7 +172,7 @@
    ```bash
    # Main dashboard (Dash-based)
    uv run python run_watchtower_dashboard.py
-   # Available at http://localhost:7777
+   # Available at http://localhost:7780
 
    # Legacy dashboard (Streamlit)
    uv run streamlit run src/web/fullstreamlit/app.py
@@ -212,8 +212,8 @@
 1. **Health Monitoring**
    ```bash
    # Health check endpoints
-   curl http://localhost:7777/health
-   curl http://localhost:7777/metrics
+   curl http://localhost:7780/health
+   curl http://localhost:7780/metrics
    ```
 
 2. **Configuration Management**

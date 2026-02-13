@@ -285,7 +285,7 @@ watchtower/
 - **Waitress 3.x**: WSGI server for Dash dashboard
   - Cross-platform (Windows/UnRAID compatible)
   - Production-ready
-  - Port 7777
+  - Port 7780
 
 - **Uvicorn 0.27.x**: ASGI server for FastAPI
   - High-performance async support
@@ -1013,7 +1013,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:7777"],  # Dashboard only
+    allow_origins=["http://localhost:7780"],  # Dashboard only
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -1185,7 +1185,7 @@ RUN uv run playwright install --with-deps chromium
 RUN mkdir -p data/shared data/users data/metrics data/watchers logs
 
 # Expose ports
-EXPOSE 7777 8000
+EXPOSE 7780 8000
 
 # Start both services
 CMD ["./start.sh"]
@@ -1200,7 +1200,7 @@ set -e
 uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
 
 # Start Dash dashboard
-uv run waitress-serve --host=0.0.0.0 --port=7777 run_watchtower_dashboard:server &
+uv run waitress-serve --host=0.0.0.0 --port=7780 run_watchtower_dashboard:server &
 
 # Wait for both processes
 wait
@@ -1215,7 +1215,7 @@ services:
     build: .
     container_name: megalith
     ports:
-      - "7777:7777"  # Dashboard
+      - "7780:7780"  # Dashboard
       - "8000:8000"  # API
     volumes:
       - ./data:/app/data
@@ -1231,7 +1231,7 @@ services:
 **Current Setup:**
 - Docker container deployment
 - Data persistence via volume mounts
-- Port mapping: 7777 (dashboard), 8000 (API - future)
+- Port mapping: 7780 (dashboard), 8000 (API - future)
 
 **Environment Variables:**
 ```bash
@@ -1448,7 +1448,7 @@ uv run python src/scripts/new_source.py --name crypto_news --type rss
 
 **Context**: Epic 9 requires REST API for external integrations, browser extension, webhooks. Options: extend Dash with Flask routes, Flask-RESTX, or FastAPI.
 
-**Decision**: Use FastAPI as separate service (port 8000), run alongside Dash (port 7777) in same Docker container.
+**Decision**: Use FastAPI as separate service (port 8000), run alongside Dash (port 7780) in same Docker container.
 
 **Rationale:**
 - Auto-generated OpenAPI/Swagger documentation (Epic 9.5 requirement)

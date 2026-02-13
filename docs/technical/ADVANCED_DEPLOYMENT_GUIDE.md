@@ -94,7 +94,7 @@ For production deployments, Podman Compose provides containerized, isolated exec
 # Build and start development containers
 python watchtower.py podman-dev --build
 
-# Access dashboard at http://localhost:7777
+# Access dashboard at http://localhost:7780
 # View logs: podman-compose -f docker-compose.dev.yml logs -f
 ```
 
@@ -104,7 +104,7 @@ python watchtower.py podman-dev --build
 # Build and start production containers
 python watchtower.py podman-prod --build
 
-# Dashboard available at http://localhost:7777
+# Dashboard available at http://localhost:7780
 # Check container status: podman-compose ps
 # View logs: podman-compose logs -f
 ```
@@ -176,7 +176,7 @@ Get-EventLog -LogName Application -Source WatchtowerPlatform
 |----------|---------|-------------|
 | `WATCHTOWER_MODE` | development | Execution mode (development/production/etl_only/dashboard_only) |
 | `WATCHTOWER_ETL_INTERVAL` | 3600 | ETL execution interval in seconds |
-| `WATCHTOWER_DASHBOARD_PORT` | 7777 | Dashboard port |
+| `WATCHTOWER_DASHBOARD_PORT` | 7780 | Dashboard port |
 | `WATCHTOWER_LOG_LEVEL` | INFO | Logging level (DEBUG/INFO/WARNING/ERROR) |
 | `WATCHTOWER_HOT_RELOAD` | false | Enable hot reload (development mode only) |
 
@@ -223,7 +223,7 @@ When health issues are detected, the system automatically:
 python watchtower.py status
 
 # View health metrics (JSON format)
-curl http://localhost:7777/health
+curl http://localhost:7780/health
 
 # Check Docker container health
 docker-compose ps
@@ -349,7 +349,7 @@ WATCHTOWER_ETL_INTERVAL=1800 python watchtower.py prod
 
 ```bash
 # Run dashboard on different port
-WATCHTOWER_DASHBOARD_PORT=7778 python watchtower.py dashboard
+WATCHTOWER_DASHBOARD_PORT=7780 python watchtower.py dashboard
 
 # Run ETL with different intervals
 WATCHTOWER_ETL_INTERVAL=7200 python watchtower.py etl

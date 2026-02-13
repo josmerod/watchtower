@@ -88,9 +88,9 @@ Transform the POC dashboard into the main Watchtower application with full clean
 ### Interim Fixes: Dashboard Issues Resolution ✅ COMPLETE
 
 #### Interim Step 1: Fix Dashboard Confusion ✅
-**Issue:** User was viewing old Streamlit dashboard (port 8501) instead of new Dash dashboard (port 7777)
+**Issue:** User was viewing old Streamlit dashboard (port 8501) instead of new Dash dashboard (port 7780)
 **Resolution:**
-- [x] Identify correct dashboard URL: http://localhost:7777
+- [x] Identify correct dashboard URL: http://localhost:7780
 - [x] Clarify difference between dashboards
 - [x] Guide user to correct dashboard
 
@@ -160,7 +160,7 @@ Transform the POC dashboard into the main Watchtower application with full clean
 - [x] Update src/web/fullstreamlit/README.md with legacy dashboard context
 - [x] Update docs/setup-guide.md with UV installation methods
 - [x] Update DEVELOPMENT_SETUP.md with UV workflows
-- [x] Update docs/dashboard_guide.md with new dashboard URLs (7777 vs 8501)
+- [x] Update docs/dashboard_guide.md with new dashboard URLs (7780 vs 8501)
 
 ### Phase 4: Deployment and Integration (Steps 10-12)
 
@@ -194,10 +194,10 @@ Transform the POC dashboard into the main Watchtower application with full clean
 - Target: Make this the main dashboard
 - Priority: Keep existing functionality while improving UX
 - Dependencies: UV package manager (already migrated)
-- **IMPORTANT**: Use correct dashboard URL: http://localhost:7777 (not 8501)
+- **IMPORTANT**: Use correct dashboard URL: http://localhost:7780 (not 8501)
 
 ## Dashboard URLs:
-- ✅ **Watchtower Dashboard (Dash)**: http://localhost:7777 ← USE THIS ONE
+- ✅ **Watchtower Dashboard (Dash)**: http://localhost:7780 ← USE THIS ONE
 - ❌ **Old Streamlit Dashboard**: http://localhost:8501 ← DON'T USE
 
 ## Risk Mitigation

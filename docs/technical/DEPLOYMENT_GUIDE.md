@@ -120,7 +120,7 @@ USER watchtower
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:7777/health || exit 1
+    CMD curl -f http://localhost:7780/health || exit 1
 
 # Default command
 CMD ["uv", "run", "python", "run_watchtower_dashboard.py"]
@@ -135,7 +135,7 @@ services:
   watchtower:
     build: .
     ports:
-      - "7777:7777"  # Dash dashboard
+      - "7780:7780"  # Dash dashboard
       - "8501:8501"  # Streamlit dashboard (if needed)
     volumes:
       - ./data:/app/data
@@ -148,7 +148,7 @@ services:
       - .env
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7777/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:7780/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -346,7 +346,7 @@ Create `/etc/nginx/sites-available/watchtower`:
 
 ```nginx
 upstream watchtower {
-    server 127.0.0.1:7777;
+    server 127.0.0.1:7780;
 }
 
 server {
@@ -514,7 +514,7 @@ sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 
 # Allow dashboard port (if direct access needed)
-sudo ufw allow 7777/tcp
+sudo ufw allow 7780/tcp
 
 # Check status
 sudo ufw status
@@ -559,7 +559,7 @@ echo "0 12 * * * /usr/bin/certbot renew --quiet" | sudo crontab -
    tail -f /opt/watchtower/logs/dashboard.log
 
    # Check port availability
-   netstat -tlnp | grep 7777
+   netstat -tlnp | grep 7780
    ```
 
 2. **ETL failures**:
