@@ -56,15 +56,21 @@ run_etl "src/etl/news/microsiervos_etl.py"
 run_etl "src/etl/news/news_get_meneame.py"
 run_etl "src/etl/news/news_get_podcasts.py"
 
+# Hacker News & Tech Trends
+run_etl "src/etl/news/news_get_ycombinator.py"
+run_etl "src/etl/news/news_get_hackernews_ask.py"
+run_etl "src/etl/news/news_get_gittrends.py"
+
 # Reddit ETL
 run_etl "src/etl/news/reddit_unified_etl.py"
 run_etl "src/etl/giveaways/reddit_giveaways_etl.py"
 
 # Deals ETL
-run_etl "src/etl/deals/run_all_deals.py" # Added from .bat
-run_etl "src/etl/deals/slickdeals_etl.py"
-run_etl "src/etl/deals/woot_etl.py"
-run_etl "src/etl/deals/isthereanydeal_rss_etl.py"
+# Deals ETL (Code missing)
+# run_etl "src/etl/deals/run_all_deals.py"
+# run_etl "src/etl/deals/slickdeals_etl.py"
+# run_etl "src/etl/deals/woot_etl.py"
+# run_etl "src/etl/deals/isthereanydeal_rss_etl.py"
 
 # Goldigging ETL
 run_etl "src/etl/goldigging/goldigging_coursera_courses.py"
@@ -144,6 +150,9 @@ run_etl "src/etl/goldigging/viajeros_piratas_etl.py"
 # Open Source Projects ETL
 run_etl "src/etl/opensource/opensource_projects_etl.py"
 
+# Uneed.best ETL (Replaces Product Hunt)
+run_etl "src/etl/news/news_get_uneed.py"
+
 echo "All ETL processes started in parallel using UV"
 echo "Process PIDs: ${pids[*]}"
 echo "Check logs directory for individual process logs"
@@ -193,7 +202,8 @@ echo "ETL and Backup workflow finished at $(date)."
 
 echo "Data has been saved to respective directories:"
 echo "- data/dev_community/"
-echo "- data/product_hunt/"
+# echo "- data/product_hunt/"
+echo "- data/uneed/"
 echo "- data/indie_hackers/"
 echo "- data/lobsters/"
 echo "- data/crypto_sentiment/"

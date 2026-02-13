@@ -1,0 +1,130 @@
+Source                              | Last Updated         | Days Since | Status
+-------------------------------------------------------------------------------------
+4chan_generals                      | 2026-01-28 18:58 | 0          | OK
+AllKeyShop                          | NEVER                | -          | EMPTY
+adhd_friendly_locations             | NEVER                | -          | EMPTY
+adhd_publications                   | NEVER                | -          | EMPTY
+ai_models                           | NEVER                | -          | EMPTY
+ai_platform_monitoring              | NEVER                | -          | EMPTY
+ai_platforms                        | 2026-01-28 18:58 | 0          | OK
+ai_research                         | 2025-11-21 19:56 | 68         | STALE
+ai_research_intelligence            | 2025-12-13 18:17 | 46         | STALE
+alerts                              | 2025-12-26 00:27 | 33         | STALE
+allkeyshop_games                    | NEVER                | -          | EMPTY
+anime                               | 2026-01-28 18:58 | 0          | OK
+anthropic_platform                  | NEVER                | -          | EMPTY
+architecture_patterns               | 2025-11-23 00:57 | 66         | STALE
+arxiv                               | 2026-01-28 18:58 | 0          | OK
+bargain_deals                       | 2026-01-05 18:44 | 23         | STALE
+bensbites                           | 2026-01-28 18:59 | 0          | OK
+book_deals                          | 2026-01-05 18:44 | 23         | STALE
+bundle_deals                        | 2026-01-05 18:44 | 23         | STALE
+cinema_ecartelera                   | NEVER                | -          | EMPTY
+cinema_ecartelera_improved          | NEVER                | -          | EMPTY
+classcentral                        | 2026-01-28 18:59 | 0          | OK
+cloud_intelligence                  | 2025-11-27 15:58 | 62         | STALE
+coursera                            | 2026-01-28 18:59 | 0          | OK
+courses                             | 2025-11-17 22:33 | 71         | STALE
+crypto_finance_deals                | 2026-01-05 18:44 | 23         | STALE
+crypto_sentiment                    | NEVER                | -          | EMPTY
+deals                               | 2026-01-05 18:44 | 23         | STALE
+deeplearningai                      | NEVER                | -          | EMPTY
+dev_community                       | NEVER                | -          | EMPTY
+developer_news                      | 2025-12-18 23:45 | 40         | STALE
+devto                               | 2026-01-28 18:57 | 0          | OK
+discord_trending                    | NEVER                | -          | EMPTY
+educational_deals                   | 2026-01-05 18:44 | 23         | STALE
+enhanced_arxiv                      | NEVER                | -          | EMPTY
+enhanced_free_games                 | 2026-01-05 18:44 | 23         | STALE
+entertainment                       | 2026-01-28 18:57 | 0          | OK
+event_intelligence                  | 2025-12-28 17:26 | 31         | STALE
+expatcircle                         | NEVER                | -          | EMPTY
+fashion_retail_deals                | 2026-01-05 18:44 | 23         | STALE
+free_courses                        | NEVER                | -          | EMPTY
+free_games                          | NEVER                | -          | EMPTY
+futuretools                         | 2026-01-28 19:10 | 0          | OK
+gamerpower                          | 2026-01-28 18:58 | 0          | OK
+games                               | 2026-01-28 18:59 | 0          | OK
+github_analytics                    | 2026-01-28 18:57 | 0          | OK
+github_copilot                      | NEVER                | -          | EMPTY
+github_trending_rss                 | 2026-01-28 18:58 | 0          | OK
+github_trends                       | 2026-01-28 18:58 | 0          | OK
+giveaways                           | 2026-01-05 18:44 | 23         | STALE
+gooddevs                            | 2026-01-28 18:58 | 0          | OK
+google_gemini                       | NEVER                | -          | EMPTY
+gumroad_scraper                     | 2026-01-28 19:02 | 0          | OK
+hackernews                          | 2026-01-28 18:57 | 0          | OK
+hackernews_ask                      | 2026-01-28 19:00 | 0          | OK
+hackernews_etl                      | NEVER                | -          | EMPTY
+hardware_tech_deals                 | 2026-01-05 18:44 | 23         | STALE
+hashnode_blogs                      | 2026-01-28 18:58 | 0          | OK
+health_fitness_deals                | 2026-01-05 18:44 | 23         | STALE
+huggingface_platform                | NEVER                | -          | EMPTY
+indie_hackers                       | 2026-01-28 18:58 | 0          | OK
+intelligence                        | 2025-11-17 22:33 | 71         | STALE
+isthereanydeal_bundles              | 2026-01-05 18:44 | 23         | STALE
+isthereanydeal_deals                | 2026-01-05 18:44 | 23         | STALE
+isthereanydeal_giveaways            | 2026-01-05 18:44 | 23         | STALE
+job_market                          | 2025-12-28 19:45 | 31         | STALE
+kaggle                              | 2026-01-28 18:57 | 0          | OK
+kagi_ai                             | 2026-01-28 18:58 | 0          | OK
+kagi_business                       | 2026-01-28 18:58 | 0          | OK
+kagi_europe                         | 2026-01-28 18:58 | 0          | OK
+kagi_gaming                         | 2026-01-28 18:58 | 0          | OK
+kagi_science                        | 2026-01-28 18:58 | 0          | OK
+kagi_spain                          | 2026-01-28 18:58 | 0          | OK
+kagi_usa                            | 2026-01-28 18:58 | 0          | OK
+kagi_world                          | 2026-01-28 18:58 | 0          | OK
+kdnuggets                           | 2026-01-28 18:57 | 0          | OK
+language_trends                     | 2025-12-28 19:56 | 31         | STALE
+leetcode_challenges                 | 2025-12-28 18:22 | 31         | STALE
+lesswrong                           | 2026-01-21 00:23 | 7          | STALE
+lobsters                            | 2026-01-28 18:57 | 0          | OK
+mal_anime_etl                       | NEVER                | -          | EMPTY
+medium_genai                        | 2026-01-28 18:57 | 0          | OK
+meme_economics                      | NEVER                | -          | EMPTY
+meneame                             | 2026-01-28 18:57 | 0          | OK
+metrics                             | 2026-01-28 19:02 | 0          | OK
+microsiervos                        | NEVER                | -          | EMPTY
+models                              | 2025-11-17 23:11 | 71         | STALE
+music_deals                         | 2026-01-05 18:44 | 23         | STALE
+news                                | 2026-01-28 18:58 | 0          | OK
+newsapi_expanded                    | 2026-01-28 18:57 | 0          | OK
+open_source_intelligence            | 2026-01-28 18:58 | 0          | OK
+openai_platform                     | NEVER                | -          | EMPTY
+openalex                            | 2026-01-28 18:58 | 0          | OK
+package_registry                    | 2026-01-28 18:58 | 0          | OK
+pluralsight_courses                 | 2026-01-28 18:59 | 0          | OK
+podcasts                            | 2026-01-28 18:58 | 0          | OK
+product_hunt                        | 2026-01-05 18:44 | 23         | STALE
+rapidapi_marketplace                | 2026-01-28 18:57 | 0          | OK
+raw                                 | 2026-01-28 18:57 | 0          | OK
+reddit_ai                           | NEVER                | -          | EMPTY
+reddit_giveaways                    | 2026-01-05 18:44 | 23         | STALE
+reddit_unified                      | 2026-01-28 18:59 | 0          | OK
+scavenging                          | 2026-01-28 19:02 | 0          | OK
+security_vulnerabilities            | NEVER                | -          | EMPTY
+shoppy                              | NEVER                | -          | EMPTY
+shortcuts                           | 2026-01-21 00:16 | 7          | STALE
+simple_hackernews_etl               | NEVER                | -          | EMPTY
+simulation                          | NEVER                | -          | EMPTY
+software_deals                      | 2026-01-05 18:44 | 23         | STALE
+spanish_public_aid                  | 2026-01-28 18:58 | 0          | OK
+stackexchange                       | 2026-01-28 18:58 | 0          | OK
+stackoverflow_trends                | 2026-01-28 18:57 | 0          | OK
+startup_intelligence                | 2025-12-17 19:05 | 42         | STALE
+streamlit_enhanced_arxiv            | NEVER                | -          | EMPTY
+tech_conference                     | NEVER                | -          | EMPTY
+tech_jobs                           | NEVER                | -          | EMPTY
+travel_deals                        | 2026-01-05 18:44 | 23         | STALE
+udemy                               | 2026-01-16 18:40 | 12         | STALE
+udemy-universal                     | 2025-07-13 20:59 | 198        | STALE
+user_profiles                       | 2025-12-26 00:27 | 33         | STALE
+users                               | NEVER                | -          | EMPTY
+valencia_events                     | 2026-01-28 18:58 | 0          | OK
+viajeros_piratas                    | NEVER                | -          | EMPTY
+watchers                            | 2026-01-28 18:59 | 0          | OK
+youtube                             | 2026-01-28 20:30 | 0          | OK
+youtube_shorts_ocr                  | 2026-01-28 18:59 | 0          | OK
+-------------------------------------------------------------------------------------
+Summary: 38 stale, 35 empty/never run, 53 OK.

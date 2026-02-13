@@ -73,9 +73,9 @@ def fetch_ask_hn_posts(session: requests.Session, max_posts: int = 100) -> list[
     posts = []
 
     try:
-        # Get top stories
-        logger.info("Fetching top stories from Hacker News")
-        response = session.get(f"{base_url}/topstories.json", timeout=30)
+        # Get Ask HN stories specifically
+        logger.info("Fetching Ask HN stories from Hacker News")
+        response = session.get(f"{base_url}/askstories.json", timeout=30)
         response.raise_for_status()
 
         story_ids = response.json()

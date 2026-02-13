@@ -49,13 +49,18 @@ def create_session() -> requests.Session:
     session.mount("https://", adapter)
 
     # Set headers
-    session.headers.update(
-        {
-            "User-Agent": "Watchtower-ETL/1.0 (GitHub Trends Analytics)",
-            "Accept": "application/vnd.github.v3+json",
-            "Content-Type": "application/json",
-        }
-    )
+    headers = {
+        "User-Agent": "Watchtower-ETL/1.0 (GitHub Trends Analytics)",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+    }
+
+    # Add authentication if available
+    github_token = os.getenv("GITHUB_TOKEN")
+    if github_token:
+        headers["Authorization"] = f"token {github_token}"
+        
+    session.headers.update(headers)
 
     return session
 

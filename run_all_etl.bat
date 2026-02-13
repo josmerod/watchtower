@@ -47,7 +47,8 @@ start /B %PYTHON_CMD% src/etl/news/valencia_events_etl.py
 start /B %PYTHON_CMD% src/etl/news/news_get_gooddevs.py
 start /B %PYTHON_CMD% src/etl/news/news_get_podcasts.py
 start /B %PYTHON_CMD% src/etl/news/news_get_newsapi.py
-start /B %PYTHON_CMD% src/etl/news/news_get_producthunt.py
+REM start /B %PYTHON_CMD% src/etl/news/news_get_producthunt.py
+start /B %PYTHON_CMD% src/etl/news/news_get_uneed.py
 start /B %PYTHON_CMD% src/etl/news/news_get_indiehackers.py
 start /B %PYTHON_CMD% src/etl/news/news_get_gittrends.py
 start /B %PYTHON_CMD% src/etl/github/github_trending_rss_etl.py
@@ -69,11 +70,11 @@ REM Reddit ETL
 start /B %PYTHON_CMD% src/etl/news/reddit_unified_etl.py
 start /B %PYTHON_CMD% src/etl/giveaways/reddit_giveaways_etl.py
 
-REM Deals ETL
-start /B %PYTHON_CMD% src/etl/deals/run_all_deals.py
-start /B %PYTHON_CMD% src/etl/deals/slickdeals_etl.py
-start /B %PYTHON_CMD% src/etl/deals/woot_etl.py
-start /B %PYTHON_CMD% src/etl/deals/isthereanydeal_rss_etl.py
+REM Deals ETL - Code missing/deprecated
+REM start /B %PYTHON_CMD% src/etl/deals/run_all_deals.py
+REM start /B %PYTHON_CMD% src/etl/deals/slickdeals_etl.py
+REM start /B %PYTHON_CMD% src/etl/deals/woot_etl.py
+REM start /B %PYTHON_CMD% src/etl/deals/isthereanydeal_rss_etl.py
 
 REM Goldigging ETL
 start /B %PYTHON_CMD% src/etl/goldigging/goldigging_coursera_courses.py
