@@ -66,7 +66,7 @@ watchtower/                          # 🏠 Project root
 │   │   └── [domain]_watcher.py      # Domain-specific watchers
 │   │
 │   ├── web/                         # 🌐 Dashboard & Visualization
-│   │   ├── dashboard/               # 📊 Primary Dash dashboard (port 7777)
+│   │   ├── dashboard/               # 📊 Primary Dash dashboard (port 7780)
 │   │   │   ├── app.py               # Main dashboard application
 │   │   │   ├── components/          # Tab-based modular components
 │   │   │   │   ├── videos_tab.py    # YouTube video browser (VideoManager pattern)
@@ -279,7 +279,7 @@ paper.model_dump()  # Serialize to dict
 **Purpose:** Data visualization and interactive dashboards
 
 **Structure:**
-- `dashboard/` - **Primary** Dash dashboard (port 7777)
+- `dashboard/` - **Primary** Dash dashboard (port 7780)
   - Tab-based modular architecture
   - VideoManager pattern for data handling
   - Single callback pattern prevents conflicts
@@ -392,7 +392,7 @@ Pydantic models ← ETL, Watchers, Dashboard, Analytics
 
 | Purpose | Entry Point | Port/Output |
 |---------|-------------|-------------|
-| **Dash Dashboard** | `run_watchtower_dashboard.py` | Port 7777 |
+| **Dash Dashboard** | `run_watchtower_dashboard.py` | Port 7780 |
 | **Streamlit Dashboard** | `run_streamlit_app.py` | Port 8501 |
 | **All ETLs (Linux/Mac)** | `run_all_etl.sh` | `data/` directory |
 | **All ETLs (Windows)** | `run_all_etl.bat` | `data/` directory |

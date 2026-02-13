@@ -85,7 +85,7 @@ bash run_all_etl.sh  # Linux/macOS
 
 ```bash
 uv run python run_watchtower_dashboard.py
-# Open browser to http://localhost:7777
+# Open browser to http://localhost:7780
 ```
 
 ### How often should I run ETL pipelines?
@@ -159,7 +159,7 @@ Yes! The dashboard is built with Dash and Bootstrap. See the [Dashboard Developm
 
 ### What port does the dashboard use?
 
-Default port is **7777**. You can change it:
+Default port is **7780**. You can change it:
 
 ```bash
 uv run python run_watchtower_dashboard.py --port 8888
@@ -285,16 +285,16 @@ python src/etl/script.py
 
 ### "Port already in use" error
 
-Another process is using port 7777. Either:
+Another process is using port 7780. Either:
 - Stop the other process
 - Use a different port: `--port 8888`
 
 ```bash
 # Find process using port (Linux/macOS)
-lsof -i :7777
+lsof -i :7780
 
 # Find process using port (Windows)
-netstat -ano | findstr :7777
+netstat -ano | findstr :7780
 ```
 
 ## Development

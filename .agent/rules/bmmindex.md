@@ -8,8 +8,8 @@ trigger: always_on
 
 **Project:** Watchtower (MEGALITH)
 **Type:** Data Processing & ETL Platform
-**Generated:** 2025-11-17
-**Documentation Version:** 3.0 (BMM Document-Project Workflow - Exhaustive Scan)
+**Generated:** 2026-02-13
+**Documentation Version:** 4.0 (AI Documentation Audit)
 
 ---
 
@@ -27,10 +27,10 @@ trigger: always_on
 
 | Metric | Value |
 |--------|-------|
-| **ETL Pipelines** | 20+ production domains |
-| **Data Models** | 21 total (15 domain + 6 base) |
+| **ETL Pipelines** | 22+ production domains |
+| **Data Models** | 38 total (Pydantic model files) |
 | **Data Sources** | 50+ platforms |
-| **Dashboard Tabs** | 15+ interactive components |
+| **Dashboard Tabs** | 25+ interactive components |
 | **Python Files** | 200+ |
 | **Test Coverage Target** | ≥80% |
 | **Documentation Pages** | 25+ comprehensive guides |
@@ -43,7 +43,7 @@ trigger: always_on
 | **Data** | pandas 2.2.3+, polars 0.20.0+, numpy 2.2.5+ |
 | **Web** | Dash 2.0+, Streamlit 1.45+, Plotly 5.0+ |
 | **Scraping** | Playwright 1.51+, BeautifulSoup4 4.13+ |
-| **Quality** | ruff, mypy, black, pytest |
+| **Quality** | ruff, mypy, pytest |
 
 ---
 
@@ -176,7 +176,7 @@ trigger: always_on
    ```bash
    # Main dashboard (Dash-based)
    uv run python run_watchtower_dashboard.py
-   # Available at http://localhost:7777
+   # Available at http://localhost:7780
 
    # Legacy dashboard (Streamlit)
    uv run streamlit run src/web/fullstreamlit/app.py
@@ -200,7 +200,7 @@ trigger: always_on
 **Key Context Points:**
 - UV-first development environment
 - Dash-based dashboard with Streamlit legacy
-- Comprehensive ETL framework with 20+ domains
+- Comprehensive ETL framework with 22+ domains
 - Pydantic-based data validation and configuration
 - File-based JSON storage architecture
 
@@ -215,8 +215,8 @@ trigger: always_on
 1. **Health Monitoring**
    ```bash
    # Health check endpoints
-   curl http://localhost:7777/health
-   curl http://localhost:7777/metrics
+   curl http://localhost:7780/health
+   curl http://localhost:7780/metrics
    ```
 
 2. **Configuration Management**
@@ -337,6 +337,6 @@ External Sources → ETL Pipelines → JSON Storage → Dashboard Components →
 
 ---
 
-**Generated:** 2025-11-17 by BMM Document-Project Workflow (Exhaustive Scan)
+**Generated:** 2026-02-13 by AI Documentation Audit
 **Next Update:** Run `document-project` workflow again for latest changes
 **AI Integration:** Use this document as primary context for Claude Code and AI assistants

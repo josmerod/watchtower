@@ -160,7 +160,14 @@ src/
 │   ├── games/            # Game deals and releases
 │   ├── deals/            # Deal aggregation across categories
 │   ├── ai_platforms/     # AI platform monitoring
-│   └── entertainment/    # Cinema, anime, media content
+│   ├── entertainment/    # Cinema, anime, media content
+│   ├── ecommerce/        # E-commerce deal aggregation
+│   ├── museums/          # Museum exhibitions
+│   ├── intelligence/     # Intelligence data sources
+│   ├── neurodivergent/   # Neurodivergent resources
+│   ├── youtube_shorts/   # YouTube Shorts processing
+│   ├── spanish_public_aid/ # Government aid programs
+│   └── expanded/         # Additional miscellaneous sources
 ├── models/               # Pydantic data models by domain
 │   ├── base.py           # Base models (TimestampedModel, etc.)
 │   ├── arxiv.py          # Research paper models
@@ -192,7 +199,7 @@ src/
 - Test with pytest: `uv run pytest --cov=src`
 - Use Ruff for formatting and linting: `uv run ruff check .` and `uv run ruff format .`
 - Dashboard development:
-  - Primary: Dash dashboard at http://localhost:7778 (`uv run python run_watchtower_dashboard.py`)
+  - Primary: Dash dashboard at http://localhost:7780 (`uv run python run_watchtower_dashboard.py`)
   - Legacy: Streamlit at http://localhost:8501 (`uv run streamlit run src/web/fullstreamlit/app.py`)
 
 ## Domain-Specific Best Practices
@@ -204,8 +211,12 @@ src/
 - **Entertainment ETL**: Cinema listings, anime schedules, media trends, Spotify browse, Trakt trending
 - **Deals ETL**: Aggregate deals across 12+ categories (software, books, health, travel, hardware, music, etc.)
 - **Giveaways ETL**: Track free games, free courses, Reddit giveaways
-- **Intelligence ETL**: Monitor cloud services, architecture trends, AI research, developer news, open source projects
+- **Intelligence ETL**: Monitor cloud services, architecture trends, AI research, developer news, open source projects, SEC filings, WHO outbreaks, LessWrong, startups
 - **GitHub ETL**: Track trending repositories via RSS feeds
+- **Museums ETL**: Museum exhibitions and cultural events
+- **E-commerce ETL**: E-commerce deal aggregation and price tracking
+- **YouTube Shorts ETL**: Video processing and metadata extraction
+- **Neurodivergent ETL**: ADHD and neurodivergent resources and research
 - **Watcher Development**: Implement state persistence, event logging, change detection
 - **Dash Components**:
   - Use data manager classes for loading and filtering
@@ -222,7 +233,7 @@ src/
 - **Web Scraping**: requests + BeautifulSoup for simple scraping, Playwright for complex sites
 - **Configuration**: Pydantic Settings with environment variable support
 - **Storage**: JSON files for structured data, CSV for exports and analysis
-- **Dashboard Framework**: Dash with Bootstrap components (primary, port 7778), Streamlit (legacy, port 8501)
+- **Dashboard Framework**: Dash with Bootstrap components (primary, port 7780), Streamlit (legacy, port 8501)
 - **Caching**: Dash callback caching and data manager caching for web apps
 - **Resilience**: Circuit breakers for failure isolation, proxy rotation for rate limit avoidance
 - **Async Operations**: Use when dealing with multiple API calls or I/O operations

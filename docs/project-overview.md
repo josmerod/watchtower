@@ -154,7 +154,7 @@ loop:
 
 #### 4. **Dashboard System** (`src/web/`)
 
-**Primary: Dash Dashboard** (Port 7777)
+**Primary: Dash Dashboard** (Port 7780)
 - Tab-based modular architecture
 - VideoManager pattern for data handling
 - Single callback pattern (prevents conflicts)
@@ -304,7 +304,7 @@ cp .env.template .env
 
 # 6. Launch dashboard
 uv run python run_watchtower_dashboard.py
-# Visit: http://localhost:7777
+# Visit: http://localhost:7780
 ```
 
 ### Development Commands

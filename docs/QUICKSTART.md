@@ -60,7 +60,7 @@ uv run python src/etl/games/enhanced_free_games_etl.py
 # Start the main Watchtower dashboard
 uv run python run_watchtower_dashboard.py
 
-# Open browser to: http://localhost:7777
+# Open browser to: http://localhost:7780
 ```
 
 ## What's Next?
@@ -147,12 +147,12 @@ uv run playwright install
 ### Dashboard Won't Start
 
 ```bash
-# Check if port 7777 is in use
+# Check if port 7780 is in use
 # Windows
-netstat -ano | findstr :7777
+netstat -ano | findstr :7780
 
 # Linux/macOS
-lsof -i :7777
+lsof -i :7780
 
 # Use different port
 uv run python run_watchtower_dashboard.py --port 8888
