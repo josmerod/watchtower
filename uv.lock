@@ -4452,11 +4452,13 @@ dependencies = [
     { name = "colorama" },
     { name = "dash" },
     { name = "dash-bootstrap-components" },
+    { name = "fastapi" },
     { name = "feedparser" },
     { name = "gitdb" },
     { name = "gitpython" },
     { name = "google-api-python-client" },
     { name = "html5lib" },
+    { name = "httpx" },
     { name = "idna" },
     { name = "isodate" },
     { name = "jinja2" },
@@ -4494,6 +4496,7 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
     { name = "urllib3" },
+    { name = "uvicorn" },
     { name = "watchdog" },
     { name = "yt-dlp" },
 ]
@@ -4525,11 +4528,6 @@ ml = [
     { name = "chromadb" },
     { name = "faiss-cpu" },
     { name = "langgraph" },
-]
-web = [
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -4566,15 +4564,15 @@ requires-dist = [
     { name = "dash-bootstrap-components", specifier = ">=1.0.0" },
     { name = "faiss-cpu", marker = "extra == 'all'", specifier = ">=1.7.4" },
     { name = "faiss-cpu", marker = "extra == 'ml'", specifier = ">=1.7.4" },
+    { name = "fastapi", specifier = ">=0.110.0" },
     { name = "fastapi", marker = "extra == 'all'", specifier = ">=0.110.0" },
-    { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.110.0" },
     { name = "feedparser", specifier = ">=6.0.11" },
     { name = "gitdb", specifier = ">=4.0.12" },
     { name = "gitpython", specifier = ">=3.1.44" },
     { name = "google-api-python-client", specifier = ">=2.0.0" },
     { name = "html5lib", specifier = ">=1.1" },
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "httpx", marker = "extra == 'all'", specifier = ">=0.27.0" },
-    { name = "httpx", marker = "extra == 'web'", specifier = ">=0.27.0" },
     { name = "idna", specifier = ">=3.10" },
     { name = "isodate", specifier = ">=0.6.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
@@ -4623,12 +4621,12 @@ requires-dist = [
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "typing-extensions", specifier = ">=4.13.2" },
     { name = "urllib3", specifier = ">=2.4.0" },
+    { name = "uvicorn", specifier = ">=0.27.0" },
     { name = "uvicorn", marker = "extra == 'all'", specifier = ">=0.27.0" },
-    { name = "uvicorn", marker = "extra == 'web'", specifier = ">=0.27.0" },
     { name = "watchdog", specifier = ">=6.0.0" },
     { name = "yt-dlp", specifier = ">=2024.3.10" },
 ]
-provides-extras = ["dev", "ml", "web", "all"]
+provides-extras = ["dev", "ml", "all"]
 
 [package.metadata.requires-dev]
 dev = [

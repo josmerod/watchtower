@@ -1,0 +1,244 @@
+"""Shared data loading services for Watchtower Dashboard and API."""
+
+import json
+import logging
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.web.dashboard.utils import get_data_path, parse_date_universal
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# --- Configuration ---
+
+NEWS_SOURCES_CONFIG = {
+    "techcrunch": {
+        "path": get_data_path("news", "techcrunch_latest.json"),
+        "name": "TechCrunch",
+    },
+    "venturebeat": {
+        "path": get_data_path("news", "venturebeat_latest.json"),
+        "name": "VentureBeat",
+    },
+    "freecodecamp": {
+        "path": get_data_path("news", "freecodecamp_latest.json"),
+        "name": "freeCodeCamp",
+    },
+    "google_ai_blog": {
+        "path": get_data_path("news", "google_ai_blog_latest.json"),
+        "name": "Google AI Blog",
+    },
+    "lobsters": {
+        "path": get_data_path("news", "lobsters_latest.json"),
+        "name": "Lobsters",
+    },
+    "arstechnica": {
+        "path": get_data_path("news", "arstechnica_latest.json"),
+        "name": "Ars Technica",
+    },
+    "futuretools": {
+        "path": get_data_path("futuretools", "futuretoolsnews.json"),
+        "name": "FutureTools",
+    },
+    "bensbites": {
+        "path": get_data_path("bensbites", "bensbites_news.json"),
+        "name": "Ben's Bites",
+    },
+    "hackernews": {
+        "path": get_data_path("hackernews", "hackernews.json"),
+        "name": "Hacker News",
+    },
+    "medium_genai": {
+        "path": get_data_path("medium_genai", "medium_genai.json"),
+        "name": "Medium GenAI",
+    },
+    "kdnuggets": {
+        "path": get_data_path("kdnuggets", "kdnuggets.json"),
+        "name": "KDnuggets",
+    },
+    "meneame_general": {
+        "path": get_data_path("meneame", "meneame_general_latest.json"),
+        "name": "Meneame General",
+    },
+    "meneame_tecnologia": {
+        "path": get_data_path("meneame", "meneame_tecnologia_latest.json"),
+        "name": "Meneame Tech",
+    },
+    "indiehackers": {
+        "path": get_data_path("indie_hackers", "posts.json"),
+        "name": "Indie Hackers",
+    },
+    "kagi_world": {
+        "path": get_data_path("kagi_world", "kagi_world.json"),
+        "name": "Kagi World",
+    },
+    "kagi_usa": {
+        "path": get_data_path("kagi_usa", "kagi_usa.json"),
+        "name": "Kagi USA",
+    },
+    "kagi_business": {
+        "path": get_data_path("kagi_business", "kagi_business.json"),
+        "name": "Kagi Business",
+    },
+    "kagi_science": {
+        "path": get_data_path("kagi_science", "kagi_science.json"),
+        "name": "Kagi Science",
+    },
+    "kagi_gaming": {
+        "path": get_data_path("kagi_gaming", "kagi_gaming.json"),
+        "name": "Kagi Gaming",
+    },
+    "kagi_ai": {"path": get_data_path("kagi_ai", "kagi_ai.json"), "name": "Kagi AI"},
+    "kagi_europe": {
+        "path": get_data_path("kagi_europe", "kagi_europe.json"),
+        "name": "Kagi Europe",
+    },
+    "kagi_spain": {
+        "path": get_data_path("kagi_spain", "kagi_spain.json"),
+        "name": "Kagi Spain",
+    },
+    "microsiervos": {
+        "path": get_data_path("news", "microsiervos_latest.json"),
+        "name": "Microsiervos",
+    },
+}
+
+KNOWLEDGE_SOURCES_CONFIG = {
+    "opensource": {
+        "path": get_data_path("open_source_intelligence", "output", "latest.json"),
+        "name": "Open Source Projects",
+    },
+    "gooddevs": {
+        "path": get_data_path("gooddevs", "gooddevs_latest.json"),
+        "name": "Good Devs",
+    },
+    "podcasts": {
+        "path": get_data_path("podcasts", "podcasts_latest.json"),
+        "name": "Podcasts",
+    },
+    "product_hunt": {
+        "path": get_data_path("product_hunt", "product_hunt_latest.json"),
+        "name": "Product Hunt",
+    },
+    "gittrends": {
+        "path": get_data_path("github_trends", "github_trends_latest.json"),
+        "name": "Git Trends",
+    },
+    "hackernews_ask": {
+        "path": get_data_path("hackernews_ask", "hackernews_ask_latest.json"),
+        "name": "HN Ask",
+    },
+    "stackoverflow_trends": {
+        "path": get_data_path("stackoverflow_trends", "stackoverflow_trends_latest.json"),
+        "name": "Stack Overflow",
+    },
+    "reddit_unified": {
+        "path": get_data_path("reddit_unified", "reddit_unified_latest.json"),
+        "name": "Reddit All",
+    },
+    "reddit_ai_ml": {
+        "path": get_data_path("reddit_unified", "reddit_ai_ml_latest.json"),
+        "name": "Reddit AI/ML",
+    },
+    "reddit_programming": {
+        "path": get_data_path("reddit_unified", "reddit_programming_latest.json"),
+        "name": "Reddit Programming",
+    },
+    "reddit_tech": {
+        "path": get_data_path("reddit_unified", "reddit_tech_latest.json"),
+        "name": "Reddit Tech",
+    },
+    "reddit_devops": {
+        "path": get_data_path("reddit_unified", "reddit_devops_latest.json"),
+        "name": "Reddit DevOps",
+    },
+    "devto": {"path": get_data_path("devto", "devto.json"), "name": "Dev.to"},
+    "hypeurls": {
+        "path": get_data_path("reddit_unified", "reddit_news_latest.json"),
+        "name": "HypeURLs"
+    },
+    "lesswrong": {
+        "path": get_data_path("lesswrong", "lesswrong_latest.json"),
+        "name": "LessWrong",
+    },
+    "substack": {
+        "path": get_data_path("substack", "output", "latest.json"),
+        "name": "Substack",
+    },
+    "trendshift": {
+        "path": get_data_path("trendshift", "output", "latest.json"),
+        "name": "TrendShift",
+    },
+    "rss_feeds": {
+        "path": get_data_path("rss_feeds", "output", "latest.json"),
+        "name": "RSS Feeds",
+    },
+}
+
+# --- Shared Logic ---
+
+def load_data_from_file(file_path: str) -> list[dict[str, Any]]:
+    """Loads items from a JSON file, handling various formats."""
+    try:
+        if not os.path.exists(file_path):
+            # logger.warning(f"File not found: {file_path}")
+            return []
+            
+        with open(file_path, encoding="utf-8") as f:
+            data = json.load(f)
+            
+        # Ensure data is a list of records
+        if isinstance(data, dict):
+            if "articles" in data and isinstance(data["articles"], list):
+                return data["articles"]
+            elif "items" in data and isinstance(data["items"], list):
+                return data["items"]
+            # Single item heuristic
+            elif all(k in data for k in ["title", "url"]):
+                return [data]
+            else:
+                logger.warning(f"Data in {file_path} is a dict but not a recognized list structure.")
+                return []
+        elif isinstance(data, list):
+            return data
+        else:
+            logger.warning(f"Data in {file_path} is not a list or dict. Type: {type(data)}")
+            return []
+            
+    except json.JSONDecodeError:
+        logger.warning(f"Could not decode JSON from {file_path}")
+        return []
+    except Exception as e:
+        logger.error(f"Error loading data from {file_path}: {e}")
+        return []
+
+def parse_date(date_str: Any) -> datetime | None:
+    """Wrapper around universal date parser."""
+    return parse_date_universal(date_str, "DataLoader")
+
+def get_sortable_date(article: dict[str, Any]) -> datetime:
+    """Get a sortable datetime object from an article dictionary."""
+    date_str = (
+        article.get("published_at") 
+        or article.get("published") 
+        or article.get("published_date") 
+        or article.get("created_at") 
+        or article.get("updated_at") 
+        or article.get("updated") 
+        or article.get("time") 
+        or article.get("pubDate")
+    )
+    parsed = parse_date(date_str)
+    return parsed if parsed else datetime.min.replace(tzinfo=timezone.utc)
+
+def format_article_date(article: dict[str, Any]) -> str:
+    """Formats the date for display."""
+    parsed_dt = get_sortable_date(article)
+    if parsed_dt == datetime.min.replace(tzinfo=timezone.utc):
+         return "Date N/A"
+    return parsed_dt.strftime("%Y-%m-%d %H:%M UTC")

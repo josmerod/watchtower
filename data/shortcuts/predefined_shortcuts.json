@@ -59,6 +59,18 @@
       "description": "Awesome bash"
     },
     {
+      "name": "101 Linux Commands",
+      "url": "https://bobbyiliev.github.io/101-linux-commands/",
+      "icon": "🐧",
+      "description": "Open-source eBook with 101 Linux commands"
+    },
+    {
+      "name": "API Mega List",
+      "url": "https://github.com/cporter202/API-mega-list",
+      "icon": "📡",
+      "description": "Comprehensive list of public APIs for development"
+    },
+    {
       "name": "Awesome design patterns",
       "url": "https://github.com/DovAmir/awesome-design-patterns",
       "icon": "🎨",
@@ -123,6 +135,12 @@
       "url": "https://jsonhero.io/",
       "icon": "🦸",
       "description": "JSON viewer and explorer"
+    },
+    {
+      "name": "STFU!",
+      "url": "https://stfu.pankajtanwar.in/",
+      "icon": "🔇",
+      "description": "Motivation through brutally honest quotes"
     }
   ],
   "Package Managers & Registries": [
@@ -579,6 +597,24 @@
       "url": "https://excalidraw.com/",
       "icon": "✏️",
       "description": "Virtual whiteboard"
+    },
+    {
+      "name": "Wallpapers Collection",
+      "url": "https://github.com/vyrx-dev/Wallpapers/tree/master",
+      "icon": "🖼️",
+      "description": "Curated wallpaper collection on GitHub"
+    },
+    {
+      "name": "Wallhaven",
+      "url": "https://wallhaven.cc/",
+      "icon": "🖼️",
+      "description": "High-quality wallpaper search engine"
+    },
+    {
+      "name": "Color Palette Pro",
+      "url": "https://colorpalette.pro/",
+      "icon": "🎨",
+      "description": "Generate beautiful color palettes"
     }
   ],
   "Development Communities": [

@@ -153,6 +153,11 @@ run_etl "src/etl/opensource/opensource_projects_etl.py"
 # Uneed.best ETL (Replaces Product Hunt)
 run_etl "src/etl/news/news_get_uneed.py"
 
+# Knowledge Garden: New Sources (February 2025)
+run_etl "src/etl/substack/substack_etl.py"
+run_etl "src/etl/trendshift/trendshift_etl.py"
+run_etl "src/etl/rss_feeds/rss_feed_etl.py"
+
 echo "All ETL processes started in parallel using UV"
 echo "Process PIDs: ${pids[*]}"
 echo "Check logs directory for individual process logs"
