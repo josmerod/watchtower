@@ -79,7 +79,7 @@ def deploy():
             f"cd {REMOTE_DIR} && docker build -t {DOCKER_IMAGE} -f deployment/Dockerfile .",
             # Force remove to ensure clean slate even if running/stuck
             f"docker rm -f {DOCKER_IMAGE} || true",
-            f"docker run -d --name {DOCKER_IMAGE} --restart unless-stopped -p {HOST_PORT}:{CONTAINER_PORT} -v /mnt/user/appdata/watchtower/data:/app/data -v /mnt/user/appdata/watchtower/logs:/app/logs -e TZ=Europe/Madrid -e BROWSERLESS_ENDPOINT=ws://192.168.31.126:3000 {DOCKER_IMAGE}",
+            f"docker run -d --name {DOCKER_IMAGE} --restart unless-stopped -p {HOST_PORT}:{CONTAINER_PORT} -p 45714:45714 -v /mnt/user/appdata/watchtower/data:/app/data -v /mnt/user/appdata/watchtower/logs:/app/logs -e TZ=Europe/Madrid -e BROWSERLESS_ENDPOINT=ws://192.168.31.126:3000 {DOCKER_IMAGE}",
             f"rm -rf {REMOTE_DIR} /tmp/{TAR_FILENAME}"
         ]
         

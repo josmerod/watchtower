@@ -41,6 +41,8 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Expose Dashboard port
 EXPOSE 7780
+# Expose API port
+EXPOSE 45714
 
 # Verify uv installation and python path
 RUN uv --version && python --version

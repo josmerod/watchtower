@@ -91,6 +91,10 @@ dependencies = [
     "opencv-python>=4.8.0",
     "openai>=2.11.0",
     "paramiko>=4.0.0",
+    # API dependencies
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "httpx>=0.27.0",
 ]
 
 [project.optional-dependencies]
@@ -111,12 +115,12 @@ ml = [
     "chromadb>=0.4.22",
 ]
 
-# Web API dependencies (currently unused)
-web = [
-    "fastapi>=0.110.0",
-    "uvicorn>=0.27.0",
-    "httpx>=0.27.0",
-]
+# Web API dependencies (moved to core)
+# web = [
+#     "fastapi>=0.110.0",
+#     "uvicorn>=0.27.0",
+#     "httpx>=0.27.0",
+# ]
 
 # All optional dependencies combined
 all = [

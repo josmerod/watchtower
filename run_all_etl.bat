@@ -147,6 +147,11 @@ start /B %PYTHON_CMD% src/etl/expanded/gaming_anime_etl.py
 REM Open Source Projects ETL
 start /B %PYTHON_CMD% src/etl/opensource/opensource_projects_etl.py
 
+REM Knowledge Garden: New Sources (February 2025)
+start /B %PYTHON_CMD% src/etl/substack/substack_etl.py
+start /B %PYTHON_CMD% src/etl/trendshift/trendshift_etl.py
+start /B %PYTHON_CMD% src/etl/rss_feeds/rss_feed_etl.py
+
 echo All available ETL processes started in parallel using %PYTHON_CMD%
 echo Check logs directory for individual process logs
 echo.
