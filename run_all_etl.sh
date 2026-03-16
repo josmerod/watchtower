@@ -85,6 +85,7 @@ run_etl "src/etl/arxiv/arxiv_etl.py" # Added from .bat
 
 # Anime ETL
 run_etl "src/etl/anime/mal_etl.py"
+run_etl "src/etl/anime/anilist_schedule_etl.py"
 
 # AI Platforms
 run_etl "src/etl/ai_platforms/papers_with_code_etl.py"
@@ -99,6 +100,10 @@ run_etl "src/etl/youtube_shorts_ocr_etl.py" # Added from .bat
 
 # Courses
 run_etl "src/etl/courses/khan_academy_etl.py"
+run_etl "src/etl/courses/udemy_spreadsheet_etl.py"
+run_etl "src/etl/courses/ms_applied_skills_etl.py"
+run_etl "src/etl/courses/aws_skill_builder_etl.py"
+run_etl "src/etl/courses/gcp_skills_boost_etl.py"
 
 # Intelligence feeds
 run_etl "src/etl/intelligence/sec_edgar_rss.py"

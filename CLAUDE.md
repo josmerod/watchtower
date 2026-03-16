@@ -16,8 +16,9 @@ Comprehensive guidance for **Watchtower** (MEGALITH) - a sophisticated 3-layer d
 1.  **UV First**: ALWAYS use `uv run <command>` (e.g., `uv run python script.py`, `uv run pytest`).
 2.  **Type Hints**: Strict Python 3.10+ typing required.
 3.  **Code Style**: Ruff for linting/formatting. Google-style docstrings.
-4.  **UI Design**: Dash components must look premium (Bootstrap). Use **Single Callback Pattern** to avoid conflicts.
+4.  **UI Design**: Dash components must look premium (Bootstrap). Keep layouts minimalist, semantic, and highly responsive. Use **Single Callback Pattern** to avoid conflicts (STRICT adherence).
 5.  **Pathing**: Use `src.utils.file_system.get_project_root()` for robust path resolution.
+6.  **Resilient ETLs**: Always subclass `BaseETL`, implement retry logic, checkpointing, and handle rate limits (`Pydantic` strictly enforced for data extraction/transformation).
 
 ## Common Interface Commands
 

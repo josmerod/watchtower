@@ -1,5 +1,6 @@
 """Anime Tab Component for Watchtower Dashboard"""
 
+import datetime
 import json
 import logging
 from pathlib import Path
@@ -28,6 +29,7 @@ def load_anime_data() -> dict[str, list[dict[str, Any]]]:
             "top_movies": [],
             "top_ova": [],
             "top_special": [],
+            "schedule": [],
         }
 
         # Look for anime JSON files in the data directory
@@ -44,6 +46,7 @@ def load_anime_data() -> dict[str, list[dict[str, Any]]]:
                 "top_movies.json": "top_movies",
                 "top_ova.json": "top_ova",
                 "top_special.json": "top_special",
+                "anilist_schedule.json": "schedule",
             }
 
             for filename, category in file_mapping.items():
@@ -76,6 +79,7 @@ def load_anime_data() -> dict[str, list[dict[str, Any]]]:
             "top_movies": [],
             "top_ova": [],
             "top_special": [],
+            "schedule": [],
         }
 
 
@@ -201,193 +205,132 @@ def create_anime_card(anime: dict[str, Any], rank_info: dict[str, str], idx: int
         )
 
 
-def create_community_rankings_section(
+def create_schedule_card(item: dict[str, Any]) -> dbc.Card:
+    """Create a compact card for the airing schedule"""
+    try:
+        airing_at = item.get("airing_at", 0)
+        dt = datetime.datetime.fromtimestamp(airing_at)
+        time_str = dt.strftime("%A, %H:%M")
+        
+        episode = item.get("episode", "?")
+        title = item.get("title_romaji") or item.get("title_english") or "Unknown"
+        image_url = item.get("cover_image_medium", "")
+        
+        card_content = [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.Img(
+                                src=image_url if image_url else "/assets/anime-placeholder.png",
+                                style={
+                                    "width": "100%",
+                                    "height": "70px",
+                                    "objectFit": "cover",
+                                    "borderRadius": "4px",
+                                },
+                            )
+                        ],
+                        width=3,
+                        className="p-2 d-flex align-items-center",
+                    ),
+                    dbc.Col(
+                        [
+                            html.Div(
+                                [
+                                    dbc.Badge(time_str, color="primary", className="me-2 mb-1", style={"fontSize": "0.7rem"}),
+                                    html.Small(f"Ep {episode}", className="fw-bold mb-1", style={"fontSize": "0.7rem", "color": "#adb5bd"}),
+                                ]
+                            ),
+                            html.H6(title, className="mb-0 text-truncate text-white", style={"fontSize": "0.85rem", "maxWidth": "100%"}),
+                        ],
+                        width=9,
+                        className="py-2 pe-2 d-flex flex-column justify-content-center",
+                    ),
+                ],
+                className="g-0",
+            )
+        ]
+        return dbc.Card(card_content, className="mb-2 shadow-sm border-0", color="dark", inverse=True)
+    except Exception as e:
+        logger.error(f"Error creating schedule card: {e}")
+        return html.Div()
+
+
+def create_anime_hub_section(
     anime_data: dict[str, list[dict[str, Any]]],
 ) -> html.Div:
     """Create comprehensive community rankings section with multi-column layout"""
     try:
-        # Define ranking categories with enhanced descriptions
-        ranking_info = {
-            "top_rated_all": {
-                "title": "🏆 All-Time Greatest",
-                "description": "Highest-rated anime of all time",
-                "badge_color": "warning",
-                "icon": "👑",
-                "display_count": 12,
-            },
-            "top_tv_series": {
-                "title": "📺 Top TV Series",
-                "description": "Best TV anime series",
-                "badge_color": "primary",
-                "icon": "🎬",
-                "display_count": 12,
-            },
-            "top_movies": {
-                "title": "🎭 Top Movies",
-                "description": "Highest-rated anime movies",
-                "badge_color": "danger",
-                "icon": "🎯",
-                "display_count": 12,
-            },
-            "top_airing": {
-                "title": "📡 Currently Airing",
-                "description": "Best anime currently broadcasting",
-                "badge_color": "success",
-                "icon": "⚡",
-                "display_count": 12,
-            },
-            "top_upcoming": {
-                "title": "🔮 Upcoming",
-                "description": "Most anticipated upcoming anime",
-                "badge_color": "info",
-                "icon": "🚀",
-                "display_count": 12,
-            },
-            "top_ova": {
-                "title": "💎 Top OVA",
-                "description": "Best Original Video Animations",
-                "badge_color": "secondary",
-                "icon": "💿",
-                "display_count": 8,
-            },
-            "top_special": {
-                "title": "⭐ Special Episodes",
-                "description": "Top special episodes and content",
-                "badge_color": "dark",
-                "icon": "🌟",
-                "display_count": 8,
-            },
-        }
+        # Sort current airing by rating descending
+        # Some items might not have 'mean' so default to 0
+        current_airing = sorted(
+            anime_data.get("top_airing", []), 
+            key=lambda x: x.get("mean") or 0.0, 
+            reverse=True
+        )[:15]
+        
+        upcoming = anime_data.get("top_upcoming", [])[:15]
+        
+        top_all_time = sorted(
+            anime_data.get("top_rated_all", []), 
+            key=lambda x: x.get("mean") or 0.0, 
+            reverse=True
+        )[:15]
+        
+        def create_block(title: str, description: str, icon: str, anime_list: list) -> html.Div:
+            info = {"badge_color": "primary"}
+            cards = [create_anime_card(anime, info, i) for i, anime in enumerate(anime_list) if anime]
+            
+            row_cols = []
+            for card in cards:
+                row_cols.append(dbc.Col(card, width=12, md=6, lg=6, xl=4))
+                
+            return html.Div([
+                html.H4([html.Span(icon, className="me-2"), title], className="mb-1"),
+                html.P(description, className="text-muted mb-3", style={"fontSize": "0.9rem"}),
+                dbc.Row(row_cols, className="g-3")
+            ], className="mb-2")
 
-        # Group categories for multi-column layout
-        primary_categories = ["top_rated_all", "top_tv_series", "top_movies"]
-        secondary_categories = ["top_airing", "top_upcoming"]
-        tertiary_categories = ["top_ova", "top_special"]
-
-        def create_category_column(categories: list[str]) -> html.Div:
-            """Create a column of anime categories"""
-            column_content = []
-
-            for category in categories:
-                if category not in anime_data or not anime_data[category]:
-                    continue
-
-                anime_list = anime_data[category]
-                info = ranking_info[category]
-                display_count = info["display_count"]
-
-                # Create anime cards for this category
-                anime_cards = []
-                for idx, anime in enumerate(anime_list[:display_count]):
-                    if not anime:
-                        continue
-                    card = create_anime_card(anime, info, idx)
-                    anime_cards.append(card)
-
-                if anime_cards:
-                    category_section = html.Div(
-                        [
-                            html.Div(
-                                [
-                                    html.H4(
-                                        [
-                                            html.Span(info["icon"], className="me-2"),
-                                            info["title"],
-                                        ],
-                                        className="mb-2",
-                                        style={"fontSize": "1.25rem"},
-                                    ),
-                                    html.P(
-                                        info["description"],
-                                        className="text-muted mb-3",
-                                        style={"fontSize": "0.9rem"},
-                                    ),
-                                ],
-                                className="mb-3",
-                            ),
-                            html.Div(anime_cards),
-                        ],
-                        className="mb-5",
-                    )
-                    column_content.append(category_section)
-
-            return html.Div(column_content)
-
-        # Check if we have any data
-        available_categories = [cat for cat in ranking_info if anime_data.get(cat)]
-
-        if not available_categories:
-            return html.Div(
-                [
-                    dbc.Alert(
-                        [
-                            html.H4(
-                                "Community Rankings Not Available",
-                                className="alert-heading",
-                            ),
-                            html.P("Comprehensive anime rankings data is not yet available."),
-                            html.Hr(),
-                            html.P(
-                                "Run the enhanced ETL to fetch community rankings:",
-                                className="mb-2",
-                            ),
-                            html.Code(
-                                "uv run python src/etl/anime/mal_etl.py",
-                                className="d-block p-2 bg-light",
-                            ),
-                        ],
-                        color="info",
-                    )
-                ]
+        left_column = dbc.Col([
+            create_block("📡 Current Airing (Top Rated)", "Top-rated anime currently broadcasting", "🔥", current_airing),
+            html.Hr(className="my-4", style={"borderColor": "#444"}),
+            create_block("🔮 Upcoming Series", "Most anticipated upcoming anime", "✨", upcoming),
+            html.Hr(className="my-4", style={"borderColor": "#444"}),
+            create_block("🏆 Top All-Time", "Highest-rated anime of all time", "👑", top_all_time),
+        ], width=12, lg=8, className="pe-lg-4")
+        
+        # Right column: Schedule
+        schedule_raw = anime_data.get("schedule", [])
+        schedule_sorted = sorted(schedule_raw, key=lambda x: x.get("airing_at", 0))
+        # Filter past episodes
+        now_ts = datetime.datetime.now().timestamp()
+        schedule_future = [s for s in schedule_sorted if s.get("airing_at", 0) > now_ts]
+        
+        schedule_cards = [create_schedule_card(item) for item in schedule_future[:40]]
+        
+        right_column = dbc.Col([
+            html.H4([html.Span("📅", className="me-2"), "Airing Schedule"], className="mb-1"),
+            html.P("Upcoming episodes this week", className="text-muted mb-3", style={"fontSize": "0.9rem"}),
+            html.Div(
+                schedule_cards,
+                style={
+                    "maxHeight": "1400px", 
+                    "overflowY": "auto", 
+                    "paddingRight": "10px"
+                },
+                className="custom-scrollbar"
             )
-
+        ], width=12, lg=4)
+        
         return html.Div(
-            [
-                # Header
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                html.H3("🏅 Community Rankings", className="mb-2"),
-                                html.P(
-                                    "MyAnimeList community rankings updated regularly",
-                                    className="text-muted mb-4",
-                                ),
-                            ]
-                        )
-                    ],
-                    className="mb-4",
-                ),
-                # Multi-column layout
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            create_category_column(primary_categories),
-                            width=12,
-                            lg=4,
-                            className="mb-4",
-                        ),
-                        dbc.Col(
-                            create_category_column(secondary_categories),
-                            width=12,
-                            lg=4,
-                            className="mb-4",
-                        ),
-                        dbc.Col(
-                            create_category_column(tertiary_categories),
-                            width=12,
-                            lg=4,
-                            className="mb-4",
-                        ),
-                    ],
-                    className="g-4",
-                ),
-            ]
+            dbc.Row([left_column, right_column]),
+            className="mb-4"
         )
 
     except Exception as e:
         logger.error(f"Error creating community rankings: {e}")
-        return html.Div([dbc.Alert("Error loading community rankings", color="danger")])
+        return html.Div([dbc.Alert("Error loading anime hub", color="danger")])
 
 
 def render_anime_tab() -> html.Div:
@@ -424,18 +367,18 @@ def render_anime_tab() -> html.Div:
         tab_content = dbc.Tabs(
             [
                 dbc.Tab(
-                    label="🏅 Community Rankings",
-                    tab_id="rankings-tab",
+                    label="🌟 Anime Hub",
+                    tab_id="hub-tab",
                     children=[
                         html.Div(
-                            [create_community_rankings_section(anime_data)],
+                            [create_anime_hub_section(anime_data)],
                             className="p-4",
                         )
                     ],
                 )
             ],
             id="anime-tabs",
-            active_tab="rankings-tab",
+            active_tab="hub-tab",
         )
 
         return html.Div(

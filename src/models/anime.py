@@ -22,3 +22,16 @@ class AnimeItem(BaseModel):
     average_episode_duration: int | None = None
     rating: str | None = None
     studios: list[dict[str, int | str]] | None = None
+
+
+class AniListScheduleItem(BaseModel):
+    id: int
+    airing_at: int
+    episode: int
+    media_id: int
+    title_romaji: str | None = None
+    title_english: str | None = None
+    title_native: str | None = None
+    cover_image_medium: str | None = None
+    cover_image_large: str | None = None
+    site_url: str | None = None

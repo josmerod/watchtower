@@ -23,8 +23,6 @@ class CourseDataManagerConfig:
 
     coursera_path: Path
     udemy_path: Path
-    pluralsight_path: Path
-    khan_academy_path: Path
     enable_cache: bool = True
     cache_ttl_seconds: int = 3600  # 1 hour default
 
@@ -77,10 +75,10 @@ class CourseDataManager:
             >>> udemy_df = manager.get_data("udemy")
         """
         with self._lock:
-            if source not in ["coursera", "udemy", "pluralsight", "khan"]:
+            if source not in ["coursera", "udemy"]:
                 raise ValueError(
                     f"Unknown source: {source}. "
-                    f"Available: coursera, udemy, pluralsight, khan"
+                    f"Available: coursera, udemy"
                 )
 
             if self._should_reload(source):
@@ -124,8 +122,6 @@ class CourseDataManager:
         loaders = {
             "coursera": self._load_coursera,
             "udemy": self._load_udemy,
-            "pluralsight": self._load_pluralsight,
-            "khan": self._load_khan_academy,
         }
 
         loader = loaders.get(source)
@@ -277,52 +273,6 @@ class CourseDataManager:
 
         return df
 
-    def _load_pluralsight(self) -> None:
-        """Load and normalize Pluralsight data."""
-        path = self._config.pluralsight_path
-
-        if not path.exists():
-            self.logger.warning(f"Pluralsight file not found: {path}")
-            self._data["pluralsight"] = pd.DataFrame()
-            return
-
-        try:
-            df = pd.read_json(path)
-        except Exception as e:
-            self.logger.error(f"Failed to read Pluralsight data: {e}")
-            self._data["pluralsight"] = pd.DataFrame()
-            return
-
-        if df.empty:
-            self.logger.info(f"Pluralsight data file is empty: {path}")
-            self._data["pluralsight"] = pd.DataFrame()
-            return
-
-        self._data["pluralsight"] = df
-
-    def _load_khan_academy(self) -> None:
-        """Load and normalize Khan Academy data."""
-        path = self._config.khan_academy_path
-
-        if not path.exists():
-            self.logger.warning(f"Khan Academy file not found: {path}")
-            self._data["khan"] = pd.DataFrame()
-            return
-
-        try:
-            df = pd.read_json(path)
-        except Exception as e:
-            self.logger.error(f"Failed to read Khan Academy data: {e}")
-            self._data["khan"] = pd.DataFrame()
-            return
-
-        if df.empty:
-            self.logger.info(f"Khan Academy data file is empty: {path}")
-            self._data["khan"] = pd.DataFrame()
-            return
-
-        self._data["khan"] = df
-
     @staticmethod
     def _parse_date(date_str: str | None) -> datetime | None:
         """Parse date string with multiple format support.
@@ -428,7 +378,7 @@ class CourseDataManager:
         Example:
             >>> stats = manager.get_source_stats()
             >>> print(stats)
-            {'coursera': 150, 'udemy': 75, 'pluralsight': 0, 'khan': 200}
+            {'coursera': 150, 'udemy': 75}
         """
         with self._lock:
             return {
