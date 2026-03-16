@@ -108,6 +108,37 @@ NEWS_SOURCES_CONFIG = {
     },
 }
 
+ARXIV_SOURCES_CONFIG = {
+    "all_arxiv": {
+        "path": get_data_path("arxiv", "arxiv_papers_latest.json"),
+        "name": "All Papers",
+    },
+    "machine_learning": {
+        "path": get_data_path("arxiv", "arxiv_machine_learning_latest.json"),
+        "name": "Machine Learning",
+    },
+    "computer_vision": {
+        "path": get_data_path("arxiv", "arxiv_computer_vision_latest.json"),
+        "name": "Computer Vision",
+    },
+    "nlp": {
+        "path": get_data_path("arxiv", "arxiv_natural_language_latest.json"),
+        "name": "NLP",
+    },
+    "neural_networks": {
+        "path": get_data_path("arxiv", "arxiv_neural_networks_latest.json"),
+        "name": "Neural Networks",
+    },
+    "robotics": {
+        "path": get_data_path("arxiv", "arxiv_robotics_latest.json"),
+        "name": "Robotics",
+    },
+    "reinforcement_learning": {
+        "path": get_data_path("arxiv", "arxiv_reinforcement_learning_latest.json"),
+        "name": "RL & AI",
+    },
+}
+
 KNOWLEDGE_SOURCES_CONFIG = {
     "opensource": {
         "path": get_data_path("open_source_intelligence", "output", "latest.json"),
