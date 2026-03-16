@@ -95,8 +95,10 @@ This project uses the **BMad Method (BMM)** for agile development.
 2.  **Pydantic**: Use Pydantic for all data structures and configuration.
 3.  **Type Hints**: Enforce strict type hints in all new code.
 4.  **File Paths**: Use absolute paths or project-relative paths carefully. The project root is auto-detected.
-5.  **Aesthetics**: When touching the UI (Dash), ensure it looks premium and modern (Bootstrap).
-6.  **Dashboard Port**: The Dash dashboard runs on port **7780**.
+5.  **Aesthetics**: When touching the UI (Dash), ensure it looks premium and modern (Bootstrap). Keep layouts minimalist, semantic, and highly responsive.
+6.  **Dash Pattern Strictness**: STRICT adherence to the Single-Callback Pattern. Never have two callbacks target the same React prop/output to avoid conflicts.
+7.  **Resilient ETLs**: Always subclass `BaseETL`, implement retry logic, checkpointing, and handle rate limits. Pydantic is strictly enforced.
+8.  **Dashboard Port**: The Dash dashboard runs on port **7780**.
 
 ## Workflows
 

@@ -89,24 +89,28 @@ start /B %PYTHON_CMD% src/etl/arxiv/arxiv_etl.py
 
 REM Anime ETL
 start /B %PYTHON_CMD% src/etl/anime/mal_etl.py
+start /B %PYTHON_CMD% src/etl/anime/anilist_schedule_etl.py
 
 REM AI Platforms
 start /B %PYTHON_CMD% src/etl/ai_platforms/papers_with_code_etl.py
 
 REM Watchers
-start /B %PYTHON_CMD% src/watchers/ms_skills_watcher.py
+call :RunETL "src/watchers/ms_skills_watcher.py"
 
 REM Youtube ETL
-start /B %PYTHON_CMD% src/etl/youtube_shorts_ocr_etl.py
+call :RunETL "src/etl/youtube_shorts_ocr_etl.py"
 
 REM Courses
-start /B %PYTHON_CMD% src/etl/courses/khan_academy_etl.py
+call :RunETL "src/etl/courses/khan_academy_etl.py"
+call :RunETL "src/etl/courses/udemy_spreadsheet_etl.py"
+call :RunETL "src/etl/courses/ms_applied_skills_etl.py"
+call :RunETL "src/etl/courses/aws_skill_builder_etl.py"
+call :RunETL "src/etl/courses/gcp_skills_boost_etl.py"
 REM Intelligence feeds
-start /B %PYTHON_CMD% src/etl/intelligence/sec_edgar_rss.py
-start /B %PYTHON_CMD% src/etl/intelligence/who_outbreaks_rss.py
+call :RunETL "src/etl/intelligence/sec_edgar_rss.py"
+call :RunETL "src/etl/intelligence/who_outbreaks_rss.py"
 
 REM Games ETL
-start /B %PYTHON_CMD% src/etl/games/games_get_deals.py
 start /B %PYTHON_CMD% src/etl/games/games_get_humblebundles.py
 start /B %PYTHON_CMD% src/etl/games/games_get_new_releases.py
 start /B %PYTHON_CMD% src/etl/games/games_get_itchio_trending.py

@@ -52,3 +52,27 @@ class PluralsightCourseModel(CourseModel):
     provider: str = Field(default="Pluralsight", description="Always Pluralsight")
     skill_paths: list[str] | None = Field(default=None, description="Associated skill paths")
     course_id: str | None = Field(default=None, description="Pluralsight course ID")
+
+
+class MsAppliedSkillModel(CourseModel):
+    """Specific model for Microsoft Applied Skills."""
+
+    provider: str = Field(default="Microsoft Learn", description="Always Microsoft Learn")
+    roles: list[str] | None = Field(default=None, description="Roles the skill is applicable to")
+    products: list[str] | None = Field(default=None, description="Microsoft products covered by the skill")
+    first_detected_at: datetime | None = Field(default=None, description="When the skill was first detected by Watchtower")
+
+
+class AwsSkillBuilderModel(CourseModel):
+    """Specific model for AWS Skill Builder courses."""
+
+    provider: str = Field(default="AWS Skill Builder", description="Always AWS Skill Builder")
+    first_detected_at: datetime | None = Field(default=None, description="When the course was first detected by Watchtower")
+
+
+class GcpSkillsBoostModel(CourseModel):
+    """Specific model for GCP Skills Boost courses and labs."""
+
+    provider: str = Field(default="GCP Skills Boost", description="Always GCP Skills Boost")
+    course_type: str | None = Field(default=None, description="Type of content (e.g., lab, course, quest)")
+    first_detected_at: datetime | None = Field(default=None, description="When the course was first detected by Watchtower")

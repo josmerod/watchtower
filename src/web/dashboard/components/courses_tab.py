@@ -12,20 +12,23 @@ from src.web.dashboard.utils import file_exists, get_data_path
 # --- Constants ---
 COURSERA_DATA_PATH = get_data_path("classcentral", "coursera_courses.json")
 UDEMY_DATA_PATH = get_data_path("udemy", "udemy_courses.json")
-PLURALSIGHT_DATA_PATH = get_data_path("pluralsight_courses", "pluralsight_courses.json")
-KHAN_ACADEMY_DATA_PATH = get_data_path("courses", "khan_academy_latest.json")
+MS_APPLIED_SKILLS_DATA_PATH = get_data_path("courses", "ms_applied_skills.json")
+AWS_SKILL_BUILDER_DATA_PATH = get_data_path("courses", "aws_skill_builder.json")
+GCP_SKILLS_BOOST_DATA_PATH = get_data_path("courses", "gcp_skills_boost.json")
 
 ALL_COURSES_DATA = {
     "coursera": pd.DataFrame(),
     "udemy": pd.DataFrame(),
-    "pluralsight": pd.DataFrame(),
-    "khan": pd.DataFrame(),
+    "ms_skills": pd.DataFrame(),
+    "aws_skills": pd.DataFrame(),
+    "gcp_skills": pd.DataFrame(),
 }
 COURSES_DATA_LOADED = {
     "coursera": False,
     "udemy": False,
-    "pluralsight": False,
-    "khan": False,
+    "ms_skills": False,
+    "aws_skills": False,
+    "gcp_skills": False,
 }
 # Page size for tables
 PAGE_SIZE = 15
@@ -205,82 +208,114 @@ def load_udemy_data():
     print(f"Info (Udemy): Loaded {len(df)} courses.")
 
 
-def load_pluralsight_data():
+
+def load_ms_applied_skills_data():
     global ALL_COURSES_DATA, COURSES_DATA_LOADED
-    file_path = PLURALSIGHT_DATA_PATH
-
+    file_path = MS_APPLIED_SKILLS_DATA_PATH
     if not file_exists(file_path):
-        print(f"Warning (Pluralsight): File not found at {file_path}")
-        ALL_COURSES_DATA["pluralsight"] = pd.DataFrame()
-        COURSES_DATA_LOADED["pluralsight"] = True
+        print(f"Warning (MS Skills): File not found at {file_path}")
+        ALL_COURSES_DATA["ms_skills"] = pd.DataFrame()
+        COURSES_DATA_LOADED["ms_skills"] = True
         return
-
     try:
         df = pd.read_json(file_path)
     except Exception as e:
-        print(f"Error (Pluralsight): Failed to load or parse {file_path}. Error: {e}")
-        ALL_COURSES_DATA["pluralsight"] = pd.DataFrame()
-        COURSES_DATA_LOADED["pluralsight"] = True
+        print(f"Error (MS Skills): Failed to load or parse {file_path}. Error: {e}")
+        ALL_COURSES_DATA["ms_skills"] = pd.DataFrame()
+        COURSES_DATA_LOADED["ms_skills"] = True
         return
-
     if df.empty:
-        print(f"Info (Pluralsight): {file_path} was empty.")
-        ALL_COURSES_DATA["pluralsight"] = pd.DataFrame()
-        COURSES_DATA_LOADED["pluralsight"] = True
+        ALL_COURSES_DATA["ms_skills"] = pd.DataFrame()
+        COURSES_DATA_LOADED["ms_skills"] = True
         return
+        
+    if "first_detected_at" in df.columns:
+        df["first_detected_at"] = pd.to_datetime(df["first_detected_at"]).dt.tz_convert(None)
+        df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
+        df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d")
+    else:
+        df["detected_str"] = "N/A"
+        
+    df = df.fillna("N/A")
+    ALL_COURSES_DATA["ms_skills"] = df
+    COURSES_DATA_LOADED["ms_skills"] = True
+    print(f"Info (MS Skills): Loaded {len(df)} items.")
 
-    # Standardize columns for Pluralsight
-    expected_cols = ["title", "url", "instructor", "duration", "level", "scraped_at"]
-    for col in expected_cols:
-        if col not in df.columns:
-            df[col] = None
 
-    df["scraped_at_parsed"] = df["scraped_at"].apply(lambda x: parse_course_date(x))
+def load_aws_skill_builder_data():
+    global ALL_COURSES_DATA, COURSES_DATA_LOADED
+    file_path = AWS_SKILL_BUILDER_DATA_PATH
+    if not file_exists(file_path):
+        print(f"Warning (AWS Skills): File not found at {file_path}")
+        ALL_COURSES_DATA["aws_skills"] = pd.DataFrame()
+        COURSES_DATA_LOADED["aws_skills"] = True
+        return
+    try:
+        df = pd.read_json(file_path)
+    except Exception as e:
+        print(f"Error (AWS Skills): Failed to load or parse {file_path}. Error: {e}")
+        ALL_COURSES_DATA["aws_skills"] = pd.DataFrame()
+        COURSES_DATA_LOADED["aws_skills"] = True
+        return
+    if df.empty:
+        ALL_COURSES_DATA["aws_skills"] = pd.DataFrame()
+        COURSES_DATA_LOADED["aws_skills"] = True
+        return
+        
+    if "first_detected_at" in df.columns:
+        df["first_detected_at"] = pd.to_datetime(df["first_detected_at"]).dt.tz_convert(None)
+        df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
+        df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d")
+    else:
+        df["detected_str"] = "N/A"
+        
+    df = df.fillna("N/A")
+    ALL_COURSES_DATA["aws_skills"] = df
+    COURSES_DATA_LOADED["aws_skills"] = True
+    print(f"Info (AWS Skills): Loaded {len(df)} items.")
 
-    if "scraped_at_parsed" in df.columns:
-        df = df.sort_values(by="scraped_at_parsed", ascending=False, na_position="last")
 
-    ALL_COURSES_DATA["pluralsight"] = df
-    COURSES_DATA_LOADED["pluralsight"] = True
-    print(f"Info (Pluralsight): Loaded {len(df)} courses.")
+def load_gcp_skills_boost_data():
+    global ALL_COURSES_DATA, COURSES_DATA_LOADED
+    file_path = GCP_SKILLS_BOOST_DATA_PATH
+    if not file_exists(file_path):
+        print(f"Warning (GCP Skills): File not found at {file_path}")
+        ALL_COURSES_DATA["gcp_skills"] = pd.DataFrame()
+        COURSES_DATA_LOADED["gcp_skills"] = True
+        return
+    try:
+        df = pd.read_json(file_path)
+    except Exception as e:
+        print(f"Error (GCP Skills): Failed to load or parse {file_path}. Error: {e}")
+        ALL_COURSES_DATA["gcp_skills"] = pd.DataFrame()
+        COURSES_DATA_LOADED["gcp_skills"] = True
+        return
+    if df.empty:
+        ALL_COURSES_DATA["gcp_skills"] = pd.DataFrame()
+        COURSES_DATA_LOADED["gcp_skills"] = True
+        return
+        
+    if "first_detected_at" in df.columns:
+        df["first_detected_at"] = pd.to_datetime(df["first_detected_at"]).dt.tz_convert(None)
+        df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
+        df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d %H:%M")
+    else:
+        df["detected_str"] = "N/A"
+        
+    df = df.fillna("N/A")
+    ALL_COURSES_DATA["gcp_skills"] = df
+    COURSES_DATA_LOADED["gcp_skills"] = True
+    print(f"Info (GCP Skills): Loaded {len(df)} items.")
 
 
 def load_all_courses_data():
     load_coursera_data()
     load_udemy_data()
-    load_pluralsight_data()
-    load_khan_academy_data()
+    load_ms_applied_skills_data()
+    load_aws_skill_builder_data()
+    load_gcp_skills_boost_data()
     print("Attempted to load all courses data.")
 
-
-def load_khan_academy_data():
-    global ALL_COURSES_DATA, COURSES_DATA_LOADED
-    file_path = KHAN_ACADEMY_DATA_PATH
-    if not file_exists(file_path):
-        print(f"Warning (Khan): File not found at {file_path}")
-        ALL_COURSES_DATA["khan"] = pd.DataFrame()
-        COURSES_DATA_LOADED["khan"] = True
-        return
-    try:
-        df = pd.read_json(file_path)
-    except Exception as e:
-        print(f"Error (Khan): Failed to load or parse {file_path}. Error: {e}")
-        ALL_COURSES_DATA["khan"] = pd.DataFrame()
-        COURSES_DATA_LOADED["khan"] = True
-        return
-    if df.empty:
-        ALL_COURSES_DATA["khan"] = pd.DataFrame()
-        COURSES_DATA_LOADED["khan"] = True
-        return
-    # Standardize minimal columns
-    df.rename(columns={"content_kind": "type"}, inplace=True)
-    expected_cols = ["title", "url", "type", "subject_path", "language", "fetched_at"]
-    for col in expected_cols:
-        if col not in df.columns:
-            df[col] = None
-    ALL_COURSES_DATA["khan"] = df
-    COURSES_DATA_LOADED["khan"] = True
-    print(f"Info (Khan): Loaded {len(df)} items.")
 
 
 load_all_courses_data()
@@ -611,12 +646,78 @@ def render_udemy_courses_sub_tab(df):
     )
 
 
+def render_ms_skills_courses_sub_tab(df):
+    if not COURSES_DATA_LOADED["ms_skills"]:
+        return dbc.Alert("MS Applied Skills data failed to load. Check logs.", color="danger", className="mt-3")
+    if df.empty:
+        return dbc.Alert("No MS Applied Skills data currently available.", color="info", className="mt-3")
+    return html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Input(id="ms-skills-search-input", placeholder="Search by title/subject/role..."),
+                        md=12,
+                        className="mb-2",
+                    )
+                ],
+                className="mt-3 mb-3",
+            ),
+            html.Div(id="ms-skills-table-container"),
+        ]
+    )
+
+
+def render_aws_skills_courses_sub_tab(df):
+    if not COURSES_DATA_LOADED["aws_skills"]:
+        return dbc.Alert("AWS Skill Builder data failed to load. Check logs.", color="danger", className="mt-3")
+    if df.empty:
+        return dbc.Alert("No AWS Skill Builder data currently available.", color="info", className="mt-3")
+    return html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Input(id="aws-skills-search-input", placeholder="Search by title..."),
+                        md=12,
+                        className="mb-2",
+                    )
+                ],
+                className="mt-3 mb-3",
+            ),
+            html.Div(id="aws-skills-table-container"),
+        ]
+    )
+
+
+def render_gcp_skills_courses_sub_tab(df):
+    if not COURSES_DATA_LOADED["gcp_skills"]:
+        return dbc.Alert("GCP Skills Boost data failed to load. Check logs.", color="danger", className="mt-3")
+    if df.empty:
+        return dbc.Alert("No GCP Skills Boost data currently available.", color="info", className="mt-3")
+    return html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Input(id="gcp-skills-search-input", placeholder="Search by title or description..."),
+                        md=12,
+                        className="mb-2",
+                    )
+                ],
+                className="mt-3 mb-3",
+            ),
+            html.Div(id="gcp-skills-table-container"),
+        ]
+    )
+
+
 # --- Main Layout ---
 def render_courses_tab():
     print(f"DEBUG: render_courses_tab called. Loaded status: {COURSES_DATA_LOADED}")
     # Initial check if any data was loaded to provide a general message
     # More specific messages are handled by individual sub-tab render functions
-    if not COURSES_DATA_LOADED["coursera"] and not COURSES_DATA_LOADED["udemy"] and not COURSES_DATA_LOADED["pluralsight"] and not COURSES_DATA_LOADED["khan"]:
+    if not any(COURSES_DATA_LOADED.values()):
         return dbc.Alert(
             "All course data failed to load. Please check data sources and ETLs.",
             color="danger",
@@ -644,14 +745,19 @@ def render_courses_tab():
                         children=render_udemy_courses_sub_tab(ALL_COURSES_DATA["udemy"]),
                     ),
                     dbc.Tab(
-                        label="Pluralsight",
-                        tab_id="tab-pluralsight",
-                        children=render_pluralsight_courses_sub_tab(ALL_COURSES_DATA["pluralsight"]),
+                        label="MS Applied Skills",
+                        tab_id="tab-ms-skills",
+                        children=render_ms_skills_courses_sub_tab(ALL_COURSES_DATA["ms_skills"]),
                     ),
                     dbc.Tab(
-                        label="Khan Academy",
-                        tab_id="tab-khan",
-                        children=render_khan_courses_sub_tab(ALL_COURSES_DATA["khan"]),
+                        label="AWS Skill Builder",
+                        tab_id="tab-aws-skills",
+                        children=render_aws_skills_courses_sub_tab(ALL_COURSES_DATA["aws_skills"]),
+                    ),
+                    dbc.Tab(
+                        label="GCP Skills Boost",
+                        tab_id="tab-gcp-skills",
+                        children=render_gcp_skills_courses_sub_tab(ALL_COURSES_DATA["gcp_skills"]),
                     ),
                 ],
             ),
@@ -972,324 +1078,122 @@ def register_courses_callbacks(app):
     def reset_udemy_pagination(_):
         return 1
 
-    # Pluralsight Callbacks (similar structure to Udemy)
     @app.callback(
-        Output("pluralsight-table-container", "children"),
-        Output("pluralsight-pagination-info", "children"),
-        Output("pluralsight-total-pages", "children"),
-        Output("pluralsight-page-input", "max"),
-        Output("pluralsight-page-input", "value"),
-        Output("pluralsight-prev-btn", "disabled"),
-        Output("pluralsight-next-btn", "disabled"),
-        Input("pluralsight-search-input", "value"),
-        Input("pluralsight-instructor-input", "value"),
-        Input("pluralsight-page-input", "value"),
-        Input("pluralsight-prev-btn", "n_clicks"),
-        Input("pluralsight-next-btn", "n_clicks"),
+        Output("ms-skills-table-container", "children"),
+        Input("ms-skills-search-input", "value"),
         prevent_initial_call=False,
     )
-    def update_pluralsight_table(search_term, instructor_filter, current_page, prev_clicks, next_clicks):
+    def update_ms_skills_table(search_term):
         try:
-            if not COURSES_DATA_LOADED["pluralsight"]:
-                return (
-                    dbc.Alert("Loading Pluralsight data...", color="info"),
-                    "",
-                    "1",
-                    1,
-                    1,
-                    True,
-                    True,
-                )
-
-            df_filtered = ALL_COURSES_DATA["pluralsight"].copy()
-            if df_filtered.empty:
-                return (
-                    dbc.Alert("No Pluralsight data available.", color="warning"),
-                    "",
-                    "1",
-                    1,
-                    1,
-                    True,
-                    True,
-                )
-
-            if search_term:
-                search_lower = search_term.lower()
-                df_filtered = df_filtered[df_filtered["title"].str.lower().contains(search_lower, na=False)]
-
-            if instructor_filter:
-                instructor_lower = instructor_filter.lower()
-                df_filtered = df_filtered[df_filtered["instructor"].str.lower().contains(instructor_lower, na=False)]
-
-            if df_filtered.empty:
-                return (
-                    dbc.Alert("No Pluralsight courses match your filters.", color="info"),
-                    "",
-                    "1",
-                    1,
-                    1,
-                    True,
-                    True,
-                )
-
-            total_items = len(df_filtered)
-            max_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
-
-            # Handle pagination button clicks
-            ctx = dash.callback_context
-            if ctx.triggered:
-                prop_id = ctx.triggered[0]["prop_id"]
-                if "prev-btn" in prop_id:
-                    current_page = max(1, (current_page or 1) - 1)
-                elif "next-btn" in prop_id:
-                    current_page = min(max_pages, (current_page or 1) + 1)
-
-            current_page = max(1, min(current_page or 1, max_pages))
-
-            start_idx = (current_page - 1) * PAGE_SIZE
-            end_idx = start_idx + PAGE_SIZE
-            df_paginated = df_filtered.iloc[start_idx:end_idx]
-
-            # Create Pluralsight table
-            table_header = [
-                html.Thead(
-                    html.Tr(
-                        [
-                            html.Th("Title"),
-                            html.Th("Instructor"),
-                        ]
-                    )
-                )
-            ]
-            table_body_rows = []
-            for _, row in df_paginated.iterrows():
-                table_body_rows.append(
-                    html.Tr(
-                        [
-                            html.Td(
-                                html.A(
-                                    row.get("title", "N/A"),
-                                    href=row.get("url"),
-                                    target="_blank",
-                                )
-                            ),
-                            html.Td(str(row.get("instructor", "N/A")) if row.get("instructor") != "false" else "N/A"),
-                        ]
-                    )
-                )
-            table_body = [html.Tbody(table_body_rows)]
-            table = dbc.Table(
-                table_header + table_body,
-                bordered=True,
-                hover=True,
-                responsive=True,
-                striped=True,
-                size="sm",
-                color="dark",
-                className="table-responsive",
-            )
-
-            # Create pagination info
-            pagination_info = f"Showing {start_idx + 1}-{min(end_idx, total_items)} of {total_items} courses"
-
-            # Button states
-            prev_disabled = current_page <= 1
-            next_disabled = current_page >= max_pages
-
-            return (
-                table,
-                pagination_info,
-                str(max_pages),
-                max_pages,
-                current_page,
-                prev_disabled,
-                next_disabled,
-            )
-
-        except Exception as e:
-            print(f"Error in pluralsight table update: {e}")
-            return (
-                dbc.Alert(f"Error loading Pluralsight data: {e!s}", color="danger"),
-                "",
-                "1",
-                1,
-                1,
-                True,
-                True,
-            )
-
-    @app.callback(
-        Output("pluralsight-page-input", "value", allow_duplicate=True),
-        Input("pluralsight-search-input", "value"),
-        Input("pluralsight-instructor-input", "value"),
-        prevent_initial_call=True,
-    )
-    def reset_pluralsight_pagination(_, __):
-        return 1
-
-    # Khan: simple searchable list
-    @app.callback(
-        Output("khan-table-container", "children"),
-        Input("khan-search-input", "value"),
-        prevent_initial_call=False,
-    )
-    def update_khan_table(search_term):
-        try:
-            if not COURSES_DATA_LOADED["khan"]:
-                return dbc.Alert("Loading Khan Academy data...", color="info")
-            df = ALL_COURSES_DATA["khan"].copy()
+            if not COURSES_DATA_LOADED["ms_skills"]:
+                return dbc.Alert("Loading MS Applied Skills data...", color="info")
+            df = ALL_COURSES_DATA["ms_skills"].copy()
             if df.empty:
-                return dbc.Alert("No Khan Academy data available.", color="warning")
+                return dbc.Alert("No data available.", color="warning")
             if search_term:
                 s = str(search_term).lower()
-                df = df[df["title"].str.lower().str.contains(s, na=False) | df["subject_path"].str.lower().str.contains(s, na=False)]
-            # Build simple table
-            header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Type"), html.Th("Subject")]))]
+                df = df[df["title"].str.lower().str.contains(s, na=False) | df["subject"].str.lower().str.contains(s, na=False) | df["roles"].astype(str).str.lower().str.contains(s, na=False)]
+                
+            header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Subject"), html.Th("Level"), html.Th("Roles"), html.Th("First Detected")]))]
             rows = []
-            for _, row in df.head(50).iterrows():
+            for _, row in df.iterrows():
+                roles_str = ", ".join(row.get("roles", [])) if isinstance(row.get("roles"), list) else "N/A"
                 rows.append(
                     html.Tr(
                         [
-                            html.Td(
-                                html.A(
-                                    row.get("title", "N/A"),
-                                    href=row.get("url"),
-                                    target="_blank",
-                                )
-                            ),
-                            html.Td(row.get("type", "N/A")),
-                            html.Td(row.get("subject_path", "")),
+                            html.Td(html.A(row.get("title", "N/A"), href=row.get("url"), target="_blank")),
+                            html.Td(row.get("subject", "N/A")),
+                            html.Td(row.get("level", "N/A")),
+                            html.Td(roles_str),
+                            html.Td(row.get("detected_str", "N/A")),
                         ]
                     )
                 )
             return dbc.Table(
                 header + [html.Tbody(rows)],
-                bordered=True,
-                hover=True,
-                responsive=True,
-                striped=True,
-                size="sm",
-                color="dark",
-                className="table-responsive",
+                bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive",
             )
         except Exception as e:
-            return dbc.Alert(f"Error loading Khan Academy data: {e!s}", color="danger")
+            return dbc.Alert(f"Error loading MS Applied Skills data: {e!s}", color="danger")
 
-
-def render_pluralsight_courses_sub_tab(df):
-    if not COURSES_DATA_LOADED["pluralsight"]:
-        return dbc.Alert(
-            "Pluralsight courses data failed to load. Check logs.",
-            color="danger",
-            className="mt-3",
-        )
-    if df.empty:
-        return dbc.Alert(
-            "No Pluralsight courses data currently available (file might be empty).",
-            color="info",
-            className="mt-3",
-        )
-
-    return html.Div(
-        [
-            dbc.Row(
-                [
-                    dbc.Col(
-                        dbc.Input(
-                            id="pluralsight-search-input",
-                            placeholder="Search by title...",
-                        ),
-                        md=8,
-                        className="mb-2",
-                    ),
-                    dbc.Col(
-                        dbc.Input(
-                            id="pluralsight-instructor-input",
-                            placeholder="Filter by instructor...",
-                        ),
-                        md=4,
-                        className="mb-2",
-                    ),
-                ],
-                className="mt-3 mb-3",
-            ),
-            html.Div(id="pluralsight-table-container"),
-            # Custom pagination with better UX
-            html.Div(
-                id="pluralsight-pagination-wrapper",
-                className="d-flex justify-content-between align-items-center mt-3",
-                children=[
-                    html.Div(id="pluralsight-pagination-info", className="text-muted"),
-                    html.Div(
-                        className="d-flex align-items-center gap-2",
-                        children=[
-                            dbc.Button(
-                                "« Previous",
-                                id="pluralsight-prev-btn",
-                                size="sm",
-                                outline=True,
-                                color="primary",
-                                disabled=True,
-                            ),
-                            dbc.Input(
-                                id="pluralsight-page-input",
-                                type="number",
-                                value=1,
-                                min=1,
-                                max=1,
-                                style={"width": "80px", "textAlign": "center"},
-                                size="sm",
-                            ),
-                            html.Span("of", className="mx-2 text-muted"),
-                            html.Span(id="pluralsight-total-pages", className="text-muted"),
-                            dbc.Button(
-                                "Next »",
-                                id="pluralsight-next-btn",
-                                size="sm",
-                                outline=True,
-                                color="primary",
-                                disabled=True,
-                            ),
-                        ],
-                    ),
-                ],
-            ),
-        ],
-        className="mt-3",
+    @app.callback(
+        Output("aws-skills-table-container", "children"),
+        Input("aws-skills-search-input", "value"),
+        prevent_initial_call=False,
     )
-
-
-def render_khan_courses_sub_tab(df):
-    if not COURSES_DATA_LOADED["khan"]:
-        return dbc.Alert(
-            "Khan Academy data failed to load. Check logs.",
-            color="danger",
-            className="mt-3",
-        )
-    if df.empty:
-        return dbc.Alert(
-            "No Khan Academy data currently available (file might be empty).",
-            color="info",
-            className="mt-3",
-        )
-    return html.Div(
-        [
-            dbc.Row(
-                [
-                    dbc.Col(
-                        dbc.Input(
-                            id="khan-search-input",
-                            placeholder="Search by title/subject...",
-                        ),
-                        md=12,
-                        className="mb-2",
+    def update_aws_skills_table(search_term):
+        try:
+            if not COURSES_DATA_LOADED["aws_skills"]:
+                return dbc.Alert("Loading AWS Skill Builder data...", color="info")
+            df = ALL_COURSES_DATA["aws_skills"].copy()
+            if df.empty:
+                return dbc.Alert("No data available.", color="warning")
+            if search_term:
+                s = str(search_term).lower()
+                df = df[df["title"].str.lower().str.contains(s, na=False)]
+                
+            header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Info"), html.Th("First Detected")]))]
+            rows = []
+            for _, row in df.iterrows():
+                rows.append(
+                    html.Tr(
+                        [
+                            html.Td(html.A(row.get("title", "N/A"), href=row.get("url"), target="_blank")),
+                            html.Td(row.get("description", "N/A")),
+                            html.Td(row.get("detected_str", "N/A")),
+                        ]
                     )
-                ],
-                className="mt-3 mb-3",
-            ),
-            html.Div(id="khan-table-container"),
-        ]
+                )
+            return dbc.Table(
+                header + [html.Tbody(rows)],
+                bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive",
+            )
+        except Exception as e:
+            return dbc.Alert(f"Error loading AWS Skill Builder data: {e!s}", color="danger")
+
+    @app.callback(
+        Output("gcp-skills-table-container", "children"),
+        Input("gcp-skills-search-input", "value"),
+        prevent_initial_call=False,
     )
+    def update_gcp_skills_table(search_term):
+        try:
+            if not COURSES_DATA_LOADED["gcp_skills"]:
+                return dbc.Alert("Loading GCP Skills Boost data...", color="info")
+            df = ALL_COURSES_DATA["gcp_skills"].copy()
+            if df.empty:
+                return dbc.Alert("No data available.", color="warning")
+            if search_term:
+                s = str(search_term).lower()
+                df = df[
+                    df["title"].str.lower().str.contains(s, na=False)
+                    | df["description"].str.lower().str.contains(s, na=False)
+                ]
+                
+            header = [html.Thead(html.Tr([
+                html.Th("Title"), html.Th("Type"), html.Th("Description"),
+                html.Th("Duration"), html.Th("Level"), html.Th("First Detected")
+            ]))]
+            rows = []
+            for _, row in df.iterrows():
+                rows.append(
+                    html.Tr(
+                        [
+                            html.Td(html.A(row.get("title", "N/A"), href=row.get("url", "#"), target="_blank")),
+                            html.Td(row.get("course_type", "N/A")),
+                            html.Td(row.get("description", "N/A")),
+                            html.Td(row.get("duration", "N/A")),
+                            html.Td(row.get("level", "N/A")),
+                            html.Td(row.get("detected_str", "N/A")),
+                        ]
+                    )
+                )
+            return dbc.Table(
+                header + [html.Tbody(rows)],
+                bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive",
+            )
+        except Exception as e:
+            return dbc.Alert(f"Error loading GCP Skills Boost data: {e!s}", color="danger")
 
 
 if __name__ == "__main__":
