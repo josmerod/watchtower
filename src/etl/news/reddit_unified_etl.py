@@ -65,6 +65,10 @@ SUBREDDITS_CONFIG = {
     "homelab": {"type": "json", "category": "devops"},
     # News Aggregators
     "hypeurls": {"type": "json", "category": "news", "pagination": True},
+    # Open Source (Mapped to Knowledge Garden Open Source Tab)
+    "coolgithubprojects": {"type": "json", "category": "opensource"},
+    "opensource": {"type": "json", "category": "opensource"},
+    "github": {"type": "json", "category": "opensource"},
 }
 
 

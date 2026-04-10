@@ -122,6 +122,22 @@ class TravelDealRawData(BaseModel):
     fetched_at: datetime
 
 
+class LifetimeDeal(BaseModel):
+    """Data model for a lifetime deal from Lifetimo or similar platforms."""
+
+    deal_id: str
+    title: str
+    description: str | None = None
+    url: str
+    price_info: str | None = None  # e.g., "$59 (Lifetime)"
+    original_price: str | None = None
+    discount_pct: str | None = None
+    categories: list[str] = []
+    published_at: datetime | None = None
+    last_checked_at: datetime = datetime.now()
+    source: str = "lifetimo"
+
+
 if __name__ == "__main__":
     # Example Usage:
     product_example = ShoppyProduct(

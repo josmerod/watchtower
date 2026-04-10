@@ -1,33 +1,32 @@
-"""Scavenging Tab Component for Watchtower Dashboard"""
+"""Scavenging Tab Component for Watchtower Dashboard
+Improved with premium table layout, clickable links, and search functionality.
+"""
 
 import logging
 from pathlib import Path
+import json
 
+import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, dash_table, dcc, html
+from dash import Input, Output, State, dcc, html
+
+from src.services.data_loader import (
+    load_data_from_file,
+    get_sortable_date,
+    format_article_date as format_article_date_shared,
+)
+from src.web.dashboard.search_utils import (
+    create_search_input,
+    filter_content,
+)
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 DATA_DIR = Path("data/scavenging")
 
-
-def load_category_file(json_path: Path) -> pd.DataFrame:
-    """Load a single JSON file into a DataFrame"""
-    try:
-        if not json_path.exists():
-            return pd.DataFrame()
-
-        data = pd.read_json(json_path)
-        if not data.empty and "published" in data.columns:
-            # Ensure published column is datetime for sorting
-            data["published"] = pd.to_datetime(data["published"], errors="coerce")
-        return data
-    except ValueError as e:
-        logger.error(f"Error loading {json_path}: {e}")
-        return pd.DataFrame()
-
+# --- Data Loading ---
 
 def discover_categories() -> dict[str, Path]:
     """Return a mapping of category name -> aggregated JSON path"""
@@ -49,338 +48,178 @@ def discover_categories() -> dict[str, Path]:
         if viajeros_file.exists():
             categories["viajeros_piratas"] = viajeros_file
 
+        # Add Humble Books data if it exists
+        humble_file = DATA_DIR / "humble_books.json"
+        if humble_file.exists():
+            categories["humble_books"] = humble_file
+
         logger.info(f"Discovered {len(categories)} scavenging categories: {list(categories.keys())}")
         return categories
     except Exception as e:
         logger.error(f"Error discovering categories: {e}")
         return {}
 
+def get_scavenging_data(category_key):
+    """Load data for a specific category."""
+    categories_map = discover_categories()
+    if category_key not in categories_map:
+        return []
+    return load_data_from_file(str(categories_map[category_key]))
 
-def create_category_table(category: str, df: pd.DataFrame) -> html.Div:
-    """Create a table for a specific category's data"""
-    try:
-        if df.empty:
-            return dbc.Alert(
-                f"No entries available for {category}.",
-                color="warning",
-                className="alert-warning",
+# --- Layout Generation ---
+
+MAX_ITEMS_PER_TAB = 100
+
+def create_scavenging_table(items):
+    """Create a premium dbc.Table from scavenging items."""
+    if not items:
+        return dbc.Alert("No entries found matching your criteria.", color="info", className="mt-3")
+
+    table_header = [
+        html.Thead(
+            html.Tr(
+                [
+                    html.Th("Title / Resource"),
+                    html.Th("Details"),
+                    html.Th("Price/Type"),
+                    html.Th("Date Added"),
+                ]
             )
+        )
+    ]
 
-        # Sort newest first
-        if "published" in df.columns:
-            df = df.sort_values(by="published", ascending=False)
+    table_body_rows = []
+    for item in items:
+        title = item.get("title", "Unknown Title")
+        url = item.get("link") or item.get("url")
+        summary = item.get("summary", "")
+        # Handle cases where summary is a dict or list (though usually it's a string here)
+        if not isinstance(summary, str):
+            summary = str(summary)
+            
+        source = item.get("source", "")
+        price = item.get("price", "N/A")
+        deal_type = item.get("deal_type") or item.get("category", "General")
+        date_display = format_article_date_shared(item)
 
-        # Prepare columns for display
-        rename_map = {
-            "title": "Título",
-            "link": "Enlace",
-            "published": "Publicado",
-            "summary": "Resumen",
-            "source": "Fuente",
-            "price": "Precio",
-            "seller": "Vendedor",
-            "category": "Categoría",
-            "deal_type": "Tipo de Oferta",
-            "currency": "Moneda",
-        }
+        # Title cell with link
+        title_cell = html.Div([
+            html.A(str(title), href=url, target="_blank", className="fw-bold text-decoration-none text-info") if url else html.Span(str(title), className="fw-bold"),
+            html.Div(f"Source: {source}", className="small text-muted") if source else None
+        ])
 
-        existing_columns = [c for c in rename_map if c in df.columns]
-        df_display = df[existing_columns].copy()
+        # Details cell
+        details_cell = html.Div(str(summary), className="small", style={"maxWidth": "400px", "whiteSpace": "normal"})
 
-        # Format published dates
-        if "published" in df_display.columns:
-            df_display["published"] = df_display["published"].dt.strftime("%Y-%m-%d %H:%M")
+        # Price/Type cell
+        price_badges = []
+        if price and price != "N/A":
+            price_badges.append(dbc.Badge(f"💰 {price}", color="success", className="me-1"))
+        if deal_type:
+            price_badges.append(dbc.Badge(deal_type.upper(), color="primary", className="me-1"))
 
-        # Rename columns
-        df_display = df_display.rename(columns=rename_map)
-
-        # Create table with dark theme styling
-        table = dash_table.DataTable(
-            id=f"scavenging-table-{category}",
-            data=df_display.to_dict("records"),
-            columns=[
-                {
-                    "name": col,
-                    "id": col,
-                    "type": "text",
-                    "presentation": "markdown" if col == "Enlace" else "input",
-                }
-                for col in df_display.columns
-            ],
-            style_cell={
-                "textAlign": "left",
-                "padding": "12px 16px",
-                "fontSize": "14px",
-                "fontFamily": "Poppins, sans-serif",
-                "maxWidth": "200px",
-                "overflow": "hidden",
-                "textOverflow": "ellipsis",
-                "backgroundColor": "#2D2B55",
-                "color": "#CDD6F4",
-                "border": "1px solid #3C3970",
-            },
-            style_header={
-                "backgroundColor": "#3C3970",
-                "color": "#E2E8F0",
-                "fontWeight": "600",
-                "borderBottom": "2px solid #A37FFF",
-                "textTransform": "uppercase",
-                "fontSize": "0.85em",
-                "letterSpacing": "0.5px",
-            },
-            style_data={
-                "backgroundColor": "#2D2B55",
-                "color": "#CDD6F4",
-                "border": "1px solid #3C3970",
-                "whiteSpace": "normal",
-                "height": "auto",
-            },
-            style_data_conditional=[
-                {"if": {"row_index": "odd"}, "backgroundColor": "#252343"},
-                {
-                    "if": {"state": "selected"},
-                    "backgroundColor": "#A37FFF",
-                    "color": "#1E1E2E",
-                },
-            ],
-            style_cell_conditional=[
-                {
-                    "if": {"column_id": "Título"},
-                    "minWidth": "200px",
-                    "width": "200px",
-                    "maxWidth": "300px",
-                },
-                {
-                    "if": {"column_id": "Enlace"},
-                    "minWidth": "100px",
-                    "width": "100px",
-                    "maxWidth": "100px",
-                },
-                {
-                    "if": {"column_id": "Resumen"},
-                    "minWidth": "300px",
-                    "width": "300px",
-                    "maxWidth": "400px",
-                },
-                {
-                    "if": {"column_id": "Precio"},
-                    "minWidth": "80px",
-                    "width": "80px",
-                    "maxWidth": "80px",
-                },
-                {
-                    "if": {"column_id": "Vendedor"},
-                    "minWidth": "120px",
-                    "width": "120px",
-                    "maxWidth": "150px",
-                },
-                {
-                    "if": {"column_id": "Categoría"},
-                    "minWidth": "100px",
-                    "width": "100px",
-                    "maxWidth": "120px",
-                },
-                {
-                    "if": {"column_id": "Tipo de Oferta"},
-                    "minWidth": "100px",
-                    "width": "100px",
-                    "maxWidth": "120px",
-                },
-                {
-                    "if": {"column_id": "Moneda"},
-                    "minWidth": "60px",
-                    "width": "60px",
-                    "maxWidth": "60px",
-                },
-            ],
-            sort_action="native",
-            filter_action="native",
-            page_action="native",
-            page_current=0,
-            page_size=15,
-            tooltip_data=[{column: {"value": str(value), "type": "text"} for column, value in row.items()} for row in df_display.to_dict("records")],
-            tooltip_duration=None,
+        table_body_rows.append(
+            html.Tr(
+                [
+                    html.Td(title_cell),
+                    html.Td(details_cell),
+                    html.Td(html.Div(price_badges)),
+                    html.Td(str(date_display), className="text-nowrap font-monospace small"),
+                ]
+            )
         )
 
-        # Download buttons
-        download_section = dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        dbc.Button(
-                            "📥 Descargar CSV",
-                            id=f"download-csv-{category}",
-                            color="primary",
-                            size="sm",
-                            className="me-2",
-                        ),
-                        dcc.Download(id=f"download-csv-data-{category}"),
-                    ],
-                    width="auto",
-                ),
-                dbc.Col(
-                    [
-                        dbc.Button(
-                            "📥 Descargar JSON",
-                            id=f"download-json-{category}",
-                            color="secondary",
-                            size="sm",
-                        ),
-                        dcc.Download(id=f"download-json-data-{category}"),
-                    ],
-                    width="auto",
-                ),
-            ],
-            className="mb-3",
-        )
-
-        return html.Div(
-            [
-                html.H5(f"📁 {category.capitalize()}", className="mb-3"),
-                html.P(
-                    f"Mostrando {len(df_display)} elementos",
-                    className="text-muted mb-3",
-                ),
-                table,
-                html.Hr(className="my-4"),
-                download_section,
-            ]
-        )
-
-    except Exception as e:
-        logger.error(f"Error creating category table for {category}: {e}")
-        return dbc.Alert(
-            f"Error loading data for category {category}: {e!s}",
-            color="danger",
-            className="alert-danger",
-        )
-
+    return dbc.Table(
+        table_header + [html.Tbody(table_body_rows)],
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="mb-0",
+    )
 
 def render_scavenging_tab() -> html.Div:
-    """Render the scavenging tab"""
-    try:
-        categories_map = discover_categories()
-
-        if not categories_map:
-            return html.Div(
-                [
-                    dbc.Alert(
-                        [
-                            html.H4(
-                                "No Scavenging Data Available",
-                                className="alert-heading",
-                            ),
-                            html.P("No scavenging data found. Run the Scavenging ETL to populate data."),
-                            html.Hr(),
-                            html.P(
-                                f"Expected data location: {DATA_DIR}/*_rss_entries.json",
-                                className="mb-0",
-                            ),
-                        ],
-                        color="info",
-                        className="alert-info",
-                    )
-                ],
-                className="p-4",
-            )
-
-        # Create tabs for each category
-        category_tabs = []
-        category_content = []
-
-        for category in sorted(categories_map.keys()):
-            tab_id = f"scavenging-{category}"
-
-            # Load data for this category
-            df = load_category_file(categories_map[category])
-
-            # Create tab content
-            category_content.append(
-                dcc.Tab(
-                    id=tab_id,
-                    value=tab_id,
-                    label=category.capitalize(),
-                    children=[html.Div([create_category_table(category, df)], className="p-3")],
-                )
-            )
-
-        return html.Div(
-            [
-                # Header
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                html.H2("⛏️ Scavenging RSS Feeds", className="mb-3"),
-                                html.P(
-                                    f"Displaying RSS entries across {len(categories_map)} categories",
-                                    className="text-muted",
-                                ),
-                            ]
-                        )
-                    ],
-                    className="mb-4",
-                ),
-                # Tabs for different categories
-                dcc.Tabs(
-                    id="scavenging-categories-tabs",
-                    value=(f"scavenging-{sorted(categories_map.keys())[0]}" if categories_map else ""),
-                    children=category_content,
-                    style={"marginBottom": "20px"},
-                ),
-            ],
-            className="p-4",
-            id="scavenging-tab-content",
-        )
-
-    except Exception as e:
-        logger.error(f"Error rendering scavenging tab: {e}")
-        return html.Div(
-            [
-                dbc.Alert(
-                    f"Error loading scavenging tab: {e!s}",
-                    color="danger",
-                    className="alert-danger",
-                )
-            ],
-            className="p-4",
-        )
-
-
-def register_scavenging_callbacks(app):
-    """Register callbacks for scavenging tab"""
-    # Get categories for callback registration
+    """Render the main Scavenging tab layout."""
     categories_map = discover_categories()
 
-    # Register download callbacks for each category
-    for category in categories_map.keys():
-        # CSV Download callback
-        @app.callback(
-            Output(f"download-csv-data-{category}", "data"),
-            Input(f"download-csv-{category}", "n_clicks"),
-            prevent_initial_call=True,
-        )
-        def download_csv(n_clicks, cat=category):
-            if n_clicks:
-                df = load_category_file(categories_map[cat])
-                if not df.empty:
-                    return dcc.send_data_frame(df.to_csv, f"{cat}_scavenging.csv", index=False)
-            return None
+    if not categories_map:
+        return dbc.Alert("No scavenging data found. Please run the ETL processes.", color="warning", className="m-4")
 
-        # JSON Download callback
+    category_tabs = []
+    for category in sorted(categories_map.keys()):
+        source_display_name = category.replace("_", " ").capitalize()
+        tab_search_id = f"scavenging-search-{category}"
+        
+        # Initial data for store
+        initial_data = get_scavenging_data(category)
+        initial_data.sort(key=get_sortable_date, reverse=True)
+        
+        tab_content = html.Div([
+            dbc.Row([
+                dbc.Col([
+                    create_search_input(
+                        input_id=tab_search_id,
+                        placeholder=f"Search in {source_display_name}...",
+                        clear_button=True,
+                    )
+                ], width=True)
+            ], className="mb-3 mt-3"),
+            
+            dcc.Store(id=f"{tab_search_id}-data", data=initial_data[:MAX_ITEMS_PER_TAB]),
+            
+            html.Div(
+                create_scavenging_table(initial_data[:MAX_ITEMS_PER_TAB]),
+                id=f"{tab_search_id}-results",
+                style={"maxHeight": "800px", "overflowY": "auto"}
+            )
+        ], className="p-3")
+
+        category_tabs.append(
+            dbc.Tab(
+                label=source_display_name,
+                tab_id=f"tab-scavenging-{category}",
+                children=tab_content
+            )
+        )
+
+    return html.Div([
+        html.H3("⛏️ Project Scavenging", className="mb-4"),
+        html.P("Automated monitoring of free resources, audiobooks, and deal alerts.", className="text-muted"),
+        dbc.Tabs(id="scavenging-main-tabs", children=category_tabs, active_tab=f"tab-scavenging-{sorted(categories_map.keys())[0]}")
+    ], className="p-4")
+
+def register_scavenging_callbacks(app):
+    """Register search and filter callbacks for Scavenging."""
+    # We discover categories again to register callbacks for all of them
+    categories_map = discover_categories()
+
+    for category in categories_map.keys():
+        search_id = f"scavenging-search-{category}"
+
         @app.callback(
-            Output(f"download-json-data-{category}", "data"),
-            Input(f"download-json-{category}", "n_clicks"),
+            Output(f"{search_id}-results", "children"),
+            [Input(search_id, "value")],
+            State(f"{search_id}-data", "data"),
+        )
+        def update_scavenging_search(search_term, cached_data):
+            if not cached_data:
+                return dbc.Alert("No data loaded.", color="info")
+
+            if search_term:
+                searchable_fields = ["title", "summary", "source", "seller", "deal_type", "category"]
+                filtered_items = filter_content(search_term, cached_data, searchable_fields)
+            else:
+                filtered_items = cached_data[:MAX_ITEMS_PER_TAB]
+
+            return create_scavenging_table(filtered_items)
+
+        @app.callback(
+            Output(search_id, "value", allow_duplicate=True),
+            Input(f"{search_id}-clear", "n_clicks"),
             prevent_initial_call=True,
         )
-        def download_json(n_clicks, cat=category):
-            if n_clicks:
-                df = load_category_file(categories_map[cat])
-                if not df.empty:
-                    json_str = df.to_json(orient="records", indent=2, force_ascii=False)
-                    return dict(
-                        content=json_str,
-                        filename=f"{cat}_scavenging.json",
-                        type="application/json",
-                    )
-            return None
+        def clear_scavenging_search(n_clicks):
+            if n_clicks: return ""
+            return dash.no_update

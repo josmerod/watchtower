@@ -77,6 +77,18 @@
       "description": "Awesome design patterns"
     },
     {
+      "name": "Awesome Projects",
+      "url": "https://github.com/imq/awesome-projects",
+      "icon": "🌟",
+      "description": "Curated list of amazing projects and frameworks"
+    },
+    {
+      "name": "Sindresorhus Awesome",
+      "url": "https://github.com/sindresorhus/awesome",
+      "icon": "😎",
+      "description": "Awesome lists about all kinds of interesting topics"
+    },
+    {
       "name": "Awesome selfhosted",
       "url": "https://awesome-selfhosted.net",
       "icon": "🌐",
