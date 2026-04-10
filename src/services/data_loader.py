@@ -222,6 +222,147 @@ KNOWLEDGE_SOURCES_CONFIG = {
     },
 }
 
+ECOMMERCE_SOURCES_CONFIG = {
+    "gumroad_scraper": {
+        "path": get_data_path("gumroad", "gumroad_products_latest.json"),
+        "name": "Gumroad Products",
+        "icon": "🛒",
+        "category": "Digital Products",
+        "description": "Digital products, courses, and resources from Gumroad marketplace",
+    },
+    "viajeros_piratas": {
+        "path": get_data_path("viajeros_piratas", "travel_deals_latest.json"),
+        "name": "Travel Deals",
+        "icon": "✈️",
+        "category": "Travel",
+        "description": "Curated travel deals and vacation packages from Viajeros Piratas",
+    },
+}
+
+ENTERTAINMENT_SOURCES_CONFIG = {
+    "cinema_ecartelera": {
+        "path": get_data_path("cinema_ecartelera", "output", "cinema_showtimes.json"),
+        "name": "Cinema Showtimes",
+        "icon": "🎬",
+        "category": "Cinema",
+        "color": "primary",
+        "description": "Current movie showtimes and cinema listings from eCartelera",
+    },
+    "cinema_ecartelera_improved": {
+        "path": get_data_path("cinema_ecartelera_improved", "cinema_improved_latest.json"),
+        "name": "Enhanced Cinema",
+        "icon": "🎭",
+        "category": "Cinema",
+        "color": "info",
+        "description": "Enhanced cinema data with ratings and detailed information",
+    },
+    "meme_economics": {
+        "path": get_data_path("meme_economics", "meme_economics_latest.json"),
+        "name": "Meme Economics",
+        "icon": "📈",
+        "category": "Memes",
+        "color": "warning",
+        "description": "Trending memes, meme coin analysis, and internet culture economics",
+    },
+    "trakt_movies": {
+        "path": get_data_path("entertainment", "trakt_movies_latest.json"),
+        "name": "Trakt Movies",
+        "icon": "🎥",
+        "category": "Movies",
+        "color": "primary",
+        "description": "Trending movies from Trakt.tv",
+    },
+    "trakt_shows": {
+        "path": get_data_path("entertainment", "trakt_shows_latest.json"),
+        "name": "Trakt Shows",
+        "icon": "📺",
+        "category": "TV",
+        "color": "info",
+        "description": "Trending shows from Trakt.tv",
+    },
+    "spotify_browse": {
+        "path": get_data_path("entertainment", "spotify_browse_latest.json"),
+        "name": "Spotify Browse",
+        "icon": "🎵",
+        "category": "Music",
+        "color": "success",
+        "description": "Featured playlists and new releases from Spotify",
+    },
+}
+
+INTEL_SOURCES_CONFIG: dict[str, dict[str, Any]] = {
+    "sec_edgar": {
+        "path": get_data_path("intelligence", "sec_edgar_latest.json"),
+        "name": "SEC EDGAR Filings",
+        "icon": "📑",
+        "category": "Regulatory",
+        "color": "primary",
+        "description": "Recent US SEC company filings",
+    },
+    "who_outbreaks": {
+        "path": get_data_path("intelligence", "who_outbreaks_latest.json"),
+        "name": "WHO Outbreak News",
+        "icon": "🩺",
+        "category": "Health",
+        "color": "danger",
+        "description": "Global disease outbreak news (WHO DON)",
+    },
+}
+
+TRAVEL_SOURCES_CONFIG = {
+    "gumroad": {
+        "path": get_data_path("gumroad", "gumroad_products_latest.json"),
+        "name": "Gumroad Products",
+    },
+    "viajeros_piratas": {
+        "path": get_data_path("viajeros_piratas", "viajeros_piratas_latest.json"),
+        "name": "Viajeros Piratas",
+    },
+}
+
+RESEARCH_SOURCES_CONFIG = {
+    "adhd_publications": {
+        "path": get_data_path("adhd_publications", "output", "json", "latest_papers.json"),
+        "name": "ADHD Publications",
+        "icon": "🧠",
+        "category": "Medical Research",
+        "color": "primary",
+        "description": "Latest ADHD research publications from PubMed and academic sources",
+    },
+    "adhd_friendly_locations": {
+        "path": get_data_path("adhd_friendly_locations", "adhd_locations_latest.json"),
+        "name": "ADHD-Friendly Locations",
+        "icon": "📍",
+        "category": "Accessibility",
+        "color": "success",
+        "description": "Curated list of ADHD-friendly spaces, services, and accommodations",
+    },
+}
+
+MUSEUMS_CONFIG = {
+    "museums": {
+        "path": get_data_path("museums", "museums_latest.json"),
+        "name": "Museums & Cultural Sites",
+        "icon": "🏛️",
+        "description": "Cultural institutions, exhibitions, and museum collections",
+    }
+}
+
+GAMES_SOURCES_CONFIG = {
+    "deals": {
+        "path": get_data_path("games", "deals.json"),
+        "name": "Game Deals",
+    },
+    "bundles": {
+        "path": get_data_path("games", "bundles.json"),
+        "name": "Game Bundles",
+    },
+    "trending": {
+        "path": get_data_path("games", "itchio_trending.json"),
+        "name": "Trending Games",
+    }
+}
+
 # --- Shared Logic ---
 
 def load_data_from_file(file_path: str) -> list[dict[str, Any]]:

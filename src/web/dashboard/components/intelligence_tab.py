@@ -27,24 +27,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-INTEL_SOURCES_CONFIG: dict[str, dict[str, Any]] = {
-    "sec_edgar": {
-        "path": get_data_path("intelligence", "sec_edgar_latest.json"),
-        "name": "SEC EDGAR Filings",
-        "icon": "📑",
-        "category": "Regulatory",
-        "color": "primary",
-        "description": "Recent US SEC company filings",
-    },
-    "who_outbreaks": {
-        "path": get_data_path("intelligence", "who_outbreaks_latest.json"),
-        "name": "WHO Outbreak News",
-        "icon": "🩺",
-        "category": "Health",
-        "color": "danger",
-        "description": "Global disease outbreak news (WHO DON)",
-    },
-}
+# Import centralized configuration
+from src.services.data_loader import INTEL_SOURCES_CONFIG
 
 # NEW: Repository-based loading (SOLID Pattern)
 class IntelligenceRepository(BaseRepository[list[dict[str, Any]]]):

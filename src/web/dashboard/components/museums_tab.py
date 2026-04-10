@@ -21,15 +21,8 @@ from src.repositories import BaseRepository
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Museums configuration
-MUSEUMS_CONFIG = {
-    "museums": {
-        "path": get_data_path("museums", "museums_latest.json"),
-        "name": "Museums & Cultural Sites",
-        "icon": "🏛️",
-        "description": "Cultural institutions, exhibitions, and museum collections",
-    }
-}
+# Import centralized configuration
+from src.services.data_loader import MUSEUMS_CONFIG
 
 # NEW: Repository-based loading (SOLID Pattern)
 class MuseumsRepository(BaseRepository[list[dict[str, Any]]]):

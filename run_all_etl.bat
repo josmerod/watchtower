@@ -26,7 +26,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Using UV for Python Orchestrator
-uv run python run_all_etl_orchestrator.py --workers 2
+uv run python run_all_etl_orchestrator.py --workers 1
 
 echo Script completed at %date% %time%
 pause

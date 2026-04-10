@@ -9,6 +9,13 @@ from src.api.models import UnifiedItem
 from src.services.data_loader import (
     KNOWLEDGE_SOURCES_CONFIG,
     NEWS_SOURCES_CONFIG,
+    ECOMMERCE_SOURCES_CONFIG,
+    ENTERTAINMENT_SOURCES_CONFIG,
+    INTEL_SOURCES_CONFIG,
+    TRAVEL_SOURCES_CONFIG,
+    RESEARCH_SOURCES_CONFIG,
+    MUSEUMS_CONFIG,
+    GAMES_SOURCES_CONFIG,
     format_article_date,
     load_data_from_file,
 )
@@ -91,10 +98,101 @@ async def get_knowledge(
         logger.error(f"Error fetching knowledge: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/ecommerce", response_model=List[UnifiedItem])
+async def get_ecommerce(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get e-commerce items."""
+    try:
+        return _load_and_process_items(ECOMMERCE_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching ecommerce: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/entertainment", response_model=List[UnifiedItem])
+async def get_entertainment(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get entertainment items."""
+    try:
+        return _load_and_process_items(ENTERTAINMENT_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching entertainment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/intelligence", response_model=List[UnifiedItem])
+async def get_intelligence(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get intelligence items."""
+    try:
+        return _load_and_process_items(INTEL_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching intelligence: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/travel", response_model=List[UnifiedItem])
+async def get_travel(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get travel items."""
+    try:
+        return _load_and_process_items(TRAVEL_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching travel: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/research", response_model=List[UnifiedItem])
+async def get_research(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get research items."""
+    try:
+        return _load_and_process_items(RESEARCH_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching research: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/museums", response_model=List[UnifiedItem])
+async def get_museums(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get museums items."""
+    try:
+        return _load_and_process_items(MUSEUMS_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching museums: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/games", response_model=List[UnifiedItem])
+async def get_games(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get games items."""
+    try:
+        return _load_and_process_items(GAMES_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching games: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/sources", response_model=dict)
 async def get_sources():
     """Get available sources."""
     return {
         "news": {k: v["name"] for k, v in NEWS_SOURCES_CONFIG.items()},
-        "knowledge_garden": {k: v["name"] for k, v in KNOWLEDGE_SOURCES_CONFIG.items()}
+        "knowledge_garden": {k: v["name"] for k, v in KNOWLEDGE_SOURCES_CONFIG.items()},
+        "ecommerce": {k: v["name"] for k, v in ECOMMERCE_SOURCES_CONFIG.items()},
+        "entertainment": {k: v["name"] for k, v in ENTERTAINMENT_SOURCES_CONFIG.items()},
+        "intelligence": {k: v["name"] for k, v in INTEL_SOURCES_CONFIG.items()},
+        "travel": {k: v["name"] for k, v in TRAVEL_SOURCES_CONFIG.items()},
+        "research": {k: v["name"] for k, v in RESEARCH_SOURCES_CONFIG.items()},
+        "museums": {k: v["name"] for k, v in MUSEUMS_CONFIG.items()},
+        "games": {k: v["name"] for k, v in GAMES_SOURCES_CONFIG.items()},
     }

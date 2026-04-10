@@ -25,25 +25,8 @@ from src.repositories import BaseRepository
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Research sources configuration
-RESEARCH_SOURCES_CONFIG = {
-    "adhd_publications": {
-        "path": get_data_path("adhd_publications", "output", "json", "latest_papers.json"),
-        "name": "ADHD Publications",
-        "icon": "🧠",
-        "category": "Medical Research",
-        "color": "primary",
-        "description": "Latest ADHD research publications from PubMed and academic sources",
-    },
-    "adhd_friendly_locations": {
-        "path": get_data_path("adhd_friendly_locations", "adhd_locations_latest.json"),
-        "name": "ADHD-Friendly Locations",
-        "icon": "📍",
-        "category": "Accessibility",
-        "color": "success",
-        "description": "Curated list of ADHD-friendly spaces, services, and accommodations",
-    },
-}
+# Import centralized configuration
+from src.services.data_loader import RESEARCH_SOURCES_CONFIG
 
 # NEW: Repository-based loading (SOLID Pattern)
 class ResearchRepository(BaseRepository[list[dict[str, Any]]]):

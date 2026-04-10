@@ -21,23 +21,8 @@ from src.repositories import BaseRepository
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# E-commerce sources configuration
-ECOMMERCE_SOURCES_CONFIG = {
-    "gumroad_scraper": {
-        "path": get_data_path("gumroad", "gumroad_products_latest.json"),
-        "name": "Gumroad Products",
-        "icon": "🛒",
-        "category": "Digital Products",
-        "description": "Digital products, courses, and resources from Gumroad marketplace",
-    },
-    "viajeros_piratas": {
-        "path": get_data_path("viajeros_piratas", "travel_deals_latest.json"),
-        "name": "Travel Deals",
-        "icon": "✈️",
-        "category": "Travel",
-        "description": "Curated travel deals and vacation packages from Viajeros Piratas",
-    },
-}
+# Import centralized configuration
+from src.services.data_loader import ECOMMERCE_SOURCES_CONFIG
 
 # NEW: Repository-based loading (SOLID Pattern)
 class EcommerceRepository(BaseRepository[list[dict[str, Any]]]):

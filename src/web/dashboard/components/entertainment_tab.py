@@ -24,57 +24,8 @@ from src.repositories import BaseRepository
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Entertainment sources configuration
-ENTERTAINMENT_SOURCES_CONFIG = {
-    "cinema_ecartelera": {
-        "path": get_data_path("cinema_ecartelera", "output", "cinema_showtimes.json"),
-        "name": "Cinema Showtimes",
-        "icon": "🎬",
-        "category": "Cinema",
-        "color": "primary",
-        "description": "Current movie showtimes and cinema listings from eCartelera",
-    },
-    "cinema_ecartelera_improved": {
-        "path": get_data_path("cinema_ecartelera_improved", "cinema_improved_latest.json"),
-        "name": "Enhanced Cinema",
-        "icon": "🎭",
-        "category": "Cinema",
-        "color": "info",
-        "description": "Enhanced cinema data with ratings and detailed information",
-    },
-    "meme_economics": {
-        "path": get_data_path("meme_economics", "meme_economics_latest.json"),
-        "name": "Meme Economics",
-        "icon": "📈",
-        "category": "Memes",
-        "color": "warning",
-        "description": "Trending memes, meme coin analysis, and internet culture economics",
-    },
-    "trakt_movies": {
-        "path": get_data_path("entertainment", "trakt_movies_latest.json"),
-        "name": "Trakt Movies",
-        "icon": "🎥",
-        "category": "Movies",
-        "color": "primary",
-        "description": "Trending movies from Trakt.tv",
-    },
-    "trakt_shows": {
-        "path": get_data_path("entertainment", "trakt_shows_latest.json"),
-        "name": "Trakt Shows",
-        "icon": "📺",
-        "category": "TV",
-        "color": "info",
-        "description": "Trending shows from Trakt.tv",
-    },
-    "spotify_browse": {
-        "path": get_data_path("entertainment", "spotify_browse_latest.json"),
-        "name": "Spotify Browse",
-        "icon": "🎵",
-        "category": "Music",
-        "color": "success",
-        "description": "Featured playlists and new releases from Spotify",
-    },
-}
+# Import centralized configuration
+from src.services.data_loader import ENTERTAINMENT_SOURCES_CONFIG
 
 # NEW: Repository-based loading (SOLID Pattern)
 class EntertainmentRepository(BaseRepository[dict[str, Any]]):
