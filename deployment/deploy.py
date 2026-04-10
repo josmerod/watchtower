@@ -35,7 +35,8 @@ def create_archive(output_filename):
     include_paths = [
         "src", "deployment", "config", "utils", "Tests",
         "pyproject.toml", "uv.lock", 
-        "run_all_etl.sh", "run_watchtower_dashboard.py", "README.md", "GEMINI.md"
+        "run_all_etl.sh", "run_watchtower_dashboard.py", "README.md", "GEMINI.md", 
+        "run_all_etl_orchestrator.py"
     ]
     
     # Files/folders to exclude explicitly if encountered (though include_paths is safer)

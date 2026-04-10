@@ -66,6 +66,7 @@ class KnowledgeGardenRepository(BaseRepository[list[dict[str, Any]]]):
 
 # Create singleton instances for each source
 opensource_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["opensource"]["path"])
+reddit_opensource_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_opensource"]["path"])
 gooddevs_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["gooddevs"]["path"])
 podcasts_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["podcasts"]["path"])
 product_hunt_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["product_hunt"]["path"])
@@ -106,6 +107,7 @@ def get_all_knowledge_data():
     # Use repository pattern instead of manual file loading
     repository_map = {
         "opensource": opensource_repo,
+        "reddit_opensource": reddit_opensource_repo,
         "gooddevs": gooddevs_repo,
         "podcasts": podcasts_repo,
         "product_hunt": product_hunt_repo,
@@ -247,7 +249,7 @@ def render_knowledge_garden_tab():
         # Developer community tab
         {"label": "Dev.to", "keys": "devto", "id": "devto"},
         {"label": "HypeURLs", "keys": "hypeurls", "id": "hypeurls"},
-        {"label": "Open Source", "keys": "opensource", "id": "opensource"},
+        {"label": "Open Source", "keys": ["opensource", "reddit_opensource"], "id": "opensource"},
         {"label": "Substack", "keys": "substack", "id": "substack"},
         {"label": "TrendShift", "keys": "trendshift", "id": "trendshift"},
         {"label": "RSS Feeds", "keys": "rss_feeds", "id": "rss_feeds"},

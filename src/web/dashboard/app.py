@@ -32,6 +32,11 @@ from src.web.dashboard.components.shortcuts_tab import (
     get_shortcuts_data,
 )
 
+from src.web.dashboard.components.deals_tab import (
+    render_deals_tab,
+    register_deals_callbacks,
+)
+
 
 
 
@@ -232,8 +237,11 @@ app.layout = dbc.Container(
                             tab_id="tab-arxiv-research",
                             children=[render_arxiv_research_tab()],
                         ),
-
-
+                        dbc.Tab(
+                            label="🏷️ Deals",
+                            tab_id="tab-deals",
+                            children=[render_deals_tab()],
+                        ),
                     ],
                 )
             )
@@ -358,6 +366,7 @@ register_news_search_callbacks(app)
 register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
 register_shortcuts_callbacks(app)
+register_deals_callbacks(app)
 
 
 

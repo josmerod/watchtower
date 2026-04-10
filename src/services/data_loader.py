@@ -108,6 +108,13 @@ NEWS_SOURCES_CONFIG = {
     },
 }
 
+DEALS_SOURCES_CONFIG = {
+    "lifetimo": {
+        "path": get_data_path("deals", "lifetimo_deals.json"),
+        "name": "Lifetimo Deals",
+    },
+}
+
 ARXIV_SOURCES_CONFIG = {
     "all_arxiv": {
         "path": get_data_path("arxiv", "arxiv_papers_latest.json"),
@@ -143,6 +150,10 @@ KNOWLEDGE_SOURCES_CONFIG = {
     "opensource": {
         "path": get_data_path("open_source_intelligence", "output", "latest.json"),
         "name": "Open Source Projects",
+    },
+    "reddit_opensource": {
+        "path": get_data_path("reddit_unified", "reddit_opensource_latest.json"),
+        "name": "Reddit Open Source",
     },
     "gooddevs": {
         "path": get_data_path("gooddevs", "gooddevs_latest.json"),

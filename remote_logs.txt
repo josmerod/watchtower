@@ -1,0 +1,27 @@
+STDOUT:
+\n--- DOCKER STATS ---
+CONTAINER ID   NAME         CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O        PIDS
+28922dd55ec1   watchtower   0.74%     422.2MiB / 15.02GiB   2.74%     2.04GB / 75.8MB   35.9GB / 452MB   46
+\n--- SYSTEM TOP ---
+top - 09:46:48 up 71 days, 16:18,  0 users,  load average: 342.44, 398.80, 403.7
+Tasks: 1202 total, 2 running, 839 sleep, 52 d-sleep, 0 stopped, 309 zombie
+%Cpu(s):  0.0 us,  7.5 sy,  0.0 ni,  0.0 id, 92.5 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :  15384.9 total,   4436.5 free,   8506.6 used,   4007.7 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   6878.3 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+    123 root      20   0       0      0      0 D  71.8   0.0 136:00.80 kcompac+
+ 166042 root      20   0    7136   5232   2672 R  14.4   0.0   0:00.05 top
+   6601 root      20   0       0      0      0 R   7.2   0.0      7,23 unraidd2
+ 221493 1000      20   0   34.3g 291840  91252 S   7.2   1.9  36:48.52 ArchiSt+
+      1 root      20   0    2712   1972   1844 S   0.0   0.0   1:14.42 init
+      2 root      20   0       0      0      0 S   0.0   0.0   1:13.51 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      8 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+
+STDERR:
