@@ -22,7 +22,7 @@ MAX_VIDEOS_PER_CHANNEL = 50
 DEFAULT_DAYS_LOOKBACK = 42  # 6 weeks
 
 # Performance optimization constants
-MAX_WORKERS_PER_CHANNEL = 8  # Max concurrent video fetches per channel
+MAX_WORKERS_PER_CHANNEL = 2  # Max concurrent video fetches per channel (reduced from 8 to save memory)
 RATE_LIMIT_DELAY = 0.1  # Delay between API calls in seconds
 CACHE_TTL = 300  # Cache TTL in seconds (5 minutes)
 CHANNEL_CACHE: dict[str, tuple[dict, float]] = {}  # Cache for channel info
@@ -257,9 +257,8 @@ def get_channel_videos_by_id(
 def process_youtube_channels(channel_handles: list[str], published_after: str = None) -> list[dict]:
     """Process multiple YouTube channels concurrently and combine their videos."""
     all_videos = []
-    # Determine a reasonable number of workers, e.g., based on CPU cores or a fixed number
-    # Let's start with a sensible default, adjust as needed based on performance
-    max_workers = min(10, os.cpu_count() + 4)  # Example: Use up to 10 workers
+    # Reduce memory usage by limiting max_workers to 3
+    max_workers = min(3, os.cpu_count() or 1)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Create a future for each channel processing task

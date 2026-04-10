@@ -13,16 +13,8 @@ from src.repositories import BaseRepository
 
 # --- Data Loading ---
 
-TRAVEL_SOURCES_CONFIG = {
-    "gumroad": {
-        "path": get_data_path("gumroad", "gumroad_products_latest.json"),
-        "name": "Gumroad Products",
-    },
-    "viajeros_piratas": {
-        "path": get_data_path("viajeros_piratas", "viajeros_piratas_latest.json"),
-        "name": "Viajeros Piratas",
-    },
-}
+# Import centralized configuration
+from src.services.data_loader import TRAVEL_SOURCES_CONFIG
 
 # NEW: Repository-based loading (SOLID Pattern)
 class TravelRepository(BaseRepository[list[dict[str, Any]]]):
