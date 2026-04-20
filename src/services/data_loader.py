@@ -307,6 +307,14 @@ INTEL_SOURCES_CONFIG: dict[str, dict[str, Any]] = {
         "color": "danger",
         "description": "Global disease outbreak news (WHO DON)",
     },
+    "nvd_cve": {
+        "path": get_data_path("nvd_cve", "output", "nvd_cve_latest.json"),
+        "name": "NVD Vulnerabilities (CVE)",
+        "icon": "🛡️",
+        "category": "Cybersecurity",
+        "color": "warning",
+        "description": "Real-time critical threats and CVE disclosures",
+    },
 }
 
 TRAVEL_SOURCES_CONFIG = {
