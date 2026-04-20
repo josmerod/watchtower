@@ -30,7 +30,7 @@ RSS_FEEDS: dict[str, str] = {
     "techcrunch_main": "https://techcrunch.com/feed/",
     "techcrunch_startups": "https://techcrunch.com/category/startups/feed/",
     "techcrunch_enterprise": "https://techcrunch.com/category/enterprise/feed/",
-    "techcrunch_funding": "https://techcrunch.com/category/fundings-exits/feed/",
+    "techcrunch_funding": "https://techcrunch.com/category/venture/feed/",
     "techcrunch_apps": "https://techcrunch.com/category/apps/feed/",
 }
 

@@ -28,11 +28,11 @@ logger = get_logger("VentureBeatETL")
 # VentureBeat RSS feeds for different categories
 RSS_FEEDS: dict[str, str] = {
     "venturebeat_main": "https://venturebeat.com/feed/",
-    "venturebeat_ai": "https://venturebeat.com/ai/feed/",
-    "venturebeat_enterprise": "https://venturebeat.com/business/feed/",
+    "venturebeat_ai": "https://venturebeat.com/category/ai/feed/",
+    "venturebeat_enterprise": "https://venturebeat.com/category/enterprise/feed/",
     "venturebeat_gaming": "https://venturebeat.com/games/feed/",
-    "venturebeat_security": "https://venturebeat.com/security/feed/",
-    "venturebeat_mobile": "https://venturebeat.com/mobile/feed/",
+    "venturebeat_security": "https://venturebeat.com/category/security/feed/",
+    "venturebeat_mobile": "https://venturebeat.com/category/mobile/feed/",
 }
 
 
@@ -47,11 +47,9 @@ def fetch_venturebeat_feeds() -> list[dict[str, Any]]:
     for source, url in RSS_FEEDS.items():
         logger.info(f"Fetching VentureBeat RSS feed from {source} at {url}")
         try:
-            # Use requests with User-Agent to avoid blocking
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            }
-            response = requests.get(url, headers=headers, timeout=30)
+            import cloudscraper
+            scraper = cloudscraper.create_scraper()
+            response = scraper.get(url, timeout=30)
             response.raise_for_status()
 
             feed = feedparser.parse(response.content)

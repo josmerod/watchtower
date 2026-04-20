@@ -23,6 +23,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from src.models.github import GitHubRepositoryModel
+from src.etl.proxy_manager import ProxyManager
 
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
@@ -33,20 +34,9 @@ logger = get_logger("GitHubTrendsETL")
 
 
 def create_session() -> requests.Session:
-    """Create a requests session with retry strategy and proper headers."""
-    session = requests.Session()
-
-    # Configure retry strategy
-    retry_strategy = Retry(
-        total=3,
-        backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["HEAD", "GET", "OPTIONS"],
-    )
-
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
+    """Create a requests session with retry strategy and proper headers via ProxyManager."""
+    proxy_manager = ProxyManager()
+    session = proxy_manager.get_session(retries=3, backoff_factor=2.0)
 
     # Set headers
     headers = {
@@ -186,8 +176,8 @@ def get_trending_repositories(session: requests.Session, language: str = None, s
 
                 repositories.append(processed_repo)
 
-            # Rate limiting for GitHub API
-            time.sleep(1)
+            # Rate limiting for GitHub API (extended to respect 60req/h better unauthenticated)
+            time.sleep(3)
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching {lang} repositories: {e}")
