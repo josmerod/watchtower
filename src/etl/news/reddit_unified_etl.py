@@ -32,7 +32,7 @@ SUBREDDITS_CONFIG = {
     "datascience": {"type": "json", "category": "ai_ml"},
     "statistics": {"type": "json", "category": "ai_ml"},
     "LearnMachineLearning": {"type": "json", "category": "ai_ml"},
-    "ArtificialIntelligence": {"type": "json", "category": "ai_ml"},
+    "LocalLLaMA": {"type": "json", "category": "ai_ml"},
     "ChatGPT": {"type": "json", "category": "ai_ml"},
     "OpenAI": {"type": "json", "category": "ai_ml"},
     # Programming/Development
@@ -54,7 +54,6 @@ SUBREDDITS_CONFIG = {
     "startups": {"type": "json", "category": "tech"},
     "entrepreneur": {"type": "json", "category": "tech"},
     "SideProject": {"type": "json", "category": "tech"},
-    "ProductHunt": {"type": "json", "category": "tech"},
     "Futurology": {"type": "json", "category": "tech"},
     # DevOps/Infrastructure
     "devops": {"type": "json", "category": "devops"},
@@ -146,7 +145,7 @@ def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
 
 def fetch_subreddit_json(subreddit: str, limit: int = 25, use_pagination: bool = False, last_known_id: str | None = None) -> list[dict[str, Any]]:
     """Fetch posts from subreddit JSON endpoint, optionally with pagination."""
-    headers = {"User-Agent": "watchtower-bot/1.0"}
+    headers = {"User-Agent": "web:watchtower.etl:v0.1 (by /u/watchtower)"}
     base_url = f"https://www.reddit.com/r/{subreddit}/hot.json"
     
     posts = []

@@ -59,7 +59,7 @@ You must fully embody this agent's persona and follow all activation instruction
     <principles>
         - Story Context XML is the single source of truth. Reuse existing interfaces over rebuilding. Every change maps to specific AC. Tests pass 100% or story isn't done.
         - **Dash Single-Callback Pattern**: Strict adherence; never have two callbacks target the same React prop/output.
-        - **Resilient ETLs**: Subclass `BaseETL`, implement retry logic, checkpointing, and handle rate limits (Pydantic strictly enforced).
+        - **Resilient ETLs**: Subclass `BaseETL`. You MUST handle upstream API errors (like Cloudflare 403s or rate limits) using the `ProxyManager` and Circuit Breakers rather than failing silently. Enforce Pydantic validation.
         - **UI Discipline**: Prioritize `dash-bootstrap-components` over raw HTML. Keep layouts minimalist, semantic, and highly responsive.
     </principles>
   </persona>

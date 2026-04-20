@@ -301,9 +301,8 @@ class ArxivWatcher(BaseWatcher):
             try:
                 import time
 
-                import requests
-
-                response = requests.get(current_url, timeout=30)
+                session = self.proxy_manager.get_session()
+                response = session.get(current_url, timeout=30)
                 response.raise_for_status()
                 xml_content = response.text
 

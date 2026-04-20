@@ -24,6 +24,8 @@ try:
 except ImportError:
     AlertEngine = None
 
+from src.etl.proxy_manager import ProxyManager
+
 
 class WatcherState:
     """State of a watcher."""
@@ -111,6 +113,8 @@ class BaseWatcher(ABC):
                 self.logger.debug(f"AlertEngine initialized for watcher {name}")
             except Exception as e:
                 self.logger.warning(f"Failed to initialize AlertEngine for watcher {name}: {e}")
+
+        self.proxy_manager = ProxyManager()
 
         # Load previous state if exists
         self.previous_state = self._load_state()
@@ -200,11 +204,13 @@ class BaseWatcher(ABC):
             Exception: If the page cannot be fetched after all retries
         """
         last_exception = None
+        
+        session = self.proxy_manager.get_session()
 
         for attempt in range(self.max_retries):
             try:
                 self.logger.info(f"Fetching {self.url} (attempt {attempt + 1}/{self.max_retries})")
-                response = requests.get(self.url, timeout=30)
+                response = session.get(self.url, timeout=30)
                 response.raise_for_status()
                 return response.text
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any
 from pathlib import Path
@@ -12,7 +11,7 @@ import plotly.express as px
 from dash import dash_table, dcc, html
 
 from src.models.ai_research_model import ImplementationComplexity
-from src.web.dashboard.utils import file_exists, get_data_path
+from src.web.dashboard.utils import get_data_path
 
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
@@ -21,6 +20,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 AI_RESEARCH_DATA_PATH = get_data_path("ai_research", "ai_research_latest.json")
+HUGGINGFACE_DATA_PATH = get_data_path("huggingface_platform", "output", "huggingface_latest.json")
 
 
 # OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
@@ -69,6 +69,24 @@ class AIResearchRepository(BaseRepository[list[dict[str, Any]]]):
 # Create singleton instance
 ai_research_repo = AIResearchRepository()
 
+class HuggingFaceRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for HuggingFace data."""
+
+    def __init__(self):
+        super().__init__(
+            data_path=Path(HUGGINGFACE_DATA_PATH),
+            cache_ttl_seconds=3600,
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        return []
+
+huggingface_repo = HuggingFaceRepository()
 
 def load_ai_research_data() -> list[dict[str, Any]]:
     """Load AI research data using repository pattern (NEW).
@@ -175,6 +193,57 @@ def create_papers_table(data: list[dict[str, Any]]) -> html.Div:
         ],
     )
 
+def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div:
+    """Create a table of HuggingFace models and datasets."""
+    if not data:
+        return dbc.Alert("No HuggingFace ecosystem data found.", color="info")
+
+    table_data = []
+    for d in data:
+        name = d.get("model_name") or d.get("dataset_name", "Unknown")
+        item_type = d.get("data_type", "unknown").replace("_release", "").title()
+        item_id = d.get("model_id") or d.get("dataset_id")
+        
+        table_data.append(
+            {
+                "Name": name,
+                "Type": item_type,
+                "Downloads": d.get("downloads", 0),
+                "Likes": d.get("likes", 0),
+                "Link": f"[Open](https://huggingface.co/{item_id})" if item_id else "N/A",
+            }
+        )
+
+    columns = [
+        {"name": "Name", "id": "Name", "type": "text"},
+        {"name": "Type", "id": "Type", "type": "text"},
+        {"name": "Downloads", "id": "Downloads", "type": "numeric"},
+        {"name": "Likes", "id": "Likes", "type": "numeric"},
+        {"name": "Link", "id": "Link", "type": "text", "presentation": "markdown"},
+    ]
+
+    return dash_table.DataTable(
+        data=table_data,
+        columns=columns,
+        page_size=10,
+        sort_action="native",
+        filter_action="native",
+        style_cell={
+            "textAlign": "left",
+            "padding": "10px",
+            "fontFamily": "Inter, sans-serif",
+            "backgroundColor": "#1e1e2e",
+            "color": "#cdd6f4",
+            "border": "1px solid #313244",
+        },
+        style_header={
+            "backgroundColor": "#181825",
+            "fontWeight": "bold",
+            "color": "#cdd6f4",
+            "border": "1px solid #313244",
+        },
+    )
+
 
 def create_charts(data: list[dict[str, Any]]) -> dbc.Row:
     """Create visualization charts."""
@@ -218,6 +287,11 @@ def create_charts(data: list[dict[str, Any]]) -> dbc.Row:
 def render_ai_research_tab() -> html.Div:
     """Render the AI Research Intelligence tab."""
     data = load_ai_research_data()
+    hf_data = []
+    try:
+        hf_data = huggingface_repo.get()
+    except Exception as e:
+        logger.error(f"Error loading HuggingFace data: {e}")
 
     return html.Div(
         [
@@ -230,5 +304,8 @@ def render_ai_research_tab() -> html.Div:
             create_charts(data),
             html.H4("Latest Papers", className="mb-3"),
             create_papers_table(data),
+            html.Hr(className="my-5"),
+            html.H4("Trending Models & Datasets (HuggingFace)", className="mb-3 text-success"),
+            create_huggingface_table(hf_data),
         ]
     )

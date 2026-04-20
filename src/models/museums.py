@@ -24,7 +24,7 @@ class VirtualMuseumModel(TimestampedModel):  # Ensure this class correctly inher
     retrieved_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         collection_name = "virtual_museums"
 
     def __hash__(self):

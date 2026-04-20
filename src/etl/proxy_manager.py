@@ -43,7 +43,7 @@ class ProxyManager:
             "https": proxy_url,
         }
 
-    def get_session(self, retries: int = 3, backoff_factor: float = 0.3) -> requests.Session:
+    def get_session(self, retries: int = 3, backoff_factor: float = 2.0) -> requests.Session:
         """Get a configured requests.Session with proxy and retries."""
         session = requests.Session()
         
