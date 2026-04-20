@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 AI_RESEARCH_DATA_PATH = get_data_path("ai_research", "ai_research_latest.json")
 HUGGINGFACE_DATA_PATH = get_data_path("huggingface_platform", "output", "huggingface_latest.json")
+SEMANTIC_SCHOLAR_DATA_PATH = get_data_path("semantic_scholar", "output", "semanticscholar_latest.json")
 
 
 # OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
@@ -87,6 +88,23 @@ class HuggingFaceRepository(BaseRepository[list[dict[str, Any]]]):
         return []
 
 huggingface_repo = HuggingFaceRepository()
+
+class SemanticScholarRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for Semantic Scholar data."""
+
+    def __init__(self):
+        super().__init__(
+            data_path=Path(SEMANTIC_SCHOLAR_DATA_PATH),
+            cache_ttl_seconds=3600,
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        if isinstance(raw_data, list):
+            return raw_data
+        return []
+
+semantic_scholar_repo = SemanticScholarRepository()
 
 def load_ai_research_data() -> list[dict[str, Any]]:
     """Load AI research data using repository pattern (NEW).
@@ -244,6 +262,62 @@ def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div:
         },
     )
 
+def create_semantic_scholar_table(data: list[dict[str, Any]]) -> html.Div:
+    """Create a table of Semantic Scholar research papers."""
+    if not data:
+        return dbc.Alert("No Semantic Scholar data found.", color="info")
+
+    table_data = []
+    for d in data:
+        authors_truncated = ", ".join(d.get("authors", [])[:3])
+        if len(d.get("authors", [])) > 3:
+            authors_truncated += " et al."
+            
+        url = d.get("url", "")
+        
+        table_data.append(
+            {
+                "Title": d.get("title", "Unknown"),
+                "Authors": authors_truncated,
+                "Citations": d.get("citations", 0),
+                "Published": d.get("published", "")[:10] if d.get("published") else "Unknown",
+                "Link": f"[Open]({url})" if url else "N/A",
+            }
+        )
+
+    columns = [
+        {"name": "Title", "id": "Title", "type": "text"},
+        {"name": "Authors", "id": "Authors", "type": "text"},
+        {"name": "Citations", "id": "Citations", "type": "numeric"},
+        {"name": "Published", "id": "Published", "type": "text"},
+        {"name": "Link", "id": "Link", "type": "text", "presentation": "markdown"},
+    ]
+
+    return dash_table.DataTable(
+        data=table_data,
+        columns=columns,
+        page_size=10,
+        sort_action="native",
+        filter_action="native",
+        style_cell={
+            "textAlign": "left",
+            "padding": "10px",
+            "fontFamily": "Inter, sans-serif",
+            "backgroundColor": "#1e1e2e",
+            "color": "#cdd6f4",
+            "border": "1px solid #313244",
+            "maxWidth": "300px",
+            "textOverflow": "ellipsis",
+            "overflow": "hidden",
+        },
+        style_header={
+            "backgroundColor": "#181825",
+            "fontWeight": "bold",
+            "color": "#cdd6f4",
+            "border": "1px solid #313244",
+        },
+    )
+
 
 def create_charts(data: list[dict[str, Any]]) -> dbc.Row:
     """Create visualization charts."""
@@ -292,6 +366,12 @@ def render_ai_research_tab() -> html.Div:
         hf_data = huggingface_repo.get()
     except Exception as e:
         logger.error(f"Error loading HuggingFace data: {e}")
+        
+    ss_data = []
+    try:
+        ss_data = semantic_scholar_repo.get()
+    except Exception as e:
+        logger.error(f"Error loading Semantic Scholar data: {e}")
 
     return html.Div(
         [
@@ -302,6 +382,9 @@ def render_ai_research_tab() -> html.Div:
             ),
             create_summary_cards(data),
             create_charts(data),
+            html.H4("Semantic Scholar Research Graph (Impact/Citations)", className="mb-3 text-info mt-5"),
+            create_semantic_scholar_table(ss_data),
+            html.Hr(className="my-5"),
             html.H4("Latest Papers", className="mb-3"),
             create_papers_table(data),
             html.Hr(className="my-5"),

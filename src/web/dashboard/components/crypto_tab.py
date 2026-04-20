@@ -1,4 +1,3 @@
-import json
 import re
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
@@ -74,6 +73,24 @@ class CryptoRepository(BaseRepository[list[dict[str, Any]]]):
 
 # Create singleton instance
 crypto_repo = CryptoRepository()
+
+# NEW: CoinGecko Repository
+class CoinGeckoRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for CoinGecko market metrics."""
+
+    def __init__(self):
+        super().__init__(
+            data_path=Path(get_data_path("coingecko", "output", "coingecko_latest.json")),
+            cache_ttl_seconds=3600,
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        if isinstance(raw_data, list):
+            return raw_data
+        return []
+
+coingecko_repo = CoinGeckoRepository()
 
 
 def load_crypto_sentiment():
@@ -632,13 +649,75 @@ def create_advanced_metrics_cards(data):
                     ),
                 ]
             ),
-            color="secondary",
-            outline=True,
             className="mb-3",
         ),
     ]
 
     return cards
+
+
+def create_coingecko_table(data: list[dict[str, Any]]) -> html.Div:
+    """Create a table of top CoinGecko cryptocurrency assets."""
+    if not data:
+        return dbc.Alert("No CoinGecko market data available.", color="info")
+
+    # Prepare data for table
+    table_data = []
+    for item in data[:50]:  # Show top 50 
+        table_data.append(
+            {
+                "rank": item.get("market_cap_rank", 0) or 0,
+                "symbol": str(item.get("symbol", "")).upper(),
+                "name": item.get("name", ""),
+                "price": f"${item.get('current_price', 0):,.2f}",
+                "change": f"{item.get('price_change_percentage_24h', 0):.2f}%",
+                "market_cap": f"${item.get('market_cap', 0):,.0f}",
+                "volume": f"${item.get('total_volume', 0):,.0f}",
+            }
+        )
+
+    columns = [
+        {"name": "Rank", "id": "rank", "type": "numeric"},
+        {"name": "Symbol", "id": "symbol", "type": "text"},
+        {"name": "Name", "id": "name", "type": "text"},
+        {"name": "Price", "id": "price", "type": "text"},
+        {"name": "24h Chg", "id": "change", "type": "text"},
+        {"name": "Market Cap", "id": "market_cap", "type": "text"},
+        {"name": "Volume (24h)", "id": "volume", "type": "text"},
+    ]
+
+    return dash_table.DataTable(
+        data=table_data,
+        columns=columns,
+        filter_action="native",
+        sort_action="native",
+        page_size=10,
+        style_table={"overflowX": "auto"},
+        style_cell={
+            "textAlign": "left",
+            "padding": "10px",
+            "fontFamily": "Inter, sans-serif",
+            "backgroundColor": "#1e1e2e",
+            "color": "#cdd6f4",
+            "border": "1px solid #313244",
+        },
+        style_header={
+            "backgroundColor": "#181825",
+            "fontWeight": "bold",
+            "color": "#cdd6f4",
+            "border": "1px solid #313244",
+        },
+        style_data_conditional=[
+            {
+                "if": {"filter_query": "{change} contains '-'"},
+                "color": "#f38ba8", # Red for negative
+            },
+            {
+                "if": {"filter_query": "{change} ! contains '-'"},
+                "color": "#a6e3a1", # Green for positive
+            },
+        ],
+    )
 
 
 def create_advanced_data_table(data):
@@ -1034,6 +1113,40 @@ def crypto_tab():
                                                     )
                                                 ]
                                             ),
+                                        ]
+                                    ),
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            ),
+            # CoinGecko Section
+            html.Hr(className="my-5"),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        [
+                                            html.H5(
+                                                [
+                                                    html.I(className="fas fa-chart-line me-2"),
+                                                    "Global Cryptocurrency Markets (CoinGecko)",
+                                                ],
+                                                className="mb-0",
+                                            ),
+                                            html.Small(
+                                                "Top Altcoin Markets by Market Capitalization",
+                                                className="text-muted",
+                                            ),
+                                        ]
+                                    ),
+                                    dbc.CardBody(
+                                        [
+                                            create_coingecko_table(coingecko_repo.get() if coingecko_repo.get() else [])
                                         ]
                                     ),
                                 ]

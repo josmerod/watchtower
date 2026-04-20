@@ -65,6 +65,7 @@ class IntelligenceRepository(BaseRepository[list[dict[str, Any]]]):
 # Create singleton instances for each source
 sec_edgar_repo = IntelligenceRepository(INTEL_SOURCES_CONFIG["sec_edgar"]["path"])
 who_outbreaks_repo = IntelligenceRepository(INTEL_SOURCES_CONFIG["who_outbreaks"]["path"])
+nvd_cve_repo = IntelligenceRepository(INTEL_SOURCES_CONFIG["nvd_cve"]["path"])
 
 
 # OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)
@@ -98,6 +99,8 @@ def load_intel_data(file_path: str) -> list[dict[str, Any]]:
             data = sec_edgar_repo.get()
         elif "who_outbreaks" in file_path:
             data = who_outbreaks_repo.get()
+        elif "nvd_cve" in file_path:
+            data = nvd_cve_repo.get()
         else:
             logger.info(f"Unknown intelligence data source: {file_path}")
             return []
