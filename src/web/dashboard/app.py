@@ -37,6 +37,11 @@ from src.web.dashboard.components.deals_tab import (
     register_deals_callbacks,
 )
 
+from src.web.dashboard.components.benchmarks_tab import (
+    render_benchmarks_tab,
+    register_benchmarks_callbacks,
+)
+
 
 
 
@@ -242,6 +247,11 @@ app.layout = dbc.Container(
                             tab_id="tab-deals",
                             children=[render_deals_tab()],
                         ),
+                        dbc.Tab(
+                            label="🏆 Benchmarks",
+                            tab_id="tab-benchmarks",
+                            children=[render_benchmarks_tab()],
+                        ),
                     ],
                 )
             )
@@ -367,6 +377,7 @@ register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
 register_shortcuts_callbacks(app)
 register_deals_callbacks(app)
+register_benchmarks_callbacks(app)
 
 
 

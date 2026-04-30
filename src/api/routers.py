@@ -16,6 +16,7 @@ from src.services.data_loader import (
     RESEARCH_SOURCES_CONFIG,
     MUSEUMS_CONFIG,
     GAMES_SOURCES_CONFIG,
+    BENCHMARKS_SOURCES_CONFIG,
     format_article_date,
     load_data_from_file,
 )
@@ -48,10 +49,10 @@ def _load_and_process_items(config_dict: dict, source_filter: Optional[str] = No
         for item in raw_data:
             # Map raw item to UnifiedItem
             # Handle variations in field names
-            title = item.get("title") or item.get("name") or item.get("full_name") or "No Title"
+            title = item.get("title") or item.get("name") or item.get("full_name") or item.get("model") or "No Title"
             url = item.get("url") or item.get("link") or item.get("html_url") or item.get("website")
             
-            # Skip items without URL or Title? (Maybe keep them for completeness but model requires title)
+            # Skip items without Title? (Maybe keep them for completeness but model requires title)
             if not title:
                 continue
 
@@ -71,6 +72,30 @@ def _load_and_process_items(config_dict: dict, source_filter: Optional[str] = No
     # Let's simple return list
     
     return items[:limit] if limit > 0 else items
+
+
+def _load_benchmarks(source_filter: Optional[str] = None) -> dict:
+    """Load benchmark data as raw dicts (not UnifiedItem) for table display."""
+    sources_to_load = BENCHMARKS_SOURCES_CONFIG.keys()
+    if source_filter:
+        if source_filter in BENCHMARKS_SOURCES_CONFIG:
+            sources_to_load = [source_filter]
+        else:
+            return {"models": []}
+
+    all_models = []
+    for key in sources_to_load:
+        source_config = BENCHMARKS_SOURCES_CONFIG[key]
+        raw_data = load_data_from_file(source_config["path"])
+        for item in raw_data:
+            item["category"] = key
+            item["source_name"] = source_config["name"]
+            all_models.append(item)
+
+    return {
+        "count": len(all_models),
+        "models": all_models,
+    }
 
 
 @router.get("/news", response_model=List[UnifiedItem])
@@ -182,6 +207,17 @@ async def get_games(
         logger.error(f"Error fetching games: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/benchmarks")
+async def get_benchmarks(
+    source: Optional[str] = Query(None, description="Filter by benchmark category (overall, security, etc.)"),
+):
+    """Get AI coding benchmark data from BridgeBench.ai."""
+    try:
+        return _load_benchmarks(source)
+    except Exception as e:
+        logger.error(f"Error fetching benchmarks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/sources", response_model=dict)
 async def get_sources():
     """Get available sources."""
@@ -195,4 +231,5 @@ async def get_sources():
         "research": {k: v["name"] for k, v in RESEARCH_SOURCES_CONFIG.items()},
         "museums": {k: v["name"] for k, v in MUSEUMS_CONFIG.items()},
         "games": {k: v["name"] for k, v in GAMES_SOURCES_CONFIG.items()},
+        "benchmarks": {k: v["name"] for k, v in BENCHMARKS_SOURCES_CONFIG.items()},
     }

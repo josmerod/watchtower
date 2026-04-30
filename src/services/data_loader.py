@@ -371,6 +371,33 @@ GAMES_SOURCES_CONFIG = {
     }
 }
 
+BENCHMARKS_SOURCES_CONFIG = {
+    "overall": {
+        "path": get_data_path("benchmarks", "bridgebench_overall.json"),
+        "name": "Overall Rankings",
+    },
+    "security": {
+        "path": get_data_path("benchmarks", "bridgebench_security.json"),
+        "name": "Security Benchmark",
+    },
+    "debugging": {
+        "path": get_data_path("benchmarks", "bridgebench_debugging.json"),
+        "name": "Debugging Benchmark",
+    },
+    "refactoring": {
+        "path": get_data_path("benchmarks", "bridgebench_refactoring.json"),
+        "name": "Refactoring Benchmark",
+    },
+    "hallucination": {
+        "path": get_data_path("benchmarks", "bridgebench_hallucination.json"),
+        "name": "Hallucination Benchmark",
+    },
+    "reasoning": {
+        "path": get_data_path("benchmarks", "bridgebench_reasoning.json"),
+        "name": "Reasoning Benchmark",
+    },
+}
+
 # --- Shared Logic ---
 
 def load_data_from_file(file_path: str) -> list[dict[str, Any]]:
@@ -389,6 +416,8 @@ def load_data_from_file(file_path: str) -> list[dict[str, Any]]:
                 return data["articles"]
             elif "items" in data and isinstance(data["items"], list):
                 return data["items"]
+            elif "models" in data and isinstance(data["models"], list):
+                return data["models"]
             # Single item heuristic
             elif all(k in data for k in ["title", "url"]):
                 return [data]
