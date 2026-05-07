@@ -98,3 +98,128 @@ def get_source_data(source_name: str):
         })
     except Exception as e:
         abort(500, description=f"Error reading data: {str(e)}")
+
+
+# ═══════════════════════════════════════════════════════════════
+# Artificial Analysis Benchmark Routes
+# ═══════════════════════════════════════════════════════════════
+
+def _get_project_root() -> Path:
+    """Get the project root directory."""
+    return Path(__file__).resolve().parents[3]
+
+
+def _load_aa_json(filename: str):
+    """Load an Artificial Analysis JSON file. Returns (data_dict, http_status_code)."""
+    data_path = _get_project_root() / "data" / "benchmarks" / filename
+    if not data_path.exists():
+        return None, 404
+    try:
+        data = json.loads(data_path.read_text(encoding="utf-8"))
+        return data, 200
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+
+@api_bp.route("/benchmarks/artificial-analysis", methods=["GET"])
+def get_artificial_analysis_data():
+    """Get Artificial Analysis benchmark data.
+
+    Query params:
+        model_type: 'llm' (default) or 'image'
+        sort_by: field name to sort by (default: 'intelligence_index')
+        sort_dir: 'desc' (default) or 'asc'
+        filter_open: 'all' (default), 'open', or 'proprietary'
+        limit: max number of results (default: 100)
+    """
+    model_type = request.args.get("model_type", "llm").lower()
+    sort_by = request.args.get("sort_by", "intelligence_index")
+    sort_dir = request.args.get("sort_dir", "desc").lower()
+    filter_open = request.args.get("filter_open", "all").lower()
+    try:
+        limit = int(request.args.get("limit", 100))
+        limit = min(max(limit, 1), 500)
+    except (ValueError, TypeError):
+        limit = 100
+
+    # Map model type to file
+    file_map = {
+        "llm": "artificial_analysis_llms.json",
+        "image": "artificial_analysis_image.json",
+    }
+
+    filename = file_map.get(model_type)
+    if not filename:
+        abort(400, description=f"Invalid model_type '{model_type}'. Use 'llm' or 'image'.")
+
+    data, status = _load_aa_json(filename)
+    if status != 200:
+        abort(status, description=data.get("error", "Data file not found") if isinstance(data, dict) else "Data not found")
+
+    models = data.get("models", [])
+
+    # Filter
+    if filter_open == "open":
+        models = [m for m in models if m.get("open_weights")]
+    elif filter_open == "proprietary":
+        models = [m for m in models if not m.get("open_weights")]
+
+    # Sort
+    reverse = sort_dir != "asc"
+    if sort_by == "name":
+        models.sort(key=lambda m: m.get("name", "").lower(), reverse=reverse)
+    elif sort_by in ("price_input_per_1m", "price_output_per_1m", "price_blended_3_to_1", "median_ttft"):
+        # Lower is better
+        if sort_dir == "desc":
+            models.sort(key=lambda m: m.get(sort_by) if m.get(sort_by) is not None else float("inf"))
+        else:
+            models.sort(key=lambda m: m.get(sort_by) if m.get(sort_by) is not None else float("inf"))
+    else:
+        models.sort(key=lambda m: m.get(sort_by) if m.get(sort_by) is not None else float("-inf"), reverse=reverse)
+
+    # Limit
+    models = models[:limit]
+
+    # Response
+    meta = {k: v for k, v in data.items() if k != "models"}
+    return jsonify({
+        "source": "artificialanalysis.ai",
+        "model_type": model_type,
+        "sort_by": sort_by,
+        "sort_dir": sort_dir,
+        "filter_open": filter_open,
+        "total_available": len(data.get("models", [])),
+        "returned": len(models),
+        "meta": meta,
+        "models": models,
+    })
+
+
+@api_bp.route("/benchmarks/artificial-analysis/models/<model_id>", methods=["GET"])
+def get_artificial_analysis_model(model_id: str):
+    """Get details for a specific model from Artificial Analysis data.
+
+    Searches both LLM and image model files for the given model ID.
+    """
+    for filename in ["artificial_analysis_llms.json", "artificial_analysis_image.json"]:
+        data, status = _load_aa_json(filename)
+        if status != 200:
+            continue
+
+        models = data.get("models", [])
+        model = None
+        for m in models:
+            if m.get("id") == model_id or m.get("slug") == model_id:
+                model = m
+                break
+
+        if model:
+            meta = {k: v for k, v in data.items() if k != "models"}
+            return jsonify({
+                "source": "artificialanalysis.ai",
+                "found_in": filename,
+                "meta": meta,
+                "model": model,
+            })
+
+    abort(404, description=f"Model '{model_id}' not found in any Artificial Analysis data files")

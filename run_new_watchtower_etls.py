@@ -5,6 +5,7 @@ This script runs the newly implemented ETLs from the brainstorm ideas:
 1. Meme Economics Tracker - Because memes are serious business
 2. Enhanced Free Games Intelligence - Never miss a free game
 3. ADHD-Friendly Location Intelligence - Making the world neurodivergent-friendly
+4. Artificial Analysis Benchmarks - Comprehensive AI model benchmarks
 
 These can be integrated into the main Watchtower ETL scheduler.
 """
@@ -56,7 +57,6 @@ def run_enhanced_free_games():
             "status": "success",
             "records": metrics.records_loaded,
         }
-
     except Exception as e:
         logger.error(f"❌ Enhanced Free Games failed: {e}")
         return {"name": "enhanced_free_games", "status": "failed", "error": str(e)}
@@ -79,10 +79,36 @@ def run_adhd_locations():
             "status": "success",
             "records": metrics.records_loaded,
         }
-
     except Exception as e:
         logger.error(f"❌ ADHD Locations failed: {e}")
         return {"name": "adhd_locations", "status": "failed", "error": str(e)}
+
+
+def run_artificial_analysis():
+    """Run the Artificial Analysis Benchmarks ETL."""
+    logger.info("📊 Starting Artificial Analysis Benchmarks...")
+
+    try:
+        from src.etl.benchmarks.artificial_analysis_etl import run
+
+        results = run()
+
+        if results:
+            ok = sum(1 for v in results.values() if v == "success")
+            total = len(results)
+            logger.info(f"✅ Artificial Analysis completed: {ok}/{total} endpoints succeeded")
+            return {
+                "name": "artificial_analysis",
+                "status": "success",
+                "records": sum(1 for v in results.values() if v == "success"),
+                "details": results,
+            }
+        else:
+            return {"name": "artificial_analysis", "status": "failed", "error": "No results returned"}
+
+    except Exception as e:
+        logger.error(f"❌ Artificial Analysis failed: {e}")
+        return {"name": "artificial_analysis", "status": "failed", "error": str(e)}
 
 
 def run_all_new_etls() -> list[dict[str, Any]]:
@@ -92,7 +118,7 @@ def run_all_new_etls() -> list[dict[str, Any]]:
     results = []
 
     # Run all ETLs
-    etl_functions = [run_meme_economics, run_enhanced_free_games, run_adhd_locations]
+    etl_functions = [run_meme_economics, run_enhanced_free_games, run_adhd_locations, run_artificial_analysis]
 
     for etl_func in etl_functions:
         try:
@@ -145,6 +171,7 @@ def print_summary(results: list[dict[str, Any]]):
         print("- data/meme_economics/output/ - Meme market intelligence")
         print("- data/enhanced_free_games/output/ - Free games recommendations")
         print("- data/adhd_friendly_locations/output/ - Neurodivergent-friendly spaces")
+        print("- data/benchmarks/ - AI model benchmarks (Artificial Analysis)")
 
     print("\n💡 Integration opportunities:")
     print("- Add to main ETL scheduler")
@@ -164,12 +191,13 @@ Examples:
   python run_new_watchtower_etls.py --etl memes        # Run only meme economics
   python run_new_watchtower_etls.py --etl games        # Run only free games
   python run_new_watchtower_etls.py --etl adhd         # Run only ADHD locations
+  python run_new_watchtower_etls.py --etl benchmarks   # Run only Artificial Analysis benchmarks
         """,
     )
 
     parser.add_argument(
         "--etl",
-        choices=["memes", "games", "adhd", "all"],
+        choices=["memes", "games", "adhd", "benchmarks", "all"],
         default="all",
         help="Which ETL to run (default: all)",
     )
@@ -195,6 +223,8 @@ Examples:
         results = [run_enhanced_free_games()]
     elif args.etl == "adhd":
         results = [run_adhd_locations()]
+    elif args.etl == "benchmarks":
+        results = [run_artificial_analysis()]
 
     # Print summary
     if not args.quiet:
