@@ -153,6 +153,14 @@ def register_all_etls() -> None:
 
     logging.info(f"Registered {len(ETLFactory.list_etls())} ETLs with factory")
 
+    # Virtual Museums ETL
+    try:
+        from src.etl.museums.museum_etl import VirtualMuseumsETL
+
+        ETLFactory.register("virtual_museums", VirtualMuseumsETL)
+    except Exception as e:
+        logging.warning(f"Failed to register VirtualMuseumsETL: {e}")
+
 
 # Auto-register on import
 register_all_etls()

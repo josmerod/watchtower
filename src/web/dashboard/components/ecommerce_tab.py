@@ -56,9 +56,9 @@ class EcommerceRepository(BaseRepository[list[dict[str, Any]]]):
         else:
             return []
 
-# Create singleton instances for each source
-gumroad_repo = EcommerceRepository(ECOMMERCE_SOURCES_CONFIG["gumroad_scraper"]["path"])
-viajeros_piratas_repo = EcommerceRepository(ECOMMERCE_SOURCES_CONFIG["viajeros_piratas"]["path"])
+# Create singleton instances for each source (only if configured)
+gumroad_repo = EcommerceRepository(ECOMMERCE_SOURCES_CONFIG["gumroad_scraper"]["path"]) if "gumroad_scraper" in ECOMMERCE_SOURCES_CONFIG else None
+viajeros_piratas_repo = EcommerceRepository(ECOMMERCE_SOURCES_CONFIG["viajeros_piratas"]["path"]) if "viajeros_piratas" in ECOMMERCE_SOURCES_CONFIG else None
 
 
 # OLD: Direct file loading (commented out for migration - SAFE TO ROLLBACK)

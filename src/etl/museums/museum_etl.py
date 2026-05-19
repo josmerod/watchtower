@@ -161,7 +161,25 @@ class VirtualMuseumsETL(SimpleETL):
 
         return transformed_models
 
-    # load method is inherited from SimpleETL
+    def load(self, data: list) -> None:
+        """Override default load to also write museums_latest.json for dashboard consumption."""
+        import json as _json
+        from datetime import datetime as _dt
+
+        serialized = _json.dumps(
+            [item.model_dump() if hasattr(item, "model_dump") else item for item in data],
+            ensure_ascii=False, indent=2, default=str,
+        )
+
+        # Save timestamped file
+        out_f = self.output_dir / f"{self.name}_{_dt.now().strftime('%Y%m%d_%H%M%S')}.json"
+        out_f.write_text(serialized, encoding="utf-8")
+        self.logger.info(f"Data saved to {out_f}")
+
+        # Also write a stable 'museums_latest.json' that MUSEUMS_CONFIG expects
+        latest_path = self.output_dir / "museums_latest.json"
+        latest_path.write_text(serialized, encoding="utf-8")
+        self.logger.info(f"Latest copy saved to {latest_path}")
 
 
 if __name__ == "__main__":

@@ -310,12 +310,7 @@ INTEL_SOURCES_CONFIG: dict[str, dict[str, Any]] = {
     },
 }
 
-TRAVEL_SOURCES_CONFIG = {
-    "gumroad": {
-        "path": get_data_path("gumroad_scraper", "output", "gumroad_free_products.json"),
-        "name": "Gumroad Products",
-    },
-}
+TRAVEL_SOURCES_CONFIG = {}  # No active travel sources — Viajeros Piratas ETL not producing output yet
 
 RESEARCH_SOURCES_CONFIG = {
     "adhd_publications": {

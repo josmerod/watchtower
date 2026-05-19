@@ -55,9 +55,9 @@ class TravelRepository(BaseRepository[list[dict[str, Any]]]):
         else:
             return []
 
-# Create singleton instances for each source
-gumroad_repo = TravelRepository(TRAVEL_SOURCES_CONFIG["gumroad"]["path"])
-viajeros_piratas_repo = TravelRepository(TRAVEL_SOURCES_CONFIG["viajeros_piratas"]["path"])
+# Create singleton instances for each source (only if configured)
+gumroad_repo = TravelRepository(TRAVEL_SOURCES_CONFIG["gumroad"]["path"]) if "gumroad" in TRAVEL_SOURCES_CONFIG else None
+viajeros_piratas_repo = TravelRepository(TRAVEL_SOURCES_CONFIG["viajeros_piratas"]["path"]) if "viajeros_piratas" in TRAVEL_SOURCES_CONFIG else None
 
 
 def load_travel_data(source_key):
