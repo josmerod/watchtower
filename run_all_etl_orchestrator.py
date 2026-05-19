@@ -30,7 +30,6 @@ ETL_SCRIPTS = [
     
     # Reddit
     "src/etl/news/reddit_unified_etl.py",
-    "src/etl/giveaways/reddit_giveaways_etl.py",
     
     # Deals
     "src/etl/deals/lifetimo_etl.py",
@@ -65,7 +64,6 @@ ETL_SCRIPTS = [
     "src/etl/youtube_shorts_ocr_etl.py",
     
     # Courses
-    "src/etl/courses/khan_academy_etl.py",
     "src/etl/courses/udemy_spreadsheet_etl.py",
     "src/etl/courses/ms_applied_skills_etl.py",
     "src/etl/courses/aws_skill_builder_etl.py",
@@ -74,23 +72,27 @@ ETL_SCRIPTS = [
     # Intelligence
     "src/etl/intelligence/sec_edgar_rss.py",
     "src/etl/intelligence/who_outbreaks_rss.py",
+    "src/etl/intelligence/nvd_cve_etl.py",
     "src/etl/intelligence/lesswrong_etl.py",
+    
+    # ADHD & Neurodivergent
+    "src/etl/adhd/adhd_publications_etl.py",
+    "src/etl/neurodivergent/adhd_friendly_locations_etl.py",
     
     # Games
     "src/etl/games/games_get_deals.py",
     "src/etl/games/games_get_humblebundles.py",
-    "src/etl/games/games_get_new_releases.py",
     "src/etl/games/games_get_itchio_trending.py",
-    "src/etl/games/games_get_epic_free.py",
-    "src/etl/games/enhanced_free_games_etl.py",
     "src/etl/games/games_get_gog_rss.py",
     "src/etl/games/games_get_isthereanydeal_api.py",
     "src/etl/games/games_get_metacritic_rss.py",
-    "src/etl/games/games_get_giantbomb.py",
     
     # Entertainment
     "src/etl/entertainment/trakt_trending_etl.py",
     "src/etl/entertainment/spotify_browse_etl.py",
+    "src/etl/entertainment/cinema_ecartelera_etl.py",
+    "src/etl/entertainment/cinema_ecartelera_improved_etl.py",
+    "src/etl/entertainment/meme_economics_etl.py",
     
     # Spanish Public Aid
     "src/etl/spanish_public_aid/spanish_public_aid_etl.py",
@@ -119,8 +121,17 @@ ETL_SCRIPTS = [
     
     # Knowledge Garden
     "src/etl/substack/substack_etl.py",
+    
+    # Benchmarks
+    "src/etl/benchmarks/artificial_analysis_etl.py",
+    "src/etl/benchmarks/bridgebench_etl.py",
+    
     "src/etl/trendshift/trendshift_etl.py",
-    "src/etl/rss_feeds/rss_feed_etl.py"
+    "src/etl/rss_feeds/rss_feed_etl.py",
+    "src/etl/museums/museum_etl.py",
+    
+    # Ecommerce
+    "src/etl/ecommerce/shoppy_etl.py",
 ]
 
 def run_script(script_path):

@@ -224,18 +224,11 @@ KNOWLEDGE_SOURCES_CONFIG = {
 
 ECOMMERCE_SOURCES_CONFIG = {
     "gumroad_scraper": {
-        "path": get_data_path("gumroad", "gumroad_products_latest.json"),
+        "path": get_data_path("gumroad_scraper", "output", "gumroad_free_products.json"),
         "name": "Gumroad Products",
         "icon": "🛒",
         "category": "Digital Products",
         "description": "Digital products, courses, and resources from Gumroad marketplace",
-    },
-    "viajeros_piratas": {
-        "path": get_data_path("viajeros_piratas", "travel_deals_latest.json"),
-        "name": "Travel Deals",
-        "icon": "✈️",
-        "category": "Travel",
-        "description": "Curated travel deals and vacation packages from Viajeros Piratas",
     },
 }
 
@@ -319,12 +312,8 @@ INTEL_SOURCES_CONFIG: dict[str, dict[str, Any]] = {
 
 TRAVEL_SOURCES_CONFIG = {
     "gumroad": {
-        "path": get_data_path("gumroad", "gumroad_products_latest.json"),
+        "path": get_data_path("gumroad_scraper", "output", "gumroad_free_products.json"),
         "name": "Gumroad Products",
-    },
-    "viajeros_piratas": {
-        "path": get_data_path("viajeros_piratas", "viajeros_piratas_latest.json"),
-        "name": "Viajeros Piratas",
     },
 }
 
@@ -338,7 +327,7 @@ RESEARCH_SOURCES_CONFIG = {
         "description": "Latest ADHD research publications from PubMed and academic sources",
     },
     "adhd_friendly_locations": {
-        "path": get_data_path("adhd_friendly_locations", "adhd_locations_latest.json"),
+        "path": get_data_path("adhd_friendly_locations", "output", "latest_adhd_locations.json"),
         "name": "ADHD-Friendly Locations",
         "icon": "📍",
         "category": "Accessibility",
@@ -349,7 +338,7 @@ RESEARCH_SOURCES_CONFIG = {
 
 MUSEUMS_CONFIG = {
     "museums": {
-        "path": get_data_path("museums", "museums_latest.json"),
+        "path": get_data_path("virtual_museums_etl", "output", "museums_latest.json"),
         "name": "Museums & Cultural Sites",
         "icon": "🏛️",
         "description": "Cultural institutions, exhibitions, and museum collections",

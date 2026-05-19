@@ -10,6 +10,7 @@ Version: 1.0.0
 from __future__ import annotations
 
 import json
+import time as _time
 from datetime import datetime
 from typing import Any
 
@@ -108,6 +109,7 @@ class StackExchangeETL(BaseETL[dict[str, Any], StackExchangeQuestionModel]):
             try:
                 questions = self._fetch_site_questions(site)
                 all_questions.extend(questions)
+                _time.sleep(2)  # Rate limit: avoid 429 from Stack Exchange API
                 self.logger.info(f"Fetched {len(questions)} questions from {site}")
             except Exception as e:
                 self.logger.error(f"Failed to fetch site '{site}': {e}")
@@ -195,7 +197,7 @@ class StackExchangeETL(BaseETL[dict[str, Any], StackExchangeQuestionModel]):
 
         # Update metrics
         for question in transformed:
-            site = question.site.value
+            site = question.site.value if isinstance(question.site, StackExchangeSite) else str(question.site)
             self.api_metrics.site_distribution[site] = self.api_metrics.site_distribution.get(site, 0) + 1
 
             for tag in question.tags:

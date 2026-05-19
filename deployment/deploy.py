@@ -20,12 +20,8 @@ DOCKER_IMAGE = "watchtower"
 HOST_PORT = "7777"
 CONTAINER_PORT = "7780"
 
-if not SERVER_IP or not PASSWORD:
-    print("Error: UNRAID_HOST and UNRAID_PASSWORD must be set in .env file")
-    print("Please create a .env file with:")
-    print("UNRAID_HOST=REDACTED_LAN_IP")
-    print("UNRAID_USER=root")
-    print("UNRAID_PASSWORD=your_password")
+if not SERVER_IP:
+    print("Error: UNRAID_HOST must be set in .env file")
     sys.exit(1)
 
 def create_archive(output_filename):
@@ -57,11 +53,16 @@ def deploy():
         # 1. Create Archive
         create_archive(local_tar_path)
         
-        # 2. Connect
+        # Connect via SSH key auth (or password if set)
         print(f"[{datetime.now()}] Connecting to {SERVER_IP}...")
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD)
+        connect_kwargs = {"username": USERNAME, "timeout": 30}
+        if PASSWORD:
+            connect_kwargs["password"] = PASSWORD
+        else:
+            connect_kwargs["key_filename"] = os.path.expanduser("~/.ssh/id_ed25519")
+        ssh.connect(SERVER_IP, **connect_kwargs)
         
         # 3. Upload
         print(f"[{datetime.now()}] Uploading archive...")

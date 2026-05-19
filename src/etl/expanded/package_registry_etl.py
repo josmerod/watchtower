@@ -254,7 +254,7 @@ class PackageRegistryETL(BaseETL[dict[str, Any], PackageModel]):
 
         # Update metrics
         for package in transformed:
-            reg = package.registry.value
+            reg = package.registry.value if isinstance(package.registry, PackageRegistry) else str(package.registry)
             self.api_metrics.registry_distribution[reg] = self.api_metrics.registry_distribution.get(reg, 0) + 1
 
             if package.language:

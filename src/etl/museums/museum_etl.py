@@ -174,7 +174,7 @@ if __name__ == "__main__":
     logging.info(metrics.model_dump_json(indent=2))
 
     # Example of how to check status and handle results
-    if metrics.status == "success":
+    if metrics.is_successful:
         logging.info("ETL completed successfully.")
     else:
-        logging.error(f"ETL failed: {metrics.error_message}")
+        logging.error(f"ETL failed with {metrics.error_count} errors")
