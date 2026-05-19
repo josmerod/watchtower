@@ -103,6 +103,7 @@ def fetch_spotify() -> dict[str, list[dict[str, Any]]]:
                         "platform": "spotify",
                         "content_type": "playlist",
                         "fetched_at": datetime.now(timezone.utc).isoformat(),
+                        "published_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
                     }
                 )
         else:
@@ -125,6 +126,7 @@ def fetch_spotify() -> dict[str, list[dict[str, Any]]]:
                         "platform": "spotify",
                         "content_type": "album",
                         "fetched_at": datetime.now(timezone.utc).isoformat(),
+                        "published_at": a.get("release_date", ""),
                     }
                 )
         else:

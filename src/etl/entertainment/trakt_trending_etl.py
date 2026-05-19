@@ -85,6 +85,7 @@ def fetch_trending(kind: str = "movies", limit: int = 50) -> list[dict[str, Any]
                     "content_type": kind[:-1],
                     "platform": "trakt",
                     "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    "published_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
                 }
             )
         except Exception:

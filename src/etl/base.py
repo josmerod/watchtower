@@ -1,14 +1,17 @@
 """Base ETL classes and patterns for Watchtower."""
 
 from __future__ import annotations
-
+import urllib.error
 import hashlib
 import json
+import logging
 import os
 import time
+import requests
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Generic, TypeVar
 
 import certifi
 
@@ -16,7 +19,39 @@ import certifi
 os.environ["SSL_CERT_FILE"] = certifi.where()
 os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
-from typing import Any, Generic, TypeVar
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+# Module-level logger for tenacity retry callbacks (runs before instance exists)
+_retry_logger = logging.getLogger("ETL.retry")
+
+# Retryable exception types for HTTP requests
+_RETRYABLE_ERRORS = (
+    requests.exceptions.ConnectionError,
+    requests.exceptions.Timeout,
+    requests.exceptions.HTTPError,
+    TimeoutError,
+    ConnectionError,
+    urllib.error.URLError,
+)
+
+
+def _before_sleep_log_retry(retry_state: Any) -> None:
+    """Log before sleeping on a retry, showing URL and attempt count."""
+    # retry_state.args[0] is self (bound method), args[1] is url
+    url = retry_state.args[1] if len(retry_state.args) > 1 else "?"
+    attempt = retry_state.attempt_number
+    sleep_time = getattr(retry_state.next_action, "sleep", 0)
+    _retry_logger.warning(
+        "Retrying %s (attempt %d/3), waiting %.1fs…",
+        url,
+        attempt,
+        sleep_time,
+    )
 
 # Added Type, ensured Generic, List, Any, TypeVar
 from pydantic import BaseModel
@@ -267,6 +302,56 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
     def http_session(self) -> Any: # requests.Session
         """Get a configured HTTP session (with proxy rotation)."""
         return self.proxy_manager.get_session(retries=self.max_retries)
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type(_RETRYABLE_ERRORS),
+        before_sleep=_before_sleep_log_retry,
+        reraise=True,
+    )
+    def fetch_url(self, url: str, **kwargs: Any) -> requests.Response:
+        """Fetch a URL with tenacity retry logic and a 30-second timeout.
+
+        This is the recommended method for all HTTP GET requests in ETL
+        subclasses.  It applies exponential-backoff retries for transient
+        network / timeout errors and enforces a 30-second connection timeout.
+
+        Args:
+            url: The URL to fetch.
+            **kwargs: Additional keyword arguments forwarded to
+                ``requests.Session.get()`` (e.g. *headers*, *params*).
+
+        Returns:
+            A ``requests.Response`` object.
+
+        Raises:
+            requests.exceptions.RetryError: After all retry attempts are
+                exhausted.
+        """
+        # Ensure a 30-second timeout unless the caller explicitly overrides it
+        kwargs.setdefault("timeout", 30)
+        session = self.http_session
+        response = session.get(url, **kwargs)
+        response.raise_for_status()
+        return response
+
+    def fetch_json(self, url: str, **kwargs: Any) -> Any:
+        """Fetch a URL and return the parsed JSON response.
+
+        Convenience wrapper around :meth:`fetch_url` that parses the
+        response body as JSON.
+
+        Args:
+            url: The URL to fetch.
+            **kwargs: Additional keyword arguments forwarded to
+                ``requests.Session.get()``.
+
+        Returns:
+            Parsed JSON data (typically ``dict`` or ``list``).
+        """
+        response = self.fetch_url(url, **kwargs)
+        return response.json()
 
     def _generate_checksum(self, data: Any) -> str:
         """Generate SHA256 checksum for data integrity verification.
