@@ -59,7 +59,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
         """Set up Playwright browser and page."""
         playwright = await async_playwright().start()
         browser = await playwright.chromium.launch(
-            headless=False,  # Visible browser for better compatibility
+            headless=True,  # Must run headless in Docker (no X server)
             args=[
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
@@ -335,7 +335,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
 
             try:
                 browser = await playwright.chromium.launch(
-                    headless=False,
+                    headless=True,  # Must run headless in Docker (no X server)
                     args=[
                         "--no-sandbox",
                         "--disable-dev-shm-usage",

@@ -79,7 +79,7 @@ class CourseraScraper:
         try:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(
-                    headless=False,
+                    headless=True,  # Must run headless in Docker
                     args=["--disable-blink-features=AutomationControlled"],
                 )
                 context = await browser.new_context(
