@@ -24,7 +24,7 @@ except Exception:  # pragma: no cover - fallback for tests
         return Path(__file__).resolve().parents[3]
 
 
-DATA_DIR = get_project_root() / "data" / "shoppy"
+DATA_DIR = Path(get_project_root()) / "data" / "shoppy"  # Path() wraps str from get_project_root()
 
 
 @dataclass

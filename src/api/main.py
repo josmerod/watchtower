@@ -13,7 +13,12 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust in production
+    allow_origins=[
+        "http://localhost:45714",
+        "http://127.0.0.1:45714",
+        "http://192.168.31.126:45714",
+        "https://watchtower.josmerod.es",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

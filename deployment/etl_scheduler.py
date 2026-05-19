@@ -35,24 +35,15 @@ def run_etls():
         
         if result.returncode != 0:
             print(f"Warning: ETL script returned non-zero exit code: {result.returncode}")
-        
-        # Restart Dashboard to load fresh data
-        print(f"[{datetime.datetime.now()}] Restarting Dashboard to refresh data...")
-        restart_result = subprocess.run(
-            ["supervisorctl", "restart", "dashboard"],
-            capture_output=True,
-            text=True
-        )
-        if restart_result.returncode == 0:
-             print("Dashboard restarted successfully.")
-        else:
-             print(f"Error restarting dashboard: {restart_result.stderr}")
-            
+
+        # Dashboard restart removed: the dashboard auto-refreshes via its API,
+        # so restarting it after every ETL run is unnecessary and disruptive.
+
     except Exception as e:
         print(f"Error running ETL script: {e}")
 
 def main():
-    print(f"[{datetime.datetime.now()}] ETL Scheduler started. Interval: 4 hours.")
+    print(f"[{datetime.datetime.now()}] ETL Scheduler started. Interval: 2 hours.")
     
     # Run immediately on start? 
     # Maybe wait a bit to let dashboard start, or just run. 
@@ -60,8 +51,8 @@ def main():
     run_etls()
     
     while True:
-        # Sleep for 4 hours (4 * 3600 seconds)
-        time.sleep(4 * 3600)
+        # Sleep for 2 hours (2 * 3600 seconds)
+        time.sleep(2 * 3600)
         run_etls()
 
 if __name__ == "__main__":
