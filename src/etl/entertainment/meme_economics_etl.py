@@ -118,6 +118,7 @@ class MemeEconomicsETL(BaseETL):
                                 "is_video": post_data.get("is_video", False),
                                 "awards": len(post_data.get("all_awardings", [])),
                                 "extracted_at": datetime.utcnow().isoformat(),
+                                "published_at": datetime.utcfromtimestamp(post_data.get("created_utc", 0)).strftime("%Y-%m-%d %H:%M UTC"),
                             }
 
                             meme_data.append(meme_record)
@@ -147,6 +148,7 @@ class MemeEconomicsETL(BaseETL):
                 "cringe_risk": "medium",
                 "investment_recommendation": "hold",
                 "extracted_at": datetime.utcnow().isoformat(),
+                "published_at": "2017-01-02",
             },
             {
                 "data_type": "trending_meme",
@@ -162,6 +164,7 @@ class MemeEconomicsETL(BaseETL):
                 "cringe_risk": "high",
                 "investment_recommendation": "sell_immediately",
                 "extracted_at": datetime.utcnow().isoformat(),
+                "published_at": "2022-03-15",
             },
         ]
 

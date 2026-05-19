@@ -623,6 +623,12 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             "source": "ecartelera.com",
         }
 
+        # Add published_at from showtime date for API compatibility
+        if cleaned.get("date"):
+            cleaned["published_at"] = cleaned["date"]
+        else:
+            cleaned["published_at"] = datetime.now().strftime("%Y-%m-%d")
+
         return cleaned
 
     def load(self, data: list[CinemaMovie]) -> None:

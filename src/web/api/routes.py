@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# DEPRECATED: This Flask-based API has been superseded by the FastAPI
+# implementation at src/api/main.py.  This module is only kept because
+# the legacy Flask dashboard (src/web/dashboard/app.py) still imports
+# the Blueprint defined below.  Do not add new routes here — add them
+# to the FastAPI routers under src/api/routers/ instead.
+
 """REST API Routes for Watchtower."""
 
 import json
