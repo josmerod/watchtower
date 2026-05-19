@@ -15,8 +15,8 @@ def get_project_root():
     # Get the directory of this utils.py file
     current_file = os.path.abspath(__file__)
     # From src/web/dashboard/utils.py, go up 4 levels to reach project root
-    # (src/web/dashboard/utils.py -> dashboard -> web -> src -> project_root)
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file)))))
+    # (dirname: utils.py -> dashboard -> web -> src -> project_root)
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file))))
     return project_root
 
 

@@ -32,6 +32,9 @@ RUN dos2unix run_all_etl.sh && chmod +x run_all_etl.sh
 # Create directory for supervisor logs
 RUN mkdir -p /app/logs
 
+# Install Playwright browsers for cinema ETLs (chromium only to save space)
+RUN uv run playwright install --with-deps chromium
+
 # Copy configuration files
 COPY deployment/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
