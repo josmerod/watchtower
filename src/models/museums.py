@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import Field, HttpUrl
+from pydantic import Field
 
 # Assuming TimestampedModel is defined in src.models.base
 from src.models.base import TimestampedModel
@@ -11,13 +11,13 @@ class VirtualMuseumModel(TimestampedModel):  # Ensure this class correctly inher
     id: uuid.UUID = Field(default_factory=uuid.uuid4)  # Redefined as per instruction, though TimestampedModel might provide it
     name: str
     description: str | None = None
-    website_url: HttpUrl | None = None
-    virtual_tour_url: HttpUrl | None = None
+    website_url: str | None = None
+    virtual_tour_url: str | None = None
     country_label: str | None = None  # Label for the country
     city_label: str | None = None  # Label for the city
     main_subject_label: str | None = None  # Label for the main subject
-    image_url: HttpUrl | None = None
-    wikidata_url: HttpUrl | None = None  # Link to the Wikidata item
+    image_url: str | None = None
+    wikidata_url: str | None = None  # Link to the Wikidata item
     latitude: float | None = None
     longitude: float | None = None
     data_source: str = "Wikidata"

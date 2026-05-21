@@ -5,7 +5,8 @@ Monitors real-time CVEs and cybersecurity threats via NVD REST API 2.0.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+import os
+from datetime import datetime, timedelta, timezone
 from typing import Any
 import time
 
@@ -46,20 +47,50 @@ class NVDEtl(BaseETL):
         extracted_data = []
 
         try:
-            # High backoff factor due to stringent NVD API rate limits without a key
             session = self.proxy_manager.get_session(retries=5, backoff_factor=2.0)
             headers = {"User-Agent": "WatchtowerBot/1.0 (Threat Intel Monitor)"}
             
+            # NVD 2.0 supports optional API key for higher rate limits.
+            # Set NVD_API_KEY env var to increase from 5 to 50 req/30s.
+            api_key = os.environ.get("NVD_API_KEY")
+            if api_key:
+                headers["apiKey"] = api_key
+            
             res = session.get(self.endpoints["cves"], headers=headers, timeout=30)
+            
+            if res.status_code == 404:
+                self.logger.warning("NVD API returned 404 — service may be temporarily unavailable. Skipping this run.")
+                self.metrics.records_failed += 1
+                return []
+            
             res.raise_for_status()
             
             vulnerabilities = res.json().get("vulnerabilities", [])
+            
+            # Filter out historical CVEs — only keep items published in the last 90 days.
+            # This guards against NVD returning unexpected results when date filters fail.
+            from datetime import datetime, timedelta, timezone
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+            recent_vulns = []
             for v in vulnerabilities:
-                cve_data = v.get("cve", {})
+                cve = v.get("cve", {})
+                pub = cve.get("published", "")
+                if pub and pub >= cutoff:
+                    recent_vulns.append(cve)
+                else:
+                    self.logger.debug(f"Skipping historical CVE: {cve.get('id', '?')} (published {pub})")
+            
+            if not recent_vulns and vulnerabilities:
+                self.logger.warning(
+                    f"NVD returned {len(vulnerabilities)} CVEs but none are from the last 90 days. "
+                    f"The API date filter may be failing. Check NVD API status."
+                )
+            
+            for cve_data in recent_vulns:
                 cve_data["data_type"] = "cve"
                 extracted_data.append(cve_data)
                 
-            self.metrics.records_extracted += len(vulnerabilities)
+            self.metrics.records_extracted += len(recent_vulns)
 
         except Exception as e:
             self.logger.error(f"Extraction failed: {e}")

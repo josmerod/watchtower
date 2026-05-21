@@ -39,7 +39,11 @@ def fetch_sec_edgar() -> list[dict[str, Any]]:
     logger.info(f"Fetching SEC EDGAR RSS: {FEED_URL}")
     entries: list[dict[str, Any]] = []
     try:
-        feed = feedparser.parse(FEED_URL)
+        # SEC.gov blocks requests without a proper User-Agent header.
+        feed = feedparser.parse(
+            FEED_URL,
+            request_headers={"User-Agent": "Watchtower/1.0 (contact@example.org)"},
+        )
     except Exception as e:
         logger.error(f"Failed to fetch SEC EDGAR RSS: {e}")
         return entries
