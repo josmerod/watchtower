@@ -8,7 +8,7 @@ authors = [
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-keywords = ["data-collection", "monitoring", "etl", "web-scraping", "streamlit", "data-intelligence"]
+keywords = ["data-collection", "monitoring", "etl", "web-scraping", "data-intelligence"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -78,10 +78,6 @@ dev = [
     "pre-commit>=3.5.0",
     "mypy>=1.7.0",
     "black>=24.1.0",
-]
-
-# Machine Learning dependencies (currently unused)
-ml = [
 ]
 
 # All optional dependencies combined

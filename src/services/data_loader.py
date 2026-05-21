@@ -310,7 +310,15 @@ INTEL_SOURCES_CONFIG: dict[str, dict[str, Any]] = {
     },
 }
 
-TRAVEL_SOURCES_CONFIG = {}  # No active travel sources — Viajeros Piratas ETL not producing output yet
+TRAVEL_SOURCES_CONFIG = {
+    "viajeros_piratas": {
+        "path": get_data_path("viajeros_piratas", "output", "viajeros_piratas_deals.json"),
+        "name": "Viajeros Piratas",
+        "icon": "✈️",
+        "category": "Travel Deals",
+        "description": "Travel deals and offers from Viajeros Piratas",
+    },
+}
 
 RESEARCH_SOURCES_CONFIG = {
     "adhd_publications": {
@@ -452,3 +460,4 @@ def format_article_date(article: dict[str, Any]) -> str:
     if parsed_dt == datetime.min.replace(tzinfo=timezone.utc):
          return "Date N/A"
     return parsed_dt.strftime("%Y-%m-%d %H:%M UTC")
+

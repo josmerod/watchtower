@@ -90,7 +90,7 @@ ETL_SCRIPTS = [
     # Entertainment
     "src/etl/entertainment/trakt_trending_etl.py",
     "src/etl/entertainment/spotify_browse_etl.py",
-    "src/etl/entertainment/cinema_ecartelera_etl.py",
+    # cinema_ecartelera_etl.py removed — file missing, only _improved version exists
     "src/etl/entertainment/cinema_ecartelera_improved_etl.py",
     "src/etl/entertainment/meme_economics_etl.py",
     
