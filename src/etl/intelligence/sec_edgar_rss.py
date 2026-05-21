@@ -1,66 +1,194 @@
-"""SEC EDGAR RSS ETL
+"""SEC EDGAR ATOM ETL
 
-Parses SEC EDGAR company filings RSS (public feed) for intelligence.
+Parses SEC EDGAR company filings ATOM feed (public feed) for intelligence.
 Default feed: recent filings.
 Outputs canonical latest JSON under data/intelligence/.
+
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
+import time
 from datetime import datetime, timezone
 from typing import Any
+from html.parser import HTMLParser
 
 import feedparser
+import urllib.error
+import urllib.request
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 
 logger = get_logger("SECEDGARETL")
 
+# SEC.gov ATOM feed for current filings
+FEED_URL = "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=&company=&dateb=&owner=include&count=40&output=atom"
+# SEC requires a proper User-Agent header
+HEADERS = {"User-Agent": "Watchtower/1.0 (contact@example.org)"}
 
-FEED_URL = "https://www.sec.gov/Archives/edgar/usgaap.rss.xml"
+
+class MLStripper(HTMLParser):
+    """Utility class to strip HTML tags from text."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.text: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.text.append(data)
+
+    def get_data(self) -> str:
+        return ''.join(self.text)
+
+
+def strip_tags(html: str) -> str:
+    """Remove HTML tags from a string."""
+    if not html:
+        return ""
+    stripper = MLStripper()
+    stripper.feed(html)
+    return stripper.get_data()
 
 
 def _parse_date(date_str: str | None) -> str | None:
+    """Parse a date string into ISO format."""
     if not date_str:
         return None
     try:
-        return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z").isoformat()
+        # Try ISO format first
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00")).isoformat()
     except Exception:
         try:
-            return datetime.fromisoformat(date_str.replace("Z", "+00:00")).isoformat()
+            return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z").isoformat()
         except Exception:
+            # Fallback: return original string
             return date_str
 
 
-def fetch_sec_edgar() -> list[dict[str, Any]]:
-    logger.info(f"Fetching SEC EDGAR RSS: {FEED_URL}")
-    entries: list[dict[str, Any]] = []
-    try:
-        # SEC.gov blocks requests without a proper User-Agent header.
-        feed = feedparser.parse(
-            FEED_URL,
-            request_headers={"User-Agent": "Watchtower/1.0 (contact@example.org)"},
-        )
-    except Exception as e:
-        logger.error(f"Failed to fetch SEC EDGAR RSS: {e}")
-        return entries
+def _parse_title(title: str) -> dict[str, str]:
+    """
+    Parse SEC EDGAR entry title to extract form_type, company_name, CIK, filing_type.
+    Expected format: "FORM_TYPE - COMPANY_NAME (CIK) (FILING_TYPE)"
+    Example: "D - Juniper Health, Inc. (0001809372) (Filer)"
+    Returns dict with keys: form_type, company_name, cik, filing_type.
+    If parsing fails, returns empty strings.
+    """
+    # Regex to capture: form_type - company_name (cik) (filing_type)
+    # form_type can contain spaces, hyphens, slashes (e.g., "13F-HR", "SC 14D-9", "10-K/A")
+    pattern = r'^(.+?)\s+-\s+(.+?)\s+\((\d+)\)\s+\(([^)]+)\)\s*$'
+    match = re.match(pattern, title.strip())
+    if match:
+        form_type, company_name, cik, filing_type = match.groups()
+        return {
+            "form_type": form_type.strip(),
+            "company_name": company_name.strip(),
+            "cik": cik.strip(),
+            "filing_type": filing_type.strip(),
+        }
+    # Fallback: try to extract at least form_type and company_name
+    parts = title.split(' - ', 1)
+    if len(parts) == 2:
+        form_type = parts[0].strip()
+        rest = parts[1].strip()
+        company_match = re.match(r'^(.+?)\s*\((\d+)\)\s*\((.+)\)$', rest)
+        if company_match:
+            company_name, cik, filing_type = company_match.groups()
+            return {
+                "form_type": form_type,
+                "company_name": company_name.strip(),
+                "cik": cik.strip(),
+                "filing_type": filing_type.strip(),
+            }
+        return {
+            "form_type": form_type,
+            "company_name": rest,
+            "cik": "",
+            "filing_type": "",
+        }
+    # If no ' - ', assume entire title is form_type
+    return {
+        "form_type": title.strip(),
+        "company_name": "",
+        "cik": "",
+        "filing_type": "",
+    }
 
+
+def fetch_sec_edgar() -> list[dict[str, Any]]:
+    """Fetch SEC EDGAR ATOM feed with retry logic."""
+    logger.info(f"Fetching SEC EDGAR ATOM: {FEED_URL}")
+    entries: list[dict[str, Any]] = []
+
+    max_attempts = 3
+    delay_seconds = 5
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            # Create request with headers and timeout
+            req = urllib.request.Request(FEED_URL, headers=HEADERS)
+            with urllib.request.urlopen(req, timeout=30) as response:
+                # Read response content
+                content = response.read()
+                # Parse with feedparser
+                feed = feedparser.parse(content)
+                break  # Success, exit retry loop
+        except urllib.error.URLError as e:
+            logger.warning(f"Attempt {attempt} failed to fetch SEC EDGAR: {e.reason}")
+            if attempt < max_attempts:
+                logger.info(f"Retrying in {delay_seconds} seconds...")
+                time.sleep(delay_seconds)
+            else:
+                logger.error(f"All {max_attempts} attempts failed to fetch SEC EDGAR feed")
+                return entries
+        except Exception as e:
+            logger.warning(f"Attempt {attempt} encountered unexpected error: {e}")
+            if attempt < max_attempts:
+                logger.info(f"Retrying in {delay_seconds} seconds...")
+                time.sleep(delay_seconds)
+            else:
+                logger.error(f"All {max_attempts} attempts failed due to unexpected error")
+                return entries
+
+    # Process entries
     for entry in getattr(feed, "entries", []) or []:
+        # Parse title for structured data
+        title = getattr(entry, "title", "")
+        parsed_title = _parse_title(title)
+
+        # Extract link: prefer entry.link, else first link in entry.links
+        url = getattr(entry, "link", "")
+        if not url and hasattr(entry, "links") and entry.links:
+            url = entry.links[0].get('href', "")
+
+        # Extract and strip summary
+        summary_html = getattr(entry, "summary", "")
+        summary = strip_tags(summary_html)
+
+        # Parse updated date
+        updated = getattr(entry, "updated", None)
+        published = _parse_date(updated)
+
         entries.append(
             {
                 "source": "sec_edgar",
-                "title": getattr(entry, "title", ""),
-                "link": getattr(entry, "link", ""),
-                "published": _parse_date(getattr(entry, "published", None)),
-                "summary": getattr(entry, "summary", ""),
+                "title": title,
+                "url": url,
+                "published": published,
+                "summary": summary,
                 "guid": getattr(entry, "id", getattr(entry, "guid", "")),
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
                 "content_type": "filing",
                 "language": "en",
                 "region": "us",
+                "form_type": parsed_title.get("form_type", ""),
+                "company_name": parsed_title.get("company_name", ""),
             }
         )
 
@@ -69,6 +197,7 @@ def fetch_sec_edgar() -> list[dict[str, Any]]:
 
 
 def save_sec(entries: list[dict[str, Any]]) -> None:
+    """Save entries to JSON files."""
     if not entries:
         logger.info("No SEC entries to save")
         return
@@ -89,8 +218,9 @@ def save_sec(entries: list[dict[str, Any]]) -> None:
     logger.info("Saved SEC EDGAR latest and timestamped outputs")
 
 
-def main():
-    logger.info("Starting SEC EDGAR RSS ETL")
+def main() -> None:
+    """Main ETL function."""
+    logger.info("Starting SEC EDGAR ATOM ETL")
     entries = fetch_sec_edgar()
     if entries:
         save_sec(entries)
