@@ -54,12 +54,12 @@ RUN uv run playwright install --with-deps chromium
 RUN useradd --create-home --shell /bin/bash watchtower
 USER watchtower
 
-# Health check
+# Health check — API runs on 45714
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:7777/health || exit 1
+    CMD curl -f http://localhost:45714/health || exit 1
 
 # Expose ports
-EXPOSE 7777
+EXPOSE 45714 7780
 
 # Default command
 CMD ["uv", "run", "python", "src/launcher/main.py", "--mode", "production"]

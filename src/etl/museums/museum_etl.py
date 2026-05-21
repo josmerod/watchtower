@@ -27,23 +27,21 @@ class VirtualMuseumsETL(SimpleETL):
     def extract(self) -> list[dict[str, Any]]:
         self.logger.info("Starting data extraction for virtual museums from Wikidata.")
 
+        # Fetch museums with official websites; optionally include virtual tour URLs.
+        # Wikidata property P4969 (virtual tour) is rarely used, so we also match
+        # museums that simply have a website — this yields ~100 results instead of 1.
         sparql_query = """
-        SELECT
-          ?museum ?museumLabel ?museumDescription
-          ?website ?virtualTourURL
-          ?countryLabel ?cityLabel
-          ?mainSubjectLabel ?image ?coordinates
+        SELECT ?museum ?museumLabel ?museumDescription ?website ?virtualTourURL
+          ?countryLabel ?cityLabel ?mainSubjectLabel ?image ?coordinates
         WHERE {
           ?museum wdt:P31 wd:Q33506;
-          { ?museum wdt:P4969 ?virtualTourURL. }
-          UNION
-          { ?museum wdt:P4837 ?virtualTourURL. }
-          OPTIONAL { ?museum wdt:P856 ?website. }
+                 wdt:P856 ?website.
           OPTIONAL { ?museum wdt:P18 ?image. }
           OPTIONAL { ?museum wdt:P625 ?coordinates. }
           OPTIONAL { ?museum wdt:P17 ?country. }
           OPTIONAL { ?museum wdt:P131 ?city. }
           OPTIONAL { ?museum wdt:P921 ?mainSubject. }
+          OPTIONAL { ?museum wdt:P4969 ?virtualTourURL. }
           SERVICE wikibase:label {
             bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".
             ?museum rdfs:label ?museumLabel.
@@ -53,7 +51,7 @@ class VirtualMuseumsETL(SimpleETL):
             ?mainSubject rdfs:label ?mainSubjectLabel.
           }
         }
-        LIMIT 200
+        LIMIT 100
         """
 
         headers = {
@@ -80,10 +78,18 @@ class VirtualMuseumsETL(SimpleETL):
             results = data.get("results", {}).get("bindings", [])
             self.logger.info(f"Received {len(results)} items from Wikidata.")
 
+            seen_urls = set()
             for item in results:
                 # Helper to get value, returns None if key is missing
                 def get_value(key: str):
                     return item.get(key, {}).get("value")
+
+                # Deduplicate by Wikidata URI (same museum can appear multiple times)
+                museum_uri = get_value("museum")
+                if museum_uri and museum_uri in seen_urls:
+                    continue
+                if museum_uri:
+                    seen_urls.add(museum_uri)
 
                 # Extract coordinates if available
                 latitude, longitude = None, None

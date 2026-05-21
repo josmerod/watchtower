@@ -27,8 +27,16 @@ class NVDEtl(BaseETL):
         )
         self.logger = get_logger("ETL.NVD")
         # Ensure we just grab the most recent published CVEs
+        # NVD 2.0: use pubStartDate to filter recent vulnerabilities
+        from datetime import datetime, timedelta, timezone
+        since = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%dT00:00:00.000")
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000")
         self.endpoints = {
-            "cves": "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=50"
+            "cves": (
+                f"https://services.nvd.nist.gov/rest/json/cves/2.0"
+                f"?resultsPerPage=50&pubStartDate={since}&pubEndDate={now}"
+                f"&sort=published&dir=desc"
+            )
         }
         self.proxy_manager = ProxyManager()
 

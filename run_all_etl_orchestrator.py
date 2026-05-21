@@ -129,9 +129,6 @@ ETL_SCRIPTS = [
     "src/etl/trendshift/trendshift_etl.py",
     "src/etl/rss_feeds/rss_feed_etl.py",
     "src/etl/museums/museum_etl.py",
-    
-    # Ecommerce
-    "src/etl/ecommerce/shoppy_etl.py",
 ]
 
 def run_script(script_path):

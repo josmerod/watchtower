@@ -143,13 +143,15 @@ def save_spotify(data: dict[str, list[dict[str, Any]]]) -> None:
     out_dir = os.path.join(get_project_root(), "data", "entertainment")
     ensure_directories([out_dir])
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # Flatten playlists + new_releases into a single list for API consumption
+    flat = data.get("playlists", []) + data.get("new_releases", [])
     json_file = os.path.join(out_dir, f"spotify_browse_{ts}.json")
     latest_file = os.path.join(out_dir, "spotify_browse_latest.json")
     with open(json_file, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+        json.dump(flat, f, indent=2, ensure_ascii=False)
     with open(latest_file, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-    logger.info("Saved Spotify browse latest and timestamped outputs")
+        json.dump(flat, f, indent=2, ensure_ascii=False)
+    logger.info(f"Saved {len(flat)} Spotify items (playlists + new releases)")
 
 
 def main():

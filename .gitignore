@@ -4,6 +4,13 @@
 .vscode/
 .VSCodeCounter/
 
+# AI tool directories
+.agent/
+.gemini/
+.continue/
+.playwright-mcp/
+.archive/
+
 # Data directories
 **/data/
 
@@ -46,3 +53,7 @@ secrets/
 # Temporary files
 *.tmp*
 nul
+
+# Test artifacts
+stale_sources_report.txt
+verify_published_at.py
