@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
@@ -111,11 +112,13 @@ class ADHDPublicationETL(BaseETL):
 
                 pub_date_elem = article_elem.find(".//PubDate")
                 pub_date = ""
+                published_at = None
                 if pub_date_elem is not None:
                     year = pub_date_elem.findtext("Year")
                     month = pub_date_elem.findtext("Month")
                     day = pub_date_elem.findtext("Day")
                     medline_date = pub_date_elem.findtext("MedlineDate")
+                    # Preserve original format for publication_date
                     if year and month and day:
                         pub_date = f"{year}-{month}-{day}"
                     elif year and month:
@@ -124,6 +127,24 @@ class ADHDPublicationETL(BaseETL):
                         pub_date = year
                     elif medline_date:
                         pub_date = medline_date
+                    
+                    # Normalize to ISO date string for published_at
+                    try:
+                        if year and month and day:
+                            dt = datetime.strptime(f"{day} {month} {year}", "%d %b %Y")
+                            published_at = dt.strftime("%Y-%m-%d")
+                        elif year and month:
+                            dt = datetime.strptime(f"01 {month} {year}", "%d %b %Y")
+                            published_at = dt.strftime("%Y-%m-%d")
+                        elif year:
+                            published_at = f"{year}-01-01"
+                        elif medline_date:
+                            # Try to extract a year from MedlineDate (e.g. "2025 Jan-Mar")
+                            year_match = re.search(r"(\d{4})", medline_date)
+                            if year_match:
+                                published_at = f"{year_match.group(1)}-01-01"
+                    except ValueError:
+                        self.logger.warning(f"Could not parse pub date: year={year}, month={month}, day={day}")
 
                 journal_title = article_elem.findtext(".//Journal/Title")
 
@@ -142,6 +163,7 @@ class ADHDPublicationETL(BaseETL):
                         "title": title,
                         "authors": authors,
                         "publication_date": pub_date,
+                        "published_at": published_at,
                         "abstract": abstract,
                         "doi": doi,
                         "url": url,
@@ -179,6 +201,7 @@ class ADHDPublicationETL(BaseETL):
                     title=paper_data.get("title", "No Title Provided"),
                     authors=authors_list,
                     publication_date=publication_date_str,
+                    published_at=paper_data.get("published_at"),
                     abstract=paper_data.get("abstract"),
                     doi=paper_data.get("doi"),
                     url=url,
