@@ -68,6 +68,7 @@ def parse_date_universal(date_str, component_name="Unknown"):
     common_formats = [
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%d",
+        "%Y-%b-%d",
         "%b %d, %Y",
         "%B %d, %Y",
         "%a, %d %b %Y %H:%M:%S %Z",

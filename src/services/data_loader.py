@@ -438,7 +438,8 @@ def get_sortable_date(article: dict[str, Any]) -> datetime:
     date_str = (
         article.get("published_at") 
         or article.get("published") 
-        or article.get("published_date") 
+        or article.get("published_date")
+        or article.get("publication_date")
         or article.get("created_at") 
         or article.get("created_utc")
         or article.get("updated_at") 

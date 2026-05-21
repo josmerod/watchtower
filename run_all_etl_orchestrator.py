@@ -27,6 +27,7 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_hackernews_ask.py",
     "src/etl/news/news_get_gittrends.py",
     "src/etl/news/news_get_uneed.py",
+    "src/etl/news/news_get_producthunt.py",  # Was orphan — not in ETL_SCRIPTS, causing stale Product Hunt data
     
     # Reddit
     "src/etl/news/reddit_unified_etl.py",
@@ -93,6 +94,9 @@ ETL_SCRIPTS = [
     # cinema_ecartelera_etl.py removed — file missing, only _improved version exists
     "src/etl/entertainment/cinema_ecartelera_improved_etl.py",
     "src/etl/entertainment/meme_economics_etl.py",
+    
+    # Ecommerce
+    "src/etl/ecommerce/shoppy_etl.py",
     
     # Spanish Public Aid
     "src/etl/spanish_public_aid/spanish_public_aid_etl.py",
