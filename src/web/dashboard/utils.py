@@ -94,6 +94,8 @@ def parse_date_universal(date_str, component_name="Unknown"):
         "%Y/%m/%d",
         "%d/%m/%Y",
         "%m-%d-%y",
+        # PubMed-style dates (e.g. "2026-May-21", "2026-05-21")
+        "%Y-%b-%d",
     ]
 
     for fmt in common_formats:
