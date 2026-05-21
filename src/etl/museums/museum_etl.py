@@ -2,6 +2,7 @@ import logging  # Keep logging for the __main__ block, if needed, or for specifi
 from typing import Any
 
 import requests
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 # BaseModel might not be directly needed if VirtualMuseumModel and SimpleETL handle it
 from pydantic import ValidationError
@@ -29,25 +30,20 @@ class VirtualMuseumsETL(SimpleETL):
         sparql_query = """
         SELECT
           ?museum ?museumLabel ?museumDescription
-          ?website
-          ?virtualTourURL
+          ?website ?virtualTourURL
           ?countryLabel ?cityLabel
-          ?mainSubjectLabel
-          ?image
-          ?coordinates # For latitude and longitude
+          ?mainSubjectLabel ?image ?coordinates
         WHERE {
-          # Museum instance with a virtual tour URL
-          ?museum wdt:P31 wd:Q33506;         # Instance of museum
-                  wdt:P4969 ?virtualTourURL. # Has a virtual tour URL
-
-          OPTIONAL { ?museum wdt:P856 ?website. } # Official website
-          OPTIONAL { ?museum wdt:P18 ?image. }     # Image
-          OPTIONAL { ?museum wdt:P625 ?coordinates. } # Coordinate location
-          OPTIONAL { ?museum wdt:P17 ?country. }      # Country
-          # Using P131 for city, it can be broader, but often points to cities or admin regions
+          ?museum wdt:P31 wd:Q33506;
+          { ?museum wdt:P4969 ?virtualTourURL. }
+          UNION
+          { ?museum wdt:P4837 ?virtualTourURL. }
+          OPTIONAL { ?museum wdt:P856 ?website. }
+          OPTIONAL { ?museum wdt:P18 ?image. }
+          OPTIONAL { ?museum wdt:P625 ?coordinates. }
+          OPTIONAL { ?museum wdt:P17 ?country. }
           OPTIONAL { ?museum wdt:P131 ?city. }
-          OPTIONAL { ?museum wdt:P921 ?mainSubject. } # Main subject
-
+          OPTIONAL { ?museum wdt:P921 ?mainSubject. }
           SERVICE wikibase:label {
             bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".
             ?museum rdfs:label ?museumLabel.
@@ -56,10 +52,8 @@ class VirtualMuseumsETL(SimpleETL):
             ?city rdfs:label ?cityLabel.
             ?mainSubject rdfs:label ?mainSubjectLabel.
           }
-          # Prefer English descriptions, but allow items without one to still be included
-          FILTER(NOT EXISTS { ?museum schema:description _:bnode FILTER(LANG(_:bnode) = "en") .} || LANG(?museumDescription) = "en")
         }
-        LIMIT 100  # Limiting results for initial development
+        LIMIT 200
         """
 
         headers = {
@@ -72,10 +66,17 @@ class VirtualMuseumsETL(SimpleETL):
 
         try:
             self.logger.info(f"Querying Wikidata SPARQL endpoint: {WIKIDATA_SPARQL_URL}")
-            response = requests.get(WIKIDATA_SPARQL_URL, headers=headers, params=params, timeout=30)
-            response.raise_for_status()  # Raises HTTPError for bad responses (4XX or 5XX)
 
-            data = response.json()
+            @retry(stop=stop_after_attempt(3),
+                   wait=wait_exponential(multiplier=2, min=5, max=60),
+                   retry=retry_if_exception_type((requests.exceptions.ConnectionError,
+                                                  requests.exceptions.HTTPError)))
+            def _fetch():
+                r = requests.get(WIKIDATA_SPARQL_URL, headers=headers, params=params, timeout=30)
+                r.raise_for_status()
+                return r.json()
+
+            data = _fetch()
             results = data.get("results", {}).get("bindings", [])
             self.logger.info(f"Received {len(results)} items from Wikidata.")
 
@@ -196,3 +197,4 @@ if __name__ == "__main__":
         logging.info("ETL completed successfully.")
     else:
         logging.error(f"ETL failed with {metrics.error_count} errors")
+

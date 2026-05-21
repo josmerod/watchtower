@@ -1,6 +1,0 @@
---- free -m ---
-               total        used        free      shared  buff/cache   available
-Mem:           15384       14817         172        1112        1835         567
-Swap:              0           0           0
-
---- docker stats --no-stream watchtower ---
