@@ -133,7 +133,7 @@ def fetch_sec_edgar() -> list[dict[str, Any]]:
         try:
             # Create request with headers and timeout
             req = urllib.request.Request(FEED_URL, headers=HEADERS)
-            with urllib.request.urlopen(req, timeout=30) as response:
+            with urllib.request.urlopen(req, timeout=60) as response:
                 # Read response content
                 content = response.read()
                 # Parse with feedparser
