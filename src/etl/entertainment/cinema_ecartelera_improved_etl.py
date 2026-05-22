@@ -640,13 +640,21 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
         # Convert to dictionaries
         data_dicts = [movie.model_dump() for movie in data]
 
-        # Save JSON
-        json_file = self.output_dir / "cinema_showtimes.json"
+        # Save JSON (timestamped)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        json_file = self.output_dir / f"cinema_improved_{ts}.json"
+
+        # Save latest for API consumption
+        latest_file = self.output_dir / "cinema_improved_latest.json"
         json_file.write_text(
             json.dumps(data_dicts, indent=2, ensure_ascii=False, default=str),
             encoding="utf-8",
         )
-        self.logger.info(f"Saved {len(data_dicts)} movies to {json_file}")
+        latest_file.write_text(
+            json.dumps(data_dicts, indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
+        self.logger.info(f"Saved {len(data_dicts)} movies to {json_file} and latest")
 
         # Save CSV
         try:

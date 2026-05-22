@@ -199,6 +199,7 @@ class MemeEconomicsETL(BaseETL):
             "normification_risk": "low",
             "prediction_accuracy": 69.42,  # We're very scientific here
             "extracted_at": datetime.utcnow().isoformat(),
+            "published_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         }
 
         market_data.append(market_index)
@@ -354,7 +355,7 @@ class MemeEconomicsETL(BaseETL):
                 json.dump(data, f, indent=2, default=str)
 
             # Also save latest market snapshot
-            latest_file = self.output_dir / "latest_meme_market.json"
+            latest_file = self.output_dir / "meme_economics_latest.json"
             with open(latest_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, default=str)
 

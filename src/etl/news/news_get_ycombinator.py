@@ -29,6 +29,9 @@ from src.utils.logging import get_logger
 # Initialize logger for this module
 logger = get_logger("YCombinatorETL")
 
+from src.utils.retry import with_retry
+
+
 
 def create_session() -> requests.Session:
     """Create a requests session with retry strategy and proper headers."""
@@ -58,6 +61,7 @@ def create_session() -> requests.Session:
     return session
 
 
+@with_retry
 def get_ycombinator_data(max_stories: int = 150) -> list[dict[str, Any]]:
     """Fetches news articles from Hacker News API.
 

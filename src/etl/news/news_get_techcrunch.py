@@ -22,6 +22,7 @@ import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.retry import with_retry
 
 logger = get_logger("TechCrunchETL")
 
@@ -35,6 +36,7 @@ RSS_FEEDS: dict[str, str] = {
 }
 
 
+@with_retry
 def fetch_techcrunch_feeds() -> list[dict[str, Any]]:
     """Fetches and parses RSS feeds from TechCrunch.
 
