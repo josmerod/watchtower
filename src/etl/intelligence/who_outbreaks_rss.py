@@ -16,6 +16,7 @@ import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.retry import fetch_with_retry
 
 logger = get_logger("WHOOutbreaksETL")
 
@@ -39,7 +40,8 @@ def fetch_who_outbreaks() -> list[dict[str, Any]]:
     logger.info(f"Fetching WHO Outbreaks RSS: {FEED_URL}")
     entries: list[dict[str, Any]] = []
     try:
-        feed = feedparser.parse(FEED_URL)
+        content = fetch_with_retry(FEED_URL)
+        feed = feedparser.parse(content)
     except Exception as e:
         logger.error(f"Failed to fetch WHO Outbreaks RSS: {e}")
         return entries

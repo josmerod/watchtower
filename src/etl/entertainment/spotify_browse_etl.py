@@ -17,6 +17,7 @@ import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.retry import with_retry
 
 logger = get_logger("SpotifyBrowseETL")
 
@@ -78,6 +79,7 @@ def _get_token() -> str | None:
         return None
 
 
+@with_retry
 def fetch_spotify() -> dict[str, list[dict[str, Any]]]:
     token = _get_token()
     if not token:

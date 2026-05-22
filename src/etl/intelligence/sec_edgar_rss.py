@@ -22,6 +22,7 @@ import urllib.request
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.retry import fetch_with_retry
 
 logger = get_logger("SECEDGARETL")
 
@@ -126,35 +127,12 @@ def fetch_sec_edgar() -> list[dict[str, Any]]:
     logger.info(f"Fetching SEC EDGAR ATOM: {FEED_URL}")
     entries: list[dict[str, Any]] = []
 
-    max_attempts = 3
-    delay_seconds = 5
-
-    for attempt in range(1, max_attempts + 1):
-        try:
-            # Create request with headers and timeout
-            req = urllib.request.Request(FEED_URL, headers=HEADERS)
-            with urllib.request.urlopen(req, timeout=60) as response:
-                # Read response content
-                content = response.read()
-                # Parse with feedparser
-                feed = feedparser.parse(content)
-                break  # Success, exit retry loop
-        except urllib.error.URLError as e:
-            logger.warning(f"Attempt {attempt} failed to fetch SEC EDGAR: {e.reason}")
-            if attempt < max_attempts:
-                logger.info(f"Retrying in {delay_seconds} seconds...")
-                time.sleep(delay_seconds)
-            else:
-                logger.error(f"All {max_attempts} attempts failed to fetch SEC EDGAR feed")
-                return entries
-        except Exception as e:
-            logger.warning(f"Attempt {attempt} encountered unexpected error: {e}")
-            if attempt < max_attempts:
-                logger.info(f"Retrying in {delay_seconds} seconds...")
-                time.sleep(delay_seconds)
-            else:
-                logger.error(f"All {max_attempts} attempts failed due to unexpected error")
-                return entries
+    try:
+        content = fetch_with_retry(FEED_URL, timeout=60, headers=HEADERS)
+        feed = feedparser.parse(content)
+    except Exception as e:
+        logger.error(f"Failed to fetch SEC EDGAR feed after retries: {e}")
+        return entries
 
     # Process entries
     for entry in getattr(feed, "entries", []) or []:

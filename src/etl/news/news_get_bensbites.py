@@ -23,11 +23,12 @@ from playwright.sync_api import sync_playwright
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.retry import with_retry
 
 # Initialize logger for this module
 logger = get_logger("BensBitesETL")
 
-
+@with_retry
 def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: int = 4) -> list[dict[str, Any]]:
     """Fetches trending news articles from Ben's Bites website using Playwright.
 

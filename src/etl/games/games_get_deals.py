@@ -29,6 +29,7 @@ import pandas as pd
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.retry import fetch_with_retry
 
 # Configurar el logger centralizado
 logger = get_logger("Games_ETL")
@@ -47,7 +48,7 @@ def get_deals():
     logger.info("Fetching deals...")
     deals_list = []
     try:
-        deals_feed = feedparser.parse(DEALS_RSS)
+        deals_feed = feedparser.parse(fetch_with_retry(DEALS_RSS))
         if deals_feed.bozo:
             logger.warning(f"Deals RSS feed is malformed or could not be parsed properly. Bozo exception: {deals_feed.bozo_exception}")
         logger.debug(f"Retrieved {len(deals_feed.entries)} deals from RSS feed: {DEALS_RSS}")
@@ -137,7 +138,7 @@ def get_bundles():
     logger.info("Fetching bundles...")
     bundles_list = []
     try:
-        bundles_feed = feedparser.parse(BUNDLES_RSS)
+        bundles_feed = feedparser.parse(fetch_with_retry(BUNDLES_RSS))
         if bundles_feed.bozo:
             logger.warning(f"Bundles RSS feed is malformed. Bozo exception: {bundles_feed.bozo_exception}")
         logger.debug(f"Retrieved {len(bundles_feed.entries)} bundles from RSS feed: {BUNDLES_RSS}")
@@ -218,7 +219,7 @@ def get_giveaways():
     logger.info("Fetching giveaways...")
     giveaways_list = []
     try:
-        giveaways_feed = feedparser.parse(GIVEAWAYS_RSS)
+        giveaways_feed = feedparser.parse(fetch_with_retry(GIVEAWAYS_RSS))
         if giveaways_feed.bozo:
             logger.warning(f"Giveaways RSS feed is malformed. Bozo exception: {giveaways_feed.bozo_exception}")
             # Still try to process what we can
