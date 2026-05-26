@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from pydantic.json import pydantic_encoder
 
 from src.etl.base import BaseETL
 from src.models.course import MsAppliedSkillModel
@@ -63,9 +62,15 @@ class MsAppliedSkillsETL(BaseETL):
             data = response.json()
             
             applied_skills = data.get("appliedSkills", [])
-            self.logger.info(f"Found {len(applied_skills)} Applied Skills in catalog.")
-            self.metrics.records_extracted = len(applied_skills)
-            return applied_skills
+            certifications = data.get("certifications", [])
+            credentials = [*applied_skills, *certifications]
+            self.logger.info(
+                "Found %s Applied Skills and %s certifications in catalog.",
+                len(applied_skills),
+                len(certifications),
+            )
+            self.metrics.records_extracted = len(credentials)
+            return credentials
             
         except requests.exceptions.HTTPError as e:
             self.logger.error(f"HTTP error fetching Microsoft Learn catalog: {e}")
@@ -85,7 +90,8 @@ class MsAppliedSkillsETL(BaseETL):
         for item in data:
             try:
                 url = item.get("url", "")
-                title = item.get("title", "Unknown Applied Skill")
+                credential_type = item.get("type") or "applied_skill"
+                title = item.get("title", "Unknown Microsoft credential")
                 
                 # Check for first detected at logic
                 first_detected = None
@@ -117,9 +123,10 @@ class MsAppliedSkillsETL(BaseETL):
                     title=title,
                     url=url,
                     provider="Microsoft Learn",
-                    description=item.get("summary", ""),
+                    description=item.get("summary") or item.get("subtitle") or "",
                     level=level,
                     subject=subject,
+                    category=credential_type,
                     published_date=published_date,
                     first_detected_at=first_detected,
                     roles=item.get("roles", []),

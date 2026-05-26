@@ -186,7 +186,7 @@ class SpanishPublicAidConfig(BaseModel):
     """Spanish Public Aid ETL configuration."""
 
     enabled_sources: list[str] = Field(
-        default=["bdns", "gva", "valencia", "labora"],
+        default=["bdns", "gva", "dogv", "valencia", "burjassot", "labora"],
         description="List of enabled data sources",
     )
     max_aids_per_source: int = Field(default=100, ge=10, le=1000, description="Maximum aids to extract per source")
@@ -208,7 +208,9 @@ class SpanishPublicAidConfig(BaseModel):
     # Source-specific settings
     bdns_enabled: bool = Field(default=True, description="Enable BDNS source")
     gva_enabled: bool = Field(default=True, description="Enable GVA source")
+    dogv_enabled: bool = Field(default=True, description="Enable DOGV aid notices source")
     valencia_enabled: bool = Field(default=True, description="Enable Valencia source")
+    burjassot_enabled: bool = Field(default=True, description="Enable Burjassot local aid source")
     labora_enabled: bool = Field(default=True, description="Enable LABORA source")
 
     # Scraping settings

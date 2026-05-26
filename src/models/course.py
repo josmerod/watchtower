@@ -55,7 +55,7 @@ class PluralsightCourseModel(CourseModel):
 
 
 class MsAppliedSkillModel(CourseModel):
-    """Specific model for Microsoft Applied Skills."""
+    """Specific model for Microsoft Applied Skills and certifications."""
 
     provider: str = Field(default="Microsoft Learn", description="Always Microsoft Learn")
     roles: list[str] | None = Field(default=None, description="Roles the skill is applicable to")

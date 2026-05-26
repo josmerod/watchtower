@@ -1,5 +1,4 @@
 import os
-import sys
 import subprocess
 import argparse
 import time
@@ -28,6 +27,7 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_gittrends.py",
     "src/etl/news/news_get_uneed.py",
     "src/etl/news/news_get_producthunt.py",  # Was orphan — not in ETL_SCRIPTS, causing stale Product Hunt data
+    "src/etl/news/valencia_events_etl.py",  # Feeds dashboard Valencia Events tab
     
     # Reddit
     "src/etl/news/reddit_unified_etl.py",

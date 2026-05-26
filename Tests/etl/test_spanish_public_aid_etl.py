@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from src.config.settings import get_settings
 from src.etl.spanish_public_aid.spanish_public_aid_etl import SpanishPublicAidETL
 from src.models.spanish_public_aid import (
     AidCategory,
@@ -58,10 +59,12 @@ class TestSpanishPublicAidETL:
         """Test ETL initialization."""
         assert etl_instance.name == "spanish_public_aid"
         assert etl_instance.description == "ETL process for scraping Spanish public aid convocations"
-        assert len(etl_instance.sources) == 4
+        assert len(etl_instance.sources) == 6
         assert "bdns" in etl_instance.sources
         assert "gva" in etl_instance.sources
+        assert "dogv" in etl_instance.sources
         assert "valencia" in etl_instance.sources
+        assert "burjassot" in etl_instance.sources
         assert "labora" in etl_instance.sources
 
     def test_determine_aid_type(self, etl_instance):
@@ -98,6 +101,36 @@ class TestSpanishPublicAidETL:
         tags = etl_instance._generate_tags(sample_raw_data)
         assert "comunidad-valenciana" in tags
         assert "generalitat-valenciana" in tags
+
+    def test_enhance_burjassot_scope(self, etl_instance):
+        """Test local Burjassot items keep their municipality."""
+        enhanced = etl_instance._enhance_aid_data(
+            {
+                "title": "Convocatoria de ayudas de emergencia social en Burjassot",
+                "description": "Prestaciones económicas individualizadas para vecinos de Burjassot",
+                "source_url": "https://transparencia.burjassot.org/ayudas-emergencia",
+                "source_name": "Ajuntament de Burjassot",
+                "source_scope": AidScope.LOCAL,
+                "organizing_entity": "Ajuntament de Burjassot",
+                "municipality": "Burjassot",
+            }
+        )
+
+        assert enhanced["scope"].municipality == "Burjassot"
+
+    def test_configured_source_allow_list_controls_sources(self, monkeypatch):
+        """Test enabled_sources makes source coverage configurable."""
+        get_settings.cache_clear()
+        monkeypatch.setenv("WATCHTOWER_SPANISH_PUBLIC_AID__ENABLED_SOURCES", '["bdns", "burjassot"]')
+
+        try:
+            etl = SpanishPublicAidETL()
+
+            assert etl.sources["bdns"]["enabled"] is True
+            assert etl.sources["burjassot"]["enabled"] is True
+            assert etl.sources["gva"]["enabled"] is False
+        finally:
+            get_settings.cache_clear()
 
     def test_generate_keywords(self, etl_instance, sample_raw_data):
         """Test keyword extraction."""
@@ -206,8 +239,14 @@ class TestSpanishPublicAidETL:
     def test_load_data(self, mock_json_dump, mock_open, etl_instance, sample_enhanced_data):
         """Test data loading."""
         # Create mock aid model
-        mock_aid = Mock(spec=SpanishPublicAidModel)
+        mock_aid = Mock()
         mock_aid.model_dump.return_value = sample_enhanced_data
+        mock_aid.is_active = True
+        mock_aid.is_urgent = False
+        mock_aid.category = AidCategory.HOUSING
+        mock_aid.scope.scope = AidScope.AUTONOMOUS_COMMUNITY
+        mock_aid.status = AidStatus.OPEN
+        mock_aid.beneficiary_type = BeneficiaryType.INDIVIDUAL
 
         data = [mock_aid]
 
@@ -231,7 +270,7 @@ class TestSpanishPublicAidETL:
         # Create mock aids
         mock_aids = []
         for i in range(5):
-            mock_aid = Mock(spec=SpanishPublicAidModel)
+            mock_aid = Mock()
             mock_aid.is_active = i < 3  # 3 active aids
             mock_aid.is_urgent = i < 1  # 1 urgent aid
             mock_aid.category.value = "vivienda"

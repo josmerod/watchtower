@@ -134,6 +134,7 @@ class ETLScheduler:
                 "src/etl/goldigging/goldigging_scavenging_etl.py",
                 "src/etl/goldigging/goldigging_deeplearningai_courses.py",
                 "src/etl/goldigging/gumroad_scraper_etl.py",
+                "src/etl/courses/ms_applied_skills_etl.py",
                 "src/etl/courses/khan_academy_etl.py",
             ],
             "research": [
@@ -235,7 +236,6 @@ class ETLScheduler:
         """Monitor running ETL processes and restart failed ones."""
         while self.running:
             try:
-                current_time = time.time()
                 failed_processes = []
 
                 for name, process_info in list(self.etl_processes.items()):

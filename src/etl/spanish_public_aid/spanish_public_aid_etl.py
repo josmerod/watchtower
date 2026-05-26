@@ -8,7 +8,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from pydantic import ValidationError
 
 from src.etl.base import SimpleETL
@@ -47,26 +47,42 @@ class SpanishPublicAidETL(SimpleETL):
                 "url": "https://www.pap.hacienda.gob.es/bdnstrans/GE/es/inicio",
                 "name": "Base de Datos Nacional de Subvenciones",
                 "scope": AidScope.NATIONAL,
-                "enabled": self.config.bdns_enabled,
+                "enabled": self._is_source_enabled("bdns"),
             },
             "gva": {
                 "url": "https://www.gva.es/es/inicio/procedimientos",
                 "search_url": "https://www.gva.es/es/inicio/procedimientos",  # Updated working URL
                 "name": "Generalitat Valenciana",
                 "scope": AidScope.AUTONOMOUS_COMMUNITY,
-                "enabled": self.config.gva_enabled,
+                "enabled": self._is_source_enabled("gva"),
+            },
+            "dogv": {
+                "url": "https://dogv.gva.es/es/resultats-temes?interestTheme=grants",
+                "name": "Diari Oficial de la Generalitat Valenciana (DOGV)",
+                "scope": AidScope.AUTONOMOUS_COMMUNITY,
+                "enabled": self._is_source_enabled("dogv"),
             },
             "valencia": {
                 "url": "https://www.valencia.es/cas/tramites/tramites-subvenciones",
                 "name": "Ayuntamiento de Valencia",
                 "scope": AidScope.LOCAL,
-                "enabled": self.config.valencia_enabled,
+                "enabled": self._is_source_enabled("valencia"),
+            },
+            "burjassot": {
+                "url": "https://transparencia.burjassot.org/contrataciones-convenios-y-subvenciones/subvenciones-y-ayudas/subvenciones-y-ayudas-ano-2025/",
+                "fallback_urls": [
+                    "https://www.burjassot.org/tag/ayudas/",
+                    "https://www.burjassot.org/servicios-sociales/prestaciones-becas-y-ayudas/",
+                ],
+                "name": "Ajuntament de Burjassot",
+                "scope": AidScope.LOCAL,
+                "enabled": self._is_source_enabled("burjassot"),
             },
             "labora": {
                 "url": "https://labora.gva.es/es/empreses/busque-ajudes-subvencions/ajudes-foment-de-l-ocupacio-2025",
                 "name": "LABORA - Servicio Valenciano de Empleo",
                 "scope": AidScope.AUTONOMOUS_COMMUNITY,
-                "enabled": self.config.labora_enabled,
+                "enabled": self._is_source_enabled("labora"),
             },
         }
 
@@ -83,6 +99,12 @@ class SpanishPublicAidETL(SimpleETL):
         # Session for connection reuse
         self.session = requests.Session()
         self.session.headers.update(self.headers)
+
+    def _is_source_enabled(self, source_key: str) -> bool:
+        """Return whether a source is enabled by the allow-list and source flag."""
+        enabled_sources = set(getattr(self.config, "enabled_sources", []) or [])
+        source_flag = getattr(self.config, f"{source_key}_enabled", True)
+        return source_key in enabled_sources and source_flag
 
     def extract(self) -> list[dict[str, Any]]:
         """Extract data from all configured sources."""
@@ -118,8 +140,12 @@ class SpanishPublicAidETL(SimpleETL):
             return self._extract_from_bdns(source_config)
         elif source_key == "gva":
             return self._extract_from_gva(source_config)
+        elif source_key == "dogv":
+            return self._extract_from_dogv(source_config)
         elif source_key == "valencia":
             return self._extract_from_valencia(source_config)
+        elif source_key == "burjassot":
+            return self._extract_from_burjassot(source_config)
         elif source_key == "labora":
             return self._extract_from_labora(source_config)
         else:
@@ -231,6 +257,14 @@ class SpanishPublicAidETL(SimpleETL):
 
         return extracted_data
 
+    def _extract_from_dogv(self, source_config: dict[str, Any]) -> list[dict[str, Any]]:
+        """Extract aid notices from DOGV's grants topic page."""
+        return self._extract_links_from_urls(
+            [source_config["url"]],
+            source_config,
+            organizing_entity="Generalitat Valenciana",
+        )
+
     def _extract_from_valencia(self, source_config: dict[str, Any]) -> list[dict[str, Any]]:
         """Extract from Ayuntamiento de Valencia."""
         extracted_data = []
@@ -251,8 +285,6 @@ class SpanishPublicAidETL(SimpleETL):
             subsidy_links = []
             for link in aid_links:
                 text = link.get_text(strip=True)
-                href = link.get("href", "")
-
                 # Skip if too short or generic
                 if len(text) < 15:
                     continue
@@ -293,6 +325,106 @@ class SpanishPublicAidETL(SimpleETL):
 
         return extracted_data
 
+    def _extract_from_burjassot(self, source_config: dict[str, Any]) -> list[dict[str, Any]]:
+        """Extract local Burjassot aid calls from transparency and news pages."""
+        urls = [source_config["url"], *source_config.get("fallback_urls", [])]
+        return self._extract_links_from_urls(
+            urls,
+            source_config,
+            organizing_entity="Ajuntament de Burjassot",
+            municipality="Burjassot",
+        )
+
+    def _extract_links_from_urls(
+        self,
+        urls: list[str],
+        source_config: dict[str, Any],
+        organizing_entity: str,
+        municipality: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Extract subsidy-like links from one or more listing pages."""
+        extracted_data = []
+        seen_urls = set()
+        keywords = [
+            "ayuda",
+            "ayudas",
+            "subven",
+            "beca",
+            "becas",
+            "convocatoria",
+            "prestaciones",
+            "premios",
+            "fomento",
+            "financiación",
+        ]
+
+        for url in urls:
+            try:
+                response = self.session.get(url, timeout=30)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.content, "html.parser")
+
+                aid_links = []
+                for link in soup.find_all("a", href=True):
+                    if not isinstance(link, Tag):
+                        continue
+                    text = " ".join(link.get_text(" ", strip=True).split())
+                    if len(text) < 15:
+                        continue
+                    if not any(keyword in text.lower() for keyword in keywords):
+                        continue
+
+                    href = str(link["href"])
+                    full_url = urljoin(url, href)
+                    if full_url in seen_urls:
+                        continue
+                    seen_urls.add(full_url)
+                    aid_links.append((text, full_url, link))
+
+                self.logger.info(f"Found {len(aid_links)} aid-like links in {source_config['name']} from {url}")
+
+                for title_text, full_url, link in aid_links[: self.config.max_aids_per_source]:
+                    description = self._extract_detail_description(full_url)
+                    extracted_data.append(
+                        {
+                            "title": title_text,
+                            "description": description,
+                            "source_url": full_url,
+                            "source_name": source_config["name"],
+                            "source_scope": source_config["scope"],
+                            "organizing_entity": organizing_entity,
+                            "municipality": municipality,
+                            "raw_element": str(link)[:1000],
+                        }
+                    )
+            except Exception as e:
+                self.logger.warning(f"Error fetching {source_config['name']} URL {url}: {e}")
+                continue
+
+        return extracted_data
+
+    def _extract_detail_description(self, url: str) -> str:
+        """Best-effort extraction of a short description from a detail page."""
+        try:
+            detail_response = self.session.get(url, timeout=15)
+            if detail_response.status_code != 200:
+                return ""
+
+            detail_soup = BeautifulSoup(detail_response.content, "html.parser")
+            desc_elem = (
+                detail_soup.find("meta", attrs={"name": "description"})
+                or detail_soup.find(["p", "div"], class_=re.compile(r".*desc.*|.*resumen.*|.*content.*|.*entry.*", re.I))
+                or detail_soup.find(["p", "div"], string=re.compile(r".{50,}", re.I))
+            )
+            if not isinstance(desc_elem, Tag):
+                return ""
+            if desc_elem.name == "meta":
+                content = desc_elem.get("content", "")
+                return str(content)[:500]
+            return desc_elem.get_text(" ", strip=True)[:500]
+        except Exception:
+            return ""
+
     def _extract_from_labora(self, source_config: dict[str, Any]) -> list[dict[str, Any]]:
         """Extract from LABORA."""
         extracted_data = []
@@ -313,8 +445,6 @@ class SpanishPublicAidETL(SimpleETL):
             employment_links = []
             for link in aid_links:
                 text = link.get_text(strip=True)
-                href = link.get("href", "")
-
                 # Skip if too short or generic
                 if len(text) < 20:
                     continue
@@ -638,7 +768,7 @@ class SpanishPublicAidETL(SimpleETL):
                             description = desc_elem.get("content", "")
                         else:
                             description = desc_elem.get_text(strip=True)[:500]  # Limit length
-            except:
+            except Exception:
                 pass  # If we can't get details, continue with what we have
 
             return {
@@ -697,7 +827,7 @@ class SpanishPublicAidETL(SimpleETL):
                     status_elem = detail_soup.find(string=re.compile(r"ABIERTO|CERRADO|OPEN|CLOSED", re.I))
                     if status_elem:
                         status_text = f" [{status_elem.strip()}]"
-            except:
+            except Exception:
                 pass
 
             return {
@@ -766,8 +896,8 @@ class SpanishPublicAidETL(SimpleETL):
         # Create geographic scope
         scope = GeographicScopeModel(
             scope=raw_data.get("source_scope", AidScope.NATIONAL),
-            autonomous_community=("Comunidad Valenciana" if raw_data.get("source_scope") == AidScope.AUTONOMOUS_COMMUNITY else None),
-            municipality=("Valencia" if raw_data.get("source_scope") == AidScope.LOCAL else None),
+            autonomous_community=("Comunitat Valenciana" if raw_data.get("source_scope") == AidScope.AUTONOMOUS_COMMUNITY else None),
+            municipality=(raw_data.get("municipality") or ("Valencia" if raw_data.get("source_scope") == AidScope.LOCAL else None)),
         )
 
         # Create amount model with default values
