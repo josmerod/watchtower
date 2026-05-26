@@ -4,11 +4,13 @@ Main entry point for the Watchtower intelligence platform dashboard.
 Works with UV environment management.
 """
 
+import os
 import sys
 
 
 def main():
     """Launch the Watchtower Dashboard with proper imports."""
+    port = int(os.getenv("WATCHTOWER_DASHBOARD_PORT", "7780"))
     print("Starting Watchtower Dashboard...")
     print("Real-time Intelligence & Monitoring Platform")
     print("-" * 60)
@@ -17,14 +19,14 @@ def main():
         from src.web.dashboard.app import app
 
         print("Successfully loaded Watchtower Dashboard")
-        print("Starting server on http://0.0.0.0:7780")
-        print("Dashboard available at: http://localhost:7780")
+        print(f"Starting server on http://0.0.0.0:{port}")
+        print(f"Dashboard available at: http://localhost:{port}")
         print("Press Ctrl+C to stop the server")
         # Run the app (Dash >=3 uses app.run, older versions use app.run_server)
         if hasattr(app, "run"):
-            app.run(debug=False, port=7780, host="0.0.0.0")
+            app.run(debug=False, port=port, host="0.0.0.0")
         else:
-            app.run_server(debug=False, port=7780, host="0.0.0.0")
+            app.run_server(debug=False, port=port, host="0.0.0.0")
     except ModuleNotFoundError as e:
         print(f"Module not found: {e}")
         print("\nTroubleshooting:")
