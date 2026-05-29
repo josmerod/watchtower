@@ -108,7 +108,7 @@ app.index_string = """
         <link rel="icon" type="image/svg+xml" href="/assets/watchtower_icon.svg">
         {%css%}
         <!-- Final visual overrides: must load after Dash auto-assets and legacy mobile CSS. -->
-        <link rel="stylesheet" href="/assets/zz_visual_refresh.css?v=6">
+        <link rel="stylesheet" href="/assets/zz_visual_refresh.css?v=7">
     </head>
     <body>
         {%app_entry%}
