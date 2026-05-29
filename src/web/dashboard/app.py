@@ -110,11 +110,11 @@ app.index_string = """
         <title>Watchtower Dashboard</title>
         <meta name="description" content="Watchtower - Real-time Intelligence & Monitoring Platform">
         <link rel="icon" type="image/svg+xml" href="/assets/watchtower_icon.svg">
-        <link rel="stylesheet" href="/assets/css/shortcuts.css">
-        <link rel="stylesheet" href="/assets/css/mobile_responsive.css">
         <!-- Font Awesome for mobile navigation icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         {%css%}
+        <!-- Final visual overrides: must load after Dash auto-assets and legacy mobile CSS. -->
+        <link rel="stylesheet" href="/assets/zz_visual_refresh.css?v=3">
     </head>
     <body>
         {%app_entry%}
@@ -573,7 +573,7 @@ def _summary_card(label: str, value, hint: str = "") -> dbc.Col:
             ],
             className="ops-summary-card",
         ),
-        xs=12,
+        xs=6,
         sm=6,
         lg=3,
     )

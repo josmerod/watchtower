@@ -1,15 +1,15 @@
 /*
  * Watchtower Dashboard visual refresh
- * Loaded after the legacy theme to override the blanket !important dark rules.
+ * Loaded last to override the legacy blanket !important dark/mobile rules.
  */
 
 :root {
-    --wt-bg: #07111f;
+    --wt-bg: #08111f;
     --wt-bg-2: #0b1728;
-    --wt-surface: rgba(15, 27, 46, 0.86);
+    --wt-surface: rgba(15, 27, 46, 0.90);
     --wt-surface-2: rgba(18, 33, 56, 0.94);
     --wt-border: rgba(148, 163, 184, 0.20);
-    --wt-border-strong: rgba(125, 211, 252, 0.32);
+    --wt-border-strong: rgba(125, 211, 252, 0.30);
     --wt-text: #eef6ff;
     --wt-muted: #9fb0c8;
     --wt-accent: #67e8f9;
@@ -17,19 +17,17 @@
     --wt-good: #34d399;
     --wt-warn: #fbbf24;
     --wt-bad: #fb7185;
-    --wt-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
-    --wt-radius-lg: 24px;
-    --wt-radius-md: 16px;
+    --wt-shadow: 0 18px 44px rgba(0, 0, 0, 0.30);
+    --wt-radius-lg: 20px;
+    --wt-radius-md: 14px;
 }
 
 html,
 body,
-#react-entry-point,
-._dash-loading,
-.dash-debug-menu__outer {
+#react-entry-point {
     background:
-        radial-gradient(circle at 14% -10%, rgba(103, 232, 249, 0.20), transparent 34rem),
-        radial-gradient(circle at 88% 3%, rgba(167, 139, 250, 0.20), transparent 30rem),
+        radial-gradient(circle at 14% -8%, rgba(103, 232, 249, 0.14), transparent 30rem),
+        radial-gradient(circle at 88% 0%, rgba(167, 139, 250, 0.14), transparent 28rem),
         linear-gradient(180deg, var(--wt-bg), var(--wt-bg-2) 48%, #050912) !important;
     color: var(--wt-text) !important;
 }
@@ -40,19 +38,44 @@ body::before {
     inset: 0;
     pointer-events: none;
     background-image:
-        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent 72%);
+        linear-gradient(rgba(255,255,255,0.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.026) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.48), transparent 70%);
     z-index: 0;
 }
 
 .container-fluid {
-    max-width: 1760px !important;
-    padding: 24px clamp(16px, 2.4vw, 36px) 48px !important;
+    max-width: 1720px !important;
+    padding: 18px clamp(14px, 2vw, 32px) 42px !important;
     background: transparent !important;
     position: relative;
     z-index: 1;
+}
+
+.container-fluid,
+.container-fluid > *,
+.dashboard-shell,
+.dashboard-shell > *,
+.dashboard-shell .col-12,
+.dashboard-hero,
+.dashboard-hero-copy,
+.dashboard-hero-actions,
+.ops-summary-row,
+.ops-summary-row > *,
+.ops-summary-row .row,
+.ops-summary-row .col-6,
+.ops-summary-row .col-sm-6,
+.ops-summary-row .col-lg-3,
+#dashboard-content,
+#tab-content {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+.ops-summary-row .row > [class*="col-"] {
+    background: transparent !important;
+    background-color: transparent !important;
 }
 
 .dashboard-shell,
@@ -79,26 +102,26 @@ body::before {
 .dashboard-hero {
     position: relative;
     overflow: hidden;
-    min-height: 184px;
-    padding: clamp(24px, 4vw, 44px) !important;
-    margin-bottom: 22px !important;
+    min-height: 0 !important;
+    padding: clamp(20px, 2.8vw, 32px) !important;
+    margin-bottom: 14px !important;
     border: 1px solid var(--wt-border-strong) !important;
     border-radius: var(--wt-radius-lg) !important;
     background:
-        linear-gradient(135deg, rgba(7, 17, 31, 0.82), rgba(16, 27, 48, 0.92)),
-        radial-gradient(circle at 86% 0%, rgba(103, 232, 249, 0.24), transparent 26rem) !important;
+        linear-gradient(135deg, rgba(8, 17, 31, 0.86), rgba(14, 26, 45, 0.94)),
+        radial-gradient(circle at 90% 10%, rgba(103, 232, 249, 0.16), transparent 22rem) !important;
     box-shadow: var(--wt-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
 .dashboard-hero::after {
     content: "";
     position: absolute;
-    right: -90px;
-    top: -110px;
-    width: 340px;
-    height: 340px;
+    right: -110px;
+    top: -130px;
+    width: 300px;
+    height: 300px;
     border-radius: 999px;
-    background: radial-gradient(circle, rgba(103, 232, 249, 0.22), transparent 64%);
+    background: radial-gradient(circle, rgba(103, 232, 249, 0.16), transparent 64%);
     filter: blur(4px);
 }
 
@@ -106,22 +129,21 @@ body::before {
 .dashboard-hero-actions {
     position: relative;
     z-index: 1;
-    background: transparent !important;
 }
 
 .dashboard-eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 7px 11px;
-    margin-bottom: 16px;
-    border: 1px solid rgba(103, 232, 249, 0.32);
+    padding: 6px 10px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(103, 232, 249, 0.28);
     border-radius: 999px;
     color: #b8f7ff !important;
     background: rgba(103, 232, 249, 0.08) !important;
-    font-size: 0.76rem;
+    font-size: 0.72rem;
     font-weight: 800;
-    letter-spacing: 0.13em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
 }
 
@@ -129,31 +151,33 @@ body::before {
     max-width: 980px;
     margin: 0 !important;
     color: var(--wt-text) !important;
-    font-size: clamp(2.15rem, 5vw, 4.8rem) !important;
-    font-weight: 850 !important;
-    letter-spacing: -0.07em !important;
-    line-height: 0.93 !important;
+    font-size: clamp(2rem, 4.2vw, 3.7rem) !important;
+    font-weight: 830 !important;
+    letter-spacing: -0.055em !important;
+    line-height: 1.02 !important;
+    text-shadow: none !important;
 }
 
 .dashboard-subtitle {
-    max-width: 760px;
-    margin: 16px 0 0 !important;
+    max-width: 740px;
+    margin: 10px 0 0 !important;
     color: #bfd0e8 !important;
     background: transparent !important;
-    font-size: clamp(1rem, 1.8vw, 1.18rem) !important;
-    line-height: 1.6 !important;
+    font-size: clamp(0.95rem, 1.4vw, 1.08rem) !important;
+    line-height: 1.45 !important;
 }
 
 .dashboard-hero-actions {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 9px;
+    min-width: max-content;
 }
 
 .dashboard-hero .btn {
     border-radius: 999px !important;
-    padding: 10px 15px !important;
+    padding: 9px 13px !important;
     font-weight: 750 !important;
     text-decoration: none !important;
     box-shadow: none !important;
@@ -172,56 +196,58 @@ body::before {
     backdrop-filter: blur(8px);
 }
 
-.ops-summary-row,
-.ops-summary-row > div,
-.ops-summary-card,
-.ops-summary-card * {
-    background: transparent !important;
-}
-
 .ops-summary-row {
-    margin-bottom: 20px !important;
+    margin-bottom: 14px !important;
 }
 
 .ops-summary-card {
     height: 100%;
-    padding: 17px 18px !important;
+    min-height: 112px;
+    padding: 14px 15px !important;
     border: 1px solid var(--wt-border) !important;
-    border-radius: 18px !important;
-    background: linear-gradient(180deg, rgba(15, 27, 46, 0.88), rgba(9, 18, 32, 0.92)) !important;
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+    border-radius: 16px !important;
+    background: linear-gradient(180deg, rgba(15, 27, 46, 0.90), rgba(9, 18, 32, 0.94)) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.ops-summary-card,
+.ops-summary-card * {
+    background-color: transparent !important;
 }
 
 .ops-summary-card__label {
-    margin-bottom: 7px !important;
+    margin-bottom: 6px !important;
     color: var(--wt-muted) !important;
-    font-size: 0.74rem !important;
+    font-size: 0.70rem !important;
     font-weight: 800 !important;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
 }
 
 .ops-summary-card__value {
     color: var(--wt-text) !important;
-    font-size: 1.42rem !important;
+    font-size: clamp(1.14rem, 2.2vw, 1.34rem) !important;
     font-weight: 850 !important;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
 }
 
 .ops-summary-card__hint {
     margin-top: 5px !important;
     color: #9fb0c8 !important;
-    font-size: 0.86rem !important;
+    font-size: 0.80rem !important;
+    line-height: 1.28;
 }
 
 .status-pill {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     width: max-content;
-    padding: 8px 12px;
+    max-width: 100%;
+    padding: 7px 10px;
     border-radius: 999px;
-    font-size: 0.9rem;
+    font-size: 0.86rem;
     font-weight: 850;
     text-transform: capitalize;
 }
@@ -230,88 +256,112 @@ body::before {
     content: "";
     width: 8px;
     height: 8px;
+    flex: 0 0 8px;
     border-radius: 999px;
     background: currentColor;
     box-shadow: 0 0 14px currentColor;
 }
 
-.status-pill--ok {
-    color: var(--wt-good) !important;
-    background: rgba(52, 211, 153, 0.11) !important;
-    border: 1px solid rgba(52, 211, 153, 0.28);
-}
+.status-pill--ok { color: var(--wt-good) !important; background: rgba(52, 211, 153, 0.11) !important; border: 1px solid rgba(52, 211, 153, 0.28); }
+.status-pill--degraded { color: var(--wt-warn) !important; background: rgba(251, 191, 36, 0.11) !important; border: 1px solid rgba(251, 191, 36, 0.28); }
+.status-pill--down { color: var(--wt-bad) !important; background: rgba(251, 113, 133, 0.12) !important; border: 1px solid rgba(251, 113, 133, 0.30); }
 
-.status-pill--degraded {
-    color: var(--wt-warn) !important;
-    background: rgba(251, 191, 36, 0.11) !important;
-    border: 1px solid rgba(251, 191, 36, 0.28);
-}
-
-.status-pill--down {
-    color: var(--wt-bad) !important;
-    background: rgba(251, 113, 133, 0.12) !important;
-    border: 1px solid rgba(251, 113, 133, 0.30);
+/* Main and nested tab bars: compact, horizontally scrollable, never hidden on mobile. */
+.nav-tabs,
+.desktop-nav-tabs,
+#dashboard-tabs,
+[role="tablist"] {
+    display: flex !important;
+    visibility: visible !important;
+    flex-wrap: nowrap !important;
+    gap: 7px;
+    max-width: 100%;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 0 14px !important;
+    padding: 9px !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border: 1px solid var(--wt-border) !important;
+    border-radius: 18px !important;
+    background: rgba(8, 17, 31, 0.78) !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.20) !important;
+    backdrop-filter: blur(14px);
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
 }
 
 .desktop-nav-tabs {
-    position: sticky;
-    top: 0;
+    position: sticky !important;
+    top: 0 !important;
     z-index: 20;
-    display: flex !important;
-    gap: 8px;
-    padding: 12px !important;
-    margin: 0 0 18px !important;
-    overflow-x: auto;
-    border: 1px solid var(--wt-border) !important;
-    border-radius: 999px !important;
-    background: rgba(8, 17, 31, 0.78) !important;
-    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.24) !important;
-    backdrop-filter: blur(16px);
-    scrollbar-width: thin;
 }
 
 .nav-tabs .nav-item,
-.nav-tabs .nav-link {
+.nav-tabs li,
+.nav-tabs .nav-link,
+#dashboard-tabs .nav-link {
+    display: block !important;
+    visibility: visible !important;
+    width: auto !important;
+    height: auto !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
     background: transparent !important;
 }
 
-.nav-tabs .nav-item .nav-link {
+.nav-tabs .nav-item .nav-link,
+#dashboard-tabs .nav-link {
     white-space: nowrap;
     margin: 0 !important;
     border: 1px solid transparent !important;
     border-radius: 999px !important;
     color: #b9c7dd !important;
-    padding: 9px 14px !important;
-    font-size: 0.92rem !important;
-    font-weight: 760 !important;
+    padding: 8px 12px !important;
+    font-size: 0.88rem !important;
+    font-weight: 740 !important;
 }
 
-.nav-tabs .nav-item .nav-link:hover {
+.nav-tabs .nav-item .nav-link:hover,
+#dashboard-tabs .nav-link:hover {
     color: var(--wt-text) !important;
     background: rgba(255, 255, 255, 0.07) !important;
     border-color: rgba(255, 255, 255, 0.12) !important;
     text-decoration: none !important;
 }
 
-.nav-tabs .nav-item .nav-link.active {
+.nav-tabs .nav-item .nav-link.active,
+#dashboard-tabs .nav-link.active {
     color: #06111f !important;
     background: linear-gradient(135deg, var(--wt-accent), #c4b5fd) !important;
     border-color: transparent !important;
-    box-shadow: 0 12px 26px rgba(103, 232, 249, 0.18) !important;
+    box-shadow: 0 10px 22px rgba(103, 232, 249, 0.15) !important;
 }
 
-.tab-pane,
 .tab-content,
-.card,
-.table-responsive {
-    border-radius: var(--wt-radius-md) !important;
+.tab-pane.active,
+.tab-content > .active,
+[role="tabpanel"].active {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.tab-content > .tab-pane:not(.active) {
+    display: none !important;
 }
 
 .card,
 .table-responsive {
     border: 1px solid var(--wt-border) !important;
+    border-radius: var(--wt-radius-md) !important;
     background: var(--wt-surface) !important;
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22) !important;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.20) !important;
 }
 
 .card-header {
@@ -320,21 +370,19 @@ body::before {
     color: var(--wt-text) !important;
 }
 
-.card-body {
-    background: transparent !important;
-}
+.card-body { background: transparent !important; }
 
 h2, h3, h4, h5, h6,
 .h2, .h3, .h4, .h5, .h6 {
     color: var(--wt-text) !important;
-    letter-spacing: -0.03em !important;
+    letter-spacing: -0.025em !important;
 }
 
 .tab-pane h3,
 .tab-pane .h3 {
-    margin: 12px 0 18px !important;
-    font-size: 1.42rem !important;
-    font-weight: 850 !important;
+    margin: 8px 0 12px !important;
+    font-size: 1.28rem !important;
+    font-weight: 830 !important;
 }
 
 input,
@@ -363,64 +411,225 @@ input:focus {
 
 .table thead th {
     position: sticky !important;
-    top: 70px !important;
+    top: 56px !important;
     z-index: 10 !important;
     border: 0 !important;
     border-bottom: 1px solid rgba(103, 232, 249, 0.22) !important;
     color: #d8e7ff !important;
     background: rgba(12, 24, 42, 0.96) !important;
-    font-size: 0.75rem !important;
-    letter-spacing: 0.12em !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.10em !important;
 }
 
 .table td,
 .table th {
     border-color: rgba(148, 163, 184, 0.12) !important;
     background: transparent !important;
+    padding: 10px 12px !important;
 }
 
-.table tbody tr {
-    background: rgba(15, 27, 46, 0.62) !important;
-}
-
-.table tbody tr:nth-child(even) {
-    background: rgba(20, 35, 58, 0.68) !important;
-}
-
-.table tbody tr:hover {
-    background: rgba(103, 232, 249, 0.08) !important;
-    transform: none !important;
-    box-shadow: inset 3px 0 0 var(--wt-accent) !important;
-}
+.table tbody tr { background: rgba(15, 27, 46, 0.62) !important; }
+.table tbody tr:nth-child(even) { background: rgba(20, 35, 58, 0.68) !important; }
+.table tbody tr:hover { background: rgba(103, 232, 249, 0.08) !important; transform: none !important; box-shadow: inset 3px 0 0 var(--wt-accent) !important; }
 
 .table td a,
-a:not(.btn) {
-    color: #8be9ff !important;
+a:not(.btn) { color: #8be9ff !important; }
+.table td a:hover,
+a:not(.btn):hover { color: #dffbff !important; background: rgba(103, 232, 249, 0.12) !important; text-decoration: none !important; }
+
+.mobile-nav-toggle,
+.mobile-nav-container,
+.mobile-dashboard-notice,
+.mobile-tabs-info {
+    display: none !important;
 }
 
-.table td a:hover,
-a:not(.btn):hover {
-    color: #dffbff !important;
-    background: rgba(103, 232, 249, 0.12) !important;
-    text-decoration: none !important;
+@media (min-width: 992px) {
+    .dashboard-hero {
+        align-items: center !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .dashboard-hero-actions {
+        justify-content: flex-start;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .dashboard-hero .btn {
+        min-height: 42px !important;
+    }
 }
 
 @media (max-width: 768px) {
+    .container-fluid {
+        padding: 12px 12px 28px !important;
+    }
+
     .dashboard-hero {
-        padding: 22px !important;
-    }
-
-    .dashboard-hero-actions {
-        justify-content: flex-start;
-        margin-top: 18px;
-    }
-
-    .desktop-nav-tabs {
-        top: 0;
+        padding: 18px !important;
+        margin-bottom: 12px !important;
         border-radius: 18px !important;
     }
 
-    .ops-summary-card {
+    .dashboard-eyebrow {
         margin-bottom: 10px;
+        font-size: 0.66rem;
+    }
+
+    .dashboard-header-title {
+        font-size: clamp(1.85rem, 10vw, 2.55rem) !important;
+        line-height: 1.04 !important;
+        letter-spacing: -0.045em !important;
+    }
+
+    .dashboard-subtitle {
+        margin-top: 9px !important;
+        font-size: 0.94rem !important;
+        line-height: 1.42 !important;
+    }
+
+    .dashboard-hero-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    .dashboard-hero .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 9px 12px !important;
+    }
+
+    .ops-summary-card {
+        min-height: 124px;
+        padding: 12px !important;
+    }
+
+    .ops-summary-card__label {
+        font-size: 0.64rem !important;
+    }
+
+    .ops-summary-card__value {
+        font-size: 1.05rem !important;
+    }
+
+    .ops-summary-card__hint {
+        font-size: 0.72rem !important;
+        overflow-wrap: anywhere;
+    }
+
+    .status-pill {
+        padding: 6px 8px;
+        font-size: 0.78rem;
+    }
+
+    .desktop-nav-tabs,
+    .nav-tabs,
+    [role="tablist"] {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 30 !important;
+        margin-bottom: 12px !important;
+        padding: 8px !important;
+        border-radius: 16px !important;
+    }
+
+    .nav-tabs .nav-item .nav-link,
+    #dashboard-tabs .nav-link {
+        padding: 8px 10px !important;
+        font-size: 0.82rem !important;
+    }
+
+    .tab-pane h3,
+    .tab-pane .h3 {
+        font-size: 1.14rem !important;
+    }
+
+    .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        min-width: 620px;
+    }
+
+    .table td,
+    .table th {
+        padding: 8px 10px !important;
+        font-size: 0.82rem !important;
+    }
+}
+
+/* Beat legacy mobile_responsive.css, which forces every Bootstrap column full-width on phones. */
+.ops-summary-row .row > .col-6,
+.ops-summary-row .row > .col-sm-6,
+.ops-summary-row .row > .col-lg-3 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    width: 50% !important;
+}
+
+@media (min-width: 992px) {
+    .ops-summary-row .row > .col-lg-3 {
+        flex: 0 0 25% !important;
+        max-width: 25% !important;
+        width: 25% !important;
+    }
+}
+
+#dashboard-tabs {
+    display: flex !important;
+    visibility: visible !important;
+    height: auto !important;
+    position: sticky !important;
+    left: auto !important;
+    top: 0 !important;
+}
+
+/* High-specificity cleanup for the legacy *:not(...) background-color rule. */
+#react-entry-point .dashboard-hero .dashboard-hero-copy,
+#react-entry-point .dashboard-hero .dashboard-hero-copy *:not(.dashboard-eyebrow),
+#react-entry-point .dashboard-hero .dashboard-hero-actions,
+#react-entry-point .ops-summary-card *,
+#react-entry-point .desktop-nav-tabs *,
+#react-entry-point .tab-content,
+#react-entry-point .tab-pane {
+    background-color: transparent !important;
+}
+
+@media (max-width: 768px) {
+    #react-entry-point .dashboard-hero {
+        padding: 14px !important;
+    }
+
+    #react-entry-point .dashboard-eyebrow {
+        margin-bottom: 8px !important;
+        padding: 5px 8px !important;
+    }
+
+    #react-entry-point .dashboard-subtitle {
+        margin-top: 7px !important;
+        font-size: 0.88rem !important;
+    }
+
+    #react-entry-point .dashboard-hero-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+        margin-top: 11px !important;
+    }
+
+    #react-entry-point .dashboard-hero .btn {
+        min-height: 38px !important;
+        padding: 8px 6px !important;
+        font-size: 0.76rem !important;
+    }
+
+    #react-entry-point .ops-summary-card {
+        min-height: 104px !important;
+        padding: 10px !important;
     }
 }
