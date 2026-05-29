@@ -1,11 +1,11 @@
-\"\"\"Product Hunt ETL Module
+"""Product Hunt ETL Module
 
 This module fetches and processes product launches using the official Product Hunt GraphQL API
 or falls back to the RSS feed if no API token is available.
 
 Usage:
     python src/etl/news/news_get_producthunt.py
-\"\"\"
+"""
 
 import json
 import os
@@ -32,14 +32,14 @@ class ProductHuntETL:
         })
 
     def fetch_via_graphql(self, limit: int = 50) -> List[Dict[str, Any]]:
-        \"\"\"Fetch products using the official GraphQL API.\"\"\"
+        """Fetch products using the official GraphQL API."""
         if not self.api_token:
             logger.warning("PRODUCTHUNT_API_TOKEN not set, skipping GraphQL")
             return []
 
         query = """
         {
-            posts(postedAfter: \"%s\", order: VOTES, first: %d) {
+            posts(postedAfter: "%s", order: VOTES, first: %d) {
                 edges {
                     node {
                         name
@@ -95,7 +95,7 @@ class ProductHuntETL:
             return []
 
     def fetch_via_rss(self, limit: int = 50) -> List[Dict[str, Any]]:
-        \"\"\"Fetch products using the RSS feed.\"\"\"
+        """Fetch products using the RSS feed."""
         try:
             logger.info("Fetching Product Hunt data via RSS feed")
             resp = self.session.get(self.rss_url, timeout=30)
@@ -134,7 +134,7 @@ class ProductHuntETL:
             return []
 
     def fetch(self, limit: int = 50) -> List[Dict[str, Any]]:
-        \"\"\"Main fetch method: try GraphQL, fallback to RSS.\"\"\"
+        """Main fetch method: try GraphQL, fallback to RSS."""
         products = self.fetch_via_graphql(limit)
         if not products:
             logger.info("GraphQL returned no products, trying RSS")
@@ -142,7 +142,7 @@ class ProductHuntETL:
         return products
 
 def process_data(raw_products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    \"\"\"Process raw scraped data into final format.\"\"\"
+    """Process raw scraped data into final format."""
     processed = []
     current_time = datetime.now(timezone.utc).isoformat()
 
