@@ -132,32 +132,39 @@ app.layout = dbc.Container(
     [
         # Skip to content link removed
 
-        # Header with mobile-responsive layout
+        # Hero header and operational summary
         dbc.Row(
-            [
-                dbc.Col(
+            dbc.Col(
+                html.Div(
                     [
                         html.Div(
                             [
-                                html.H1(
-                                    "Watchtower Dashboard",
-                                    className="dashboard-header-title mb-0",
-                                ),
-                                html.A(
-                                    "Docs",
-                                    href="/docs",
-                                    className="btn btn-outline-light btn-sm mt-3 mt-md-0",
-                                    target="_self",
+                                html.Div("Live intelligence console", className="dashboard-eyebrow"),
+                                html.H1("Watchtower Dashboard", className="dashboard-header-title"),
+                                html.P(
+                                    "Fresh feeds, deals, research, events, benchmarks, and ETL health in one place.",
+                                    className="dashboard-subtitle",
                                 ),
                             ],
-                            className="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-center",
+                            className="dashboard-hero-copy",
+                        ),
+                        html.Div(
+                            [
+                                html.A("Open API", href="https://watchtower-api.josmerod.es/docs", className="btn btn-primary", target="_blank"),
+                                html.A("Docs", href="/docs", className="btn btn-outline-light", target="_self"),
+                                html.A("Health JSON", href="/health", className="btn btn-outline-light", target="_self"),
+                            ],
+                            className="dashboard-hero-actions",
                         ),
                     ],
-                    width=12,
+                    className="dashboard-hero d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-4",
                 ),
-            ],
-            className="dashboard-header mb-4",
+                width=12,
+            ),
+            className="dashboard-shell",
         ),
+        dcc.Interval(id="ops-summary-refresh", interval=300000, n_intervals=0),
+        html.Div(id="ops-summary-cards", className="ops-summary-row"),
         # Header buttons container
         html.Div(
             className="d-none",  # Hidden container specifically for keeping mobile nav happy if it looks for header-buttons
@@ -537,6 +544,79 @@ def metrics():
 # Callback for dynamic tab content loading
 # Remove legacy dynamic loader with dead branches to avoid confusion
 # (Tabs are rendered directly above per component.)
+
+
+
+
+def _format_uptime(seconds: float | None) -> str:
+    """Human-friendly uptime for the dashboard summary strip."""
+    if seconds is None:
+        return "unknown"
+    minutes = int(seconds // 60)
+    if minutes < 60:
+        return f"{minutes}m"
+    hours = minutes // 60
+    if hours < 48:
+        return f"{hours}h {minutes % 60}m"
+    days = hours // 24
+    return f"{days}d {hours % 24}h"
+
+
+def _summary_card(label: str, value, hint: str = "") -> dbc.Col:
+    """Build a compact operational summary card."""
+    return dbc.Col(
+        html.Div(
+            [
+                html.Div(label, className="ops-summary-card__label"),
+                html.Div(value, className="ops-summary-card__value"),
+                html.Div(hint, className="ops-summary-card__hint") if hint else None,
+            ],
+            className="ops-summary-card",
+        ),
+        xs=12,
+        sm=6,
+        lg=3,
+    )
+
+
+@app.callback(Output("ops-summary-cards", "children"), Input("ops-summary-refresh", "n_intervals"))
+def update_ops_summary(_n_intervals):
+    """Refresh the top-of-dashboard health cards without requiring a page reload."""
+    try:
+        health_status = health_monitor.calculate_overall_health()
+        details = health_status.details or {}
+        status = health_status.status or "unknown"
+        failed_sources = details.get("failed_sources") or []
+        degraded_sources = details.get("degraded_sources") or []
+        failure_percentage = details.get("failure_percentage", 0) or 0
+        total_runs = details.get("total_etl_runs", 0) or 0
+        failed_runs = details.get("failed_runs", 0) or 0
+
+        status_value = html.Span(status, className=f"status-pill status-pill--{status}")
+        failed_hint = ", ".join(failed_sources[:3]) if failed_sources else "No failing sources reported"
+        if len(failed_sources) > 3:
+            failed_hint += f" +{len(failed_sources) - 3} more"
+
+        return dbc.Row(
+            [
+                _summary_card("System status", status_value, f"{failure_percentage:.1f}% source failure rate"),
+                _summary_card("ETL sources", total_runs, f"{failed_runs} failing / {len(degraded_sources)} degraded"),
+                _summary_card("Failed sources", len(failed_sources), failed_hint),
+                _summary_card("Dashboard uptime", _format_uptime(health_status.uptime_seconds), "Auto-refreshes every 5 minutes"),
+            ],
+            className="g-3",
+        )
+    except Exception as exc:
+        return dbc.Row(
+            [
+                _summary_card(
+                    "System status",
+                    html.Span("down", className="status-pill status-pill--down"),
+                    f"Health summary failed: {exc}",
+                )
+            ],
+            className="g-3",
+        )
 
 
 # Register callbacks from other modules
