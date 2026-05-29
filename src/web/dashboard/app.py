@@ -82,17 +82,13 @@ from src.web.dashboard.components.videos_tab import (
 from src.web.dashboard.health_monitor import HealthMonitor
 from src.web.api.routes import api_bp  # Import API Blueprint
 
-# Include external JavaScript libraries. Local files under assets/ are auto-loaded by Dash.
-external_scripts = [
-    "https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js",
-    "https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js",
-]
+# No external scripts needed — dbc handles Bootstrap behavior via React.
+# SortableJS removed (drag-drop modal was deleted). Bootstrap JS CDN removed (redundant with dbc).
 
 # Initialize the Dash application with Bootstrap styling
 app = dash.Dash(
     __name__,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
-    external_scripts=external_scripts,
     suppress_callback_exceptions=True,
 )
 
@@ -110,8 +106,6 @@ app.index_string = """
         <title>Watchtower Dashboard</title>
         <meta name="description" content="Watchtower - Real-time Intelligence & Monitoring Platform">
         <link rel="icon" type="image/svg+xml" href="/assets/watchtower_icon.svg">
-        <!-- Font Awesome for mobile navigation icons -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         {%css%}
         <!-- Final visual overrides: must load after Dash auto-assets and legacy mobile CSS. -->
         <link rel="stylesheet" href="/assets/zz_visual_refresh.css?v=3">
@@ -190,25 +184,21 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="News",
                             tab_id="tab-news",
-                            children=[render_news_tab()],
                         ),
 
                         dbc.Tab(
                             label="Shortcuts",
                             tab_id="tab-shortcuts",
-                            children=[render_shortcuts_tab()],
                         ),
 
                         dbc.Tab(
                             label="🌱 Knowledge Garden",
                             tab_id="tab-knowledge-garden",
-                            children=[render_knowledge_garden_tab()],
                         ),
                         # Open Source moved to Knowledge Garden subtab
                         dbc.Tab(
                             label="Videos",
                             tab_id="tab-videos",
-                            children=[render_videos_tab()],
                         ),
 
                         # Removed Intelligence and AI Research tabs as per cleanup
@@ -217,48 +207,39 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="Courses",
                             tab_id="tab-courses",
-                            children=[render_courses_tab()],
                         ),
                         dbc.Tab(
                             label="Anime",
                             tab_id="tab-anime",
-                            children=[render_anime_tab()],
                         ),
                         dbc.Tab(
                             label="4chan Generals",
                             tab_id="tab-4chan",
-                            children=[render_fourchan_tab()],
                         ),
                         dbc.Tab(
                             label="Scavenging",
                             tab_id="tab-scavenging",
-                            children=[render_scavenging_tab()],
                         ),
                         dbc.Tab(
                             label="Valencia Events",
                             tab_id="tab-valencia",
-                            children=[render_valencia_events_tab()],
                         ),
 
                         dbc.Tab(
                             label="🏛️ Ayudas Públicas",
                             tab_id="tab-spanish-aid",
-                            children=[render_spanish_public_aid_tab()],
                         ),
                         dbc.Tab(
                             label="📄 ArXiv Research",
                             tab_id="tab-arxiv-research",
-                            children=[render_arxiv_research_tab()],
                         ),
                         dbc.Tab(
                             label="🏷️ Deals",
                             tab_id="tab-deals",
-                            children=[render_deals_tab()],
                         ),
                         dbc.Tab(
                             label="🏆 Benchmarks",
                             tab_id="tab-benchmarks",
-                            children=[render_benchmarks_tab()],
                         ),
                     ],
                 )
@@ -577,6 +558,36 @@ def _summary_card(label: str, value, hint: str = "") -> dbc.Col:
         sm=6,
         lg=3,
     )
+
+
+_TAB_RENDERERS = {
+    "tab-news": render_news_tab,
+    "tab-shortcuts": render_shortcuts_tab,
+    "tab-knowledge-garden": render_knowledge_garden_tab,
+    "tab-videos": render_videos_tab,
+    "tab-courses": render_courses_tab,
+    "tab-anime": render_anime_tab,
+    "tab-4chan": render_fourchan_tab,
+    "tab-scavenging": render_scavenging_tab,
+    "tab-valencia": render_valencia_events_tab,
+    "tab-spanish-aid": render_spanish_public_aid_tab,
+    "tab-arxiv-research": render_arxiv_research_tab,
+    "tab-deals": render_deals_tab,
+    "tab-benchmarks": render_benchmarks_tab,
+}
+
+
+@app.callback(Output("tab-content", "children"), Input("dashboard-tabs", "active_tab"))
+def render_active_tab(active_tab):
+    """Lazy-render the selected top-level tab.
+
+    Previously every tab and nested sub-tab was serialized in the initial Dash
+    layout. That made `_dash-layout` ~720KB and forced the browser to hydrate
+    the entire application before the user could interact. Keep the tab chrome
+    in the initial layout and render only the selected content on demand.
+    """
+    renderer = _TAB_RENDERERS.get(active_tab or "tab-news", render_news_tab)
+    return html.Div(renderer(), className="lazy-tab-content")
 
 
 @app.callback(Output("ops-summary-cards", "children"), Input("ops-summary-refresh", "n_intervals"))
