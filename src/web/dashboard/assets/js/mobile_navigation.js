@@ -37,7 +37,7 @@ class MobileNavigation {
         this.mobileNavToggle = document.createElement('button');
         this.mobileNavToggle.className = 'mobile-nav-toggle btn btn-outline-primary';
         this.mobileNavToggle.innerHTML = `
-            <i class="fas fa-bars"></i>
+            <span aria-hidden="true">☰</span>
             <span class="ms-2">Menu</span>
         `;
         this.mobileNavToggle.setAttribute('aria-label', 'Toggle navigation menu');
@@ -61,7 +61,7 @@ class MobileNavigation {
         // Create close button
         this.mobileNavClose = document.createElement('button');
         this.mobileNavClose.className = 'btn btn-outline-secondary btn-sm';
-        this.mobileNavClose.innerHTML = '<i class="fas fa-times"></i>';
+        this.mobileNavClose.innerHTML = '<span aria-hidden="true">×</span>';
         this.mobileNavClose.setAttribute('aria-label', 'Close navigation menu');
 
         mobileNavHeader.appendChild(mobileNavTitle);

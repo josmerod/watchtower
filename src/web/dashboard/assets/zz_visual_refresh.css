@@ -633,3 +633,154 @@ a:not(.btn):hover { color: #dffbff !important; background: rgba(103, 232, 249, 0
         padding: 10px !important;
     }
 }
+
+/* Performance: avoid layout/paint work for hidden or below-fold heavy content. */
+.lazy-tab-content,
+.tab-pane,
+.card,
+.table-responsive {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 720px;
+}
+
+.table-responsive {
+    border-radius: 14px !important;
+    border: 1px solid rgba(148, 163, 184, 0.16) !important;
+    box-shadow: none !important;
+}
+
+/* UX: tighter main chrome and clearer horizontal-scroll affordance. */
+.desktop-nav-tabs {
+    scroll-padding-inline: 12px;
+    scrollbar-width: thin;
+}
+
+.desktop-nav-tabs::after {
+    content: "";
+    flex: 0 0 12px;
+}
+
+.desktop-nav-tabs .nav-link {
+    white-space: nowrap !important;
+}
+
+@media (min-width: 992px) {
+    #react-entry-point .dashboard-hero {
+        padding: 22px 26px !important;
+    }
+
+    #react-entry-point .dashboard-header-title {
+        font-size: clamp(1.85rem, 3.2vw, 3.1rem) !important;
+    }
+
+    #react-entry-point .ops-summary-card {
+        min-height: 94px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #dashboard-tabs.desktop-nav-tabs {
+        margin-inline: -12px !important;
+        padding-inline: 12px !important;
+        background: rgba(8, 17, 31, 0.92) !important;
+        backdrop-filter: blur(10px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Compact operational summary: keep status useful without consuming half the phone screen. */
+#react-entry-point .ops-summary-card {
+    min-height: 84px !important;
+    padding: 11px 12px !important;
+}
+
+#react-entry-point .ops-summary-card__label {
+    margin-bottom: 4px !important;
+    font-size: 0.70rem !important;
+}
+
+#react-entry-point .ops-summary-card__value {
+    font-size: clamp(1.2rem, 2vw, 1.65rem) !important;
+    line-height: 1.08 !important;
+}
+
+#react-entry-point .ops-summary-card__hint {
+    margin-top: 5px !important;
+    font-size: 0.72rem !important;
+    line-height: 1.25 !important;
+}
+
+@media (max-width: 768px) {
+    #react-entry-point .container-fluid {
+        padding-top: 8px !important;
+    }
+
+    #react-entry-point .dashboard-hero {
+        padding: 12px 13px !important;
+        margin-bottom: 8px !important;
+    }
+
+    #react-entry-point .dashboard-header-title {
+        font-size: 1.82rem !important;
+    }
+
+    #react-entry-point .dashboard-subtitle {
+        font-size: 0.82rem !important;
+        line-height: 1.3 !important;
+    }
+
+    #react-entry-point .dashboard-hero-actions {
+        margin-top: 8px !important;
+    }
+
+    #react-entry-point .ops-summary-row {
+        margin-bottom: 8px !important;
+    }
+
+    #react-entry-point .ops-summary-card {
+        min-height: 82px !important;
+        padding: 8px 9px !important;
+    }
+
+    #react-entry-point .ops-summary-card__hint {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+/* Phone-first summary: fixed-height cards prevent verbose health hints from pushing navigation down. */
+@media (max-width: 768px) {
+    #react-entry-point .ops-summary-card {
+        height: 88px !important;
+        min-height: 88px !important;
+        overflow: hidden !important;
+    }
+
+    #react-entry-point .ops-summary-card__label {
+        font-size: 0.64rem !important;
+        margin-bottom: 3px !important;
+    }
+
+    #react-entry-point .ops-summary-card__value {
+        font-size: 1.08rem !important;
+    }
+
+    #react-entry-point .ops-summary-card__hint {
+        margin-top: 4px !important;
+        font-size: 0.66rem !important;
+        line-height: 1.15 !important;
+        -webkit-line-clamp: 2 !important;
+    }
+}
