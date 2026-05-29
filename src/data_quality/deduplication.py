@@ -237,13 +237,20 @@ class DeduplicationEngine:
         Returns:
             Recency score (0.0 to 1.0).
         """
-        # Use created_at timestamp, fall back to current time if not available
-        created_at = getattr(item, "created_at", datetime.utcnow())
+        # Use created_at timestamp, fall back to current time if not available.
+        # Some ETLs legitimately produce TimestampedModel subclasses with
+        # created_at=None; treat them as current rather than letting a quality
+        # scoring failure mark an otherwise successful ETL run as failed.
+        created_at = getattr(item, "created_at", None) or datetime.utcnow()
         if isinstance(created_at, str):
             try:
                 created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-            except:
+            except (TypeError, ValueError):
                 created_at = datetime.utcnow()
+
+        # Normalize timezone-aware datetimes before subtracting from utcnow().
+        if getattr(created_at, "tzinfo", None) is not None:
+            created_at = created_at.replace(tzinfo=None)
 
         # Calculate days since creation
         days_old = (datetime.utcnow() - created_at).total_seconds() / (24 * 3600)

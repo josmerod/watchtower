@@ -10,7 +10,9 @@ Version: 1.0.0
 from __future__ import annotations
 
 import json
-from datetime import datetime
+import os
+import re
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -56,8 +58,11 @@ class GithubAnalyticsETL(BaseETL[dict[str, Any], GithubRepoModel]):
             **kwargs,
         )
 
-        # Supported platforms
-        self.platforms = platforms or ["trendshift", "ossinsight", "libhunt"]
+        # Use GitHub's public Search API as the stable no-auth fallback.
+        # The old Trendshift/OssInsight/LibHunt methods were placeholders, so
+        # `github_search` is now the default real source. GITHUB_TOKEN is used
+        # if present to raise rate limits, but is not required.
+        self.platforms = platforms or ["github_search"]
 
         # Languages to filter
         self.languages = languages or ["python", "javascript", "typescript", "go", "rust"]
@@ -112,7 +117,9 @@ class GithubAnalyticsETL(BaseETL[dict[str, Any], GithubRepoModel]):
         Returns:
             List of repository dictionaries.
         """
-        if platform == "trendshift":
+        if platform == "github_search":
+            return self._fetch_github_search()
+        elif platform == "trendshift":
             return self._fetch_trendshift()
         elif platform == "ossinsight":
             return self._fetch_ossinsight()
@@ -122,30 +129,116 @@ class GithubAnalyticsETL(BaseETL[dict[str, Any], GithubRepoModel]):
             self.logger.warning(f"Unknown platform: {platform}")
             return []
 
+    def _fetch_github_search(self) -> list[dict[str, Any]]:
+        """Fetch recently active popular repositories from GitHub Search API."""
+        pushed_after = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "WatchtowerBot/1.0 (GitHub analytics monitor)",
+        }
+        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        repos_by_full_name: dict[str, dict[str, Any]] = {}
+        per_language = max(1, min(30, self.max_repos_per_platform // max(1, len(self.languages))))
+
+        for language in self.languages:
+            params = {
+                "q": f"language:{language} pushed:>{pushed_after} stars:>1000 archived:false fork:false",
+                "sort": "stars",
+                "order": "desc",
+                "per_page": per_language,
+            }
+            response = self.http_session.get(
+                "https://api.github.com/search/repositories",
+                headers=headers,
+                params=params,
+                timeout=30,
+            )
+            if response.status_code in {403, 429}:
+                self.logger.warning("GitHub Search API rate-limited; falling back to GitHub Trending HTML")
+                return self._fetch_github_trending_html()
+            response.raise_for_status()
+
+            for position, repo in enumerate(response.json().get("items", []), start=1):
+                full_name = repo.get("full_name")
+                if not full_name or full_name in repos_by_full_name:
+                    continue
+                owner = repo.get("owner") or {}
+                repos_by_full_name[full_name] = {
+                    "repo_id": str(repo.get("id") or full_name),
+                    "name": repo.get("name") or full_name.rsplit("/", 1)[-1],
+                    "full_name": full_name,
+                    "url": repo.get("html_url") or f"https://github.com/{full_name}",
+                    "description": repo.get("description"),
+                    "owner_id": str(owner.get("id") or owner.get("login") or "unknown"),
+                    "owner_type": owner.get("type", "user"),
+                    "stars_count": repo.get("stargazers_count") or 0,
+                    "forks_count": repo.get("forks_count") or 0,
+                    "watchers_count": repo.get("watchers_count") or 0,
+                    "open_issues_count": repo.get("open_issues_count") or 0,
+                    "primary_language": repo.get("language") or language.title(),
+                    "topics": repo.get("topics") or [],
+                    "trend_direction": "rising",
+                    "trend_score": min(100.0, max(0.0, float(repo.get("stargazers_count") or 0) / 1000.0)),
+                    "position": position,
+                    "created_at": repo.get("created_at"),
+                    "updated_at": repo.get("updated_at"),
+                    "pushed_at": repo.get("pushed_at"),
+                    "license_key": (repo.get("license") or {}).get("key"),
+                    "license_name": (repo.get("license") or {}).get("name"),
+                    "size": repo.get("size"),
+                    "data_source": "github_search",
+                }
+
+        return list(repos_by_full_name.values())[: self.max_repos_per_platform]
+
+    def _fetch_github_trending_html(self) -> list[dict[str, Any]]:
+        """Fetch GitHub Trending HTML as a no-auth fallback for search limits."""
+        repos_by_full_name: dict[str, dict[str, Any]] = {}
+        headers = {"User-Agent": "WatchtowerBot/1.0 (GitHub trending monitor)"}
+        languages = self.languages or [""]
+        per_language = max(1, min(25, self.max_repos_per_platform // max(1, len(languages))))
+
+        for language in languages:
+            slug = language.lower().replace("#", "sharp").replace(" ", "-")
+            url = f"https://github.com/trending/{slug}" if slug else "https://github.com/trending"
+            response = self.http_session.get(url, params={"since": "daily"}, headers=headers, timeout=30)
+            response.raise_for_status()
+            html = response.text
+            matches = re.findall(r'<h2[^>]*>\s*<a[^>]+href="/([^/\s]+/[^/\s]+)"', html)
+            for position, full_name in enumerate(matches[:per_language], start=1):
+                full_name = full_name.strip().replace("\n", "").replace(" ", "")
+                if not full_name or full_name in repos_by_full_name:
+                    continue
+                owner, name = full_name.split("/", 1)
+                repos_by_full_name[full_name] = {
+                    "repo_id": f"github_trending_{full_name}",
+                    "name": name,
+                    "full_name": full_name,
+                    "url": f"https://github.com/{full_name}",
+                    "description": None,
+                    "owner_id": owner,
+                    "owner_type": "user",
+                    "primary_language": language.title() if language else None,
+                    "trend_direction": "rising",
+                    "position": position,
+                    "data_source": "github_trending_html",
+                    "created_at": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.utcnow().isoformat(),
+                }
+
+        return list(repos_by_full_name.values())[: self.max_repos_per_platform]
+
     def _fetch_trendshift(self) -> list[dict[str, Any]]:
         """Fetch trending repositories from Trendshift.io.
 
         Returns:
             List of repository dictionaries.
         """
-        # Note: Implement actual API call here
-        # This is a placeholder that returns sample data
-        return [
-            {
-                "repo_id": "trendshift_1",
-                "name": "sample-project",
-                "full_name": "user/sample-project",
-                "url": "https://github.com/user/sample-project",
-                "description": "A sample trending project",
-                "stars_count": 1500,
-                "forks_count": 200,
-                "primary_language": "Python",
-                "trend_direction": "rising",
-                "trend_score": 85.0,
-                "daily_stars": 50,
-                "data_source": "trendshift",
-            },
-        ]
+        # Deprecated source: kept only for explicit opt-in compatibility.
+        return self._fetch_github_search()
 
     def _fetch_ossinsight(self) -> list[dict[str, Any]]:
         """Fetch repositories from Ossinsight.
