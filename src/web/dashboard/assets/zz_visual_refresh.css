@@ -440,9 +440,10 @@ select:focus,
 .table thead th,
 .dash-header,
 .dash-spreadsheet-container th {
-    position: sticky !important;
-    top: 56px !important;
-    z-index: 10 !important;
+    /* Do not make table headers sticky: legacy CSS pinned them over the first row. */
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
     border-color: var(--wt-border) !important;
     color: var(--wt-text-strong) !important;
     background: var(--wt-surface-raised) !important;
