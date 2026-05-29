@@ -36,7 +36,6 @@ class NVDEtl(BaseETL):
             "cves": (
                 f"https://services.nvd.nist.gov/rest/json/cves/2.0"
                 f"?resultsPerPage=50&pubStartDate={since}&pubEndDate={now}"
-                f"&sort=published&dir=desc"
             )
         }
         self.proxy_manager = ProxyManager()
@@ -66,6 +65,10 @@ class NVDEtl(BaseETL):
             res.raise_for_status()
             
             vulnerabilities = res.json().get("vulnerabilities", [])
+            vulnerabilities.sort(
+                key=lambda item: item.get("cve", {}).get("published", ""),
+                reverse=True,
+            )
             
             # Filter out historical CVEs — only keep items published in the last 90 days.
             # This guards against NVD returning unexpected results when date filters fail.

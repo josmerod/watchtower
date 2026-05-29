@@ -119,8 +119,12 @@ class OpenAlexETL(BaseETL[dict[str, Any], OpenAlexWorkModel]):
             List of work dictionaries.
         """
         url = f"{self.base_url}/works"
+        # OpenAlex no longer accepts concept display names in a
+        # `concepts.openalex:<name>` filter; that field expects IDs and now
+        # returns HTTP 400 for names. Use the supported full-text/default search
+        # filter as the no-auth public alternative.
         params = {
-            "filter": f"concepts.openalex:{concept}",
+            "filter": f"default.search:{concept}",
             "per-page": 200,
             "sort": "publication_date:desc",
         }
@@ -171,7 +175,7 @@ class OpenAlexETL(BaseETL[dict[str, Any], OpenAlexWorkModel]):
 
         # Update metrics
         for work in transformed:
-            work_type = work.type.value
+            work_type = getattr(work.type, "value", str(work.type))
             self.api_metrics.work_type_distribution[work_type] = self.api_metrics.work_type_distribution.get(work_type, 0) + 1
 
             if work.publication_year:
@@ -215,7 +219,7 @@ class OpenAlexETL(BaseETL[dict[str, Any], OpenAlexWorkModel]):
         # Parse type
         type_str = raw.get("type", "journal-article")
         try:
-            work_type = WorkType(type_str.replace("-", "_"))
+            work_type = WorkType(type_str)
         except ValueError:
             work_type = WorkType.OTHER
 
@@ -225,15 +229,27 @@ class OpenAlexETL(BaseETL[dict[str, Any], OpenAlexWorkModel]):
         venue_id = source.get("id")
         venue_name = source.get("display_name")
         venue_issn = source.get("issn")
+        if isinstance(venue_issn, list):
+            venue_issn = venue_issn[0] if venue_issn else None
         publisher = source.get("publisher")
 
         # Extract authors
         authorships = raw.get("authorships") or []
         author_ids = [str(a.get("author", {}).get("id")) for a in authorships if a.get("author")]
 
-        # Extract concepts
+        # Extract concepts. OpenAlex can return concept objects, and this ETL
+        # also appends the query concept as a string for traceability.
         concepts_data = raw.get("concepts") or []
-        concepts = [c.get("display_name") for c in concepts_data if c.get("display_name") and c.get("score", 0) > 50]
+        concepts = []
+        for concept in concepts_data:
+            if isinstance(concept, str):
+                concepts.append(concept)
+            elif isinstance(concept, dict):
+                score = concept.get("score")
+                # OpenAlex concept scores are usually 0-1; old code compared
+                # to 50, which discarded every valid concept.
+                if concept.get("display_name") and (score is None or score > 0.3):
+                    concepts.append(concept["display_name"])
 
         # Extract year
         publication_year = raw.get("publication_year")

@@ -105,7 +105,11 @@ class ETLMetrics(BaseModel):
 
     @property
     def success_rate(self) -> float:
-        total_records = self.records_extracted
+        # For ETLs with deduplication, records_transformed may be reduced to
+        # the final unique item count before load. Treat successful loading of
+        # that post-transform/post-dedupe set as 100%, rather than penalizing
+        # duplicate removal as if records failed.
+        total_records = self.records_transformed or self.records_extracted
         if total_records == 0:
             return 100.0 if self.error_count == 0 and self.records_failed == 0 else 0.0
         return (self.records_loaded / total_records) * 100

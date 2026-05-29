@@ -142,94 +142,113 @@ class PackageRegistryETL(BaseETL[dict[str, Any], PackageModel]):
             return []
 
     def _fetch_npm(self) -> list[dict[str, Any]]:
-        """Fetch packages from npm registry.
-
-        Returns:
-            List of package dictionaries.
-        """
-        # Note: Implement actual API call here
-        # This is a placeholder that returns sample data
-        return [
-            {
-                "package_id": "npm_react",
-                "name": "react",
-                "registry": "npm",
-                "url": "https://www.npmjs.com/package/react",
-                "description": "React is a JavaScript library for building user interfaces",
-                "version": "18.2.0",
-                "downloads_total": 20000000000,
-                "downloads_weekly": 15000000,
-                "author_name": "Facebook",
-                "keywords": ["react", "ui", "framework"],
-                "language": "JavaScript",
-                "license": "MIT",
-                "repository_url": "https://github.com/facebook/react",
-            },
-            {
-                "package_id": "npm_vue",
-                "name": "vue",
-                "registry": "npm",
-                "url": "https://www.npmjs.com/package/vue",
-                "description": "Vue.js is a progressive JavaScript framework",
-                "version": "3.3.0",
-                "downloads_total": 10000000000,
-                "downloads_weekly": 8000000,
-                "author_name": "Evan You",
-                "keywords": ["vue", "ui", "framework"],
-                "language": "JavaScript",
-                "license": "MIT",
-                "repository_url": "https://github.com/vuejs/core",
-            },
-        ]
+        """Fetch packages from npm's public search API."""
+        packages: dict[str, dict[str, Any]] = {}
+        per_keyword = max(1, min(10, self.max_packages_per_registry // max(1, len(self.keywords))))
+        for keyword in self.keywords:
+            response = self.http_session.get(
+                "https://registry.npmjs.org/-/v1/search",
+                params={"text": keyword, "size": per_keyword, "popularity": 1.0, "quality": 0.5, "maintenance": 0.5},
+                timeout=30,
+            )
+            response.raise_for_status()
+            for result in response.json().get("objects", []):
+                package = result.get("package") or {}
+                name = package.get("name")
+                if not name or name in packages:
+                    continue
+                links = package.get("links") or {}
+                publisher = package.get("publisher") or {}
+                packages[name] = {
+                    "package_id": f"npm_{name}",
+                    "name": name,
+                    "registry": "npm",
+                    "url": links.get("npm") or f"https://www.npmjs.com/package/{name}",
+                    "description": package.get("description"),
+                    "version": package.get("version"),
+                    "author_name": publisher.get("username") or publisher.get("email"),
+                    "keywords": package.get("keywords") or [],
+                    "language": "JavaScript",
+                    "license": package.get("license"),
+                    "repository_url": links.get("repository"),
+                    "homepage_url": links.get("homepage"),
+                    "popularity_score": (result.get("score") or {}).get("detail", {}).get("popularity"),
+                    "quality_score": (result.get("score") or {}).get("detail", {}).get("quality"),
+                    "published_at": package.get("date"),
+                }
+        return list(packages.values())[: self.max_packages_per_registry]
 
     def _fetch_pypi(self) -> list[dict[str, Any]]:
-        """Fetch packages from PyPI registry.
-
-        Returns:
-            List of package dictionaries.
-        """
-        # Note: Implement actual API call here
-        return [
-            {
-                "package_id": "pypi_requests",
-                "name": "requests",
-                "registry": "pypi",
-                "url": "https://pypi.org/project/requests/",
-                "description": "Python HTTP for Humans",
-                "version": "2.31.0",
-                "downloads_total": 5000000000,
-                "downloads_weekly": 50000000,
-                "author_name": "Kenneth Reitz",
-                "keywords": ["http", "requests", "web"],
-                "language": "Python",
-                "license": "Apache 2.0",
-                "repository_url": "https://github.com/psf/requests",
-            },
-        ]
+        """Fetch selected packages from PyPI's JSON API."""
+        packages = []
+        for name in self.keywords[: self.max_packages_per_registry]:
+            response = self.http_session.get(f"https://pypi.org/pypi/{name}/json", timeout=30)
+            if response.status_code == 404:
+                continue
+            response.raise_for_status()
+            data = response.json()
+            info = data.get("info") or {}
+            if not info.get("name"):
+                continue
+            releases = data.get("releases") or {}
+            version = info.get("version")
+            release_files = releases.get(version, []) if version else []
+            published_at = release_files[0].get("upload_time_iso_8601") if release_files else None
+            packages.append(
+                {
+                    "package_id": f"pypi_{info['name']}",
+                    "name": info["name"],
+                    "registry": "pypi",
+                    "url": info.get("package_url") or f"https://pypi.org/project/{info['name']}/",
+                    "description": info.get("summary"),
+                    "version": version,
+                    "versions_count": len(releases),
+                    "author_name": info.get("author"),
+                    "author_email": info.get("author_email"),
+                    "keywords": [kw for kw in str(info.get("keywords") or "").replace(",", " ").split() if kw],
+                    "language": "Python",
+                    "license": info.get("license"),
+                    "repository_url": (info.get("project_urls") or {}).get("Source"),
+                    "homepage_url": info.get("home_page") or (info.get("project_urls") or {}).get("Homepage"),
+                    "published_at": published_at,
+                }
+            )
+        return packages
 
     def _fetch_crates_io(self) -> list[dict[str, Any]]:
-        """Fetch packages from crates.io registry.
-
-        Returns:
-            List of package dictionaries.
-        """
-        # Note: Implement actual API call here
-        return [
-            {
-                "package_id": "crates_serde",
-                "name": "serde",
-                "registry": "crates_io",
-                "url": "https://crates.io/crates/serde",
-                "description": "Serialization framework for Rust",
-                "version": "1.0.0",
-                "downloads_total": 500000000,
-                "downloads_weekly": 5000000,
-                "keywords": ["serialization", "json", "rust"],
-                "language": "Rust",
-                "license": "MIT OR Apache-2.0",
-                "repository_url": "https://github.com/serde-rs/serde",
-            },
-        ]
+        """Fetch crates from crates.io's public API."""
+        crates: dict[str, dict[str, Any]] = {}
+        per_keyword = max(1, min(10, self.max_packages_per_registry // max(1, len(self.keywords))))
+        headers = {"User-Agent": "WatchtowerBot/1.0 (package registry monitor)"}
+        for keyword in self.keywords:
+            response = self.http_session.get(
+                "https://crates.io/api/v1/crates",
+                params={"q": keyword, "sort": "downloads", "per_page": per_keyword},
+                headers=headers,
+                timeout=30,
+            )
+            response.raise_for_status()
+            for crate in response.json().get("crates", []):
+                name = crate.get("id") or crate.get("name")
+                if not name or name in crates:
+                    continue
+                crates[name] = {
+                    "package_id": f"crates_{name}",
+                    "name": name,
+                    "registry": "crates_io",
+                    "url": f"https://crates.io/crates/{name}",
+                    "description": crate.get("description"),
+                    "version": crate.get("max_version"),
+                    "downloads_total": crate.get("downloads") or 0,
+                    "downloads_recent": crate.get("recent_downloads"),
+                    "keywords": crate.get("keywords") or [],
+                    "language": "Rust",
+                    "repository_url": crate.get("repository"),
+                    "homepage_url": crate.get("homepage"),
+                    "created_at": crate.get("created_at"),
+                    "updated_at": crate.get("updated_at"),
+                }
+        return list(crates.values())[: self.max_packages_per_registry]
 
     def transform(self, raw_data: list[dict[str, Any]]) -> list[PackageModel]:
         """Transform raw package data to models.
