@@ -16,9 +16,9 @@
     --wt-text-strong: #ffffff;
     --wt-muted: #cbd5e1;
     --wt-muted-2: #94a3b8;
-    --wt-accent: #38bdf8;
-    --wt-accent-strong: #0ea5e9;
-    --wt-accent-contrast: #04111d;
+    --wt-accent: #c4b5fd;
+    --wt-accent-strong: #a78bfa;
+    --wt-accent-contrast: #1e103f;
     --wt-good: #22c55e;
     --wt-warn: #f59e0b;
     --wt-bad: #f43f5e;
@@ -62,13 +62,13 @@ p, label, .card-text, .text-muted, small {
 }
 
 a:not(.btn) {
-    color: #7dd3fc !important;
+    color: #c4b5fd !important;
     text-decoration: none !important;
 }
 
 a:not(.btn):hover,
 a:not(.btn):focus {
-    color: #bae6fd !important;
+    color: #ddd6fe !important;
     text-decoration: underline !important;
     background: transparent !important;
 }
@@ -96,8 +96,8 @@ a:not(.btn):focus {
     padding: 5px 9px !important;
     border: 1px solid var(--wt-border-strong) !important;
     border-radius: 999px !important;
-    color: #bae6fd !important;
-    background: #0c2638 !important;
+    color: #ddd6fe !important;
+    background: #2e1f4f !important;
     font-size: 0.72rem !important;
     font-weight: 800 !important;
     letter-spacing: 0.08em !important;
@@ -139,14 +139,14 @@ a:not(.btn):focus {
 .btn-primary,
 .dashboard-hero .btn-primary {
     color: var(--wt-accent-contrast) !important;
-    border-color: #7dd3fc !important;
-    background: #7dd3fc !important;
+    border-color: #c4b5fd !important;
+    background: #c4b5fd !important;
 }
 
 .btn-primary:hover,
 .dashboard-hero .btn-primary:hover {
-    background: #bae6fd !important;
-    border-color: #bae6fd !important;
+    background: #ddd6fe !important;
+    border-color: #ddd6fe !important;
 }
 
 .btn-outline-light,
@@ -307,8 +307,8 @@ a:not(.btn):focus {
 .nav-tabs .nav-link[aria-selected="true"],
 #dashboard-tabs .nav-link[aria-selected="true"] {
     color: var(--wt-accent-contrast) !important;
-    border-color: #7dd3fc !important;
-    background: #7dd3fc !important;
+    border-color: #c4b5fd !important;
+    background: #c4b5fd !important;
     box-shadow: none !important;
 }
 
@@ -385,7 +385,7 @@ select:focus,
 .Select.is-focused > .Select-control,
 .Select-control:hover {
     border-color: var(--wt-accent) !important;
-    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.20) !important;
+    box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.22) !important;
     outline: none !important;
 }
 
@@ -414,14 +414,14 @@ select:focus,
 
 .Select-option.is-focused,
 .VirtualizedSelectFocusedOption {
-    color: #082f49 !important;
-    background: #e0f2fe !important;
+    color: #2e1065 !important;
+    background: #ede9fe !important;
 }
 
 .Select-option.is-selected,
 .VirtualizedSelectSelectedOption {
     color: #ffffff !important;
-    background: #0284c7 !important;
+    background: #7c3aed !important;
 }
 
 .Select-arrow-zone,
