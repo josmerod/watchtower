@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -392,6 +393,66 @@ BENCHMARKS_SOURCES_CONFIG = {
 
 # --- Shared Logic ---
 
+def _normalize_dedupe_text(value: Any) -> str:
+    """Normalize text/URLs for lightweight display-time deduplication."""
+    if value is None:
+        return ""
+
+    normalized = str(value).strip().lower()
+    normalized = re.sub(r"^https?://(www\.)?", "", normalized)
+    normalized = re.sub(r"[#?].*$", "", normalized)
+    normalized = normalized.rstrip("/")
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized
+
+
+def get_item_dedupe_key(item: dict[str, Any]) -> tuple[str, str] | None:
+    """Return a stable key for exact/near-exact duplicate feed items.
+
+    Prefer URL because titles can legitimately repeat in sources such as travel deals.
+    Fall back to title only when there is no URL-like field.
+    """
+    url = _normalize_dedupe_text(
+        item.get("url") or item.get("link") or item.get("html_url") or item.get("website")
+    )
+    if url:
+        return ("url", url)
+
+    title = _normalize_dedupe_text(
+        item.get("title") or item.get("name") or item.get("full_name") or item.get("model")
+    )
+    if title:
+        return ("title", title)
+
+    return None
+
+
+def deduplicate_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Remove duplicate feed items while preserving first-seen order.
+
+    This is intentionally conservative: URL matches are removed across the board;
+    title-only matches are only used when an item has no URL at all. That avoids
+    collapsing legitimate repeated titles with different links/prices.
+    """
+    seen: set[tuple[str, str]] = set()
+    deduped: list[dict[str, Any]] = []
+    removed = 0
+
+    for item in items:
+        key = get_item_dedupe_key(item)
+        if key and key in seen:
+            removed += 1
+            continue
+        if key:
+            seen.add(key)
+        deduped.append(item)
+
+    if removed:
+        logger.info("Deduplicated %s duplicate items from %s loaded records", removed, len(items))
+
+    return deduped
+
+
 def load_data_from_file(file_path: str) -> list[dict[str, Any]]:
     """Loads items from a JSON file, handling various formats."""
     try:
@@ -405,11 +466,11 @@ def load_data_from_file(file_path: str) -> list[dict[str, Any]]:
         # Ensure data is a list of records
         if isinstance(data, dict):
             if "articles" in data and isinstance(data["articles"], list):
-                return data["articles"]
+                return deduplicate_items(data["articles"])
             elif "items" in data and isinstance(data["items"], list):
-                return data["items"]
+                return deduplicate_items(data["items"])
             elif "models" in data and isinstance(data["models"], list):
-                return data["models"]
+                return deduplicate_items(data["models"])
             # Single item heuristic
             elif all(k in data for k in ["title", "url"]):
                 return [data]
@@ -417,7 +478,7 @@ def load_data_from_file(file_path: str) -> list[dict[str, Any]]:
                 logger.warning(f"Data in {file_path} is a dict but not a recognized list structure.")
                 return []
         elif isinstance(data, list):
-            return data
+            return deduplicate_items(data)
         else:
             logger.warning(f"Data in {file_path} is not a list or dict. Type: {type(data)}")
             return []

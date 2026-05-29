@@ -18,6 +18,7 @@ from src.services.data_loader import (
     GAMES_SOURCES_CONFIG,
     BENCHMARKS_SOURCES_CONFIG,
     format_article_date,
+    get_item_dedupe_key,
     load_data_from_file,
 )
 
@@ -71,7 +72,19 @@ def _load_and_process_items(config_dict: dict, source_filter: Optional[str] = No
     # For now, return unsorted or relying on file order, but dashboard sorts.
     # Let's simple return list
     
-    return items[:limit] if limit > 0 else items
+    # Remove duplicates across combined sources before applying the response limit.
+    # Keep first-seen item, preserving source order and source-specific recency order.
+    seen = set()
+    unique_items = []
+    for item in items:
+        key = get_item_dedupe_key(item.model_dump())
+        if key and key in seen:
+            continue
+        if key:
+            seen.add(key)
+        unique_items.append(item)
+
+    return unique_items[:limit] if limit > 0 else unique_items
 
 
 def _load_benchmarks(source_filter: Optional[str] = None) -> dict:

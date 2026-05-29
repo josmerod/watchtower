@@ -3,6 +3,7 @@ from datetime import datetime
 import dash
 import dash_bootstrap_components as dbc
 from dash import html, dcc, Input, Output, State, ALL, clientside_callback
+from flask import jsonify, redirect, render_template_string
 
 from src.web.dashboard.components.anime_tab import render_anime_tab
 from src.web.dashboard.components.arxiv_research_tab import (
@@ -81,14 +82,8 @@ from src.web.dashboard.components.videos_tab import (
 from src.web.dashboard.health_monitor import HealthMonitor
 from src.web.api.routes import api_bp  # Import API Blueprint
 
-# Include localStorage script for filter presets and shortcuts functionality
+# Include external JavaScript libraries. Local files under assets/ are auto-loaded by Dash.
 external_scripts = [
-    "/assets/js/localStorage.js",
-    "/assets/js/items_per_page.js",
-    "/assets/js/mobile_navigation.js",
-    "/assets/js/shortcuts.js",
-    "/assets/js/dragdrop.js",
-    "/assets/js/dragdrop.js",
     "https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js",
     "https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js",
 ]
@@ -147,6 +142,12 @@ app.layout = dbc.Container(
                                 html.H1(
                                     "Watchtower Dashboard",
                                     className="dashboard-header-title mb-0",
+                                ),
+                                html.A(
+                                    "Docs",
+                                    href="/docs",
+                                    className="btn btn-outline-light btn-sm mt-3 mt-md-0",
+                                    target="_self",
                                 ),
                             ],
                             className="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-center",
@@ -280,6 +281,178 @@ server = app.server
 
 # Initialize health monitor
 health_monitor = HealthMonitor()
+
+
+WATCHTOWER_DOCS_HTML = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Watchtower Docs</title>
+  <meta name="description" content="Public documentation for Watchtower, the data aggregation and monitoring platform.">
+  <link rel="icon" type="image/svg+xml" href="/assets/watchtower_icon.svg">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08111f;
+      --panel: #101b2d;
+      --panel-2: #0c1626;
+      --text: #ecf3ff;
+      --muted: #a7b4c7;
+      --accent: #69d2ff;
+      --accent-2: #98f5c4;
+      --border: rgba(255,255,255,.12);
+      --code: #07101d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #183154 0, var(--bg) 40%, #050912 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 22px 64px; }
+    header { padding: 44px 0 30px; border-bottom: 1px solid var(--border); }
+    .eyebrow { color: var(--accent-2); text-transform: uppercase; letter-spacing: .14em; font-size: .78rem; font-weight: 700; }
+    h1 { font-size: clamp(2.2rem, 6vw, 4.6rem); line-height: 1; margin: 10px 0 18px; }
+    h2 { margin-top: 42px; padding-top: 10px; font-size: 1.8rem; }
+    h3 { margin-top: 28px; color: var(--accent-2); }
+    p, li { color: var(--muted); }
+    .lead { max-width: 820px; font-size: 1.15rem; color: #d8e5f8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid var(--border); border-radius: 18px; padding: 20px; box-shadow: 0 18px 40px rgba(0,0,0,.24); }
+    .card strong { display: block; color: var(--text); margin-bottom: 6px; }
+    .pillrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0; }
+    .pill { border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; color: #dce9fb; background: rgba(255,255,255,.05); }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    code { background: rgba(105,210,255,.12); color: #dff6ff; padding: 2px 6px; border-radius: 7px; }
+    pre { background: var(--code); border: 1px solid var(--border); border-radius: 14px; padding: 16px; overflow-x: auto; color: #dce9fb; }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 14px; border: 1px solid var(--border); }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { color: var(--text); background: rgba(255,255,255,.06); }
+    td { color: var(--muted); }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0; }
+    .button { display: inline-block; padding: 11px 16px; border-radius: 12px; border: 1px solid var(--border); background: rgba(105,210,255,.14); color: var(--text); font-weight: 700; }
+    .button.secondary { background: rgba(255,255,255,.06); }
+    .note { border-left: 4px solid var(--accent-2); background: rgba(152,245,196,.08); padding: 14px 16px; border-radius: 12px; }
+    footer { margin-top: 52px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div class="eyebrow">Watchtower public docs</div>
+      <h1>Data aggregation, monitoring, and intelligence feeds.</h1>
+      <p class="lead">Watchtower collects useful data from public sources, normalizes it into category feeds, exposes a JSON API, and renders a dashboard for browsing news, deals, courses, research, events, public aid, benchmarks, and more.</p>
+      <div class="actions">
+        <a class="button" href="/">Open dashboard</a>
+        <a class="button secondary" href="https://watchtower-api.josmerod.es/docs">Interactive API docs</a>
+        <a class="button secondary" href="https://watchtower-api.josmerod.es/api/v1/sources">Source list JSON</a>
+      </div>
+    </header>
+
+    <section>
+      <h2>Public endpoints</h2>
+      <div class="grid">
+        <div class="card"><strong>Dashboard</strong><a href="https://watchtower.josmerod.es">watchtower.josmerod.es</a><p>Human-facing Dash UI with tabs for each content area.</p></div>
+        <div class="card"><strong>API</strong><a href="https://watchtower-api.josmerod.es">watchtower-api.josmerod.es</a><p>FastAPI service serving normalized JSON feeds.</p></div>
+        <div class="card"><strong>Health</strong><a href="/health">/health</a><p>Dashboard health endpoint. API health is at <code>https://watchtower-api.josmerod.es/health</code>.</p></div>
+        <div class="card"><strong>Metrics</strong><a href="/metrics">/metrics</a><p>Dashboard-side ETL and source metrics where available.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>How the system works</h2>
+      <ol>
+        <li><strong>ETLs run on a schedule.</strong> Scripts fetch public feeds, APIs, and pages, then write normalized JSON files under Watchtower data directories.</li>
+        <li><strong>The API serves category feeds.</strong> FastAPI reads the generated files and exposes them under <code>/api/v1/*</code>.</li>
+        <li><strong>The dashboard renders the same data.</strong> The UI groups sources into tabs and adds search/filter/table views.</li>
+        <li><strong>Hermes crons consume the API.</strong> Daily and weekly summaries pull directly from the API host, not from the dashboard host.</li>
+      </ol>
+      <p class="note"><strong>Important:</strong> the dashboard host and API host are intentionally split. Use <code>watchtower.josmerod.es</code> for humans and <code>watchtower-api.josmerod.es</code> for integrations.</p>
+    </section>
+
+    <section>
+      <h2>API quick start</h2>
+      <pre><code># Health
+curl -s https://watchtower-api.josmerod.es/health
+
+# Latest news item
+curl -s "https://watchtower-api.josmerod.es/api/v1/news?limit=1"
+
+# Available source keys by category
+curl -s https://watchtower-api.josmerod.es/api/v1/sources
+
+# Filter one category by source
+curl -s "https://watchtower-api.josmerod.es/api/v1/ecommerce?source=gumroad_scraper&amp;limit=5"</code></pre>
+    </section>
+
+    <section>
+      <h2>Core API routes</h2>
+      <table>
+        <thead><tr><th>Route</th><th>Use it for</th><th>Parameters</th></tr></thead>
+        <tbody>
+          <tr><td><code>/api/v1/news</code></td><td>Tech/news feeds such as Hacker News, TechCrunch, Ben's Bites, Product Hunt, and similar sources.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/knowledge-garden</code></td><td>Longer-lived knowledge items, open-source discoveries, references, and learning material.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/ecommerce</code></td><td>Digital products, marketplace items, and deal feeds.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/games</code></td><td>Game deals and free/discounted game opportunities.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/travel</code></td><td>Travel deals and destination opportunities.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/research</code></td><td>Academic/research feeds such as arXiv and ADHD/publication data.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/intelligence</code></td><td>Security and intelligence feeds such as CVEs and SEC-style signals.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/museums</code></td><td>Museum/culture data.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/entertainment</code></td><td>Movies, anime, and entertainment feeds.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/benchmarks</code></td><td>AI coding benchmark data.</td><td><code>source</code></td></tr>
+          <tr><td><code>/api/v1/sources</code></td><td>Machine-readable list of available source keys for filtering.</td><td>None</td></tr>
+        </tbody>
+      </table>
+      <p>The full OpenAPI/Swagger reference is available at <a href="https://watchtower-api.josmerod.es/docs">watchtower-api.josmerod.es/docs</a>.</p>
+    </section>
+
+    <section>
+      <h2>Freshness and staleness model</h2>
+      <p>Watchtower data freshness depends on the ETL source. Most sources are refreshed by the scheduled ETL runner; browser-backed sources can fail if Playwright browser binaries or source-site access change. The API can be healthy while one source is stale, so check freshness per source rather than treating health as a complete data-quality signal.</p>
+      <div class="pillrow">
+        <span class="pill">API up ≠ every source fresh</span>
+        <span class="pill">Check item timestamps</span>
+        <span class="pill">Check <code>/api/v1/sources</code></span>
+        <span class="pill">Use dashboard <code>/metrics</code> when debugging</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Common integration pattern</h2>
+      <pre><code>import requests
+
+base = "https://watchtower-api.josmerod.es/api/v1"
+items = requests.get(f"{base}/news", params={"limit": 10}, timeout=20).json()
+for item in items:
+    print(item["published_at"], item["source"], item["title"])</code></pre>
+    </section>
+
+    <footer>
+      <p>Watchtower docs are served from the dashboard app at <code>/docs</code>. API OpenAPI docs are served by the API app at <code>watchtower-api.josmerod.es/docs</code>.</p>
+    </footer>
+  </main>
+</body>
+</html>
+"""
+
+
+@server.route("/docs")
+@server.route("/docs/")
+def docs():
+    """Public human-readable Watchtower documentation."""
+    return render_template_string(WATCHTOWER_DOCS_HTML)
+
+
+@server.route("/api-docs")
+def api_docs_redirect():
+    """Convenience redirect to the public FastAPI Swagger UI."""
+    return redirect("https://watchtower-api.josmerod.es/docs", code=302)
 
 
 @server.route("/health")

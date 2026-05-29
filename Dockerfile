@@ -19,6 +19,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 COPY run_watchtower_dashboard.py ./
 COPY run_all_etl.sh ./
+COPY run_all_etl_orchestrator.py ./
 COPY deployment/ ./deployment/
 COPY src/ ./src/
 COPY secrets/ ./secrets/
@@ -29,11 +30,33 @@ RUN uv sync --frozen --no-dev
 # Production stage
 FROM python:3.11-slim
 
-# Install runtime dependencies
+# Install runtime dependencies, including browser libraries required by Playwright-backed ETLs.
 RUN apt-get update && apt-get install -y \
     bash \
     curl \
     supervisor \
+    libglib2.0-0 \
+    libnss3 \
+    libnspr4 \
+    libdbus-1-3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libxcb1 \
+    libxkbcommon0 \
+    libatspi2.0-0 \
+    libx11-6 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    fonts-unifont \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from base stage
@@ -47,6 +70,7 @@ WORKDIR /app
 # Copy application code
 COPY run_watchtower_dashboard.py ./
 COPY run_all_etl.sh ./
+COPY run_all_etl_orchestrator.py ./
 COPY deployment/ ./deployment/
 COPY src/ ./src/
 COPY secrets/ ./secrets/
@@ -54,6 +78,9 @@ COPY secrets/ ./secrets/
 # Set Python path to include virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/.venv/lib/python3.11/site-packages"
+
+# Install Playwright browser binaries used by browser-backed ETLs.
+RUN uv run playwright install chromium
 
 # Prepare writable runtime directories. The Unraid bind-mounted data/logs tree
 # contains historical root-owned files; run as root to preserve compatibility.

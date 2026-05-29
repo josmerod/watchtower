@@ -32,6 +32,17 @@ class HealthMonitor:
         """Get server uptime in seconds."""
         return time.time() - self.start_time
 
+    @staticmethod
+    def _metric_success_rate(metrics_data: dict[str, Any]) -> float:
+        """Return a sane 0-100 success rate for mixed legacy/current metric shapes."""
+        raw_success_rate = metrics_data.get("success_rate")
+        if isinstance(raw_success_rate, int | float):
+            return max(0.0, min(float(raw_success_rate), 100.0))
+
+        error_count = metrics_data.get("error_count", 0) or 0
+        records_failed = metrics_data.get("records_failed", 0) or 0
+        return 0.0 if error_count or records_failed else 100.0
+
     def read_latest_etl_metrics(self) -> dict[str, Any]:
         """Read latest ETL metrics from aggregated metrics file.
 
@@ -91,7 +102,7 @@ class HealthMonitor:
             )
 
         # Extract basic metrics
-        success_rate = latest_metrics.get("success_rate", 0.0)
+        success_rate = self._metric_success_rate(latest_metrics)
         error_count = latest_metrics.get("error_count", 0)
         last_run_time = None
 
@@ -138,25 +149,29 @@ class HealthMonitor:
         total_runs = len(etl_metrics)
         failed_runs = 0
         degraded_runs = 0
+        failed_sources = []
+        degraded_sources = []
 
         for etl_name, metrics_data in etl_metrics.items():
             if not isinstance(metrics_data, dict):
                 continue
 
-            success_rate = metrics_data.get("success_rate", 0.0)
+            success_rate = self._metric_success_rate(metrics_data)
             if success_rate < 70:
                 failed_runs += 1
+                failed_sources.append(etl_name)
             elif success_rate < 90:
                 degraded_runs += 1
+                degraded_sources.append(etl_name)
 
         # Calculate failure percentage
         failure_percentage = (failed_runs / total_runs * 100) if total_runs > 0 else 0
 
         # Determine overall status
-        if failure_percentage > 10:  # AC2: >10% failed = degraded
-            status = "degraded"
-        elif failure_percentage > 50:  # Very high failure rate = down
+        if failure_percentage > 50:
             status = "down"
+        elif failure_percentage > 10:
+            status = "degraded"
         elif not self._can_read_data_files():
             status = "down"  # AC3: Can't read data files = down
         else:
@@ -166,6 +181,8 @@ class HealthMonitor:
             "total_etl_runs": total_runs,
             "failed_runs": failed_runs,
             "degraded_runs": degraded_runs,
+            "failed_sources": failed_sources,
+            "degraded_sources": degraded_sources,
             "failure_percentage": failure_percentage,
             "can_read_data_files": self._can_read_data_files(),
         }
@@ -241,7 +258,7 @@ class HealthMonitor:
                 last_etl_run_times[etl_name] = None
 
             # Error rate
-            success_rate = metrics_data.get("success_rate", 100.0)
+            success_rate = self._metric_success_rate(metrics_data)
             error_rates_per_source[etl_name] = 100.0 - success_rate
 
             # Individual ETL health
