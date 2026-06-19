@@ -17,6 +17,10 @@ from src.services.data_loader import (
     MUSEUMS_CONFIG,
     GAMES_SOURCES_CONFIG,
     BENCHMARKS_SOURCES_CONFIG,
+    ARXIV_SOURCES_CONFIG,
+    AI_PLATFORMS_SOURCES_CONFIG,
+    EXPANDED_SOURCES_CONFIG,
+    SPANISH_AID_SOURCES_CONFIG,
     format_article_date,
     get_item_dedupe_key,
     load_data_from_file,
@@ -50,7 +54,7 @@ def _load_and_process_items(config_dict: dict, source_filter: Optional[str] = No
         for item in raw_data:
             # Map raw item to UnifiedItem
             # Handle variations in field names
-            title = item.get("title") or item.get("name") or item.get("full_name") or item.get("model") or "No Title"
+            title = item.get("title") or item.get("name") or item.get("full_name") or item.get("model") or item.get("qualified_name") or item.get("display") or "No Title"
             url = item.get("url") or item.get("link") or item.get("html_url") or item.get("website")
             
             # Skip items without Title? (Maybe keep them for completeness but model requires title)
@@ -231,6 +235,54 @@ async def get_benchmarks(
         logger.error(f"Error fetching benchmarks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/arxiv", response_model=List[UnifiedItem])
+async def get_arxiv(
+    source: Optional[str] = Query(None, description="Filter by source key (e.g. 'papers', 'machine_learning')"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get ArXiv research papers."""
+    try:
+        return _load_and_process_items(ARXIV_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching arxiv: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/ai-platforms", response_model=List[UnifiedItem])
+async def get_ai_platforms(
+    source: Optional[str] = Query(None, description="Filter by source key (e.g. 'replicate')"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get AI platform model data."""
+    try:
+        return _load_and_process_items(AI_PLATFORMS_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching ai-platforms: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/expanded", response_model=List[UnifiedItem])
+async def get_expanded(
+    source: Optional[str] = Query(None, description="Filter by source key (e.g. 'github_analytics', 'stackexchange')"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get expanded intelligence data (GitHub, StackExchange, OpenAlex, packages, Kaggle)."""
+    try:
+        return _load_and_process_items(EXPANDED_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching expanded: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/spanish-aid", response_model=List[UnifiedItem])
+async def get_spanish_aid(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get Spanish public aid and subsidies data."""
+    try:
+        return _load_and_process_items(SPANISH_AID_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching spanish-aid: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/sources", response_model=dict)
 async def get_sources():
     """Get available sources."""
@@ -245,4 +297,8 @@ async def get_sources():
         "museums": {k: v["name"] for k, v in MUSEUMS_CONFIG.items()},
         "games": {k: v["name"] for k, v in GAMES_SOURCES_CONFIG.items()},
         "benchmarks": {k: v["name"] for k, v in BENCHMARKS_SOURCES_CONFIG.items()},
+        "arxiv": {k: v["name"] for k, v in ARXIV_SOURCES_CONFIG.items()},
+        "ai_platforms": {k: v["name"] for k, v in AI_PLATFORMS_SOURCES_CONFIG.items()},
+        "expanded": {k: v["name"] for k, v in EXPANDED_SOURCES_CONFIG.items()},
+        "spanish_aid": {k: v["name"] for k, v in SPANISH_AID_SOURCES_CONFIG.items()},
     }

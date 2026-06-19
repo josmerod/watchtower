@@ -771,9 +771,9 @@ def render_games_tab():
         if all_files_missing:
             return html.Div(
                 [
-                    html.H3("Juegos", className="mb-3"),
+                    html.H3("Games", className="mb-3"),
                     dbc.Alert(
-                        "Todos los archivos de datos de juegos están ausentes. Por favor, ejecute los ETLs correspondientes.",
+                        "All game data files are missing. Please run the corresponding ETLs.",
                         color="danger",
                         className="alert-danger",
                     ),
@@ -782,9 +782,9 @@ def render_games_tab():
         else:
             return html.Div(
                 [
-                    html.H3("Juegos", className="mb-3"),
+                    html.H3("Games", className="mb-3"),
                     dbc.Alert(
-                        "No se pudieron cargar los datos de los juegos o no hay datos disponibles. Verifique la consola para más detalles.",
+                        "Could not load game data or no data is available. Check the console for more details.",
                         color="warning",
                         className="alert-warning",
                     ),
@@ -793,12 +793,12 @@ def render_games_tab():
 
     return html.Div(
         [
-            html.H3("Juegos", className="mb-3"),
+            html.H3("Games", className="mb-3"),
             dbc.Tabs(
                 id="games-sub-tabs",
                 children=[
                     dbc.Tab(
-                        label="Reseñas (Metacritic)",
+                        label="Reviews (Metacritic)",
                         tab_id="subtab-metacritic",
                         children=render_metacritic_sub_tab(ALL_GAMES_DATA["metacritic"]),
                     ),
@@ -829,8 +829,8 @@ if __name__ == "__main__":
 
     # Summary of loaded data for testing
     for key, df in ALL_GAMES_DATA.items():
-        status = "cargado" if DATA_LOADED_SUCCESSFULLY[key] else "no cargado o vacío"
-        print(f"Juegos Test: Datos para '{key}' {status} - {len(df)} registros.")
+        status = "loaded" if DATA_LOADED_SUCCESSFULLY[key] else "not loaded or empty"
+        print(f"Games Test: Data for '{key}' {status} - {len(df)} records.")
         if not DATA_LOADED_SUCCESSFULLY[key] and df.empty:
             # More specific path based on how individual loaders will be implemented
             filename_map = {
@@ -840,6 +840,6 @@ if __name__ == "__main__":
                 "trending": "itchio_trending.json",
                 "new_releases": "new_releases.json",
             }
-            print(f"  Verifique si {DATA_BASE_PATH}{filename_map.get(key, key + '.json')} existe y es válido.")
+            print(f"  Check if {DATA_BASE_PATH}{filename_map.get(key, key + '.json')} exists and is valid.")
 
     app_test.run_server(debug=True, port=8057)
