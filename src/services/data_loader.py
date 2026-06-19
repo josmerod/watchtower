@@ -107,6 +107,10 @@ NEWS_SOURCES_CONFIG = {
         "path": get_data_path("news", "microsiervos_latest.json"),
         "name": "Microsiervos",
     },
+    "spanish_tech": {
+        "path": get_data_path("news", "spanish_tech_latest.json"),
+        "name": "Spanish Tech (Xataka, Hipertextual, Genbeta)",
+    },
 }
 
 DEALS_SOURCES_CONFIG = {
@@ -309,6 +313,14 @@ INTEL_SOURCES_CONFIG: dict[str, dict[str, Any]] = {
         "color": "warning",
         "description": "Real-time critical threats and CVE disclosures",
     },
+    "security_feeds": {
+        "path": get_data_path("security_feeds", "security_feeds_latest.json"),
+        "name": "Security News (CISA, THN, BC, Krebs)",
+        "icon": "🔒",
+        "category": "Cybersecurity",
+        "color": "danger",
+        "description": "Security advisories and cybersecurity news from CISA, The Hacker News, BleepingComputer, Krebs",
+    },
 }
 
 TRAVEL_SOURCES_CONFIG = {
@@ -464,6 +476,15 @@ SPANISH_AID_SOURCES_CONFIG = {
     "public_aid": {
         "path": get_data_path("spanish_public_aid", "output", "spanish_public_aid_latest.json"),
         "name": "Spanish Public Aid",
+    },
+}
+
+# --- Cloud Provider Updates ---
+
+CLOUD_UPDATES_SOURCES_CONFIG = {
+    "cloud_updates": {
+        "path": get_data_path("cloud_updates", "cloud_updates_latest.json"),
+        "name": "Cloud Updates (AWS, GCP, CNCF, GitHub)",
     },
 }
 

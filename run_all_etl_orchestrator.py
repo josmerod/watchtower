@@ -28,6 +28,8 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_uneed.py",
     "src/etl/news/news_get_producthunt.py",  # Was orphan — not in ETL_SCRIPTS, causing stale Product Hunt data
     "src/etl/news/valencia_events_etl.py",  # Feeds dashboard Valencia Events tab
+    "src/etl/news/news_get_spanish_tech.py",  # Xataka, Hipertextual, Genbeta
+    "src/etl/news/news_get_cloud_updates.py",  # AWS, GCP, CNCF, GitHub Blog
     
     # Reddit
     "src/etl/news/reddit_unified_etl.py",
@@ -75,6 +77,7 @@ ETL_SCRIPTS = [
     "src/etl/intelligence/who_outbreaks_rss.py",
     "src/etl/intelligence/nvd_cve_etl.py",
     "src/etl/intelligence/lesswrong_etl.py",
+    "src/etl/intelligence/security_feeds_etl.py",  # CISA, THN, BleepingComputer, Krebs
     
     # ADHD & Neurodivergent
     "src/etl/adhd/adhd_publications_etl.py",
