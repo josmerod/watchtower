@@ -21,6 +21,7 @@ from src.services.data_loader import (
     AI_PLATFORMS_SOURCES_CONFIG,
     EXPANDED_SOURCES_CONFIG,
     SPANISH_AID_SOURCES_CONFIG,
+    CLOUD_UPDATES_SOURCES_CONFIG,
     format_article_date,
     get_item_dedupe_key,
     load_data_from_file,
@@ -283,6 +284,18 @@ async def get_spanish_aid(
         logger.error(f"Error fetching spanish-aid: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/cloud-updates", response_model=List[UnifiedItem])
+async def get_cloud_updates(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get cloud provider updates (AWS, GCP, CNCF, GitHub Blog)."""
+    try:
+        return _load_and_process_items(CLOUD_UPDATES_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching cloud-updates: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/sources", response_model=dict)
 async def get_sources():
     """Get available sources."""
@@ -301,4 +314,5 @@ async def get_sources():
         "ai_platforms": {k: v["name"] for k, v in AI_PLATFORMS_SOURCES_CONFIG.items()},
         "expanded": {k: v["name"] for k, v in EXPANDED_SOURCES_CONFIG.items()},
         "spanish_aid": {k: v["name"] for k, v in SPANISH_AID_SOURCES_CONFIG.items()},
+        "cloud_updates": {k: v["name"] for k, v in CLOUD_UPDATES_SOURCES_CONFIG.items()},
     }
