@@ -138,7 +138,7 @@ def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Di
                 dbc.CardBody(
                     [
                         html.H4(f"{total_aids}", className="card-title text-primary"),
-                        html.P("Total Ayudas", className="card-text"),
+                        html.P("Total Aid", className="card-text"),
                     ]
                 )
             ],
@@ -149,7 +149,7 @@ def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Di
                 dbc.CardBody(
                     [
                         html.H4(f"{active_aids}", className="card-title text-success"),
-                        html.P("Ayudas Activas", className="card-text"),
+                        html.P("Active Aid", className="card-text"),
                     ]
                 )
             ],
@@ -160,7 +160,7 @@ def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Di
                 dbc.CardBody(
                     [
                         html.H4(f"{closing_soon}", className="card-title text-warning"),
-                        html.P("Cierran Pronto", className="card-text"),
+                        html.P("Closing Soon", className="card-text"),
                     ]
                 )
             ],
@@ -174,7 +174,7 @@ def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Di
                             most_common_category.title(),
                             className="card-title text-info",
                         ),
-                        html.P("Categoría Principal", className="card-text"),
+                        html.P("Main Category", className="card-text"),
                     ]
                 )
             ],
@@ -188,7 +188,7 @@ def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Di
 def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
     """Create a pie chart showing aids by category."""
     if not aids_data:
-        return dcc.Graph(figure={"data": [], "layout": {"title": "No hay datos disponibles"}})
+        return dcc.Graph(figure={"data": [], "layout": {"title": "No data available"}})
 
     # Count aids by category
     category_counts = {}
@@ -200,7 +200,7 @@ def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
     fig = px.pie(
         values=list(category_counts.values()),
         names=list(category_counts.keys()),
-        title="Distribución por Categoría",
+        title="Distribution by Category",
     )
 
     fig.update_traces(textposition="inside", textinfo="percent+label")
@@ -212,18 +212,18 @@ def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
 def create_scope_chart(aids_data: list[dict]) -> dcc.Graph:
     """Create a bar chart showing aids by geographic scope."""
     if not aids_data:
-        return dcc.Graph(figure={"data": [], "layout": {"title": "No hay datos disponibles"}})
+        return dcc.Graph(figure={"data": [], "layout": {"title": "No data available"}})
 
     # Count aids by scope
     scope_counts = {}
     for aid in aids_data:
         scope = aid.get("scope", {}).get("scope", "nacional")
         scope_name = {
-            "nacional": "Nacional",
-            "autonomica": "Autonómica",
+            "nacional": "National",
+            "autonomica": "Regional",
             "provincial": "Provincial",
             "local": "Local",
-            "europea": "Europea",
+            "europea": "European",
         }.get(scope, scope.title())
 
         scope_counts[scope_name] = scope_counts.get(scope_name, 0) + 1
@@ -232,8 +232,8 @@ def create_scope_chart(aids_data: list[dict]) -> dcc.Graph:
     fig = px.bar(
         x=list(scope_counts.keys()),
         y=list(scope_counts.values()),
-        title="Distribución por Ámbito Geográfico",
-        labels={"x": "Ámbito", "y": "Número de Ayudas"},
+        title="Distribution by Geographic Scope",
+        labels={"x": "Scope", "y": "Number of Aid"},
     )
 
     fig.update_layout(height=400, margin=dict(t=50, b=50, l=50, r=50))
@@ -244,7 +244,7 @@ def create_scope_chart(aids_data: list[dict]) -> dcc.Graph:
 def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
     """Create a timeline showing aids closing dates."""
     if not aids_data:
-        return dcc.Graph(figure={"data": [], "layout": {"title": "No hay datos disponibles"}})
+        return dcc.Graph(figure={"data": [], "layout": {"title": "No data available"}})
 
     # Filter aids with closing dates
     aids_with_dates = []
@@ -255,7 +255,7 @@ def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
             if parsed_date:
                 aids_with_dates.append(
                     {
-                        "title": aid.get("title", "Sin título")[:50] + "...",
+                        "title": aid.get("title", "Untitled")[:50] + "...",
                         "closing_date": parsed_date,
                         "category": aid.get("category", "otros"),
                         "status": aid.get("status", "abierta"),
@@ -266,7 +266,7 @@ def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
         return dcc.Graph(
             figure={
                 "data": [],
-                "layout": {"title": "No hay ayudas con fechas de cierre disponibles"},
+                "layout": {"title": "No aid with closing dates available"},
             }
         )
 
@@ -296,9 +296,9 @@ def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
         )
 
     fig.update_layout(
-        title="Próximas Fechas de Cierre",
-        xaxis_title="Fecha de Cierre",
-        yaxis_title="Ayudas",
+        title="Upcoming Closing Dates",
+        xaxis_title="Closing Date",
+        yaxis_title="Aid",
         height=600,
         yaxis=dict(showticklabels=False),
         margin=dict(t=50, b=50, l=50, r=200),
@@ -315,20 +315,20 @@ def create_aids_filter_controls() -> html.Div:
                 [
                     dbc.Col(
                         [
-                            html.Label("Filtrar por Categoría:"),
+                            html.Label("Filter by Category:"),
                             dcc.Dropdown(
                                 id="category-filter",
                                 options=[
-                                    {"label": "Todas", "value": "all"},
-                                    {"label": "Vivienda", "value": "vivienda"},
-                                    {"label": "Empleo", "value": "empleo"},
-                                    {"label": "Educación", "value": "educacion"},
-                                    {"label": "Salud", "value": "salud"},
-                                    {"label": "Juventud", "value": "juventud"},
-                                    {"label": "Familia", "value": "familia"},
-                                    {"label": "Emergencia", "value": "emergencia"},
-                                    {"label": "Empresa", "value": "empresa"},
-                                    {"label": "Otros", "value": "otros"},
+                                    {"label": "All", "value": "all"},
+                                    {"label": "Housing", "value": "vivienda"},
+                                    {"label": "Employment", "value": "empleo"},
+                                    {"label": "Education", "value": "educacion"},
+                                    {"label": "Health", "value": "salud"},
+                                    {"label": "Youth", "value": "juventud"},
+                                    {"label": "Family", "value": "familia"},
+                                    {"label": "Emergency", "value": "emergencia"},
+                                    {"label": "Business", "value": "empresa"},
+                                    {"label": "Other", "value": "otros"},
                                 ],
                                 value="all",
                                 multi=False,
@@ -338,19 +338,19 @@ def create_aids_filter_controls() -> html.Div:
                     ),
                     dbc.Col(
                         [
-                            html.Label("Filtrar por Estado:"),
+                            html.Label("Filter by Status:"),
                             dcc.Dropdown(
                                 id="status-filter",
                                 options=[
-                                    {"label": "Todos", "value": "all"},
-                                    {"label": "Abierta", "value": "abierta"},
-                                    {"label": "Cerrada", "value": "cerrada"},
+                                    {"label": "All", "value": "all"},
+                                    {"label": "Open", "value": "abierta"},
+                                    {"label": "Closed", "value": "cerrada"},
                                     {
-                                        "label": "En Evaluación",
+                                        "label": "Under Evaluation",
                                         "value": "en_evaluacion",
                                     },
-                                    {"label": "Resuelta", "value": "resuelta"},
-                                    {"label": "Próxima", "value": "proxima"},
+                                    {"label": "Resolved", "value": "resuelta"},
+                                    {"label": "Upcoming", "value": "proxima"},
                                 ],
                                 value="abierta",
                                 multi=False,
@@ -360,13 +360,13 @@ def create_aids_filter_controls() -> html.Div:
                     ),
                     dbc.Col(
                         [
-                            html.Label("Filtrar por Ámbito:"),
+                            html.Label("Filter by Scope:"),
                             dcc.Dropdown(
                                 id="scope-filter",
                                 options=[
-                                    {"label": "Todos", "value": "all"},
-                                    {"label": "Nacional", "value": "nacional"},
-                                    {"label": "Autonómica", "value": "autonomica"},
+                                    {"label": "All", "value": "all"},
+                                    {"label": "National", "value": "nacional"},
+                                    {"label": "Regional", "value": "autonomica"},
                                     {"label": "Local", "value": "local"},
                                 ],
                                 value="all",
@@ -377,10 +377,10 @@ def create_aids_filter_controls() -> html.Div:
                     ),
                     dbc.Col(
                         [
-                            html.Label("Solo urgentes (< 7 días):"),
+                            html.Label("Only urgent (< 7 days):"),
                             dcc.Checklist(
                                 id="urgent-filter",
-                                options=[{"label": "Solo urgentes", "value": "urgent"}],
+                                options=[{"label": "Only urgent", "value": "urgent"}],
                                 value=[],
                                 inline=True,
                             ),
@@ -397,7 +397,7 @@ def create_aids_filter_controls() -> html.Div:
 def create_aids_table(aids_data: list[dict]) -> html.Div:
     """Create a table showing aids with filtering capabilities."""
     if not aids_data:
-        return dbc.Alert("No hay datos de ayudas disponibles.", color="info")
+        return dbc.Alert("No aid data available.", color="info")
 
     # Prepare data for table
     table_data = []
@@ -418,13 +418,13 @@ def create_aids_table(aids_data: list[dict]) -> html.Div:
             if amount.get("fixed_amount"):
                 amount_info = f"€{amount['fixed_amount']}"
             elif amount.get("max_amount"):
-                amount_info = f"Hasta €{amount['max_amount']}"
+                amount_info = f"Up to €{amount['max_amount']}"
             elif amount.get("min_amount"):
-                amount_info = f"Desde €{amount['min_amount']}"
+                amount_info = f"From €{amount['min_amount']}"
 
         table_data.append(
             {
-                "title": aid.get("title", "Sin título"),
+                "title": aid.get("title", "Untitled"),
                 "category": aid.get("category", "otros").title(),
                 "status": aid.get("status", "abierta").title(),
                 "scope": aid.get("scope", {}).get("scope", "nacional").title(),
@@ -442,18 +442,18 @@ def create_aids_table(aids_data: list[dict]) -> html.Div:
         data=table_data,
         columns=[
             {
-                "name": "Título",
+                "name": "Title",
                 "id": "title",
                 "type": "text",
                 "presentation": "markdown",
             },
-            {"name": "Categoría", "id": "category", "type": "text"},
-            {"name": "Estado", "id": "status", "type": "text"},
-            {"name": "Ámbito", "id": "scope", "type": "text"},
-            {"name": "Organismo", "id": "organizing_entity", "type": "text"},
-            {"name": "Fecha Cierre", "id": "closing_date", "type": "datetime"},
-            {"name": "Días Restantes", "id": "days_left", "type": "numeric"},
-            {"name": "Cuantía", "id": "amount", "type": "text"},
+            {"name": "Category", "id": "category", "type": "text"},
+            {"name": "Status", "id": "status", "type": "text"},
+            {"name": "Scope", "id": "scope", "type": "text"},
+            {"name": "Entity", "id": "organizing_entity", "type": "text"},
+            {"name": "Closing Date", "id": "closing_date", "type": "datetime"},
+            {"name": "Days Remaining", "id": "days_left", "type": "numeric"},
+            {"name": "Amount", "id": "amount", "type": "text"},
         ],
         page_size=20,
         sort_action="native",
@@ -503,7 +503,7 @@ def create_aids_table(aids_data: list[dict]) -> html.Div:
         ],
     )
 
-    return html.Div([html.H5("Tabla de Ayudas Públicas", className="mb-3"), table])
+    return html.Div([html.H5("Public Aid Table", className="mb-3"), table])
 
 
 def create_search_component() -> html.Div:
@@ -518,11 +518,11 @@ def create_search_component() -> html.Div:
                                 [
                                     dbc.Input(
                                         id="search-input",
-                                        placeholder="Buscar ayudas por título, descripción o palabras clave...",
+                                        placeholder="Search aid by title, description or keywords...",
                                         type="text",
                                     ),
                                     dbc.Button(
-                                        "Buscar",
+                                        "Search",
                                         id="search-button",
                                         color="primary",
                                         n_clicks=0,
@@ -535,7 +535,7 @@ def create_search_component() -> html.Div:
                     dbc.Col(
                         [
                             dbc.Button(
-                                "Limpiar Filtros",
+                                "Clear Filters",
                                 id="clear-filters-button",
                                 color="secondary",
                                 outline=True,
@@ -547,7 +547,7 @@ def create_search_component() -> html.Div:
                     dbc.Col(
                         [
                             dbc.Button(
-                                "Actualizar Datos",
+                                "Update Data",
                                 id="refresh-data-button",
                                 color="success",
                                 outline=True,
@@ -576,11 +576,11 @@ def render_spanish_public_aid_tab():
             [
                 dbc.Alert(
                     [
-                        html.H4("No hay datos disponibles", className="alert-heading"),
-                        html.P("No se encontraron datos de ayudas públicas españolas."),
+                        html.H4("No data available", className="alert-heading"),
+                        html.P("No Spanish public aid data found."),
                         html.Hr(),
                         html.P(
-                            "Asegúrate de ejecutar el ETL de ayudas públicas españolas primero:",
+                            "Make sure to run the Spanish public aid ETL first:",
                             className="mb-0",
                         ),
                         html.Code("uv run python src/etl/spanish_public_aid/spanish_public_aid_etl.py"),
@@ -594,7 +594,7 @@ def render_spanish_public_aid_tab():
 
     return html.Div(
         [
-            html.H3("Ayudas Públicas Españolas", className="mb-4"),
+            html.H3("Spanish Public Aid", className="mb-4"),
             # Summary cards
             create_aid_summary_cards(aids_data, stats_data),
             html.Hr(),
@@ -629,14 +629,14 @@ def render_spanish_public_aid_tab():
                         [
                             html.Small(
                                 [
-                                    "Última actualización: ",
+                                    "Last updated: ",
                                     html.Span(
                                         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                                         id="last-updated-time",
                                     ),
                                     " | ",
                                     html.A(
-                                        "Ver código fuente",
+                                        "View source code",
                                         href="https://github.com/your-repo/watchtower/tree/main/src/etl/spanish_public_aid",
                                         target="_blank",
                                     ),
@@ -684,7 +684,7 @@ def register_spanish_aid_callbacks(app):
         aids_data, _ = load_spanish_aid_data()
 
         if not aids_data:
-            return dbc.Alert("No hay datos disponibles.", color="info")
+            return dbc.Alert("No data available.", color="info")
 
         # Apply filters
         filtered_data = aids_data.copy()

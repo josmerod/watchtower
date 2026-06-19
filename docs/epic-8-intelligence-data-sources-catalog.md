@@ -505,7 +505,6 @@ This document provides a comprehensive catalog of 450+ verified data sources acr
 |--------|------|----------------|----------------------|-------------------|
 | **Coursera** | University Courses | API | Medium | ⭐⭐⭐⭐⭐ University Partners |
 | **edX** | University Courses | API | Medium | ⭐⭐⭐⭐⭐ University Partners |
-| **Udacity** | Tech Nanodegrees | API | Medium | ⭐⭐⭐⭐⭐ Tech Focus |
 | **Pluralsight** | Tech Skills Platform | API | Medium | ⭐⭐⭐⭐⭐ Corporate Training |
 | **LinkedIn Learning** | Professional Skills | API | Medium | ⭐⭐⭐⭐⭐ Professional Network |
 | **Udemy** | Marketplace Courses | API | Medium | ⭐⭐⭐⭐ Large Marketplace |

@@ -391,6 +391,82 @@ BENCHMARKS_SOURCES_CONFIG = {
     },
 }
 
+# --- ArXiv Research Papers ---
+
+ARXIV_SOURCES_CONFIG = {
+    "papers": {
+        "path": get_data_path("arxiv", "arxiv_papers_latest.json"),
+        "name": "ArXiv Papers",
+    },
+    "machine_learning": {
+        "path": get_data_path("arxiv", "arxiv_machine_learning_latest.json"),
+        "name": "ML Papers",
+    },
+    "computer_vision": {
+        "path": get_data_path("arxiv", "arxiv_computer_vision_latest.json"),
+        "name": "Computer Vision Papers",
+    },
+    "natural_language": {
+        "path": get_data_path("arxiv", "arxiv_natural_language_latest.json"),
+        "name": "NLP Papers",
+    },
+    "reinforcement_learning": {
+        "path": get_data_path("arxiv", "arxiv_reinforcement_learning_latest.json"),
+        "name": "Reinforcement Learning Papers",
+    },
+    "robotics": {
+        "path": get_data_path("arxiv", "arxiv_robotics_latest.json"),
+        "name": "Robotics Papers",
+    },
+    "neural_networks": {
+        "path": get_data_path("arxiv", "arxiv_neural_networks_latest.json"),
+        "name": "Neural Network Papers",
+    },
+}
+
+# --- AI Platform Models ---
+
+AI_PLATFORMS_SOURCES_CONFIG = {
+    "replicate": {
+        "path": get_data_path("ai_platforms", "replicate_explore_latest.json"),
+        "name": "Replicate Models",
+    },
+}
+
+# --- Expanded Intelligence (GitHub, StackExchange, OpenAlex, etc.) ---
+
+EXPANDED_SOURCES_CONFIG = {
+    "github_analytics": {
+        "path": get_data_path("github_analytics", "output", "github_analytics_latest.json"),
+        "name": "GitHub Trending",
+    },
+    "stackexchange": {
+        "path": get_data_path("stackexchange", "output", "stackexchange_latest.json"),
+        "name": "Stack Exchange",
+    },
+    "openalex": {
+        "path": get_data_path("openalex", "output", "openalex_latest.json"),
+        "name": "OpenAlex Research",
+    },
+    "package_registry": {
+        "path": get_data_path("package_registry", "output", "packages_latest.json"),
+        "name": "Package Registry",
+    },
+    "kaggle": {
+        "path": get_data_path("kaggle", "output", "kaggle_latest.json"),
+        "name": "Kaggle Datasets",
+    },
+}
+
+# --- Spanish Public Aid ---
+
+SPANISH_AID_SOURCES_CONFIG = {
+    "public_aid": {
+        "path": get_data_path("spanish_public_aid", "output", "spanish_public_aid_latest.json"),
+        "name": "Spanish Public Aid",
+    },
+}
+
 # --- Shared Logic ---
 
 def _normalize_dedupe_text(value: Any) -> str:

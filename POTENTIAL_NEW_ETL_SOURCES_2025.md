@@ -378,7 +378,6 @@ This document catalogs **305+ potential new data sources** across **40 categorie
 | Source | API/Data Access | Value | Priority | Notes |
 |--------|----------------|-------|----------|-------|
 | **edX** | Scraping | University courses | ⭐⭐⭐⭐⭐ HIGH | Ivy League content |
-| **Udacity** | Scraping | Nanodegree programs | ⭐⭐⭐⭐ HIGH | Vocational focus |
 | **FutureLearn** | Scraping | UK-based platform | ⭐⭐⭐⭐ MEDIUM | European focus |
 | **Skillshare** | API | Creative courses | ⭐⭐⭐⭐ MEDIUM | Creative skills |
 | **Domestika** | Scraping | Spanish creative courses | ⭐⭐⭐ MEDIUM | Regional relevance |

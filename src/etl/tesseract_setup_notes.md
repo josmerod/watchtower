@@ -19,29 +19,16 @@ sudo apt-get install tesseract-ocr
 
 ## Python Dependencies
 
-### MoviePy 2.x Compatibility
-This project now uses MoviePy 2.x, which has breaking changes from MoviePy 1.x:
+### Video frame processing
+Watchtower extracts video frames with OpenCV (`cv2.VideoCapture`) rather than MoviePy.
+MoviePy was removed from the runtime dependency set because its Pillow upper bound blocked
+security updates to Pillow 12.x.
 
-#### Import Changes
-- **Old (MoviePy 1.x):** `from moviepy.editor import VideoFileClip`
-- **New (MoviePy 2.x):** `from moviepy import VideoFileClip`
-
-#### Key Differences
-- No more `moviepy.editor` module - import directly from `moviepy`
-- Methods that modify clips now start with `with_` (e.g., `.with_duration()`, `.with_position()`)
-- Methods like `.subclip()` are now `.subclipped()`
-- Effects use `.with_effects()` and import from `moviepy.video.fx`
-- Audio methods use direct multiplication for volume adjustment
-
-#### Installation
-```bash
-pip install moviepy>=2.0.0
-```
-
-### Other Dependencies
+### Dependencies
 ```bash
 pip install pytesseract>=0.3.10
-pip install pillow>=8.0.0
+pip install pillow>=12.2.0
+pip install opencv-python>=4.8.0
 pip install yt-dlp>=2024.3.10
 ```
 
@@ -77,18 +64,22 @@ custom_config = r'--oem 3 --psm 6'
 text = pytesseract.image_to_string(image, config=custom_config)
 ```
 
-### Video Frame Processing (MoviePy 2.x)
+### Video Frame Processing (OpenCV)
 ```python
-from moviepy import VideoFileClip
+import cv2
 from PIL import Image
 import pytesseract
 
-# Extract frames and perform OCR
-video = VideoFileClip('video.mp4')
-frame = video.get_frame(5)  # Get frame at 5 seconds
-image = Image.fromarray(frame)
-text = pytesseract.image_to_string(image)
-video.close()  # Always close to free resources
+# Extract one frame at 5 seconds and perform OCR
+capture = cv2.VideoCapture("video.mp4")
+capture.set(cv2.CAP_PROP_POS_MSEC, 5000)
+ok, frame_bgr = capture.read()
+if ok:
+    frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(frame_rgb)
+    text = pytesseract.image_to_string(image)
+    print(text)
+capture.release()
 ```
 
 ## Troubleshooting
@@ -103,20 +94,19 @@ video.close()  # Always close to free resources
    - Solution: Use appropriate `--psm` (Page Segmentation Mode)
    - Common values: 6 (uniform block), 8 (single word), 13 (raw line)
 
-3. **MoviePy Import Errors**
-   - Solution: Ensure MoviePy 2.x is installed
-   - Use `from moviepy import VideoFileClip` (not `from moviepy.editor`)
+3. **OpenCV cannot open video**
+   - Solution: Verify the file exists, is a supported video format, and ffmpeg/OpenCV codecs are available
 
 4. **Memory Issues with Large Videos**
    - Solution: Process frames in smaller batches
-   - Use `video.close()` to free memory after processing
+   - Use `capture.release()` to free resources after processing
 
 ## Performance Tips
 
 1. **Limit Frame Processing**: Don't process every frame, use intervals
 2. **Use Lower Quality Videos**: For OCR, video quality can be reduced
 3. **Add Processing Delays**: Be respectful to system resources
-4. **Clean Up Resources**: Always close video clips after use
+4. **Clean Up Resources**: Always release video captures after use
 
 ## Language Support
 

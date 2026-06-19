@@ -108,7 +108,6 @@ class DeduplicationEngine:
             # Course platforms
             "coursera": 86,
             "edx": 85,
-            "udacity": 83,
             # Gaming sources
             "steam": 88,
             "epic_games": 85,

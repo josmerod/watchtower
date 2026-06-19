@@ -8,8 +8,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import cv2
+import numpy as np
 import yt_dlp
-from moviepy.editor import VideoFileClip
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -247,15 +248,22 @@ class VideoService:
 
         all_extracted_text = []
         all_urls = []
-        video_clip = None
+        capture = None
         previous_frame = None
 
         try:
-            # Load video clip
-            video_clip = VideoFileClip(str(video_path))
-            duration = video_clip.duration
+            # Load video with OpenCV instead of MoviePy. This keeps the OCR path
+            # lightweight and avoids MoviePy's Pillow<12 dependency cap.
+            capture = cv2.VideoCapture(str(video_path))
+            if not capture.isOpened():
+                logger.warning(f"Could not open video {video_path}. Skipping OCR.")
+                return OCRResult(text="")
 
-            if duration is None:
+            fps = capture.get(cv2.CAP_PROP_FPS) or 0
+            frame_count = capture.get(cv2.CAP_PROP_FRAME_COUNT) or 0
+            duration = frame_count / fps if fps > 0 else 0
+
+            if duration <= 0:
                 logger.warning(f"Could not get duration for video {video_path}. Skipping OCR.")
                 return OCRResult(text="")
 
@@ -288,8 +296,13 @@ class VideoService:
                             f"({((i + 1) / len(frame_times) * 100):.1f}%)"
                         )
 
-                    # Get frame at specified time
-                    frame = video_clip.get_frame(frame_time)
+                    # Get frame at specified time (OpenCV returns BGR; OCR expects RGB).
+                    capture.set(cv2.CAP_PROP_POS_MSEC, frame_time * 1000)
+                    ok, frame_bgr = capture.read()
+                    if not ok or frame_bgr is None:
+                        logger.warning(f"Invalid frame at {frame_time}s, skipping")
+                        continue
+                    frame = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
 
                     # Ensure frame is valid
                     if frame is None or not isinstance(frame, np.ndarray):
@@ -358,12 +371,12 @@ class VideoService:
             return OCRResult(text="")
 
         finally:
-            # Always close the video clip
-            if video_clip is not None:
+            # Always close the video capture.
+            if capture is not None:
                 try:
-                    video_clip.close()
+                    capture.release()
                 except Exception as e:
-                    logger.warning(f"Error closing video clip: {e}")
+                    logger.warning(f"Error closing video capture: {e}")
 
         # Process text results
         final_text = ""
