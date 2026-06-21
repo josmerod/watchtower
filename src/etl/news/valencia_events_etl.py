@@ -12,6 +12,15 @@ from bs4 import BeautifulSoup
 from src.etl.base import BaseETL
 from src.models.base import TimestampedModel
 
+# Dynamic year matching — prevents the recurring "hardcoded year" bug.
+_NOW = datetime.now()
+_VALID_YEARS = {str(_NOW.year), str(_NOW.year + 1), str(_NOW.year - 1)}
+
+
+def _has_valid_year(text: str) -> bool:
+    """Check if text contains a plausible event year (current, next, or prev)."""
+    return any(y in text for y in _VALID_YEARS)
+
 
 class ValenciaEvent(TimestampedModel):
     """Model for Valencia events."""
@@ -116,19 +125,19 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 # Pattern 1: Look for text containing "Del" and "al"
                 for string in block.strings:
                     text = string.strip()
-                    if "Del" in text and "al" in text and ("2025" in text or "2024" in text):
+                    if "Del" in text and "al" in text and _has_valid_year(text):
                         date_candidates.append(text)
 
                 # Pattern 2: Look for text containing "Fecha:"
                 for string in block.strings:
                     text = string.strip()
-                    if "Fecha:" in text and ("2025" in text or "2024" in text):
+                    if "Fecha:" in text and _has_valid_year(text):
                         date_candidates.append(text)
 
                 # Pattern 3: Look for standalone date patterns
                 for string in block.strings:
                     text = string.strip()
-                    if re.search(r"\d{1,2}/\d{1,2}/\d{4}", text) and ("2025" in text or "2024" in text):
+                    if re.search(r"\d{1,2}/\d{1,2}/\d{4}", text) and _has_valid_year(text):
                         date_candidates.append(text)
 
                 # Use the best candidate (prefer longer, more complete date info)
@@ -196,7 +205,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             event_entries.extend(potential_entries)
 
             # Also try with HTML structure seen in the example
-            event_items = soup.find_all(lambda tag: tag.name and tag.get_text() and ("exposición" in tag.get_text().lower() or "música" in tag.get_text().lower() or "2025" in tag.get_text()))
+            event_items = soup.find_all(lambda tag: tag.name and tag.get_text() and ("exposición" in tag.get_text().lower() or "música" in tag.get_text().lower() or _has_valid_year(tag.get_text())))
 
             event_entries.extend(event_items)
 
@@ -213,7 +222,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
                     # Extract date - look for date pattern
                     date_text = ""
-                    date_element = entry.find(string=lambda t: t and isinstance(t, str) and ("Del" in t or "al" in t or "2025" in t))
+                    date_element = entry.find(string=lambda t: t and isinstance(t, str) and ("Del" in t or "al" in t or _has_valid_year(t)))
 
                     if date_element:
                         date_text = date_element.strip()
@@ -222,7 +231,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                         next_sibling = entry.next_sibling
                         while next_sibling and not date_text:
                             if hasattr(next_sibling, "text") and isinstance(next_sibling.text, str):
-                                if "Del" in next_sibling.text or "al" in next_sibling.text or "2025" in next_sibling.text:
+                                if "Del" in next_sibling.text or "al" in next_sibling.text or _has_valid_year(next_sibling.text):
                                     date_text = next_sibling.text.strip()
                             next_sibling = next_sibling.next_sibling
 
@@ -310,14 +319,14 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     for sibling in list(parent.children):
                         if sibling != heading and hasattr(sibling, "text") and isinstance(sibling.text, str):
                             sibling_text = sibling.text.strip()
-                            if "Del" in sibling_text or "al" in sibling_text or "2025" in sibling_text:
+                            if "Del" in sibling_text or "al" in sibling_text or _has_valid_year(sibling_text):
                                 date_text = sibling_text
                                 break
 
                     # If no date found, look for a date in the parent text
                     if not date_text and hasattr(parent, "text"):
                         parent_text = parent.text
-                        date_parts = [part for part in parent_text.split("\n") if "Del" in part or "al" in part or "2025" in part]
+                        date_parts = [part for part in parent_text.split("\n") if "Del" in part or "al" in part or _has_valid_year(part)]
                         if date_parts:
                             date_text = date_parts[0].strip()
 

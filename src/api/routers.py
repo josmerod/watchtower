@@ -22,6 +22,7 @@ from src.services.data_loader import (
     EXPANDED_SOURCES_CONFIG,
     SPANISH_AID_SOURCES_CONFIG,
     CLOUD_UPDATES_SOURCES_CONFIG,
+    VALENCIA_LOCAL_SOURCES_CONFIG,
     format_article_date,
     get_item_dedupe_key,
     load_data_from_file,
@@ -296,6 +297,18 @@ async def get_cloud_updates(
         logger.error(f"Error fetching cloud-updates: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/valencia-local", response_model=List[UnifiedItem])
+async def get_valencia_local(
+    source: Optional[str] = Query(None, description="Filter by source key"),
+    limit: int = Query(10000, ge=1, le=10000, description="Max items to return")
+):
+    """Get Valencia local news and transport updates."""
+    try:
+        return _load_and_process_items(VALENCIA_LOCAL_SOURCES_CONFIG, source, limit)
+    except Exception as e:
+        logger.error(f"Error fetching valencia-local: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/sources", response_model=dict)
 async def get_sources():
     """Get available sources."""
@@ -315,4 +328,5 @@ async def get_sources():
         "expanded": {k: v["name"] for k, v in EXPANDED_SOURCES_CONFIG.items()},
         "spanish_aid": {k: v["name"] for k, v in SPANISH_AID_SOURCES_CONFIG.items()},
         "cloud_updates": {k: v["name"] for k, v in CLOUD_UPDATES_SOURCES_CONFIG.items()},
+        "valencia_local": {k: v["name"] for k, v in VALENCIA_LOCAL_SOURCES_CONFIG.items()},
     }
