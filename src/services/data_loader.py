@@ -488,6 +488,15 @@ CLOUD_UPDATES_SOURCES_CONFIG = {
     },
 }
 
+# --- Valencia Local Feeds ---
+
+VALENCIA_LOCAL_SOURCES_CONFIG = {
+    "valencia_local": {
+        "path": get_data_path("valencia_local", "valencia_local_latest.json"),
+        "name": "Valencia Local (20minutos CV, Metro VLC)",
+    },
+}
+
 # --- Shared Logic ---
 
 def _normalize_dedupe_text(value: Any) -> str:

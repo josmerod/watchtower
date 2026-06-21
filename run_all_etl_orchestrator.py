@@ -30,6 +30,7 @@ ETL_SCRIPTS = [
     "src/etl/news/valencia_events_etl.py",  # Feeds dashboard Valencia Events tab
     "src/etl/news/news_get_spanish_tech.py",  # Xataka, Hipertextual, Genbeta
     "src/etl/news/news_get_cloud_updates.py",  # AWS, GCP, CNCF, GitHub Blog
+    "src/etl/news/news_get_valencia_local.py",  # 20minutos CV, Metro Valencia
     
     # Reddit
     "src/etl/news/reddit_unified_etl.py",
