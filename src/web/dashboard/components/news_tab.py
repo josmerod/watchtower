@@ -14,11 +14,20 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from src.services.data_loader import (
     NEWS_SOURCES_CONFIG,
+    CLOUD_UPDATES_SOURCES_CONFIG,
+    VALENCIA_LOCAL_SOURCES_CONFIG,
     load_data_from_file,
     parse_date,
     get_sortable_date,
     format_article_date as format_article_date_shared,
 )
+
+# Merge the extra source configs so the news tab can render them as subtabs
+_ALL_NEWS_SOURCES = {
+    **NEWS_SOURCES_CONFIG,
+    **CLOUD_UPDATES_SOURCES_CONFIG,
+    **VALENCIA_LOCAL_SOURCES_CONFIG,
+}
 from src.web.dashboard.components.recommendations_tab import recommendations_manager
 from src.web.dashboard.search_utils import (
     create_search_input,
@@ -53,7 +62,7 @@ def get_all_news_data():
     except NameError:
         pass
 
-    data = {source_key: load_data_from_file(config["path"]) for source_key, config in NEWS_SOURCES_CONFIG.items()}
+    data = {source_key: load_data_from_file(config["path"]) for source_key, config in _ALL_NEWS_SOURCES.items()}
     _NEWS_CACHE = {"ts": now, "data": data}
     return data
 
@@ -84,7 +93,7 @@ def create_news_source_tab_content(source_keys, combined_name=None):
     all_articles_for_tab = []
     if isinstance(source_keys, str):  # Single source key
         source_keys = [source_keys]
-        source_display_name = NEWS_SOURCES_CONFIG[source_keys[0]]["name"]
+        source_display_name = _ALL_NEWS_SOURCES[source_keys[0]]["name"]
         tab_search_id = f"news-search-{source_keys[0]}"
     else:  # List of source keys (for combined tabs)
         source_display_name = combined_name or "Combined News"
@@ -98,7 +107,7 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         # Add source name to each article for display in the table
         for article in articles_from_source:
             # Use 'source_display' to ensure we have a consistent field for the table
-            article["source_display_name"] = article.get("source", NEWS_SOURCES_CONFIG[key]["name"])
+            article["source_display_name"] = article.get("source", _ALL_NEWS_SOURCES[key]["name"])
         all_articles_for_tab.extend(articles_from_source)
 
     # Sort all articles by date (descending)
@@ -303,7 +312,7 @@ def register_news_search_callbacks(app):
                         source_articles = all_news_data[key]
                         # Enrich with source display name
                         for art in source_articles:
-                            art["source_display_name"] = NEWS_SOURCES_CONFIG[key]["name"]
+                            art["source_display_name"] = _ALL_NEWS_SOURCES[key]["name"]
                         articles_data.extend(source_articles)
                     else:
                         # Try swapping dash to underscore just in case
@@ -312,7 +321,7 @@ def register_news_search_callbacks(app):
                             source_articles = all_news_data[alt_key]
                              # Enrich with source display name
                             for art in source_articles:
-                                art["source_display_name"] = NEWS_SOURCES_CONFIG[alt_key]["name"]
+                                art["source_display_name"] = _ALL_NEWS_SOURCES[alt_key]["name"]
                             articles_data.extend(source_articles)
                 
                 if not articles_data:
@@ -565,6 +574,9 @@ def render_news_tab():
         {"label": "Kagi Europe", "keys": "kagi_europe", "id": "kagi_europe"},
         {"label": "Kagi Spain", "keys": "kagi_spain", "id": "kagi_spain"},
         {"label": "Microsiervos", "keys": "microsiervos", "id": "microsiervos"},
+        {"label": "🇪🇸 Spanish Tech", "keys": "spanish_tech", "id": "spanish_tech"},
+        {"label": "☁️ Cloud Updates", "keys": "cloud_updates", "id": "cloud_updates"},
+        {"label": "📍 Valencia Local", "keys": "valencia_local", "id": "valencia_local"},
     ]
 
     tabs_children = []
