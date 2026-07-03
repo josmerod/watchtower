@@ -1,11 +1,19 @@
 """Sync project tasks to Coda.io (Live Update with Deduplication)."""
 
 import json
-import requests
+import os
 import sys
 
-# Configuration
-API_KEY = "REDACTED_CODA_API_KEY"
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Configuration — read CODA_API_KEY from .env (see .env.example).
+API_KEY = os.getenv("CODA_API_KEY")
+if not API_KEY:
+    print("Error: CODA_API_KEY must be set in .env file")
+    sys.exit(1)
 BASE_URL = "https://coda.io/apis/v1"
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 
@@ -18,7 +26,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "5",
         "Epic": "Epic 8",
         "Description": "Product Hunt, Reddit quality filters, Developer News tab, UI cleanup, Arxiv fixes.",
-        "Priority": "High"
+        "Priority": "High",
     },
     {
         "ID": "8.9.1",
@@ -27,7 +35,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Implemented Playwright scraper for Product Hunt to bypass 403 errors.",
-        "Priority": "High"
+        "Priority": "High",
     },
     {
         "ID": "8.9.2",
@@ -36,7 +44,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "2",
         "Epic": "Epic 8",
         "Description": "Added score (>=10) and stickied filters to Reddit ETL.",
-        "Priority": "Medium"
+        "Priority": "Medium",
     },
     {
         "ID": "8.9.3",
@@ -45,26 +53,10 @@ TASKS_TO_UPDATE = [
         "Story Points": "5",
         "Epic": "Epic 8",
         "Description": "Implemented dedicated tab for developer news (Product Hunt, Reddit, etc.) with search.",
-        "Priority": "High"
+        "Priority": "High",
     },
-    {
-        "ID": "8.9.4",
-        "Title": "UI Cleanup",
-        "Status": "Done",
-        "Story Points": "1",
-        "Epic": "Epic 8",
-        "Description": "Removed unused tabs (Intelligence, AI Research) to declutter UI.",
-        "Priority": "Low"
-    },
-    {
-        "ID": "8.9.5",
-        "Title": "Arxiv Watcher Fix",
-        "Status": "Done",
-        "Story Points": "2",
-        "Epic": "Epic 8",
-        "Description": "Fixed Arxiv API query errors by removing submittedDate filter.",
-        "Priority": "High"
-    },
+    {"ID": "8.9.4", "Title": "UI Cleanup", "Status": "Done", "Story Points": "1", "Epic": "Epic 8", "Description": "Removed unused tabs (Intelligence, AI Research) to declutter UI.", "Priority": "Low"},
+    {"ID": "8.9.5", "Title": "Arxiv Watcher Fix", "Status": "Done", "Story Points": "2", "Epic": "Epic 8", "Description": "Fixed Arxiv API query errors by removing submittedDate filter.", "Priority": "High"},
     # Epic 8.10: Technology Startup Intelligence - COMPLETED ✅
     {
         "ID": "8.10",
@@ -73,7 +65,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "8",
         "Epic": "Epic 8",
         "Description": "Comprehensive startup tracking including TechCrunch, Product Hunt, and AI analysis.",
-        "Priority": "High"
+        "Priority": "High",
     },
     {
         "ID": "8.10.1",
@@ -82,7 +74,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Implemented StartupIntelligenceETL with TechCrunch and Product Hunt scrapers.",
-        "Priority": "High"
+        "Priority": "High",
     },
     {
         "ID": "8.10.2",
@@ -91,7 +83,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Created dashboard tab for Startups with AI-enriched analysis and filtering.",
-        "Priority": "High"
+        "Priority": "High",
     },
     {
         "ID": "8.10.3",
@@ -100,7 +92,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Integrated Gemini Flash 2.0 for categorizing and scoring startup news.",
-        "Priority": "Medium"
+        "Priority": "Medium",
     },
     # Epic 8.11: Open Source Project Intelligence - COMPLETED ✅
     {
@@ -110,7 +102,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "8",
         "Epic": "Epic 8",
         "Description": "GitHub Trending aggregation across key languages with AI insights.",
-        "Priority": "High"
+        "Priority": "High",
     },
     {
         "ID": "8.11.1",
@@ -119,7 +111,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Implemented Playwright scraper for GitHub Trending (Daily/Weekly).",
-        "Priority": "High"
+        "Priority": "High",
     },
     {
         "ID": "8.11.2",
@@ -128,7 +120,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Created dashboard tab with language filtering and star sorting.",
-        "Priority": "High"
+        "Priority": "High",
     },
     {
         "ID": "8.11.3",
@@ -137,7 +129,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "2",
         "Epic": "Epic 8",
         "Description": "Automated categorization and summary generation for repos.",
-        "Priority": "Medium"
+        "Priority": "Medium",
     },
     # Epic 7: Technical Debt & Performance - PENDING 📋
     {
@@ -147,7 +139,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "5",
         "Epic": "Epic 7",
         "Description": "Implement circuit breaker pattern for failing ETLs to prevent resource exhaustion and repeated failures.",
-        "Priority": "High"
+        "Priority": "High",
     },
     {
         "ID": "7.2",
@@ -156,7 +148,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "5",
         "Epic": "Epic 7",
         "Description": "Integrate proxy rotation for 403-prone extractors (Podcasts, Humble) to improve reliability.",
-        "Priority": "High"
+        "Priority": "High",
     },
     # Epic 8: Additional Intelligence Sources - PENDING 📋
     {
@@ -166,7 +158,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "3",
         "Epic": "Epic 8",
         "Description": "Add Lobste.rs as a new data source for developer news, similar to HackerNews.",
-        "Priority": "Medium"
+        "Priority": "Medium",
     },
     {
         "ID": "8.13",
@@ -175,7 +167,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "5",
         "Epic": "Epic 8",
         "Description": "Generate a weekly summary email of top-rated content using Gemini AI enrichment.",
-        "Priority": "Medium"
+        "Priority": "Medium",
     },
     # Epic 2: Personalized Intelligence Hub - PENDING 📋
     {
@@ -185,7 +177,7 @@ TASKS_TO_UPDATE = [
         "Story Points": "8",
         "Epic": "Epic 2",
         "Description": "Implement unified global search page searching across all intelligence domains (Videos, News, Papers).",
-        "Priority": "High"
+        "Priority": "High",
     },
     # Epic 9: Maintenance & Cleanup - IN PROGRESS 🏗️
     {
@@ -195,27 +187,12 @@ TASKS_TO_UPDATE = [
         "Story Points": "2",
         "Epic": "Epic 9",
         "Description": "Removed temporary debug files, logs, and unused artifacts from project root.",
-        "Priority": "Medium"
+        "Priority": "Medium",
     },
-    {
-        "ID": "9.2",
-        "Title": "Script Organization",
-        "Status": "Done",
-        "Story Points": "2",
-        "Epic": "Epic 9",
-        "Description": "Moved deployment and utility scripts to `scripts/` directory.",
-        "Priority": "Low"
-    },
-    {
-        "ID": "9.3",
-        "Title": "Deprecated Code Removal",
-        "Status": "In Progress",
-        "Story Points": "3",
-        "Epic": "Epic 9",
-        "Description": "Identify and remove unused code in `src` and tests.",
-        "Priority": "Medium"
-    }
+    {"ID": "9.2", "Title": "Script Organization", "Status": "Done", "Story Points": "2", "Epic": "Epic 9", "Description": "Moved deployment and utility scripts to `scripts/` directory.", "Priority": "Low"},
+    {"ID": "9.3", "Title": "Deprecated Code Removal", "Status": "In Progress", "Story Points": "3", "Epic": "Epic 9", "Description": "Identify and remove unused code in `src` and tests.", "Priority": "Medium"},
 ]
+
 
 def list_docs():
     response = requests.get(f"{BASE_URL}/docs", headers=HEADERS)
@@ -224,6 +201,7 @@ def list_docs():
     print(f"Error listing docs: {response.text}")
     return []
 
+
 def list_tables(doc_id):
     response = requests.get(f"{BASE_URL}/docs/{doc_id}/tables", headers=HEADERS)
     if response.status_code == 200:
@@ -231,11 +209,12 @@ def list_tables(doc_id):
     print(f"Error listing tables: {response.text}")
     return []
 
+
 def find_column_mapping(doc_id, table_id, keys):
     response = requests.get(f"{BASE_URL}/docs/{doc_id}/tables/{table_id}/columns", headers=HEADERS)
     if response.status_code != 200:
         return {}
-    
+
     columns = response.json().get("items", [])
     print(f"DEBUG: Available columns in Coda: {[c['name'] for c in columns]}")
     mapping = {}
@@ -246,31 +225,34 @@ def find_column_mapping(doc_id, table_id, keys):
                 break
     return mapping
 
+
 def list_rows(doc_id, table_id, limit=500):
     """List rows from the table."""
     url = f"{BASE_URL}/docs/{doc_id}/tables/{table_id}/rows"
-    params = {"limit": limit} # Adjust if more rows needed
+    params = {"limit": limit}  # Adjust if more rows needed
     response = requests.get(url, headers=HEADERS, params=params)
     if response.status_code == 200:
         return response.json().get("items", [])
     print(f"Error listing rows: {response.text}")
     return []
 
+
 def delete_rows(doc_id, table_id, row_ids):
     """Delete rows by ID."""
     if not row_ids:
         return
-    
+
     url = f"{BASE_URL}/docs/{doc_id}/tables/{table_id}/rows"
     payload = {"rowIds": row_ids}
-    
+
     print(f"Deleting {len(row_ids)} rows...")
     response = requests.delete(url, headers=HEADERS, json=payload)
-    
+
     if response.status_code in [200, 202]:
         print("Deletion successful.")
     else:
         print(f"Failed to delete rows: {response.text}")
+
 
 def upsert_rows(doc_id, table_id, rows, mapping, key_columns):
     """Upsert rows manually (insert)."""
@@ -281,25 +263,26 @@ def upsert_rows(doc_id, table_id, rows, mapping, key_columns):
             if key in mapping:
                 cells.append({"column": mapping[key], "value": value})
         coda_rows.append({"cells": cells})
-        
+
     payload = {"rows": coda_rows}
-    
+
     url = f"{BASE_URL}/docs/{doc_id}/tables/{table_id}/rows"
     print(f"Inserting {len(rows)} rows to {url}...")
-    
+
     response = requests.post(url, headers=HEADERS, json=payload)
     if response.status_code in [200, 202]:
         print("Success!")
     else:
         print(f"Failed: {response.text}")
 
+
 def clean_and_sync(doc_id, table_id, tasks, mapping):
     """Delete existing entries for these tasks, then insert fresh."""
-    
+
     # 1. Get existing rows
     print("Fetching existing rows to check for duplicates...")
     existing_rows = list_rows(doc_id, table_id)
-    
+
     # 2. Find column ID for "ID"
     id_col_id = mapping.get("ID")
     if not id_col_id:
@@ -310,45 +293,46 @@ def clean_and_sync(doc_id, table_id, tasks, mapping):
     # We delete ALL instances matching our current task IDs to ensure clean state
     task_ids_to_reset = {t["ID"] for t in tasks}
     rows_to_delete = []
-    
+
     for row in existing_rows:
         # Find the value of the ID column in this row
         row_task_id = None
         if "values" in row:
-             row_task_id = row["values"].get(id_col_id)
-        
+            row_task_id = row["values"].get(id_col_id)
+
         # Checking if the row's ID matches one of our target IDs
         if row_task_id and str(row_task_id) in task_ids_to_reset:
             rows_to_delete.append(row["id"])
-            
+
     if rows_to_delete:
         print(f"Found {len(rows_to_delete)} older/duplicate instances of these tasks.")
         delete_rows(doc_id, table_id, rows_to_delete)
     else:
         print("No duplicates found to delete.")
-        
+
     # 4. Insert Fresh
     upsert_rows(doc_id, table_id, tasks, mapping, ["ID"])
+
 
 def main():
     print("Connecting to Coda...")
     docs = list_docs()
     target_doc = next((d for d in docs if "Watchtower" in d["name"]), None)
-    
+
     if not target_doc:
         target_doc = next((d for d in docs if "Project" in d["name"]), None)
-        
+
     if not target_doc:
         print("Could not find Watchtower Project Doc.")
         return
 
     print(f"Using Doc: {target_doc['name']}")
-    
+
     tables = list_tables(target_doc["id"])
     print(f"DEBUG: All tables: {[t['name'] for t in tables]}")
-    
+
     target_table = next((t for t in tables if "Tasks" in t["name"] or "Stories" in t["name"]), None)
-    
+
     if not target_table:
         if tables:
             target_table = tables[0]
@@ -358,20 +342,20 @@ def main():
             return
 
     print(f"Using Table: {target_table['name']}")
-    
+
     # Check if this is the simple "To-do list" table
-    if target_table['name'] == 'To-do list':
+    if target_table["name"] == "To-do list":
         print("Detected simple 'To-do list' table. Adapting data model...")
-        
+
         # Simplified mapping for this specific table
         # We need to manually map our rich keys to the simple columns: 'Task', '✅', 'Due', 'Assignee'
         # First, let's find the column IDs for 'Task' and '✅'
         col_response = requests.get(f"{BASE_URL}/docs/{target_doc['id']}/tables/{target_table['id']}/columns", headers=HEADERS)
         cols = col_response.json().get("items", [])
-        
-        task_col_id = next((c['id'] for c in cols if c['name'] == 'Task'), None)
-        done_col_id = next((c['id'] for c in cols if c['name'] == '✅'), None)
-        
+
+        task_col_id = next((c["id"] for c in cols if c["name"] == "Task"), None)
+        done_col_id = next((c["id"] for c in cols if c["name"] == "✅"), None)
+
         if not task_col_id:
             print("Error: Could not find 'Task' column.")
             return
@@ -385,18 +369,15 @@ def main():
         for t in TASKS_TO_UPDATE:
             # Format: "ID: Title (Epic) - Description"
             task_text = f"{t['ID']}: {t['Title']} [{t['Epic']}] - {t['Description']}"
-            simple_tasks.append({
-                "Task": task_text,
-                "Checkbox": t["Status"] == "Done"
-            })
-            
+            simple_tasks.append({"Task": task_text, "Checkbox": t["Status"] == "Done"})
+
         # Custom clean and sync for simple table
         print("Fetching existing rows...")
         existing_rows = list_rows(target_doc["id"], target_table["id"])
-        
+
         rows_to_delete = []
-        task_ids = {t['ID'] for t in TASKS_TO_UPDATE}
-        
+        task_ids = {t["ID"] for t in TASKS_TO_UPDATE}
+
         for row in existing_rows:
             if "values" in row and task_col_id in row["values"]:
                 val = row["values"][task_col_id]
@@ -406,11 +387,11 @@ def main():
                     row_task_id = val.split(":")[0].strip()
                     if row_task_id in task_ids:
                         rows_to_delete.append(row["id"])
-        
+
         if rows_to_delete:
             print(f"Deleting {len(rows_to_delete)} existing rows...")
             delete_rows(target_doc["id"], target_table["id"], rows_to_delete)
-            
+
         # Insert
         upsert_rows(target_doc["id"], target_table["id"], simple_tasks, mapping, ["Task", "Checkbox"])
 
@@ -419,6 +400,7 @@ def main():
         mapping = find_column_mapping(target_doc["id"], target_table["id"], TASKS_TO_UPDATE[0].keys())
         print(f"Mapped columns: {list(mapping.keys())}")
         clean_and_sync(target_doc["id"], target_table["id"], TASKS_TO_UPDATE, mapping)
+
 
 if __name__ == "__main__":
     main()

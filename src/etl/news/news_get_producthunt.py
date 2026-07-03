@@ -21,15 +21,14 @@ from src.utils.logging import get_logger
 # Initialize logger
 logger = get_logger("ProductHuntETL")
 
+
 class ProductHuntETL:
     def __init__(self):
         self.api_token = os.getenv("PRODUCTHUNT_API_TOKEN")
         self.api_url = "https://api.producthunt.com/v2/api/graphql"
         self.rss_url = "https://www.producthunt.com/feed"
         self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "WatchtowerBot/1.0 (https://josmerod.es; REDACTED_EMAIL)"
-        })
+        self.session.headers.update({"User-Agent": "WatchtowerBot/1.0 (https://github.com/josmerod/watchtower)"})
 
     def fetch_via_graphql(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Fetch products using the official GraphQL API."""
@@ -56,16 +55,14 @@ class ProductHuntETL:
                 }
             }
         }
-        """ % (datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), limit)
+        """ % (
+            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            limit,
+        )
 
         try:
             logger.info("Fetching Product Hunt data via GraphQL API")
-            resp = self.session.post(
-                self.api_url,
-                headers={"Authorization": f"Bearer {self.api_token}", "Content-Type": "application/json"},
-                json={"query": query},
-                timeout=30
-            )
+            resp = self.session.post(self.api_url, headers={"Authorization": f"Bearer {self.api_token}", "Content-Type": "application/json"}, json={"query": query}, timeout=30)
             resp.raise_for_status()
             data = resp.json()
 
@@ -77,17 +74,19 @@ class ProductHuntETL:
             for edge in data.get("data", {}).get("posts", {}).get("edges", []):
                 node = edge.get("node", {})
                 topics = [t.get("name") for t in node.get("topics", []) if t.get("name")]
-                products.append({
-                    "name": node.get("name", "").strip(),
-                    "tagline": node.get("tagline", ""),
-                    "url": node.get("url", ""),
-                    "website": node.get("website", ""),
-                    "votes": node.get("votesCount", 0),
-                    "comments": node.get("commentsCount", 0),
-                    "thumbnail": "",  # GraphQL doesn't provide thumbnail in this query
-                    "category": ", ".join(topics) if topics else "general",
-                    "created_at": node.get("createdAt"),
-                })
+                products.append(
+                    {
+                        "name": node.get("name", "").strip(),
+                        "tagline": node.get("tagline", ""),
+                        "url": node.get("url", ""),
+                        "website": node.get("website", ""),
+                        "votes": node.get("votesCount", 0),
+                        "comments": node.get("commentsCount", 0),
+                        "thumbnail": "",  # GraphQL doesn't provide thumbnail in this query
+                        "category": ", ".join(topics) if topics else "general",
+                        "created_at": node.get("createdAt"),
+                    }
+                )
             logger.info(f"Fetched {len(products)} products via GraphQL")
             return products
         except Exception as e:
@@ -103,6 +102,7 @@ class ProductHuntETL:
 
             # Simple RSS parsing (we could use feedparser but avoid extra dep)
             import xml.etree.ElementTree as ET
+
             root = ET.fromstring(resp.content)
 
             products = []
@@ -116,17 +116,19 @@ class ProductHuntETL:
                 votes = 0
                 # TODO: could parse from description if format known
 
-                products.append({
-                    "name": title,
-                    "tagline": description,
-                    "url": link,
-                    "website": link,  # RSS doesn't separate website
-                    "votes": votes,
-                    "comments": 0,
-                    "thumbnail": "",
-                    "category": "general",
-                    "created_at": pub_date,
-                })
+                products.append(
+                    {
+                        "name": title,
+                        "tagline": description,
+                        "url": link,
+                        "website": link,  # RSS doesn't separate website
+                        "votes": votes,
+                        "comments": 0,
+                        "thumbnail": "",
+                        "category": "general",
+                        "created_at": pub_date,
+                    }
+                )
             logger.info(f"Fetched {len(products)} products via RSS")
             return products
         except Exception as e:
@@ -141,6 +143,7 @@ class ProductHuntETL:
             products = self.fetch_via_rss(limit)
         return products
 
+
 def process_data(raw_products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Process raw scraped data into final format."""
     processed = []
@@ -153,47 +156,50 @@ def process_data(raw_products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             if name and name[0].isdigit() and ". " in name[:4]:
                 name = name.split(". ", 1)[1]
 
-            processed.append({
-                "id": f"ph_product_{i}",
-                "name": name,
-                "tagline": p["tagline"],
-                "description": p["tagline"],
-                "url": p["url"],
-                "website": p["website"],
-                "slug": p["url"].split("/products/")[-1] if "/products/" in p["url"] else p["url"].split("/posts/")[-1] if "/posts/" in p["url"] else "unknown",
-                "votes_count": p["votes"],
-                "comments_count": p["comments"],
-                "reviews_count": 0,
-                "reviews_rating": 0.0,
-                "featured_at": current_time,
-                "created_at": p.get("created_at", current_time),
-                "updated_at": current_time,
-                "thumbnail_url": p["thumbnail"],
-                "gallery_images": [],
-                "topics": [p["category"]] if p["category"] != "general" else [],
-                "makers": [],
-                "hunters": [],
-                "product_links": [{"type": "website", "url": p["url"]}] if p["website"] else [],
-                "category": p["category"],
-                "mock_data": False,
-                "fetched_at": current_time,
-                "platform": "product_hunt",
-                "days_since_launch": 0,
-                "engagement_score": p["votes"],
-                "launch_success_score": p["votes"],
-                "potential_score": p["votes"] * 0.5,
-                "freshness_factor": 1.0,
-                "popularity_category": "viral" if p["votes"] > 1000 else "high" if p["votes"] > 500 else "medium",
-                "launch_phase": "launch_day",
-                "primary_category": p["category"],
-                "innovation_level": "standard",
-                "data_source": "product_hunt_graphql" if p.get("_source") == "graphql" else "product_hunt_rss"
-            })
+            processed.append(
+                {
+                    "id": f"ph_product_{i}",
+                    "name": name,
+                    "tagline": p["tagline"],
+                    "description": p["tagline"],
+                    "url": p["url"],
+                    "website": p["website"],
+                    "slug": p["url"].split("/products/")[-1] if "/products/" in p["url"] else p["url"].split("/posts/")[-1] if "/posts/" in p["url"] else "unknown",
+                    "votes_count": p["votes"],
+                    "comments_count": p["comments"],
+                    "reviews_count": 0,
+                    "reviews_rating": 0.0,
+                    "featured_at": current_time,
+                    "created_at": p.get("created_at", current_time),
+                    "updated_at": current_time,
+                    "thumbnail_url": p["thumbnail"],
+                    "gallery_images": [],
+                    "topics": [p["category"]] if p["category"] != "general" else [],
+                    "makers": [],
+                    "hunters": [],
+                    "product_links": [{"type": "website", "url": p["url"]}] if p["website"] else [],
+                    "category": p["category"],
+                    "mock_data": False,
+                    "fetched_at": current_time,
+                    "platform": "product_hunt",
+                    "days_since_launch": 0,
+                    "engagement_score": p["votes"],
+                    "launch_success_score": p["votes"],
+                    "potential_score": p["votes"] * 0.5,
+                    "freshness_factor": 1.0,
+                    "popularity_category": "viral" if p["votes"] > 1000 else "high" if p["votes"] > 500 else "medium",
+                    "launch_phase": "launch_day",
+                    "primary_category": p["category"],
+                    "innovation_level": "standard",
+                    "data_source": "product_hunt_graphql" if p.get("_source") == "graphql" else "product_hunt_rss",
+                }
+            )
         except Exception as e:
             logger.warning(f"Error processing item {i}: {e}")
             continue
 
     return processed
+
 
 def main():
     try:
@@ -226,6 +232,7 @@ def main():
     except Exception as e:
         logger.error(f"ETL failed: {e}")
         raise
+
 
 if __name__ == "__main__":
     main()

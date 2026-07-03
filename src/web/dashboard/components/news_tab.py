@@ -256,12 +256,10 @@ def register_news_search_callbacks(app):
     """Register search callbacks for all news tabs."""
     # Get all unique search IDs from the tab definitions
     search_ids = [
-        "news-search-techcrunch",
-        "news-search-venturebeat",
+        "news-search-techcrunch-venturebeat-arstechnica-kagi_ai",
         "news-search-freecodecamp",
         "news-search-google_ai_blog",
         "news-search-lobsters",
-        "news-search-arstechnica",
         "news-search-futuretools-bensbites",
         "news-search-hackernews",
         "news-search-medium_genai",
@@ -274,7 +272,6 @@ def register_news_search_callbacks(app):
         "news-search-kagi_business",
         "news-search-kagi_science",
         "news-search-kagi_gaming",
-        "news-search-kagi_ai",
         "news-search-kagi_europe",
         "news-search-kagi_spain",
         "news-search-microsiervos",
@@ -547,12 +544,14 @@ def register_news_search_callbacks(app):
 def render_news_tab():
     """Render the complete news tab with all sub-tabs."""
     tab_definitions = [
-        {"label": "TechCrunch", "keys": "techcrunch", "id": "tc"},
-        {"label": "VentureBeat", "keys": "venturebeat", "id": "vb"},
+        {
+            "label": "Top Tech",
+            "keys": ["techcrunch", "venturebeat", "arstechnica", "kagi_ai"],
+            "id": "top_tech",
+        },
         {"label": "freeCodeCamp", "keys": "freecodecamp", "id": "fcc"},
         {"label": "Google AI Blog", "keys": "google_ai_blog", "id": "gaib"},
         {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"},
-        {"label": "Ars Technica", "keys": "arstechnica", "id": "ars"},
         {
             "label": "FutureTools & Ben's Bites",
             "keys": ["futuretools", "bensbites"],
@@ -570,7 +569,6 @@ def render_news_tab():
         {"label": "Kagi Business", "keys": "kagi_business", "id": "kagi_business"},
         {"label": "Kagi Science", "keys": "kagi_science", "id": "kagi_science"},
         {"label": "Kagi Gaming", "keys": "kagi_gaming", "id": "kagi_gaming"},
-        {"label": "Kagi AI", "keys": "kagi_ai", "id": "kagi_ai"},
         {"label": "Kagi Europe", "keys": "kagi_europe", "id": "kagi_europe"},
         {"label": "Kagi Spain", "keys": "kagi_spain", "id": "kagi_spain"},
         {"label": "Microsiervos", "keys": "microsiervos", "id": "microsiervos"},

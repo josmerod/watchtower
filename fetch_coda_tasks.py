@@ -1,13 +1,21 @@
-
 import json
-import requests
+import os
 import sys
 from collections import defaultdict
 
-# Configuration from sync_to_coda.py
-API_KEY = "REDACTED_CODA_API_KEY"
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Configuration — read CODA_API_KEY from .env (see .env.example).
+API_KEY = os.getenv("CODA_API_KEY")
+if not API_KEY:
+    print("Error: CODA_API_KEY must be set in .env file")
+    sys.exit(1)
 BASE_URL = "https://coda.io/apis/v1"
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
+
 
 def list_docs():
     response = requests.get(f"{BASE_URL}/docs", headers=HEADERS)
@@ -16,6 +24,7 @@ def list_docs():
     print(f"Error listing docs: {response.text}")
     return []
 
+
 def list_tables(doc_id):
     response = requests.get(f"{BASE_URL}/docs/{doc_id}/tables", headers=HEADERS)
     if response.status_code == 200:
@@ -23,11 +32,13 @@ def list_tables(doc_id):
     print(f"Error listing tables: {response.text}")
     return []
 
+
 def get_columns(doc_id, table_id):
     response = requests.get(f"{BASE_URL}/docs/{doc_id}/tables/{table_id}/columns", headers=HEADERS)
     if response.status_code != 200:
         return []
     return response.json().get("items", [])
+
 
 def list_rows(doc_id, table_id, limit=2000):
     url = f"{BASE_URL}/docs/{doc_id}/tables/{table_id}/rows"
@@ -37,6 +48,7 @@ def list_rows(doc_id, table_id, limit=2000):
         return response.json().get("items", [])
     print(f"Error listing rows: {response.text}")
     return []
+
 
 def delete_rows(doc_id, table_id, row_ids):
     if not row_ids:
@@ -50,22 +62,23 @@ def delete_rows(doc_id, table_id, row_ids):
     else:
         print(f"Failed to delete rows: {response.text}")
 
+
 def main():
     print("Connecting to Coda...")
     docs = list_docs()
     target_doc = next((d for d in docs if "Watchtower" in d["name"]), None)
     if not target_doc:
         target_doc = next((d for d in docs if "Project" in d["name"]), None)
-    
+
     if not target_doc:
         print("Could not find Watchtower Project Doc.")
         return
 
     print(f"Using Doc: {target_doc['name']}")
-    
+
     tables = list_tables(target_doc["id"])
     target_table = next((t for t in tables if "Tasks" in t["name"] or "Stories" in t["name"]), None)
-    
+
     if not target_table:
         if tables:
             target_table = tables[0]
@@ -75,11 +88,11 @@ def main():
             return
 
     print(f"Using Table: {target_table['name']}")
-    
+
     # Get columns to map ID, Title, Status
     columns = get_columns(target_doc["id"], target_table["id"])
     col_map = {c["name"]: c["id"] for c in columns}
-    
+
     id_col = col_map.get("ID")
     title_col = col_map.get("Title") or col_map.get("Task Name") or col_map.get("Name")
     status_col = col_map.get("Status")
@@ -98,7 +111,7 @@ def main():
     for row in rows:
         values = row.get("values", {})
         task_id_val = values.get(id_col)
-        
+
         # Capture task details for display
         task_data = {
             "row_id": row["id"],
@@ -106,11 +119,11 @@ def main():
             "title": values.get(title_col, "Unknown Title"),
             "status": values.get(status_col, "Unknown Status"),
             "priority": values.get(priority_col, "Unknown Priority"),
-            "index": row["index"] # Keep track of order/recency if available
+            "index": row["index"],  # Keep track of order/recency if available
         }
-        
-        if task_id_val: # Only group if ID exists
-             tasks_by_id[str(task_id_val)].append(task_data)
+
+        if task_id_val:  # Only group if ID exists
+            tasks_by_id[str(task_id_val)].append(task_data)
 
     # Identify duplicates
     duplicates_to_delete = []
@@ -122,18 +135,18 @@ def main():
             # Or just keep the first one found?
             # Let's keep the one with the most complete info?
             # For now, let's keep the one with the highest 'index' (usually latest added) or lowest (original)?
-            # Coda API 'index' might not be reliable for recency. 
+            # Coda API 'index' might not be reliable for recency.
             # Let's keep the first one and delete the rest.
-            
+
             # Actually, standard behavior is usually "keep latest", but sometimes duplicates are partial.
             # I'll keep the first one in the list returned by API unless I have reason not to.
             # Let's arbitrary keep the one with the LOWEST index (top of table) or HIGHEST?
             # Let's simply keep the first one in the list (index 0) and delete others (index 1+)
-            
+
             keep = task_list[0]
             for dupe in task_list[1:]:
                 duplicates_to_delete.append(dupe["row_id"])
-            
+
             unique_tasks.append(keep)
         else:
             unique_tasks.append(task_list[0])
@@ -150,11 +163,12 @@ def main():
         f.write("--- Available Tasks ---\n")
         # Sort by ID
         unique_tasks.sort(key=lambda x: str(x["id"]))
-        
+
         for t in unique_tasks:
             line = f"[{t['id']}] {t['title']} (Status: {t['status']}, Priority: {t['priority']})"
             print(line)
             f.write(line + "\n")
+
 
 if __name__ == "__main__":
     main()
