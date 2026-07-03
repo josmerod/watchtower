@@ -32,14 +32,14 @@ dependencies = [
     "python-dateutil>=2.9.0.post0",
     # Data validation and configuration
     "pydantic>=2.11.5",
-    "pydantic-settings>=2.9.1",
+    "pydantic-settings>=2.14.2",
     # Web scraping and API interaction
     "requests>=2.33.0",
     "beautifulsoup4>=4.13.3",
     "playwright>=1.51.0",
     "feedparser>=6.0.11",
-    "aiohttp>=3.13.4",
-    "yt-dlp>=2026.3.17",
+    "aiohttp>=3.14.1",
+    "yt-dlp>=2026.6.9",
     "cloudscraper>=1.2.60",
     # Web framework and UI
     "plotly>=5.0.0",
