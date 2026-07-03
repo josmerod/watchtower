@@ -1,0 +1,76 @@
+{
+  "_comment": "Template for duce-cli-settings.json. Copy to duce-cli-settings.json (gitignored) and fill in real values. Never commit the real file.",
+  "email": "YOUR_EMAIL@example.com",
+  "password": "YOUR_UDEMY_PASSWORD",
+  "use_browser_cookies": false,
+  "stay_logged_in": {
+    "auto": false,
+    "manual": false
+  },
+  "categories": {
+    "business": true,
+    "design": true,
+    "development": true,
+    "finance": true,
+    "health-fitness": true,
+    "it-software": true,
+    "lifestyle": true,
+    "marketing": true,
+    "music": true,
+    "office-productivity": true,
+    "personal-development": true,
+    "photography": true,
+    "teaching": true
+  },
+  "languages": {
+    "ar": false,
+    "zh": false,
+    "nl": false,
+    "en": true,
+    "fr": false,
+    "de": false,
+    "hi": false,
+    "it": true,
+    "ja": true,
+    "ko": false,
+    "pl": false,
+    "pt": true,
+    "ru": false,
+    "es": true,
+    "tr": false
+  },
+  "min_rating": 0,
+  "max_price": 0,
+  "min_reviews": 0,
+  "instructor_exclude": [],
+  "title_exclude": [],
+  "save_txt": true,
+  "sites": {
+    "Real Discount": true,
+    "Discudemy": true,
+    "IDownloadCoupons": true,
+    "Tutorial Bar": true,
+    "E-next": true,
+    "Course Vania": true,
+    "Udemy Freebies": true,
+    "Course Joiner": true,
+    "Cursos Dev": true,
+    "Udemy Free Courses": true
+  },
+  "discounted_only": false,
+  "course_update_threshold_months": 24,
+  "filters": {
+    "min_rating": 0.0,
+    "instructor_exclude": [
+      "instructor-1",
+      "instructor-2",
+      "more-bad-instructor"
+    ],
+    "title_exclude": [
+      "noT_cAse SenSItiVe"
+    ],
+    "discounted_only": false,
+    "course_update_threshold_months": 120
+  },
+  "browser_type": "chrome"
+}

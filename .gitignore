@@ -35,7 +35,7 @@ venv_main/
 **/ms-playwright/
 
 # Udemy related
-src/etl/goldigging/free_udemy_courses/duce-cli-settings.json
+**/duce-cli-settings.json
 src/etl/goldigging/free_udemy_courses/courses_to_enroll.json
 src/etl/goldigging/free_udemy_courses/Courses/
 src/miners/udemy-universal/courses_to_enroll.json
@@ -48,6 +48,8 @@ src/miners/asf-winonly/logs/
 # Environment variables file
 # Contains sensitive information like API keys, do not commit.
 .env
+.env.*
+!.env.example
 secrets/
 
 # Temporary files

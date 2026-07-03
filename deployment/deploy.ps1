@@ -1,7 +1,8 @@
 # Deploy Watchtower to Unraid (Remote Build)
 # Usage: ./deployment/deploy.ps1
 
-$ServerIP = "REDACTED_LAN_IP"
+$ServerIP = $env:UNRAID_HOST
+if (-not $ServerIP) { Write-Error "UNRAID_HOST env var must be set"; exit 1 }
 $RemoteUser = "root"
 $RemoteDir = "/tmp/watchtower_deploy"
 $TarFileName = "watchtower_src.tar.gz"
@@ -14,7 +15,7 @@ tar -czf "$LocalTarPath" src deployment config utils Tests pyproject.toml uv.loc
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to create archive"; exit 1 }
 
 Write-Host "2. Uploading archive to $ServerIP..." -ForegroundColor Cyan
-Write-Host "   (You may be asked for password: REDACTED_PASSWORD)" -ForegroundColor Gray
+Write-Host "   Authenticate via SSH key (~/.ssh/id_ed25519)." -ForegroundColor Gray
 scp "$LocalTarPath" "${RemoteUser}@${ServerIP}:/tmp/${TarFileName}"
 
 if ($LASTEXITCODE -ne 0) { Write-Error "SCP failed"; exit 1 }
