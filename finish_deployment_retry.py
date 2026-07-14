@@ -20,8 +20,8 @@ try:
     DOCKER_IMAGE = "watchtower"
 
     print("Waiting for Docker to be ready...")
-    for i in range(30):
-        stdin, stdout, stderr = ssh.exec_command("docker info > /dev/null 2>&1")
+    for _i in range(30):
+        _stdin, stdout, _stderr = ssh.exec_command("docker info > /dev/null 2>&1")
         if stdout.channel.recv_exit_status() == 0:
             print("Docker is ready!")
             break

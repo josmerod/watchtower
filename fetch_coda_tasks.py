@@ -129,7 +129,7 @@ def main():
     duplicates_to_delete = []
     unique_tasks = []
 
-    for t_id, task_list in tasks_by_id.items():
+    for _t_id, task_list in tasks_by_id.items():
         if len(task_list) > 1:
             # Sort by row index (or creation) - assuming higher index/later content is better?
             # Or just keep the first one found?

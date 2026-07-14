@@ -448,7 +448,7 @@ class DeduplicationEngine:
 
         # Extract groups with multiple items (duplicates)
         duplicate_groups = []
-        for url, group_items in url_groups.items():
+        for _url, group_items in url_groups.items():
             if len(group_items) > 1:
                 duplicate_groups.append(group_items)
                 self.stats["url_matches"] += len(group_items) - 1

@@ -104,7 +104,7 @@ class BackupManager:
             except Exception as e:
                 module_logger.error(f"LocalWebserverAuth failed: {e}. This requires user interaction or a pre-generated '{saved_credentials_path}'.")
                 module_logger.error(f"For server environments, ensure '{saved_credentials_path}' is present and valid, or use a service account.")
-                raise RuntimeError(f"Google Drive authentication failed: {e}")
+                raise RuntimeError(f"Google Drive authentication failed: {e}") from e
         elif self.gauth.access_token_expired:
             module_logger.info("Google Drive credentials expired. Refreshing token.")
             try:
@@ -112,7 +112,7 @@ class BackupManager:
             except Exception as e:  # Catch specific refresh errors if known
                 module_logger.error(f"Failed to refresh Google Drive token: {e}")
                 module_logger.error(f"Consider re-authenticating by removing '{saved_credentials_path}' and running interactively once.")
-                raise RuntimeError(f"Google Drive token refresh failed: {e}")
+                raise RuntimeError(f"Google Drive token refresh failed: {e}") from e
         else:
             module_logger.info("Google Drive credentials loaded successfully and are valid.")
             # Authorize should not be needed if LoadCredentials or Refresh worked

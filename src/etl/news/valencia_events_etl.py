@@ -766,7 +766,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
         # Merge events with the same title to create more complete records
         unique_events = []
-        for title, group in event_groups.items():
+        for _title, group in event_groups.items():
             if not group:
                 continue
 

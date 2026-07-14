@@ -139,7 +139,7 @@ class TechnologyAdoptionAnalyzer:
 
         except Exception as e:
             self.logger.error(f"Failed to setup prediction models: {e}")
-            raise TechnologyAdoptionAnalysisError("Failed to initialize prediction models", cause=e)
+            raise TechnologyAdoptionAnalysisError("Failed to initialize prediction models", cause=e) from e
 
     async def analyze_framework_battles(
         self,
@@ -185,7 +185,7 @@ class TechnologyAdoptionAnalyzer:
                 "Framework battle analysis failed",
                 context={"error_details": str(e)},
                 cause=e,
-            )
+            ) from e
 
     async def _gather_framework_data(self, frameworks: list[str], keywords: list[str]) -> dict[str, dict[str, Any]]:
         """Gather framework data from multiple sources.
@@ -877,7 +877,7 @@ class TechnologyAdoptionAnalyzer:
                 "Adoption trend prediction failed",
                 context={"timeframe_months": timeframe_months},
                 cause=e,
-            )
+            ) from e
 
     async def _gather_current_technology_data(self) -> dict[str, dict[str, Any]]:
         """Gather current technology data for predictions.

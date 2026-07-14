@@ -65,7 +65,7 @@ try:
         *_RETRY_BASE,
         _RequestsRequestException,
     )
-except ImportError:  # pragma: no cover – requests not installed
+except ImportError:  # pragma: no cover - requests not installed
     RETRYABLE_ERRORS = _RETRY_BASE
 
 # ---------------------------------------------------------------------------

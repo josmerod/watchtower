@@ -76,13 +76,14 @@ class VirtualMuseumsETL(SimpleETL):
             self.logger.info(f"Received {len(results)} items from Wikidata.")
 
             seen_urls = set()
-            for item in results:
-                # Helper to get value, returns None if key is missing
-                def get_value(key: str):
-                    return item.get(key, {}).get("value")
 
+            def get_value(record: dict, key: str):
+                """Helper to get value from a Wikidata binding, returns None if missing."""
+                return record.get(key, {}).get("value")
+
+            for item in results:
                 # Deduplicate by Wikidata URI (same museum can appear multiple times)
-                museum_uri = get_value("museum")
+                museum_uri = get_value(item, "museum")
                 if museum_uri and museum_uri in seen_urls:
                     continue
                 if museum_uri:
@@ -90,7 +91,7 @@ class VirtualMuseumsETL(SimpleETL):
 
                 # Extract coordinates if available
                 latitude, longitude = None, None
-                coordinates_str = get_value("coordinates")
+                coordinates_str = get_value(item, "coordinates")
                 if coordinates_str:
                     # Format is "Point(Longitude Latitude)"
                     try:
@@ -99,18 +100,18 @@ class VirtualMuseumsETL(SimpleETL):
                             longitude = float(parts[0])
                             latitude = float(parts[1])
                     except ValueError:
-                        self.logger.warning(f"Could not parse coordinates: {coordinates_str} for {get_value('museum')}")
+                        self.logger.warning(f"Could not parse coordinates: {coordinates_str} for {get_value(item, 'museum')}")
 
                 processed_item = {
-                    "wikidata_url": get_value("museum"),
-                    "name": get_value("museumLabel"),
-                    "description": get_value("museumDescription"),
-                    "website_url": get_value("website"),
-                    "virtual_tour_url": get_value("virtualTourURL"),
-                    "country_label": get_value("countryLabel"),
-                    "city_label": get_value("cityLabel"),
-                    "main_subject_label": get_value("mainSubjectLabel"),
-                    "image_url": get_value("image"),
+                    "wikidata_url": get_value(item, "museum"),
+                    "name": get_value(item, "museumLabel"),
+                    "description": get_value(item, "museumDescription"),
+                    "website_url": get_value(item, "website"),
+                    "virtual_tour_url": get_value(item, "virtualTourURL"),
+                    "country_label": get_value(item, "countryLabel"),
+                    "city_label": get_value(item, "cityLabel"),
+                    "main_subject_label": get_value(item, "mainSubjectLabel"),
+                    "image_url": get_value(item, "image"),
                     "latitude": latitude,
                     "longitude": longitude,
                     # data_source and retrieved_at will be set during transformation/model creation

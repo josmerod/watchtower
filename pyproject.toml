@@ -196,16 +196,9 @@ ignore = [
     "RUF013",  # PEP 484 implicit Optional
     "E402",    # module-level import not at top (many ETLs set env first)
     "E722",    # bare except (existing pattern, flagged for cleanup)
-    "B904",    # raise from err in except (25 sites — mechanical, not bugs)
     "F401",    # unused imports (many __init__.py re-exports, dynamic imports)
     "E741",    # ambiguous variable name (l, I, O) — cosmetic
     "E501",    # line too long (line-length=210 already generous)
-    "B007",    # loop variable not used (rename to _*)
-    "F811",    # redefinition (arxiv_research_tab.py — refactor needed)
-    "RUF002",  # ambiguous unicode char in docstring (Spanish accents)
-    "RUF003",  # ambiguous unicode char in comment (Spanish accents)
-    "RUF006",  # mutable default arg (async context)
-    "B023",    # function doesn't bind loop variable (museum_etl — refactor)
     "UP031",   # use format spec instead of % (existing pattern)
     "F403",    # from X import * (config/__init__.py, utils/__init__.py re-exports)
     "SIM116",  # use dict instead of if/elif chains (style preference)

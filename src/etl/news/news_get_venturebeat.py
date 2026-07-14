@@ -76,7 +76,7 @@ def fetch_venturebeat_feeds() -> list[dict[str, Any]]:
                             published_raw_utc = published_raw[:-1] + "+00:00"
                             published = datetime.fromisoformat(published_raw_utc).isoformat()
                         else:
-                            raise ValueError(f"Could not parse ISO format: {published_raw}")
+                            raise ValueError(f"Could not parse ISO format: {published_raw}") from None
 
                 # 2. RFC 2822 format (traditional RSS format)
                 elif any(day in published_raw for day in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]):
@@ -95,7 +95,7 @@ def fetch_venturebeat_feeds() -> list[dict[str, Any]]:
                         try:
                             published = datetime.fromtimestamp(float(published_raw)).isoformat()
                         except (ValueError, TypeError):
-                            raise ValueError(f"Unknown date format: {published_raw}")
+                            raise ValueError(f"Unknown date format: {published_raw}") from None
 
             except Exception as e:
                 logger.warning(f"Could not parse publication date '{published_raw}' for entry '{entry.get('title')}' from {source}: {e}. Using raw value.")

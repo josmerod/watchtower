@@ -250,7 +250,7 @@ class ETLScheduler:
                             del self.etl_processes[name]
 
                 # Restart failed categories
-                for name, category in failed_processes:
+                for _name, category in failed_processes:
                     if category in self.etl_processes:
                         # Remove dead processes from category
                         self.etl_processes[category] = [p for p in self.etl_processes[category] if p.is_alive()]
@@ -381,7 +381,7 @@ class WatchtowerLauncher:
         scheduler = ETLScheduler(self.config)
 
         # Start process monitoring in background
-        asyncio.create_task(scheduler.monitor_processes())
+        asyncio.create_task(scheduler.monitor_processes())  # noqa: RUF006
 
         # Start all ETL processes
         await scheduler.start_all_processes()
@@ -395,7 +395,7 @@ class WatchtowerLauncher:
         monitor = HealthMonitor(self.config)
 
         # Start monitoring loop in background
-        asyncio.create_task(monitor.run_monitoring_loop(self.etl_scheduler))
+        asyncio.create_task(monitor.run_monitoring_loop(self.etl_scheduler))  # noqa: RUF006
 
         return monitor
 

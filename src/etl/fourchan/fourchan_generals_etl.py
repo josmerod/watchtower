@@ -74,7 +74,7 @@ class FourChanGeneralsETL(SimpleETL):
 
             for page in pages:
                 for thread in page.get("threads", []):
-                    # Attach board identifier early – useful downstream
+                    # Attach board identifier early - useful downstream
                     thread["board"] = board
                     extracted.append(thread)
 
@@ -126,7 +126,7 @@ class FourChanGeneralsETL(SimpleETL):
     # Load
     # ------------------------------------------------------------------
     def load(self, data: list[dict[str, Any]]) -> None:
-        """Persist results to JSON – dated and latest pointers."""
+        """Persist results to JSON - dated and latest pointers."""
         if not data:
             self.logger.info("No *General* threads detected – nothing to load.")
             return

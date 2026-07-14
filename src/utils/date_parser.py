@@ -7,7 +7,6 @@ and dashboard components.
 
 from __future__ import annotations
 
-import datetime
 from datetime import datetime, timezone
 
 import pandas as pd

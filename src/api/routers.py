@@ -118,7 +118,7 @@ async def get_news(source: str | None = Query(None, description="Filter by sourc
         return _load_and_process_items(NEWS_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching news: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/knowledge-garden", response_model=list[UnifiedItem])
@@ -128,7 +128,7 @@ async def get_knowledge(source: str | None = Query(None, description="Filter by 
         return _load_and_process_items(KNOWLEDGE_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching knowledge: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/ecommerce", response_model=list[UnifiedItem])
@@ -138,7 +138,7 @@ async def get_ecommerce(source: str | None = Query(None, description="Filter by 
         return _load_and_process_items(ECOMMERCE_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching ecommerce: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/entertainment", response_model=list[UnifiedItem])
@@ -148,7 +148,7 @@ async def get_entertainment(source: str | None = Query(None, description="Filter
         return _load_and_process_items(ENTERTAINMENT_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching entertainment: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/intelligence", response_model=list[UnifiedItem])
@@ -158,7 +158,7 @@ async def get_intelligence(source: str | None = Query(None, description="Filter 
         return _load_and_process_items(INTEL_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching intelligence: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/travel", response_model=list[UnifiedItem])
@@ -168,7 +168,7 @@ async def get_travel(source: str | None = Query(None, description="Filter by sou
         return _load_and_process_items(TRAVEL_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching travel: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/research", response_model=list[UnifiedItem])
@@ -178,7 +178,7 @@ async def get_research(source: str | None = Query(None, description="Filter by s
         return _load_and_process_items(RESEARCH_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching research: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/museums", response_model=list[UnifiedItem])
@@ -188,7 +188,7 @@ async def get_museums(source: str | None = Query(None, description="Filter by so
         return _load_and_process_items(MUSEUMS_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching museums: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/games", response_model=list[UnifiedItem])
@@ -198,7 +198,7 @@ async def get_games(source: str | None = Query(None, description="Filter by sour
         return _load_and_process_items(GAMES_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching games: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/benchmarks")
@@ -210,7 +210,7 @@ async def get_benchmarks(
         return _load_benchmarks(source)
     except Exception as e:
         logger.error(f"Error fetching benchmarks: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/arxiv", response_model=list[UnifiedItem])
@@ -220,7 +220,7 @@ async def get_arxiv(source: str | None = Query(None, description="Filter by sour
         return _load_and_process_items(ARXIV_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching arxiv: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/ai-platforms", response_model=list[UnifiedItem])
@@ -230,7 +230,7 @@ async def get_ai_platforms(source: str | None = Query(None, description="Filter 
         return _load_and_process_items(AI_PLATFORMS_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching ai-platforms: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/expanded", response_model=list[UnifiedItem])
@@ -242,7 +242,7 @@ async def get_expanded(
         return _load_and_process_items(EXPANDED_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching expanded: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/spanish-aid", response_model=list[UnifiedItem])
@@ -252,7 +252,7 @@ async def get_spanish_aid(source: str | None = Query(None, description="Filter b
         return _load_and_process_items(SPANISH_AID_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching spanish-aid: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/cloud-updates", response_model=list[UnifiedItem])
@@ -262,7 +262,7 @@ async def get_cloud_updates(source: str | None = Query(None, description="Filter
         return _load_and_process_items(CLOUD_UPDATES_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching cloud-updates: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/valencia-local", response_model=list[UnifiedItem])
@@ -272,7 +272,7 @@ async def get_valencia_local(source: str | None = Query(None, description="Filte
         return _load_and_process_items(VALENCIA_LOCAL_SOURCES_CONFIG, source, limit)
     except Exception as e:
         logger.error(f"Error fetching valencia-local: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/sources", response_model=dict)
