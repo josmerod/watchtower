@@ -24,7 +24,7 @@ def fetch_logs():
         ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD)
 
         print(f"Fetching logs from {LOG_FILE}...")
-        stdin, stdout, stderr = ssh.exec_command(f"tail -n 50 {LOG_FILE}")
+        _stdin, stdout, stderr = ssh.exec_command(f"tail -n 50 {LOG_FILE}")
 
         print("--- REMOTE LOGS START ---")
         print(stdout.read().decode())

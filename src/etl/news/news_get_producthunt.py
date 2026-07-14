@@ -9,12 +9,11 @@ Usage:
 
 import json
 import os
-import time
 from datetime import datetime, timezone
-from typing import Any, List, Dict, Optional
+from typing import Any
 
 import requests
-from src.models.news import ProductHuntModel
+
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 
@@ -30,7 +29,7 @@ class ProductHuntETL:
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": "WatchtowerBot/1.0 (https://github.com/josmerod/watchtower)"})
 
-    def fetch_via_graphql(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def fetch_via_graphql(self, limit: int = 50) -> list[dict[str, Any]]:
         """Fetch products using the official GraphQL API."""
         if not self.api_token:
             logger.warning("PRODUCTHUNT_API_TOKEN not set, skipping GraphQL")
@@ -93,7 +92,7 @@ class ProductHuntETL:
             logger.error(f"GraphQL fetch failed: {e}")
             return []
 
-    def fetch_via_rss(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def fetch_via_rss(self, limit: int = 50) -> list[dict[str, Any]]:
         """Fetch products using the RSS feed."""
         try:
             logger.info("Fetching Product Hunt data via RSS feed")
@@ -135,7 +134,7 @@ class ProductHuntETL:
             logger.error(f"RSS fetch failed: {e}")
             return []
 
-    def fetch(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def fetch(self, limit: int = 50) -> list[dict[str, Any]]:
         """Main fetch method: try GraphQL, fallback to RSS."""
         products = self.fetch_via_graphql(limit)
         if not products:
@@ -144,7 +143,7 @@ class ProductHuntETL:
         return products
 
 
-def process_data(raw_products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def process_data(raw_products: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Process raw scraped data into final format."""
     processed = []
     current_time = datetime.now(timezone.utc).isoformat()

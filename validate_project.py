@@ -54,7 +54,7 @@ class ProjectValidator:
         for file_path in python_files:
             try:
                 with open(file_path, encoding="utf-8") as f:
-                    content = f.read()
+                    f.read()
 
                     self.stats["sys_path_insertions"] += 1
             except Exception as e:

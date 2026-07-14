@@ -3,45 +3,41 @@ Clean, fast interface for discovering ArXiv research papers
 Tabbed interface per category, mirroring the News tab style.
 """
 
-import json
 import logging
 import sys
 import time
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import ALL, Input, Output, State, html
+from dash import Input, Output, State, html
 
 # Ensure path compatibility
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from src.services.data_loader import (
     ARXIV_SOURCES_CONFIG,
-    format_article_date as format_article_date_shared,
     get_sortable_date,
     load_data_from_file,
-    parse_date,
+)
+from src.services.data_loader import (
+    format_article_date as format_article_date_shared,
 )
 from src.web.dashboard.search_utils import (
     create_search_input,
-    filter_content,
-    get_common_searchable_fields,
 )
 from src.web.dashboard.trend_utils import (
     get_trending_items_map,
     is_item_trending,
     render_trend_badge,
 )
-from src.web.dashboard.utils import get_data_path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --- Data Loading ---
+
 
 def get_all_arxiv_data():
     """Load fresh ArXiv data from all configured category sources."""
@@ -72,7 +68,7 @@ def format_article_date(paper):
 
 def create_arxiv_category_tab_content(source_key):
     """Creates the content for a specific ArXiv category tab as a table with search functionality.
-    
+
     Sorts papers by date before limiting.
     """
     source_display_name = ARXIV_SOURCES_CONFIG[source_key]["name"]
@@ -81,7 +77,7 @@ def create_arxiv_category_tab_content(source_key):
     # Load fresh data each time
     all_arxiv_data = get_all_arxiv_data()
     papers_from_source = all_arxiv_data.get(source_key, [])
-    
+
     # Store all papers in a hidden div for search filtering
     papers_data_store = html.Div(
         papers_from_source[:MAX_PAPERS_PER_TAB],
@@ -113,10 +109,10 @@ def create_arxiv_category_tab_content(source_key):
 
     # Create table body with robust field fallbacks
     table_body_rows = []
-    for i, paper in enumerate(papers_from_source[:MAX_PAPERS_PER_TAB]):
+    for _i, paper in enumerate(papers_from_source[:MAX_PAPERS_PER_TAB]):
         # Check trend status
         is_trending = is_item_trending(paper, trending_map)
-        
+
         # Use primary category for trend checking if available
         primary_cat = paper.get("categories", [""])[0] if isinstance(paper.get("categories"), list) and paper.get("categories") else ""
         trend_badge = render_trend_badge(trending_map.get(f"category:{primary_cat}") or trending_map.get(paper.get("id"))) if is_trending else None
@@ -124,17 +120,17 @@ def create_arxiv_category_tab_content(source_key):
         # Title
         title = paper.get("title", "Unknown Title")
         title = title.replace("\n", " ").strip()
-        
+
         # Original Link
         url = paper.get("link") or paper.get("id")
-        
+
         # GitHub Link (if enriched by ETL)
         github_url = paper.get("github_html_url")
-        
+
         # Authors
         authors_list = paper.get("authors", [])
-        authors_display = ", ".join(authors_list[:3]) + (f" +{len(authors_list)-3} more" if len(authors_list) > 3 else "") if isinstance(authors_list, list) else str(authors_list)
-        
+        authors_display = ", ".join(authors_list[:3]) + (f" +{len(authors_list) - 3} more" if len(authors_list) > 3 else "") if isinstance(authors_list, list) else str(authors_list)
+
         # Date
         date_display = format_article_date(paper)
 
@@ -144,18 +140,18 @@ def create_arxiv_category_tab_content(source_key):
         title_elements = [
             html.A(title, href=url, target="_blank", className="text-decoration-none fw-bold") if url else title,
         ]
-        
+
         if github_url:
-             title_elements.append(
-                 html.A(
+            title_elements.append(
+                html.A(
                     html.I(className="fab fa-github ms-2 text-dark"),
                     href=github_url,
                     target="_blank",
                     title="View GitHub Repository",
                     className="text-decoration-none",
                 )
-             )
-             
+            )
+
         if trend_badge:
             title_elements.append(html.Span(trend_badge, className="ms-2"))
 
@@ -220,7 +216,7 @@ def create_arxiv_category_tab_content(source_key):
 def register_arxiv_callbacks(app):
     """Register search callbacks for all ArXiv tabs."""
     # Get all unique search IDs from the source config
-    search_ids = [f"arxiv-search-{key}" for key in ARXIV_SOURCES_CONFIG.keys()]
+    search_ids = [f"arxiv-search-{key}" for key in ARXIV_SOURCES_CONFIG]
 
     for search_id in search_ids:
 
@@ -234,29 +230,29 @@ def register_arxiv_callbacks(app):
             try:
                 # 1. Determine Source Key from Search ID
                 source_key = current_search_id.replace("arxiv-search-", "")
-                
+
                 # 2. Fetch Fresh Data (CACHE HIT usually)
                 all_arxiv_data = get_all_arxiv_data()
                 papers_data = all_arxiv_data.get(source_key, [])
-                
+
                 if not papers_data:
-                     return dbc.Alert("No data available for this category.", color="warning")
+                    return dbc.Alert("No data available for this category.", color="warning")
 
                 # 3. Sort
                 papers_data.sort(key=get_sortable_date, reverse=True)
-                
+
                 # 4. Filter (Search)
                 if search_term:
-                     search_lower = search_term.lower()
-                     filtered_papers = []
-                     for p in papers_data:
-                         title = str(p.get("title", "")).lower()
-                         summary = str(p.get("summary", "")).lower()
-                         authors = str(p.get("authors", "")).lower()
-                         if search_lower in title or search_lower in summary or search_lower in authors:
-                             filtered_papers.append(p)
+                    search_lower = search_term.lower()
+                    filtered_papers = []
+                    for p in papers_data:
+                        title = str(p.get("title", "")).lower()
+                        summary = str(p.get("summary", "")).lower()
+                        authors = str(p.get("authors", "")).lower()
+                        if search_lower in title or search_lower in summary or search_lower in authors:
+                            filtered_papers.append(p)
                 else:
-                     filtered_papers = papers_data[:MAX_PAPERS_PER_TAB] # Limit initial view
+                    filtered_papers = papers_data[:MAX_PAPERS_PER_TAB]  # Limit initial view
 
                 # Create table for filtered results
                 table_header = [
@@ -275,7 +271,7 @@ def register_arxiv_callbacks(app):
                 trending_map = get_trending_items_map()
 
                 table_body_rows = []
-                for i, paper in enumerate(filtered_papers):
+                for _i, paper in enumerate(filtered_papers):
                     # Check trend status
                     is_trending = is_item_trending(paper, trending_map)
                     primary_cat = paper.get("categories", [""])[0] if isinstance(paper.get("categories"), list) and paper.get("categories") else ""
@@ -284,10 +280,10 @@ def register_arxiv_callbacks(app):
                     title = str(paper.get("title", "Unknown Title")).replace("\n", " ").strip()
                     url = paper.get("link") or paper.get("id")
                     github_url = paper.get("github_html_url")
-                    
+
                     authors_list = paper.get("authors", [])
-                    authors_display = ", ".join(authors_list[:3]) + (f" +{len(authors_list)-3} more" if len(authors_list) > 3 else "") if isinstance(authors_list, list) else str(authors_list)
-                    
+                    authors_display = ", ".join(authors_list[:3]) + (f" +{len(authors_list) - 3} more" if len(authors_list) > 3 else "") if isinstance(authors_list, list) else str(authors_list)
+
                     date_display = format_article_date(paper)
 
                     row_class = "trending-item" if is_trending else ""
@@ -295,18 +291,18 @@ def register_arxiv_callbacks(app):
                     title_elements = [
                         html.A(title, href=url, target="_blank", className="text-decoration-none fw-bold") if url else title,
                     ]
-                    
+
                     if github_url:
-                         title_elements.append(
-                             html.A(
+                        title_elements.append(
+                            html.A(
                                 html.I(className="fab fa-github ms-2 text-dark"),
                                 href=github_url,
                                 target="_blank",
                                 title="View GitHub Repository",
                                 className="text-decoration-none",
                             )
-                         )
-                         
+                        )
+
                     if trend_badge:
                         title_elements.append(html.Span(trend_badge, className="ms-2"))
 
@@ -377,20 +373,12 @@ def register_arxiv_callbacks(app):
 # Main function to render the ArXiv tab
 def render_arxiv_research_tab():
     """Render the complete ArXiv research tab with all category sub-tabs."""
-    
+
     tabs_children = []
-    
+
     # Order of tabs to display (All first, then categories)
-    ordered_keys = [
-        "all_arxiv",
-        "machine_learning",
-        "computer_vision",
-        "nlp",
-        "neural_networks",
-        "robotics",
-        "reinforcement_learning"
-    ]
-    
+    ordered_keys = ["all_arxiv", "machine_learning", "computer_vision", "nlp", "neural_networks", "robotics", "reinforcement_learning"]
+
     for key in ordered_keys:
         if key in ARXIV_SOURCES_CONFIG:
             config = ARXIV_SOURCES_CONFIG[key]
@@ -415,7 +403,7 @@ def render_arxiv_research_tab():
 def register_arxiv_callbacks(app):
     """Register search callbacks for all ArXiv tabs."""
     # Get all unique search IDs from the source config
-    search_ids = [f"arxiv-search-{key}" for key in ARXIV_SOURCES_CONFIG.keys()]
+    search_ids = [f"arxiv-search-{key}" for key in ARXIV_SOURCES_CONFIG]
 
     for search_id in search_ids:
 
@@ -429,29 +417,29 @@ def register_arxiv_callbacks(app):
             try:
                 # 1. Determine Source Key from Search ID
                 source_key = current_search_id.replace("arxiv-search-", "")
-                
+
                 # 2. Fetch Fresh Data (CACHE HIT usually)
                 all_arxiv_data = get_all_arxiv_data()
                 papers_data = all_arxiv_data.get(source_key, [])
-                
+
                 if not papers_data:
-                     return dbc.Alert("No data available for this category.", color="warning")
+                    return dbc.Alert("No data available for this category.", color="warning")
 
                 # 3. Sort
                 papers_data.sort(key=get_sortable_date, reverse=True)
-                
+
                 # 4. Filter (Search)
                 if search_term:
-                     search_lower = search_term.lower()
-                     filtered_papers = []
-                     for p in papers_data:
-                         title = str(p.get("title", "")).lower()
-                         summary = str(p.get("summary", "")).lower()
-                         authors = str(p.get("authors", "")).lower()
-                         if search_lower in title or search_lower in summary or search_lower in authors:
-                             filtered_papers.append(p)
+                    search_lower = search_term.lower()
+                    filtered_papers = []
+                    for p in papers_data:
+                        title = str(p.get("title", "")).lower()
+                        summary = str(p.get("summary", "")).lower()
+                        authors = str(p.get("authors", "")).lower()
+                        if search_lower in title or search_lower in summary or search_lower in authors:
+                            filtered_papers.append(p)
                 else:
-                     filtered_papers = papers_data[:MAX_PAPERS_PER_TAB] # Limit initial view
+                    filtered_papers = papers_data[:MAX_PAPERS_PER_TAB]  # Limit initial view
 
                 # Create table for filtered results
                 table_header = [
@@ -470,7 +458,7 @@ def register_arxiv_callbacks(app):
                 trending_map = get_trending_items_map()
 
                 table_body_rows = []
-                for i, paper in enumerate(filtered_papers):
+                for _i, paper in enumerate(filtered_papers):
                     # Check trend status
                     is_trending = is_item_trending(paper, trending_map)
                     primary_cat = paper.get("categories", [""])[0] if isinstance(paper.get("categories"), list) and paper.get("categories") else ""
@@ -479,10 +467,10 @@ def register_arxiv_callbacks(app):
                     title = str(paper.get("title", "Unknown Title")).replace("\n", " ").strip()
                     url = paper.get("link") or paper.get("id")
                     github_url = paper.get("github_html_url")
-                    
+
                     authors_list = paper.get("authors", [])
-                    authors_display = ", ".join(authors_list[:3]) + (f" +{len(authors_list)-3} more" if len(authors_list) > 3 else "") if isinstance(authors_list, list) else str(authors_list)
-                    
+                    authors_display = ", ".join(authors_list[:3]) + (f" +{len(authors_list) - 3} more" if len(authors_list) > 3 else "") if isinstance(authors_list, list) else str(authors_list)
+
                     date_display = format_article_date(paper)
 
                     row_class = "trending-item" if is_trending else ""
@@ -490,18 +478,18 @@ def register_arxiv_callbacks(app):
                     title_elements = [
                         html.A(title, href=url, target="_blank", className="text-decoration-none fw-bold") if url else title,
                     ]
-                    
+
                     if github_url:
-                         title_elements.append(
-                             html.A(
+                        title_elements.append(
+                            html.A(
                                 html.I(className="fab fa-github ms-2 text-dark"),
                                 href=github_url,
                                 target="_blank",
                                 title="View GitHub Repository",
                                 className="text-decoration-none",
                             )
-                         )
-                         
+                        )
+
                     if trend_badge:
                         title_elements.append(html.Span(trend_badge, className="ms-2"))
 
@@ -572,20 +560,12 @@ def register_arxiv_callbacks(app):
 # Main function to render the ArXiv tab
 def render_arxiv_research_tab():
     """Render the complete ArXiv research tab with all category sub-tabs."""
-    
+
     tabs_children = []
-    
+
     # Order of tabs to display (All first, then categories)
-    ordered_keys = [
-        "all_arxiv",
-        "machine_learning",
-        "computer_vision",
-        "nlp",
-        "neural_networks",
-        "robotics",
-        "reinforcement_learning"
-    ]
-    
+    ordered_keys = ["all_arxiv", "machine_learning", "computer_vision", "nlp", "neural_networks", "robotics", "reinforcement_learning"]
+
     for key in ordered_keys:
         if key in ARXIV_SOURCES_CONFIG:
             config = ARXIV_SOURCES_CONFIG[key]
@@ -609,4 +589,3 @@ def render_arxiv_research_tab():
             ),
         ]
     )
-

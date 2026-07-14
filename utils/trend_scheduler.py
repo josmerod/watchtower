@@ -97,7 +97,7 @@ class TrendScheduler:
                 "message": "Daily trend analysis completed successfully",
             }
 
-            logger.info(f"Daily trend analysis completed: {results['trends_detected']} trends detected " f"({results['rising_trends']} rising, {results['falling_trends']} falling)")
+            logger.info(f"Daily trend analysis completed: {results['trends_detected']} trends detected ({results['rising_trends']} rising, {results['falling_trends']} falling)")
 
             return results
 

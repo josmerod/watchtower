@@ -2,7 +2,6 @@
 Cultural institutions and museum data integration
 """
 
-import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -12,8 +11,6 @@ import pandas as pd
 from dash import dash_table, html
 
 # Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
 
@@ -23,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Import centralized configuration
 from src.services.data_loader import MUSEUMS_CONFIG
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class MuseumsRepository(BaseRepository[list[dict[str, Any]]]):
@@ -51,6 +49,7 @@ class MuseumsRepository(BaseRepository[list[dict[str, Any]]]):
             return [raw_data]
         else:
             return []
+
 
 # Create singleton instance
 museums_repo = MuseumsRepository()

@@ -2,7 +2,6 @@
 Specialized for ADHD research publications and neurodivergent-friendly locations
 """
 
-import json
 import logging
 from collections import Counter
 from datetime import datetime, timezone
@@ -15,11 +14,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import Input, Output, callback, dash_table, dcc, html
 
-# Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
+
+# Import shared utilities
+from src.web.dashboard.utils import parse_date_universal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Import centralized configuration
 from src.services.data_loader import RESEARCH_SOURCES_CONFIG
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class ResearchRepository(BaseRepository[list[dict[str, Any]]]):
@@ -62,6 +62,7 @@ class ResearchRepository(BaseRepository[list[dict[str, Any]]]):
             return [raw_data]
         else:
             return []
+
 
 # Create singleton instances for each source
 adhd_publications_repo = ResearchRepository(RESEARCH_SOURCES_CONFIG["adhd_publications"]["path"])
@@ -236,8 +237,8 @@ def create_publication_timeline():
             y=counts,
             mode="lines+markers",
             name="Publications",
-            line=dict(color="#A37FFF", width=3),
-            marker=dict(color="#A37FFF", size=8),
+            line={"color": "#A37FFF", "width": 3},
+            marker={"color": "#A37FFF", "size": 8},
         )
     )
 
@@ -514,7 +515,7 @@ def create_research_table(source_id, items):
 
 def render_research_tab():
     """Main render function for the Research dashboard tab"""
-    total_items = len(ALL_RESEARCH)
+    len(ALL_RESEARCH)
     research_papers = [item for item in ALL_RESEARCH if item["source_category"] == "Medical Research"]
     locations = [item for item in ALL_RESEARCH if item["source_category"] == "Accessibility"]
 

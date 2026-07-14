@@ -65,9 +65,7 @@ class PathSettings:
     # Output directories
     output_dir: Path = field(default_factory=lambda: Path("data/youtube_shorts_ocr"))
     temp_video_dir: Path = field(default_factory=lambda: Path("data/temp_youtube_videos"))
-    checkpoint_file: Path = field(
-        default_factory=lambda: Path("data/youtube_shorts_ocr/checkpoint.json")
-    )
+    checkpoint_file: Path = field(default_factory=lambda: Path("data/youtube_shorts_ocr/checkpoint.json"))
 
     def ensure_directories(self) -> None:
         """Create all necessary directories if they don't exist."""

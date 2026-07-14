@@ -31,11 +31,9 @@ repos:
     -   id: ruff-format
         types_or: [python, pyi, jupyter]
 
--   repo: https://github.com/psf/black
-    rev: 24.8.0
-    hooks:
-    -   id: black
-        types_or: [python, pyi]
+# NOTE: black removed — ruff-format is the single source of truth for formatting
+# (per AGENTS.md). Running both caused conflicts where each reformatted the
+# other's output. ruff-format uses the same defaults (double quotes, 4-space).
 
 -   repo: https://github.com/pycqa/flake8
     rev: 7.0.0
@@ -48,8 +46,8 @@ repos:
     rev: v2.3.0
     hooks:
     -   id: codespell
-        exclude: ^(src/miners/|.bmad/|logs.txt|.*\.log|docs/)
-        args: [-L, "assertIn,hace,anual,indien,als,alle,wil,lokale,cursos,clases,traker,componentes,intelectual,optimice,potencial,braket,ehr,ser,funcional,re-use,searchin,sesion,carrer,calle,momento,skool,extensiones,valide,avance,controles,halp,desig,thi,architec,whethe,ond,inthe,learnin,onw,proffes,brin,bein,profies,fron,sence,vrsion,vesion,meu"]
+        exclude: ^(src/miners/|.bmad/|logs.txt|.*\.log|docs/|data/)
+        args: [-L, "assertIn,hace,anual,indien,als,alle,wil,lokale,cursos,clases,traker,componentes,intelectual,optimice,potencial,braket,ehr,ser,funcional,re-use,searchin,sesion,carrer,calle,momento,skool,extensiones,valide,avance,controles,halp,desig,thi,architec,whethe,ond,inthe,learnin,onw,proffes,brin,bein,profies,fron,sence,vrsion,vesion,meu,cliente,Cliente,clientes,Clientes,varios,Comandos,comandos,medias,Oficial,oficial,Autor,autor,htts,THN,relevante,Relevante,crate,crates,fases,Fases"]
         additional_dependencies:
           - tomli
 

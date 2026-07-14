@@ -127,7 +127,7 @@ class ADHDPublicationETL(BaseETL):
                         pub_date = year
                     elif medline_date:
                         pub_date = medline_date
-                    
+
                     # Normalize to ISO date string for published_at
                     try:
                         if year and month and day:

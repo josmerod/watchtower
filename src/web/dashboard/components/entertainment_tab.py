@@ -2,7 +2,6 @@
 Integrates entertainment-related ETLs including cinema, meme economics, and other entertainment content
 """
 
-import json
 import logging
 from collections import Counter
 from datetime import datetime, timezone
@@ -14,11 +13,11 @@ import pandas as pd
 import plotly.express as px
 from dash import Input, Output, callback, dash_table, dcc, html
 
-# Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
+
+# Import shared utilities
+from src.web.dashboard.utils import parse_date_universal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Import centralized configuration
 from src.services.data_loader import ENTERTAINMENT_SOURCES_CONFIG
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class EntertainmentRepository(BaseRepository[dict[str, Any]]):
@@ -58,6 +58,7 @@ class EntertainmentRepository(BaseRepository[dict[str, Any]]):
             return {"items": raw_data}
         else:
             return {}
+
 
 # Create singleton instances for each source
 cinema_ecartelera_repo = EntertainmentRepository(ENTERTAINMENT_SOURCES_CONFIG["cinema_ecartelera"]["path"])

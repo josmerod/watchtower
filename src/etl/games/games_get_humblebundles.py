@@ -119,8 +119,7 @@ class HumbleBundleScraper:
     async def _extract_bundles_from_js(self, page, bundle_type: str, all_bundles: list):
         """Extracts bundle data embedded in JavaScript variables on the page."""
         logger.info(f"Attempting to extract bundle data from JavaScript for {bundle_type}")
-        js_bundles_data = await page.evaluate(
-            r"""
+        js_bundles_data = await page.evaluate(r"""
             () => {
                 try {
                     const results = [];
@@ -167,8 +166,7 @@ class HumbleBundleScraper:
                     return results;
                 } catch (e) { return [{error: e.toString()}]; }
             }
-        """
-        )
+        """)
 
         if js_bundles_data:
             debug_js_path = os.path.join(self.debug_dir, f"humble_{bundle_type}_js_data.json")

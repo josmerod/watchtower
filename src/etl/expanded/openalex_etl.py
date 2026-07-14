@@ -107,7 +107,7 @@ class OpenAlexETL(BaseETL[dict[str, Any], OpenAlexWorkModel]):
         self.logger.info(f"Extraction complete: {len(all_works)} total works")
         self.api_metrics.total_works_discovered = len(all_works)
 
-        return all_works[:self.max_works]
+        return all_works[: self.max_works]
 
     def _fetch_by_concept(self, concept: str) -> list[dict[str, Any]]:
         """Fetch works by research concept.

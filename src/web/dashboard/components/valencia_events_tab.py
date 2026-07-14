@@ -1,6 +1,5 @@
 """Valencia Events Tab Component for Watchtower Dashboard"""
 
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +18,7 @@ logger = logging.getLogger(__name__)
 # Data file paths
 VALENCIA_EVENTS_FILE = Path("data/valencia_events/valencia_events.json")
 TECH_EVENTS_FILE = Path("data/tech_events/tech_events_valencia.json")
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class ValenciaEventsRepository(BaseRepository[list[dict[str, Any]]]):
@@ -51,6 +51,7 @@ class ValenciaEventsRepository(BaseRepository[list[dict[str, Any]]]):
             return [raw_data]
         else:
             return []
+
 
 # Create singleton instances for each source
 valencia_events_repo = ValenciaEventsRepository(str(VALENCIA_EVENTS_FILE))
@@ -97,11 +98,10 @@ def create_event_card(event: dict[str, Any]) -> dbc.Card:
         if isinstance(venue_info, dict):
             venue_name = venue_info.get("name", "Location not specified")
             venue_address = venue_info.get("address", "")
-            venue_city = venue_info.get("city", "Valencia")
+            venue_info.get("city", "Valencia")
         else:
             venue_name = str(venue_info) if venue_info else "Location not specified"
             venue_address = ""
-            venue_city = "Valencia"
 
         # Format dates
         date_display = date_text if date_text else (f"{start_date} - {end_date}" if start_date and end_date else start_date if start_date else "Date TBC")
@@ -196,7 +196,7 @@ def create_events_table(events: list[dict[str, Any]]) -> dash_table.DataTable:
         display_columns = ["title", "category", "date_text", "source"]
         if "venue" in df.columns:
             # Extract venue name for table display
-            df["venue_name"] = df["venue"].apply(lambda x: (x.get("name", "N/A") if isinstance(x, dict) else str(x) if x else "N/A"))
+            df["venue_name"] = df["venue"].apply(lambda x: x.get("name", "N/A") if isinstance(x, dict) else str(x) if x else "N/A")
             display_columns.append("venue_name")
 
         # Filter existing columns

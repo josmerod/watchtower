@@ -35,33 +35,33 @@ from src.exceptions.watcher import (
 )
 
 __all__ = [
-    # Base exceptions
-    "WatchtowerError",
-    "ConfigurationError",
-    "ValidationError",
     "AuthenticationError",
     "AuthorizationError",
-    # ETL exceptions
-    "ETLError",
     "CheckpointError",
-    "ExtractionError",
-    "TransformationError",
-    "LoadError",
+    "ConfigurationError",
     "DataSourceError",
     "DataValidationError",
-    "ETLTimeoutError",
     "ETLConfigurationError",
-    # Scraping exceptions
-    "ScrapingError",
-    "RequestError",
+    # ETL exceptions
+    "ETLError",
+    "ETLTimeoutError",
+    "ExtractionError",
+    "LoadError",
     "ParsingError",
     "RateLimitError",
+    "RequestError",
+    # Scraping exceptions
+    "ScrapingError",
     "TimeoutError",
+    "TransformationError",
+    "ValidationError",
+    "WatcherConfigurationError",
+    "WatcherConnectionError",
     # Watcher exceptions
     "WatcherError",
-    "WatcherConfigurationError",
     "WatcherRuntimeError",
     "WatcherTimeoutError",
     "WatcherValidationError",
-    "WatcherConnectionError",
+    # Base exceptions
+    "WatchtowerError",
 ]

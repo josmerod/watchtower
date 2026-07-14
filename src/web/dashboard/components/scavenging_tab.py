@@ -4,17 +4,17 @@ Improved with premium table layout, clickable links, and search functionality.
 
 import logging
 from pathlib import Path
-import json
 
 import dash
 import dash_bootstrap_components as dbc
-import pandas as pd
 from dash import Input, Output, State, dcc, html
 
 from src.services.data_loader import (
-    load_data_from_file,
-    get_sortable_date,
     format_article_date as format_article_date_shared,
+)
+from src.services.data_loader import (
+    get_sortable_date,
+    load_data_from_file,
 )
 from src.web.dashboard.search_utils import (
     create_search_input,
@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path("data/scavenging")
 
 # --- Data Loading ---
+
 
 def discover_categories() -> dict[str, Path]:
     """Return a mapping of category name -> aggregated JSON path"""
@@ -59,6 +60,7 @@ def discover_categories() -> dict[str, Path]:
         logger.error(f"Error discovering categories: {e}")
         return {}
 
+
 def get_scavenging_data(category_key):
     """Load data for a specific category."""
     categories_map = discover_categories()
@@ -66,9 +68,11 @@ def get_scavenging_data(category_key):
         return []
     return load_data_from_file(str(categories_map[category_key]))
 
+
 # --- Layout Generation ---
 
 MAX_ITEMS_PER_TAB = 100
+
 
 def create_scavenging_table(items):
     """Create a premium dbc.Table from scavenging items."""
@@ -96,17 +100,19 @@ def create_scavenging_table(items):
         # Handle cases where summary is a dict or list (though usually it's a string here)
         if not isinstance(summary, str):
             summary = str(summary)
-            
+
         source = item.get("source", "")
         price = item.get("price", "N/A")
         deal_type = item.get("deal_type") or item.get("category", "General")
         date_display = format_article_date_shared(item)
 
         # Title cell with link
-        title_cell = html.Div([
-            html.A(str(title), href=url, target="_blank", className="fw-bold text-decoration-none text-info") if url else html.Span(str(title), className="fw-bold"),
-            html.Div(f"Source: {source}", className="small text-muted") if source else None
-        ])
+        title_cell = html.Div(
+            [
+                html.A(str(title), href=url, target="_blank", className="fw-bold text-decoration-none text-info") if url else html.Span(str(title), className="fw-bold"),
+                html.Div(f"Source: {source}", className="small text-muted") if source else None,
+            ]
+        )
 
         # Details cell
         details_cell = html.Div(str(summary), className="small", style={"maxWidth": "400px", "whiteSpace": "normal"})
@@ -140,6 +146,7 @@ def create_scavenging_table(items):
         className="mb-0",
     )
 
+
 def render_scavenging_tab() -> html.Div:
     """Render the main Scavenging tab layout."""
     categories_map = discover_categories()
@@ -151,51 +158,52 @@ def render_scavenging_tab() -> html.Div:
     for category in sorted(categories_map.keys()):
         source_display_name = category.replace("_", " ").capitalize()
         tab_search_id = f"scavenging-search-{category}"
-        
+
         # Initial data for store
         initial_data = get_scavenging_data(category)
         initial_data.sort(key=get_sortable_date, reverse=True)
-        
-        tab_content = html.Div([
-            dbc.Row([
-                dbc.Col([
-                    create_search_input(
-                        input_id=tab_search_id,
-                        placeholder=f"Search in {source_display_name}...",
-                        clear_button=True,
-                    )
-                ], width=True)
-            ], className="mb-3 mt-3"),
-            
-            dcc.Store(id=f"{tab_search_id}-data", data=initial_data[:MAX_ITEMS_PER_TAB]),
-            
-            html.Div(
-                create_scavenging_table(initial_data[:MAX_ITEMS_PER_TAB]),
-                id=f"{tab_search_id}-results",
-                style={"maxHeight": "800px", "overflowY": "auto"}
-            )
-        ], className="p-3")
 
-        category_tabs.append(
-            dbc.Tab(
-                label=source_display_name,
-                tab_id=f"tab-scavenging-{category}",
-                children=tab_content
-            )
+        tab_content = html.Div(
+            [
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                create_search_input(
+                                    input_id=tab_search_id,
+                                    placeholder=f"Search in {source_display_name}...",
+                                    clear_button=True,
+                                )
+                            ],
+                            width=True,
+                        )
+                    ],
+                    className="mb-3 mt-3",
+                ),
+                dcc.Store(id=f"{tab_search_id}-data", data=initial_data[:MAX_ITEMS_PER_TAB]),
+                html.Div(create_scavenging_table(initial_data[:MAX_ITEMS_PER_TAB]), id=f"{tab_search_id}-results", style={"maxHeight": "800px", "overflowY": "auto"}),
+            ],
+            className="p-3",
         )
 
-    return html.Div([
-        html.H3("⛏️ Project Scavenging", className="mb-4"),
-        html.P("Automated monitoring of free resources, audiobooks, and deal alerts.", className="text-muted"),
-        dbc.Tabs(id="scavenging-main-tabs", children=category_tabs, active_tab=f"tab-scavenging-{sorted(categories_map.keys())[0]}")
-    ], className="p-4")
+        category_tabs.append(dbc.Tab(label=source_display_name, tab_id=f"tab-scavenging-{category}", children=tab_content))
+
+    return html.Div(
+        [
+            html.H3("⛏️ Project Scavenging", className="mb-4"),
+            html.P("Automated monitoring of free resources, audiobooks, and deal alerts.", className="text-muted"),
+            dbc.Tabs(id="scavenging-main-tabs", children=category_tabs, active_tab=f"tab-scavenging-{sorted(categories_map.keys())[0]}"),
+        ],
+        className="p-4",
+    )
+
 
 def register_scavenging_callbacks(app):
     """Register search and filter callbacks for Scavenging."""
     # We discover categories again to register callbacks for all of them
     categories_map = discover_categories()
 
-    for category in categories_map.keys():
+    for category in categories_map:
         search_id = f"scavenging-search-{category}"
 
         @app.callback(
@@ -221,5 +229,6 @@ def register_scavenging_callbacks(app):
             prevent_initial_call=True,
         )
         def clear_scavenging_search(n_clicks):
-            if n_clicks: return ""
+            if n_clicks:
+                return ""
             return dash.no_update

@@ -1,5 +1,3 @@
-import json
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -8,15 +6,13 @@ import dash_bootstrap_components as dbc
 from dash import html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, parse_date_universal
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
 from src.services.data_loader import (
     KNOWLEDGE_SOURCES_CONFIG,
-    load_data_from_file,
-    parse_date,
     get_sortable_date,
+)
+from src.services.data_loader import (
     format_article_date as format_article_date_shared,
 )
 
@@ -63,6 +59,7 @@ class KnowledgeGardenRepository(BaseRepository[list[dict[str, Any]]]):
             return []
         else:
             return []
+
 
 # Create singleton instances for each source
 opensource_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["opensource"]["path"])
@@ -256,7 +253,7 @@ def render_knowledge_garden_tab():
     ]
 
     tabs_children = []
-    
+
     # 2. Standard Knowledge Sources (Table Layout)
     for tab_def in tab_definitions:
         tab_id = f"knowledge-tab-{tab_def['id']}"

@@ -14,8 +14,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import requests
-
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 
@@ -204,7 +202,7 @@ class BaseWatcher(ABC):
             Exception: If the page cannot be fetched after all retries
         """
         last_exception = None
-        
+
         session = self.proxy_manager.get_session()
 
         for attempt in range(self.max_retries):
@@ -218,7 +216,7 @@ class BaseWatcher(ABC):
                 last_exception = e
                 if attempt < self.max_retries - 1:
                     delay = self.retry_delay * (2**attempt)  # Exponential backoff
-                    self.logger.warning(f"Error fetching URL {self.url}: {e!s}. " f"Retrying in {delay}s... (attempt {attempt + 1}/{self.max_retries})")
+                    self.logger.warning(f"Error fetching URL {self.url}: {e!s}. Retrying in {delay}s... (attempt {attempt + 1}/{self.max_retries})")
                     time.sleep(delay)
                 else:
                     self.logger.error(f"Failed to fetch URL {self.url} after {self.max_retries} attempts: {e!s}")

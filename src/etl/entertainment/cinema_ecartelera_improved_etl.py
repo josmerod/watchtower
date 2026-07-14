@@ -93,8 +93,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
             page = context.new_page()
 
             # Anti-detection script
-            page.add_init_script(
-                """
+            page.add_init_script("""
                 // Remove webdriver property
                 Object.defineProperty(navigator, 'webdriver', {
                     get: () => undefined,
@@ -109,8 +108,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
                 Object.defineProperty(navigator, 'languages', {
                     get: () => ['es-ES', 'es', 'en'],
                 });
-            """
-            )
+            """)
 
             try:
                 for cinema_info in self.cinema_urls:

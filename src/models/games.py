@@ -99,9 +99,7 @@ class GameGiveawayModel(TimestampedModel):
         now = datetime.utcnow()
         if self.expires_at and now > self.expires_at:
             return False
-        if self.starts_at and now < self.starts_at:
-            return False
-        return True
+        return not (self.starts_at and now < self.starts_at)
 
     @property
     def urgency_level(self) -> str:

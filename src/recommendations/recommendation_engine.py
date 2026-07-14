@@ -227,7 +227,7 @@ class RecommendationEngine:
                 :10
             ]  # Limit to 10 recent items
 
-            for i, activity in enumerate(recent_interactions):
+            for _i, activity in enumerate(recent_interactions):
                 # Find similar content based on title
                 similar_content = self._find_similar_content(activity.title, activity.content_type)
 

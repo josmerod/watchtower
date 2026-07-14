@@ -71,7 +71,7 @@ class TrendAnalyzer:
                     },
                     badge=TrendBadge(
                         label="🔥 Trending",
-                        tooltip=f"Volume up {int(pct_change*100)}% this week",
+                        tooltip=f"Volume up {int(pct_change * 100)}% this week",
                     ),
                 )
                 trend_analyses.append(analysis)

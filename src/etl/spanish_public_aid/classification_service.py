@@ -1,8 +1,5 @@
 """Classification service for Spanish public aids."""
 
-import logging
-from typing import Any
-
 from src.models.spanish_public_aid import (
     AidCategory,
     AidScope,

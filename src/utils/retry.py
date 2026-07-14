@@ -35,8 +35,8 @@ from __future__ import annotations
 import logging
 import urllib.error
 import urllib.request
-from functools import wraps
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from tenacity import (
     before_sleep_log,
@@ -60,6 +60,7 @@ _RETRY_BASE: tuple[type[BaseException], ...] = (
 
 try:
     from requests.exceptions import RequestException as _RequestsRequestException  # type: ignore[import-untyped]
+
     RETRYABLE_ERRORS: tuple[type[BaseException], ...] = (
         *_RETRY_BASE,
         _RequestsRequestException,
@@ -71,8 +72,8 @@ except ImportError:  # pragma: no cover – requests not installed
 # Shared tenacity configuration
 # ---------------------------------------------------------------------------
 _TENACITY_KW: dict[str, Any] = {
-    "stop": stop_after_attempt(4),                       # 1 initial + 3 retries
-    "wait": wait_exponential(multiplier=1, min=1, max=4), # ~1s, 2s, 4s
+    "stop": stop_after_attempt(4),  # 1 initial + 3 retries
+    "wait": wait_exponential(multiplier=1, min=1, max=4),  # ~1s, 2s, 4s
     "retry": retry_if_exception_type(RETRYABLE_ERRORS),
     "before_sleep": before_sleep_log(logger, logging.WARNING),
     "reraise": True,

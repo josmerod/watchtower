@@ -11,6 +11,7 @@ Tests cover:
 from __future__ import annotations
 
 import json
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -18,24 +19,23 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
-import threading
 
+from src.utils.date_parser import (
+    DateParser,
+    format_date,
+    get_date_parser,
+    parse_date,
+    to_iso_format,
+)
 from src.web.dashboard.managers.course_data_manager import (
     CourseDataManager,
     CourseDataManagerConfig,
 )
-from src.utils.date_parser import (
-    DateParser,
-    parse_date,
-    format_date,
-    to_iso_format,
-    get_date_parser,
-)
-
 
 # =============================================================================
 # CourseDataManager Tests
 # =============================================================================
+
 
 class TestCourseDataManagerConfig:
     """Test CourseDataManagerConfig configuration."""
@@ -73,34 +73,36 @@ class TestCourseDataManager:
     @pytest.fixture
     def sample_data(self):
         """Create sample course data."""
-        return pd.DataFrame([
-            {
-                "title": "Course 1",
-                "url": "https://example.com/course1",
-                "description": "Description 1",
-                "institution": "Institution 1",
-                "subject": "Subject 1",
-                "language": "en",
-                "duration": "10 hours",
-                "start_date_str": "2024-01-15",
-                "is_free": True,
-                "certificate_offered": True,
-                "scraped_at_str": "2024-01-10T00:00:00Z",
-            },
-            {
-                "title": "Course 2",
-                "url": "https://example.com/course2",
-                "description": "Description 2",
-                "institution": "Institution 2",
-                "subject": "Subject 2",
-                "language": "en",
-                "duration": "15 hours",
-                "start_date_str": "2024-02-01",
-                "is_free": False,
-                "certificate_offered": False,
-                "scraped_at_str": "2024-01-10T00:00:00Z",
-            },
-        ])
+        return pd.DataFrame(
+            [
+                {
+                    "title": "Course 1",
+                    "url": "https://example.com/course1",
+                    "description": "Description 1",
+                    "institution": "Institution 1",
+                    "subject": "Subject 1",
+                    "language": "en",
+                    "duration": "10 hours",
+                    "start_date_str": "2024-01-15",
+                    "is_free": True,
+                    "certificate_offered": True,
+                    "scraped_at_str": "2024-01-10T00:00:00Z",
+                },
+                {
+                    "title": "Course 2",
+                    "url": "https://example.com/course2",
+                    "description": "Description 2",
+                    "institution": "Institution 2",
+                    "subject": "Subject 2",
+                    "language": "en",
+                    "duration": "15 hours",
+                    "start_date_str": "2024-02-01",
+                    "is_free": False,
+                    "certificate_offered": False,
+                    "scraped_at_str": "2024-01-10T00:00:00Z",
+                },
+            ]
+        )
 
     @pytest.fixture
     def manager(self, tmp_path: Path, sample_data: pd.DataFrame):
@@ -333,17 +335,19 @@ class TestCourseDataManager:
     def test_manager_normalize_coursera(self, manager: CourseDataManager):
         """Test Coursera data normalization."""
         # Create raw DataFrame with alternative column names
-        raw_data = pd.DataFrame([
-            {
-                "name": "Course 1",  # Should be renamed to "title"
-                "link": "https://example.com/1",  # Should be renamed to "url"
-                "partner": "Institution 1",  # Should be renamed to "institution"
-                "category": "Subject 1",  # Should be renamed to "subject"
-                "startDate": "2024-01-15",  # Should be renamed to "start_date_str"
-                "isFree": True,  # Should be renamed to "is_free"
-                "hasCertificate": True,  # Should be renamed to "certificate_offered"
-            }
-        ])
+        raw_data = pd.DataFrame(
+            [
+                {
+                    "name": "Course 1",  # Should be renamed to "title"
+                    "link": "https://example.com/1",  # Should be renamed to "url"
+                    "partner": "Institution 1",  # Should be renamed to "institution"
+                    "category": "Subject 1",  # Should be renamed to "subject"
+                    "startDate": "2024-01-15",  # Should be renamed to "start_date_str"
+                    "isFree": True,  # Should be renamed to "is_free"
+                    "hasCertificate": True,  # Should be renamed to "certificate_offered"
+                }
+            ]
+        )
 
         normalized = manager._normalize_coursera(raw_data)
 
@@ -364,6 +368,7 @@ class TestCourseDataManager:
 # DateParser Tests
 # =============================================================================
 
+
 class TestDateParser:
     """Test DateParser functionality."""
 
@@ -376,6 +381,7 @@ class TestDateParser:
     def test_parser_custom_timezone(self):
         """Test parser with custom timezone."""
         import datetime as dt
+
         custom_tz = dt.timezone(dt.timedelta(hours=5))
         parser = DateParser(default_timezone=custom_tz)
         assert parser.default_timezone == custom_tz
@@ -590,6 +596,7 @@ class TestDateParser:
 # Convenience Function Tests
 # =============================================================================
 
+
 class TestConvenienceFunctions:
     """Test convenience functions for date parsing."""
 
@@ -623,6 +630,7 @@ class TestConvenienceFunctions:
 # =============================================================================
 # Edge Cases and Error Handling
 # =============================================================================
+
 
 class TestEdgeCases:
     """Test edge cases and error handling."""

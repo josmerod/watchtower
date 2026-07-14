@@ -11,14 +11,13 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 import requests
 
 from src.config.settings import get_settings
 from src.etl.base import BaseETL
-from src.models.newsapi import NewsApiArticleModel, NewsApiMetricsModel, NewsArticleSourceModel
+from src.models.newsapi import NewsApiArticleModel, NewsApiMetricsModel
 from src.utils.logging import get_logger
 
 
@@ -176,7 +175,7 @@ class NewsApiETL(BaseETL[dict[str, Any], NewsApiArticleModel]):
                 self.logger.warning("Rate limited by NewsAPI")
                 self.api_metrics.rate_limit_hits += 1
             raise
-        except Exception as e:
+        except Exception:
             self.api_metrics.failed_requests += 1
             raise
 
@@ -209,7 +208,7 @@ class NewsApiETL(BaseETL[dict[str, Any], NewsApiArticleModel]):
             if e.response.status_code == 429:
                 self.api_metrics.rate_limit_hits += 1
             raise
-        except Exception as e:
+        except Exception:
             self.api_metrics.failed_requests += 1
             raise
 
@@ -344,7 +343,7 @@ def main():
         etl = NewsApiETL()
         metrics = etl.run()
 
-        logger.info(f"ETL completed successfully")
+        logger.info("ETL completed successfully")
         logger.info(f"Records extracted: {metrics.records_extracted}")
         logger.info(f"Records transformed: {metrics.records_transformed}")
         logger.info(f"Records loaded: {metrics.records_loaded}")

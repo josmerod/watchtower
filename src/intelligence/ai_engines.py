@@ -1,13 +1,14 @@
 """Intelligence engines for AI Research analysis."""
 
-from typing import Optional
-from pydantic import BaseModel, Field
-
-from src.models.ai_research_model import AIResearchPaper, ImplementationComplexity
-from src.intelligence.llm_client import get_llm_client, LLMClient
 import logging
 
+from pydantic import BaseModel, Field
+
+from src.intelligence.llm_client import LLMClient, get_llm_client
+from src.models.ai_research_model import AIResearchPaper, ImplementationComplexity
+
 logger = logging.getLogger(__name__)
+
 
 # Pydantic models for structured LLM extraction
 class PaperAnalysis(BaseModel):
@@ -20,13 +21,13 @@ class PaperAnalysis(BaseModel):
 
 class AITrendDetector:
     """Detects trends in AI research using Hybrid (Heuristic + LLM) approach."""
-    
+
     def __init__(self):
         self.llm_client: LLMClient = get_llm_client()
 
     def analyze_trend(self, paper: AIResearchPaper) -> float:
         """Calculate trend score (0.0-1.0 scale).
-        
+
         Hybrid Logic:
         1. Base heuristic score (keyword match).
         2. If heuristic > 0.4 (potentially interesting), use LLM for deep analysis.
@@ -34,12 +35,12 @@ class AITrendDetector:
         """
         # 1. Heuristic Check
         heuristic_score = self._heuristic_score(paper)
-        
+
         # 2. Threshold Check (Optimize costs)
         # Only use LLM for potentially relevant papers
         if heuristic_score < 0.3:
             return heuristic_score
-            
+
         # 3. LLM Analysis
         try:
             analysis = self._get_llm_analysis(paper)
@@ -48,7 +49,7 @@ class AITrendDetector:
                 return (analysis.trend_score * 0.7) + (heuristic_score * 0.3)
         except Exception as e:
             logger.warning(f"LLM analysis failed for {paper.title}: {e}")
-            
+
         return heuristic_score
 
     def _heuristic_score(self, paper: AIResearchPaper) -> float:
@@ -56,13 +57,13 @@ class AITrendDetector:
         score = 0.5
         title_lower = paper.title.lower()
         hot_keywords = ["transformer", "diffusion", "llm", "generative", "foundation model", "agent", "rag", "reasoning"]
-        
+
         for kw in hot_keywords:
             if kw in title_lower:
                 score += 0.1
         return min(1.0, score)
 
-    def _get_llm_analysis(self, paper: AIResearchPaper) -> Optional[PaperAnalysis]:
+    def _get_llm_analysis(self, paper: AIResearchPaper) -> PaperAnalysis | None:
         """Call LLM to analyze paper."""
         prompt = (
             "Analyze this AI research paper. "
@@ -71,7 +72,7 @@ class AITrendDetector:
             "Estimate implementation complexity for a single engineer."
         )
         content = f"Title: {paper.title}\nAbstract: {paper.summary}\nDomain: {paper.primary_domain}"
-        
+
         return self.llm_client.extract_structured_data(content, PaperAnalysis, prompt)
 
 
@@ -83,14 +84,14 @@ class ImplementationComplexityScorer:
         # Check if code is available (Strongest signal)
         if paper.code_url:
             return ImplementationComplexity.LOW
-            
+
         # Fallback to simple heuristic if LLM analysis wasn't cached/done
         # (In a real scenario, we'd reuse the LLM result from TrendDetector if available)
-        
+
         # Simple heuristic
         if "theory" in paper.primary_domain.lower() or "math" in paper.primary_domain.lower():
             return ImplementationComplexity.VERY_HIGH
-            
+
         return ImplementationComplexity.HIGH
 
 
@@ -106,5 +107,5 @@ class ResearchOpportunityAnalyzer:
 
         if not paper.code_url and paper.trend_score > 0.8:
             opportunities.append("High-Value Open Source Implementation Gap")
-            
+
         return opportunities

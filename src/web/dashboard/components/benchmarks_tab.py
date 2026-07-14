@@ -9,14 +9,15 @@ Displays model performance across multiple benchmark sources:
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+from dash import html
 
 logger = logging.getLogger(__name__)
 
 # ── Project Root ──────────────────────────────────────────────
+
 
 def _get_project_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
@@ -25,6 +26,7 @@ def _get_project_root() -> str:
 # ═══════════════════════════════════════════════════════════════
 # SECTION 1: BridgeBench.ai (unchanged from original)
 # ═══════════════════════════════════════════════════════════════
+
 
 def _load_benchmark_category(category: str) -> list[dict]:
     """Load benchmark JSON for a given category."""
@@ -143,10 +145,7 @@ def _build_table(models: list[dict], category: str) -> html.Table:
     columns = config["columns"]
     numeric_cols = config["numeric_cols"]
 
-    header_cells = [
-        html.Th(COLUMN_LABELS.get(c, c.title()), style={"textAlign": "center" if c != "model" else "left", "fontSize": "0.85rem", "textTransform": "uppercase"})
-        for c in columns
-    ]
+    header_cells = [html.Th(COLUMN_LABELS.get(c, c.title()), style={"textAlign": "center" if c != "model" else "left", "fontSize": "0.85rem", "textTransform": "uppercase"}) for c in columns]
     thead = html.Thead(html.Tr(header_cells))
 
     rows = []
@@ -180,10 +179,13 @@ def _build_category_tab(category: str) -> html.Div:
     models = _load_benchmark_category(category)
 
     if not models:
-        return html.Div([
-            html.H5(f"{config['label']} — No Data", className="text-muted"),
-            html.P("Benchmark data file not found. Run the ETL to generate it."),
-        ], className="p-3")
+        return html.Div(
+            [
+                html.H5(f"{config['label']} — No Data", className="text-muted"),
+                html.P("Benchmark data file not found. Run the ETL to generate it."),
+            ],
+            className="p-3",
+        )
 
     meta_items = []
     data_path = os.path.join(_get_project_root(), "data", "benchmarks", f"bridgebench_{category}.json")
@@ -202,14 +204,19 @@ def _build_category_tab(category: str) -> html.Div:
     meta_text = " · ".join(meta_items)
     source_link = html.A("BridgeBench.ai", href=f"https://bridgebench.ai/{category}", target="_blank", rel="noopener noreferrer", style={"color": "#6c757d"})
 
-    return html.Div([
-        html.Div([
-            html.H5(config["label"], className="mb-1", style={"fontWeight": "700"}),
-            html.P(config["description"], className="mb-1 text-muted", style={"fontSize": "0.85rem"}),
-            html.Small([source_link, " · ", meta_text], className="text-muted"),
-        ], className="mb-3"),
-        html.Div(_build_table(models, category), style={"overflowX": "auto", "borderRadius": "8px", "border": "1px solid #dee2e6"}),
-    ])
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.H5(config["label"], className="mb-1", style={"fontWeight": "700"}),
+                    html.P(config["description"], className="mb-1 text-muted", style={"fontSize": "0.85rem"}),
+                    html.Small([source_link, " · ", meta_text], className="text-muted"),
+                ],
+                className="mb-3",
+            ),
+            html.Div(_build_table(models, category), style={"overflowX": "auto", "borderRadius": "8px", "border": "1px solid #dee2e6"}),
+        ]
+    )
 
 
 def _safe_float(val) -> float:
@@ -229,54 +236,84 @@ def _render_bridgebench_section() -> html.Div:
 
     summary_cards = []
     if top_quality:
-        summary_cards.extend([
-            dbc.Card([
-                dbc.CardBody([
-                    html.Small("Models Ranked", className="text-muted"),
-                    html.H3(str(len(overall_models)), className="mb-0", style={"color": "#007bff"}),
-                ], className="text-center py-2"),
-            ], className="col-md-3 col-6 mb-2"),
-            dbc.Card([
-                dbc.CardBody([
-                    html.Small("Quality Leader", className="text-muted"),
-                    html.H6(top_quality.get("model", "—"), className="mb-0", style={"fontWeight": "700"}),
-                    html.Span(f"{top_quality.get('quality', '—')} pts", className="badge bg-success"),
-                ], className="text-center py-2"),
-            ], className="col-md-3 col-6 mb-2"),
-            dbc.Card([
-                dbc.CardBody([
-                    html.Small("Vibe Leader", className="text-muted"),
-                    html.H6(vibe_leader.get("model", "—") if vibe_leader else "—", className="mb-0", style={"fontWeight": "700", "fontSize": "0.85rem"}),
-                    html.Span(f"{vibe_leader.get('vibe', '—') if vibe_leader else '—'} pts", className="badge bg-info"),
-                ], className="text-center py-2"),
-            ], className="col-md-3 col-6 mb-2"),
-            dbc.Card([
-                dbc.CardBody([
-                    html.Small("Source", className="text-muted"),
-                    html.H6(html.A("BridgeBench.ai", href="https://bridgebench.ai", target="_blank"), className="mb-0"),
-                    html.Span("AI Coding Benchmarks", className="text-muted", style={"fontSize": "0.75rem"}),
-                ], className="text-center py-2"),
-            ], className="col-md-3 col-6 mb-2"),
-        ])
+        summary_cards.extend(
+            [
+                dbc.Card(
+                    [
+                        dbc.CardBody(
+                            [
+                                html.Small("Models Ranked", className="text-muted"),
+                                html.H3(str(len(overall_models)), className="mb-0", style={"color": "#007bff"}),
+                            ],
+                            className="text-center py-2",
+                        ),
+                    ],
+                    className="col-md-3 col-6 mb-2",
+                ),
+                dbc.Card(
+                    [
+                        dbc.CardBody(
+                            [
+                                html.Small("Quality Leader", className="text-muted"),
+                                html.H6(top_quality.get("model", "—"), className="mb-0", style={"fontWeight": "700"}),
+                                html.Span(f"{top_quality.get('quality', '—')} pts", className="badge bg-success"),
+                            ],
+                            className="text-center py-2",
+                        ),
+                    ],
+                    className="col-md-3 col-6 mb-2",
+                ),
+                dbc.Card(
+                    [
+                        dbc.CardBody(
+                            [
+                                html.Small("Vibe Leader", className="text-muted"),
+                                html.H6(vibe_leader.get("model", "—") if vibe_leader else "—", className="mb-0", style={"fontWeight": "700", "fontSize": "0.85rem"}),
+                                html.Span(f"{vibe_leader.get('vibe', '—') if vibe_leader else '—'} pts", className="badge bg-info"),
+                            ],
+                            className="text-center py-2",
+                        ),
+                    ],
+                    className="col-md-3 col-6 mb-2",
+                ),
+                dbc.Card(
+                    [
+                        dbc.CardBody(
+                            [
+                                html.Small("Source", className="text-muted"),
+                                html.H6(html.A("BridgeBench.ai", href="https://bridgebench.ai", target="_blank"), className="mb-0"),
+                                html.Span("AI Coding Benchmarks", className="text-muted", style={"fontSize": "0.75rem"}),
+                            ],
+                            className="text-center py-2",
+                        ),
+                    ],
+                    className="col-md-3 col-6 mb-2",
+                ),
+            ]
+        )
 
     tab_children = []
     for cat_key, cat_config in BENCHMARK_CATEGORIES.items():
-        tab_children.append(
-            dbc.Tab(label=cat_config["label"], tab_id=f"benchmark-{cat_key}", children=[_build_category_tab(cat_key)])
-        )
+        tab_children.append(dbc.Tab(label=cat_config["label"], tab_id=f"benchmark-{cat_key}", children=[_build_category_tab(cat_key)]))
 
-    return html.Div([
-        html.Div([
-            html.H4("🏆 AI Coding Benchmarks", className="mb-3", style={"fontWeight": "700"}),
-            dbc.Row(summary_cards) if summary_cards else None,
-        ], className="mb-3"),
-        dbc.Tabs(tab_children, id="benchmark-category-tabs", active_tab="benchmark-overall", className="nav-justified"),
-    ])
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.H4("🏆 AI Coding Benchmarks", className="mb-3", style={"fontWeight": "700"}),
+                    dbc.Row(summary_cards) if summary_cards else None,
+                ],
+                className="mb-3",
+            ),
+            dbc.Tabs(tab_children, id="benchmark-category-tabs", active_tab="benchmark-overall", className="nav-justified"),
+        ]
+    )
 
 
 # ═══════════════════════════════════════════════════════════════
 # SECTION 2: Artificial Analysis
 # ═══════════════════════════════════════════════════════════════
+
 
 def _load_aa_data(filename: str) -> tuple[list[dict], dict]:
     """Load Artificial Analysis JSON. Returns (models_list, metadata_dict)."""
@@ -404,30 +441,29 @@ def _build_aa_llm_table(models: list[dict], filter_open: str = "all", sort_by: s
 
     # Header
     cols = ["#", "Model", "Creator", "Type", "Intelligence", "Coding", "Math", "MMLU-Pro", "GPQA", "Price In", "Price Out", "Speed", "TTFT"]
-    header = html.Thead(html.Tr([
-        html.Th(c, style={"textAlign": "center", "fontSize": "0.78rem", "textTransform": "uppercase", "whiteSpace": "nowrap"})
-        for c in cols
-    ]))
+    header = html.Thead(html.Tr([html.Th(c, style={"textAlign": "center", "fontSize": "0.78rem", "textTransform": "uppercase", "whiteSpace": "nowrap"}) for c in cols]))
 
     rows = []
     for i, m in enumerate(display):
         badge_class = "badge bg-success" if m.get("open_weights") else "badge bg-secondary"
         badge_text = "Open" if m.get("open_weights") else "Prop"
-        row = html.Tr([
-            html.Td(str(i + 1), style={"textAlign": "center", "color": "#6c757d", "fontSize": "0.85rem"}),
-            html.Td(m.get("name", "—"), style={"fontWeight": "600", "fontSize": "0.85rem", "whiteSpace": "nowrap"}),
-            html.Td(m.get("creator", "—"), style={"fontSize": "0.8rem", "color": "#495057"}),
-            html.Td(html.Span(badge_text, className=badge_class, style={"fontSize": "0.7rem"}), style={"textAlign": "center"}),
-            _aa_score_cell(_fmt_score(m.get("intelligence_index"))),
-            _aa_score_cell(_fmt_score(m.get("coding_index"))),
-            _aa_score_cell(_fmt_score(m.get("math_index"))),
-            _aa_score_cell(_fmt_score(m.get("mmlu_pro"))),
-            _aa_score_cell(_fmt_score(m.get("gpqa"))),
-            _aa_score_cell(_fmt_price(m.get("price_input_per_1m")), is_benchmark=False),
-            _aa_score_cell(_fmt_price(m.get("price_output_per_1m")), is_benchmark=False),
-            _aa_score_cell(_fmt_speed(m.get("median_output_tps")), is_benchmark=False),
-            _aa_score_cell(_fmt_ttft(m.get("median_ttft")), is_benchmark=False),
-        ])
+        row = html.Tr(
+            [
+                html.Td(str(i + 1), style={"textAlign": "center", "color": "#6c757d", "fontSize": "0.85rem"}),
+                html.Td(m.get("name", "—"), style={"fontWeight": "600", "fontSize": "0.85rem", "whiteSpace": "nowrap"}),
+                html.Td(m.get("creator", "—"), style={"fontSize": "0.8rem", "color": "#495057"}),
+                html.Td(html.Span(badge_text, className=badge_class, style={"fontSize": "0.7rem"}), style={"textAlign": "center"}),
+                _aa_score_cell(_fmt_score(m.get("intelligence_index"))),
+                _aa_score_cell(_fmt_score(m.get("coding_index"))),
+                _aa_score_cell(_fmt_score(m.get("math_index"))),
+                _aa_score_cell(_fmt_score(m.get("mmlu_pro"))),
+                _aa_score_cell(_fmt_score(m.get("gpqa"))),
+                _aa_score_cell(_fmt_price(m.get("price_input_per_1m")), is_benchmark=False),
+                _aa_score_cell(_fmt_price(m.get("price_output_per_1m")), is_benchmark=False),
+                _aa_score_cell(_fmt_speed(m.get("median_output_tps")), is_benchmark=False),
+                _aa_score_cell(_fmt_ttft(m.get("median_ttft")), is_benchmark=False),
+            ]
+        )
         rows.append(row)
 
     tbody = html.Tbody(rows)
@@ -449,25 +485,24 @@ def _build_aa_image_table(models: list[dict]) -> html.Div:
     display = models[:50]  # Top 50
 
     cols = ["#", "Model", "Creator", "Type", "Arena ELO", "Votes", "Quality #", "Alignment #"]
-    header = html.Thead(html.Tr([
-        html.Th(c, style={"textAlign": "center", "fontSize": "0.78rem", "textTransform": "uppercase", "whiteSpace": "nowrap"})
-        for c in cols
-    ]))
+    header = html.Thead(html.Tr([html.Th(c, style={"textAlign": "center", "fontSize": "0.78rem", "textTransform": "uppercase", "whiteSpace": "nowrap"}) for c in cols]))
 
     rows = []
     for i, m in enumerate(display):
         badge_class = "badge bg-success" if m.get("open_weights") else "badge bg-secondary"
         badge_text = "Open" if m.get("open_weights") else "Prop"
-        row = html.Tr([
-            html.Td(str(i + 1), style={"textAlign": "center", "color": "#6c757d", "fontSize": "0.85rem"}),
-            html.Td(m.get("name", "—"), style={"fontWeight": "600", "fontSize": "0.85rem", "whiteSpace": "nowrap"}),
-            html.Td(m.get("creator", "—"), style={"fontSize": "0.8rem", "color": "#495057"}),
-            html.Td(html.Span(badge_text, className=badge_class, style={"fontSize": "0.7rem"}), style={"textAlign": "center"}),
-            _aa_score_cell(_fmt_score(m.get("arena_elo"))),
-            html.Td(_fmt_score(m.get("arena_votes")), style={"textAlign": "center", "fontSize": "0.85rem", "color": "#6c757d"}),
-            html.Td(_fmt_score(m.get("quality_ranking")), style={"textAlign": "center", "fontSize": "0.85rem"}),
-            html.Td(_fmt_score(m.get("alignment_ranking")), style={"textAlign": "center", "fontSize": "0.85rem"}),
-        ])
+        row = html.Tr(
+            [
+                html.Td(str(i + 1), style={"textAlign": "center", "color": "#6c757d", "fontSize": "0.85rem"}),
+                html.Td(m.get("name", "—"), style={"fontWeight": "600", "fontSize": "0.85rem", "whiteSpace": "nowrap"}),
+                html.Td(m.get("creator", "—"), style={"fontSize": "0.8rem", "color": "#495057"}),
+                html.Td(html.Span(badge_text, className=badge_class, style={"fontSize": "0.7rem"}), style={"textAlign": "center"}),
+                _aa_score_cell(_fmt_score(m.get("arena_elo"))),
+                html.Td(_fmt_score(m.get("arena_votes")), style={"textAlign": "center", "fontSize": "0.85rem", "color": "#6c757d"}),
+                html.Td(_fmt_score(m.get("quality_ranking")), style={"textAlign": "center", "fontSize": "0.85rem"}),
+                html.Td(_fmt_score(m.get("alignment_ranking")), style={"textAlign": "center", "fontSize": "0.85rem"}),
+            ]
+        )
         rows.append(row)
 
     tbody = html.Tbody(rows)
@@ -499,20 +534,29 @@ def _get_aa_meta_text(meta: dict, filename: str) -> str:
 
 def _render_aa_no_data() -> html.Div:
     """Render placeholder when no AA data is available."""
-    return html.Div([
-        html.Div([
-            html.H5("📊 Artificial Analysis — No Data", className="text-muted"),
-            html.P("Benchmark data not found. Run the ETL to fetch data:"),
-            html.Code("python -m src.etl.benchmarks.artificial_analysis_etl", style={"fontSize": "0.85rem"}),
-            html.P([
-                "Set ",
-                html.Code("ARTIFICIAL_ANALYSIS_API_KEY", style={"fontSize": "0.85rem"}),
-                " in your environment or .env file. Get a free key at ",
-                html.A("artificialanalysis.ai", href="https://artificialanalysis.ai/", target="_blank"),
-                ".",
-            ], className="text-muted mt-2", style={"fontSize": "0.85rem"}),
-        ], className="p-3"),
-    ])
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.H5("📊 Artificial Analysis — No Data", className="text-muted"),
+                    html.P("Benchmark data not found. Run the ETL to fetch data:"),
+                    html.Code("python -m src.etl.benchmarks.artificial_analysis_etl", style={"fontSize": "0.85rem"}),
+                    html.P(
+                        [
+                            "Set ",
+                            html.Code("ARTIFICIAL_ANALYSIS_API_KEY", style={"fontSize": "0.85rem"}),
+                            " in your environment or .env file. Get a free key at ",
+                            html.A("artificialanalysis.ai", href="https://artificialanalysis.ai/", target="_blank"),
+                            ".",
+                        ],
+                        className="text-muted mt-2",
+                        style={"fontSize": "0.85rem"},
+                    ),
+                ],
+                className="p-3",
+            ),
+        ]
+    )
 
 
 def _render_aa_llm_section() -> html.Div:
@@ -531,74 +575,123 @@ def _render_aa_llm_section() -> html.Div:
     prop_count = len(models) - open_count
 
     summary_cards = [
-        dbc.Card([
-            dbc.CardBody([
-                html.Small("Total Models", className="text-muted"),
-                html.H3(str(len(models)), className="mb-0", style={"color": "#6f42c1"}),
-            ], className="text-center py-2"),
-        ], className="col-md-2 col-4 mb-2"),
-        dbc.Card([
-            dbc.CardBody([
-                html.Small("With Scores", className="text-muted"),
-                html.H3(str(len(with_evals)), className="mb-0", style={"color": "#007bff"}),
-            ], className="text-center py-2"),
-        ], className="col-md-2 col-4 mb-2"),
-        dbc.Card([
-            dbc.CardBody([
-                html.Small("Open Weights", className="text-muted"),
-                html.H3(str(open_count), className="mb-0", style={"color": "#28a745"}),
-            ], className="text-center py-2"),
-        ], className="col-md-2 col-4 mb-2"),
-        dbc.Card([
-            dbc.CardBody([
-                html.Small("Proprietary", className="text-muted"),
-                html.H3(str(prop_count), className="mb-0", style={"color": "#6c757d"}),
-            ], className="text-center py-2"),
-        ], className="col-md-2 col-4 mb-2"),
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    [
+                        html.Small("Total Models", className="text-muted"),
+                        html.H3(str(len(models)), className="mb-0", style={"color": "#6f42c1"}),
+                    ],
+                    className="text-center py-2",
+                ),
+            ],
+            className="col-md-2 col-4 mb-2",
+        ),
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    [
+                        html.Small("With Scores", className="text-muted"),
+                        html.H3(str(len(with_evals)), className="mb-0", style={"color": "#007bff"}),
+                    ],
+                    className="text-center py-2",
+                ),
+            ],
+            className="col-md-2 col-4 mb-2",
+        ),
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    [
+                        html.Small("Open Weights", className="text-muted"),
+                        html.H3(str(open_count), className="mb-0", style={"color": "#28a745"}),
+                    ],
+                    className="text-center py-2",
+                ),
+            ],
+            className="col-md-2 col-4 mb-2",
+        ),
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    [
+                        html.Small("Proprietary", className="text-muted"),
+                        html.H3(str(prop_count), className="mb-0", style={"color": "#6c757d"}),
+                    ],
+                    className="text-center py-2",
+                ),
+            ],
+            className="col-md-2 col-4 mb-2",
+        ),
     ]
 
     # Top models quick stats
     if with_evals:
         best_intel = max(with_evals, key=lambda m: m.get("intelligence_index") or 0)
         best_coding = max(with_evals, key=lambda m: m.get("coding_index") or 0)
-        best_math = max(with_evals, key=lambda m: m.get("math_index") or 0)
+        max(with_evals, key=lambda m: m.get("math_index") or 0)
 
-        summary_cards.extend([
-            dbc.Card([
-                dbc.CardBody([
-                    html.Small("Best Intelligence", className="text-muted"),
-                    html.H6(best_intel.get("name", "—"), className="mb-0", style={"fontWeight": "700", "fontSize": "0.8rem"}),
-                    html.Span(f"{_fmt_score(best_intel.get('intelligence_index'))}", className="badge bg-primary"),
-                ], className="text-center py-2"),
-            ], className="col-md-2 col-4 mb-2"),
-            dbc.Card([
-                dbc.CardBody([
-                    html.Small("Best Coding", className="text-muted"),
-                    html.H6(best_coding.get("name", "—"), className="mb-0", style={"fontWeight": "700", "fontSize": "0.8rem"}),
-                    html.Span(f"{_fmt_score(best_coding.get('coding_index'))}", className="badge bg-warning"),
-                ], className="text-center py-2"),
-            ], className="col-md-2 col-4 mb-2"),
-        ])
+        summary_cards.extend(
+            [
+                dbc.Card(
+                    [
+                        dbc.CardBody(
+                            [
+                                html.Small("Best Intelligence", className="text-muted"),
+                                html.H6(best_intel.get("name", "—"), className="mb-0", style={"fontWeight": "700", "fontSize": "0.8rem"}),
+                                html.Span(f"{_fmt_score(best_intel.get('intelligence_index'))}", className="badge bg-primary"),
+                            ],
+                            className="text-center py-2",
+                        ),
+                    ],
+                    className="col-md-2 col-4 mb-2",
+                ),
+                dbc.Card(
+                    [
+                        dbc.CardBody(
+                            [
+                                html.Small("Best Coding", className="text-muted"),
+                                html.H6(best_coding.get("name", "—"), className="mb-0", style={"fontWeight": "700", "fontSize": "0.8rem"}),
+                                html.Span(f"{_fmt_score(best_coding.get('coding_index'))}", className="badge bg-warning"),
+                            ],
+                            className="text-center py-2",
+                        ),
+                    ],
+                    className="col-md-2 col-4 mb-2",
+                ),
+            ]
+        )
 
     # Sort/filter controls (static — Dash callbacks could make these dynamic)
-    filter_info = html.Div([
-        html.Small([
-            "💡 Showing top 100. Data is sorted by Intelligence Index by default. "
-            "Use the API endpoint for custom filtering: ",
-            html.Code("/api/v1/benchmarks/artificial-analysis?model_type=llm", style={"fontSize": "0.75rem"}),
-        ], className="text-muted", style={"fontSize": "0.8rem"}),
-    ], className="mb-2")
+    filter_info = html.Div(
+        [
+            html.Small(
+                [
+                    "💡 Showing top 100. Data is sorted by Intelligence Index by default. Use the API endpoint for custom filtering: ",
+                    html.Code("/api/v1/benchmarks/artificial-analysis?model_type=llm", style={"fontSize": "0.75rem"}),
+                ],
+                className="text-muted",
+                style={"fontSize": "0.8rem"},
+            ),
+        ],
+        className="mb-2",
+    )
 
-    return html.Div([
-        html.Div([
-            html.H5("🤖 LLM Leaderboard", className="mb-1", style={"fontWeight": "700"}),
-            html.P("Comprehensive benchmarks across intelligence, coding, math, pricing, and speed.", className="mb-1 text-muted", style={"fontSize": "0.85rem"}),
-            html.Small([source_link, " · ", meta_text], className="text-muted"),
-        ], className="mb-3"),
-        dbc.Row(summary_cards),
-        filter_info,
-        _build_aa_llm_table(models),
-    ])
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.H5("🤖 LLM Leaderboard", className="mb-1", style={"fontWeight": "700"}),
+                    html.P("Comprehensive benchmarks across intelligence, coding, math, pricing, and speed.", className="mb-1 text-muted", style={"fontSize": "0.85rem"}),
+                    html.Small([source_link, " · ", meta_text], className="text-muted"),
+                ],
+                className="mb-3",
+            ),
+            dbc.Row(summary_cards),
+            filter_info,
+            _build_aa_llm_table(models),
+        ]
+    )
 
 
 def _render_aa_image_section() -> html.Div:
@@ -606,13 +699,18 @@ def _render_aa_image_section() -> html.Div:
     models, meta = _load_aa_data("artificial_analysis_image.json")
 
     if not models:
-        return html.Div([
-            html.Div([
-                html.H5("🎨 Image Models Arena — No Data", className="text-muted"),
-                html.P("Run the ETL with the text-to-image endpoint to fetch arena data."),
-                html.Code("python -m src.etl.benchmarks.artificial_analysis_etl", style={"fontSize": "0.85rem"}),
-            ], className="p-3"),
-        ])
+        return html.Div(
+            [
+                html.Div(
+                    [
+                        html.H5("🎨 Image Models Arena — No Data", className="text-muted"),
+                        html.P("Run the ETL with the text-to-image endpoint to fetch arena data."),
+                        html.Code("python -m src.etl.benchmarks.artificial_analysis_etl", style={"fontSize": "0.85rem"}),
+                    ],
+                    className="p-3",
+                ),
+            ]
+        )
 
     meta_text = _get_aa_meta_text(meta, "artificial_analysis_image.json")
     source_link = html.A("Artificial Analysis", href="https://artificialanalysis.ai/text-to-image", target="_blank", rel="noopener noreferrer", style={"color": "#6c757d"})
@@ -620,41 +718,64 @@ def _render_aa_image_section() -> html.Div:
     open_count = sum(1 for m in models if m.get("open_weights"))
 
     summary_cards = [
-        dbc.Card([
-            dbc.CardBody([
-                html.Small("Total Models", className="text-muted"),
-                html.H3(str(len(models)), className="mb-0", style={"color": "#6f42c1"}),
-            ], className="text-center py-2"),
-        ], className="col-md-3 col-6 mb-2"),
-        dbc.Card([
-            dbc.CardBody([
-                html.Small("Open Weights", className="text-muted"),
-                html.H3(str(open_count), className="mb-0", style={"color": "#28a745"}),
-            ], className="text-center py-2"),
-        ], className="col-md-3 col-6 mb-2"),
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    [
+                        html.Small("Total Models", className="text-muted"),
+                        html.H3(str(len(models)), className="mb-0", style={"color": "#6f42c1"}),
+                    ],
+                    className="text-center py-2",
+                ),
+            ],
+            className="col-md-3 col-6 mb-2",
+        ),
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    [
+                        html.Small("Open Weights", className="text-muted"),
+                        html.H3(str(open_count), className="mb-0", style={"color": "#28a745"}),
+                    ],
+                    className="text-center py-2",
+                ),
+            ],
+            className="col-md-3 col-6 mb-2",
+        ),
     ]
 
     if models:
         top_elo = models[0]
         summary_cards.append(
-            dbc.Card([
-                dbc.CardBody([
-                    html.Small("Arena Leader", className="text-muted"),
-                    html.H6(top_elo.get("name", "—"), className="mb-0", style={"fontWeight": "700", "fontSize": "0.8rem"}),
-                    html.Span(f"ELO: {_fmt_score(top_elo.get('arena_elo'))}", className="badge bg-primary"),
-                ], className="text-center py-2"),
-            ], className="col-md-3 col-6 mb-2"),
+            dbc.Card(
+                [
+                    dbc.CardBody(
+                        [
+                            html.Small("Arena Leader", className="text-muted"),
+                            html.H6(top_elo.get("name", "—"), className="mb-0", style={"fontWeight": "700", "fontSize": "0.8rem"}),
+                            html.Span(f"ELO: {_fmt_score(top_elo.get('arena_elo'))}", className="badge bg-primary"),
+                        ],
+                        className="text-center py-2",
+                    ),
+                ],
+                className="col-md-3 col-6 mb-2",
+            ),
         )
 
-    return html.Div([
-        html.Div([
-            html.H5("🎨 Image Models Arena", className="mb-1", style={"fontWeight": "700"}),
-            html.P("ELO ratings from the Artificial Analysis text-to-image arena.", className="mb-1 text-muted", style={"fontSize": "0.85rem"}),
-            html.Small([source_link, " · ", meta_text], className="text-muted"),
-        ], className="mb-3"),
-        dbc.Row(summary_cards),
-        _build_aa_image_table(models),
-    ])
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.H5("🎨 Image Models Arena", className="mb-1", style={"fontWeight": "700"}),
+                    html.P("ELO ratings from the Artificial Analysis text-to-image arena.", className="mb-1 text-muted", style={"fontSize": "0.85rem"}),
+                    html.Small([source_link, " · ", meta_text], className="text-muted"),
+                ],
+                className="mb-3",
+            ),
+            dbc.Row(summary_cards),
+            _build_aa_image_table(models),
+        ]
+    )
 
 
 def _render_artificial_analysis_section() -> html.Div:
@@ -664,22 +785,27 @@ def _render_artificial_analysis_section() -> html.Div:
         dbc.Tab(label="🎨 Image Arena", tab_id="aa-image", children=[_render_aa_image_section()]),
     ]
 
-    return html.Div([
-        html.Div([
-            html.H4("📊 Artificial Analysis", className="mb-1", style={"fontWeight": "700"}),
-            html.P(
-                "Comprehensive AI model benchmarks — intelligence, coding, math, pricing, speed, and image generation arena ratings.",
-                className="text-muted mb-3",
-                style={"fontSize": "0.9rem"},
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.H4("📊 Artificial Analysis", className="mb-1", style={"fontWeight": "700"}),
+                    html.P(
+                        "Comprehensive AI model benchmarks — intelligence, coding, math, pricing, speed, and image generation arena ratings.",
+                        className="text-muted mb-3",
+                        style={"fontSize": "0.9rem"},
+                    ),
+                ]
             ),
-        ]),
-        dbc.Tabs(aa_tabs, id="aa-category-tabs", active_tab="aa-llm", className="nav-justified"),
-    ])
+            dbc.Tabs(aa_tabs, id="aa-category-tabs", active_tab="aa-llm", className="nav-justified"),
+        ]
+    )
 
 
 # ═══════════════════════════════════════════════════════════════
 # MAIN: Combined Benchmarks Tab
 # ═══════════════════════════════════════════════════════════════
+
 
 def render_benchmarks_tab() -> html.Div:
     """Render the full benchmarks tab with top-level source tabs."""
@@ -697,15 +823,17 @@ def render_benchmarks_tab() -> html.Div:
         ),
     ]
 
-    return html.Div([
-        dbc.Tabs(
-            top_tabs,
-            id="benchmarks-source-tabs",
-            active_tab="benchmarks-bridgebench",
-            className="nav-fill mb-4",
-            style={"fontSize": "1.1rem"},
-        ),
-    ])
+    return html.Div(
+        [
+            dbc.Tabs(
+                top_tabs,
+                id="benchmarks-source-tabs",
+                active_tab="benchmarks-bridgebench",
+                className="nav-fill mb-4",
+                style={"fontSize": "1.1rem"},
+            ),
+        ]
+    )
 
 
 def register_benchmarks_callbacks(app):

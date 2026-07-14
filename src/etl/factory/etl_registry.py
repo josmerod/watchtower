@@ -3,7 +3,7 @@
 This module registers all ETLs with the ETLFactory for dynamic instantiation.
 """
 
-from src.etl.factory.etl_factory import ETLFactory, register_etl
+from src.etl.factory.etl_factory import ETLFactory
 
 # Import ETL classes to register them
 # Note: We use lazy imports to avoid circular dependencies
@@ -25,8 +25,6 @@ def register_all_etls() -> None:
             config={"batch_size": 100, "enable_checkpointing": True},
         )
     except Exception as e:
-        from typing import cast
-
         import logging
 
         logging.warning(f"Failed to register ArxivETL: {e}")

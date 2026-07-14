@@ -11,7 +11,6 @@ Output:
     - CSV file: data/hackernews/hackernews.csv
 """
 
-import csv
 import json
 import os
 import time
@@ -30,7 +29,6 @@ from src.utils.logging import get_logger
 logger = get_logger("YCombinatorETL")
 
 from src.utils.retry import with_retry
-
 
 
 def create_session() -> requests.Session:
@@ -80,38 +78,38 @@ def get_ycombinator_data(max_stories: int = 150) -> list[dict[str, Any]]:
         logger.info("Fetching top stories from Hacker News API")
         response = session.get(f"{base_url}/topstories.json", timeout=30)
         response.raise_for_status()
-        
+
         story_ids = response.json()
         logger.info(f"Retrieved {len(story_ids)} top story IDs")
-        
+
         # Process stories
         processed_count = 0
-        
+
         for story_id in story_ids:
             if processed_count >= max_stories:
                 break
-                
+
             try:
                 # Get story details
                 story_response = session.get(f"{base_url}/item/{story_id}.json", timeout=30)
                 story_response.raise_for_status()
                 story_data = story_response.json()
-                
+
                 if not story_data:
                     continue
-                    
-                # Skip if no URL (e.g. Ask HN or text-only posts, unless we want them too? 
+
+                # Skip if no URL (e.g. Ask HN or text-only posts, unless we want them too?
                 # The original script prioritized links. We'll keep both but ensure URL field exists)
-                
+
                 title = story_data.get("title", "")
                 url = story_data.get("url", "")
-                
+
                 # If no external URL, use the HN item URL
                 if not url:
                     url = f"https://news.ycombinator.com/item?id={story_id}"
-                
+
                 published_at = datetime.fromtimestamp(story_data.get("time", 0)).isoformat()
-                
+
                 article = {
                     "title": title,
                     "url": url,
@@ -121,13 +119,14 @@ def get_ycombinator_data(max_stories: int = 150) -> list[dict[str, Any]]:
                     "points": story_data.get("score", 0),
                     "comments_url": f"https://news.ycombinator.com/item?id={story_id}",
                     "comments_count": story_data.get("descendants", 0),
-                    "author": story_data.get("by", "")
+                    "author": story_data.get("by", ""),
                 }
-                
+
                 # Extract domain for source field if possible
                 if "url" in story_data:
                     try:
                         from urllib.parse import urlparse
+
                         domain = urlparse(story_data["url"]).netloc
                         if domain:
                             article["source"] = domain.replace("www.", "")
@@ -137,10 +136,10 @@ def get_ycombinator_data(max_stories: int = 150) -> list[dict[str, Any]]:
                 articles.append(article)
                 processed_count += 1
                 logger.debug(f"Processed story: {title}")
-                
+
                 # Be nice to the API
                 time.sleep(0.05)
-                
+
             except Exception as e:
                 logger.warning(f"Error fetching story {story_id}: {e}")
                 continue
@@ -155,8 +154,8 @@ def get_ycombinator_data(max_stories: int = 150) -> list[dict[str, Any]]:
 
 def process_ycombinator_articles(articles: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Process and transform HN articles into a standardized format.
-    
-    This function primarily adds metadata wrapping as the API extraction 
+
+    This function primarily adds metadata wrapping as the API extraction
     is already cleaner than RSS.
     """
     logger.info(f"Processing {len(articles)} Hacker News articles")
@@ -176,7 +175,7 @@ def process_ycombinator_articles(articles: list[dict[str, Any]]) -> list[dict[st
                     "points": article.get("points", 0),
                     "comments_url": article.get("comments_url", ""),
                     "comments_count": article.get("comments_count", 0),
-                    "author": article.get("author", "")
+                    "author": article.get("author", ""),
                 },
             }
             processed_articles.append(processed_article)
@@ -227,10 +226,10 @@ def main():
                 "published_at": item["published_at"],
                 "points": item["metadata"]["points"],
                 "comments_count": item["metadata"]["comments_count"],
-                "comments_url": item["metadata"]["comments_url"]
+                "comments_url": item["metadata"]["comments_url"],
             }
             csv_data.append(flat)
-            
+
         pd.DataFrame(csv_data).to_csv(csv_file, index=False)
         logger.debug(f"Saved CSV data to {csv_file}")
 

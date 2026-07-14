@@ -7,12 +7,10 @@ It extracts paper metadata and saves information about new or updated papers.
 
 import json
 import os
-from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import quote
 
 import feedparser
-import requests
 
 from src.watchers.base_watcher import BaseWatcher
 
@@ -65,12 +63,12 @@ class ArxivWatcher(BaseWatcher):
 
         # Build the complete search URL
         # We must encode the query parameters to avoid 400 Bad Request
-        
+
         # Format: cat:(A OR B)
         # Note: We removed submittedDate filter as it caused 500 errors.
         raw_query = f"cat:({categories})"
         encoded_query = quote(raw_query)
-        
+
         self.api_url = f"{self.ARXIV_API_BASE}?search_query={encoded_query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
 
         self.max_results = max_results
@@ -257,9 +255,9 @@ class ArxivWatcher(BaseWatcher):
         """
         # We removed the submittedDate filter because it causes HTTP 500 Internal Errors
         # with the ArXiv API. We instead rely on sortBy=submittedDate to get the latest.
-        
+
         categories = " OR ".join(self.AI_ML_CATEGORIES)
-        
+
         raw_query = f"cat:({categories})"
         encoded_query = quote(raw_query)
 

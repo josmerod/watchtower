@@ -536,9 +536,7 @@ def register_notifications_callbacks(app):
             return False
 
         triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        if triggered_id == "create-rule-btn" or triggered_id.startswith("edit-rule-"):
-            return True
-        return False
+        return bool(triggered_id == "create-rule-btn" or triggered_id.startswith("edit-rule-"))
 
     @app.callback(
         Output("rule-modal-header", "children"),
@@ -795,7 +793,6 @@ def render_rule_form(rule: AlertRule | None = None) -> dbc.Container:
     Returns:
         Dash component with rule form
     """
-    is_edit = rule is not None
 
     return dbc.Container(
         [

@@ -8,8 +8,6 @@ from typing import Any
 import requests
 from bs4 import BeautifulSoup
 
-from src.models.spanish_public_aid import AidScope
-
 
 class ScrapingService:
     """Service for scraping Spanish public aid websites."""
@@ -84,7 +82,7 @@ class ScrapingService:
 
             logging.info(f"Found {len(aid_elements)} potential aid elements in BDNS")
 
-            for element in aid_elements[:source_config.get("max_aids_per_source", 20)]:
+            for element in aid_elements[: source_config.get("max_aids_per_source", 20)]:
                 try:
                     aid_data = self._parse_element(element, "bdns")
                     if aid_data and aid_data.get("title"):
@@ -117,14 +115,12 @@ class ScrapingService:
                     soup = BeautifulSoup(response.content, "html.parser")
 
                     aid_elements = (
-                        soup.find_all(["div", "article", "li"], class_=re.compile(r".*ayuda.*|.*subven.*", re.I))
-                        or soup.find_all("a", href=re.compile(r".*ayuda.*|.*subven.*", re.I))
-                        or soup.find_all("h3")
+                        soup.find_all(["div", "article", "li"], class_=re.compile(r".*ayuda.*|.*subven.*", re.I)) or soup.find_all("a", href=re.compile(r".*ayuda.*|.*subven.*", re.I)) or soup.find_all("h3")
                     )
 
                     logging.info(f"Found {len(aid_elements)} potential aid elements in GVA from {url}")
 
-                    for element in aid_elements[:source_config.get("max_aids_per_source", 20)]:
+                    for element in aid_elements[: source_config.get("max_aids_per_source", 20)]:
                         try:
                             aid_data = self._parse_element(element, "gva")
                             if aid_data and aid_data.get("title"):
@@ -160,20 +156,17 @@ class ScrapingService:
             subsidy_links = []
             for link in aid_links:
                 text = link.get_text(strip=True)
-                href = link.get("href", "")
+                link.get("href", "")
 
                 if len(text) < 15:
                     continue
 
-                if any(
-                    keyword in text.lower()
-                    for keyword in ["ayuda", "subven", "beca", "fomento", "convocatoria"]
-                ) and text.lower().strip() not in ["subvenciones", "ayudas", "tramites"]:
+                if any(keyword in text.lower() for keyword in ["ayuda", "subven", "beca", "fomento", "convocatoria"]) and text.lower().strip() not in ["subvenciones", "ayudas", "tramites"]:
                     subsidy_links.append(link)
 
             logging.info(f"Found {len(subsidy_links)} specific aid links in Valencia")
 
-            for link in subsidy_links[:source_config.get("max_aids_per_source", 20)]:
+            for link in subsidy_links[: source_config.get("max_aids_per_source", 20)]:
                 try:
                     aid_data = self._parse_element(link, "valencia")
                     if aid_data and aid_data.get("title") and len(aid_data["title"]) > 20:
@@ -210,15 +203,22 @@ class ScrapingService:
                 if any(
                     keyword in text.lower()
                     for keyword in [
-                        "empleo", "contratación", "formación", "laboral",
-                        "trabajo", "fomento", "incentivo", "beca", "ayuda",
+                        "empleo",
+                        "contratación",
+                        "formación",
+                        "laboral",
+                        "trabajo",
+                        "fomento",
+                        "incentivo",
+                        "beca",
+                        "ayuda",
                     ]
                 ):
                     employment_links.append(link)
 
             logging.info(f"Found {len(employment_links)} specific employment aid links in LABORA")
 
-            for link in employment_links[:source_config.get("max_aids_per_source", 20)]:
+            for link in employment_links[: source_config.get("max_aids_per_source", 20)]:
                 try:
                     aid_data = self._parse_element(link, "labora")
                     if aid_data and aid_data.get("title") and len(aid_data["title"]) > 20:
@@ -257,10 +257,7 @@ class ScrapingService:
                 return None
 
             # Extract description
-            description_elem = (
-                element.find(["p", "div"], class_=re.compile(r".*desc.*|.*resumen.*", re.I))
-                or element.find_next_sibling(["p", "div"])
-            )
+            description_elem = element.find(["p", "div"], class_=re.compile(r".*desc.*|.*resumen.*", re.I)) or element.find_next_sibling(["p", "div"])
 
             description_text = description_elem.get_text(strip=True) if description_elem else ""
 

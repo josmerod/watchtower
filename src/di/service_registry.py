@@ -55,8 +55,6 @@ def register_core_services(container: DIContainer | None = None) -> DIContainer:
         from src.repositories.repository_manager import (
             RepositoryManager,
             create_courses_repository_manager,
-            create_news_repository_manager,
-            create_games_repository_manager,
         )
 
         # Register factory function

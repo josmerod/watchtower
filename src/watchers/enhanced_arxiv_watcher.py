@@ -536,7 +536,7 @@ class EnhancedArxivWatcher(BaseWatcher):
 
             # Log details about high-impact papers
             for paper in new_high_impact_papers:
-                self.logger.info(f"High-impact paper: {paper['title'][:100]}... " f"(Score: {paper['relevance_score']}, Areas: {paper['research_areas']})")
+                self.logger.info(f"High-impact paper: {paper['title'][:100]}... (Score: {paper['relevance_score']}, Areas: {paper['research_areas']})")
 
     def _save_papers(self, papers: list[dict[str, Any]], filename: str):
         """Save papers to a JSON file with enhanced metadata.

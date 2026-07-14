@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import os
-import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -25,7 +24,7 @@ GRAPHQL_URL = "https://www.lesswrong.com/graphql"
 
 def fetch_lesswrong() -> list[dict[str, Any]]:
     logger.info("Fetching LessWrong data via GraphQL...")
-    
+
     # Query for new posts with rich metadata
     query = """
     {
@@ -51,24 +50,21 @@ def fetch_lesswrong() -> list[dict[str, Any]]:
       }
     }
     """
-    
-    headers = {
-        "Content-Type": "application/json",
-        "User-Agent": "Watchtower/ETL/1.0"
-    }
-    
+
+    headers = {"Content-Type": "application/json", "User-Agent": "Watchtower/ETL/1.0"}
+
     try:
         response = requests.post(GRAPHQL_URL, json={"query": query}, headers=headers, timeout=30)
         response.raise_for_status()
         data = response.json()
-        
+
         if "errors" in data:
             logger.error(f"GraphQL Errors: {data['errors']}")
             return []
-            
+
         posts = data.get("data", {}).get("posts", {}).get("results", [])
         logger.info(f"Retrieved {len(posts)} raw posts from GraphQL")
-        
+
         entries = []
         for post in posts:
             # Construct absolute URL
@@ -77,7 +73,7 @@ def fetch_lesswrong() -> list[dict[str, Any]]:
                 link = f"https://www.lesswrong.com{relative_url}"
             else:
                 link = relative_url
-                
+
             # Parse date
             published_str = post.get("postedAt")
             published = None
@@ -108,7 +104,7 @@ def fetch_lesswrong() -> list[dict[str, Any]]:
                 "title": post.get("title", ""),
                 "link": link,
                 "published": published,
-                "summary": post.get("htmlBody", "")[:2000] + "..." if post.get("htmlBody") else "", # Truncate summary for file size
+                "summary": post.get("htmlBody", "")[:2000] + "..." if post.get("htmlBody") else "",  # Truncate summary for file size
                 "author": author,
                 "guid": post.get("_id", link),
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
@@ -118,16 +114,12 @@ def fetch_lesswrong() -> list[dict[str, Any]]:
                 "score": post.get("baseScore", 0),
                 "comments": post.get("commentCount", 0),
                 "tags": tags,
-                "metrics": {
-                    "views": post.get("viewCount"), # Might be null, not in my query but useful if added
-                    "score": post.get("baseScore", 0),
-                    "comments": post.get("commentCount", 0)
-                }
+                "metrics": {"views": post.get("viewCount"), "score": post.get("baseScore", 0), "comments": post.get("commentCount", 0)},  # Might be null, not in my query but useful if added
             }
             entries.append(entry)
-            
+
         return entries
-        
+
     except Exception as e:
         logger.error(f"Failed to fetch LessWrong GraphQL: {e}")
         return []
@@ -144,7 +136,7 @@ def save_lesswrong(entries: list[dict[str, Any]]) -> None:
 
     # Save minimal latest file (lighter weight)
     # But keep full data in timestamped
-    
+
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     json_file = os.path.join(output_dir, f"lesswrong_{ts}.json")
     latest_json = os.path.join(output_dir, "lesswrong_latest.json")

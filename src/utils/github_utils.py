@@ -122,7 +122,7 @@ def find_github_links_in_text(text: str) -> list[str]:
     found_urls = re.findall(regex, text)
 
     # Reconstruct the full URLs and ensure uniqueness
-    unique_urls = sorted(list({f"https://github.com/{owner}/{repo}" for owner, repo in found_urls}))
+    unique_urls = sorted({f"https://github.com/{owner}/{repo}" for owner, repo in found_urls})
 
     return unique_urls
 

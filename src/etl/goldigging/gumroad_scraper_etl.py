@@ -52,7 +52,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
         # Pagination settings
         self.items_per_page = 48  # Typical items per page on Gumroad
 
-        self.logger.info(f"Initialized Gumroad scraper for {'first run' if first_run else 'regular run'} " f"with {self.max_items} items max")
+        self.logger.info(f"Initialized Gumroad scraper for {'first run' if first_run else 'regular run'} with {self.max_items} items max")
 
     def _build_url(self, from_offset: int = 0) -> str:
         """Build the URL for a specific starting position."""

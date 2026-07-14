@@ -1,6 +1,5 @@
 """Spanish Public Aid Dashboard Component."""
 
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -11,13 +10,14 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import Input, Output, dash_table, dcc, html
 
-# Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
 
+# Import shared utilities
+from src.web.dashboard.utils import get_data_path, parse_date_universal
+
 # --- Data Loading ---
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class SpanishAidRepository(BaseRepository[list[dict[str, Any]]]):
@@ -48,6 +48,7 @@ class SpanishAidRepository(BaseRepository[list[dict[str, Any]]]):
         else:
             return []
 
+
 class SpanishAidStatsRepository(BaseRepository[dict[str, Any]]):
     """Repository for Spanish public aid statistics data."""
 
@@ -75,6 +76,7 @@ class SpanishAidStatsRepository(BaseRepository[dict[str, Any]]):
             return {"items": raw_data}
         else:
             return {}
+
 
 # Create singleton instances
 spanish_aid_repo = SpanishAidRepository()
@@ -204,7 +206,7 @@ def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
     )
 
     fig.update_traces(textposition="inside", textinfo="percent+label")
-    fig.update_layout(showlegend=True, height=400, margin=dict(t=50, b=50, l=50, r=50))
+    fig.update_layout(showlegend=True, height=400, margin={"t": 50, "b": 50, "l": 50, "r": 50})
 
     return dcc.Graph(figure=fig)
 
@@ -236,7 +238,7 @@ def create_scope_chart(aids_data: list[dict]) -> dcc.Graph:
         labels={"x": "Scope", "y": "Number of Aid"},
     )
 
-    fig.update_layout(height=400, margin=dict(t=50, b=50, l=50, r=50))
+    fig.update_layout(height=400, margin={"t": 50, "b": 50, "l": 50, "r": 50})
 
     return dcc.Graph(figure=fig)
 
@@ -289,7 +291,7 @@ def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
                 mode="markers+text",
                 text=[aid["title"]],
                 textposition="middle right",
-                marker=dict(size=10, color=color),
+                marker={"size": 10, "color": color},
                 name=aid["category"],
                 showlegend=False,
             )
@@ -300,8 +302,8 @@ def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
         xaxis_title="Closing Date",
         yaxis_title="Aid",
         height=600,
-        yaxis=dict(showticklabels=False),
-        margin=dict(t=50, b=50, l=50, r=200),
+        yaxis={"showticklabels": False},
+        margin={"t": 50, "b": 50, "l": 50, "r": 200},
     )
 
     return dcc.Graph(figure=fig)
@@ -485,8 +487,8 @@ def create_aids_table(aids_data: list[dict]) -> html.Div:
             },
             {
                 "if": {"filter_query": "{days_left} <= 7 && {days_left} > 0"},
-                "backgroundColor": "#3e2723", # Dark reddish background for urgency
-                "color": "#ffcdd2", # Light red text
+                "backgroundColor": "#3e2723",  # Dark reddish background for urgency
+                "color": "#ffcdd2",  # Light red text
             },
             {
                 "if": {"filter_query": "{status} = Cerrada"},
@@ -494,7 +496,7 @@ def create_aids_table(aids_data: list[dict]) -> html.Div:
                 "color": "#757575",
             },
         ],
-        tooltip_data=[{column: {"value": str(row[column]), "type": "markdown"} for column in row.keys()} for row in table_data],
+        tooltip_data=[{column: {"value": str(row[column]), "type": "markdown"} for column in row} for row in table_data],
         css=[
             {
                 "selector": ".dash-table-tooltip",

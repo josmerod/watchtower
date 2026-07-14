@@ -7,10 +7,9 @@ Replaces global state anti-pattern with encapsulated, testable data management.
 from __future__ import annotations
 
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Optional
 
 import pandas as pd
 
@@ -48,9 +47,9 @@ class CourseDataManager:
             config: Configuration for data paths and caching behavior
         """
         self._config = config
-        self._data: Dict[str, pd.DataFrame] = {}
-        self._loaded: Dict[str, bool] = {}
-        self._cache_timestamps: Dict[str, datetime] = {}
+        self._data: dict[str, pd.DataFrame] = {}
+        self._loaded: dict[str, bool] = {}
+        self._cache_timestamps: dict[str, datetime] = {}
         self._lock = threading.Lock()
         self.logger = get_logger(self.__class__.__name__)
 
@@ -76,10 +75,7 @@ class CourseDataManager:
         """
         with self._lock:
             if source not in ["coursera", "udemy"]:
-                raise ValueError(
-                    f"Unknown source: {source}. "
-                    f"Available: coursera, udemy"
-                )
+                raise ValueError(f"Unknown source: {source}. Available: coursera, udemy")
 
             if self._should_reload(source):
                 self._load_source(source)
@@ -328,7 +324,7 @@ class CourseDataManager:
         except (ValueError, OSError):
             pass
 
-        self.logger.warning(f"Could not parse date: {date_str}")
+        # _parse_date is a staticmethod — cannot use self.logger here.
         return None
 
     def invalidate_cache(self, source: str | None = None) -> None:
@@ -363,13 +359,9 @@ class CourseDataManager:
             ['coursera', 'udemy']
         """
         with self._lock:
-            return [
-                source
-                for source, loaded in self._loaded.items()
-                if loaded and not self._data.get(source, pd.DataFrame()).empty
-            ]
+            return [source for source, loaded in self._loaded.items() if loaded and not self._data.get(source, pd.DataFrame()).empty]
 
-    def get_source_stats(self) -> Dict[str, int]:
+    def get_source_stats(self) -> dict[str, int]:
         """Get statistics for each data source.
 
         Returns:
@@ -381,8 +373,4 @@ class CourseDataManager:
             {'coursera': 150, 'udemy': 75}
         """
         with self._lock:
-            return {
-                source: len(df)
-                for source, df in self._data.items()
-                if source in self._loaded and self._loaded[source]
-            }
+            return {source: len(df) for source, df in self._data.items() if self._loaded.get(source)}

@@ -93,19 +93,21 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         # APPROACH 1: Based on the example HTML, events seem to be contained in
         # elements with specific text in their titles
         event_blocks = soup.find_all(
-            lambda tag: tag.name
-            and tag.find(["h2", "h3"])
-            and tag.find(["h2", "h3"]).text
-            and any(
-                x in tag.find(["h2", "h3"]).text
-                for x in [
-                    "Exposición",
-                    "Concierto",
-                    "Festival",
-                    "Visita",
-                    "Descubre",
-                    "Siente",
-                ]
+            lambda tag: (
+                tag.name
+                and tag.find(["h2", "h3"])
+                and tag.find(["h2", "h3"]).text
+                and any(
+                    x in tag.find(["h2", "h3"]).text
+                    for x in [
+                        "Exposición",
+                        "Concierto",
+                        "Festival",
+                        "Visita",
+                        "Descubre",
+                        "Siente",
+                    ]
+                )
             )
         )
 

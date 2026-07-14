@@ -1,18 +1,21 @@
 """Verify REST API Endpoints."""
 
-import requests
-import time
-import sys
 import json
+import sys
+import time
+
+import requests
 
 BASE_URL = "http://localhost:7777/api"
 API_KEY = "watchtower-dev-key"
+
 
 def print_result(name, passed, details=""):
     status = "✅ PASS" if passed else "❌ FAIL"
     print(f"{status} - {name} {details}")
     if not passed:
         sys.exit(1)
+
 
 def wait_for_server():
     print("Waiting for server...")
@@ -23,6 +26,7 @@ def wait_for_server():
         except:
             time.sleep(2)
     return False
+
 
 def verify_api():
     if not wait_for_server():
@@ -42,7 +46,7 @@ def verify_api():
         print_result("Auth Enforced (No Key)", r.status_code == 401, f"Got {r.status_code}")
     except Exception as e:
         print_result("Auth Enforced", False, str(e))
-        
+
     # 3. Auth Fail (Bad Key)
     try:
         r = requests.get(f"{BASE_URL}/sources", headers={"X-API-Key": "wrong-key"})
@@ -57,21 +61,22 @@ def verify_api():
         print_result("List Sources", r.status_code == 200 and "sources" in data, f"Found {data.get('count', 0)} sources")
     except Exception as e:
         print_result("List Sources", False, str(e))
-        
+
     # 5. Get Data (Success)
     # Using 'language_trends' as it was just created
     source = "language_trends"
     try:
         r = requests.get(f"{BASE_URL}/data/{source}", headers={"X-API-Key": API_KEY})
         if r.status_code == 404:
-             print(f"⚠️ Source {source} not found, trying job_market")
-             source = "job_market"
-             r = requests.get(f"{BASE_URL}/data/{source}", headers={"X-API-Key": API_KEY})
-             
+            print(f"⚠️ Source {source} not found, trying job_market")
+            source = "job_market"
+            r = requests.get(f"{BASE_URL}/data/{source}", headers={"X-API-Key": API_KEY})
+
         data = r.json()
         print_result(f"Get Data ({source})", r.status_code == 200 and "data" in data, f"Timestamp: {data.get('timestamp')}")
     except Exception as e:
         print_result("Get Data", False, str(e))
+
 
 if __name__ == "__main__":
     verify_api()

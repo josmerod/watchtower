@@ -123,27 +123,20 @@ dev-dependencies = [
     "codespell>=2.4.1",
     "shellcheck-py>=0.11.0.1",
     "detect-secrets>=1.5.0",
+    # Type stubs for mypy (reduce import-untyped errors)
+    "pandas-stubs>=2.0",
+    "types-paramiko>=3.0",
+    "types-requests>=2.31",
+    "types-python-dateutil>=2.9",
 ]
 
-# Preserving existing tool configurations
+# Ruff configuration.
+# Rule selection and exclude live under [tool.ruff.lint] (the modern layout).
+# The previous [tool.ruff]-level select/exclude was deprecated AND erroneously
+# excluded "src" and "*.py", which silently disabled linting of all source.
 [tool.ruff]
 line-length = 210
 target-version = "py310"
-select = [
-    "E",   # pycodestyle errors
-    "F",   # pyflakes
-    "W",   # pycodestyle warnings
-    "I",   # isort
-    "UP",  # pyupgrade
-    "C4",  # flake8-comprehensions
-    "B",   # flake8-bugbear
-    "A",   # flake8-builtins
-    "RUF", # Ruff-specific rules
-    "N",   # pep8-naming
-    "D",   # pydocstyle
-    "PT",  # pytest style
-    "SIM", # simplify
-]
 exclude = [
     ".bzr",
     ".direnv",
@@ -171,17 +164,53 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
-    "Tests",
-    "src",
-    "*.py",
+    "Tests",   # tests have their own conventions (F841 in assertions, SIM117, etc.)
+    # Vendored / generated code we don't lint
+    "src/miners/udemy-universal",
+    "src/miners/asf-winonly",
 ]
 
 [tool.ruff.lint]
-# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
-# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
-# McCabe complexity (`C901`) by default.
-select = ["E4", "E7", "E9", "F"]
-ignore = []
+# Pragmatic rule set: catches real bugs without forcing docstrings (D) across
+# the existing codebase. Add "D" back once docstring coverage is acceptable.
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes (undefined names, unused imports, etc.)
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+    "C4",  # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "RUF", # Ruff-specific rules
+    "SIM", # simplify
+]
+# Ignore refactor-heavy style rules that would require touching hundreds of
+# lines without fixing bugs. Re-enable one at a time when the codebase is ready.
+ignore = [
+    "SIM102",  # nested if -> collapse (readability preference)
+    "SIM105",  # contextlib.suppress instead of try/except/pass
+    "SIM108",  # ternary instead of if/else assignment
+    "RUF001",  # ambiguous unicode char (Spanish accents trip this)
+    "RUF005",  # iterable unpacking instead of concatenation
+    "RUF012",  # Mutable class annotations should be ClassVar
+    "RUF013",  # PEP 484 implicit Optional
+    "E402",    # module-level import not at top (many ETLs set env first)
+    "E722",    # bare except (existing pattern, flagged for cleanup)
+    "B904",    # raise from err in except (25 sites — mechanical, not bugs)
+    "F401",    # unused imports (many __init__.py re-exports, dynamic imports)
+    "E741",    # ambiguous variable name (l, I, O) — cosmetic
+    "E501",    # line too long (line-length=210 already generous)
+    "B007",    # loop variable not used (rename to _*)
+    "F811",    # redefinition (arxiv_research_tab.py — refactor needed)
+    "RUF002",  # ambiguous unicode char in docstring (Spanish accents)
+    "RUF003",  # ambiguous unicode char in comment (Spanish accents)
+    "RUF006",  # mutable default arg (async context)
+    "B023",    # function doesn't bind loop variable (museum_etl — refactor)
+    "UP031",   # use format spec instead of % (existing pattern)
+    "F403",    # from X import * (config/__init__.py, utils/__init__.py re-exports)
+    "SIM116",  # use dict instead of if/elif chains (style preference)
+    "UP038",   # isinstance X | Y (rule removed in newer ruff, hook uses older)
+]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
@@ -191,7 +220,7 @@ unfixable = []
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.lint.pydocstyle]
-convention = "google"  # Use Google-style docstrings
+convention = "google"  # Honored when "D" is re-enabled
 
 [tool.ruff.format]
 quote-style = "double"

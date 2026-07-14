@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import List, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -16,8 +16,9 @@ T = TypeVar("T", bound=BaseModel)
 
 class EnrichmentResult(BaseModel):
     """Structured result from LLM enrichment."""
+
     summary: str = Field(description="Concise summary of the content")
-    tags: List[str] = Field(description="Relevant tags/categories")
+    tags: list[str] = Field(description="Relevant tags/categories")
     insight: str | None = Field(default=None, description="Key insight or 'why it matters'")
 
 
@@ -27,7 +28,7 @@ class ContentEnricher:
     def __init__(self):
         self.llm_client = get_llm_client()
 
-    def enrich_batch(self, items: List[T]) -> List[T]:
+    def enrich_batch(self, items: list[T]) -> list[T]:
         """Enrich a batch of items with AI metadata.
 
         Args:
@@ -40,10 +41,7 @@ class ContentEnricher:
             return []
 
         # Filter for enrichable items
-        enrichable_items = [
-            item for item in items 
-            if isinstance(item, AIEnhancedModel) and not item.ai_summary
-        ]
+        enrichable_items = [item for item in items if isinstance(item, AIEnhancedModel) and not item.ai_summary]
 
         if not enrichable_items:
             return items
@@ -81,11 +79,7 @@ class ContentEnricher:
             "3. A 'key insight' or 'why it matters' statement (1 sentence) for a developer audience."
         )
 
-        result = self.llm_client.extract_structured_data(
-            text=text_content,
-            schema=EnrichmentResult,
-            prompt=prompt
-        )
+        result = self.llm_client.extract_structured_data(text=text_content, schema=EnrichmentResult, prompt=prompt)
 
         if result:
             item.ai_summary = result.summary

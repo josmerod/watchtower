@@ -241,7 +241,4 @@ class URLExtractor:
             return False
 
         tld = domain_part.rsplit(".", 1)[-1]
-        if not tld or len(tld) < 2 or len(tld) > 10:
-            return False
-
-        return True
+        return not (not tld or len(tld) < 2 or len(tld) > 10)

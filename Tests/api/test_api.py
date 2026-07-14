@@ -2,15 +2,18 @@
 
 import pytest
 from fastapi.testclient import TestClient
+
 from src.api.main import app
 
 client = TestClient(app)
+
 
 def test_health_check():
     """Test health check endpoint."""
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
 
 def test_get_sources():
     """Test getting available sources."""
@@ -21,6 +24,7 @@ def test_get_sources():
     assert "knowledge_garden" in data
     assert "techcrunch" in data["news"]
     assert "opensource" in data["knowledge_garden"]
+
 
 def test_get_news():
     """Test getting news items."""
@@ -35,6 +39,7 @@ def test_get_news():
         assert "source" in item
         assert "url" in item
 
+
 def test_get_news_filtered():
     """Test filtering news by source."""
     # filtering by a source that likely exists
@@ -43,6 +48,7 @@ def test_get_news_filtered():
     data = response.json()
     if data:
         assert data[0]["source"] == "TechCrunch"
+
 
 def test_get_knowledge():
     """Test getting knowledge garden items."""
@@ -54,6 +60,7 @@ def test_get_knowledge():
         item = data[0]
         assert "title" in item
         assert "source" in item
+
 
 def test_get_knowledge_filtered():
     """Test filtering knowledge items."""

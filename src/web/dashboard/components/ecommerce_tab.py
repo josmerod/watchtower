@@ -2,7 +2,6 @@
 Gumroad products, travel deals, and commercial opportunities
 """
 
-import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -11,11 +10,11 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, callback, dash_table, dcc, html
 
-# Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
+
+# Import shared utilities
+from src.web.dashboard.utils import parse_date_universal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Import centralized configuration
 from src.services.data_loader import ECOMMERCE_SOURCES_CONFIG
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class EcommerceRepository(BaseRepository[list[dict[str, Any]]]):
@@ -55,6 +55,7 @@ class EcommerceRepository(BaseRepository[list[dict[str, Any]]]):
             return [raw_data]
         else:
             return []
+
 
 # Create singleton instances for each source (only if configured)
 gumroad_repo = EcommerceRepository(ECOMMERCE_SOURCES_CONFIG["gumroad_scraper"]["path"]) if "gumroad_scraper" in ECOMMERCE_SOURCES_CONFIG else None

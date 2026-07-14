@@ -11,18 +11,12 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
-import requests
-
-from src.config.settings import get_settings
 from src.etl.base import BaseETL
 from src.models.hashnode import (
-    HashnodeAuthorModel,
     HashnodeMetricsModel,
     HashnodePostModel,
-    HashnodePublicationModel,
     HashnodePublicationType,
 )
 from src.utils.logging import get_logger
@@ -195,7 +189,7 @@ class HashnodeETL(BaseETL[dict[str, Any], HashnodePostModel]):
                 self.logger.error(f"GraphQL request failed for tag '{tag}': {e}")
                 break
 
-        return posts[:self.max_posts_per_tag]
+        return posts[: self.max_posts_per_tag]
 
     def transform(self, raw_data: list[dict[str, Any]]) -> list[HashnodePostModel]:
         """Transform raw Hashnode data to models.
@@ -356,7 +350,7 @@ def main():
         etl = HashnodeETL()
         metrics = etl.run()
 
-        logger.info(f"ETL completed successfully")
+        logger.info("ETL completed successfully")
         logger.info(f"Records extracted: {metrics.records_extracted}")
         logger.info(f"Records transformed: {metrics.records_transformed}")
         logger.info(f"Records loaded: {metrics.records_loaded}")

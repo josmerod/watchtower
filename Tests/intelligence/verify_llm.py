@@ -1,22 +1,22 @@
-
 import os
 import sys
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 
+from src.config.settings import get_settings
 from src.intelligence.ai_engines import AITrendDetector
 from src.models.ai_research_model import AIResearchPaper, ImplementationComplexity, ResearchDomain
-from src.config.settings import get_settings
+
 
 def test_llm_integration():
     print("Testing LLM Integration...")
-    
+
     # 1. Check Configuration
     settings = get_settings()
     print(f"LLM Provider: {settings.llm.provider}")
     print(f"API Key Present: {bool(settings.llm.openai_api_key)}")
-    
+
     # 2. Create Dummy Paper
     paper = AIResearchPaper(
         title="Autonomous Agents with Reasoning Capabilities",
@@ -27,15 +27,15 @@ def test_llm_integration():
         url="http://example.com",
         source="Test",
         trend_score=0.0,
-        complexity=ImplementationComplexity.MEDIUM
+        complexity=ImplementationComplexity.MEDIUM,
     )
-    
+
     # 3. Run Analysis
     detector = AITrendDetector()
     score = detector.analyze_trend(paper)
-    
+
     print(f"Analysis Result Trend Score: {score}")
-    
+
     # Validate result
     if score > 0.6:
         print("PASS: High trend score detected (as expected for 'Autonomous Agents').")
@@ -43,6 +43,7 @@ def test_llm_integration():
         print("WARN: Low trend score. Valid if running MOCK or API failed.")
 
     print("\nTest Complete.")
+
 
 if __name__ == "__main__":
     test_llm_integration()

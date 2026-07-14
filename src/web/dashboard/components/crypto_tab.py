@@ -10,13 +10,14 @@ import plotly.graph_objects as go
 from dash import dash_table, dcc, html
 from plotly.subplots import make_subplots
 
-# Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
 
+# Import shared utilities
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
+
 # --- Enhanced Data Loading ---
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class CryptoRepository(BaseRepository[list[dict[str, Any]]]):
@@ -71,8 +72,10 @@ class CryptoRepository(BaseRepository[list[dict[str, Any]]]):
         else:
             return []
 
+
 # Create singleton instance
 crypto_repo = CryptoRepository()
+
 
 # NEW: CoinGecko Repository
 class CoinGeckoRepository(BaseRepository[list[dict[str, Any]]]):
@@ -89,6 +92,7 @@ class CoinGeckoRepository(BaseRepository[list[dict[str, Any]]]):
         if isinstance(raw_data, list):
             return raw_data
         return []
+
 
 coingecko_repo = CoinGeckoRepository()
 
@@ -272,7 +276,7 @@ def create_sentiment_timeline(data):
                 x=hourly_data.index,
                 y=hourly_data["positive"],
                 name="Positive",
-                line=dict(color="green"),
+                line={"color": "green"},
                 mode="lines+markers",
             ),
             row=1,
@@ -285,7 +289,7 @@ def create_sentiment_timeline(data):
                 x=hourly_data.index,
                 y=hourly_data["negative"],
                 name="Negative",
-                line=dict(color="red"),
+                line={"color": "red"},
                 mode="lines+markers",
             ),
             row=1,
@@ -298,7 +302,7 @@ def create_sentiment_timeline(data):
                 x=hourly_data.index,
                 y=hourly_data["neutral"],
                 name="Neutral",
-                line=dict(color="gray"),
+                line={"color": "gray"},
                 mode="lines+markers",
             ),
             row=1,
@@ -322,7 +326,7 @@ def create_sentiment_timeline(data):
                 y=sentiment_data["confidence"],
                 mode="markers",
                 name=f"{sentiment.title()} Engagement",
-                marker=dict(color=colors.get(sentiment, "blue"), size=8, opacity=0.6),
+                marker={"color": colors.get(sentiment, "blue"), "size": 8, "opacity": 0.6},
             ),
             row=2,
             col=1,
@@ -472,7 +476,7 @@ def create_coin_analysis_chart(data):
             text=df_coins["coin"],
             textposition="top center",
             name="Coins",
-            marker=dict(size=df_coins["mentions"], sizemode="diameter", sizeref=0.5),
+            marker={"size": df_coins["mentions"], "sizemode": "diameter", "sizeref": 0.5},
         ),
         row=2,
         col=2,
@@ -663,7 +667,7 @@ def create_coingecko_table(data: list[dict[str, Any]]) -> html.Div:
 
     # Prepare data for table
     table_data = []
-    for item in data[:50]:  # Show top 50 
+    for item in data[:50]:  # Show top 50
         table_data.append(
             {
                 "rank": item.get("market_cap_rank", 0) or 0,
@@ -710,11 +714,11 @@ def create_coingecko_table(data: list[dict[str, Any]]) -> html.Div:
         style_data_conditional=[
             {
                 "if": {"filter_query": "{change} contains '-'"},
-                "color": "#f38ba8", # Red for negative
+                "color": "#f38ba8",  # Red for negative
             },
             {
                 "if": {"filter_query": "{change} ! contains '-'"},
-                "color": "#a6e3a1", # Green for positive
+                "color": "#a6e3a1",  # Green for positive
             },
         ],
     )
@@ -1144,11 +1148,7 @@ def crypto_tab():
                                             ),
                                         ]
                                     ),
-                                    dbc.CardBody(
-                                        [
-                                            create_coingecko_table(coingecko_repo.get() if coingecko_repo.get() else [])
-                                        ]
-                                    ),
+                                    dbc.CardBody([create_coingecko_table(coingecko_repo.get() if coingecko_repo.get() else [])]),
                                 ]
                             )
                         ]

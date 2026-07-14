@@ -2,10 +2,10 @@ import logging  # Keep logging for the __main__ block, if needed, or for specifi
 from typing import Any
 
 import requests
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 # BaseModel might not be directly needed if VirtualMuseumModel and SimpleETL handle it
 from pydantic import ValidationError
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 # Actual imports:
 from src.etl.base import SimpleETL
@@ -65,10 +65,7 @@ class VirtualMuseumsETL(SimpleETL):
         try:
             self.logger.info(f"Querying Wikidata SPARQL endpoint: {WIKIDATA_SPARQL_URL}")
 
-            @retry(stop=stop_after_attempt(3),
-                   wait=wait_exponential(multiplier=2, min=5, max=60),
-                   retry=retry_if_exception_type((requests.exceptions.ConnectionError,
-                                                  requests.exceptions.HTTPError)))
+            @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2, min=5, max=60), retry=retry_if_exception_type((requests.exceptions.ConnectionError, requests.exceptions.HTTPError)))
             def _fetch():
                 r = requests.get(WIKIDATA_SPARQL_URL, headers=headers, params=params, timeout=30)
                 r.raise_for_status()
@@ -175,7 +172,9 @@ class VirtualMuseumsETL(SimpleETL):
 
         serialized = _json.dumps(
             [item.model_dump() if hasattr(item, "model_dump") else item for item in data],
-            ensure_ascii=False, indent=2, default=str,
+            ensure_ascii=False,
+            indent=2,
+            default=str,
         )
 
         # Save timestamped file
@@ -203,4 +202,3 @@ if __name__ == "__main__":
         logging.info("ETL completed successfully.")
     else:
         logging.error(f"ETL failed with {metrics.error_count} errors")
-

@@ -361,7 +361,7 @@ class DeduplicationEngine:
             if item1_id in processed_ids:
                 continue
 
-            title1 = getattr(item1, "title", "")
+            getattr(item1, "title", "")
             norm_title1 = normalized_titles[item1_id]
             current_group = [item1]
 
@@ -373,7 +373,7 @@ class DeduplicationEngine:
                 if item2_id in processed_ids:
                     continue
 
-                title2 = getattr(item2, "title", "")
+                getattr(item2, "title", "")
                 norm_title2 = normalized_titles[item2_id]
 
                 # Optimization: Check length difference first on NORMALIZED titles
@@ -422,7 +422,7 @@ class DeduplicationEngine:
 
         # Extract groups with multiple items (duplicates)
         duplicate_groups = []
-        for hash_value, group_items in hash_groups.items():
+        for _hash_value, group_items in hash_groups.items():
             if len(group_items) > 1:
                 duplicate_groups.append(group_items)
                 self.stats["content_hash_matches"] += len(group_items) - 1
@@ -691,7 +691,7 @@ class DeduplicationEngine:
         processing_time = (datetime.utcnow() - start_time).total_seconds()
         duplicates_removed = sum(len(group.duplicate_items) for group in duplicate_groups)
 
-        logger.info(f"Deduplication completed: {len(content)} items -> {len(unique_items)} unique, " f"{duplicates_removed} duplicates removed in {processing_time:.2f}s")
+        logger.info(f"Deduplication completed: {len(content)} items -> {len(unique_items)} unique, {duplicates_removed} duplicates removed in {processing_time:.2f}s")
 
         # Convert model instances to dictionaries for Pydantic compatibility
         unique_items_dict = [item.model_dump() if hasattr(item, "model_dump") else item for item in unique_items]

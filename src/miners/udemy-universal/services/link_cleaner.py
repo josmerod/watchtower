@@ -39,9 +39,7 @@ class LinkCleaner:
     LINKSYNERGY_PARAMS = ["RD_PARM1", "murl", "u1", "url", "SREF"]
 
     # Udemy URL pattern
-    UDEMY_PATTERN = re.compile(
-        r"https?://(?:www\.)?udemy\.com/course/[^/\s]+/?(?:\?(?:couponCode=[^&\s]+)?)?"
-    )
+    UDEMY_PATTERN = re.compile(r"https?://(?:www\.)?udemy\.com/course/[^/\s]+/?(?:\?(?:couponCode=[^&\s]+)?)?")
 
     def __init__(self, debug: bool = False):
         """Initialize the link cleaner.

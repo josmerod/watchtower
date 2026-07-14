@@ -1,4 +1,5 @@
 import feedparser
+
 from src.etl.base import SimpleETL
 from src.utils.logging import get_logger
 
@@ -15,6 +16,7 @@ class MicrosiervosETL(SimpleETL):
     def parse_date(self, date_str: str) -> str:
         """Parses date string to ISO format."""
         from datetime import datetime, timezone
+
         try:
             # Common RSS formats
             dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
@@ -29,7 +31,7 @@ class MicrosiervosETL(SimpleETL):
     def extract(self) -> list[dict]:
         """Fetch and parse RSS feed using requests session with proxy support."""
         logger.info(f"Fetching RSS feed from {RSS_URL}")
-        
+
         try:
             # Story 7.2: Use proxied session
             response = self.http_session.get(RSS_URL, timeout=30)
@@ -48,7 +50,7 @@ class MicrosiervosETL(SimpleETL):
         for entry in feed.entries:
             try:
                 published = self.parse_date(entry.get("published", ""))
-                
+
                 item = {
                     "source": SOURCE_NAME,
                     "id": entry.get("id", entry.get("link")),
@@ -57,17 +59,18 @@ class MicrosiervosETL(SimpleETL):
                     "published_at": published,
                     "description": entry.get("summary", ""),
                     "author": entry.get("author", "Microsiervos"),
-                    "tags": [tag.term for tag in entry.get("tags", [])] if "tags" in entry else []
+                    "tags": [tag.term for tag in entry.get("tags", [])] if "tags" in entry else [],
                 }
                 entries.append(item)
             except Exception as e:
                 logger.error(f"Error processing entry {entry.get('title', 'Unknown')}: {e}")
-        
+
         return entries
 
     def transform(self, data: list[dict]) -> list[dict]:
         """No transformation needed as we formatted in extract."""
         return data
+
 
 if __name__ == "__main__":
     etl = MicrosiervosETL()

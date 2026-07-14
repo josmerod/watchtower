@@ -4,14 +4,13 @@ Tests custom exceptions and error handling.
 
 import unittest
 
-from src.exceptions.base import ErrorContext, WatchtowerError
 # from src.exceptions.config import (
 #     ConfigurationError,
 #     ConfigurationFileError,
 #     ConfigurationParsingError,
 #     ConfigurationValidationError,
 # )
-from src.exceptions.base import ConfigurationError
+from src.exceptions.base import ConfigurationError, ErrorContext, WatchtowerError
 from src.exceptions.etl import (
     ETLConfigurationError,
     ETLConnectionError,
@@ -27,6 +26,7 @@ from src.exceptions.watcher import (
     WatcherStateError,
     WatcherTimeoutError,
 )
+
 # from src.exceptions.web import (
 #     WebAuthenticationError,
 #     WebConnectionError,

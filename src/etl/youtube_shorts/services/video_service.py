@@ -1,12 +1,10 @@
 """Video service for downloading and processing YouTube videos."""
 
 import logging
-import os
 import shutil
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
 
 import cv2
 import numpy as np
@@ -137,10 +135,7 @@ class VideoService:
                         # Log progress
                         progress_interval = 50 if total_entries > 200 else 10
                         if processed_count % progress_interval == 0:
-                            logger.info(
-                                f"[PROGRESS] Processing video {processed_count}/{total_entries} - "
-                                f"Found {len(videos_info)} valid shorts so far..."
-                            )
+                            logger.info(f"[PROGRESS] Processing video {processed_count}/{total_entries} - Found {len(videos_info)} valid shorts so far...")
 
                         # Skip already processed or failed videos
                         if video_id in processed_ids:
@@ -167,10 +162,7 @@ class VideoService:
                         logger.info(f"[INFO] Reached limit of {limit} videos, stopping search...")
                         break
 
-                logger.info(
-                    f"[INFO] Filter summary: {len(videos_info)} new videos, "
-                    f"{skipped_processed} already processed, {skipped_failed} previously failed"
-                )
+                logger.info(f"[INFO] Filter summary: {len(videos_info)} new videos, {skipped_processed} already processed, {skipped_failed} previously failed")
 
             else:
                 logger.warning(f"No entries found for channel {channel_url}")
@@ -291,10 +283,7 @@ class VideoService:
                 try:
                     # Log progress for longer videos
                     if len(frame_times) > 10 and (i + 1) % 5 == 0:
-                        logger.info(
-                            f"[PROGRESS] OCR: {i + 1}/{len(frame_times)} frames "
-                            f"({((i + 1) / len(frame_times) * 100):.1f}%)"
-                        )
+                        logger.info(f"[PROGRESS] OCR: {i + 1}/{len(frame_times)} frames ({((i + 1) / len(frame_times) * 100):.1f}%)")
 
                     # Get frame at specified time (OpenCV returns BGR; OCR expects RGB).
                     capture.set(cv2.CAP_PROP_POS_MSEC, frame_time * 1000)
@@ -310,25 +299,16 @@ class VideoService:
                         continue
 
                     # Skip very similar frames
-                    if previous_frame is not None and self.ocr_service.are_frames_similar(
-                        frame, previous_frame
-                    ):
+                    if previous_frame is not None and self.ocr_service.are_frames_similar(frame, previous_frame):
                         skipped_frames += 1
                         continue
 
                     # Extract text and URLs
-                    ocr_result = self.ocr_service.extract_text_from_frame(
-                        frame, frame_time, i
-                    )
+                    ocr_result = self.ocr_service.extract_text_from_frame(frame, frame_time, i)
 
                     # Check confidence threshold
-                    if (
-                        ocr_result["confidence"] >= self.ocr_service.settings.min_confidence
-                        and len(ocr_result["text"]) >= self.ocr_service.settings.min_text_length
-                    ):
-                        cleaned_text = self.ocr_service.clean_extracted_text(
-                            ocr_result["text"]
-                        )
+                    if ocr_result["confidence"] >= self.ocr_service.settings.min_confidence and len(ocr_result["text"]) >= self.ocr_service.settings.min_text_length:
+                        cleaned_text = self.ocr_service.clean_extracted_text(ocr_result["text"])
                         if cleaned_text:
                             all_extracted_text.append(
                                 {
@@ -338,18 +318,12 @@ class VideoService:
                                     "method": ocr_result["method"],
                                 }
                             )
-                            logger.debug(
-                                f"OCR @{frame_time:.1f}s (conf: {ocr_result['confidence']:.1f}): "
-                                f"{cleaned_text[:100]}..."
-                            )
+                            logger.debug(f"OCR @{frame_time:.1f}s (conf: {ocr_result['confidence']:.1f}): {cleaned_text[:100]}...")
 
                     # Collect URLs
                     if ocr_result["urls"]:
                         all_urls.extend(ocr_result["urls"])
-                        logger.info(
-                            f"[INFO] Found {len(ocr_result['urls'])} URLs in frame {i + 1} "
-                            f"at {frame_time:.1f}s"
-                        )
+                        logger.info(f"[INFO] Found {len(ocr_result['urls'])} URLs in frame {i + 1} at {frame_time:.1f}s")
 
                     previous_frame = frame
                     processed_frames += 1
@@ -361,10 +335,7 @@ class VideoService:
                     logger.error(f"Error processing frame at {frame_time}s: {e}")
                     continue
 
-            logger.info(
-                f"[OK] OCR complete: processed {processed_frames} frames, "
-                f"skipped {skipped_frames} similar frames"
-            )
+            logger.info(f"[OK] OCR complete: processed {processed_frames} frames, skipped {skipped_frames} similar frames")
 
         except Exception as e:
             logger.error(f"Error opening or processing video file {video_path}: {e}")
@@ -416,9 +387,7 @@ class VideoService:
         }
 
         if all_extracted_text:
-            avg_confidence = sum(item["confidence"] for item in all_extracted_text) / len(
-                all_extracted_text
-            )
+            avg_confidence = sum(item["confidence"] for item in all_extracted_text) / len(all_extracted_text)
             metadata["avg_confidence"] = avg_confidence
             logger.info(f"Average confidence: {avg_confidence:.1f}%")
 

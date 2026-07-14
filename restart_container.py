@@ -1,4 +1,5 @@
 import os
+
 import paramiko
 from dotenv import load_dotenv
 
@@ -13,17 +14,17 @@ ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 try:
     print(f"Connecting to {SERVER_IP} with 30s timeout...")
     ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD, timeout=30)
-    
+
     print("Connected. Stopping/removing watchtower container to free resources...")
     # Stop container forcefully if needed
     cmd = "docker rm -f watchtower"
     print(f"Running: {cmd}")
     stdin, stdout, stderr = ssh.exec_command(cmd, timeout=60)
-    out = stdout.read().decode('utf-8')
-    err = stderr.read().decode('utf-8')
+    out = stdout.read().decode("utf-8")
+    err = stderr.read().decode("utf-8")
     print("STDOUT:", out.strip())
     print("STDERR:", err.strip())
-    
+
     print("Starting watchtower container...")
     start_cmd = (
         "docker run -d --name watchtower --restart unless-stopped "
@@ -33,14 +34,15 @@ try:
         "-e TZ=Europe/Madrid -e BROWSERLESS_ENDPOINT=ws://REDACTED_LAN_IP:3000 watchtower"
     )
     stdin, stdout, stderr = ssh.exec_command(start_cmd, timeout=60)
-    out = stdout.read().decode('utf-8')
-    err = stderr.read().decode('utf-8')
+    out = stdout.read().decode("utf-8")
+    err = stderr.read().decode("utf-8")
     print("STDOUT:", out.strip())
     print("STDERR:", err.strip())
-    
+
     print("Done")
-except Exception as e:
+except Exception:
     import traceback
+
     traceback.print_exc()
 finally:
     ssh.close()

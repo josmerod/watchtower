@@ -290,7 +290,7 @@ def main():
     api_key = settings.api.news_api_key
     if not api_key:
         logger.warning(
-            "NewsAPI key not found in settings (checked API_NEWS_API_KEY). " "NewsAPI data collection will be skipped. " "To enable NewsAPI: set API_NEWS_API_KEY in your .env file or environment variables."
+            "NewsAPI key not found in settings (checked API_NEWS_API_KEY). NewsAPI data collection will be skipped. To enable NewsAPI: set API_NEWS_API_KEY in your .env file or environment variables."
         )
         # Create empty output files to maintain consistency in data structure
         empty_data = []

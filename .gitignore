@@ -40,6 +40,10 @@ src/etl/goldigging/free_udemy_courses/courses_to_enroll.json
 src/etl/goldigging/free_udemy_courses/Courses/
 src/miners/udemy-universal/courses_to_enroll.json
 src/miners/udemy-universal/debug_rd_page.html
+# Udemy miner runtime output (statistics, state) — not config
+src/miners/udemy-universal/daily_statistics.json
+src/miners/udemy-universal/enrollment_statistics.json
+src/miners/udemy-universal/last_update_check.json
 
 # Miners specific
 src/miners/asf-winonly/config/

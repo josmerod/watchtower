@@ -15,9 +15,9 @@ __all__ = [
     "DIContainer",
     "DIContainerError",
     "ServiceLifetime",
+    "auto_register_containers",
     "get_container",
     # Registration
     "register_core_services",
     "register_etl_services",
-    "auto_register_containers",
 ]

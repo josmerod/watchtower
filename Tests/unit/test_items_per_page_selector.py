@@ -86,7 +86,7 @@ class TestItemsPerPageSelector:
         # Note: args contents might be Dash objects, check str representation or id
         output_arg = args[1]
         input_arg = args[2]
-        
+
         assert "videos-items-per-page-select" in str(output_arg)
         assert "videos-items-per-page-select" in str(input_arg)
         assert kwargs["prevent_initial_call"] is True

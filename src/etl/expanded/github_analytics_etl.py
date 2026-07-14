@@ -13,12 +13,8 @@ import json
 import os
 import re
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any
 
-import requests
-
-from src.config.settings import get_settings
 from src.etl.base import BaseETL
 from src.models.github_analytics import GithubAnalyticsMetricsModel, GithubRepoModel, TrendDirection
 from src.utils.logging import get_logger
@@ -441,7 +437,7 @@ def main():
         etl = GithubAnalyticsETL()
         metrics = etl.run()
 
-        logger.info(f"ETL completed successfully")
+        logger.info("ETL completed successfully")
         logger.info(f"Records extracted: {metrics.records_extracted}")
         logger.info(f"Records transformed: {metrics.records_transformed}")
         logger.info(f"Records loaded: {metrics.records_loaded}")

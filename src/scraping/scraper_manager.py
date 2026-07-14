@@ -242,10 +242,7 @@ class ScraperManager:
         """
         import time
 
-        valid_entries = sum(
-            1 for _, timestamp in self._cache.values()
-            if time.time() - timestamp < self.cache_ttl
-        )
+        valid_entries = sum(1 for _, timestamp in self._cache.values() if time.time() - timestamp < self.cache_ttl)
 
         return {
             "total_entries": len(self._cache),

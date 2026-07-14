@@ -51,7 +51,7 @@ def fetch_replicate_explore(max_items: int = 100) -> list[dict[str, Any]]:
             else:
                 logger.info("Launching local browser")
                 browser = p.chromium.launch(headless=True)
-                
+
             context = browser.new_context()
             page = context.new_page()
             page.goto(EXPLORE_URL, wait_until="networkidle", timeout=60000)

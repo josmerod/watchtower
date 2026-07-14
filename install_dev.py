@@ -35,7 +35,7 @@ def install_uv() -> bool:
             # Unix/Linux/macOS installation
             cmd = ["sh", "-c", "curl -LsSf https://astral.sh/uv/install.sh | sh"]
 
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
         print("[PASS] UV installed successfully")
 
         # Add UV to PATH for current session (Unix-like systems)

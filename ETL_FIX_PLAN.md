@@ -1,14 +1,14 @@
 # Watchtower ETL Failure Analysis & Fix Plan
 
-**Generated:** 2026-05-19  
+**Generated:** 2026-05-19
 **Context:** 9 failing ETLs out of 79 total (70 success, 9 failed)
 
 ---
 
 ## 1. museum_etl.py — `'ETLMetrics' object has no attribute 'status'`
 
-**File:** `src/etl/museums/museum_etl.py`  
-**Line:** 177  
+**File:** `src/etl/museums/museum_etl.py`
+**Line:** 177
 **Root Cause:** The `__main__` block at the end of the file references `metrics.status` and `metrics.error_message`, but `ETLMetrics` (in `base.py`) has no `status` or `error_message` attributes. The available properties are `is_successful` (bool), `error_count` (int), and `errors_detail` (list).
 
 **Fix:** Replace the `__main__` block logic to use the correct attributes.
@@ -35,8 +35,8 @@ new_string:
 
 ## 2. shoppy_etl.py — `TypeError: unsupported operand type(s) for /: 'str' and 'str'`
 
-**File:** `src/etl/ecommerce/shoppy_etl.py`  
-**Line:** 27  
+**File:** `src/etl/ecommerce/shoppy_etl.py`
+**Line:** 27
 **Root Cause:** `get_project_root()` from `src/utils/file_system.py` returns `str` (line 254: `return str(get_file_system_manager().project_root)`). The code at line 27 does `get_project_root() / "data" / "shoppy"` — the `/` operator only works on `Path` objects, not `str`.
 
 **Fix:** Wrap the return value in `Path()`.
@@ -55,7 +55,7 @@ DATA_DIR = Path(get_project_root()) / "data" / "shoppy"
 
 ## 3. cinema_ecartelera_etl.py — Playwright browsers not installed
 
-**File:** `src/etl/entertainment/cinema_ecartelera_etl.py`  
+**File:** `src/etl/entertainment/cinema_ecartelera_etl.py`
 **Root Cause:** The Dockerfile at line 51 already runs `playwright install --with-deps`, so the browsers ARE installed at build time. However, the error typically occurs when:
 - The Docker image was built but the `playwright` package wasn't in `pyproject.toml` dependencies at build time
 - Or the image was built with a cached layer where playwright install failed silently
@@ -76,7 +76,7 @@ docker run -d ... watchtower
 
 ## 4. cinema_ecartelera_improved_etl.py — Same Playwright issue as #3
 
-**File:** `src/etl/entertainment/cinema_ecartelera_improved_etl.py`  
+**File:** `src/etl/entertainment/cinema_ecartelera_improved_etl.py`
 **Root Cause:** Same as #3 — Playwright browsers not present in the running container.
 
 **Fix:** Same as #3 — rebuild the Docker image.
@@ -87,8 +87,8 @@ docker run -d ... watchtower
 
 ## 5. package_registry_etl.py — `'str' object has no attribute 'value'`
 
-**File:** `src/etl/expanded/package_registry_etl.py`  
-**Line:** 257  
+**File:** `src/etl/expanded/package_registry_etl.py`
+**Line:** 257
 **Root Cause:** At line 257, the code does `package.registry.value` where `registry` is expected to be a `PackageRegistry` enum. However, the `PackageModel`'s `registry` field is typed as `PackageRegistry` (an Enum), and `.value` should work on it. The issue is that when the ETL's `transform()` method stores data via `_transform_package()`, the `registry` field gets assigned a `PackageRegistry` enum — that part is fine. BUT the `api_metrics.registry_distribution` dict keys become strings (line 257-258), which is fine too.
 
 **The actual failure is at line 411** (the `main()` function), which is the **error report line**. Looking more carefully: the error at runtime happens in the transform loop. The `PackageModel.registry` field is a `PackageRegistry` enum, so `package.registry.value` SHOULD work. However, if the data from the API comes back with `registry` as a plain string in the raw dict and somehow bypasses the enum conversion in `_transform_package`, this would fail.
@@ -117,15 +117,15 @@ new_string:
 
 ## 6. crypto_sentiment_miner.py — `datetime.UTC` not available in Python 3.11
 
-**File:** `src/miners/crypto_sentiment_miner.py`  
-**Lines:** 311, 350, 388  
+**File:** `src/miners/crypto_sentiment_miner.py`
+**Lines:** 311, 350, 388
 **Root Cause:** `datetime.UTC` was introduced in **Python 3.11**. However, the error says it's not available. This could mean:
 - The container runs Python < 3.11 (unlikely, Dockerfile says `python:3.11-slim`)
 - Or there's a `from datetime import datetime` (not `import datetime`), so `datetime.UTC` becomes `datetime.datetime.UTC` which doesn't work
 
 Looking at the imports: `from datetime import datetime` (line 19). So `datetime` is the CLASS, and `datetime.UTC` tries to access `UTC` on the `datetime` class — this is correct for Python 3.11+. However, `datetime.UTC` is actually `datetime.timezone.utc`, not `datetime.UTC`. The `datetime.UTC` constant was added in Python 3.11 as an alias.
 
-Wait — checking more carefully: In Python 3.11, `datetime.UTC` is indeed available as a class attribute. BUT the import `from datetime import datetime` means `datetime` is the class. `datetime.UTC` should work if Python >= 3.11. 
+Wait — checking more carefully: In Python 3.11, `datetime.UTC` is indeed available as a class attribute. BUT the import `from datetime import datetime` means `datetime` is the class. `datetime.UTC` should work if Python >= 3.11.
 
 **Actually:** Looking at the actual error message again: `AttributeError: type object 'datetime.datetime' has no attribute 'UTC'`. The error says `datetime.datetime.UTC`, not `datetime.UTC`. This means somewhere in the code, `datetime` was imported as a module (`import datetime`), not as a class. Looking at line 19: `from datetime import datetime` — so `datetime` IS the class.
 
@@ -169,8 +169,8 @@ new_string:
 
 ## 7. stackexchange_etl.py — Error code 1
 
-**File:** `src/etl/expanded/stackexchange_etl.py`  
-**Root Cause:** After analyzing the code, this ETL calls the Stack Exchange API via `self.http_session.get(url, params=params, timeout=30)` at line 152. The `self.http_session` comes from `self.proxy_manager.get_session(retries=self.max_retries)` (BaseETL property at line 267). 
+**File:** `src/etl/expanded/stackexchange_etl.py`
+**Root Cause:** After analyzing the code, this ETL calls the Stack Exchange API via `self.http_session.get(url, params=params, timeout=30)` at line 152. The `self.http_session` comes from `self.proxy_manager.get_session(retries=self.max_retries)` (BaseETL property at line 267).
 
 **Error code 1 in the supervisor log** typically means the process exited with code 1 (unhandled exception). The most likely causes:
 1. **Rate limiting / network failure** — Stack Exchange API returns 429 when rate limited, and the code raises `HTTPError` at line 153 (`response.raise_for_status()`)
@@ -274,7 +274,7 @@ Looking at `src/launcher/main.py` line 153-154, the scripts ARE configured in th
 2. The file contains a dict that doesn't match recognized structures (line 424-426)
 
 The most likely cause: **The JSON structure from the ETL doesn't match what `load_data_from_file()` expects.** The ETL writes a raw list of items. Let's check:
-- `sec_edgar_rss.py` writes `json.dump(entries, ...)` where entries is a list of dicts — ✅ matches `isinstance(data, list)` 
+- `sec_edgar_rss.py` writes `json.dump(entries, ...)` where entries is a list of dicts — ✅ matches `isinstance(data, list)`
 - `load_data_from_file()` handles lists directly (line 427-428) — ✅ should work
 
 **Wait — checking `data_loader.py` more carefully:** The `INTEL_SOURCES_CONFIG` is used by the API endpoint. The function that loads it would call `load_data_from_file(config["path"])`. Since the files exist in Docker and contain valid lists, this should work.

@@ -63,7 +63,7 @@ def parse_markdown_tables(html: str) -> list[dict[str, str]]:
             props = next_json.get("props", {}).get("pageProps", {})
             if props:
                 # The data might be nested in various ways
-                for key, val in props.items():
+                for _key, val in props.items():
                     if isinstance(val, dict) and "models" in val:
                         results = val["models"]
                         logger.info(f"Found {len(results)} models from __NEXT_DATA__")
@@ -76,7 +76,7 @@ def parse_markdown_tables(html: str) -> list[dict[str, str]]:
             logger.debug(f"Could not parse __NEXT_DATA__: {e}")
 
     # Strategy 2: Parse HTML table elements directly
-    table_pattern = re.compile(r'<table[^>]*>(.*?)</table>', re.DOTALL)
+    table_pattern = re.compile(r"<table[^>]*>(.*?)</table>", re.DOTALL)
     tables = table_pattern.findall(html)
 
     if not tables:
@@ -87,7 +87,7 @@ def parse_markdown_tables(html: str) -> list[dict[str, str]]:
     table_html = max(tables, key=len) if tables else ""
 
     # Extract rows
-    row_pattern = re.compile(r'<tr[^>]*>(.*?)</tr>', re.DOTALL)
+    row_pattern = re.compile(r"<tr[^>]*>(.*?)</tr>", re.DOTALL)
     rows = row_pattern.findall(table_html)
 
     if not rows:
@@ -95,27 +95,27 @@ def parse_markdown_tables(html: str) -> list[dict[str, str]]:
         return results
 
     # Extract headers from first row
-    header_pattern = re.compile(r'<th[^>]*>(.*?)</th>', re.DOTALL)
+    header_pattern = re.compile(r"<th[^>]*>(.*?)</th>", re.DOTALL)
     headers = []
     th_matches = header_pattern.findall(rows[0])
     for h in th_matches:
-        clean = re.sub(r'<[^>]+>', '', h).strip().lower()
+        clean = re.sub(r"<[^>]+>", "", h).strip().lower()
         if clean:
             headers.append(clean)
 
     # If no th headers, try td in first row
     if not headers:
-        td_pattern = re.compile(r'<td[^>]*>(.*?)</td>', re.DOTALL)
+        td_pattern = re.compile(r"<td[^>]*>(.*?)</td>", re.DOTALL)
         td_matches = td_pattern.findall(rows[0])
         for h in td_matches:
-            clean = re.sub(r'<[^>]+>', '', h).strip().lower()
-            if clean and clean != '---':
+            clean = re.sub(r"<[^>]+>", "", h).strip().lower()
+            if clean and clean != "---":
                 headers.append(clean)
 
     logger.info(f"Table headers: {headers}")
 
     # Parse data rows (skip header row)
-    td_pattern = re.compile(r'<td[^>]*>(.*?)</td>', re.DOTALL)
+    td_pattern = re.compile(r"<td[^>]*>(.*?)</td>", re.DOTALL)
     for row in rows[1:]:
         cells = td_pattern.findall(row)
         if not cells or len(cells) < 2:
@@ -124,9 +124,9 @@ def parse_markdown_tables(html: str) -> list[dict[str, str]]:
         row_data = {}
         for i, cell in enumerate(cells):
             if i < len(headers):
-                clean_val = re.sub(r'<[^>]+>', '', cell).strip()
+                clean_val = re.sub(r"<[^>]+>", "", cell).strip()
                 # Skip separator rows
-                if clean_val and clean_val != '---':
+                if clean_val and clean_val != "---":
                     row_data[headers[i]] = clean_val
             else:
                 break
@@ -169,11 +169,9 @@ def normalize_scores(data: list[dict], source: str) -> list[dict]:
     """Convert score values to floats where possible."""
     # Columns that should be numeric
     if source == "overall":
-        numeric_cols = ["quality", "vibe", "security", "debugging", "refactoring",
-                        "hallucination", "reasoning", "ui"]
+        numeric_cols = ["quality", "vibe", "security", "debugging", "refactoring", "hallucination", "reasoning", "ui"]
     else:
-        numeric_cols = ["score", "visible", "hidden", "repro", "regress",
-                        "diagnose", "intent", "accuracy", "evidence", "tasks"]
+        numeric_cols = ["score", "visible", "hidden", "repro", "regress", "diagnose", "intent", "accuracy", "evidence", "tasks"]
 
     for entry in data:
         for col in numeric_cols:
@@ -226,6 +224,7 @@ def run():
         except Exception as e:
             logger.error(f"Failed to process {source}: {e}")
             import traceback
+
             traceback.print_exc()
 
     logger.info("BridgeBench ETL complete.")

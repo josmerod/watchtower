@@ -56,7 +56,4 @@ def is_item_trending(item: dict, trending_map: dict[str, dict]) -> bool:
 
     # Check by category/source
     source = item.get("source")
-    if source and f"category:{source}" in trending_map:
-        return True
-
-    return False
+    return bool(source and f"category:{source}" in trending_map)

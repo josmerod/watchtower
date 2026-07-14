@@ -27,9 +27,7 @@ FEEDS: dict[str, str] = {
     "wwwhatsnew": "https://wwwhatsnew.com/feed/",
 }
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; WatchtowerBot/1.0; +https://josmerod.es)"
-}
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; WatchtowerBot/1.0; +https://josmerod.es)"}
 
 
 def _parse_date(date_str: str) -> str:
@@ -68,24 +66,23 @@ def fetch_feeds() -> list[dict[str, Any]]:
 
             for entry in feed.entries:
                 published = _parse_date(entry.get("published", ""))
-                summary = _strip_html(
-                    entry.get("summary", "")
-                    or entry.get("description", "")
-                )
+                summary = _strip_html(entry.get("summary", "") or entry.get("description", ""))
                 categories = []
                 if hasattr(entry, "tags"):
                     categories = [t.term for t in entry.tags if hasattr(t, "term")]
 
-                entries.append({
-                    "source": f"spanish_tech_{source}",
-                    "title": entry.get("title", ""),
-                    "link": entry.get("link", ""),
-                    "published": published,
-                    "summary": summary,
-                    "categories": categories,
-                    "fetched_at": datetime.now(timezone.utc).isoformat(),
-                    "language": "es",
-                })
+                entries.append(
+                    {
+                        "source": f"spanish_tech_{source}",
+                        "title": entry.get("title", ""),
+                        "link": entry.get("link", ""),
+                        "published": published,
+                        "summary": summary,
+                        "categories": categories,
+                        "fetched_at": datetime.now(timezone.utc).isoformat(),
+                        "language": "es",
+                    }
+                )
 
         except Exception as e:
             logger.error(f"Failed to fetch {source}: {e}")

@@ -1,7 +1,7 @@
-import paramiko
+import os
 import sys
 
-import os
+import paramiko
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -24,28 +24,24 @@ def fetch_logs():
         ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD)
 
         print("--- Log Files in /mnt/user/appdata/watchtower/logs ---")
-        stdin, stdout, stderr = ssh.exec_command("ls -1 /mnt/user/appdata/watchtower/logs")
+        _stdin, stdout, _stderr = ssh.exec_command("ls -1 /mnt/user/appdata/watchtower/logs")
         print(stdout.read().decode())
 
         print("--- Content of scheduler.err.log ---")
-        stdin, stdout, stderr = ssh.exec_command("cat /mnt/user/appdata/watchtower/logs/scheduler.err.log | tail -n 50")
+        _stdin, stdout, _stderr = ssh.exec_command("cat /mnt/user/appdata/watchtower/logs/scheduler.err.log | tail -n 50")
         print(stdout.read().decode())
 
         print("--- Content of scheduler.out.log ---")
-        stdin, stdout, stderr = ssh.exec_command("cat /mnt/user/appdata/watchtower/logs/scheduler.out.log | tail -n 50")
+        _stdin, stdout, _stderr = ssh.exec_command("cat /mnt/user/appdata/watchtower/logs/scheduler.out.log | tail -n 50")
         print(stdout.read().decode())
 
         print("--- Supervisord Log ---")
-        stdin, stdout, stderr = ssh.exec_command("cat /mnt/user/appdata/watchtower/logs/supervisord.log | tail -n 20")
+        _stdin, stdout, _stderr = ssh.exec_command("cat /mnt/user/appdata/watchtower/logs/supervisord.log | tail -n 20")
         print(stdout.read().decode())
 
         print("--- Data Directory Timestamps (News) ---")
-        stdin, stdout, stderr = ssh.exec_command("ls -lt /mnt/user/appdata/watchtower/data/news/ | head -n 10")
+        _stdin, stdout, _stderr = ssh.exec_command("ls -lt /mnt/user/appdata/watchtower/data/news/ | head -n 10")
         print(stdout.read().decode())
-
-        ssh.close()
-    except Exception as e:
-        print(f"Error fetching logs: {e}")
 
         ssh.close()
     except Exception as e:

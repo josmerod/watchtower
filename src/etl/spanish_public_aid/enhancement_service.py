@@ -1,6 +1,5 @@
 """Enhancement service for Spanish public aid data."""
 
-import logging
 from typing import Any
 
 from src.models.spanish_public_aid import SpanishPublicAidModel
@@ -92,9 +91,18 @@ class EnhancementService:
 
         # Common Spanish aid keywords
         aid_keywords = [
-            "subvención", "ayuda", "beca", "fomento", "apoyo",
-            "convocatoria", "plazo", "solicitud", "inscripción",
-            "requisitos", "documentación", "bases",
+            "subvención",
+            "ayuda",
+            "beca",
+            "fomento",
+            "apoyo",
+            "convocatoria",
+            "plazo",
+            "solicitud",
+            "inscripción",
+            "requisitos",
+            "documentación",
+            "bases",
         ]
 
         for keyword in aid_keywords:
@@ -103,6 +111,7 @@ class EnhancementService:
 
         # Extract year if present
         import re
+
         years = re.findall(r"\b20\d{2}\b", text)
         keywords.extend(years)
 

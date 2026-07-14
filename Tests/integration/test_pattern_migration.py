@@ -10,8 +10,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from typing import Any, Callable
 import logging
+from collections.abc import Callable
+from typing import Any
 
 
 class MigrationTestPlan:
@@ -101,8 +102,9 @@ class MigrationTestPlan:
         self.logger.info("\n[*] Testing Repository Pattern...")
 
         try:
-            from src.repositories import DataFrameRepository
             from pathlib import Path
+
+            from src.repositories import DataFrameRepository
 
             # Test 1: Can create repository
             test_repo = DataFrameRepository(
@@ -134,7 +136,7 @@ class MigrationTestPlan:
         self.logger.info("\n[*] Testing Scraping Strategy...")
 
         try:
-            from src.scraping import scrape_url, ScrapingMethod
+            from src.scraping import ScrapingMethod, scrape_url
 
             # Test 1: Can scrape (will fail if no network, but shouldn't crash)
             result = scrape_url(
@@ -225,8 +227,9 @@ class MigrationTestPlan:
         Returns:
             Checkpoint identifier
         """
-        import git
         from datetime import datetime
+
+        import git
 
         try:
             repo = git.Repo(".")

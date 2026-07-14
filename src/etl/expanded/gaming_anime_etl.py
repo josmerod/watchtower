@@ -50,9 +50,7 @@ class GamerPowerETL(BaseETL[dict, GamerPowerGiveawayModel]):
     def load(self, data: list[GamerPowerGiveawayModel]) -> None:
         items_data = [g.model_dump(mode="json") for g in data]
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        (self.output_dir / f"gamerpower_{timestamp}.json").write_text(
-            json.dumps(items_data, indent=2)
-        )
+        (self.output_dir / f"gamerpower_{timestamp}.json").write_text(json.dumps(items_data, indent=2))
 
 
 class AniListETL(BaseETL[dict, AniListMediaModel]):
@@ -90,9 +88,7 @@ class AniListETL(BaseETL[dict, AniListMediaModel]):
     def load(self, data: list[AniListMediaModel]) -> None:
         items_data = [a.model_dump(mode="json") for a in data]
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        (self.output_dir / f"anilist_{timestamp}.json").write_text(
-            json.dumps(items_data, indent=2)
-        )
+        (self.output_dir / f"anilist_{timestamp}.json").write_text(json.dumps(items_data, indent=2))
 
 
 def main_gamerpower():

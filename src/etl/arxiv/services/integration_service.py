@@ -1,7 +1,6 @@
 """Integration services for external platforms (GitHub, PapersWithCode)."""
 
 import logging
-import os
 from typing import Any
 
 from src.models.arxiv import GitHubRepositoryModel, PapersWithCodeModel

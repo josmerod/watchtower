@@ -1,8 +1,9 @@
 import os
+import sys
+import time
+
 import paramiko
 from dotenv import load_dotenv
-import time
-import sys
 
 load_dotenv()
 SERVER_IP = os.getenv("UNRAID_HOST")
@@ -14,22 +15,22 @@ ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 try:
     print(f"Connecting to {SERVER_IP} to finalize deploy...")
     ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD, timeout=15)
-    
+
     REMOTE_DIR = "/tmp/watchtower_deploy"
     DOCKER_IMAGE = "watchtower"
-    
+
     # Run the build
     print("Running docker build...")
     cmd = f"cd {REMOTE_DIR} && docker build -t {DOCKER_IMAGE} -f deployment/Dockerfile ."
     stdin, stdout, stderr = ssh.exec_command(cmd)
-    
+
     # Wait for completion and stream output
     exit_status = stdout.channel.recv_exit_status()
     if exit_status != 0:
         print(f"Build failed with {exit_status}")
         print(stderr.read().decode())
         sys.exit(1)
-        
+
     print("Build succeeded. Starting container...")
     start_cmd = (
         f"docker rm -f {DOCKER_IMAGE} || true && "
@@ -45,9 +46,10 @@ try:
         print("Container started successfully!")
     else:
         print(f"Failed to start container: {stderr.read().decode()}")
-        
-except Exception as e:
+
+except Exception:
     import traceback
+
     traceback.print_exc()
 finally:
     ssh.close()

@@ -54,26 +54,25 @@ def register_items_per_page_callback(tab_name):
 
     # Client-side callback to save preference to localStorage
     clientside_callback(
-        """
-        function(itemsPerPage) {
+        f"""
+        function(itemsPerPage) {{
             // Save preference to localStorage using ItemsPerPageManager
-            if (typeof window.itemsPerPageManager !== 'undefined') {
+            if (typeof window.itemsPerPageManager !== 'undefined') {{
                 window.itemsPerPageManager.applyPreference(
-                    '%(tab_name)s',
+                    '{tab_name}',
                     itemsPerPage,
-                    function(tab, value) {
-                        console.log(`Items per page updated for ${tab}: ${value}`);
+                    function(tab, value) {{
+                        console.log(`Items per page updated for ${{tab}}: ${{value}}`);
                         // Trigger a content refresh if needed
-                        if (typeof window.refreshTabContent === 'function') {
+                        if (typeof window.refreshTabContent === 'function') {{
                             window.refreshTabContent(tab, value);
-                        }
-                    }
+                        }}
+                    }}
                 );
-            }
+            }}
             return itemsPerPage;
-        }
-        """
-        % {"tab_name": tab_name},
+        }}
+        """,
         Output(selector_id, "value"),
         Input(selector_id, "value"),
         prevent_initial_call=True,

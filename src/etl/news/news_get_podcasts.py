@@ -51,9 +51,7 @@ def get_podcast_episodes(max_retries: int = 3, retry_delay: int = 5) -> list[dic
         for attempt in range(max_retries):
             try:
                 # Fetch feed via requests with timeout and headers to avoid 403s
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                }
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
                 response = requests.get(rss_url, headers=headers, timeout=15)
                 response.raise_for_status()
                 feed = feedparser.parse(response.content)

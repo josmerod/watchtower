@@ -2377,7 +2377,7 @@ class Udemy:
             settings_file = "duce-cli-settings.json" if self.interface == "cli" else "settings.json"
             with open(settings_file, encoding="utf-8") as f:
                 loaded_settings = json.load(f)
-            
+
             # Default settings
             default_settings = {
                 "email": "",
@@ -2396,15 +2396,15 @@ class Udemy:
                 "discounted_only": False,
                 "course_update_threshold_months": 24,
             }
-            
+
             # Update defaults with loaded settings
             # We do a deep update for nested dictionaries if needed, but for now top-level merge + manually handling nested might be needed if user config is partial.
             # Simple update for top level keys:
             for key, value in loaded_settings.items():
                 default_settings[key] = value
-                
+
             self.settings = default_settings
-            
+
             if self.debug:
                 self.logger.debug("Settings loaded from file")
             return self.settings

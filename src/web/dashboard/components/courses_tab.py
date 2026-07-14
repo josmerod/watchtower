@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
 import os
+from datetime import datetime, timezone
 
 import dash
 import dash_bootstrap_components as dbc
@@ -197,7 +197,7 @@ def load_udemy_data():
 
     if "scraped_at" in df.columns:
         df = df.sort_values(by="scraped_at", ascending=False, na_position="last")
-    
+
     # Fill N/A for display
     df["language"] = df["language"].fillna("Unknown")
     df["category"] = df["category"].fillna("Other")
@@ -206,7 +206,6 @@ def load_udemy_data():
     ALL_COURSES_DATA["udemy"] = df
     COURSES_DATA_LOADED["udemy"] = True
     print(f"Info (Udemy): Loaded {len(df)} courses.")
-
 
 
 def load_ms_applied_skills_data():
@@ -228,14 +227,14 @@ def load_ms_applied_skills_data():
         ALL_COURSES_DATA["ms_skills"] = pd.DataFrame()
         COURSES_DATA_LOADED["ms_skills"] = True
         return
-        
+
     if "first_detected_at" in df.columns:
         df["first_detected_at"] = pd.to_datetime(df["first_detected_at"]).dt.tz_convert(None)
         df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
         df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d")
     else:
         df["detected_str"] = "N/A"
-        
+
     df = df.fillna("N/A")
     ALL_COURSES_DATA["ms_skills"] = df
     COURSES_DATA_LOADED["ms_skills"] = True
@@ -261,14 +260,14 @@ def load_aws_skill_builder_data():
         ALL_COURSES_DATA["aws_skills"] = pd.DataFrame()
         COURSES_DATA_LOADED["aws_skills"] = True
         return
-        
+
     if "first_detected_at" in df.columns:
         df["first_detected_at"] = pd.to_datetime(df["first_detected_at"]).dt.tz_convert(None)
         df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
         df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d")
     else:
         df["detected_str"] = "N/A"
-        
+
     df = df.fillna("N/A")
     ALL_COURSES_DATA["aws_skills"] = df
     COURSES_DATA_LOADED["aws_skills"] = True
@@ -294,14 +293,14 @@ def load_gcp_skills_boost_data():
         ALL_COURSES_DATA["gcp_skills"] = pd.DataFrame()
         COURSES_DATA_LOADED["gcp_skills"] = True
         return
-        
+
     if "first_detected_at" in df.columns:
         df["first_detected_at"] = pd.to_datetime(df["first_detected_at"]).dt.tz_convert(None)
         df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
         df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d %H:%M")
     else:
         df["detected_str"] = "N/A"
-        
+
     df = df.fillna("N/A")
     ALL_COURSES_DATA["gcp_skills"] = df
     COURSES_DATA_LOADED["gcp_skills"] = True
@@ -315,7 +314,6 @@ def load_all_courses_data():
     load_aws_skill_builder_data()
     load_gcp_skills_boost_data()
     print("Attempted to load all courses data.")
-
 
 
 load_all_courses_data()
@@ -382,7 +380,7 @@ def get_initial_coursera_table():
     """Pre-render initial Coursera table data for layout."""
     if not COURSES_DATA_LOADED["coursera"] or ALL_COURSES_DATA["coursera"].empty:
         return dbc.Alert("Loading Coursera data...", color="info")
-    
+
     df = ALL_COURSES_DATA["coursera"]
     df_paginated = df.head(PAGE_SIZE)
     return create_coursera_table(df_paginated)
@@ -546,7 +544,7 @@ def get_initial_udemy_table():
     """Pre-render initial Udemy table data for layout."""
     if not COURSES_DATA_LOADED["udemy"] or ALL_COURSES_DATA["udemy"].empty:
         return dbc.Alert("Loading Udemy data...", color="info")
-    
+
     df = ALL_COURSES_DATA["udemy"]
     df_paginated = df.head(PAGE_SIZE)
     return create_udemy_table(df_paginated)
@@ -565,7 +563,7 @@ def render_udemy_courses_sub_tab(df):
             color="info",
             className="mt-3",
         )
-    
+
     # Prepare filter options
     language_options = [{"label": i, "value": i} for i in sorted(df["language"].unique().tolist()) if i] if "language" in df.columns else []
     category_options = [{"label": i, "value": i} for i in sorted(df["category"].unique().tolist()) if i] if "category" in df.columns else []
@@ -768,6 +766,7 @@ def render_courses_tab():
 # --- Callbacks ---
 def register_courses_callbacks(app):
     print("DEBUG: register_courses_callbacks called")
+
     @app.callback(
         Output("coursera-table-container", "children"),
         Output("coursera-pagination-info", "children"),
@@ -832,7 +831,7 @@ def register_courses_callbacks(app):
             if free_only_checked:  # Checkbox value is a list, [True] if checked, else None or empty list
                 # is_free column should be boolean True/False after loading.
                 # If it can be None/NaN, handle that: df_filtered['is_free'].fillna(False) == True
-                df_filtered = df_filtered[df_filtered["is_free"] == True]
+                df_filtered = df_filtered[df_filtered["is_free"]]
 
             if df_filtered.empty:
                 return (
@@ -952,10 +951,10 @@ def register_courses_callbacks(app):
             if search_term:
                 search_lower = search_term.lower()
                 df_filtered = df_filtered[df_filtered["title"].str.lower().contains(search_lower, na=False)]
-            
+
             if language_filter:
                 df_filtered = df_filtered[df_filtered["language"] == language_filter]
-                
+
             if category_filter:
                 df_filtered = df_filtered[df_filtered["category"] == category_filter]
 
@@ -1011,7 +1010,7 @@ def register_courses_callbacks(app):
                         date_str = row["scraped_at"].strftime("%Y-%m-%d")
                     except Exception:
                         date_str = str(row["scraped_at"])[:10]
-                        
+
                 table_body_rows.append(
                     html.Tr(
                         [
@@ -1093,7 +1092,7 @@ def register_courses_callbacks(app):
             if search_term:
                 s = str(search_term).lower()
                 df = df[df["title"].str.lower().str.contains(s, na=False) | df["subject"].str.lower().str.contains(s, na=False) | df["roles"].astype(str).str.lower().str.contains(s, na=False)]
-                
+
             header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Subject"), html.Th("Level"), html.Th("Roles"), html.Th("First Detected")]))]
             rows = []
             for _, row in df.iterrows():
@@ -1111,7 +1110,13 @@ def register_courses_callbacks(app):
                 )
             return dbc.Table(
                 header + [html.Tbody(rows)],
-                bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive",
+                bordered=True,
+                hover=True,
+                responsive=True,
+                striped=True,
+                size="sm",
+                color="dark",
+                className="table-responsive",
             )
         except Exception as e:
             return dbc.Alert(f"Error loading MS Applied Skills data: {e!s}", color="danger")
@@ -1131,7 +1136,7 @@ def register_courses_callbacks(app):
             if search_term:
                 s = str(search_term).lower()
                 df = df[df["title"].str.lower().str.contains(s, na=False)]
-                
+
             header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Info"), html.Th("First Detected")]))]
             rows = []
             for _, row in df.iterrows():
@@ -1146,7 +1151,13 @@ def register_courses_callbacks(app):
                 )
             return dbc.Table(
                 header + [html.Tbody(rows)],
-                bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive",
+                bordered=True,
+                hover=True,
+                responsive=True,
+                striped=True,
+                size="sm",
+                color="dark",
+                className="table-responsive",
             )
         except Exception as e:
             return dbc.Alert(f"Error loading AWS Skill Builder data: {e!s}", color="danger")
@@ -1165,15 +1176,9 @@ def register_courses_callbacks(app):
                 return dbc.Alert("No data available.", color="warning")
             if search_term:
                 s = str(search_term).lower()
-                df = df[
-                    df["title"].str.lower().str.contains(s, na=False)
-                    | df["description"].str.lower().str.contains(s, na=False)
-                ]
-                
-            header = [html.Thead(html.Tr([
-                html.Th("Title"), html.Th("Type"), html.Th("Description"),
-                html.Th("Duration"), html.Th("Level"), html.Th("First Detected")
-            ]))]
+                df = df[df["title"].str.lower().str.contains(s, na=False) | df["description"].str.lower().str.contains(s, na=False)]
+
+            header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Type"), html.Th("Description"), html.Th("Duration"), html.Th("Level"), html.Th("First Detected")]))]
             rows = []
             for _, row in df.iterrows():
                 rows.append(
@@ -1190,7 +1195,13 @@ def register_courses_callbacks(app):
                 )
             return dbc.Table(
                 header + [html.Tbody(rows)],
-                bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive",
+                bordered=True,
+                hover=True,
+                responsive=True,
+                striped=True,
+                size="sm",
+                color="dark",
+                className="table-responsive",
             )
         except Exception as e:
             return dbc.Alert(f"Error loading GCP Skills Boost data: {e!s}", color="danger")

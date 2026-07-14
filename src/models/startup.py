@@ -20,19 +20,20 @@ class StartupNewsItem(TimestampedModel, AIEnhancedModel):
     tags: list[str] = Field(default_factory=list, description="Tags or categories")
     published_at: datetime = Field(description="Publication timestamp")
     author: str | None = Field(default=None, description="Author or maker")
-    
+
     # Engagement metrics
     votes: int = Field(default=0, description="Upvotes (for Product Hunt)")
     comments: int = Field(default=0, description="Comment count")
-    
+
     # Metadata
     thumbnail_url: str | None = Field(default=None, description="Thumbnail image URL")
     funding_mentioned: bool = Field(default=False, description="Whether funding is mentioned")
     company_mentioned: list[str] = Field(default_factory=list, description="Companies mentioned")
-    
+
     # For Product Hunt
     tagline: str | None = Field(default=None, description="Product tagline")
-    
+
     class Config:
         """Pydantic config."""
+
         use_enum_values = True

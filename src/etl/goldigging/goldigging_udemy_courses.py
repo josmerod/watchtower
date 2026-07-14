@@ -59,11 +59,11 @@ class UdemyCoursesETL:
             return []
 
         courses: list[dict[str, Any]] = []
-        
+
         # Use csv.DictReader for reliable parsing
         f = StringIO(response.text)
         reader = csv.DictReader(f)
-        
+
         rows = list(reader)
         logger.info(f"Fetched {len(rows)} raw rows from sheet")
 
@@ -82,9 +82,9 @@ class UdemyCoursesETL:
             title = row.get(COL_TITLE, "").strip()
             category = row.get(COL_CAT, "").strip()
             subcategory = row.get(COL_SUBCAT, "").strip()
-            
+
             # 3. URL Generation
-            # Some IDs might be pure numbers, others might be strings. 
+            # Some IDs might be pure numbers, others might be strings.
             # Assuming simple append works as per requirement.
             url = f"{CAPGEMINI_UDEMY_BASE_URL}{course_id}"
 
@@ -102,11 +102,11 @@ class UdemyCoursesETL:
                     # Requirement says "sort by added day desc", so preserving the date is important.
                     logger.debug(f"Could not parse date: {date_added_str}")
                     scraped_at = ""
-            
-            # If no date, maybe skip or put at end? 
-            # Let's keep it but it might affect sorting if None. 
+
+            # If no date, maybe skip or put at end?
+            # Let's keep it but it might affect sorting if None.
             # We'll handle sorting in valid list.
-            
+
             course = {
                 "title": title,
                 "url": url,
@@ -114,7 +114,7 @@ class UdemyCoursesETL:
                 "language": lang,
                 "category": category,
                 "subcategory": subcategory,
-                "provider": "Udemy", # Adding static provider for context
+                "provider": "Udemy",  # Adding static provider for context
             }
             courses.append(course)
 

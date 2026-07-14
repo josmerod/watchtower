@@ -188,7 +188,7 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
 
             transformed_papers.append(transformed_paper)
 
-        self.logger.info(f"Transformed {len(transformed_papers)} papers into " f"{len({c['cluster_id'] for c in classifications})} clusters")
+        self.logger.info(f"Transformed {len(transformed_papers)} papers into {len({c['cluster_id'] for c in classifications})} clusters")
         return transformed_papers
 
     def load(self, transformed_papers: list[dict[str, Any]]) -> None:
@@ -240,7 +240,7 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
                     df[col] = df[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x)
 
             if "github_languages" in df.columns:
-                df["github_languages"] = df["github_languages"].apply(lambda x: (", ".join([f"{k}:{v}" for k, v in x.items()]) if isinstance(x, dict) else x))
+                df["github_languages"] = df["github_languages"].apply(lambda x: ", ".join([f"{k}:{v}" for k, v in x.items()]) if isinstance(x, dict) else x)
 
             # Save DataFrame
             csv_file = csv_dir / f"papers_{timestamp}.csv"

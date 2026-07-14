@@ -130,9 +130,7 @@ class VideoProcessingResult:
         }
 
     @classmethod
-    def from_video_metadata(
-        cls, metadata: VideoMetadata, status: str = "failed"
-    ) -> "VideoProcessingResult":
+    def from_video_metadata(cls, metadata: VideoMetadata, status: str = "failed") -> "VideoProcessingResult":
         """Create a processing result from video metadata."""
         return cls(
             url=metadata.url,

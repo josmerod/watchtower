@@ -5,7 +5,6 @@ Aggregates internal insights (recommendations, trends) and external intelligence
 
 from __future__ import annotations
 
-import json
 import logging
 from collections import Counter
 from datetime import datetime, timezone
@@ -16,12 +15,11 @@ import dash_bootstrap_components as dbc
 import plotly.express as px
 from dash import Input, Output, dash_table, dcc, html
 
-from src.web.dashboard.components.recommendations_tab import recommendations_manager
-from src.web.dashboard.trend_utils import load_latest_trends
-from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
+from src.web.dashboard.components.recommendations_tab import recommendations_manager
+from src.web.dashboard.trend_utils import load_latest_trends
+from src.web.dashboard.utils import parse_date_universal
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Import centralized configuration
 from src.services.data_loader import INTEL_SOURCES_CONFIG
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class IntelligenceRepository(BaseRepository[list[dict[str, Any]]]):
@@ -61,6 +60,7 @@ class IntelligenceRepository(BaseRepository[list[dict[str, Any]]]):
             return [raw_data]
         else:
             return []
+
 
 # Create singleton instances for each source
 sec_edgar_repo = IntelligenceRepository(INTEL_SOURCES_CONFIG["sec_edgar"]["path"])

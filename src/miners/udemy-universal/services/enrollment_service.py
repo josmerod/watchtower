@@ -125,9 +125,7 @@ class EnrollmentService:
                 error=str(e),
             )
 
-    def _enroll_discounted(
-        self, course_id: str, coupon_code: str, price: float
-    ) -> EnrollmentResult:
+    def _enroll_discounted(self, course_id: str, coupon_code: str, price: float) -> EnrollmentResult:
         """Enroll in a discounted course.
 
         Args:
@@ -162,9 +160,7 @@ class EnrollmentService:
                 error=str(e),
             )
 
-    def enroll_in_courses(
-        self, courses: list[Course]
-    ) -> list[EnrollmentResult]:
+    def enroll_in_courses(self, courses: list[Course]) -> list[EnrollmentResult]:
         """Enroll in multiple courses.
 
         Args:
@@ -277,11 +273,7 @@ class CourseFilter:
             True if course should be excluded
         """
         # Extract instructors
-        instructors = [
-            i["absolute_url"].split("/")[-2]
-            for i in dma["serverSideProps"]["course"]["instructors"]["instructors_info"]
-            if i.get("absolute_url")
-        ]
+        instructors = [i["absolute_url"].split("/")[-2] for i in dma["serverSideProps"]["course"]["instructors"]["instructors_info"] if i.get("absolute_url")]
 
         # Extract course attributes
         language = dma["serverSideProps"]["course"]["localeSimpleEnglishTitle"]

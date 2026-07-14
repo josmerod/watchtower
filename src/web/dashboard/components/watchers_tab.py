@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 from typing import Any
 
@@ -8,13 +7,14 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import dcc, html
 
-# Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
 
+# Import shared utilities
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
+
 # --- Data Loading ---
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class WatcherEventsRepository(BaseRepository[list[dict[str, Any]]]):
@@ -69,6 +69,7 @@ class WatcherEventsRepository(BaseRepository[list[dict[str, Any]]]):
         else:
             return []
 
+
 class WatcherStateRepository(BaseRepository[dict[str, Any]]):
     """Repository for watcher state data."""
 
@@ -96,6 +97,7 @@ class WatcherStateRepository(BaseRepository[dict[str, Any]]):
             return {"items": raw_data}
         else:
             return {}
+
 
 # Create singleton instances
 watcher_events_repo = WatcherEventsRepository()

@@ -1,4 +1,3 @@
-import json
 import os
 import re  # For parsing prices
 from datetime import datetime, timezone
@@ -8,16 +7,17 @@ from typing import Any
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import dcc, html
-
-# Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path, log_missing_file
+from dash import html
 
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
 
+# Import shared utilities
+from src.web.dashboard.utils import file_exists, get_data_path
+
 # --- Constants ---
 DATA_BASE_PATH = get_data_path("games", "")  # Relative to this file
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class GamesRepository(BaseRepository[dict[str, Any]]):
@@ -51,6 +51,7 @@ class GamesRepository(BaseRepository[dict[str, Any]]):
         else:
             return {}
 
+
 # Create singleton instances for each games data source
 deals_repo = GamesRepository(get_data_path("games", "deals.json"))
 bundles_repo = GamesRepository(get_data_path("games", "bundles.json"))
@@ -61,7 +62,7 @@ ALL_GAMES_DATA = {
     "new_releases": pd.DataFrame(),
     "metacritic": pd.DataFrame(),
 }
-DATA_LOADED_SUCCESSFULLY = {key: False for key in ALL_GAMES_DATA}
+DATA_LOADED_SUCCESSFULLY = dict.fromkeys(ALL_GAMES_DATA, False)
 
 
 # --- Date Parsing Utility ---
@@ -411,9 +412,6 @@ def load_bundles_data():
     print(f"Info (Bundles): Combined total of {len(combined_df)} bundles.")
 
 
-
-
-
 def load_trending_data():
     global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
     file_path = get_data_path("games", "itchio_trending.json")
@@ -483,9 +481,6 @@ def load_trending_data():
     print(f"Info (Trending): Loaded {len(df)} trending Itch.io games.")
 
 
-
-
-
 def load_all_games_data():
     # This will call the individual loaders
     load_deals_data()
@@ -531,9 +526,6 @@ def format_display_date(dt_obj):
     if pd.isna(dt_obj) or dt_obj is None:
         return "N/A"
     return dt_obj.strftime("%Y-%m-%d")  # Simpler date format for tables
-
-
-
 
 
 def render_bundles_sub_tab(df):
@@ -742,9 +734,6 @@ def render_metacritic_sub_tab(df):
     )
 
 
-
-
-
 def render_games_tab():
     # Load fresh data each time
     load_all_games_data()
@@ -802,7 +791,6 @@ def render_games_tab():
                         tab_id="subtab-metacritic",
                         children=render_metacritic_sub_tab(ALL_GAMES_DATA["metacritic"]),
                     ),
-
                 ],
             ),
         ]
@@ -818,11 +806,11 @@ if __name__ == "__main__":
     if not DATA_LOADED_SUCCESSFULLY["bundles"]:
         load_bundles_data()
     if not DATA_LOADED_SUCCESSFULLY["giveaways"]:
-        load_giveaways_data()
+        pass  # load_giveaways_data() — removed, no longer available
     if not DATA_LOADED_SUCCESSFULLY["trending"]:
         load_trending_data()
     if not DATA_LOADED_SUCCESSFULLY["new_releases"]:
-        load_new_releases_data()
+        pass  # load_new_releases_data() — removed, no longer available
 
     app_test = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     app_test.layout = dbc.Container(render_games_tab(), fluid=True, className="py-4")

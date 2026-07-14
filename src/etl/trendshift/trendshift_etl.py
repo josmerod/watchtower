@@ -35,11 +35,7 @@ class TrendShiftETL(BaseETL):
         self.logger.info(f"Fetching trending repos from {TRENDSHIFT_URL}")
 
         headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            ),
+            "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
         }
 
         try:
@@ -62,11 +58,13 @@ class TrendShiftETL(BaseETL):
             # Extract text content as title fallback
             title = link.get_text(strip=True) or href.split("/")[-1]
 
-            repos.append({
-                "url": href if href.startswith("http") else f"https://github.com{href}",
-                "title": title,
-                "raw_html": str(link),
-            })
+            repos.append(
+                {
+                    "url": href if href.startswith("http") else f"https://github.com{href}",
+                    "title": title,
+                    "raw_html": str(link),
+                }
+            )
 
         # Fallback: try generic card-based extraction if <a> links are empty
         if not repos:
@@ -82,11 +80,13 @@ class TrendShiftETL(BaseETL):
                 desc_tag = card.find("p")
                 description = desc_tag.get_text(strip=True) if desc_tag else ""
 
-                repos.append({
-                    "url": href if href.startswith("http") else f"https://trendshift.io{href}",
-                    "title": title,
-                    "description": description,
-                })
+                repos.append(
+                    {
+                        "url": href if href.startswith("http") else f"https://trendshift.io{href}",
+                        "title": title,
+                        "description": description,
+                    }
+                )
 
         self.logger.info(f"Extracted {len(repos)} trending repos")
         self.metrics.records_extracted = len(repos)
@@ -120,13 +120,15 @@ class TrendShiftETL(BaseETL):
                 elif len(parts) >= 4:
                     title = parts[-1]
 
-            transformed.append({
-                "title": title,
-                "url": url,
-                "description": repo.get("description", ""),
-                "published_at": datetime.utcnow().isoformat(),
-                "source": "TrendShift",
-            })
+            transformed.append(
+                {
+                    "title": title,
+                    "url": url,
+                    "description": repo.get("description", ""),
+                    "published_at": datetime.utcnow().isoformat(),
+                    "source": "TrendShift",
+                }
+            )
 
         self.logger.info(f"Transformed {len(transformed)} repos (deduped)")
         self.metrics.records_transformed = len(transformed)

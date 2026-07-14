@@ -1,9 +1,7 @@
-import json
 import logging
 
 # Import shared utilities
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import dash
@@ -13,12 +11,13 @@ from dash import ALL, Input, Output, State, html
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from src.services.data_loader import (
-    NEWS_SOURCES_CONFIG,
     CLOUD_UPDATES_SOURCES_CONFIG,
+    NEWS_SOURCES_CONFIG,
     VALENCIA_LOCAL_SOURCES_CONFIG,
-    load_data_from_file,
-    parse_date,
     get_sortable_date,
+    load_data_from_file,
+)
+from src.services.data_loader import (
     format_article_date as format_article_date_shared,
 )
 
@@ -34,7 +33,6 @@ from src.web.dashboard.search_utils import (
     filter_content,
     get_common_searchable_fields,
 )
-from src.web.dashboard.utils import get_data_path, parse_date_universal
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -147,7 +145,7 @@ def create_news_source_tab_content(source_keys, combined_name=None):
 
     # Create table body with robust field fallbacks for heterogeneous sources
     table_body_rows = []
-    for i, article in enumerate(all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]):
+    for _i, article in enumerate(all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]):
         # Check trend status
         is_trending = is_item_trending(article, trending_map)
         trend_badge = render_trend_badge(trending_map.get(f"category:{article.get('source')}") or trending_map.get(article.get("id"))) if is_trending else None
@@ -198,7 +196,6 @@ def create_news_source_tab_content(source_keys, combined_name=None):
         color="dark",
         className="table-responsive mb-0",  # Remove default bottom margin if wrapped in Div with padding
     )
-
 
     # Return search input and table container
     return html.Div(
@@ -292,13 +289,13 @@ def register_news_search_callbacks(app):
                 # Format: news-search-{key} or news-search-{key1}-{key2}
                 id_suffix = current_search_id.replace("news-search-", "")
                 if id_suffix == "futuretools-bensbites":
-                     source_keys = ["futuretools", "bensbites"]
+                    source_keys = ["futuretools", "bensbites"]
                 else:
-                     source_keys = id_suffix.split("-")
-                
+                    source_keys = id_suffix.split("-")
+
                 # 2. Fetch Fresh Data (CACHE HIT usually, unless cleared)
                 all_news_data = get_all_news_data()
-                
+
                 # 3. Aggregate Data for this Tab
                 articles_data = []
                 for key in source_keys:
@@ -316,30 +313,27 @@ def register_news_search_callbacks(app):
                         alt_key = key.replace("-", "_")
                         if alt_key in all_news_data:
                             source_articles = all_news_data[alt_key]
-                             # Enrich with source display name
+                            # Enrich with source display name
                             for art in source_articles:
                                 art["source_display_name"] = _ALL_NEWS_SOURCES[alt_key]["name"]
                             articles_data.extend(source_articles)
-                
+
                 if not articles_data:
-                     return dbc.Alert("No data available (fetch returned empty)", color="warning")
+                    return dbc.Alert("No data available (fetch returned empty)", color="warning")
 
                 # 4. Sort
                 articles_data.sort(key=get_sortable_date, reverse=True)
 
                 articles_data.sort(key=get_sortable_date, reverse=True)
-                
+
                 # 5. Filter (Search)
                 if search_term:
-                     searchable_fields = get_common_searchable_fields("news")
-                     filtered_articles = filter_content(search_term, articles_data, searchable_fields)
+                    searchable_fields = get_common_searchable_fields("news")
+                    filtered_articles = filter_content(search_term, articles_data, searchable_fields)
                 else:
-                     filtered_articles = articles_data[:MAX_ARTICLES_PER_SOURCE] # Limit initial view
-
+                    filtered_articles = articles_data[:MAX_ARTICLES_PER_SOURCE]  # Limit initial view
 
                 # Legacy filtering block removed
-
-
 
                 # Create table for filtered results
                 table_header = [
@@ -364,7 +358,7 @@ def register_news_search_callbacks(app):
                 trending_map = get_trending_items_map()
 
                 table_body_rows = []
-                for i, article in enumerate(filtered_articles):
+                for _i, article in enumerate(filtered_articles):
                     # Check trend status
                     is_trending = is_item_trending(article, trending_map)
                     trend_badge = render_trend_badge(trending_map.get(f"category:{article.get('source')}") or trending_map.get(article.get("id"))) if is_trending else None

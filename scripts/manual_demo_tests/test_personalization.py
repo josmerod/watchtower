@@ -109,7 +109,7 @@ print(f"   ✓ Generated {len(recommendations)} recommendations\n")
 print("4. Recommendation Results:\n")
 for i, (paper, score, breakdown) in enumerate(recommendations, 1):
     print(f"   {i}. {paper.title}")
-    print(f"      Match: {score*100:.1f}%")
+    print(f"      Match: {score * 100:.1f}%")
     print()
 
 # Verify ranking

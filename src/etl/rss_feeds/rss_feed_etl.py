@@ -60,12 +60,10 @@ class RSSFeedETL(BaseETL):
                 parsed = feedparser.parse(feed_url)
 
                 if parsed.bozo and not parsed.entries:
-                    self.logger.warning(
-                        f"Feed '{feed_name}' returned errors: {parsed.bozo_exception}"
-                    )
+                    self.logger.warning(f"Feed '{feed_name}' returned errors: {parsed.bozo_exception}")
                     continue
 
-                entries = parsed.entries[:self.max_entries_per_feed]
+                entries = parsed.entries[: self.max_entries_per_feed]
                 for entry in entries:
                     entry["_feed_name"] = feed_name
                     entry["_feed_url"] = feed_url
@@ -105,14 +103,16 @@ class RSSFeedETL(BaseETL):
 
                 feed_name = entry.get("_feed_name", "RSS")
 
-                transformed.append({
-                    "title": title,
-                    "url": link,
-                    "description": summary[:500] if summary else "",
-                    "published_at": str(published_at),
-                    "source": f"RSS ({feed_name})",
-                    "author": entry.get("author", feed_name),
-                })
+                transformed.append(
+                    {
+                        "title": title,
+                        "url": link,
+                        "description": summary[:500] if summary else "",
+                        "published_at": str(published_at),
+                        "source": f"RSS ({feed_name})",
+                        "author": entry.get("author", feed_name),
+                    }
+                )
             except Exception as e:
                 self.logger.warning(f"Skipping entry due to transform error: {e}")
 

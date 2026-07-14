@@ -80,7 +80,7 @@ def register_duplicate_filter_callback(component_id: str, data_store_id: str, da
 
             # Create summary text
             if summary["duplicate_items"] > 0:
-                summary_text = f"Showing {summary['unique_items']} {data_name} " f"({summary['duplicate_items']} duplicates hidden in {summary['duplicate_groups']} groups)"
+                summary_text = f"Showing {summary['unique_items']} {data_name} ({summary['duplicate_items']} duplicates hidden in {summary['duplicate_groups']} groups)"
             else:
                 summary_text = f"Showing {summary['unique_items']} {data_name} (no duplicates)"
 

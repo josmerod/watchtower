@@ -11,14 +11,11 @@ from __future__ import annotations
 import json
 import os
 import re
-import time
 from datetime import datetime, timezone
-from typing import Any
 from html.parser import HTMLParser
+from typing import Any
 
 import feedparser
-import urllib.error
-import urllib.request
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
@@ -46,7 +43,7 @@ class MLStripper(HTMLParser):
         self.text.append(data)
 
     def get_data(self) -> str:
-        return ''.join(self.text)
+        return "".join(self.text)
 
 
 def strip_tags(html: str) -> str:
@@ -83,7 +80,7 @@ def _parse_title(title: str) -> dict[str, str]:
     """
     # Regex to capture: form_type - company_name (cik) (filing_type)
     # form_type can contain spaces, hyphens, slashes (e.g., "13F-HR", "SC 14D-9", "10-K/A")
-    pattern = r'^(.+?)\s+-\s+(.+?)\s+\((\d+)\)\s+\(([^)]+)\)\s*$'
+    pattern = r"^(.+?)\s+-\s+(.+?)\s+\((\d+)\)\s+\(([^)]+)\)\s*$"
     match = re.match(pattern, title.strip())
     if match:
         form_type, company_name, cik, filing_type = match.groups()
@@ -94,11 +91,11 @@ def _parse_title(title: str) -> dict[str, str]:
             "filing_type": filing_type.strip(),
         }
     # Fallback: try to extract at least form_type and company_name
-    parts = title.split(' - ', 1)
+    parts = title.split(" - ", 1)
     if len(parts) == 2:
         form_type = parts[0].strip()
         rest = parts[1].strip()
-        company_match = re.match(r'^(.+?)\s*\((\d+)\)\s*\((.+)\)$', rest)
+        company_match = re.match(r"^(.+?)\s*\((\d+)\)\s*\((.+)\)$", rest)
         if company_match:
             company_name, cik, filing_type = company_match.groups()
             return {
@@ -143,7 +140,7 @@ def fetch_sec_edgar() -> list[dict[str, Any]]:
         # Extract link: prefer entry.link, else first link in entry.links
         url = getattr(entry, "link", "")
         if not url and hasattr(entry, "links") and entry.links:
-            url = entry.links[0].get('href', "")
+            url = entry.links[0].get("href", "")
 
         # Extract and strip summary
         summary_html = getattr(entry, "summary", "")

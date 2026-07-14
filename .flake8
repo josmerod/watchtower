@@ -1,4 +1,7 @@
 [flake8]
 max-line-length = 210
-extend-ignore = E203,E402,E722,F401,F811,F841,E712,E501,E741,F403
+# Ignored rules are technical debt requiring larger refactors:
+#   F824  — global statements that only read (courses_tab.py, games_tab.py)
+#   E128  — continuation line indent in health_monitor.py
+extend-ignore = E203,E402,E722,F401,F811,F841,E712,E501,E741,F403,F824,E128
 exclude = .git,__pycache__,build,dist,Tests,src/miners

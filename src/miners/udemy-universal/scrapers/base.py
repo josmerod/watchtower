@@ -68,9 +68,7 @@ class BaseScraper(ABC):
         """
         pass
 
-    def fetch_page(
-        self, url: str, headers: dict[str, str] | None = None
-    ) -> str | None:
+    def fetch_page(self, url: str, headers: dict[str, str] | None = None) -> str | None:
         """Fetch a page's content.
 
         Args:
@@ -114,9 +112,7 @@ class BaseScraper(ABC):
         print(f"[{self.site_code.upper()}] ERROR: {message}")
         self._result.errors.append(message)
 
-    def create_course(
-        self, title: str, url: str, coupon_code: str | None = None
-    ) -> Course:
+    def create_course(self, title: str, url: str, coupon_code: str | None = None) -> Course:
         """Create a Course entity.
 
         Args:

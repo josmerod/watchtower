@@ -6,13 +6,12 @@ and configuration management.
 
 from __future__ import annotations
 
-import inspect
 import logging
-from pathlib import Path
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from src.config.settings import get_settings
-from src.etl.base import BaseETL, SimpleETL
+from src.etl.base import BaseETL
 
 # Type variable for ETL classes
 T = TypeVar("T", bound=BaseETL)
@@ -58,7 +57,7 @@ class ETLRegistry:
             raise ETLFactoryError(f"ETL '{name}' already registered")
 
         if not issubclass(etl_class, BaseETL):
-            raise ETLFactoryError(f"ETL class must inherit from BaseETL")
+            raise ETLFactoryError("ETL class must inherit from BaseETL")
 
         self._etls[name] = etl_class
         self._configs[name] = config or {}
@@ -146,7 +145,7 @@ class ETLFactory:
 
         Auto-discovers and registers common ETLs.
         """
-        registry = cls.get_registry()
+        cls.get_registry()
 
         # Auto-register commonly used ETLs
         # This is a placeholder - actual registration happens via @register_etl decorator
@@ -229,11 +228,7 @@ class ETLFactory:
             raise ETLFactoryError(f"Failed to create ETL '{name}': {e}") from e
 
     @classmethod
-    def _resolve_dependencies(
-        cls,
-        dependencies: dict[str, str],
-        config: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _resolve_dependencies(cls, dependencies: dict[str, str], config: dict[str, Any]) -> dict[str, Any]:
         """Resolve dependency injections.
 
         Args:

@@ -141,11 +141,7 @@ class AlertRule(BaseModel):
                 return False
 
         # Check all conditions (AND logic - all must match)
-        for condition in self.conditions:
-            if not self._evaluate_condition(condition, content):
-                return False
-
-        return True
+        return all(self._evaluate_condition(condition, content) for condition in self.conditions)
 
     def _is_in_quiet_hours(self, now: datetime) -> bool:
         """Check if current time is within quiet hours."""

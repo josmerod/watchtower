@@ -154,9 +154,7 @@ class HTTPScrapingStrategy(ScrapingStrategy):
         try:
             self.log_debug(f"Fetching URL: {self.context.url}")
 
-            headers = self.context.headers or {
-                "User-Agent": self.context.user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-            }
+            headers = self.context.headers or {"User-Agent": self.context.user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
             response = requests.get(
                 self.context.url,

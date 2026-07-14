@@ -399,7 +399,7 @@ def main():
     etl = PluralsightETL(max_pages=3)  # Start with fewer pages for testing
     metrics = etl.run()
 
-    print(f"ETL completed. Extracted: {metrics.records_extracted}, " f"Transformed: {metrics.records_transformed}, " f"Loaded: {metrics.records_loaded}")
+    print(f"ETL completed. Extracted: {metrics.records_extracted}, Transformed: {metrics.records_transformed}, Loaded: {metrics.records_loaded}")
 
 
 if __name__ == "__main__":

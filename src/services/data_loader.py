@@ -5,10 +5,7 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
-
-import pandas as pd
 
 from src.web.dashboard.utils import get_data_path, parse_date_universal
 
@@ -205,10 +202,7 @@ KNOWLEDGE_SOURCES_CONFIG = {
         "name": "Reddit DevOps",
     },
     "devto": {"path": get_data_path("devto", "devto.json"), "name": "Dev.to"},
-    "hypeurls": {
-        "path": get_data_path("reddit_unified", "reddit_news_latest.json"),
-        "name": "HypeURLs"
-    },
+    "hypeurls": {"path": get_data_path("reddit_unified", "reddit_news_latest.json"), "name": "HypeURLs"},
     "lesswrong": {
         "path": get_data_path("lesswrong", "lesswrong_latest.json"),
         "name": "LessWrong",
@@ -373,7 +367,7 @@ GAMES_SOURCES_CONFIG = {
     "trending": {
         "path": get_data_path("games", "itchio_trending.json"),
         "name": "Trending Games",
-    }
+    },
 }
 
 BENCHMARKS_SOURCES_CONFIG = {
@@ -499,6 +493,7 @@ VALENCIA_LOCAL_SOURCES_CONFIG = {
 
 # --- Shared Logic ---
 
+
 def _normalize_dedupe_text(value: Any) -> str:
     """Normalize text/URLs for lightweight display-time deduplication."""
     if value is None:
@@ -518,15 +513,11 @@ def get_item_dedupe_key(item: dict[str, Any]) -> tuple[str, str] | None:
     Prefer URL because titles can legitimately repeat in sources such as travel deals.
     Fall back to title only when there is no URL-like field.
     """
-    url = _normalize_dedupe_text(
-        item.get("url") or item.get("link") or item.get("html_url") or item.get("website")
-    )
+    url = _normalize_dedupe_text(item.get("url") or item.get("link") or item.get("html_url") or item.get("website"))
     if url:
         return ("url", url)
 
-    title = _normalize_dedupe_text(
-        item.get("title") or item.get("name") or item.get("full_name") or item.get("model")
-    )
+    title = _normalize_dedupe_text(item.get("title") or item.get("name") or item.get("full_name") or item.get("model"))
     if title:
         return ("title", title)
 
@@ -565,10 +556,10 @@ def load_data_from_file(file_path: str) -> list[dict[str, Any]]:
         if not os.path.exists(file_path):
             # logger.warning(f"File not found: {file_path}")
             return []
-            
+
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
-            
+
         # Ensure data is a list of records
         if isinstance(data, dict):
             if "articles" in data and isinstance(data["articles"], list):
@@ -588,7 +579,7 @@ def load_data_from_file(file_path: str) -> list[dict[str, Any]]:
         else:
             logger.warning(f"Data in {file_path} is not a list or dict. Type: {type(data)}")
             return []
-            
+
     except json.JSONDecodeError:
         logger.warning(f"Could not decode JSON from {file_path}")
         return []
@@ -596,22 +587,24 @@ def load_data_from_file(file_path: str) -> list[dict[str, Any]]:
         logger.error(f"Error loading data from {file_path}: {e}")
         return []
 
+
 def parse_date(date_str: Any) -> datetime | None:
     """Wrapper around universal date parser."""
     return parse_date_universal(date_str, "DataLoader")
 
+
 def get_sortable_date(article: dict[str, Any]) -> datetime:
     """Get a sortable datetime object from an article dictionary."""
     date_str = (
-        article.get("published_at") 
-        or article.get("published") 
+        article.get("published_at")
+        or article.get("published")
         or article.get("published_date")
         or article.get("publication_date")
-        or article.get("created_at") 
+        or article.get("created_at")
         or article.get("created_utc")
-        or article.get("updated_at") 
-        or article.get("updated") 
-        or article.get("time") 
+        or article.get("updated_at")
+        or article.get("updated")
+        or article.get("time")
         or article.get("pubDate")
         or article.get("release_date")
         or article.get("fetched_at")
@@ -622,10 +615,10 @@ def get_sortable_date(article: dict[str, Any]) -> datetime:
     parsed = parse_date(date_str)
     return parsed if parsed else datetime.min.replace(tzinfo=timezone.utc)
 
+
 def format_article_date(article: dict[str, Any]) -> str:
     """Formats the date for display."""
     parsed_dt = get_sortable_date(article)
     if parsed_dt == datetime.min.replace(tzinfo=timezone.utc):
-         return "Date N/A"
+        return "Date N/A"
     return parsed_dt.strftime("%Y-%m-%d %H:%M UTC")
-

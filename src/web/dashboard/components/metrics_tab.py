@@ -566,8 +566,8 @@ def create_time_series_chart(time_series_data):
                     y=source_data["duration"],
                     mode="lines+markers",
                     name=source_name,
-                    line=dict(width=2),
-                    marker=dict(size=8),
+                    line={"width": 2},
+                    marker={"size": 8},
                 )
             )
 
@@ -578,7 +578,7 @@ def create_time_series_chart(time_series_data):
         hovermode="x unified",
         template="plotly_white",
         height=400,
-        legend=dict(orientation="h", yanchor="bottom"),
+        legend={"orientation": "h", "yanchor": "bottom"},
     )
 
     return fig
@@ -724,9 +724,9 @@ def create_error_details_section(source_name, error_details):
         error_items.append(
             dbc.Alert(
                 [
-                    html.H6(f"Error {i+1}:", className="alert-heading"),
+                    html.H6(f"Error {i + 1}:", className="alert-heading"),
                     html.P(error.get("message", "Unknown error"), className="mb-2"),
-                    html.Small(f"Time: {_format_datetime(error.get('timestamp'))} | " f"Context: {error.get('context', 'No context')}"),
+                    html.Small(f"Time: {_format_datetime(error.get('timestamp'))} | Context: {error.get('context', 'No context')}"),
                 ],
                 color="danger",
                 className="mb-2",

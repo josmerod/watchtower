@@ -154,7 +154,7 @@ class HealthMonitor:
             total_processes = 0
             active_processes = 0
 
-            for category, processes in etl_scheduler.etl_processes.items():
+            for _category, processes in etl_scheduler.etl_processes.items():
                 total_processes += len(processes)
                 active_processes += sum(1 for p in processes if p.is_alive())
 
@@ -268,9 +268,7 @@ class HealthMonitor:
             metrics.cpu_percent,
             metrics.memory_percent,
             metrics.disk_usage_percent,
-        ) = (
-            results[2] if not isinstance(results[2], Exception) else (False, 0, 0, 0)
-        )
+        ) = results[2] if not isinstance(results[2], Exception) else (False, 0, 0, 0)
         metrics.system_resources_ok = system_ok
         metrics.data_integrity_ok = results[3] if not isinstance(results[3], Exception) else False
         metrics.network_connectivity_ok = results[4] if not isinstance(results[4], Exception) else False
@@ -309,12 +307,9 @@ class HealthMonitor:
             should_trigger = False
 
             if (
-                action.name == "restart_dashboard"
-                and not metrics.dashboard_healthy
-                or action.name == "restart_etl_processes"
-                and not metrics.etl_processes_healthy
-                or action.name == "cleanup_disk_space"
-                and metrics.disk_usage_percent > 85
+                (action.name == "restart_dashboard" and not metrics.dashboard_healthy)
+                or (action.name == "restart_etl_processes" and not metrics.etl_processes_healthy)
+                or (action.name == "cleanup_disk_space" and metrics.disk_usage_percent > 85)
             ):
                 should_trigger = True
             elif action.name == "restart_system" and not self.is_system_healthy(metrics):

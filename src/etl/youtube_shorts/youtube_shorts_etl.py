@@ -6,13 +6,11 @@ Following SOLID principles with service layer architecture.
 
 import argparse
 import json
-import logging
 import shutil
 import time
-from pathlib import Path
 from typing import Any
 
-from src.utils.logging_utils import setup_logger, get_project_root
+from src.utils.logging_utils import get_project_root, setup_logger
 
 from .config import DEFAULT_CONFIG, YouTubeOCRConfig
 from .domain.models import VideoProcessingResult
@@ -117,10 +115,7 @@ class YouTubeShortsETL:
         for i, video_meta in enumerate(videos_meta, 1):
             video_start_time = time.time()
 
-            logger.info(
-                f"[PROGRESS] Processing video {i}/{len(videos_meta)} "
-                f"({(i / len(videos_meta) * 100):.1f}%)"
-            )
+            logger.info(f"[PROGRESS] Processing video {i}/{len(videos_meta)} ({(i / len(videos_meta) * 100):.1f}%)")
             logger.info(f"[CURRENT] {video_meta.title}")
 
             result = self._process_single_video(video_meta, checkpoint)
@@ -139,15 +134,9 @@ class YouTubeShortsETL:
                 avg_time = (time.time() - processing_start_time) / i
                 remaining = len(videos_meta) - i
                 estimated_time = remaining * avg_time
-                logger.info(
-                    f"[TIMING] Video: {video_duration:.1f}s. "
-                    f"Est. remaining: {estimated_time / 60:.1f}min"
-                )
+                logger.info(f"[TIMING] Video: {video_duration:.1f}s. Est. remaining: {estimated_time / 60:.1f}min")
 
-            logger.info(
-                f"[PROGRESS] Progress: {successful_count} successful, "
-                f"{failed_count} failed, {urls_found} URLs found"
-            )
+            logger.info(f"[PROGRESS] Progress: {successful_count} successful, {failed_count} failed, {urls_found} URLs found")
 
             # Save checkpoint after each video
             self.checkpoint_service.save(checkpoint)
@@ -159,14 +148,8 @@ class YouTubeShortsETL:
 
         # Final summary
         total_time = time.time() - processing_start_time
-        logger.info(
-            f"[COMPLETE] Processing complete! "
-            f"Success: {successful_count}, Failed: {failed_count}, URLs: {urls_found}"
-        )
-        logger.info(
-            f"[TIMING] Total: {total_time / 60:.1f}min "
-            f"({total_time / len(videos_meta):.1f}s per video)"
-        )
+        logger.info(f"[COMPLETE] Processing complete! Success: {successful_count}, Failed: {failed_count}, URLs: {urls_found}")
+        logger.info(f"[TIMING] Total: {total_time / 60:.1f}min ({total_time / len(videos_meta):.1f}s per video)")
 
         # Save results
         self._save_results(all_results)
@@ -176,9 +159,7 @@ class YouTubeShortsETL:
 
         return all_results
 
-    def _process_single_video(
-        self, video_meta, checkpoint: dict[str, Any]
-    ) -> VideoProcessingResult:
+    def _process_single_video(self, video_meta, checkpoint: dict[str, Any]) -> VideoProcessingResult:
         """Process a single video: download, OCR, cleanup.
 
         Args:
@@ -209,23 +190,15 @@ class YouTubeShortsETL:
                 logger.info("[INFO] Starting OCR analysis of video frames...")
                 ocr_result = self.video_service.process_video_frames(video_path)
 
-                result.ocr_description = (
-                    ocr_result.text if ocr_result.text else "No high-quality text found in video"
-                )
+                result.ocr_description = ocr_result.text if ocr_result.text else "No high-quality text found in video"
                 result.extracted_urls = ocr_result.urls
-                result.all_detected_urls = [
-                    url.get("cleaned_url", url.get("url", ""))
-                    for url in ocr_result.urls
-                ]
+                result.all_detected_urls = [url.get("cleaned_url", url.get("url", "")) for url in ocr_result.urls]
                 result.metadata = ocr_result.metadata
                 result.processing_status = "success"
 
                 # Log success
                 if result.all_detected_urls:
-                    logger.info(
-                        f"[OK] Successfully processed {video_meta.video_id} - "
-                        f"Found {len(result.all_detected_urls)} URLs"
-                    )
+                    logger.info(f"[OK] Successfully processed {video_meta.video_id} - Found {len(result.all_detected_urls)} URLs")
                 else:
                     logger.info(f"[OK] Successfully processed {video_meta.video_id} - No URLs detected")
 
@@ -300,9 +273,7 @@ class YouTubeShortsETL:
 
 def main():
     """Main entry point for CLI execution."""
-    parser = argparse.ArgumentParser(
-        description="Enhanced YouTube Shorts OCR ETL with clean architecture"
-    )
+    parser = argparse.ArgumentParser(description="Enhanced YouTube Shorts OCR ETL with clean architecture")
     parser.add_argument(
         "--limit",
         type=int,
@@ -356,12 +327,8 @@ def main():
         total_urls = sum(len(r.all_detected_urls) for r in results)
         videos_with_urls = len([r for r in results if r.all_detected_urls])
 
-        logger.info(
-            f"ETL process completed. Success: {successful}, Failed: {failed}"
-        )
-        logger.info(
-            f"URL Extraction Summary: {total_urls} URLs found across {videos_with_urls} videos"
-        )
+        logger.info(f"ETL process completed. Success: {successful}, Failed: {failed}")
+        logger.info(f"URL Extraction Summary: {total_urls} URLs found across {videos_with_urls} videos")
 
         # Show extracted URLs
         if total_urls > 0:
@@ -371,9 +338,8 @@ def main():
                     print(f"\n[VIDEO] Video {i}: {result.title}")
                     for url_data in result.extracted_urls:
                         print(f"   [URL] {url_data.get('cleaned_url', url_data.get('url', 'Unknown'))}")
-                        print(f"      Confidence: {url_data.get('confidence', 0):.1f}% | "
-                              f"Time: {url_data.get('timestamp', 0):.1f}s")
-                        context = url_data.get('context_text', '')
+                        print(f"      Confidence: {url_data.get('confidence', 0):.1f}% | Time: {url_data.get('timestamp', 0):.1f}s")
+                        context = url_data.get("context_text", "")
                         if context:
                             print(f"      Context: {context[:100]}...")
                     print()

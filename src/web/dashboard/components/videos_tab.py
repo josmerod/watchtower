@@ -422,34 +422,29 @@ def register_video_callbacks(app):
         try:
             if selected_channel is None:
                 selected_channel = "all"
-            
+
             if items_per_page is None:
                 items_per_page = 48  # Default fallback
 
             # Get videos for selected channel with filters and limit
-            videos = video_manager.get_videos(
-                channel=selected_channel, 
-                search_term=search_term,
-                days_filter=date_filter,
-                limit=items_per_page
-            )
+            videos = video_manager.get_videos(channel=selected_channel, search_term=search_term, days_filter=date_filter, limit=items_per_page)
 
             if not videos:
-                return [dbc.Alert(f"No videos found matching your criteria.", color="info")]
+                return [dbc.Alert("No videos found matching your criteria.", color="info")]
 
             # Create video cards
             video_cards = [create_video_card(video) for video in videos]
 
             # Format channel name for display
             channel_display = "all channels" if selected_channel == "all" else f"'{selected_channel}'"
-            
+
             # Format other filters for display
             filters_text = []
             if search_term:
                 filters_text.append(f"matching '{search_term}'")
             if date_filter and date_filter != "all":
                 filters_text.append(f"from last {date_filter} days")
-                
+
             filter_suffix = f" ({', '.join(filters_text)})" if filters_text else ""
 
             content = [

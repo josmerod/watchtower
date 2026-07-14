@@ -503,17 +503,17 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
             # Patch: Flatten configuration for legacy Udemy class compatibility
             # The ConfigValidator uses a nested structure, but base.py expects a flat structure
             flat_settings = self.config.copy()
-            
+
             # Flatten filters
             if "filters" in flat_settings:
                 for key, value in flat_settings["filters"].items():
                     flat_settings[key] = value
-            
+
             # Flatten output
             if "output" in flat_settings:
                 for key, value in flat_settings["output"].items():
                     flat_settings[key] = value
-            
+
             # Flatten exclusions
             if "exclusions" in flat_settings:
                 for key, value in flat_settings["exclusions"].items():
@@ -534,9 +534,9 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
                 flat_settings["min_reviews"] = 0
             if "discounted_only" not in flat_settings:
                 flat_settings["discounted_only"] = False
-            
+
             udemy.settings = flat_settings
-            
+
             # Initialize Udemy object attributes (filters, etc.) by calling is_user_dumb
             # (This method has side effects of setting self.title_exclude, self.sites, etc.)
             udemy.is_user_dumb()

@@ -1,36 +1,37 @@
 import json
 import logging
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import ALL, Input, Output, State, html, dcc
+from dash import Input, Output, State, dcc, html
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from src.services.data_loader import (
     DEALS_SOURCES_CONFIG,
-    load_data_from_file,
     get_sortable_date,
+    load_data_from_file,
+)
+from src.services.data_loader import (
     format_article_date as format_article_date_shared,
 )
 from src.web.dashboard.search_utils import (
     create_search_input,
     filter_content,
-    get_common_searchable_fields,
 )
-from src.web.dashboard.utils import get_data_path
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # --- Data Loading ---
 
+
 def get_all_deals_data():
     """Load fresh deals data from all configured sources."""
     import time
+
     global _DEALS_CACHE
     now = time.time()
     try:
@@ -43,13 +44,16 @@ def get_all_deals_data():
     _DEALS_CACHE = {"ts": now, "data": data}
     return data
 
+
 def format_deal_date(deal):
     """Wrapper for shared formatting."""
     return format_article_date_shared(deal)
 
+
 # --- Layout Generation ---
 
 MAX_DEALS_PER_SOURCE = 50
+
 
 def create_deals_source_tab_content(source_keys, combined_name=None):
     """Creates the content for a deals tab as a table with search functionality."""
@@ -142,12 +146,14 @@ def create_deals_source_tab_content(source_keys, combined_name=None):
         ]
     )
 
+
 def register_deals_callbacks(app):
     """Register search callbacks for deals tabs."""
     # Add IDs for potential multiple deal sources
     search_ids = ["v2-deals-search-lifetimo"]
 
     for search_id in search_ids:
+
         @app.callback(
             Output(f"{search_id}-results", "children"),
             [Input(search_id, "value")],
@@ -186,16 +192,13 @@ def register_deals_callbacks(app):
                 )
 
             table = dbc.Table(
-                [
-                    html.Thead(html.Tr([html.Th("Deal Title"), html.Th("Categories"), html.Th("Date Added")])),
-                    html.Tbody(table_body_rows)
-                ],
+                [html.Thead(html.Tr([html.Th("Deal Title"), html.Th("Categories"), html.Th("Date Added")])), html.Tbody(table_body_rows)],
                 bordered=True,
                 hover=True,
                 responsive=True,
                 striped=True,
                 size="sm",
-                color="dark"
+                color="dark",
             )
 
             return table
@@ -206,8 +209,10 @@ def register_deals_callbacks(app):
             prevent_initial_call=True,
         )
         def clear_deals_search(n_clicks):
-            if n_clicks: return ""
+            if n_clicks:
+                return ""
             return dash.no_update
+
 
 def render_deals_tab():
     """Render the Deals tab with Lifetimo sub-tab."""

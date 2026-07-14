@@ -200,7 +200,7 @@ class FilterPresetsComponent:
 
             # Extract filter values from preset data
             filter_values = []
-            for filter_name in self.filter_inputs.keys():
+            for filter_name in self.filter_inputs:
                 filter_values.append(selected_preset_data.get("filters", {}).get(filter_name))
 
             return filter_values
@@ -238,9 +238,7 @@ class FilterPresetsComponent:
         callbacks = {}
 
         # Load presets callback
-        callbacks[
-            "load_presets"
-        ] = f"""
+        callbacks["load_presets"] = f"""
             function() {{
                 try {{
                     const storageKey = 'watchtower_filter_presets';
@@ -260,9 +258,7 @@ class FilterPresetsComponent:
         """
 
         # Save preset callback
-        callbacks[
-            "save_preset"
-        ] = f"""
+        callbacks["save_preset"] = f"""
             function(presetName, currentFilters) {{
                 try {{
                     const storageKey = 'watchtower_filter_presets';
@@ -304,9 +300,7 @@ class FilterPresetsComponent:
         """
 
         # Delete preset callback
-        callbacks[
-            "delete_preset"
-        ] = f"""
+        callbacks["delete_preset"] = f"""
             function(presetName) {{
                 try {{
                     const storageKey = 'watchtower_filter_presets';

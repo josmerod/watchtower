@@ -1,6 +1,5 @@
 """4chan Generals Tab Component for Watchtower Dashboard"""
 
-import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -16,6 +15,7 @@ from src.repositories import BaseRepository
 logger = logging.getLogger(__name__)
 
 DATA_FILE = Path("data/4chan_generals/output/latest.json")
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class FourChanRepository(BaseRepository[list[dict[str, Any]]]):
@@ -44,6 +44,7 @@ class FourChanRepository(BaseRepository[list[dict[str, Any]]]):
             return [raw_data]
         else:
             return []
+
 
 # Create singleton instance
 fourchan_repo = FourChanRepository()
@@ -250,7 +251,7 @@ def render_fourchan_tab() -> html.Div:
         # Create tabs for each board
         board_content = []
 
-        for idx, board in enumerate(boards):
+        for _idx, board in enumerate(boards):
             tab_id = f"4chan-board-{board}"
 
             # Create tab with thread count

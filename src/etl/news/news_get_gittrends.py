@@ -19,11 +19,9 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
-from src.models.github import GitHubRepositoryModel
 from src.etl.proxy_manager import ProxyManager
+from src.models.github import GitHubRepositoryModel
 
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
@@ -49,7 +47,7 @@ def create_session() -> requests.Session:
     github_token = os.getenv("GITHUB_TOKEN")
     if github_token:
         headers["Authorization"] = f"token {github_token}"
-        
+
     session.headers.update(headers)
 
     return session
@@ -253,7 +251,7 @@ def process_github_data(repositories: list[dict[str, Any]], topics: list[dict[st
     processed_repos = []
 
     # Create topic lookup for enrichment
-    topic_lookup = {topic.get("name"): topic for topic in topics}
+    {topic.get("name"): topic for topic in topics}
 
     for repo in repositories:
         try:
@@ -261,12 +259,12 @@ def process_github_data(repositories: list[dict[str, Any]], topics: list[dict[st
             stars = repo.get("stars_count", 0)
             forks = repo.get("forks_count", 0)
             watchers = repo.get("watchers_count", 0)
-            open_issues = repo.get("open_issues_count", 0)
+            repo.get("open_issues_count", 0)
 
             # Parse dates
             created_at = repo.get("created_at")
             updated_at = repo.get("updated_at")
-            pushed_at = repo.get("pushed_at")
+            repo.get("pushed_at")
 
             if created_at:
                 created_date = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
@@ -317,7 +315,7 @@ def process_github_data(repositories: list[dict[str, Any]], topics: list[dict[st
             # Determine project category
             description = (repo.get("description") or "").lower()
             language = (repo.get("language") or "").lower()
-            topics_list = repo.get("topics", [])
+            repo.get("topics", [])
 
             if any(
                 word in description

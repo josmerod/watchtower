@@ -2,7 +2,7 @@ from datetime import datetime
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import html, dcc, Input, Output, State, ALL, clientside_callback
+from dash import Input, Output, dcc, html
 from flask import jsonify, redirect, render_template_string
 
 from src.web.dashboard.components.anime_tab import render_anime_tab
@@ -10,66 +10,43 @@ from src.web.dashboard.components.arxiv_research_tab import (
     register_arxiv_callbacks,
     render_arxiv_research_tab,
 )
-
+from src.web.dashboard.components.benchmarks_tab import (
+    register_benchmarks_callbacks,
+    render_benchmarks_tab,
+)
 from src.web.dashboard.components.courses_tab import (
     register_courses_callbacks,
     render_courses_tab,
 )
-
+from src.web.dashboard.components.deals_tab import (
+    register_deals_callbacks,
+    render_deals_tab,
+)
 from src.web.dashboard.components.fourchan_tab import (
-    register_fourchan_callbacks,
     render_fourchan_tab,
 )
-
-from src.web.dashboard.components.open_source_tab import render_open_source_tab
-
-from src.web.dashboard.components.scavenging_tab import (
-    render_scavenging_tab,
-    register_scavenging_callbacks,
-)
-from src.web.dashboard.components.shortcuts_tab import (
-    render_shortcuts_tab,
-    register_shortcuts_callbacks,
-    get_shortcuts_data,
-)
-
-from src.web.dashboard.components.deals_tab import (
-    render_deals_tab,
-    register_deals_callbacks,
-)
-
-from src.web.dashboard.components.benchmarks_tab import (
-    render_benchmarks_tab,
-    register_benchmarks_callbacks,
-)
-
-
-
-
 from src.web.dashboard.components.knowledge_garden_tab import (
     render_knowledge_garden_tab,
 )
-
-
-
 from src.web.dashboard.components.news_tab import (
     register_news_search_callbacks,
     render_news_tab,
 )
-
-# Removed notifications tab import as per UI cleanup
-
 from src.web.dashboard.components.scavenging_tab import (
     register_scavenging_callbacks,
     render_scavenging_tab,
 )
+from src.web.dashboard.components.shortcuts_tab import (
+    get_shortcuts_data,
+    register_shortcuts_callbacks,
+    render_shortcuts_tab,
+)
 
-
+# Removed notifications tab import as per UI cleanup
 from src.web.dashboard.components.spanish_public_aid_tab import (
     register_spanish_aid_callbacks,
     render_spanish_public_aid_tab,
 )
-
 from src.web.dashboard.components.valencia_events_new_tab import (
     register_valencia_events_callbacks,
     render_valencia_events_tab,
@@ -78,9 +55,7 @@ from src.web.dashboard.components.videos_tab import (
     register_video_callbacks,
     render_videos_tab,
 )
-
 from src.web.dashboard.health_monitor import HealthMonitor
-from src.web.api.routes import api_bp  # Import API Blueprint
 
 # No external scripts needed — dbc handles Bootstrap behavior via React.
 # SortableJS removed (drag-drop modal was deleted). Bootstrap JS CDN removed (redundant with dbc).
@@ -94,7 +69,6 @@ app = dash.Dash(
 
 # Set app title for browser tab and configure metadata
 app.title = "Watchtower Dashboard"
-
 
 
 # Add meta tags for better branding
@@ -125,7 +99,6 @@ app.index_string = """
 app.layout = dbc.Container(
     [
         # Skip to content link removed
-
         # Hero header and operational summary
         dbc.Row(
             dbc.Col(
@@ -163,8 +136,8 @@ app.layout = dbc.Container(
         html.Div(
             className="d-none",  # Hidden container specifically for keeping mobile nav happy if it looks for header-buttons
             children=[
-                 # Removed shortcuts_sidebar and customize_tabs toggles
-            ]
+                # Removed shortcuts_sidebar and customize_tabs toggles
+            ],
         ),
         # Removed shortcuts sidebar
         # Removed customize tabs modal and stores
@@ -179,18 +152,14 @@ app.layout = dbc.Container(
                     active_tab="tab-news",  # Set a default active tab
                     className="desktop-nav-tabs",
                     children=[
-
-
                         dbc.Tab(
                             label="News",
                             tab_id="tab-news",
                         ),
-
                         dbc.Tab(
                             label="Shortcuts",
                             tab_id="tab-shortcuts",
                         ),
-
                         dbc.Tab(
                             label="🌱 Knowledge Garden",
                             tab_id="tab-knowledge-garden",
@@ -200,10 +169,7 @@ app.layout = dbc.Container(
                             label="Videos",
                             tab_id="tab-videos",
                         ),
-
                         # Removed Intelligence and AI Research tabs as per cleanup
-
-
                         dbc.Tab(
                             label="Courses",
                             tab_id="tab-courses",
@@ -224,7 +190,6 @@ app.layout = dbc.Container(
                             label="Valencia Events",
                             tab_id="tab-valencia",
                         ),
-
                         dbc.Tab(
                             label="🏛️ Ayudas Públicas",
                             tab_id="tab-spanish-aid",
@@ -519,14 +484,9 @@ def metrics():
 # Callback for updating shortcuts in the Shortcuts Tab
 
 
-
-
-
 # Callback for dynamic tab content loading
 # Remove legacy dynamic loader with dead branches to avoid confusion
 # (Tabs are rendered directly above per component.)
-
-
 
 
 def _format_uptime(seconds: float | None) -> str:
@@ -642,13 +602,6 @@ register_valencia_events_callbacks(app)
 register_shortcuts_callbacks(app)
 register_deals_callbacks(app)
 register_benchmarks_callbacks(app)
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":

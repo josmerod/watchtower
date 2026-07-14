@@ -15,6 +15,7 @@ from src.repositories.repository_manager import (
 )
 
 __all__ = [
+    "AggregatedRepository",
     # Base
     "BaseRepository",
     "CacheEntry",
@@ -22,9 +23,8 @@ __all__ = [
     "RepositoryError",
     # Manager
     "RepositoryManager",
-    "AggregatedRepository",
     # Factories
     "create_courses_repository_manager",
-    "create_news_repository_manager",
     "create_games_repository_manager",
+    "create_news_repository_manager",
 ]

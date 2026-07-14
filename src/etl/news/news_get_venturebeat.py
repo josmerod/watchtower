@@ -17,7 +17,6 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
-import requests
 import feedparser
 
 from src.utils.file_system import ensure_directories, get_project_root
@@ -48,12 +47,13 @@ def fetch_venturebeat_feeds() -> list[dict[str, Any]]:
         logger.info(f"Fetching VentureBeat RSS feed from {source} at {url}")
         try:
             import cloudscraper
+
             scraper = cloudscraper.create_scraper()
             response = scraper.get(url, timeout=30)
             response.raise_for_status()
 
             feed = feedparser.parse(response.content)
-            
+
             if feed.bozo:
                 logger.warning(f"Error parsing feed from {source}: {feed.bozo_exception}")
                 # Continue if we have entries despite bozo error

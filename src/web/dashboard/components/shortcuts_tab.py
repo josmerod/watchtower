@@ -5,11 +5,11 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, html
 
-# Import shared utilities
-from src.web.dashboard.utils import get_data_path
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
+
+# Import shared utilities
+from src.web.dashboard.utils import get_data_path
 
 
 # NEW: Repository-based loading (SOLID Pattern)
@@ -50,13 +50,10 @@ class ShortcutsRepository(BaseRepository[dict[str, Any]]):
         else:
             return {}
 
+
 # Create singleton instances for each source
-predefined_shortcuts_repo = ShortcutsRepository(
-    get_data_path("shortcuts", "predefined_shortcuts.json")
-)
-custom_shortcuts_repo = ShortcutsRepository(
-    get_data_path("shortcuts", "custom_shortcuts.json")
-)
+predefined_shortcuts_repo = ShortcutsRepository(get_data_path("shortcuts", "predefined_shortcuts.json"))
+custom_shortcuts_repo = ShortcutsRepository(get_data_path("shortcuts", "custom_shortcuts.json"))
 
 
 def create_shortcut_button(shortcut_info):
@@ -141,11 +138,9 @@ def render_shortcuts_tab():
 # This needs the 'app' instance, so it will be defined in app.py or a dedicated callbacks file
 # For now, the structure is prepared here.
 
+
 def register_shortcuts_callbacks(app):
-    @app.callback(
-        Output("shortcuts-cards-container", "children"),
-        [Input("search-shortcuts-input", "value")]
-    )
+    @app.callback(Output("shortcuts-cards-container", "children"), [Input("search-shortcuts-input", "value")])
     def update_filtered_shortcuts(search_value):
         return render_shortcuts_tab_layout(get_shortcuts_data(), search_value)
 

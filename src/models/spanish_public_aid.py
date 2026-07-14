@@ -237,9 +237,7 @@ class SpanishPublicAidModel(TimestampedModel):
             return False
         if self.closing_date and now > self.closing_date:
             return False
-        if self.opening_date and now < self.opening_date:
-            return False
-        return True
+        return not (self.opening_date and now < self.opening_date)
 
     @property
     def days_until_closing(self) -> int | None:

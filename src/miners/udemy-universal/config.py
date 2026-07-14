@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 # =============================================================================
 # Version Information
 # =============================================================================
@@ -69,10 +68,8 @@ EXTERNAL_LINKS: dict[str, str] = {
 # HTTP Headers
 # =============================================================================
 DEFAULT_HEADERS: dict[str, str] = {
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36 Edg/92.0.902.84",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,"
-    "image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " "(KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36 Edg/92.0.902.84",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp," "image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
 }
 
 UDEMY_API_HEADERS: dict[str, str] = {
@@ -145,18 +142,20 @@ class FilterSettings:
         course_update_threshold_months: Maximum months since last update
     """
 
-    sites: dict[str, bool] = field(default_factory=lambda: {
-        "uf": True,
-        "tb": True,
-        "rd": True,
-        "cv": True,
-        "idc": True,
-        "en": True,
-        "du": True,
-        "cj": True,
-        "cd": False,  # Disabled by default
-        "ufc": False,  # Disabled by default
-    })
+    sites: dict[str, bool] = field(
+        default_factory=lambda: {
+            "uf": True,
+            "tb": True,
+            "rd": True,
+            "cv": True,
+            "idc": True,
+            "en": True,
+            "du": True,
+            "cj": True,
+            "cd": False,  # Disabled by default
+            "ufc": False,  # Disabled by default
+        }
+    )
     categories: dict[str, bool] = field(default_factory=dict)
     languages: dict[str, bool] = field(default_factory=lambda: {"English": True})
     instructor_exclude: list[str] = field(default_factory=list)
@@ -277,9 +276,7 @@ class Config:
 
         # Validate filter settings
         if not self.filter_settings.is_valid():
-            errors.append(
-                "Invalid filter settings: At least one site, category, and language must be enabled"
-            )
+            errors.append("Invalid filter settings: At least one site, category, and language must be enabled")
 
         # Validate rating range
         if not (0 <= self.filter_settings.min_rating <= 5):

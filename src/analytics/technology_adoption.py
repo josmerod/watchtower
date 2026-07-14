@@ -174,7 +174,7 @@ class TechnologyAdoptionAnalyzer:
                 battle = self._create_framework_battle(category, comparison_results)
                 battles[category] = battle
 
-                self.logger.info(f"{category.value} battle analyzed: " f"Winner={battle.winner}, Runner-up={battle.runner_up}")
+                self.logger.info(f"{category.value} battle analyzed: Winner={battle.winner}, Runner-up={battle.runner_up}")
 
             self.logger.info(f"Completed framework battle analysis for {len(battles)} categories")
             return battles
@@ -889,7 +889,7 @@ class TechnologyAdoptionAnalyzer:
 
         try:
             # Collect data from all framework categories
-            for category, config in self.framework_categories.items():
+            for _category, config in self.framework_categories.items():
                 framework_data = await self._gather_framework_data(config["frameworks"], config["keywords"])
                 current_data.update(framework_data)
 

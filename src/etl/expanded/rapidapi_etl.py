@@ -11,17 +11,13 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from pathlib import Path
 from typing import Any
-
-import requests
 
 from src.config.settings import get_settings
 from src.etl.base import BaseETL
 from src.models.rapidapi import (
     ApiCategory,
     RapidApiApiModel,
-    RapidApiCollectionModel,
     RapidApiMetricsModel,
 )
 from src.utils.logging import get_logger
@@ -331,7 +327,7 @@ def main():
         etl = RapidApiETL()
         metrics = etl.run()
 
-        logger.info(f"ETL completed successfully")
+        logger.info("ETL completed successfully")
         logger.info(f"Records extracted: {metrics.records_extracted}")
         logger.info(f"Records transformed: {metrics.records_transformed}")
         logger.info(f"Records loaded: {metrics.records_loaded}")

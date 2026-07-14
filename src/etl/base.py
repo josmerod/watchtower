@@ -1,19 +1,20 @@
 """Base ETL classes and patterns for Watchtower."""
 
 from __future__ import annotations
-import urllib.error
+
 import hashlib
 import json
 import logging
 import os
 import time
-import requests
+import urllib.error
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Generic, TypeVar
 
 import certifi
+import requests
 
 # Set SSL certificate file globally for the ETL process
 os.environ["SSL_CERT_FILE"] = certifi.where()
@@ -53,18 +54,19 @@ def _before_sleep_log_retry(retry_state: Any) -> None:
         sleep_time,
     )
 
+
 # Added Type, ensured Generic, List, Any, TypeVar
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
 
 from src.config.settings import get_settings
 from src.data_quality.deduplication import DeduplicationEngine
+from src.etl.circuit_breaker import CircuitBreaker
+from src.etl.proxy_manager import ProxyManager
 from src.exceptions.base import handle_exception
 from src.exceptions.etl import CheckpointError, ETLError
 from src.models.base import TimestampedModel
 from src.utils.logging import get_logger, get_performance_logger
-from src.etl.circuit_breaker import CircuitBreaker
-from src.etl.proxy_manager import ProxyManager
 
 # Type variables for generic ETL
 InputType = TypeVar("InputType")
@@ -303,7 +305,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             ) from e
 
     @property
-    def http_session(self) -> Any: # requests.Session
+    def http_session(self) -> Any:  # requests.Session
         """Get a configured HTTP session (with proxy rotation)."""
         return self.proxy_manager.get_session(retries=self.max_retries)
 
@@ -523,7 +525,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             self.metrics.duplicates_removed = result.duplicates_removed
             self.metrics.deduplication_time_seconds = deduplication_time
 
-            self.logger.info(f"Deduplication completed: {result.total_items} items -> " f"{len(result.unique_items)} unique, {result.duplicates_removed} duplicates removed " f"in {deduplication_time:.2f}s")
+            self.logger.info(f"Deduplication completed: {result.total_items} items -> {len(result.unique_items)} unique, {result.duplicates_removed} duplicates removed in {deduplication_time:.2f}s")
 
             # Return unique items + non-deduplicable items
             unique_items = result.unique_items
@@ -577,14 +579,12 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         self.logger.info(f"Starting ETL process: {self.name}")
         self.perf_logger.start(f"ETL_{self.name}")
         self.metrics = ETLMetrics(start_time=datetime.utcnow())
-        
+
         # Story 7.1: Check Circuit Breaker
         if not self.circuit_breaker.can_proceed():
             self.logger.warning(f"ETL {self.name} skipped due to open circuit breaker.")
             self.metrics.add_error_detail(
-                error_message="Circuit breaker is open. ETL execution skipped.",
-                error_type="CircuitBreakerOpen",
-                context={"recovery_time": str(self.circuit_breaker.state.recovery_time)}
+                error_message="Circuit breaker is open. ETL execution skipped.", error_type="CircuitBreakerOpen", context={"recovery_time": str(self.circuit_breaker.state.recovery_time)}
             )
             self.metrics.finish()
             return self.metrics
@@ -622,12 +622,13 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             enriched = deduplicated
             if self.enable_enrichment:
                 try:
-                   from src.intelligence.enrichment import ContentEnricher
-                   enricher = ContentEnricher()
-                   enriched = enricher.enrich_batch(deduplicated)
+                    from src.intelligence.enrichment import ContentEnricher
+
+                    enricher = ContentEnricher()
+                    enriched = enricher.enrich_batch(deduplicated)
                 except Exception as e:
                     self.logger.warning(f"AI Enrichment failed: {e}")
-                    enriched = deduplicated # Fallback to unenriched
+                    enriched = deduplicated  # Fallback to unenriched
 
             self._retry_operation("load", lambda: self.load(enriched))
             self.metrics.records_loaded = len(enriched)
@@ -648,12 +649,12 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 self.circuit_breaker.record_success()
             elif self.metrics.error_count == 0:
                 self.logger.info("ETL completed. No records loaded.")
-                self.circuit_breaker.record_success() # Treat no-data as success for stability
+                self.circuit_breaker.record_success()  # Treat no-data as success for stability
             # else: errors occurred and were handled by _retry_operation, ETLError will be raised
-            
+
         except Exception as e:
             run_threw_exception = True
-            
+
             # Story 7.1: Record failure
             self.circuit_breaker.record_failure()
 

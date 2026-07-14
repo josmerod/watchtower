@@ -12,8 +12,8 @@ Free tier: 1000 requests/day.
 import json
 import logging
 import os
-import urllib.request
 import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -86,8 +86,7 @@ def fetch_json(url: str, api_key: str | None = None) -> list[dict] | dict | None
             return data
     except urllib.error.HTTPError as e:
         if e.code == 401:
-            logger.error("Authentication failed — invalid or missing API key. "
-                         "Set ARTIFICIAL_ANALYSIS_API_KEY env var.")
+            logger.error("Authentication failed — invalid or missing API key. Set ARTIFICIAL_ANALYSIS_API_KEY env var.")
         elif e.code == 429:
             logger.error("Rate limited — too many requests. Try again later.")
         else:
@@ -99,6 +98,7 @@ def fetch_json(url: str, api_key: str | None = None) -> list[dict] | dict | None
     except Exception as e:
         logger.error(f"Fetch error: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
@@ -254,12 +254,7 @@ def run(endpoints: list[str] | None = None):
     """
     api_key = get_api_key()
     if not api_key:
-        logger.warning(
-            "No ARTIFICIAL_ANALYSIS_API_KEY found. "
-            "The API may work without a key for limited access, "
-            "but setting the key is recommended. "
-            "Get one free at https://artificialanalysis.ai/"
-        )
+        logger.warning("No ARTIFICIAL_ANALYSIS_API_KEY found. The API may work without a key for limited access, but setting the key is recommended. Get one free at https://artificialanalysis.ai/")
 
     if endpoints is None:
         endpoints = list(PRIMARY_ENDPOINTS)

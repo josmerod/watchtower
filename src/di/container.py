@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import inspect
 import logging
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from enum import Enum
-from typing import Any, Callable, Type, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from pydantic import BaseModel
 
@@ -67,10 +69,10 @@ class DIContainer:
 
     def register(
         self,
-        service_type: Type[T],
+        service_type: type[T],
         lifetime: ServiceLifetime = ServiceLifetime.SINGLETON,
         factory: Callable[[], T] | None = None,
-    ) -> Type[T]:
+    ) -> type[T]:
         """Register a service with the container.
 
         Can be used as a decorator.
@@ -108,15 +110,13 @@ class DIContainer:
         )
 
         self._services[service_name] = descriptor
-        self._logger.debug(
-            f"Registered service '{service_name}' with lifetime {lifetime.value}"
-        )
+        self._logger.debug(f"Registered service '{service_name}' with lifetime {lifetime.value}")
 
         return service_type
 
     def register_instance(
         self,
-        service_type: Type[T],
+        service_type: type[T],
         instance: T,
     ) -> None:
         """Register a pre-created instance as singleton.
@@ -142,7 +142,7 @@ class DIContainer:
 
     def register_factory(
         self,
-        service_type: Type[T],
+        service_type: type[T],
         factory: Callable[[], T],
         lifetime: ServiceLifetime = ServiceLifetime.SINGLETON,
     ) -> None:
@@ -155,7 +155,7 @@ class DIContainer:
         """
         self.register(service_type, lifetime=lifetime, factory=factory)
 
-    def resolve(self, service_type: Type[T]) -> T:
+    def resolve(self, service_type: type[T]) -> T:
         """Resolve a service from the container.
 
         Args:
@@ -183,15 +183,8 @@ class DIContainer:
             return cast(T, self._instances[service_name])
 
         # Return scoped instance if exists in current scope
-        if (
-            descriptor.lifetime == ServiceLifetime.SCOPED
-            and self._current_scope is not None
-            and self._current_scope in self._scoped_instances
-            and service_name in self._scoped_instances[self._current_scope]
-        ):
-            return cast(
-                T, self._scoped_instances[self._current_scope][service_name]
-            )
+        if descriptor.lifetime == ServiceLifetime.SCOPED and self._current_scope is not None and self._current_scope in self._scoped_instances and service_name in self._scoped_instances[self._current_scope]:
+            return cast(T, self._scoped_instances[self._current_scope][service_name])
 
         # Create new instance
         instance = self._create_instance(descriptor)
@@ -228,15 +221,11 @@ class DIContainer:
         try:
             # Create instance with dependencies
             instance = descriptor.service_type(**dependencies)
-            self._logger.debug(
-                f"Created instance of {descriptor.service_type.__name__}"
-            )
+            self._logger.debug(f"Created instance of {descriptor.service_type.__name__}")
             return instance
 
         except Exception as e:
-            raise DIContainerError(
-                f"Failed to create instance of {descriptor.service_type.__name__}: {e}"
-            ) from e
+            raise DIContainerError(f"Failed to create instance of {descriptor.service_type.__name__}: {e}") from e
 
     def _resolve_dependencies(self, descriptor: ServiceDescriptor) -> dict[str, Any]:
         """Resolve dependencies for a service.
@@ -299,11 +288,7 @@ class DIContainer:
             params = sig.parameters
 
             # Skip 'self' parameter
-            dependencies = [
-                name for name, param in list(params.items())[1:]
-                if param.default == inspect.Parameter.empty
-                and param.annotation != inspect.Parameter.empty
-            ]
+            dependencies = [name for name, param in list(params.items())[1:] if param.default == inspect.Parameter.empty and param.annotation != inspect.Parameter.empty]
 
             return dependencies
 
@@ -322,7 +307,7 @@ class DIContainer:
         """
         return service_type.__name__.lower()
 
-    def create_scope(self, scope_id: str | None = None) -> "Scope":
+    def create_scope(self, scope_id: str | None = None) -> AbstractContextManager[None]:
         """Create a new scope for scoped services.
 
         Args:

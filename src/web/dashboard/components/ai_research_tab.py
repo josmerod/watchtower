@@ -3,18 +3,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import plotly.express as px
 from dash import dash_table, dcc, html
 
 from src.models.ai_research_model import ImplementationComplexity
-from src.web.dashboard.utils import get_data_path
 
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
+from src.web.dashboard.utils import get_data_path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -67,8 +67,10 @@ class AIResearchRepository(BaseRepository[list[dict[str, Any]]]):
         else:
             return []
 
+
 # Create singleton instance
 ai_research_repo = AIResearchRepository()
+
 
 class HuggingFaceRepository(BaseRepository[list[dict[str, Any]]]):
     """Repository for HuggingFace data."""
@@ -87,7 +89,9 @@ class HuggingFaceRepository(BaseRepository[list[dict[str, Any]]]):
             return [raw_data]
         return []
 
+
 huggingface_repo = HuggingFaceRepository()
+
 
 class SemanticScholarRepository(BaseRepository[list[dict[str, Any]]]):
     """Repository for Semantic Scholar data."""
@@ -104,7 +108,9 @@ class SemanticScholarRepository(BaseRepository[list[dict[str, Any]]]):
             return raw_data
         return []
 
+
 semantic_scholar_repo = SemanticScholarRepository()
+
 
 def load_ai_research_data() -> list[dict[str, Any]]:
     """Load AI research data using repository pattern (NEW).
@@ -211,6 +217,7 @@ def create_papers_table(data: list[dict[str, Any]]) -> html.Div:
         ],
     )
 
+
 def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div:
     """Create a table of HuggingFace models and datasets."""
     if not data:
@@ -221,7 +228,7 @@ def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div:
         name = d.get("model_name") or d.get("dataset_name", "Unknown")
         item_type = d.get("data_type", "unknown").replace("_release", "").title()
         item_id = d.get("model_id") or d.get("dataset_id")
-        
+
         table_data.append(
             {
                 "Name": name,
@@ -262,6 +269,7 @@ def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div:
         },
     )
 
+
 def create_semantic_scholar_table(data: list[dict[str, Any]]) -> html.Div:
     """Create a table of Semantic Scholar research papers."""
     if not data:
@@ -272,9 +280,9 @@ def create_semantic_scholar_table(data: list[dict[str, Any]]) -> html.Div:
         authors_truncated = ", ".join(d.get("authors", [])[:3])
         if len(d.get("authors", [])) > 3:
             authors_truncated += " et al."
-            
+
         url = d.get("url", "")
-        
+
         table_data.append(
             {
                 "Title": d.get("title", "Unknown"),
@@ -366,7 +374,7 @@ def render_ai_research_tab() -> html.Div:
         hf_data = huggingface_repo.get()
     except Exception as e:
         logger.error(f"Error loading HuggingFace data: {e}")
-        
+
     ss_data = []
     try:
         ss_data = semantic_scholar_repo.get()

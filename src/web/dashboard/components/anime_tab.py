@@ -211,11 +211,11 @@ def create_schedule_card(item: dict[str, Any]) -> dbc.Card:
         airing_at = item.get("airing_at", 0)
         dt = datetime.datetime.fromtimestamp(airing_at)
         time_str = dt.strftime("%A, %H:%M")
-        
+
         episode = item.get("episode", "?")
         title = item.get("title_romaji") or item.get("title_english") or "Unknown"
         image_url = item.get("cover_image_medium", "")
-        
+
         card_content = [
             dbc.Row(
                 [
@@ -264,69 +264,58 @@ def create_anime_hub_section(
     try:
         # Sort current airing by rating descending
         # Some items might not have 'mean' so default to 0
-        current_airing = sorted(
-            anime_data.get("top_airing", []), 
-            key=lambda x: x.get("mean") or 0.0, 
-            reverse=True
-        )[:15]
-        
+        current_airing = sorted(anime_data.get("top_airing", []), key=lambda x: x.get("mean") or 0.0, reverse=True)[:15]
+
         upcoming = anime_data.get("top_upcoming", [])[:15]
-        
-        top_all_time = sorted(
-            anime_data.get("top_rated_all", []), 
-            key=lambda x: x.get("mean") or 0.0, 
-            reverse=True
-        )[:15]
-        
+
+        top_all_time = sorted(anime_data.get("top_rated_all", []), key=lambda x: x.get("mean") or 0.0, reverse=True)[:15]
+
         def create_block(title: str, description: str, icon: str, anime_list: list) -> html.Div:
             info = {"badge_color": "primary"}
             cards = [create_anime_card(anime, info, i) for i, anime in enumerate(anime_list) if anime]
-            
+
             row_cols = []
             for card in cards:
                 row_cols.append(dbc.Col(card, width=12, md=6, lg=6, xl=4))
-                
-            return html.Div([
-                html.H4([html.Span(icon, className="me-2"), title], className="mb-1"),
-                html.P(description, className="text-muted mb-3", style={"fontSize": "0.9rem"}),
-                dbc.Row(row_cols, className="g-3")
-            ], className="mb-2")
 
-        left_column = dbc.Col([
-            create_block("📡 Current Airing (Top Rated)", "Top-rated anime currently broadcasting", "🔥", current_airing),
-            html.Hr(className="my-4", style={"borderColor": "#444"}),
-            create_block("🔮 Upcoming Series", "Most anticipated upcoming anime", "✨", upcoming),
-            html.Hr(className="my-4", style={"borderColor": "#444"}),
-            create_block("🏆 Top All-Time", "Highest-rated anime of all time", "👑", top_all_time),
-        ], width=12, lg=8, className="pe-lg-4")
-        
+            return html.Div(
+                [html.H4([html.Span(icon, className="me-2"), title], className="mb-1"), html.P(description, className="text-muted mb-3", style={"fontSize": "0.9rem"}), dbc.Row(row_cols, className="g-3")],
+                className="mb-2",
+            )
+
+        left_column = dbc.Col(
+            [
+                create_block("📡 Current Airing (Top Rated)", "Top-rated anime currently broadcasting", "🔥", current_airing),
+                html.Hr(className="my-4", style={"borderColor": "#444"}),
+                create_block("🔮 Upcoming Series", "Most anticipated upcoming anime", "✨", upcoming),
+                html.Hr(className="my-4", style={"borderColor": "#444"}),
+                create_block("🏆 Top All-Time", "Highest-rated anime of all time", "👑", top_all_time),
+            ],
+            width=12,
+            lg=8,
+            className="pe-lg-4",
+        )
+
         # Right column: Schedule
         schedule_raw = anime_data.get("schedule", [])
         schedule_sorted = sorted(schedule_raw, key=lambda x: x.get("airing_at", 0))
         # Filter past episodes
         now_ts = datetime.datetime.now().timestamp()
         schedule_future = [s for s in schedule_sorted if s.get("airing_at", 0) > now_ts]
-        
+
         schedule_cards = [create_schedule_card(item) for item in schedule_future[:40]]
-        
-        right_column = dbc.Col([
-            html.H4([html.Span("📅", className="me-2"), "Airing Schedule"], className="mb-1"),
-            html.P("Upcoming episodes this week", className="text-muted mb-3", style={"fontSize": "0.9rem"}),
-            html.Div(
-                schedule_cards,
-                style={
-                    "maxHeight": "1400px", 
-                    "overflowY": "auto", 
-                    "paddingRight": "10px"
-                },
-                className="custom-scrollbar"
-            )
-        ], width=12, lg=4)
-        
-        return html.Div(
-            dbc.Row([left_column, right_column]),
-            className="mb-4"
+
+        right_column = dbc.Col(
+            [
+                html.H4([html.Span("📅", className="me-2"), "Airing Schedule"], className="mb-1"),
+                html.P("Upcoming episodes this week", className="text-muted mb-3", style={"fontSize": "0.9rem"}),
+                html.Div(schedule_cards, style={"maxHeight": "1400px", "overflowY": "auto", "paddingRight": "10px"}, className="custom-scrollbar"),
+            ],
+            width=12,
+            lg=4,
         )
+
+        return html.Div(dbc.Row([left_column, right_column]), className="mb-4")
 
     except Exception as e:
         logger.error(f"Error creating community rankings: {e}")

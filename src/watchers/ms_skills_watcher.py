@@ -805,7 +805,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
         }
 
         # Record the event with details
-        event = self._record_event(
+        self._record_event(
             event_type="ms_applied_skills_changed",
             old_value=old_value,
             new_value=new_value,

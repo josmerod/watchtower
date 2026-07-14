@@ -15,8 +15,8 @@ from src.etl.base import BaseETL
 
 # Newsletter slugs to scrape — add more as needed
 DEFAULT_NEWSLETTERS: list[str] = [
-    "aimadesimple0",      # AI Made Simple by Nitin Sharma
-    "adhdweasel",          # The ADHD Weasel
+    "aimadesimple0",  # AI Made Simple by Nitin Sharma
+    "adhdweasel",  # The ADHD Weasel
 ]
 
 
@@ -62,12 +62,10 @@ class SubstackETL(BaseETL):
                 parsed = feedparser.parse(feed_url)
 
                 if parsed.bozo and not parsed.entries:
-                    self.logger.warning(
-                        f"Feed for '{slug}' returned errors: {parsed.bozo_exception}"
-                    )
+                    self.logger.warning(f"Feed for '{slug}' returned errors: {parsed.bozo_exception}")
                     continue
 
-                entries = parsed.entries[:self.max_posts_per_newsletter]
+                entries = parsed.entries[: self.max_posts_per_newsletter]
                 for entry in entries:
                     entry["_newsletter_slug"] = slug
                 all_entries.extend(entries)
@@ -112,15 +110,17 @@ class SubstackETL(BaseETL):
                 if summary and len(summary) > 300:
                     summary = summary[:300] + "…"
 
-                transformed.append({
-                    "title": title,
-                    "url": link,
-                    "description": summary,
-                    "published_at": str(published_at),
-                    "source": f"Substack ({newsletter_slug})",
-                    "author": author,
-                    "newsletter": newsletter_slug,
-                })
+                transformed.append(
+                    {
+                        "title": title,
+                        "url": link,
+                        "description": summary,
+                        "published_at": str(published_at),
+                        "source": f"Substack ({newsletter_slug})",
+                        "author": author,
+                        "newsletter": newsletter_slug,
+                    }
+                )
             except Exception as e:
                 self.logger.warning(f"Skipping post due to transform error: {e}")
 

@@ -9,11 +9,10 @@ from __future__ import annotations
 
 import datetime
 from datetime import datetime, timezone
-from typing import Optional
 
 import pandas as pd
 
-from src.constants.etl import DATE_COMMON_FORMATS, DATE_ISO_FORMAT, DATE_ISO_FORMAT_WITH_TZ
+from src.constants.etl import DATE_COMMON_FORMATS, DATE_ISO_FORMAT
 from src.utils.logging import get_logger
 
 
@@ -58,7 +57,7 @@ class DateParser:
         self,
         date_str: str | None | float | int,
         format_str: str | None = None,
-    ) -> Optional[datetime]:
+    ) -> datetime | None:
         """Parse date string with automatic format detection.
 
         Attempts to parse dates in the following order:
@@ -131,7 +130,7 @@ class DateParser:
         self.logger.warning(f"Could not parse date: {date_str}")
         return None
 
-    def _parse_iso_with_tz(self, date_str: str) -> Optional[datetime]:
+    def _parse_iso_with_tz(self, date_str: str) -> datetime | None:
         """Parse ISO format with timezone.
 
         Args:
@@ -148,7 +147,7 @@ class DateParser:
         except (ValueError, AttributeError):
             return None
 
-    def _parse_iso_no_tz(self, date_str: str) -> Optional[datetime]:
+    def _parse_iso_no_tz(self, date_str: str) -> datetime | None:
         """Parse ISO format without timezone.
 
         Args:
@@ -163,7 +162,7 @@ class DateParser:
         except (ValueError, AttributeError):
             return None
 
-    def _parse_with_format(self, date_str: str, format_str: str) -> Optional[datetime]:
+    def _parse_with_format(self, date_str: str, format_str: str) -> datetime | None:
         """Parse date with specific format string.
 
         Args:
@@ -179,7 +178,7 @@ class DateParser:
         except ValueError:
             return None
 
-    def _parse_timestamp(self, timestamp: str | int | float) -> Optional[datetime]:
+    def _parse_timestamp(self, timestamp: str | int | float) -> datetime | None:
         """Parse Unix timestamp (seconds or milliseconds).
 
         Args:
@@ -203,7 +202,7 @@ class DateParser:
         self,
         date_strings: list[str | None],
         format_str: str | None = None,
-    ) -> list[Optional[datetime]]:
+    ) -> list[datetime | None]:
         """Parse multiple date strings efficiently.
 
         Args:
@@ -225,7 +224,7 @@ class DateParser:
 
     def format(
         self,
-        dt: Optional[datetime],
+        dt: datetime | None,
         format_str: str = DATE_ISO_FORMAT,
     ) -> str | None:
         """Format datetime to string.
@@ -252,7 +251,7 @@ class DateParser:
             self.logger.error(f"Failed to format datetime {dt}: {e}")
             return None
 
-    def to_iso_format(self, dt: Optional[datetime]) -> str | None:
+    def to_iso_format(self, dt: datetime | None) -> str | None:
         """Convert datetime to ISO format string.
 
         Args:
@@ -304,7 +303,7 @@ class DateParser:
         """
         return datetime.now(self.default_timezone)
 
-    def age_in_days(self, dt: Optional[datetime]) -> Optional[int]:
+    def age_in_days(self, dt: datetime | None) -> int | None:
         """Calculate age of datetime in days.
 
         Args:
@@ -349,7 +348,7 @@ def get_date_parser() -> DateParser:
 
 
 # Convenience functions for common operations
-def parse_date(date_str: str | None, format_str: str | None = None) -> Optional[datetime]:
+def parse_date(date_str: str | None, format_str: str | None = None) -> datetime | None:
     """Parse date string using default parser.
 
     Convenience function that uses the shared DateParser instance.
@@ -368,7 +367,7 @@ def parse_date(date_str: str | None, format_str: str | None = None) -> Optional[
     return get_date_parser().parse(date_str, format_str)
 
 
-def format_date(dt: Optional[datetime], format_str: str = DATE_ISO_FORMAT) -> str | None:
+def format_date(dt: datetime | None, format_str: str = DATE_ISO_FORMAT) -> str | None:
     """Format datetime to string using default parser.
 
     Convenience function that uses the shared DateParser instance.
@@ -388,7 +387,7 @@ def format_date(dt: Optional[datetime], format_str: str = DATE_ISO_FORMAT) -> st
     return get_date_parser().format(dt, format_str)
 
 
-def to_iso_format(dt: Optional[datetime]) -> str | None:
+def to_iso_format(dt: datetime | None) -> str | None:
     """Convert datetime to ISO format using default parser.
 
     Convenience function that uses the shared DateParser instance.

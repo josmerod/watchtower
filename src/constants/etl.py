@@ -53,11 +53,7 @@ JSON_DEFAULT_DATETIME_FORMAT: str = "%Y-%m-%dT%H:%M:%S.%fZ"
 # --- Web Scraping Constants ---
 SCRAPER_DEFAULT_TIMEOUT_SECONDS: int = 30
 SCRAPER_DEFAULT_MAX_RETRIES: int = 5
-SCRAPER_DEFAULT_USER_AGENT: str = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/120.0.0.0 Safari/537.36"
-)
+SCRAPER_DEFAULT_USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 SCRAPER_DEFAULT_REQUEST_DELAY_SECONDS: float = 1.0
 SCRAPER_DEFAULT_CONCURRENT_REQUESTS: int = 5
 

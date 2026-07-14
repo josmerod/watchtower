@@ -7,4 +7,4 @@ for real-time content monitoring and alerting.
 from .engine import AlertEngine
 from .models import AlertEvent, AlertRule
 
-__all__ = ["AlertRule", "AlertEvent", "AlertEngine"]
+__all__ = ["AlertEngine", "AlertEvent", "AlertRule"]

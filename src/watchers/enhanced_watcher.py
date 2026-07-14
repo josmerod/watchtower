@@ -356,7 +356,7 @@ class EnhancedWatcher(ABC):
 
             # Check if we should alert on consecutive failures
             if self.config.alert_threshold and self.consecutive_failures >= self.config.alert_threshold:
-                self.logger.error(f"Watcher {self.config.name} has failed {self.consecutive_failures} " f"consecutive times (threshold: {self.config.alert_threshold})")
+                self.logger.error(f"Watcher {self.config.name} has failed {self.consecutive_failures} consecutive times (threshold: {self.config.alert_threshold})")
                 self._record_event(
                     "threshold_exceeded",
                     details={"consecutive_failures": self.consecutive_failures},
@@ -378,7 +378,7 @@ class EnhancedWatcher(ABC):
                 return await self.check()
             except Exception as e:
                 if attempt < self.config.max_retries - 1:
-                    self.logger.warning(f"Attempt {attempt + 1}/{self.config.max_retries} failed for " f"{self.config.name}: {e}. Retrying in {self.config.retry_delay}s...")
+                    self.logger.warning(f"Attempt {attempt + 1}/{self.config.max_retries} failed for {self.config.name}: {e}. Retrying in {self.config.retry_delay}s...")
                     await asyncio.sleep(self.config.retry_delay)
                 else:
                     self.logger.error(f"All {self.config.max_retries} attempts failed for {self.config.name}")

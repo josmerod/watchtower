@@ -83,7 +83,7 @@ def process_single_file(input_file, output_file, key_field, prefer_newer, backup
             return False
 
     try:
-        output_path, removed_count = deduplicate_courses_file(
+        _output_path, removed_count = deduplicate_courses_file(
             input_file,
             key_field=key_field,
             prefer_newer=prefer_newer,

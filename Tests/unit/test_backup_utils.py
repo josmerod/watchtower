@@ -250,7 +250,7 @@ class TestBackupManager(unittest.TestCase):
             "title": latest_title_on_drive,
         }[k]
         mock_old_latest_file.__getitem__.side_effect = mock_old_latest_file.get.side_effect
-        
+
         # Setup ListFile returns
         self.mock_google_drive_instance.ListFile.return_value.GetList.side_effect = [
             [mock_old_latest_file],  # First call: found existing latest
@@ -258,19 +258,19 @@ class TestBackupManager(unittest.TestCase):
         ]
 
         # Setup datetime mock
-        # We need the real datetime class logic for what we don't mock, but since we mock the formatted string construction indirectly via the return value of _get_drive_file_modified_date (which we mocked), we just need to ensure strftime logic in valid range? 
+        # We need the real datetime class logic for what we don't mock, but since we mock the formatted string construction indirectly via the return value of _get_drive_file_modified_date (which we mocked), we just need to ensure strftime logic in valid range?
         # Actually SUT calls modified_date.strftime(). modified_date is our return value (real datetime).
         # SUT then calls _rename_drive_file with result.
-        
+
         manager._prepare_latest_in_drive(latest_filename_base)
 
         # Verify interactions
         manager._get_drive_file_modified_date.assert_called_once_with("id_old_latest")
-        
+
         # Expected new title
         expected_timestamp = "20230101_100000"
         expected_title = f"{latest_filename_base}_{expected_timestamp}.zip"
-        
+
         manager._rename_drive_file.assert_called_once_with("id_old_latest", expected_title)
 
     def test_enforce_retention_policy_deletes_oldest(self):
@@ -311,9 +311,7 @@ class TestBackupManager(unittest.TestCase):
             mf.__getitem__.side_effect = lambda k, i=id_val, t=title_val: {
                 "id": i,
                 "title": t,
-            }[
-                k
-            ]  # For file_item['title']
+            }[k]  # For file_item['title']
             mf.Delete = MagicMock()
             mock_drive_files.append(mf)
 

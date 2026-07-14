@@ -25,11 +25,14 @@ class Environment(str, Enum):
     STAGING = "staging"
     PRODUCTION = "production"
 
+
 class LLMProvider(str, Enum):
     """Supported LLM providers."""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     MOCK = "mock"
+
 
 class DatabaseConfig(BaseModel):
     """Database configuration model."""
@@ -236,9 +239,10 @@ class SpanishPublicAidConfig(BaseModel):
         description="Days threshold for 'closing soon' notifications",
     )
 
+
 class LLMConfig(BaseModel):
     """Configuration for Large Language Models."""
-    
+
     provider: LLMProvider = Field(default=LLMProvider.MOCK, description="LLM Provider to use")
     openai_api_key: str | None = Field(default=None, description="OpenAI API Key")
     openai_base_url: str | None = Field(default=None, description="OpenAI Base URL for compatible APIs")

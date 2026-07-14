@@ -9,16 +9,7 @@ from unittest.mock import patch
 
 from pydantic import ValidationError
 
-from src.config.models import (
-    DatabaseConfig,
-    ETLConfig,
-    GoogleDriveConfig,
-    LoggingConfig,
-    SecurityConfig,
-    StreamlitConfig,
-    Environment,
-    LLMProvider
-)
+from src.config.models import DatabaseConfig, Environment, ETLConfig, GoogleDriveConfig, LLMProvider, LoggingConfig, SecurityConfig, StreamlitConfig
 from src.config.settings import Settings, get_settings
 
 
@@ -66,7 +57,7 @@ class TestConfigurationModels(unittest.TestCase):
 
         self.assertEqual(config.credentials_file, "credentials.json")
         self.assertEqual(config.backup_folder_id, "test_folder_id")
-        
+
     def test_logging_config_levels(self):
         """Test LoggingConfig with different log levels."""
         config = LoggingConfig(level="DEBUG")
@@ -96,6 +87,7 @@ class TestConfigurationModels(unittest.TestCase):
         """Test LLMConfig with default values."""
         # Assuming LLMConfig is accessed via Settings usually, but we check model defaults here
         from src.config.models import LLMConfig
+
         config = LLMConfig()
         self.assertEqual(config.provider, LLMProvider.MOCK)
         self.assertEqual(config.model, "gpt-4o-mini")
@@ -128,7 +120,7 @@ name = "test-project"
     def tearDown(self):
         """Clean up test environment."""
         import shutil
-        
+
         self.root_patcher.stop()
 
         shutil.rmtree(self.test_dir, ignore_errors=True)
@@ -163,7 +155,7 @@ name = "test-project"
         """Test Settings loading from environment variables."""
         with patch("src.config.settings.Path.cwd", return_value=self.test_project_root):
             settings = Settings()
-            
+
         self.assertEqual(settings.environment, Environment.PRODUCTION)
         self.assertTrue(settings.debug)
         self.assertEqual(settings.database.url, "postgresql://prod-db/watchtower")
@@ -191,14 +183,14 @@ name = "test-project"
     def test_settings_project_root_discovery(self):
         """Test automatic project root discovery."""
         # This test is tricky because _find_project_root logic relies on __file__.
-        # We've mocked _find_project_root in setUp, so we are checking the mock behavior here, 
+        # We've mocked _find_project_root in setUp, so we are checking the mock behavior here,
         # or we verify that our manual override works effectively.
         # To truly test the logic, we'd need to unpatch and mock __file__, which is complex.
         # Instead, we verify that if _find_project_root returns X, project_root is X.
-        
+
         settings = Settings(_env_file=None)
         self.assertEqual(Path(settings.project_root), self.test_project_root)
-        
+
         # Verify find_project_root was called (by __init__ because project_root was None)
         self.mock_find_root.assert_called()
 
@@ -211,7 +203,7 @@ name = "test-project"
         # settings.data_dir becomes absolute
         self.assertTrue(Path(settings.data_dir).is_absolute())
         self.assertTrue(Path(settings.logs_dir).is_absolute())
-        
+
         self.assertEqual(Path(settings.data_dir), self.test_project_root / "data")
         self.assertEqual(Path(settings.logs_dir), self.test_project_root / "logs")
 
@@ -239,7 +231,7 @@ name = "test-project"
         # In settings.py: project_root: str | None
         custom_root = str(self.test_project_root / "custom_root")
         Path(custom_root).mkdir(parents=True, exist_ok=True)
-        
+
         settings = Settings(project_root=custom_root)
         self.assertEqual(settings.project_root, custom_root)
 

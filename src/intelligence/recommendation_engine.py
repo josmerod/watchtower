@@ -65,7 +65,7 @@ class ContentBasedRecommendationEngine:
         # Return top N
         recommendations = scored_papers[:top_n]
 
-        self.logger.info(f"Generated {len(recommendations)} recommendations " f"(filtered from {len(available_papers)} papers)")
+        self.logger.info(f"Generated {len(recommendations)} recommendations (filtered from {len(available_papers)} papers)")
 
         return recommendations
 

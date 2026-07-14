@@ -22,18 +22,18 @@ from pydantic import BaseModel, ValidationError
 
 from src.etl.base_refactored import (
     BaseETL,
-    SimpleETL,
     DataFrameETL,
-    ETLMetrics,
     ETLCheckpoint,
+    ETLMetrics,
+    SimpleETL,
     Transformable,
 )
 from src.models.base import TimestampedModel
 
-
 # =============================================================================
 # Test Models
 # =============================================================================
+
 
 class TestInputModel(BaseModel):
     """Test input model conforming to Transformable protocol."""
@@ -69,6 +69,7 @@ class TestOutputModel2(TimestampedModel):
 # =============================================================================
 # Test ETL Implementations
 # =============================================================================
+
 
 class SuccessfulETL(BaseETL[TestInputModel, TestOutputModel]):
     """Test ETL that succeeds."""
@@ -138,6 +139,7 @@ class EmptyETL(BaseETL[TestInputModel, TestOutputModel]):
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def temp_dir(tmp_path: Path) -> Path:
     """Create temporary directory for ETL data."""
@@ -172,6 +174,7 @@ def successful_etl(mock_settings: MagicMock, temp_dir: Path) -> SuccessfulETL:
 # =============================================================================
 # ETLMetrics Tests
 # =============================================================================
+
 
 class TestETLMetrics:
     """Test ETLMetrics model."""
@@ -262,6 +265,7 @@ class TestETLMetrics:
 # =============================================================================
 # BaseETL Tests
 # =============================================================================
+
 
 class TestBaseETL:
     """Test BaseETL functionality."""
@@ -507,6 +511,7 @@ class TestBaseETL:
 # SimpleETL Tests
 # =============================================================================
 
+
 class TestSimpleETL:
     """Test SimpleETL implementation."""
 
@@ -534,6 +539,7 @@ class TestSimpleETL:
 # DataFrameETL Tests
 # =============================================================================
 
+
 class TestDataFrameETL:
     """Test DataFrameETL implementation."""
 
@@ -544,6 +550,7 @@ class TestDataFrameETL:
             with patch.dict("sys.modules", {"pandas": None}):
                 with pytest.raises(ImportError):
                     from src.etl.base_refactored import DataFrameETL
+
                     DataFrameETL(name="test")
 
     def test_dataframe_etl_extract_transform(self, mock_settings: MagicMock):
@@ -554,10 +561,12 @@ class TestDataFrameETL:
 
             class TestDataFrameETL(DataFrameETL[dict, TestOutputModel]):
                 def extract_to_dataframe(self) -> Any:
-                    return pd.DataFrame([
-                        {"title": "Test1", "score": 1.5},
-                        {"title": "Test2", "score": 2.5},
-                    ])
+                    return pd.DataFrame(
+                        [
+                            {"title": "Test1", "score": 1.5},
+                            {"title": "Test2", "score": 2.5},
+                        ]
+                    )
 
                 def transform_dataframe(self, df: Any) -> list[TestOutputModel]:
                     return [
@@ -613,6 +622,7 @@ class TestDataFrameETL:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestETLIntegration:
     """Integration tests for complete ETL workflows."""
@@ -698,6 +708,7 @@ class TestETLIntegration:
 # Error Handling Tests
 # =============================================================================
 
+
 class TestETLErrorHandling:
     """Test ETL error handling."""
 
@@ -750,11 +761,13 @@ class TestETLErrorHandling:
                     return [TestInputModel(name="test", value=10)]
 
                 def transform(self, data: list[TestInputModel]) -> list[TestOutputModel]:
-                    return [TestOutputModel(
-                        title="test",
-                        score=1.5,
-                        processed_at=datetime.now(timezone.utc),
-                    )]
+                    return [
+                        TestOutputModel(
+                            title="test",
+                            score=1.5,
+                            processed_at=datetime.now(timezone.utc),
+                        )
+                    ]
 
                 def load(self, data: list[TestOutputModel]) -> None:
                     raise ValueError("Load failed")

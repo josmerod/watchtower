@@ -1,20 +1,19 @@
-import json
 from pathlib import Path
 from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import html
 
-# Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
-
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
 
 # --- Data Loading ---
-
 # Import centralized configuration
 from src.services.data_loader import TRAVEL_SOURCES_CONFIG
+
+# Import shared utilities
+from src.web.dashboard.utils import parse_date_universal
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class TravelRepository(BaseRepository[list[dict[str, Any]]]):
@@ -54,6 +53,7 @@ class TravelRepository(BaseRepository[list[dict[str, Any]]]):
             return []
         else:
             return []
+
 
 # Create singleton instances for each source (only if configured)
 gumroad_repo = TravelRepository(TRAVEL_SOURCES_CONFIG["gumroad"]["path"]) if "gumroad" in TRAVEL_SOURCES_CONFIG else None

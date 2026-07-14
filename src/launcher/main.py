@@ -222,7 +222,7 @@ class ETLScheduler:
         self.logger.info("Starting all ETL processes...")
 
         category_processes = {}
-        for category in self.etl_categories.keys():
+        for category in self.etl_categories:
             self.logger.info(f"Starting {category} ETL processes...")
             processes = await self.start_category_processes(category)
             category_processes[category] = processes

@@ -1,14 +1,12 @@
 """New Valencia Events Tab Component with Subtabs for Watchtower Dashboard"""
 
-import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import dash_bootstrap_components as dbc
-import pandas as pd
-from dash import Input, Output, dash_table, html
+from dash import html
 
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
@@ -18,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Data file paths
 VALENCIA_EVENTS_FILE = Path("data/valencia_events/valencia_events.json")
+
 
 # NEW: Repository-based loading (SOLID Pattern)
 class ValenciaEventsNewRepository(BaseRepository[list[dict[str, Any]]]):
@@ -46,6 +45,7 @@ class ValenciaEventsNewRepository(BaseRepository[list[dict[str, Any]]]):
             return [raw_data]
         else:
             return []
+
 
 # Create singleton instance
 valencia_events_new_repo = ValenciaEventsNewRepository()
@@ -205,7 +205,9 @@ def create_events_table(events: list[dict[str, Any]]) -> dbc.Table:
                                 target="_blank",
                                 color="outline-primary",
                                 size="sm",
-                            ) if url else html.Span("—", className="text-muted")
+                            )
+                            if url
+                            else html.Span("—", className="text-muted")
                         ),
                     ]
                 )
@@ -265,7 +267,7 @@ def render_valencia_events_tab() -> html.Div:
         total_events = len(events_data)
         categories = {event.get("category", "General") for event in events_data}
         tech_events_count = len(tech_events_data)
-        upcoming_events_count = len(upcoming_events_data)
+        len(upcoming_events_data)
         free_events = len([e for e in events_data if e.get("cost", 0) == 0])
 
         def _stat_card(value: str, label: str, icon: str) -> dbc.Card:
@@ -306,11 +308,7 @@ def render_valencia_events_tab() -> html.Div:
                     children=[
                         html.Div(
                             [
-                                html.Div(
-                                    create_events_table(events_data),
-                                    id="all-table-container",
-                                    className="mt-3"
-                                ),
+                                html.Div(create_events_table(events_data), id="all-table-container", className="mt-3"),
                             ]
                         )
                     ],
@@ -321,16 +319,10 @@ def render_valencia_events_tab() -> html.Div:
                     children=[
                         html.Div(
                             [
-                                html.Div(
-                                    create_events_table(upcoming_events_data),
-                                    id="upcoming-table-container",
-                                    className="mt-3"
-                                )
-                                if upcoming_events_data
-                                else dbc.Alert(
-                                    "No upcoming events available",
-                                    color="info",
-                                    className="mt-3 text-center"
+                                (
+                                    html.Div(create_events_table(upcoming_events_data), id="upcoming-table-container", className="mt-3")
+                                    if upcoming_events_data
+                                    else dbc.Alert("No upcoming events available", color="info", className="mt-3 text-center")
                                 ),
                             ]
                         )
@@ -395,6 +387,6 @@ def _is_upcoming_event(date_str: str, cutoff_date: datetime) -> bool:
 
 def register_valencia_events_callbacks(app):
     """Register callbacks for Valencia events tab"""
-    # No callbacks needed for static sorting in basic version, 
+    # No callbacks needed for static sorting in basic version,
     # but filter callbacks could be added here if needed.
     pass

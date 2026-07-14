@@ -1,10 +1,9 @@
 import json
 import logging
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-
-import urllib.request
-import urllib.error
 
 from src.etl.base import BaseETL
 from src.models.course import GcpSkillsBoostModel
@@ -20,7 +19,7 @@ class GcpSkillsBoostETL(BaseETL):
         # Fetching 200 to get a good chunk of recent and existing items
         self.url = "https://partner.skills.google/catalog/list?page=1&per_page=200"
         self.base_url = "https://partner.skills.google"
-        
+
         # Determine output path
         self.output_dir = Path("data/courses")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -29,16 +28,10 @@ class GcpSkillsBoostETL(BaseETL):
     def extract(self) -> str:
         """Fetch the JSON payload from GCP Skills Boost."""
         try:
-            req = urllib.request.Request(
-                self.url,
-                headers={
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Watchtower/1.0',
-                    'Accept': 'application/json'
-                }
-            )
+            req = urllib.request.Request(self.url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Watchtower/1.0", "Accept": "application/json"})
             with urllib.request.urlopen(req) as response:
-                payload = response.read().decode('utf-8')
-                
+                payload = response.read().decode("utf-8")
+
             logger.info("Successfully fetched payload from GCP Skills Boost.")
             return payload
         except urllib.error.URLError as e:
@@ -52,14 +45,14 @@ class GcpSkillsBoostETL(BaseETL):
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON payload: {e}")
             raise
-            
+
         logger.info(f"Extracted {len(items)} items from JSON.")
-        
+
         # Load previous courses to track first_detected_at
         existing_detection_times = {}
         if self.output_file.exists():
             try:
-                with open(self.output_file, "r", encoding="utf-8") as f:
+                with open(self.output_file, encoding="utf-8") as f:
                     old_data = json.load(f)
                     for course in old_data:
                         if course.get("url") and course.get("first_detected_at"):
@@ -75,9 +68,9 @@ class GcpSkillsBoostETL(BaseETL):
             path = item.get("path", "")
             if not title or not path:
                 continue
-                
+
             url = f"{self.base_url}{path}"
-            
+
             detected_at_str = existing_detection_times.get(url)
             if detected_at_str:
                 detected_at = datetime.fromisoformat(detected_at_str)
@@ -85,13 +78,7 @@ class GcpSkillsBoostETL(BaseETL):
                 detected_at = now
 
             model = GcpSkillsBoostModel(
-                title=title,
-                url=url,
-                duration=item.get("duration"),
-                level=item.get("level"),
-                description=item.get("description"),
-                course_type=item.get("type"),
-                first_detected_at=detected_at
+                title=title, url=url, duration=item.get("duration"), level=item.get("level"), description=item.get("description"), course_type=item.get("type"), first_detected_at=detected_at
             )
             models.append(model.model_dump(mode="json"))
 

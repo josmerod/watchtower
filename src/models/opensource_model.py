@@ -1,6 +1,9 @@
 from datetime import datetime
+
 from pydantic import Field
-from src.models.base import TimestampedModel, AIEnhancedModel
+
+from src.models.base import AIEnhancedModel, TimestampedModel
+
 
 class OpenSourceProjectItem(TimestampedModel, AIEnhancedModel):
     title: str

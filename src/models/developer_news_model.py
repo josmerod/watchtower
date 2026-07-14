@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+
+from pydantic import BaseModel, Field, HttpUrl
 
 from src.models.base import AIEnhancedModel
-from pydantic import BaseModel, Field, HttpUrl
 
 
 class NewsSourceType(str, Enum):
@@ -27,18 +27,18 @@ class DeveloperNewsItem(AIEnhancedModel):
     title: str = Field(..., description="Title of the news item")
     url: HttpUrl = Field(..., description="URL to the original content")
     source: NewsSourceType = Field(..., description="Source of the news")
-    author: Optional[str] = Field(None, description="Author of the content")
+    author: str | None = Field(None, description="Author of the content")
     published_at: datetime = Field(..., description="Publication timestamp")
-    
+
     # Intelligence fields
-    summary: Optional[str] = Field(None, description="AI/Heuristic summary of the content")
-    tags: List[str] = Field(default_factory=list, description="Extracted tags/categories")
+    summary: str | None = Field(None, description="AI/Heuristic summary of the content")
+    tags: list[str] = Field(default_factory=list, description="Extracted tags/categories")
     relevance_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Relevance to user tech stack")
     trend_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Trend score (0-1)")
-    
+
     # Metadata
-    original_score: Optional[int] = Field(None, description="Score from original source (e.g., HN points)")
-    comments_count: Optional[int] = Field(None, description="Number of comments")
+    original_score: int | None = Field(None, description="Score from original source (e.g., HN points)")
+    comments_count: int | None = Field(None, description="Number of comments")
 
 
 class NewsTrend(BaseModel):
@@ -47,5 +47,5 @@ class NewsTrend(BaseModel):
     keyword: str = Field(..., description="The trending keyword or topic")
     velocity: float = Field(..., description="Growth rate of the trend")
     volume: int = Field(..., description="Number of items matching this trend")
-    related_items: List[str] = Field(default_factory=list, description="IDs of related news items")
+    related_items: list[str] = Field(default_factory=list, description="IDs of related news items")
     detected_at: datetime = Field(default_factory=datetime.now, description="When the trend was detected")

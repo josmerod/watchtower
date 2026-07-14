@@ -28,6 +28,7 @@ from src.utils.retry import with_retry
 # Initialize logger for this module
 logger = get_logger("BensBitesETL")
 
+
 @with_retry
 def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: int = 4) -> list[dict[str, Any]]:
     """Fetches trending news articles from Ben's Bites website using Playwright.
@@ -58,8 +59,8 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
                     logger.warning(f"Could not connect to remote browser: {e}. Falling back to local launch.")
                     browser = p.chromium.launch(headless=True)
             else:
-                 logger.info("No remote browser configured. Launching local browser.")
-                 browser = p.chromium.launch(headless=True)
+                logger.info("No remote browser configured. Launching local browser.")
+                browser = p.chromium.launch(headless=True)
 
             context = browser.new_context(
                 viewport={"width": 1920, "height": 1080},

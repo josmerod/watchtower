@@ -764,7 +764,7 @@ def main():
         print("\nTop mentioned cryptocurrencies:")
         for crypto, mentions in crypto_mentions[:10]:
             sentiment_data = aggregated_data["crypto_sentiment"][crypto]
-            print(f"  {crypto.title()}: {mentions} mentions, " f"sentiment: {sentiment_data['sentiment_trend']} " f"({sentiment_data['average_sentiment']:+.2f})")
+            print(f"  {crypto.title()}: {mentions} mentions, sentiment: {sentiment_data['sentiment_trend']} ({sentiment_data['average_sentiment']:+.2f})")
 
     except Exception as e:
         logger.error(f"Error in cryptocurrency sentiment mining: {e}")

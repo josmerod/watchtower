@@ -34,10 +34,7 @@ class CheckpointService:
                     checkpoint = json.load(f)
                     processed_count = len(checkpoint.get("processed_videos", []))
                     failed_count = len(checkpoint.get("failed_videos", []))
-                    logger.info(
-                        f"Loaded checkpoint with {processed_count} processed videos, "
-                        f"{failed_count} failed videos"
-                    )
+                    logger.info(f"Loaded checkpoint with {processed_count} processed videos, {failed_count} failed videos")
                     return checkpoint
             except (OSError, json.JSONDecodeError) as e:
                 logger.warning(f"Error loading checkpoint: {e}. Starting fresh.")

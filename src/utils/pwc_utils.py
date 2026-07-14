@@ -79,7 +79,6 @@ async def get_pwc_details_for_paper(
 
     pwc_paper_obj: Paper | None = None
     pwc_id: str | None = None
-    last_error = None
     # TODO: Add unit tests for input parsing (_extract_arxiv_id_from_url)
     cleaned_arxiv_id = None
     if arxiv_id_url:
@@ -95,7 +94,6 @@ async def get_pwc_details_for_paper(
                     pwc_paper_obj = papers_list.results[0]
                     pwc_id = pwc_paper_obj.id
                     logger.info(f"Found PwC paper {pwc_id} for ArXiv ID {cleaned_arxiv_id}")
-                    last_error = None
                     break  # Found paper, exit retry loop
                 else:
                     # Not found is not necessarily an error to retry, but log it.
@@ -111,7 +109,6 @@ async def get_pwc_details_for_paper(
                     pwc_paper_obj = papers_list_title.results[0]  # Take the first match
                     pwc_id = pwc_paper_obj.id
                     logger.info(f"Found PwC paper {pwc_id} for title '{title}'")
-                    last_error = None
                     break  # Found paper, exit retry loop
                 else:
                     logger.info(f"No PwC paper found for title '{title}' on attempt {attempt + 1}")
@@ -126,7 +123,6 @@ async def get_pwc_details_for_paper(
 
         except Exception as e:  # Catch generic exceptions which might indicate API issues
             # Consider catching more specific client exceptions if available e.g., RateLimitError, ServerError
-            last_error = e
             logger.warning(f"Error finding PwC paper (Attempt {attempt + 1}/{MAX_RETRIES}): {e}")
             if attempt < MAX_RETRIES - 1:
                 logger.info(f"Retrying after {RETRY_DELAY_SECONDS} seconds...")
@@ -156,13 +152,11 @@ async def get_pwc_details_for_paper(
 
     async def fetch_with_retry(api_call, *args, **kwargs):
         """Helper to wrap API calls with retry logic."""
-        last_call_error = None
         for attempt in range(MAX_RETRIES):
             try:
                 result = api_call(*args, **kwargs)
                 return result
             except Exception as e:
-                last_call_error = e
                 logger.warning(f"Error in API call {api_call.__name__} (Attempt {attempt + 1}): {e}")
                 if attempt < MAX_RETRIES - 1:
                     logger.info(f"Retrying after {RETRY_DELAY_SECONDS} seconds...")

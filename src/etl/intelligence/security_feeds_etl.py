@@ -27,9 +27,7 @@ FEEDS: dict[str, str] = {
     "krebs_security": "https://krebsonsecurity.com/feed/",
 }
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; WatchtowerBot/1.0; +https://josmerod.es)"
-}
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; WatchtowerBot/1.0; +https://josmerod.es)"}
 
 
 def _parse_date(date_str: str) -> str:
@@ -77,9 +75,7 @@ def fetch_feeds() -> list[dict[str, Any]]:
             for entry in feed.entries:
                 published = _parse_date(entry.get("published", ""))
                 title = entry.get("title", "")
-                summary = _strip_html(
-                    str(entry.get("summary", "") or entry.get("description", ""))
-                )
+                summary = _strip_html(str(entry.get("summary", "") or entry.get("description", "")))
                 full_text = f"{title} {summary}"
                 severity = _extract_severity(full_text)
 
@@ -87,18 +83,20 @@ def fetch_feeds() -> list[dict[str, Any]]:
                 if hasattr(entry, "tags"):
                     categories = [t.term for t in entry.tags if hasattr(t, "term")]
 
-                entries.append({
-                    "source": f"security_{source}",
-                    "title": title,
-                    "link": entry.get("link", ""),
-                    "published": published,
-                    "summary": summary,
-                    "categories": categories,
-                    "severity": severity,
-                    "fetched_at": datetime.now(timezone.utc).isoformat(),
-                    "language": "en",
-                    "content_type": "security_advisory",
-                })
+                entries.append(
+                    {
+                        "source": f"security_{source}",
+                        "title": title,
+                        "link": entry.get("link", ""),
+                        "published": published,
+                        "summary": summary,
+                        "categories": categories,
+                        "severity": severity,
+                        "fetched_at": datetime.now(timezone.utc).isoformat(),
+                        "language": "en",
+                        "content_type": "security_advisory",
+                    }
+                )
 
         except Exception as e:
             logger.error(f"Failed to fetch {source}: {e}")

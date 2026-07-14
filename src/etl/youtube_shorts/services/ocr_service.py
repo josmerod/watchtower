@@ -6,10 +6,10 @@ from typing import Any
 import cv2
 import numpy as np
 import pytesseract
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance
 
 from ..config import OCRSettings
-from ..domain.models import ExtractedURL, OCRResult
+from ..domain.models import ExtractedURL
 from .url_extractor import URLExtractor
 
 logger = logging.getLogger(__name__)
@@ -119,9 +119,7 @@ class OCRService:
                         confidences.append(conf)
 
             extracted_text = " ".join(text_parts)
-            avg_confidence = (
-                sum(confidences) / len(confidences) if confidences else 0.0
-            )
+            avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
 
             return {
                 "text": extracted_text,
@@ -134,9 +132,7 @@ class OCRService:
                 logger.debug(f"OCR extraction failed: {e}")
             return {"text": "", "confidence": 0.0, "method": "failed"}
 
-    def extract_text_from_frame(
-        self, frame: np.ndarray, frame_time: float, frame_number: int
-    ) -> dict[str, Any]:
+    def extract_text_from_frame(self, frame: np.ndarray, frame_time: float, frame_number: int) -> dict[str, Any]:
         """Extract text and URLs from a video frame.
 
         Args:
@@ -205,9 +201,7 @@ class OCRService:
 
                 # Extract URLs from text
                 if result["text"]:
-                    urls = self.url_extractor.extract_urls_from_text(
-                        result["text"], confidence=best_confidence
-                    )
+                    urls = self.url_extractor.extract_urls_from_text(result["text"], confidence=best_confidence)
                     for url in urls:
                         extracted_url = ExtractedURL(
                             url=url,
@@ -226,9 +220,7 @@ class OCRService:
 
         return result
 
-    def are_frames_similar(
-        self, frame1: np.ndarray, frame2: np.ndarray
-    ) -> bool:
+    def are_frames_similar(self, frame1: np.ndarray, frame2: np.ndarray) -> bool:
         """Check if two frames are too similar to warrant separate OCR processing.
 
         Args:
@@ -240,16 +232,8 @@ class OCRService:
         """
         try:
             # Convert to grayscale for comparison
-            gray1 = (
-                cv2.cvtColor(frame1, cv2.COLOR_RGB2GRAY)
-                if len(frame1.shape) == 3
-                else frame1
-            )
-            gray2 = (
-                cv2.cvtColor(frame2, cv2.COLOR_RGB2GRAY)
-                if len(frame2.shape) == 3
-                else frame2
-            )
+            gray1 = cv2.cvtColor(frame1, cv2.COLOR_RGB2GRAY) if len(frame1.shape) == 3 else frame1
+            gray2 = cv2.cvtColor(frame2, cv2.COLOR_RGB2GRAY) if len(frame2.shape) == 3 else frame2
 
             # Resize to fixed size for comparison
             gray1 = cv2.resize(gray1, (100, 100))
@@ -298,9 +282,7 @@ class OCRService:
                 continue
 
             # Skip words with too many special characters
-            special_char_count = len(
-                [c for c in word if not c.isalnum() and not c.isspace()]
-            )
+            special_char_count = len([c for c in word if not c.isalnum() and not c.isspace()])
             if special_char_count > len(word) * 0.5:
                 continue
 

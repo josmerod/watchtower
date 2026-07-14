@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 API_URL = "https://learn.microsoft.com/api/catalog/"
 
+
 class MsAppliedSkillsETL(BaseETL):
     """ETL process for fetching Microsoft Applied Skills."""
 
@@ -32,7 +33,7 @@ class MsAppliedSkillsETL(BaseETL):
         # We save data under data/courses/
         project_root = Path(__file__).resolve().parent.parent.parent.parent
         self.output_file = project_root / "data" / "courses" / "ms_applied_skills.json"
-        
+
         # We need to maintain state to know when a skill was first detected.
         self.previous_state: dict[str, str] = {}
         self._load_previous_state()
@@ -41,7 +42,7 @@ class MsAppliedSkillsETL(BaseETL):
         """Loads previous data to preserve the `first_detected_at` timestamps."""
         if self.output_file.exists():
             try:
-                with open(self.output_file, "r", encoding="utf-8") as f:
+                with open(self.output_file, encoding="utf-8") as f:
                     data = json.load(f)
                     for item in data:
                         url = item.get("url")
@@ -60,7 +61,7 @@ class MsAppliedSkillsETL(BaseETL):
             response = requests.get(API_URL, timeout=30)
             response.raise_for_status()
             data = response.json()
-            
+
             applied_skills = data.get("appliedSkills", [])
             certifications = data.get("certifications", [])
             credentials = [*applied_skills, *certifications]
@@ -71,7 +72,7 @@ class MsAppliedSkillsETL(BaseETL):
             )
             self.metrics.records_extracted = len(credentials)
             return credentials
-            
+
         except requests.exceptions.HTTPError as e:
             self.logger.error(f"HTTP error fetching Microsoft Learn catalog: {e}")
             self.metrics.error_count += 1
@@ -86,13 +87,13 @@ class MsAppliedSkillsETL(BaseETL):
         self.logger.info("Transforming Applied Skills data...")
         transformed_data = []
         now = datetime.datetime.now(datetime.timezone.utc)
-        
+
         for item in data:
             try:
                 url = item.get("url", "")
                 credential_type = item.get("type") or "applied_skill"
                 title = item.get("title", "Unknown Microsoft credential")
-                
+
                 # Check for first detected at logic
                 first_detected = None
                 if url in self.previous_state:
@@ -102,11 +103,11 @@ class MsAppliedSkillsETL(BaseETL):
                         first_detected = now
                 else:
                     first_detected = now
-                
+
                 # Parse level and dates
                 levels = item.get("levels", [])
                 level = levels[0].capitalize() if levels else None
-                
+
                 last_modified_str = item.get("last_modified")
                 published_date = None
                 if last_modified_str:
@@ -114,11 +115,11 @@ class MsAppliedSkillsETL(BaseETL):
                         published_date = datetime.datetime.fromisoformat(last_modified_str)
                     except ValueError:
                         pass
-                
+
                 # Subject mapping
                 subjects = item.get("subjects", [])
                 subject = subjects[0].replace("-", " ").title() if subjects else None
-                
+
                 skill = MsAppliedSkillModel(
                     title=title,
                     url=url,
@@ -136,7 +137,7 @@ class MsAppliedSkillsETL(BaseETL):
             except Exception as e:
                 self.logger.error(f"Failed to transform item {item.get('uid')}: {e}")
                 self.metrics.records_failed += 1
-                
+
         self.metrics.records_transformed = len(transformed_data)
         return transformed_data
 
@@ -148,7 +149,7 @@ class MsAppliedSkillsETL(BaseETL):
 
         self.logger.info(f"Saving {len(data)} Applied Skills to {self.output_file}...")
         self.output_file.parent.mkdir(parents=True, exist_ok=True)
-        
+
         try:
             with open(self.output_file, "w", encoding="utf-8") as f:
                 # Use default=str for formatting datetime safely along with pydantic_encoder
@@ -158,6 +159,7 @@ class MsAppliedSkillsETL(BaseETL):
             self.logger.error(f"Failed to save Microsoft Applied Skills: {e}")
             self.metrics.error_count += 1
             raise
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
