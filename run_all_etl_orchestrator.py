@@ -92,9 +92,11 @@ ETL_SCRIPTS = [
     # 4chan
     "src/etl/fourchan/fourchan_generals_etl.py",
     # Expanded Phase 1
-    "src/etl/expanded/newsapi_etl.py",
+    # NOTE: newsapi_etl.py removed — requires NEWSAPI_KEY which is not configured.
+    # NOTE: hashnode_etl.py removed — Hashnode's public tag GraphQL API is deprecated
+    #       (gql.hashnode.com now serves HTML; /graphql returns 522). Re-enable if a
+    #       Hashnode Personal Access Token flow is added. Scripts remain in-repo.
     "src/etl/expanded/rapidapi_etl.py",
-    "src/etl/expanded/hashnode_etl.py",
     "src/etl/expanded/github_analytics_etl.py",
     "src/etl/expanded/package_registry_etl.py",
     # Expanded Phase 2
