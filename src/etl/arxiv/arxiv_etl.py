@@ -15,7 +15,7 @@ except Exception:
     PapersWithCodeClient = None  # type: ignore
 
 from src.etl.base import BaseETL
-from src.utils.github_utils import find_github_links_in_text, get_github_repo_info
+from src.utils.github_utils import find_github_links_in_text, get_github_repo_info, get_github_repo_info_batch
 from src.utils.nlp_classifier import NLPContentClassifier
 from src.watchers.arxiv_watcher import ArxivWatcher
 
@@ -136,13 +136,32 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
         classifications = self.classifier.batch_classify(texts_for_classification)
 
         # Merge classifications and GitHub info with papers
-        transformed_papers = []
+        # --- Pre-collect all GitHub URLs for concurrent fetching ---
         github_token = None  # Configure via environment if needed
+        per_paper_github_urls: list[list[str]] = []
+        all_github_urls: list[str] = []
+
+        for paper in papers:
+            text_to_search_github = f"{paper.get('summary', '')} {paper.get('comment', '')}"
+            urls = find_github_links_in_text(text_to_search_github)
+            per_paper_github_urls.append(urls)
+            all_github_urls.extend(urls)
+
+        # Single concurrent batch fetch — replaces N sequential get_github_repo_info() calls
+        if all_github_urls:
+            self.logger.info(f"Batch-fetching GitHub info for {len(all_github_urls)} URLs across {len(papers)} papers")
+            github_results = get_github_repo_info_batch(all_github_urls, github_token=github_token)
+        else:
+            github_results = {}
+
+        # --- Merge results into transformed papers ---
+        transformed_papers = []
+        github_url_idx = 0  # Tracks position in the flat all_github_urls list
 
         for i, paper in enumerate(papers):
             classification = classifications[i]
 
-            # Initialize GitHub fields
+            # Initialize GitHub fields with defaults
             github_info = {
                 "github_html_url": None,
                 "github_description": None,
@@ -162,18 +181,16 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
                 "github_default_branch": None,
             }
 
-            # Find and process GitHub links
-            text_to_search_github = f"{paper.get('summary', '')} {paper.get('comment', '')}"
-            github_urls = find_github_links_in_text(text_to_search_github)
-
-            if github_urls:
-                self.logger.info(f"Found GitHub links for paper {paper.get('id', 'N/A')}: {github_urls}")
-                fetched_repo_info = get_github_repo_info(github_urls[0], github_token=github_token)
-                if fetched_repo_info:
-                    self.logger.info(f"Fetched GitHub info for {github_urls[0]}")
-                    github_info.update(fetched_repo_info)
+            # Apply the pre-fetched result for this paper's first GitHub URL
+            urls = per_paper_github_urls[i]
+            if urls:
+                # Only fetch info for the first URL (same behavior as before)
+                repo_info = github_results.get(all_github_urls[github_url_idx])
+                if repo_info:
+                    github_info.update(repo_info)
                 else:
-                    self.logger.warning(f"Failed to fetch GitHub info for {github_urls[0]}")
+                    self.logger.warning(f"Failed to fetch GitHub info for {urls[0]}")
+                github_url_idx += 1
 
             # Create transformed paper with classification and GitHub data
             transformed_paper = {
