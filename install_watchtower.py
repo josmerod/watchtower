@@ -45,7 +45,6 @@ def run_with_timeout(command, timeout_seconds=300):
         # Run the command
         result = subprocess.run(
             command,
-            shell=True,
             capture_output=False,
             text=True,
             timeout=timeout_seconds,
@@ -117,13 +116,13 @@ def main():
     # Select appropriate deployment script
     if os_type == "windows":
         script_name = "deploy_windows.bat"
-        command = script_name
+        command = [script_name]
     elif os_type == "macos":
         script_name = "deploy_mac.sh"
-        command = f"bash {script_name}"
+        command = ["bash", script_name]
     elif os_type == "linux":
         script_name = "deploy_linux.sh"
-        command = f"bash {script_name}"
+        command = ["bash", script_name]
     else:
         print(f"[ERROR] Unsupported operating system: {platform.system()}")
         print("[INFO] Please run the appropriate deployment script manually:")

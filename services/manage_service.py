@@ -209,7 +209,7 @@ endlocal
                 "Watchtower Intelligence Platform",
             ]
 
-            subprocess.run(cmd, check=True, shell=True)
+            subprocess.run(cmd, check=True)
 
             print("SUCCESS Windows service installed successfully!")
             print("🚀 Start with: net start WatchtowerPlatform")
@@ -337,12 +337,13 @@ endlocal
             print(result.stdout)
         elif manager == "launchd":
             result = subprocess.run(
-                ["launchctl", "list", "|", "grep", "watchtower"],
+                ["launchctl", "list"],
                 capture_output=True,
                 text=True,
-                shell=True,
             )
-            print(result.stdout)
+            for line in result.stdout.splitlines():
+                if "watchtower" in line:
+                    print(line)
         elif manager in ["nssm", "sc"]:
             result = subprocess.run(["sc", "query", "WatchtowerPlatform"], capture_output=True, text=True)
             print(result.stdout)
