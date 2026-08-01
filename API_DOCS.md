@@ -13,11 +13,12 @@ Fetch aggregated news items.
 - **Method**: `GET`
 - **Parameters**:
     - `source` (optional): Filter by source key (e.g., `techcrunch`, `venturebeat`).
-    - `limit` (optional): Maximum number of items to return (default: 10000).
+    - `limit` (optional): Maximum number of items to return (default: 50, max: 10000).
+    - `offset` (optional): Number of items to skip (default: 0).
 
 **Example**:
 ```bash
-curl "http://localhost:45714/api/v1/news?source=techcrunch&limit=5"
+curl "http://localhost:45714/api/v1/news?source=techcrunch&limit=5&offset=10"
 ```
 
 ### 2. Get Knowledge Garden Items
@@ -27,7 +28,8 @@ Fetch items from knowledge garden sources (Open Source, Reddit, etc.).
 - **Method**: `GET`
 - **Parameters**:
     - `source` (optional): Filter by source key (e.g., `opensource`, `gooddevs`).
-    - `limit` (optional): Maximum number of items to return (default: 10000).
+    - `limit` (optional): Maximum number of items to return (default: 50, max: 10000).
+    - `offset` (optional): Number of items to skip (default: 0).
 
 **Example**:
 ```bash
