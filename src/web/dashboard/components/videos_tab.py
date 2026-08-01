@@ -102,16 +102,16 @@ class VideoManager:
         if channel is None or channel == "all":
             # All channels
             for ch_name, df in self.video_data.items():
-                for _, video in df.iterrows():
-                    video_dict = video.to_dict()
+                for video in df.to_dict("records"):
+                    video_dict = video.copy()
                     video_dict["channel"] = ch_name
                     all_videos.append(video_dict)
         else:
             # Single channel
             if channel in self.video_data:
                 df = self.video_data[channel]
-                for _, video in df.iterrows():
-                    video_dict = video.to_dict()
+                for video in df.to_dict("records"):
+                    video_dict = video.copy()
                     video_dict["channel"] = channel
                     all_videos.append(video_dict)
 

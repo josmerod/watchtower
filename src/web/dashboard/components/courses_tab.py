@@ -345,7 +345,7 @@ def create_coursera_table(df_subset):
     ]
 
     table_body_rows = []
-    for _, row in df_subset.iterrows():
+    for row in df_subset.to_dict("records"):
         table_body_rows.append(
             html.Tr(
                 [
@@ -510,7 +510,7 @@ def create_udemy_table(df_subset):
     ]
 
     table_body_rows = []
-    for _, row in df_subset.iterrows():
+    for row in df_subset.to_dict("records"):
         table_body_rows.append(
             html.Tr(
                 [
@@ -1002,7 +1002,7 @@ def register_courses_callbacks(app):
                 )
             ]
             table_body_rows = []
-            for _, row in df_paginated.iterrows():
+            for row in df_paginated.to_dict("records"):
                 # Format Date
                 date_str = "N/A"
                 if pd.notna(row.get("scraped_at")):
@@ -1095,7 +1095,7 @@ def register_courses_callbacks(app):
 
             header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Subject"), html.Th("Level"), html.Th("Roles"), html.Th("First Detected")]))]
             rows = []
-            for _, row in df.iterrows():
+            for row in df.to_dict("records"):
                 roles_str = ", ".join(row.get("roles", [])) if isinstance(row.get("roles"), list) else "N/A"
                 rows.append(
                     html.Tr(
@@ -1139,7 +1139,7 @@ def register_courses_callbacks(app):
 
             header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Info"), html.Th("First Detected")]))]
             rows = []
-            for _, row in df.iterrows():
+            for row in df.to_dict("records"):
                 rows.append(
                     html.Tr(
                         [
@@ -1180,7 +1180,7 @@ def register_courses_callbacks(app):
 
             header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Type"), html.Th("Description"), html.Th("Duration"), html.Th("Level"), html.Th("First Detected")]))]
             rows = []
-            for _, row in df.iterrows():
+            for row in df.to_dict("records"):
                 rows.append(
                     html.Tr(
                         [

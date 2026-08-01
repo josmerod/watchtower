@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routers import router
+from src.config.settings import get_settings
 
 app = FastAPI(
     title="Watchtower API",
@@ -11,18 +12,14 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Configure CORS
+# Configure CORS — read-only API, restrict origins from config and methods to GET
+settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:45714",
-        "http://127.0.0.1:45714",
-        "http://REDACTED_LAN_IP:45714",
-        "https://watchtower.josmerod.es",
-    ],
+    allow_origins=settings.api.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=settings.api.cors_methods,
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.include_router(router, prefix="/api/v1")
