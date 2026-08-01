@@ -448,50 +448,67 @@ def main():
     """Main function to run the GitHub Trends ETL process."""
     logger.info("Starting GitHub Trends ETL process")
 
-    try:
-        # Setup
-        project_root = get_project_root()
-        output_dir = os.path.join(project_root, "data", "github_trends")
-        session = create_session()
+    # Use ProxyManager as context manager so sessions are properly closed
+    with ProxyManager() as pm:
+        session = pm.get_session(retries=3, backoff_factor=2.0)
 
-        # Fetch data
-        logger.info("Fetching trending repositories and topics from GitHub")
-        repositories = get_trending_repositories(session, since="daily")
-        topics = get_github_topics(session)
+        # Add headers
+        headers = {
+            "User-Agent": "Watchtower-ETL/1.0 (GitHub Trends Analytics)",
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json",
+        }
 
-        if not repositories:
-            logger.warning("No repositories fetched. Exiting.")
-            return
+        # Add authentication if available
+        github_token = os.getenv("GITHUB_TOKEN")
+        if github_token:
+            headers["Authorization"] = f"token {github_token}"
 
-        # Process data
-        logger.info("Processing and enriching data")
-        processed_data = process_github_data(repositories, topics)
+        session.headers.update(headers)
 
-        # Save data
-        file_paths = save_data(processed_data, output_dir)
+        try:
+            # Setup
+            project_root = get_project_root()
+            output_dir = os.path.join(project_root, "data", "github_trends")
 
-        # Summary
-        total_repos = len(processed_data)
-        trending_repos = len([r for r in processed_data if r.get("is_trending", False)])
-        active_repos = len([r for r in processed_data if r.get("has_recent_activity", False)])
+            # Fetch data
+            logger.info("Fetching trending repositories and topics from GitHub")
+            repositories = get_trending_repositories(session, since="daily")
+            topics = get_github_topics(session)
 
-        logger.info("GitHub Trends ETL completed successfully!")
-        logger.info(f"Total repositories: {total_repos}")
-        logger.info(f"Trending repositories: {trending_repos}")
-        logger.info(f"Recently active repositories: {active_repos}")
-        logger.info(f"Files saved: {list(file_paths.values())}")
+            if not repositories:
+                logger.warning("No repositories fetched. Exiting.")
+                return
 
-        # Print language distribution
-        if processed_data:
-            languages = [r.get("language", "Unknown") for r in processed_data if r.get("language")]
-            from collections import Counter
+            # Process data
+            logger.info("Processing and enriching data")
+            processed_data = process_github_data(repositories, topics)
 
-            top_languages = Counter(languages).most_common(10)
-            logger.info(f"Top programming languages: {top_languages}")
+            # Save data
+            file_paths = save_data(processed_data, output_dir)
 
-    except Exception as e:
-        logger.error(f"GitHub Trends ETL failed: {e}")
-        raise
+            # Summary
+            total_repos = len(processed_data)
+            trending_repos = len([r for r in processed_data if r.get("is_trending", False)])
+            active_repos = len([r for r in processed_data if r.get("has_recent_activity", False)])
+
+            logger.info("GitHub Trends ETL completed successfully!")
+            logger.info(f"Total repositories: {total_repos}")
+            logger.info(f"Trending repositories: {trending_repos}")
+            logger.info(f"Recently active repositories: {active_repos}")
+            logger.info(f"Files saved: {list(file_paths.values())}")
+
+            # Print language distribution
+            if processed_data:
+                languages = [r.get("language", "Unknown") for r in processed_data if r.get("language")]
+                from collections import Counter
+
+                top_languages = Counter(languages).most_common(10)
+                logger.info(f"Top programming languages: {top_languages}")
+
+        except Exception as e:
+            logger.error(f"GitHub Trends ETL failed: {e}")
+            raise
 
 
 if __name__ == "__main__":

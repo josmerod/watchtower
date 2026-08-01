@@ -404,5 +404,8 @@ class BaseWatcher(ABC):
             self.logger.info("Watcher stopped by user")
         except Exception as e:
             self.logger.error(f"Watcher failed: {e!s}")
+        finally:
+            # Close any cached sessions to prevent connection pool leaks
+            self.proxy_manager.close()
 
         self.logger.info(f"Watcher {self.name} finished after {run_count} runs")

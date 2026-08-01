@@ -677,6 +677,9 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 final_msg = str(e)
             raise ETLError(final_msg, context=err_ctx, cause=e) from e
         finally:
+            # Close any cached sessions to prevent connection pool leaks
+            self.proxy_manager.close()
+
             self.metrics.finish()
             self.perf_logger.end(success=not run_threw_exception and self.metrics.error_count == 0)
 
