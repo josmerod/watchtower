@@ -46,8 +46,9 @@ src/miners/udemy-universal/enrollment_statistics.json
 src/miners/udemy-universal/last_update_check.json
 
 # Miners specific
-src/miners/asf-winonly/config/
-src/miners/asf-winonly/logs/
+# Vendored ArchiSteamFarm release artifact (52 MB of .exe/.dll/.js) — removed in
+# T-005. If needed again, fetch via release artifact / git-LFS instead of tracking.
+src/miners/asf-winonly/
 
 # Environment variables file
 # Contains sensitive information like API keys, do not commit.
