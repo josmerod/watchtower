@@ -148,10 +148,35 @@ def register_my_callbacks(app):
 
 - Branch off `main` before committing; only commit/push when asked.
 - Keep commits focused. The repo uses pre-commit (`.pre-commit-config.yaml`) with
-  Ruff, mypy, codespell, detect-secrets, and shellcheck — run
-  `uv run pre-commit run --all-files` before finalizing a change.
+  Ruff (lint + format), codespell, detect-secrets, and shellcheck — run
+  `uv run pre-commit run --all-files` before finalizing a change. mypy is
+  advisory: run it explicitly with
+  `uv run pre-commit run --hook-stage manual mypy` (or `uv run mypy src`); it does
+  not block commits while legacy type errors are being worked down.
 - Never commit secrets. `.secrets.baseline` is the detect-secrets allowlist; real
   credentials must come from env vars / `.env` (gitignored).
+
+## Working with this repo (agent good practices)
+
+Non-obvious rules that keep work correct and reviewable:
+
+- **Verify before claiming done.** Run the actual command (`uv run pytest`,
+  `uv run ruff check .`, `uv run pre-commit run --all-files`) and paste the
+  result — never assert success without evidence. See
+  `superpowers:verification-before-completion`.
+- **Pre-commit is mandatory before finalizing.** `uv run pre-commit run --all-files`
+  must be green (mypy aside, which is advisory).
+- **Never `cat .env`.** Grep for the specific key you need
+  (`grep -E '^UNRAID_HOST=' .env`). The file holds live credentials.
+- **Ruff is the single formatter/linter.** Do not reintroduce black or flake8 —
+  they conflict with ruff and have been removed from dev deps.
+- **`data/` is historical and gitignored.** Never clobber or commit it; ETL
+  outputs persist across deploys via `cp -rn`.
+- **Deploys:** `uv run --with paramiko deployment/deploy.py` to ship,
+  `deployment/force_restart.py` to bounce without rebuild. See the `unraid-deploy`
+  skill.
+- **Task tracking:** use `docs/TASK_BOARD.md` (one task in-progress at a time) and
+  the `task-board` skill to iterate.
 
 ## Reference docs in-repo
 

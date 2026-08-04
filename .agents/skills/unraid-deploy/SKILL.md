@@ -1,15 +1,15 @@
 ---
 name: unraid-deploy
-description: Build, ship, restart, and debug the Watchtower container on the Unraid server. Use whenever the user wants to deploy, redeploy, push an update, restart the remote container, check remote logs, verify the deployment, or troubleshoot why the dashboard/ETLs are stale or down on Unraid. Trigger on phrases like "deploy to unraid", "ship it", "redeploy", "restart watchtower", "check remote logs", "is the deploy working", "force restart".
+description: Build, ship, restart, and debug the Watchtower container on the Unraid server. Use whenever the user wants to deploy, redeploy, push an update, restart the remote container, check remote logs, verify the deployment, confirm the deploy is healthy, or troubleshoot why the dashboard/ETLs are stale or down on Unraid. Trigger on phrases like "deploy to unraid", "ship it", "redeploy", "restart watchtower", "check remote logs", "is the deploy working", "is it up", "force restart", "bounce the container", "roll back the deploy".
 ---
 
 # Unraid Deploy
 
 Standard workflow for getting Watchtower onto the Unraid server and keeping it
-healthy. The repo has two ways to ship code: a Python deployer (`deploy.py`) and
-a PowerShell alternative (`deploy.ps1`). **Prefer `deploy.py`** unless the user is
-on PowerShell and `paramiko` isn't available — the Python path reads secrets from
-`.env` and is the maintained one.
+healthy. The repo has two ways to ship code: a Python deployer
+(`deployment/deploy.py`) and a PowerShell alternative (`deployment/deploy.ps1`).
+**Prefer `deploy.py`** unless the user is on PowerShell and `paramiko` isn't
+available — the Python path reads secrets from `.env` and is the maintained one.
 
 ## Hard prerequisites — check these FIRST
 
@@ -75,20 +75,53 @@ so you don't need to permanently add it to `pyproject.toml`.
 ## After a deploy — verify before declaring success
 
 A green `deploy.py` exit only means the container started. Confirm it's actually
-serving:
+serving before telling the user it's done. Run these (substitute the host from
+`.env` — never echo the whole file):
 
-1. Health endpoint: `curl -fsS http://<UNRAID_HOST>:45714/health` (must return 200).
-   The Dockerfile's `HEALTHCHECK` hits this same path.
-2. Container is up and not restarting:
-   `docker ps --filter name=watchtower` (via SSH if needed).
-3. Data freshness — pick a known ETL output and check its mtime, e.g.
-   `stat -c '%y' /mnt/user/appdata/watchtower/data/news/techcrunch_latest.json`
-   (this is exactly what `force_restart.py` checks).
+```bash
+# 1. Health endpoint — must return HTTP 200. The Dockerfile HEALTHCHECK hits this.
+curl -fsS "http://${UNRAID_HOST}:45714/health" && echo "health OK"
+
+# 2. Container is up, not restart-looping. Run over SSH if curl isn't local.
+uv run --with paramiko python -c "
+import os, paramiko
+from dotenv import load_dotenv
+load_dotenv()
+ssh = paramiko.SSHClient(); ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+kw = {'username': os.getenv('UNRAID_USER','root'), 'timeout': 30}
+pw = os.getenv('UNRAID_PASSWORD')
+kw['password'] = pw if pw else None
+kw['key_filename'] = os.path.expanduser('~/.ssh/id_ed25519') if not pw else None
+ssh.connect(os.getenv('UNRAID_HOST'), **kw)
+_, out, _ = ssh.exec_command('docker ps --filter name=watchtower --format \"{{.Status}}\"')
+print('container:', out.read().decode().strip())
+_, out, _ = ssh.exec_command('docker exec watchtower supervisorctl status')
+print('supervisor:', out.read().decode().strip())
+ssh.close()
+"
+
+# 3. Data freshness — mtime of a known ETL output (force_restart.py checks this too).
+#    Run remotely; replace the path with a source the user actually runs.
+#    stat -c '%y' /mnt/user/appdata/watchtower/data/news/techcrunch_latest.json
+```
 
 If health is red after ~40s (the compose `start_period`), pull logs before
 declaring failure — most post-deploy issues are a crashed supervisor program
 (visible in `/mnt/user/appdata/watchtower/logs/*.log`) or a stale Playwright
 browser binary.
+
+## Rollback
+
+There is no tagged previous release — `deploy.py` always builds `watchtower:latest`
+and overwrites the running container. If a deploy is bad:
+
+1. **First, try `force_restart.py`** (no rebuild) — many "it's broken" reports are
+   a stuck process, not a bad image: `uv run --with paramiko python deployment/force_restart.py`.
+2. If the image itself is bad, the previous build's layers are still in Docker's
+   build cache on Unraid. Rebuild from the last-known-good commit locally and
+   redeploy: `git log --oneline -5`, checkout the prior commit, re-run `deploy.py`.
+3. Last resort — the data volume at `/mnt/user/appdata/watchtower/data` is never
+   touched by a redeploy (`cp -rn`), so historical data survives any rollback.
 
 ## The running container's process model
 

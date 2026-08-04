@@ -134,3 +134,21 @@ data/
 -   **"Take a deep breath..."**: Trigger Chain-of-Thought processing.
 -   **"Important to my career..."**: High-Assurance Mode (safety first).
 -   **"Rate your confidence..."**: Strict 0.0-1.0 probability estimate.
+
+## Working with this repo (agent good practices)
+
+Non-obvious rules that keep work correct and reviewable:
+
+-   **Verify before claiming done.** Run the actual command (`uv run pytest`,
+    `uv run ruff check .`, `uv run pre-commit run --all-files`) and cite the output
+    — never assert success without evidence.
+-   **Pre-commit is mandatory before finalizing.**
+    `uv run pre-commit run --all-files` must be green. mypy is advisory: run it
+    explicitly with `uv run mypy src`; it does not block commits.
+-   **Never `cat .env`.** Grep for the specific key (`grep -E '^UNRAID_HOST=' .env`).
+-   **Ruff is the single formatter/linter.** Don't reintroduce black or flake8.
+-   **`data/` is historical and gitignored.** Never clobber or commit it.
+-   **Deploys:** `uv run --with paramiko deployment/deploy.py` to ship,
+    `deployment/force_restart.py` to bounce. See the `unraid-deploy` skill.
+-   **Task tracking:** `docs/TASK_BOARD.md` (one in-progress task at a time) + the
+    `task-board` skill to iterate.

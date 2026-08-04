@@ -131,3 +131,15 @@ The following user patterns represent specific intent signals. Recognize and ada
 3.  **Cognitive Decompression** ("Take a deep breath..."): Trigger **Chain-of-Thought processing**. Break down the problem into atomic steps and reason through each before generating code.
 4.  **Criticality Marker** ("Important to my career..."): Activate **High-Assurance Mode**. Prioritize safety, check for destructive side effects, and warn about potential risks.
 5.  **Confidence Calibration** ("Rate your confidence..."): Provide a strict **0.0-1.0 probability estimate**. If <0.9, list specific risk factors and alternative approaches.
+
+## Working with this repo (agent good practices)
+
+Non-obvious rules that keep work correct and reviewable:
+
+1.  **Verify before claiming done.** Run the actual command (`uv run pytest`, `uv run ruff check .`, `uv run pre-commit run --all-files`) and cite the output — never assert success without evidence.
+2.  **Pre-commit is mandatory before finalizing.** `uv run pre-commit run --all-files` must be green. mypy is advisory: run it explicitly with `uv run mypy src`; it does not block commits.
+3.  **Never `cat .env`.** Grep for the specific key (`grep -E '^UNRAID_HOST=' .env`).
+4.  **Ruff is the single formatter/linter.** Don't reintroduce black or flake8.
+5.  **`data/` is historical and gitignored.** Never clobber or commit it.
+6.  **Deploys:** `uv run --with paramiko deployment/deploy.py` to ship, `deployment/force_restart.py` to bounce. See the `unraid-deploy` skill.
+7.  **Task tracking:** `docs/TASK_BOARD.md` (one in-progress task at a time) + the `task-board` skill to iterate.

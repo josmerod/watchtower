@@ -1,6 +1,20 @@
+# Pre-commit hooks for Watchtower.
+#
+# Design decisions (see AGENTS.md "Code style"):
+#   - Ruff is the SINGLE source of truth for lint + format. black and flake8 are
+#     intentionally absent — running both with ruff caused mutual reformatting
+#     conflicts and the .flake8 allowlist masked real issues. Do not reintroduce
+#     them.
+#   - mypy is ADVISORY only: it lives in the `manual` stage so it does NOT run on
+#     every commit (the codebase has legacy type errors being worked down). Run
+#     it explicitly with:  uv run pre-commit run --hook-stage manual mypy
+#   - pytest runs at the `pre-push` stage (not commit) so day-to-day commits stay
+#     fast; a full test run gates pushes.
+minimum_pre_commit_version: "3.0.0"
+
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
@@ -20,10 +34,10 @@ repos:
     -   id: name-tests-test
         args: ['--pytest-test-first']
     -   id: requirements-txt-fixer
-    exclude: ^\.bmad-ephemeral/
+        exclude: ^\.bmad-ephemeral/
 
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.5
+    rev: v0.15.15
     hooks:
     -   id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -31,22 +45,11 @@ repos:
     -   id: ruff-format
         types_or: [python, pyi, jupyter]
 
-# NOTE: black removed — ruff-format is the single source of truth for formatting
-# (per AGENTS.md). Running both caused conflicts where each reformatted the
-# other's output. ruff-format uses the same defaults (double quotes, 4-space).
-
--   repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
-    hooks:
-    -   id: flake8
-        exclude: ^Tests/
-        additional_dependencies: [Flake8-pyproject]
-
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
     -   id: codespell
-        exclude: ^(src/miners/|.bmad/|logs.txt|.*\.log|docs/|data/)
+        exclude: ^(src/miners/|\.bmad/|logs\.txt|.*\.log|docs/|data/)
         args: [-L, "assertIn,hace,anual,indien,als,alle,wil,lokale,cursos,clases,traker,componentes,intelectual,optimice,potencial,braket,ehr,ser,funcional,re-use,searchin,sesion,carrer,calle,momento,skool,extensiones,valide,avance,controles,halp,desig,thi,architec,whethe,ond,inthe,learnin,onw,proffes,brin,bein,profies,fron,sence,vrsion,vesion,meu,cliente,Cliente,clientes,Clientes,varios,Comandos,comandos,medias,Oficial,oficial,Autor,autor,htts,THN,relevante,Relevante,crate,crates,fases,Fases"]
         additional_dependencies:
           - tomli
@@ -56,12 +59,17 @@ repos:
     hooks:
     -   id: shellcheck
 
+# mypy — ADVISORY. Runs only on explicit request:
+#   uv run pre-commit run --hook-stage manual mypy
+# Scoped to src/ so it does not churn on scripts/Tests. types-paramiko covers the
+# deploy-time import. Errors here are real but legacy; they are being worked down
+# via the task board and must NOT block commits.
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.0
+    rev: v1.20.2
     hooks:
     -   id: mypy
         args: [--ignore-missing-imports, --show-error-codes]
-        exclude: ^(src/|Tests/|utils/|[^/]+\.py$)
+        files: ^src/
         additional_dependencies:
           - types-requests
           - types-python-dateutil
@@ -71,13 +79,13 @@ repos:
           - types-pyyaml
           - types-setuptools
           - types-toml
+          - types-paramiko
           - pydantic
           - fastapi
           - streamlit
           - polars
           - pandas-stubs
-
-
+        stages: [manual]
 
 -   repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
@@ -88,11 +96,12 @@ repos:
 
 -   repo: local
     hooks:
+    # Full test suite, only on push. Uses uv so the locked environment is used.
     -   id: pytest-check
         name: pytest-check
-        entry: pytest
+        entry: uv run pytest
         language: system
         pass_filenames: false
         always_run: true
         args: [--tb=short, -q]
-        stages: [push]
+        stages: [pre-push]

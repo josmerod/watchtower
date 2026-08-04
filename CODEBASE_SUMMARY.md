@@ -169,8 +169,7 @@ watchtower/
 ├── docker-compose.dev.yml        # Compose dev
 ├── docker-compose.enhanced.yml   # Compose enhanced
 ├── .env.template                 # Template de env vars
-├── .pre-commit-config.yaml       # Pre-commit hooks
-├── .flake8                       # Config flake8
+├── .pre-commit-config.yaml       # Pre-commit hooks (Ruff is the sole linter/formatter)
 ├── playwright.config.py          # Config e2e tests
 ├── openapi.json                  # OpenAPI schema exportado
 ├── run_watchtower_dashboard.py   # Entry point del dashboard
