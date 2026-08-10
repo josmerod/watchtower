@@ -52,7 +52,7 @@ class TestRecommendationsManager:
             patch("src.web.dashboard.components.recommendations_tab.UserActivityTracker") as mock_tracker,
             patch("src.web.dashboard.components.recommendations_tab.RecommendationEngine") as mock_engine,
         ):
-            manager = RecommendationsManager()
+            RecommendationsManager()
 
             mock_tracker.assert_called_once()
             mock_engine.assert_called_once_with(mock_tracker.return_value)
@@ -211,7 +211,7 @@ class TestRecommendationsTab:
 
     def test_render_recommendations_tab(self):
         """Test rendering of the recommendations tab."""
-        with patch("src.web.dashboard.components.recommendations_tab.recommendations_manager") as mock_manager:
+        with patch("src.web.dashboard.components.recommendations_tab.recommendations_manager"):
             tab = render_recommendations_tab("test_user")
 
             # Check that the tab is a Dash component

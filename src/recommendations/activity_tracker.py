@@ -47,6 +47,7 @@ class UserActivityTracker:
     def get_user_profile_file(self, user_id: str) -> Path:
         """Get the path to a user's profile file."""
         user_dir = self.data_dir / user_id
+        user_dir.mkdir(parents=True, exist_ok=True)
         return user_dir / "profile.json"
 
     def track_interaction(
@@ -99,7 +100,9 @@ class UserActivityTracker:
             activities = [a for a in activities if a.timestamp > cutoff_date]
 
             # Save updated activities
-            self.save_user_activities(user_id, activities)
+            if not self.save_user_activities(user_id, activities):
+                logger.error(f"Failed to save tracked activity for user {user_id}")
+                return False
 
             logger.debug(f"Tracked {action.value} activity for user {user_id}: {content_id}")
             return True
