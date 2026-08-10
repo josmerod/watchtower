@@ -6,6 +6,9 @@ links within text content.
 """
 
 import re
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 from urllib.parse import urlparse
 
@@ -16,6 +19,53 @@ from src.utils.logging import get_logger
 logger = get_logger(__name__)
 
 GITHUB_API_BASE_URL = "https://api.github.com/repos"
+
+# Safety margin: pause when fewer than this many requests remain in the rate-limit window
+_RATE_LIMIT_SAFETY_THRESHOLD = 10
+
+
+class _GitHubRateLimiter:
+    """Thread-safe rate limiter driven by GitHub's X-RateLimit-* response headers.
+
+    Workers call ``update(headers)`` after every API response and ``acquire()`` before
+    each request. When remaining quota drops below the safety threshold, ``acquire()``
+    blocks until the reset epoch so threads automatically back off.
+    """
+
+    def __init__(self, safety_threshold: int = _RATE_LIMIT_SAFETY_THRESHOLD) -> None:
+        self._lock = threading.Lock()
+        self._threshold = safety_threshold
+        self._remaining: int | None = None
+        self._reset_epoch: float | None = None
+
+    def update(self, headers: Any) -> None:
+        """Parse rate-limit headers from a ``requests.Response`` and store them."""
+        try:
+            remaining = headers.get("X-RateLimit-Remaining")
+            reset = headers.get("X-RateLimit-Reset")
+            if remaining is not None:
+                self._remaining = int(remaining)
+            if reset is not None:
+                self._reset_epoch = float(reset)
+        except (ValueError, TypeError) as e:
+            logger.debug(f"Could not parse rate-limit headers: {e}")
+
+    def acquire(self) -> None:
+        """Block the calling thread until it is safe to send another request."""
+        with self._lock:
+            if self._remaining is not None and self._remaining < self._threshold and self._reset_epoch is not None:
+                wait_seconds = max(0.0, self._reset_epoch - time.time() + 1.0)
+                if wait_seconds > 0:
+                    logger.warning(f"GitHub rate limit nearly exhausted ({self._remaining} remaining). Pausing for {wait_seconds:.0f}s until reset.")
+                    # Release lock during sleep so other threads can also queue up and wait
+                    # We release and re-acquire to avoid holding the lock during the long sleep
+                    self._lock.release()
+                    try:
+                        time.sleep(wait_seconds)
+                    finally:
+                        self._lock.acquire()
+                    # Reset remaining so we don't re-sleep immediately after reset
+                    self._remaining = None
 
 
 def extract_github_owner_repo(url: str) -> tuple[str, str] | None:
@@ -36,13 +86,20 @@ def extract_github_owner_repo(url: str) -> tuple[str, str] | None:
     return None
 
 
-def get_github_repo_info(repo_url: str, github_token: str | None = None) -> dict[str, Any] | None:
+def get_github_repo_info(
+    repo_url: str,
+    github_token: str | None = None,
+    rate_limiter: _GitHubRateLimiter | None = None,
+) -> dict[str, Any] | None:
     """Fetches information about a GitHub repository using its URL.
 
     Args:
         repo_url (str): The full URL of the GitHub repository.
         github_token (str, optional): A GitHub personal access token for authenticated requests.
                                       Defaults to None (unauthenticated request).
+        rate_limiter (optional): Shared rate limiter. When provided, each request
+            first calls ``acquire()`` to respect GitHub quota, then updates the
+            limiter with response headers. Defaults to None (no rate-limit coordination).
 
     Returns:
         Optional[Dict[str, Any]]: A dictionary containing repository information
@@ -62,7 +119,11 @@ def get_github_repo_info(repo_url: str, github_token: str | None = None) -> dict
         headers["Authorization"] = f"token {github_token}"
 
     try:
+        if rate_limiter:
+            rate_limiter.acquire()
         response = requests.get(api_url, headers=headers, timeout=10)
+        if rate_limiter:
+            rate_limiter.update(response.headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
         data = response.json()
 
@@ -70,7 +131,11 @@ def get_github_repo_info(repo_url: str, github_token: str | None = None) -> dict
         languages_url = data.get("languages_url")
         languages_data = {}
         if languages_url:
+            if rate_limiter:
+                rate_limiter.acquire()
             lang_response = requests.get(languages_url, headers=headers, timeout=5)
+            if rate_limiter:
+                rate_limiter.update(lang_response.headers)
             if lang_response.status_code == 200:
                 languages_data = lang_response.json()
             else:
@@ -125,6 +190,54 @@ def find_github_links_in_text(text: str) -> list[str]:
     unique_urls = sorted({f"https://github.com/{owner}/{repo}" for owner, repo in found_urls})
 
     return unique_urls
+
+
+def get_github_repo_info_batch(
+    repo_urls: list[str],
+    github_token: str | None = None,
+    max_workers: int = 5,
+) -> dict[str, dict[str, Any] | None]:
+    """Fetch GitHub repository info for multiple URLs concurrently.
+
+    Uses a :class:`ThreadPoolExecutor` with a shared :class:`_GitHubRateLimiter`
+    so that requests run in parallel while respecting GitHub's secondary rate
+    limits. Each URL is fetched at most once; duplicate URLs share a single result.
+
+    Args:
+        repo_urls: List of GitHub repository URLs to fetch.
+        github_token: Optional GitHub PAT for authenticated requests (higher rate limits).
+        max_workers: Maximum number of concurrent worker threads. Defaults to 5,
+            which is safe for unauthenticated use (60 req/h) and well within
+            the 5000 req/h authenticated limit.
+
+    Returns:
+        A mapping ``{repo_url: repo_info_dict_or_None}`` for every URL in the
+        input list, including duplicates.
+    """
+    if not repo_urls:
+        return {}
+
+    # De-duplicate URLs to avoid redundant API calls
+    unique_urls: list[str] = list(dict.fromkeys(repo_urls))
+
+    rate_limiter = _GitHubRateLimiter()
+    results: dict[str, dict[str, Any] | None] = {}
+
+    logger.info(f"Fetching GitHub info for {len(unique_urls)} unique repos with {max_workers} workers")
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_url: dict[Any, str] = {executor.submit(get_github_repo_info, url, github_token, rate_limiter): url for url in unique_urls}
+
+        for future in as_completed(future_to_url):
+            url = future_to_url[future]
+            try:
+                results[url] = future.result()
+            except Exception as e:
+                logger.error(f"Worker error fetching {url}: {e}")
+                results[url] = None
+
+    # Expand results back to all input URLs (including duplicates)
+    return {url: results.get(url) for url in repo_urls}
 
 
 if __name__ == "__main__":
