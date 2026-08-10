@@ -18,6 +18,28 @@ from src.web.dashboard.utils import get_data_path
 logger = logging.getLogger(__name__)
 
 
+def _canonical_channel(name: str) -> str:
+    """Normalize a channel directory name for de-duplication.
+
+    Channel directories can appear under variant names for the same channel
+    (e.g. ``MatthewBerman`` vs ``matthew-berman`` vs ``MatthewBerman-videos``).
+    This folds common variants so the dropdown and the "all" feed don't list
+    the same channel twice.
+
+    Args:
+        name: Raw channel directory name.
+
+    Returns:
+        A canonical, comparable key (lowercased, trimmed of common suffixes
+        and separators).
+    """
+    canonical = name.strip().lower()
+    for suffix in ("-videos", "_videos", "-channel", "_channel", "-official", "_official"):
+        if canonical.endswith(suffix):
+            canonical = canonical[: -len(suffix)]
+    return canonical.replace("_", "-").strip("-")
+
+
 class VideoManager:
     """Manages video data loading and filtering."""
 
@@ -86,10 +108,20 @@ class VideoManager:
         self.loaded = True
 
     def get_channels(self):
-        """Get list of available channels."""
+        """Get a de-duplicated list of available channels.
+
+        Channel directories can appear under variant names for the same
+        channel (e.g. ``MatthewBerman`` and ``MatthewBerman-videos``); this
+        folds them so each channel appears once in the dropdown.
+        """
         if not self.loaded:
             self.load_data()
-        return list(self.video_data.keys())
+        seen: dict[str, str] = {}
+        for raw in self.video_data:
+            key = _canonical_channel(raw)
+            if key not in seen:
+                seen[key] = raw
+        return list(seen.values())
 
     def get_videos(self, channel=None, search_term=None, days_filter=None, limit=200):
         """Get filtered videos."""
@@ -116,6 +148,20 @@ class VideoManager:
                     all_videos.append(video_dict)
 
         logger.debug(f"Retrieved {len(all_videos)} videos for channel '{channel}'")
+
+        # De-duplicate by URL: the same video can appear under two channel
+        # directories when a channel was fetched under variant names.
+        seen_urls: set[str] = set()
+        deduped: list[dict] = []
+        for video in all_videos:
+            url = video.get("url")
+            if not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            deduped.append(video)
+        if len(deduped) != len(all_videos):
+            logger.info(f"De-duplicated {len(all_videos) - len(deduped)} duplicate video(s) by URL")
+        all_videos = deduped
 
         # Apply search filter
         if search_term and search_term.strip():
@@ -318,9 +364,25 @@ def render_videos_tab():
         return html.Div(
             [
                 html.H3("Videos", className="mb-3"),
-                dbc.Alert(
-                    "No video data found. Please check if the YouTube ETL has run.",
-                    color="info",
+                dbc.Card(
+                    dbc.CardBody(
+                        [
+                            html.Div(
+                                html.I(className="fas fa-video-slash text-muted", style={"fontSize": "3rem"}),
+                                className="text-center mb-3",
+                            ),
+                            html.H5("No video data found", className="text-center mb-2"),
+                            html.P(
+                                [
+                                    "Run the YouTube ETL to populate the Videos tab. ",
+                                    html.Br(),
+                                    html.Code("uv run python -m src.etl.youtube_shorts.youtube_shorts_etl", className="small"),
+                                ],
+                                className="text-muted text-center mb-0",
+                            ),
+                        ]
+                    ),
+                    className="border-0 shadow-sm",
                 ),
             ]
         )
