@@ -170,7 +170,7 @@ app.layout = dbc.Container(
                         ),
                         # Removed Intelligence and AI Research tabs as per cleanup
                         dbc.Tab(
-                            label="Courses",
+                            label="Learning",
                             tab_id="tab-courses",
                         ),
                         dbc.Tab(

@@ -15,6 +15,7 @@ UDEMY_DATA_PATH = get_data_path("udemy", "udemy_courses.json")
 MS_APPLIED_SKILLS_DATA_PATH = get_data_path("courses", "ms_applied_skills.json")
 AWS_SKILL_BUILDER_DATA_PATH = get_data_path("courses", "aws_skill_builder.json")
 GCP_SKILLS_BOOST_DATA_PATH = get_data_path("courses", "gcp_skills_boost.json")
+FREECODECAMP_DATA_PATH = get_data_path("news", "freecodecamp_latest.json")
 
 ALL_COURSES_DATA = {
     "coursera": pd.DataFrame(),
@@ -710,6 +711,52 @@ def render_gcp_skills_courses_sub_tab(df):
     )
 
 
+def render_freecodecamp_sub_tab():
+    """Render freeCodeCamp articles as a learning resource list."""
+    import json
+
+    if not file_exists(FREECODECAMP_DATA_PATH):
+        return dbc.Alert("No freeCodeCamp data available. Run the ETL to populate.", color="info", className="mt-3")
+
+    try:
+        with open(FREECODECAMP_DATA_PATH, encoding="utf-8") as f:
+            articles = json.load(f)
+    except (OSError, ValueError):
+        return dbc.Alert("Failed to load freeCodeCamp data.", color="danger", className="mt-3")
+
+    if not articles:
+        return html.P("No freeCodeCamp articles found.", className="text-muted mt-3")
+
+    cards = []
+    for article in articles[:50]:
+        title = article.get("title", "Untitled")
+        link = article.get("link", "#")
+        summary = article.get("summary", "")
+        published = article.get("published", "")
+        cards.append(
+            dbc.Card(
+                dbc.CardBody(
+                    [
+                        html.H6(
+                            html.A(title, href=link, target="_blank", className="text-decoration-none"),
+                            className="mb-1",
+                        ),
+                        html.Small(published, className="text-muted") if published else None,
+                        html.P(summary[:200] + "…" if len(summary) > 200 else summary, className="small text-muted mt-1 mb-0") if summary else None,
+                    ]
+                ),
+                className="mb-2 shadow-sm",
+            )
+        )
+
+    return html.Div(
+        [
+            html.P(f"{len(articles)} freeCodeCamp articles available.", className="text-muted small mb-3"),
+            *cards,
+        ]
+    )
+
+
 # --- Main Layout ---
 def render_courses_tab():
     print(f"DEBUG: render_courses_tab called. Loaded status: {COURSES_DATA_LOADED}")
@@ -756,6 +803,11 @@ def render_courses_tab():
                         label="GCP Skills Boost",
                         tab_id="tab-gcp-skills",
                         children=render_gcp_skills_courses_sub_tab(ALL_COURSES_DATA["gcp_skills"]),
+                    ),
+                    dbc.Tab(
+                        label="📚 freeCodeCamp",
+                        tab_id="tab-freecodecamp",
+                        children=render_freecodecamp_sub_tab(),
                     ),
                 ],
             ),
