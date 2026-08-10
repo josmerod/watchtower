@@ -1,0 +1,58 @@
+# Dependabot configuration for automated dependency updates.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Watchtower uses uv (pyproject.toml + uv.lock) for Python deps, GitHub Actions
+# for CI, and a Dockerfile (deployment/Dockerfile) for the container image.
+
+version: 2
+
+updates:
+  # Python dependencies (pyproject.toml / uv.lock).
+  # Dependabot's pip ecosystem reads pyproject.toml; it does not yet understand
+  # uv.lock natively, but it will still open PRs for pyproject.toml ranges.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      # Bundle minor/patch updates of non-critical libs to reduce PR noise.
+      python-minor:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions used in .github/workflows/.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # Docker base image (deployment/Dockerfile).
+  - package-ecosystem: "docker"
+    directory: "/deployment"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
