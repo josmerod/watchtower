@@ -646,9 +646,9 @@ def render_udemy_courses_sub_tab(df):
 
 def render_ms_skills_courses_sub_tab(df):
     if not COURSES_DATA_LOADED["ms_skills"]:
-        return dbc.Alert("MS Applied Skills data failed to load. Check logs.", color="danger", className="mt-3")
+        return dbc.Alert("MS Credentials data failed to load. Check logs.", color="danger", className="mt-3")
     if df.empty:
-        return dbc.Alert("No MS Applied Skills data currently available.", color="info", className="mt-3")
+        return dbc.Alert("No MS Credentials data currently available.", color="info", className="mt-3")
     return html.Div(
         [
             dbc.Row(
@@ -743,7 +743,7 @@ def render_courses_tab():
                         children=render_udemy_courses_sub_tab(ALL_COURSES_DATA["udemy"]),
                     ),
                     dbc.Tab(
-                        label="MS Applied Skills",
+                        label="MS Credentials",
                         tab_id="tab-ms-skills",
                         children=render_ms_skills_courses_sub_tab(ALL_COURSES_DATA["ms_skills"]),
                     ),
@@ -1085,7 +1085,7 @@ def register_courses_callbacks(app):
     def update_ms_skills_table(search_term):
         try:
             if not COURSES_DATA_LOADED["ms_skills"]:
-                return dbc.Alert("Loading MS Applied Skills data...", color="info")
+                return dbc.Alert("Loading MS Credentials data...", color="info")
             df = ALL_COURSES_DATA["ms_skills"].copy()
             if df.empty:
                 return dbc.Alert("No data available.", color="warning")
