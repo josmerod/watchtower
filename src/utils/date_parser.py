@@ -132,16 +132,25 @@ class DateParser:
     def _parse_iso_with_tz(self, date_str: str) -> datetime | None:
         """Parse ISO format with timezone.
 
+        Only matches strings that carry an explicit offset (e.g. ``+00:00`` or
+        ``Z``). Naive datetimes (e.g. date-only ``"2024-01-31"``) are left for
+        ``_parse_iso_no_tz`` so they aren't misinterpreted as local time.
+
         Args:
             date_str: Date string in ISO format with timezone
 
         Returns:
-            Parsed datetime or None if parsing fails
+            Parsed datetime or None if parsing fails or no offset is present
         """
         try:
+            # Only treat as tz-bearing if an offset marker is present.
+            if "Z" not in date_str and "+" not in date_str[10:] and "-" not in date_str[10:]:
+                return None
             # Replace Z with +00:00 for UTC
             normalized = date_str.replace("Z", "+00:00")
             dt = datetime.fromisoformat(normalized)
+            if dt.tzinfo is None:
+                return None
             return dt.astimezone(self.default_timezone)
         except (ValueError, AttributeError):
             return None
@@ -193,7 +202,14 @@ class DateParser:
             if ts > 10000000000:  # Milliseconds
                 ts /= 1000
 
-            return datetime.fromtimestamp(ts, tz=self.default_timezone)
+            # datetime.fromtimestamp raises OSError on Windows for negative
+            # timestamps. Compute via UTC (epoch + timedelta) to support them.
+            try:
+                return datetime.fromtimestamp(ts, tz=self.default_timezone)
+            except OSError:
+                from datetime import timedelta
+
+                return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=ts)
         except (ValueError, OSError):
             return None
 
