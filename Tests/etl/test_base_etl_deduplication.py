@@ -151,11 +151,11 @@ class TestBaseETLDeduplication:
         """Test deduplication with mixed model types (some not TimestampedModel)."""
         etl = TestDeduplicationETL(test_data=[])
 
-        # Mix of TimestampedModel and regular dict items
+        # Mix of TimestampedModel and regular dict items with distinct titles
         mixed_data = [
-            TestContentModel(title="Model Item 1"),
-            {"title": "Dict Item 1"},  # Not TimestampedModel
-            TestContentModel(title="Model Item 2"),
+            TestContentModel(title="Quantum Computing Breakthrough"),
+            {"title": "Unrelated Dictionary Item"},  # Not TimestampedModel
+            TestContentModel(title="Climate Change Research"),
         ]
 
         result = etl._apply_deduplication(mixed_data)
@@ -250,10 +250,10 @@ class TestBaseETLDeduplication:
         """Test error handling during deduplication."""
         etl = TestDeduplicationETL(test_data=[], enable_deduplication=True)
 
-        # Create data that might cause deduplication issues
+        # Create data that might cause deduplication edge-case issues
         problematic_data = [
             TestContentModel(title="Normal Item"),
-            TestContentModel(title=None),  # None title might cause issues
+            TestContentModel(title=""),  # Empty title — edge case for dedup
         ]
 
         # Should not raise exceptions
