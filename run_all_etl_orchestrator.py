@@ -17,6 +17,7 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_futuretools.py",
     "src/etl/news/news_get_genai_medium.py",
     "src/etl/news/news_get_gooddevs.py",
+    "src/etl/news/news_get_selfhosted.py",
     "src/etl/news/news_get_indiehackers.py",
     "src/etl/news/news_get_kagi.py",
     "src/etl/news/news_get_kdnuggets.py",
