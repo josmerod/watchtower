@@ -11,22 +11,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
       - name: Install uv
-        run: pip install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
 
       - name: Install dependencies
         run: uv sync
+
+      - name: Lint (ruff check)
+        run: uv run ruff check --output-format=github .
+
+      - name: Format check (ruff format)
+        run: uv run ruff format --check .
 
       - name: Syntax check
         run: python -m py_compile src/api/main.py src/etl/base.py
 
       - name: Run tests
-        run: python -m pytest Tests/ -v
-        continue-on-error: true
+        run: uv run pytest Tests/ -v
+        continue-on-error: true # T-023: pre-existing failures from API drift
 
       - name: Validate Dockerfile
         run: docker build -f deployment/Dockerfile --check . 2>/dev/null || docker build -f deployment/Dockerfile --quiet . 2>&1 | head -5
