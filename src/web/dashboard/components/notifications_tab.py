@@ -15,6 +15,23 @@ from src.alerts.engine import AlertEngine
 from src.repositories import BaseRepository
 
 
+def _get_rule_id(rule: Any) -> str:
+    """Extract a rule ID from rule objects, dicts, or bare ID values.
+
+    Args:
+        rule: A rule object with an ``id`` attribute, a rule dict with an ``id``
+            key, or a bare rule-ID value.
+
+    Returns:
+        The rule ID as a string (empty string when none is available).
+    """
+    if hasattr(rule, "id"):
+        return str(rule.id)
+    if isinstance(rule, dict):
+        return str(rule.get("id", ""))
+    return str(rule)
+
+
 class NotificationsManager:
     """Manager for alert rules with file-based persistence."""
 

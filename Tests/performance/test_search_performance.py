@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from src.web.dashboard.utils.search_utils import (
+from src.web.dashboard.search_utils import (
     filter_content,
     get_common_searchable_fields,
 )
@@ -35,7 +35,7 @@ class TestSearchPerformance:
         searchable_fields = get_common_searchable_fields("news")
 
         start_time = time.time()
-        result = filter_content("test", dataset, searchable_fields)
+        filter_content("test", dataset, searchable_fields)
         end_time = time.time()
 
         response_time = end_time - start_time
@@ -47,7 +47,7 @@ class TestSearchPerformance:
         searchable_fields = get_common_searchable_fields("news")
 
         start_time = time.time()
-        result = filter_content("test", dataset, searchable_fields)
+        filter_content("test", dataset, searchable_fields)
         end_time = time.time()
 
         response_time = end_time - start_time
@@ -59,7 +59,7 @@ class TestSearchPerformance:
         searchable_fields = get_common_searchable_fields("news")
 
         start_time = time.time()
-        result = filter_content("test", dataset, searchable_fields)
+        filter_content("test", dataset, searchable_fields)
         end_time = time.time()
 
         response_time = end_time - start_time
@@ -85,7 +85,7 @@ class TestSearchPerformance:
         long_query = "this is a very long search query that might affect performance"
 
         start_time = time.time()
-        result = filter_content(long_query, dataset, searchable_fields)
+        filter_content(long_query, dataset, searchable_fields)
         end_time = time.time()
 
         response_time = end_time - start_time
@@ -110,7 +110,7 @@ class TestSearchPerformance:
         searchable_fields = get_common_searchable_fields("news")
 
         start_time = time.time()
-        result = filter_content("TEST ARTICLE", dataset, searchable_fields)
+        filter_content("TEST ARTICLE", dataset, searchable_fields)
         end_time = time.time()
 
         response_time = end_time - start_time
@@ -125,7 +125,7 @@ class TestSearchPerformance:
         total_time = 0
         for query in queries:
             start_time = time.time()
-            result = filter_content(query, dataset, searchable_fields)
+            filter_content(query, dataset, searchable_fields)
             end_time = time.time()
             total_time += end_time - start_time
 
@@ -147,7 +147,7 @@ class TestSearchPerformance:
 
         # Perform multiple searches
         for i in range(5):
-            result = filter_content(f"test {i}", dataset, searchable_fields)
+            filter_content(f"test {i}", dataset, searchable_fields)
 
         final_memory = process.memory_info().rss
         memory_increase = (final_memory - initial_memory) / 1024 / 1024  # MB
