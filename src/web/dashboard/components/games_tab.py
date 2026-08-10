@@ -550,7 +550,7 @@ def render_bundles_sub_tab(df):
         )
     ]
     table_body_rows = []
-    for _, row in df.head(50).iterrows():
+    for row in df.head(50).to_dict("records"):
         table_body_rows.append(
             html.Tr(
                 [
@@ -604,7 +604,7 @@ def render_deals_sub_tab(df):
         )
     ]
     table_body_rows = []
-    for _, row in df.head(50).iterrows():
+    for row in df.head(50).to_dict("records"):
         discount_display = f"{int(row.get('discount_numeric', 0))}%" if pd.notna(row.get("discount_numeric")) else "N/A"
         table_body_rows.append(
             html.Tr(
@@ -658,7 +658,7 @@ def render_trending_sub_tab(df):
         )
     ]
     table_body_rows = []
-    for _, row in df.head(50).iterrows():
+    for row in df.head(50).to_dict("records"):
         price_display = "Free" if row.get("price_numeric", -1) == 0.0 else (f"${row.get('price_numeric', 0.0):.2f}" if pd.notna(row.get("price_numeric")) else "N/A")
         table_body_rows.append(
             html.Tr(
@@ -708,7 +708,7 @@ def render_metacritic_sub_tab(df):
         )
     ]
     rows = []
-    for _, row in df.head(50).iterrows():
+    for row in df.head(50).to_dict("records"):
         title = row.get("title", "N/A")
         url = row.get("url") or row.get("link")
         score = row.get("metacritic_score", "N/A")

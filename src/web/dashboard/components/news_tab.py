@@ -324,8 +324,6 @@ def register_news_search_callbacks(app):
                 # 4. Sort
                 articles_data.sort(key=get_sortable_date, reverse=True)
 
-                articles_data.sort(key=get_sortable_date, reverse=True)
-
                 # 5. Filter (Search)
                 if search_term:
                     searchable_fields = get_common_searchable_fields("news")

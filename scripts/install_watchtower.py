@@ -33,8 +33,13 @@ def timeout_handler(signum, frame):
 
 def run_with_timeout(command, timeout_seconds=300):
     """Run a command with timeout handling"""
+    import shlex
+
     print(f"[INFO] Running: {command}")
     print(f"[INFO] Timeout set to {timeout_seconds} seconds")
+
+    # Split command string into argument list to avoid shell=True (security)
+    args = shlex.split(command) if isinstance(command, str) else command
 
     try:
         # Set up signal handler for timeout (Unix-like systems)
@@ -42,10 +47,10 @@ def run_with_timeout(command, timeout_seconds=300):
             signal.signal(signal.SIGALRM, timeout_handler)
             signal.alarm(timeout_seconds)
 
-        # Run the command
+        # Run the command (shell=False for security)
         result = subprocess.run(
-            command,
-            shell=True,
+            args,
+            shell=False,
             capture_output=False,
             text=True,
             timeout=timeout_seconds,

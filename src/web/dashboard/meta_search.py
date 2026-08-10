@@ -128,7 +128,7 @@ class MetaSearchEngine:
 
                 filtered_papers = df[mask].head(limit)
 
-                for _, p in filtered_papers.iterrows():
+                for p in filtered_papers.to_dict("records"):
                     results.append(
                         {
                             "id": f"paper_{p.get('link')}",

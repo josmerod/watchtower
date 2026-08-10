@@ -99,10 +99,15 @@ class APIConfig(BaseModel):
     reload: bool = Field(default=False, description="Enable auto-reload in development")
     workers: int = Field(default=1, ge=1, le=32, description="Number of worker processes")
     cors_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8080"],
+        default=[
+            "http://localhost:45714",
+            "http://127.0.0.1:45714",
+            "http://192.168.31.126:45714",
+            "https://watchtower.josmerod.es",
+        ],
         description="CORS allowed origins",
     )
-    cors_methods: list[str] = Field(default=["GET", "POST", "PUT", "DELETE"], description="CORS allowed methods")
+    cors_methods: list[str] = Field(default=["GET"], description="CORS allowed methods")
     news_api_key: str | None = Field(default=None, description="API key for NewsAPI")
     mal_client_id: str | None = Field(default=None, description="MyAnimeList API Client ID")
 
