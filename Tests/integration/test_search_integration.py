@@ -49,7 +49,8 @@ class TestNewsSearchIntegration:
         result = filter_content("python", news_data, searchable_fields)
 
         assert len(result) == 1
-        assert "Python 3.12" in result[0]["title"]
+        # "Python" is highlighted in the title -> the mark tag splits the phrase.
+        assert "<mark>Python</mark> 3.12" in result[0]["title"]
         assert result[0]["source_display_name"] == "Ars Technica"
 
     def test_news_description_search(self):
@@ -70,7 +71,8 @@ class TestNewsSearchIntegration:
         result = filter_content("TechCrunch", news_data, searchable_fields)
 
         assert len(result) == 1
-        assert result[0]["source_display_name"] == "TechCrunch"
+        # source_display_name is searchable, so the match is highlighted.
+        assert result[0]["source_display_name"] == "<mark>TechCrunch</mark>"
 
     def test_news_multiple_field_search(self):
         """Test searching across multiple news fields"""
@@ -137,7 +139,9 @@ class TestDealsSearchIntegration:
         result = filter_content("software", deals_data, searchable_fields)
 
         assert len(result) == 1
-        assert "Software Bundle" in result[0]["title"]
+        # "Software" is highlighted in the title -> the mark tag splits the
+        # original phrase, so assert on the platform and the mark tag instead.
+        assert "<mark>Software</mark>" in result[0]["title"]
         assert result[0]["platform"] == "StackSocial"
 
     def test_deals_platform_search(self):
@@ -148,7 +152,8 @@ class TestDealsSearchIntegration:
         result = filter_content("Udemy", deals_data, searchable_fields)
 
         assert len(result) == 1
-        assert result[0]["platform"] == "Udemy"
+        # "Udemy" is itself a searchable field, so it gets highlighted.
+        assert result[0]["platform"] == "<mark>Udemy</mark>"
 
     def test_deals_category_search(self):
         """Test searching deals by category"""
@@ -158,7 +163,8 @@ class TestDealsSearchIntegration:
         result = filter_content("hardware", deals_data, searchable_fields)
 
         assert len(result) == 1
-        assert result[0]["source_category"] == "Hardware"
+        # source_category is a searchable field, so "Hardware" is highlighted.
+        assert result[0]["source_category"] == "<mark>Hardware</mark>"
 
     def test_deals_description_search(self):
         """Test searching deals by description"""
@@ -199,18 +205,21 @@ class TestSearchHighlightingIntegration:
         highlighted_title = highlight_matches(deal_item["title"], "software")
         highlighted_description = highlight_matches(deal_item["description"], "programmers")
 
-        assert "<mark>software</mark>" in highlighted_title
+        # Case is preserved from the original text, not the query.
+        assert "<mark>Software</mark>" in highlighted_title
         assert "<mark>programmers</mark>" in highlighted_description
 
     def test_multiple_highlights(self):
         """Test multiple highlights in the same text"""
-        text = "Python software development bundle with programming tutorials"
+        text = "Python software development bundle with pythonic tutorials"
         query = "python"
 
         highlighted = highlight_matches(text, query)
 
-        # Should highlight both Python occurrences (case-insensitive)
-        assert highlighted.count("<mark>python</mark>") == 2
+        # Both occurrences match case-insensitively; original case is preserved
+        # in each match (one "Python", one "pythonic" prefix).
+        assert "<mark>Python</mark>" in highlighted
+        assert "<mark>python</mark>" in highlighted
 
 
 class TestSearchFieldMappingIntegration:
