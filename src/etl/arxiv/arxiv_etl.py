@@ -278,6 +278,11 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
                 "arxiv_neural_networks_latest.json": by_cat("cs.NE"),
                 "arxiv_robotics_latest.json": by_cat("cs.RO"),
                 "arxiv_reinforcement_learning_latest.json": by_cat("cs.AI"),
+                # Added high-value research areas aligned with Watchtower's mission
+                "arxiv_security_latest.json": by_cat("cs.CR") + by_cat("cs.CY"),
+                "arxiv_systems_cloud_latest.json": by_cat("cs.DC") + by_cat("cs.AR") + by_cat("cs.OS"),
+                "arxiv_quantum_latest.json": by_cat("quant-ph"),
+                "arxiv_data_engineering_latest.json": by_cat("cs.DB") + by_cat("cs.DS") + by_cat("cs.IR"),
             }
             for filename, items in splits.items():
                 (self.data_dir / filename).write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")

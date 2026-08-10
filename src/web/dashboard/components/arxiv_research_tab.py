@@ -377,7 +377,19 @@ def render_arxiv_research_tab():
     tabs_children = []
 
     # Order of tabs to display (All first, then categories)
-    ordered_keys = ["all_arxiv", "machine_learning", "computer_vision", "nlp", "neural_networks", "robotics", "reinforcement_learning"]
+    ordered_keys = [
+        "all_arxiv",
+        "machine_learning",
+        "computer_vision",
+        "nlp",
+        "neural_networks",
+        "robotics",
+        "reinforcement_learning",
+        "security",
+        "systems_cloud",
+        "quantum",
+        "data_engineering",
+    ]
 
     for key in ordered_keys:
         if key in ARXIV_SOURCES_CONFIG:

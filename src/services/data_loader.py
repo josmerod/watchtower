@@ -146,6 +146,22 @@ ARXIV_SOURCES_CONFIG = {
         "path": get_data_path("arxiv", "arxiv_reinforcement_learning_latest.json"),
         "name": "RL & AI",
     },
+    "security": {
+        "path": get_data_path("arxiv", "arxiv_security_latest.json"),
+        "name": "Security & Privacy",
+    },
+    "systems_cloud": {
+        "path": get_data_path("arxiv", "arxiv_systems_cloud_latest.json"),
+        "name": "Systems & Cloud",
+    },
+    "quantum": {
+        "path": get_data_path("arxiv", "arxiv_quantum_latest.json"),
+        "name": "Quantum Computing",
+    },
+    "data_engineering": {
+        "path": get_data_path("arxiv", "arxiv_data_engineering_latest.json"),
+        "name": "Data Engineering",
+    },
 }
 
 KNOWLEDGE_SOURCES_CONFIG = {
@@ -394,39 +410,6 @@ BENCHMARKS_SOURCES_CONFIG = {
     "reasoning": {
         "path": get_data_path("benchmarks", "bridgebench_reasoning.json"),
         "name": "Reasoning Benchmark",
-    },
-}
-
-# --- ArXiv Research Papers ---
-
-ARXIV_SOURCES_CONFIG = {
-    "papers": {
-        "path": get_data_path("arxiv", "arxiv_papers_latest.json"),
-        "name": "ArXiv Papers",
-    },
-    "machine_learning": {
-        "path": get_data_path("arxiv", "arxiv_machine_learning_latest.json"),
-        "name": "ML Papers",
-    },
-    "computer_vision": {
-        "path": get_data_path("arxiv", "arxiv_computer_vision_latest.json"),
-        "name": "Computer Vision Papers",
-    },
-    "natural_language": {
-        "path": get_data_path("arxiv", "arxiv_natural_language_latest.json"),
-        "name": "NLP Papers",
-    },
-    "reinforcement_learning": {
-        "path": get_data_path("arxiv", "arxiv_reinforcement_learning_latest.json"),
-        "name": "Reinforcement Learning Papers",
-    },
-    "robotics": {
-        "path": get_data_path("arxiv", "arxiv_robotics_latest.json"),
-        "name": "Robotics Papers",
-    },
-    "neural_networks": {
-        "path": get_data_path("arxiv", "arxiv_neural_networks_latest.json"),
-        "name": "Neural Network Papers",
     },
 }
 
