@@ -14,6 +14,7 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_techcrunch.py",
     "src/etl/news/news_get_venturebeat.py",
     "src/etl/news/news_get_bensbites.py",
+    "src/etl/news/news_get_futuretools.py",
     "src/etl/news/news_get_genai_medium.py",
     "src/etl/news/news_get_gooddevs.py",
     "src/etl/news/news_get_indiehackers.py",
