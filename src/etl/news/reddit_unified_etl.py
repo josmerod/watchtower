@@ -14,6 +14,7 @@ from typing import Any
 import feedparser
 import requests
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 
@@ -93,7 +94,7 @@ def save_state(state: dict) -> None:
 def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
     """Fetch posts from subreddit RSS feed."""
     rss_url = f"https://www.reddit.com/r/{subreddit}/.rss"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+    headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT}
 
     try:
         response = requests.get(rss_url, headers=headers, timeout=10)

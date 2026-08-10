@@ -9,6 +9,7 @@ from typing import Any
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 # Import utilities
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
@@ -83,7 +84,7 @@ class ClassCentralScraper:
                 browser = await p.chromium.launch(headless=True)
                 context = await browser.new_context(
                     viewport={"width": 1920, "height": 1080},
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+                    user_agent=SCRAPER_DEFAULT_USER_AGENT,
                 )
                 page = await context.new_page()
 

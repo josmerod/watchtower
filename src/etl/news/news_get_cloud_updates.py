@@ -15,6 +15,7 @@ from typing import Any
 import feedparser
 import requests
 
+from src.constants.etl import SCRAPER_BRANDED_USER_AGENT
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 
@@ -27,7 +28,7 @@ FEEDS: dict[str, str] = {
     "github_blog": "https://github.blog/feed/",
 }
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; WatchtowerBot/1.0; +https://josmerod.es)"}
+HEADERS = {"User-Agent": SCRAPER_BRANDED_USER_AGENT}
 
 
 def _parse_date(date_str: str) -> str:

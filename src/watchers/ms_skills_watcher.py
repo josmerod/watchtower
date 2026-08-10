@@ -19,6 +19,8 @@ from bs4 import BeautifulSoup
 from playwright.async_api import Page, async_playwright
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
+
 # Add the project root to the path to ensure imports work correctly
 from src.watchers.base_watcher import BaseWatcher
 
@@ -226,7 +228,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
             await page.set_viewport_size({"width": 1920, "height": 1080})
             await page.set_extra_http_headers(
                 {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "User-Agent": SCRAPER_DEFAULT_USER_AGENT,
                     "Accept-Language": "en-US,en;q=0.9",
                 }
             )
@@ -836,7 +838,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
     def _get_browse_page_html(self, browse_url: str) -> str | None:
         """Fetch the HTML content of the browse page with improved error handling and modern headers."""
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+            "User-Agent": SCRAPER_DEFAULT_USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",

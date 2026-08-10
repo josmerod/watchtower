@@ -20,6 +20,7 @@ from typing import Any
 import feedparser
 import requests
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 from src.utils.retry import with_retry
@@ -49,7 +50,7 @@ def fetch_techcrunch_feeds() -> list[dict[str, Any]]:
         logger.info(f"Fetching TechCrunch RSS feed from {source} at {url}")
         try:
             # Use requests with User-Agent to avoid blocking
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+            headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT}
             response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
 

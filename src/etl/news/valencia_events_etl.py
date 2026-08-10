@@ -9,6 +9,7 @@ from typing import Any
 import requests
 from bs4 import BeautifulSoup
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import BaseETL
 from src.models.base import TimestampedModel
 
@@ -391,7 +392,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             # For now, we'll use web scraping approach
             url = "https://www.meetup.com/es-ES/find/?location=es--Valencia&source=EVENTS"
 
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+            headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT}
 
             response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
@@ -472,7 +473,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             # Eventbrite API would require API key, so we'll use web scraping
             url = "https://www.eventbrite.es/d/spain--valencia/all-events/"
 
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+            headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT}
 
             response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()

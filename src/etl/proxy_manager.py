@@ -10,6 +10,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from src.config.settings import get_settings
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,6 @@ class ProxyManager:
         session.mount("https://", adapter)
 
         # standard headers
-        session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"})
+        session.headers.update({"User-Agent": SCRAPER_DEFAULT_USER_AGENT})
 
         return session

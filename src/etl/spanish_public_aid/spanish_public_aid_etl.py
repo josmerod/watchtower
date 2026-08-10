@@ -11,6 +11,7 @@ import requests
 from bs4 import BeautifulSoup, Tag
 from pydantic import ValidationError
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import SimpleETL
 from src.models.spanish_public_aid import (
     AidCategory,
@@ -88,7 +89,7 @@ class SpanishPublicAidETL(SimpleETL):
 
         # Headers for requests
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "User-Agent": SCRAPER_DEFAULT_USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
             "Accept-Encoding": "gzip, deflate, br",

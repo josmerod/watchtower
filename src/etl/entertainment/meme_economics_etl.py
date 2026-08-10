@@ -18,6 +18,7 @@ from typing import Any
 
 import requests
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import BaseETL
 from src.utils.logging import get_logger
 
@@ -43,7 +44,7 @@ class MemeEconomicsETL(BaseETL):
         }
 
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "User-Agent": SCRAPER_DEFAULT_USER_AGENT,
             "Accept": "application/json, text/html, */*",
         }
 

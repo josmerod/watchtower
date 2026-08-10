@@ -5,6 +5,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+from src.constants.etl import SCRAPER_BRANDED_USER_AGENT
 from src.etl.base import BaseETL
 from src.models.course import GcpSkillsBoostModel
 
@@ -28,7 +29,7 @@ class GcpSkillsBoostETL(BaseETL):
     def extract(self) -> str:
         """Fetch the JSON payload from GCP Skills Boost."""
         try:
-            req = urllib.request.Request(self.url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Watchtower/1.0", "Accept": "application/json"})
+            req = urllib.request.Request(self.url, headers={"User-Agent": SCRAPER_BRANDED_USER_AGENT, "Accept": "application/json"})
             with urllib.request.urlopen(req) as response:
                 payload = response.read().decode("utf-8")
 

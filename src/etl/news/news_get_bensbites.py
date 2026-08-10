@@ -20,6 +20,8 @@ from typing import Any
 
 from playwright.sync_api import sync_playwright
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
+
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
@@ -64,7 +66,7 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
 
             context = browser.new_context(
                 viewport={"width": 1920, "height": 1080},
-                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                user_agent=SCRAPER_DEFAULT_USER_AGENT,
                 locale="en-US",
                 timezone_id="America/New_York",
                 color_scheme="dark",

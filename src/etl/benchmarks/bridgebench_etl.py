@@ -11,6 +11,8 @@ import re
 import urllib.request
 from datetime import datetime, timezone
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ PAGES = {
 }
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "User-Agent": SCRAPER_DEFAULT_USER_AGENT,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 

@@ -9,6 +9,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.utils.file_system import ensure_directories, get_project_root
 
 # Add the project root to the path for imports
@@ -30,7 +31,7 @@ def get_itchio_trending() -> None:
     """
     logger.info("Fetching itch.io trending games")
 
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+    headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT}
 
     try:
         response = requests.get(ITC_URL, headers=headers, timeout=30)
