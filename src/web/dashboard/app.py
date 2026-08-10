@@ -46,6 +46,10 @@ from src.web.dashboard.components.spanish_public_aid_tab import (
     register_spanish_aid_callbacks,
     render_spanish_public_aid_tab,
 )
+from src.web.dashboard.components.tech_radar_tab import (
+    register_tech_radar_callbacks,
+    render_tech_radar_tab,
+)
 from src.web.dashboard.components.valencia_events_new_tab import (
     register_valencia_events_callbacks,
     render_valencia_events_tab,
@@ -200,6 +204,10 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="🏆 Benchmarks",
                             tab_id="tab-benchmarks",
+                        ),
+                        dbc.Tab(
+                            label="🛰️ Tech Radar",
+                            tab_id="tab-tech-radar",
                         ),
                     ],
                 )
@@ -528,6 +536,7 @@ _TAB_RENDERERS = {
     "tab-arxiv-research": render_arxiv_research_tab,
     "tab-deals": render_deals_tab,
     "tab-benchmarks": render_benchmarks_tab,
+    "tab-tech-radar": render_tech_radar_tab,
 }
 
 
@@ -596,6 +605,7 @@ register_valencia_events_callbacks(app)
 register_shortcuts_callbacks(app)
 register_deals_callbacks(app)
 register_benchmarks_callbacks(app)
+register_tech_radar_callbacks(app)
 
 
 if __name__ == "__main__":
