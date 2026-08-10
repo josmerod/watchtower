@@ -330,7 +330,8 @@ class TestSpanishPublicAidModels:
         # Test model_dump_json
         json_str = aid.model_dump_json()
         assert isinstance(json_str, str)
-        assert '"title": "Test Aid"' in json_str
+        # Pydantic v2 model_dump_json produces compact JSON (no space after colon)
+        assert '"title":"Test Aid"' in json_str
 
     def test_enum_values(self):
         """Test enum values are correct."""
