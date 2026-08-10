@@ -13,6 +13,7 @@ from src.alerts.engine import AlertEngine
 
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
+from src.repositories.base_repository import RepositoryError
 
 
 def _get_rule_id(rule: Any) -> str:
@@ -87,13 +88,34 @@ class AlertRulesRepository(BaseRepository[list[dict[str, Any]]]):
         else:
             return []
 
-    def save_rule(self, rule: dict[str, Any]) -> bool:
-        """Save a rule to file."""
-        try:
-            import json
-            from pathlib import Path
+    def _read_rules(self) -> list[dict[str, Any]]:
+        """Load current rules, defaulting to an empty list when the store is new.
 
-            rules = self.load_rules()
+        ``BaseRepository.get`` raises ``RepositoryError`` (wrapping
+        ``FileNotFoundError``) when the data file is absent — a brand-new rules
+        store; we treat that as "no rules yet".
+        """
+        try:
+            data = self.get()
+        except RepositoryError:
+            return []
+        return data or []
+
+    def save_rule(self, rule: dict[str, Any]) -> bool:
+        """Save a rule to file (inserts or updates by id).
+
+        Args:
+            rule: Rule dictionary; if it has an ``id`` matching an existing rule,
+                the existing rule is replaced, otherwise the rule is appended.
+
+        Returns:
+            ``True`` on success, ``False`` if the write failed.
+        """
+        import json
+        from pathlib import Path
+
+        try:
+            rules = self._read_rules()
 
             # Update existing rule or add new one
             for i, existing_rule in enumerate(rules):
@@ -104,26 +126,38 @@ class AlertRulesRepository(BaseRepository[list[dict[str, Any]]]):
                 rules.append(rule)
 
             rules_file = Path("data/alerts/rules.json")
+            rules_file.parent.mkdir(parents=True, exist_ok=True)
             with open(rules_file, "w") as f:
                 json.dump(rules, f, indent=2, default=str)
 
+            self.clear_cache()
             return True
         except Exception:
             return False
 
     def delete_rule(self, rule_id: str) -> bool:
-        """Delete a rule by ID."""
-        try:
-            import json
-            from pathlib import Path
+        """Delete a rule by ID.
 
-            rules = self.load_rules()
+        Args:
+            rule_id: ID of the rule to remove.
+
+        Returns:
+            ``True`` on success (including when the id was already absent),
+            ``False`` if the write failed.
+        """
+        import json
+        from pathlib import Path
+
+        try:
+            rules = self._read_rules()
             rules = [rule for rule in rules if rule.get("id") != rule_id]
 
             rules_file = Path("data/alerts/rules.json")
+            rules_file.parent.mkdir(parents=True, exist_ok=True)
             with open(rules_file, "w") as f:
                 json.dump(rules, f, indent=2, default=str)
 
+            self.clear_cache()
             return True
         except Exception:
             return False
