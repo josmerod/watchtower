@@ -148,7 +148,7 @@ if __name__ == "__main__":
     etl = FourChanGeneralsETL()
     try:
         metrics = etl.run()
-        print(f"ETL completed successfully. Processed {metrics.records_extracted} records.")
+        etl.logger.info(f"ETL completed successfully. Processed {metrics.records_extracted} records.")
     except Exception as e:
-        print(f"ETL failed with error: {e}")
+        etl.logger.error(f"ETL failed with error: {e}")
         raise
