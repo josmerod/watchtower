@@ -141,7 +141,6 @@ class ETLScheduler:
                 "src/etl/arxiv/arxiv_etl.py",
             ],
             "entertainment": [
-                "src/etl/anime/mal_etl.py",
                 "src/etl/entertainment/trakt_trending_etl.py",
                 "src/etl/entertainment/spotify_browse_etl.py",
             ],

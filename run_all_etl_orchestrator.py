@@ -48,9 +48,6 @@ ETL_SCRIPTS = [
     "src/etl/goldigging/humble_books_etl.py",
     # Arxiv
     "src/etl/arxiv/arxiv_etl.py",
-    # Anime
-    "src/etl/anime/mal_etl.py",
-    "src/etl/anime/anilist_schedule_etl.py",
     # AI Platforms
     "src/etl/ai_platforms/papers_with_code_etl.py",
     "src/etl/ai_platforms/replicate_models_etl.py",
@@ -102,7 +99,6 @@ ETL_SCRIPTS = [
     "src/etl/expanded/stackexchange_etl.py",
     "src/etl/expanded/openalex_etl.py",
     "src/etl/expanded/kaggle_etl.py",
-    "src/etl/expanded/gaming_anime_etl.py",
     # Miners
     "src/miners/crypto_sentiment_miner.py",
     # Open Source Projects
