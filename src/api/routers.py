@@ -1,8 +1,10 @@
 """API routers for Watchtower data."""
 
+import json
 import logging
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import ValidationError
 
 from src.api.models import UnifiedItem
 from src.services.data_loader import (
@@ -116,7 +118,7 @@ async def get_news(source: str | None = Query(None, description="Filter by sourc
     """Get news items."""
     try:
         return _load_and_process_items(NEWS_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching news: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -126,7 +128,7 @@ async def get_knowledge(source: str | None = Query(None, description="Filter by 
     """Get knowledge garden items."""
     try:
         return _load_and_process_items(KNOWLEDGE_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching knowledge: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -136,7 +138,7 @@ async def get_ecommerce(source: str | None = Query(None, description="Filter by 
     """Get e-commerce items."""
     try:
         return _load_and_process_items(ECOMMERCE_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching ecommerce: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -146,7 +148,7 @@ async def get_entertainment(source: str | None = Query(None, description="Filter
     """Get entertainment items."""
     try:
         return _load_and_process_items(ENTERTAINMENT_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching entertainment: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -156,7 +158,7 @@ async def get_intelligence(source: str | None = Query(None, description="Filter 
     """Get intelligence items."""
     try:
         return _load_and_process_items(INTEL_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching intelligence: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -166,7 +168,7 @@ async def get_travel(source: str | None = Query(None, description="Filter by sou
     """Get travel items."""
     try:
         return _load_and_process_items(TRAVEL_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching travel: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -176,7 +178,7 @@ async def get_research(source: str | None = Query(None, description="Filter by s
     """Get research items."""
     try:
         return _load_and_process_items(RESEARCH_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching research: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -186,7 +188,7 @@ async def get_museums(source: str | None = Query(None, description="Filter by so
     """Get museums items."""
     try:
         return _load_and_process_items(MUSEUMS_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching museums: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -196,7 +198,7 @@ async def get_games(source: str | None = Query(None, description="Filter by sour
     """Get games items."""
     try:
         return _load_and_process_items(GAMES_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching games: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -208,7 +210,7 @@ async def get_benchmarks(
     """Get AI coding benchmark data from BridgeBench.ai."""
     try:
         return _load_benchmarks(source)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching benchmarks: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -218,7 +220,7 @@ async def get_arxiv(source: str | None = Query(None, description="Filter by sour
     """Get ArXiv research papers."""
     try:
         return _load_and_process_items(ARXIV_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching arxiv: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -228,7 +230,7 @@ async def get_ai_platforms(source: str | None = Query(None, description="Filter 
     """Get AI platform model data."""
     try:
         return _load_and_process_items(AI_PLATFORMS_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching ai-platforms: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -240,7 +242,7 @@ async def get_expanded(
     """Get expanded intelligence data (GitHub, StackExchange, OpenAlex, packages, Kaggle)."""
     try:
         return _load_and_process_items(EXPANDED_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching expanded: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -250,7 +252,7 @@ async def get_spanish_aid(source: str | None = Query(None, description="Filter b
     """Get Spanish public aid and subsidies data."""
     try:
         return _load_and_process_items(SPANISH_AID_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching spanish-aid: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -260,7 +262,7 @@ async def get_cloud_updates(source: str | None = Query(None, description="Filter
     """Get cloud provider updates (AWS, GCP, CNCF, GitHub Blog)."""
     try:
         return _load_and_process_items(CLOUD_UPDATES_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching cloud-updates: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -270,7 +272,7 @@ async def get_valencia_local(source: str | None = Query(None, description="Filte
     """Get Valencia local news and transport updates."""
     try:
         return _load_and_process_items(VALENCIA_LOCAL_SOURCES_CONFIG, source, limit)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching valencia-local: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
