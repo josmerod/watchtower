@@ -7,7 +7,20 @@ import time
 
 import pytest
 import requests
-from playwright.sync_api import Page, expect
+
+# Skip the entire module when pytest-playwright is unavailable or the dashboard
+# can't start — this is an integration test requiring both.
+try:
+    from playwright.sync_api import Page, expect
+
+    _PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    _PLAYWRIGHT_AVAILABLE = False
+
+pytestmark = pytest.mark.skipif(
+    not _PLAYWRIGHT_AVAILABLE,
+    reason="Playwright not available — install pytest-playwright and run the dashboard for visual tests",
+)
 
 # Constants
 DASHBOARD_URL = "http://localhost:7778"
@@ -28,7 +41,7 @@ def dashboard_process():
 
     # Wait for server to start
     max_retries = 60
-    for i in range(max_retries):
+    for _i in range(max_retries):
         try:
             response = requests.get(f"{DASHBOARD_URL}/health")
             if response.status_code == 200:
