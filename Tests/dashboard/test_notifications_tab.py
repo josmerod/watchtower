@@ -99,32 +99,37 @@ class TestNotificationsManager:
         assert loaded[0]["id"] == "rule-1"
         assert loaded[0]["conditions"][0]["value"] == "python"
 
-    @pytest.mark.xfail(
-        reason="AlertRulesRepository.save_rule/delete_rule call self.load_rules() "
-        "which is undefined on the repository (defined on NotificationsManager); "
-        "the resulting exception is swallowed to False. Tracked as a latent bug."
-    )
-    def test_repo_save_rule_is_broken(self, isolated_data_root: Path) -> None:
-        """Documents the latent ``AlertRulesRepository.save_rule`` bug."""
+    def test_repo_save_rule_roundtrip(self, isolated_data_root: Path) -> None:
+        """``AlertRulesRepository.save_rule`` persists and is readable by the manager.
+
+        Regression test for the bug where ``save_rule`` called ``self.load_rules()``
+        (undefined on the repository), so it always raised and returned ``False``.
+        Also covers the fresh-store case where the rules file does not exist yet.
+        """
         manager = NotificationsManager()
-        assert manager.rules_repo.save_rule({"id": "rule-1", "name": "A"}) is True
+        rule: dict[str, Any] = {"id": "rule-1", "name": "A", "active": True}
+        assert manager.rules_repo.save_rule(rule) is True
+        assert len(manager.load_rules()) == 1
 
-    def test_delete_rule_removes_from_file(self, isolated_data_root: Path) -> None:
-        """A rule removed from the rules file is no longer loaded by a fresh manager."""
-        import json
+    def test_repo_save_rule_updates_existing(self, isolated_data_root: Path) -> None:
+        """Saving a rule with an existing id replaces it (no duplicates)."""
+        manager = NotificationsManager()
+        repo = manager.rules_repo
+        repo.save_rule({"id": "r1", "name": "original", "active": True})
+        repo.save_rule({"id": "r1", "name": "updated", "active": False})
 
-        alerts_dir = isolated_data_root / "data" / "alerts"
-        alerts_dir.mkdir(parents=True, exist_ok=True)
-        rules_file = alerts_dir / "rules.json"
-        rules_file.write_text(json.dumps([{"id": "rule-1", "name": "A"}]), encoding="utf-8")
+        # Fresh manager so the cache doesn't mask the write.
+        rules = NotificationsManager().load_rules()
+        assert len(rules) == 1
+        assert rules[0]["name"] == "updated"
 
-        first = NotificationsManager()
-        assert len(first.load_rules()) == 1
-
-        # Rewrite without the rule; a fresh manager (uncached) reflects the deletion.
-        rules_file.write_text(json.dumps([]), encoding="utf-8")
-        second = NotificationsManager()
-        assert second.load_rules() == []
+    def test_repo_delete_rule(self, isolated_data_root: Path) -> None:
+        """``AlertRulesRepository.delete_rule`` removes a rule by id."""
+        manager = NotificationsManager()
+        repo = manager.rules_repo
+        repo.save_rule({"id": "rule-1", "name": "A"})
+        assert repo.delete_rule("rule-1") is True
+        assert NotificationsManager().load_rules() == []
 
 
 class TestRenderFunctions:
