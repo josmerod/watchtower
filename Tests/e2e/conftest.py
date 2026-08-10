@@ -8,6 +8,27 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+
+# Skip all E2E tests when pytest-playwright isn't installed (provides the
+# `page` fixture) — the tests also need a running dashboard server.
+_PYTEST_PLAYWRIGHT_AVAILABLE = True
+try:
+    import pytest_playwright
+except ImportError:
+    _PYTEST_PLAYWRIGHT_AVAILABLE = False
+
+_SKIP_REASON = (
+    "pytest-playwright not installed — install with 'uv add --dev pytest-playwright' "
+    "and run the dashboard server to execute E2E tests"
+)
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip all E2E tests when pytest-playwright is unavailable."""
+    if not _PYTEST_PLAYWRIGHT_AVAILABLE:
+        skip_marker = pytest.mark.skip(reason=_SKIP_REASON)
+        for item in items:
+            item.add_marker(skip_marker)
 from playwright.sync_api import Page
 
 # Add src to Python path for imports
@@ -39,13 +60,17 @@ def browser_context_args(browser_context_args: dict) -> dict:
     }
 
 
-@pytest.fixture()
-def page(page: Page) -> Generator[Page, None, None]:
-    """Configure page with custom settings."""
-    # Set default timeout
+@pytest.fixture(autouse=True)
+def _configure_page(page: Page) -> Generator[Page, None, None]:
+    """Apply custom settings to the Playwright page fixture.
+
+    This wraps the built-in ``page`` fixture (via an autouse dependency) to set
+    a default timeout and capture console errors. Unlike overriding ``page``
+    directly (which would create a recursive dependency), this fixture runs
+    automatically before each test that uses ``page``.
+    """
     page.set_default_timeout(30000)
 
-    # Configure console logging
     def handle_console(msg):
         if msg.type == "error":
             print(f"Console Error: {msg.text}")
@@ -55,9 +80,6 @@ def page(page: Page) -> Generator[Page, None, None]:
     page.on("console", handle_console)
 
     yield page
-
-    # Cleanup after test
-    page.close()
 
 
 @pytest.fixture(scope="session", autouse=True)
