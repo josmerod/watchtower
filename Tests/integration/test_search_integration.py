@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.web.dashboard.utils.search_utils import (
+from src.web.dashboard.search_utils import (
     filter_content,
     get_common_searchable_fields,
     highlight_matches,
