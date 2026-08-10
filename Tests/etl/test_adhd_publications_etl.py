@@ -1,3 +1,4 @@
+import logging
 import os
 import xml.etree.ElementTree as ET
 from unittest.mock import (
@@ -397,6 +398,11 @@ def test_transform_handles_empty_input(adhd_etl_instance):
 
 def test_transform_handles_missing_critical_fields(adhd_etl_instance, caplog):
     # 'title' is a required field in ADHDPublication Pydantic model
+    malformed_data = [
+        {"title": "Valid Title", "authors": ["Author A"], "url": "https://pubmed.ncbi.nlm.nih.gov/1"},
+        {"authors": ["No Title Author"], "url": "https://pubmed.ncbi.nlm.nih.gov/2"},  # missing title
+        {"title": "No URL", "authors": ["Author C"]},  # missing url
+    ]
 
     # To capture logs from adhd_etl_instance.logger specifically:
     # Method 1: Patch the logger on the instance if it's already configured
@@ -486,9 +492,6 @@ def test_load_saves_json_and_csv_correctly(mock_df_to_csv, mock_file_open, mock_
     csv_dir = tmp_path / "csv"
     mock_os_makedirs.assert_any_call(json_dir, exist_ok=True)
     mock_os_makedirs.assert_any_call(csv_dir, exist_ok=True)
-
-    # Expected data for json.dump
-    expected_papers_dict_list = [paper.model_dump() for paper in sample_transformed_papers_data]
 
     # JSON Assertions
     # mock_open().write calls are what json.dump eventually calls.
