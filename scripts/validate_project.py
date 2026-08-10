@@ -212,7 +212,7 @@ class ProjectValidator:
             print("❌ Critical issues found - please review and fix")
 
         print("\n🔧 To improve code quality:")
-        print("1. Run 'python install_dev.py' for proper package setup")
+        print("1. Run 'python scripts/install_dev.py' for proper package setup")
         print("2. Run 'ruff format .' for code formatting")
         print("3. Run 'ruff check .' for linting")
         print("4. Run 'mypy src/' for type checking")
