@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -37,6 +37,41 @@ from src.web.dashboard.managers.course_data_manager import (
 # =============================================================================
 
 
+@pytest.fixture
+def sample_data() -> pd.DataFrame:
+    """Create sample course data shared across test classes."""
+    return pd.DataFrame(
+        [
+            {
+                "title": "Course 1",
+                "url": "https://example.com/course1",
+                "description": "Description 1",
+                "institution": "Institution 1",
+                "subject": "Subject 1",
+                "language": "en",
+                "duration": "10 hours",
+                "start_date_str": "2024-01-15",
+                "is_free": True,
+                "certificate_offered": True,
+                "scraped_at_str": "2024-01-10T00:00:00Z",
+            },
+            {
+                "title": "Course 2",
+                "url": "https://example.com/course2",
+                "description": "Description 2",
+                "institution": "Institution 2",
+                "subject": "Subject 2",
+                "language": "en",
+                "duration": "15 hours",
+                "start_date_str": "2024-02-01",
+                "is_free": False,
+                "certificate_offered": False,
+                "scraped_at_str": "2024-01-10T00:00:00Z",
+            },
+        ]
+    )
+
+
 class TestCourseDataManagerConfig:
     """Test CourseDataManagerConfig configuration."""
 
@@ -45,8 +80,6 @@ class TestCourseDataManagerConfig:
         config = CourseDataManagerConfig(
             coursera_path=tmp_path / "coursera.json",
             udemy_path=tmp_path / "udemy.json",
-            pluralsight_path=tmp_path / "pluralsight.json",
-            khan_academy_path=tmp_path / "khan.json",
             enable_cache=True,
             cache_ttl_seconds=1800,
         )
@@ -59,8 +92,6 @@ class TestCourseDataManagerConfig:
         config = CourseDataManagerConfig(
             coursera_path=tmp_path / "coursera.json",
             udemy_path=tmp_path / "udemy.json",
-            pluralsight_path=tmp_path / "pluralsight.json",
-            khan_academy_path=tmp_path / "khan.json",
         )
 
         assert config.enable_cache is True  # Default
@@ -71,62 +102,22 @@ class TestCourseDataManager:
     """Test CourseDataManager functionality."""
 
     @pytest.fixture
-    def sample_data(self):
-        """Create sample course data."""
-        return pd.DataFrame(
-            [
-                {
-                    "title": "Course 1",
-                    "url": "https://example.com/course1",
-                    "description": "Description 1",
-                    "institution": "Institution 1",
-                    "subject": "Subject 1",
-                    "language": "en",
-                    "duration": "10 hours",
-                    "start_date_str": "2024-01-15",
-                    "is_free": True,
-                    "certificate_offered": True,
-                    "scraped_at_str": "2024-01-10T00:00:00Z",
-                },
-                {
-                    "title": "Course 2",
-                    "url": "https://example.com/course2",
-                    "description": "Description 2",
-                    "institution": "Institution 2",
-                    "subject": "Subject 2",
-                    "language": "en",
-                    "duration": "15 hours",
-                    "start_date_str": "2024-02-01",
-                    "is_free": False,
-                    "certificate_offered": False,
-                    "scraped_at_str": "2024-01-10T00:00:00Z",
-                },
-            ]
-        )
-
-    @pytest.fixture
     def manager(self, tmp_path: Path, sample_data: pd.DataFrame):
         """Create CourseDataManager with sample data."""
         # Write sample data files
         coursera_path = tmp_path / "coursera.json"
         udemy_path = tmp_path / "udemy.json"
-        pluralsight_path = tmp_path / "pluralsight.json"
-        khan_path = tmp_path / "khan.json"
 
         # Write Coursera data
         coursera_path.write_text(sample_data.to_json(orient="records", indent=2))
 
-        # Create empty files for other sources
+        # Create empty file for udemy
         udemy_path.write_text("[]")
-        pluralsight_path.write_text("[]")
-        khan_path.write_text("[]")
 
         # Create manager
         config = CourseDataManagerConfig(
             coursera_path=coursera_path,
             udemy_path=udemy_path,
-            pluralsight_path=pluralsight_path,
-            khan_academy_path=khan_path,
             enable_cache=True,
             cache_ttl_seconds=3600,
         )
@@ -180,8 +171,6 @@ class TestCourseDataManager:
         config = CourseDataManagerConfig(
             coursera_path=tmp_path / "nonexistent.json",
             udemy_path=tmp_path / "nonexistent.json",
-            pluralsight_path=tmp_path / "nonexistent.json",
-            khan_academy_path=tmp_path / "nonexistent.json",
         )
         manager = CourseDataManager(config)
 
@@ -199,8 +188,6 @@ class TestCourseDataManager:
         config = CourseDataManagerConfig(
             coursera_path=invalid_path,
             udemy_path=tmp_path / "udemy.json",
-            pluralsight_path=tmp_path / "pluralsight.json",
-            khan_academy_path=tmp_path / "khan.json",
         )
         manager = CourseDataManager(config)
 
@@ -213,8 +200,7 @@ class TestCourseDataManager:
     def test_manager_invalidate_cache_specific_source(self, manager: CourseDataManager):
         """Test invalidating cache for specific source."""
         # Load data
-        df1 = manager.get_data("coursera")
-        cache_time_1 = manager._cache_timestamps.get("coursera")
+        manager.get_data("coursera")
 
         # Invalidate cache
         manager.invalidate_cache("coursera")
@@ -268,8 +254,6 @@ class TestCourseDataManager:
         config = CourseDataManagerConfig(
             coursera_path=coursera_path,
             udemy_path=tmp_path / "udemy.json",
-            pluralsight_path=tmp_path / "pluralsight.json",
-            khan_academy_path=tmp_path / "khan.json",
         )
         manager = CourseDataManager(config)
 
@@ -294,26 +278,21 @@ class TestCourseDataManager:
         # All threads should return same result
         assert all(result == 2 for result in results)
 
-    def test_manager_cache_expiration(self, manager: CourseDataManager, monkeypatch):
+    def test_manager_cache_expiration(self, manager: CourseDataManager):
         """Test cache expiration based on TTL."""
-        # Load data
+        # Load data (populates cache)
         df1 = manager.get_data("coursera")
 
-        # Mock time to simulate cache expiration
-        mock_time = datetime.now(timezone.utc)
-        with patch("src.web.dashboard.managers.course_data_manager.datetime") as mock_dt:
-            mock_dt.now.return_value = mock_time
-            mock_dt.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
+        # Backdate the cache timestamp so the TTL is expired (> 3600s old).
+        # No need to patch datetime: the manager compares now() vs the stored
+        # cache timestamp, so setting it to the past forces a reload.
+        manager._cache_timestamps["coursera"] = datetime.now(timezone.utc) - timedelta(seconds=4000)
 
-            # Set cache time to past
-            old_time = mock_time.timestamp() - 4000  # More than 3600s TTL
-            manager._cache_timestamps["coursera"] = datetime.fromtimestamp(old_time, tz=timezone.utc)
+        # Next call should reload from disk
+        df2 = manager.get_data("coursera")
 
-            # Next call should reload from disk
-            df2 = manager.get_data("coursera")
-
-            # Data should be the same
-            pd.testing.assert_frame_equal(df1, df2)
+        # Data should be the same after reload
+        pd.testing.assert_frame_equal(df1, df2)
 
     def test_manager_parse_date(self, manager: CourseDataManager):
         """Test date parsing in manager."""
@@ -671,8 +650,6 @@ class TestEdgeCases:
         config = CourseDataManagerConfig(
             coursera_path=empty_path,
             udemy_path=tmp_path / "udemy.json",
-            pluralsight_path=tmp_path / "pluralsight.json",
-            khan_academy_path=tmp_path / "khan.json",
         )
         manager = CourseDataManager(config)
 
@@ -689,8 +666,6 @@ class TestEdgeCases:
         config = CourseDataManagerConfig(
             coursera_path=coursera_path,
             udemy_path=tmp_path / "udemy.json",
-            pluralsight_path=tmp_path / "pluralsight.json",
-            khan_academy_path=tmp_path / "khan.json",
             enable_cache=False,  # Disable caching
         )
         manager = CourseDataManager(config)
@@ -698,8 +673,9 @@ class TestEdgeCases:
         # First call
         df1 = manager.get_data("coursera")
 
-        # Should not be cached (cache disabled)
-        assert manager._cache_timestamps.get("coursera") is None
+        # With cache disabled, _should_reload always returns True, so every
+        # call reloads from disk regardless of any recorded timestamp.
+        assert manager._should_reload("coursera") is True
 
         # Second call should reload from disk
         df2 = manager.get_data("coursera")
