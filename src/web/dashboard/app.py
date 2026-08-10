@@ -5,7 +5,6 @@ import dash_bootstrap_components as dbc
 from dash import Input, Output, dcc, html
 from flask import jsonify, redirect, render_template_string
 
-from src.web.dashboard.components.anime_tab import render_anime_tab
 from src.web.dashboard.components.arxiv_research_tab import (
     register_arxiv_callbacks,
     render_arxiv_research_tab,
@@ -173,10 +172,6 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="Courses",
                             tab_id="tab-courses",
-                        ),
-                        dbc.Tab(
-                            label="Anime",
-                            tab_id="tab-anime",
                         ),
                         dbc.Tab(
                             label="4chan Generals",
@@ -526,7 +521,6 @@ _TAB_RENDERERS = {
     "tab-knowledge-garden": render_knowledge_garden_tab,
     "tab-videos": render_videos_tab,
     "tab-courses": render_courses_tab,
-    "tab-anime": render_anime_tab,
     "tab-4chan": render_fourchan_tab,
     "tab-scavenging": render_scavenging_tab,
     "tab-valencia": render_valencia_events_tab,
