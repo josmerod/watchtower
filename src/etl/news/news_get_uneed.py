@@ -11,6 +11,7 @@ from typing import Any
 
 from playwright.sync_api import sync_playwright
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 
@@ -35,9 +36,7 @@ class UneedScraper:
                 logger.info(f"Connecting to remote browser at {browserless_ws}")
                 browser = p.chromium.connect_over_cdp(browserless_ws)
                 # Use a new context
-                context = browser.new_context(
-                    viewport={"width": 1920, "height": 1080}, user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                )
+                context = browser.new_context(viewport={"width": 1920, "height": 1080}, user_agent=SCRAPER_DEFAULT_USER_AGENT)
             except Exception as e:
                 logger.warning(f"Could not connect to remote browser: {e}. Falling back to local launch.")
                 browser = p.chromium.launch(headless=True)

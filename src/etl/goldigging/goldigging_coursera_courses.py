@@ -10,6 +10,7 @@ from typing import Any
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 # Import utilities
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.utils.course_deduplication import deduplicate_courses
 from src.utils.file_system import ensure_directories, get_project_root
 
@@ -84,7 +85,7 @@ class CourseraScraper:
                 )
                 context = await browser.new_context(
                     viewport={"width": 1920, "height": 1080},
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+                    user_agent=SCRAPER_DEFAULT_USER_AGENT,
                 )
                 # Stealth: mask automation to bypass Cloudflare detection
                 await context.add_init_script("() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }")

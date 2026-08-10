@@ -11,6 +11,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import BaseETL
 
 TRENDSHIFT_URL = "https://trendshift.io/"
@@ -35,7 +36,7 @@ class TrendShiftETL(BaseETL):
         self.logger.info(f"Fetching trending repos from {TRENDSHIFT_URL}")
 
         headers = {
-            "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
+            "User-Agent": (SCRAPER_DEFAULT_USER_AGENT),
         }
 
         try:

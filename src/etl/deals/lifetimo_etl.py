@@ -7,6 +7,7 @@ from typing import Any
 import requests
 from bs4 import BeautifulSoup
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import BaseETL
 from src.models.ecommerce import LifetimeDeal
 from src.utils.file_system import ensure_directories
@@ -22,7 +23,7 @@ class LifetimoETL(BaseETL[dict[str, Any], dict[str, Any]]):
         super().__init__(name="lifetimo_deals", description="Scrapes Lifetimo Lifetime Deals for productivity, AI, and automation", enable_checkpointing=True, max_retries=3, retry_delay=5)
         self.base_url = "https://lifetimo.com/dealbox/?_deal_categories=productivity%2Cai%2Cbundles%2Cself-hosted%2Cbackup%2Clearning%2Cautomation%2Cscheduling"
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+            "User-Agent": SCRAPER_DEFAULT_USER_AGENT,
         }
 
     def extract(self) -> list[dict[str, Any]]:

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
+from src.constants.etl import SCRAPER_BRANDED_USER_AGENT
 from src.etl.base import BaseETL
 from src.models.course import AwsSkillBuilderModel
 
@@ -28,7 +29,7 @@ class AwsSkillBuilderETL(BaseETL):
     def extract(self) -> str:
         """Fetch the HTML content from ClassCentral."""
         try:
-            req = urllib.request.Request(self.url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Watchtower/1.0"})
+            req = urllib.request.Request(self.url, headers={"User-Agent": SCRAPER_BRANDED_USER_AGENT})
             with urllib.request.urlopen(req) as response:
                 html = response.read().decode("utf-8")
 

@@ -14,6 +14,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
+
 # Ensure project root is on path
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
@@ -45,7 +47,7 @@ class HumbleBundleScraper:
         )
         context = await browser.new_context(
             viewport={"width": 1920, "height": 1080},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            user_agent=SCRAPER_DEFAULT_USER_AGENT,
         )
         await context.add_init_script("() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); }")
         return browser, context

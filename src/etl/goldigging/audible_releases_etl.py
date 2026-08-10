@@ -7,6 +7,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import BaseETL
 from src.utils.file_system import ensure_directories
 from src.utils.logging import get_logger
@@ -20,7 +21,7 @@ class AudibleReleasesETL(BaseETL[dict[str, Any], dict[str, Any]]):
     def __init__(self):
         super().__init__(name="audible_releases", description="Scrapes Audible New Releases (latest 30 days) into the Scavenging ecosystem", enable_checkpointing=True, max_retries=3, retry_delay=5)
         self.base_url = "https://www.audible.es/newreleases?audible_programs=21870165031&feature_six_browse-bin=18385686031&feature_six_browse-bin=18385668031&feature_twelve_browse-bin=18385638031&feature_twelve_browse-bin=18385639031&publication_date=20260215-20260315&sort=pubdate-desc-rank"
-        self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36", "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"}
+        self.headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT, "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"}
 
     def _get_soup(self, page: int) -> BeautifulSoup:
         """Fetch and parse a specific page."""
