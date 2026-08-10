@@ -1,6 +1,8 @@
-"""AI Benchmarks Tab — BridgeBench.ai rankings + Artificial Analysis leaderboard.
+"""AI Benchmarks Tab — community leaderboard + BridgeBench + Artificial Analysis.
 
 Displays model performance across multiple benchmark sources:
+- Community LLM Leaderboard: LMArena MT-bench/MMLU scores + provider pricing
+  (no-auth, always-available aggregate of public sources)
 - BridgeBench.ai: AI coding benchmarks (Overall, Security, Debugging, etc.)
 - Artificial Analysis: LLM benchmarks (intelligence, coding, math, pricing, speed)
   and Image Model Arena (ELO ratings from text-to-image evaluations)
@@ -10,6 +12,7 @@ import json
 import logging
 import os
 from datetime import datetime
+from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import html
@@ -803,14 +806,212 @@ def _render_artificial_analysis_section() -> html.Div:
 
 
 # ═══════════════════════════════════════════════════════════════
+# Community LLM Leaderboard (LMArena scores + provider pricing)
+# ═══════════════════════════════════════════════════════════════
+
+
+def _load_community_leaderboard() -> dict[str, Any]:
+    """Load the community leaderboard aggregate JSON.
+
+    Returns an empty dict when the file is absent (the ETL has not run yet).
+    """
+    data_path = os.path.join(_get_project_root(), "data", "benchmarks", "llm_leaderboard.json")
+    if not os.path.exists(data_path):
+        return {}
+    try:
+        with open(data_path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _build_scores_table(scores: list[dict[str, Any]], limit: int = 100) -> html.Div:
+    """Build a styled table of LMArena MT-bench / MMLU scores (top ``limit``)."""
+    header = html.Tr(
+        [
+            html.Th("#", className="text-end"),
+            html.Th("Model"),
+            html.Th("MT-bench", className="text-end"),
+            html.Th("MMLU", className="text-end"),
+            html.Th("Organization"),
+            html.Th("License"),
+        ],
+        className="table-light",
+    )
+
+    rows: list[html.Tr] = []
+    medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+    for item in scores[:limit]:
+        rank = item.get("rank")
+        badge = medals.get(rank, str(rank) if rank is not None else "")
+        rows.append(
+            html.Tr(
+                [
+                    html.Td(badge, className="text-end fw-bold"),
+                    html.Td(item.get("model", "—")),
+                    html.Td(_fmt_score(item.get("mt_bench")), className="text-end"),
+                    html.Td(_fmt_score(item.get("mmlu")), className="text-end"),
+                    html.Td(item.get("organization", "—")),
+                    html.Td(item.get("license", "—")),
+                ]
+            )
+        )
+
+    return html.Div(
+        dbc.Table(
+            [header, *rows],
+            bordered=True,
+            hover=True,
+            responsive=True,
+            size="sm",
+            className="align-middle",
+        ),
+        style={"maxHeight": "60vh", "overflowY": "auto"},
+    )
+
+
+def _build_pricing_table(pricing: list[dict[str, Any]], limit: int = 100) -> html.Div:
+    """Build a styled table of provider model pricing (top ``limit`` by input cost)."""
+    sorted_pricing = sorted(
+        pricing,
+        key=lambda m: (m.get("input_cents_per_million_tokens") is None, m.get("input_cents_per_million_tokens") or 0),
+    )
+    header = html.Tr(
+        [
+            html.Th("Model"),
+            html.Th("Provider"),
+            html.Th("In $/M tok", className="text-end"),
+            html.Th("Out $/M tok", className="text-end"),
+            html.Th("Max ctx", className="text-end"),
+            html.Th("Modalities"),
+        ],
+        className="table-light",
+    )
+    rows: list[html.Tr] = []
+    for item in sorted_pricing[:limit]:
+        in_price = item.get("input_cents_per_million_tokens")
+        out_price = item.get("output_cents_per_million_tokens")
+        max_ctx = (item.get("max_input_tokens") or 0) + (item.get("max_output_tokens") or 0)
+        modalities = ", ".join(sorted(set((item.get("input_modalities") or []) + (item.get("output_modalities") or [])))) or "—"
+        rows.append(
+            html.Tr(
+                [
+                    html.Td(item.get("model", "—")),
+                    html.Td(item.get("provider", "—")),
+                    html.Td(f"${in_price / 100:.2f}" if isinstance(in_price, (int, float)) else "—", className="text-end"),
+                    html.Td(f"${out_price / 100:.2f}" if isinstance(out_price, (int, float)) else "—", className="text-end"),
+                    html.Td(f"{max_ctx:,}" if max_ctx else "—", className="text-end"),
+                    html.Td(modalities),
+                ]
+            )
+        )
+
+    return html.Div(
+        dbc.Table(
+            [header, *rows],
+            bordered=True,
+            hover=True,
+            responsive=True,
+            size="sm",
+            className="align-middle",
+        ),
+        style={"maxHeight": "60vh", "overflowY": "auto"},
+    )
+
+
+def _fmt_score(value: Any) -> str:
+    """Format a numeric score for display, or '—' when absent."""
+    if isinstance(value, (int, float)):
+        return f"{value:.3f}" if value <= 1 else f"{value:.2f}"
+    return "—"
+
+
+def _render_community_leaderboard_section() -> html.Div:
+    """Render the community LLM leaderboard (scores + pricing sub-tabs)."""
+    data = _load_community_leaderboard()
+    if not data:
+        return html.Div(
+            [
+                html.H4("🌐 Community LLM Leaderboard", className="mb-1", style={"fontWeight": "700"}),
+                html.Div(
+                    [
+                        html.I(className="fas fa-database me-2", style={"fontSize": "2rem", "color": "#6c757d"}),
+                        html.H5("No benchmark data yet", className="mt-2"),
+                        html.P(
+                            [
+                                "Run the ETL to populate: ",
+                                html.Code("uv run python -m src.etl.benchmarks.llm_leaderboard_etl", className="text-primary"),
+                            ],
+                            className="text-muted mb-0",
+                        ),
+                    ],
+                    className="text-center p-5",
+                ),
+            ],
+            className="p-3",
+        )
+
+    scores = data.get("scores", [])
+    pricing = data.get("pricing", [])
+    fetched_at = data.get("fetched_at", "—")
+    source_file = data.get("scores_source_file", "—")
+
+    summary_cards = dbc.Row(
+        [
+            dbc.Col(dbc.Card(dbc.CardBody([html.H6(f"{len(scores)}", className="mb-0 text-primary"), html.Small("Scored models", className="text-muted")]), className="text-center shadow-sm"), width=4),
+            dbc.Col(dbc.Card(dbc.CardBody([html.H6(f"{len(pricing)}", className="mb-0 text-success"), html.Small("Priced models", className="text-muted")]), className="text-center shadow-sm"), width=4),
+            dbc.Col(
+                dbc.Card(
+                    dbc.CardBody(
+                        [html.H6(source_file.split("_")[-1].replace(".csv", "") if source_file.endswith(".csv") else "—", className="mb-0 text-info"), html.Small("Scores snapshot", className="text-muted")]
+                    ),
+                    className="text-center shadow-sm",
+                ),
+                width=4,
+            ),
+        ],
+        className="mb-3",
+    )
+
+    tabs = [
+        dbc.Tab(label="🏆 MT-bench / MMLU Scores", tab_id="community-scores", children=[summary_cards, _build_scores_table(scores)]),
+        dbc.Tab(label="💵 Provider Pricing", tab_id="community-pricing", children=[_build_pricing_table(pricing)]),
+    ]
+
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.H4("🌐 Community LLM Leaderboard", className="mb-1", style={"fontWeight": "700"}),
+                    html.P(
+                        [
+                            "LMArena scores (MT-bench, MMLU) + provider pricing/capabilities. ",
+                            html.Small(f"Last fetched: {fetched_at[:10]}", className="text-muted"),
+                        ],
+                        className="text-muted mb-3",
+                        style={"fontSize": "0.9rem"},
+                    ),
+                ]
+            ),
+            dbc.Tabs(tabs, id="community-leaderboard-tabs", active_tab="community-scores", className="nav-justified"),
+        ]
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
 # MAIN: Combined Benchmarks Tab
 # ═══════════════════════════════════════════════════════════════
 
 
 def render_benchmarks_tab() -> html.Div:
     """Render the full benchmarks tab with top-level source tabs."""
-    # Top-level tabs: BridgeBench | Artificial Analysis
+    # Top-level tabs: Community Leaderboard | BridgeBench | Artificial Analysis
     top_tabs = [
+        dbc.Tab(
+            label="🌐 Community Leaderboard",
+            tab_id="benchmarks-community",
+            children=[_render_community_leaderboard_section()],
+        ),
         dbc.Tab(
             label="🏆 BridgeBench.ai",
             tab_id="benchmarks-bridgebench",
@@ -828,7 +1029,7 @@ def render_benchmarks_tab() -> html.Div:
             dbc.Tabs(
                 top_tabs,
                 id="benchmarks-source-tabs",
-                active_tab="benchmarks-bridgebench",
+                active_tab="benchmarks-community",
                 className="nav-fill mb-4",
                 style={"fontSize": "1.1rem"},
             ),

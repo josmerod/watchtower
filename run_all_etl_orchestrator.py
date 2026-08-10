@@ -111,6 +111,7 @@ ETL_SCRIPTS = [
     # Benchmarks
     "src/etl/benchmarks/artificial_analysis_etl.py",
     "src/etl/benchmarks/bridgebench_etl.py",
+    "src/etl/benchmarks/llm_leaderboard_etl.py",
     "src/etl/trendshift/trendshift_etl.py",
     "src/etl/rss_feeds/rss_feed_etl.py",
     "src/etl/museums/museum_etl.py",
