@@ -49,8 +49,9 @@ def highlight_matches(text: str, query: str) -> str:
         # Create regex pattern for case-insensitive matching
         pattern = re.compile(re.escape(query), re.IGNORECASE)
 
-        # Use <mark> tags for highlighting
-        highlighted = pattern.sub(f"<mark>{query}</mark>", escaped_text)
+        # Use <mark> tags for highlighting. \g<0> preserves the original
+        # matched text (and its case) rather than substituting the query.
+        highlighted = pattern.sub(r"<mark>\g<0></mark>", escaped_text)
 
         return highlighted
     except Exception as e:

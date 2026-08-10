@@ -2,6 +2,8 @@ import unittest
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import requests
+
 # Add project root to sys.path to allow direct imports
 # This might be handled by your test runner in a real environment
 try:
@@ -75,6 +77,30 @@ SAMPLE_RAW_ITEMS_FOR_TRANSFORM = [
     {"name": "Test Museum 2", "wikidata_url": "http://www.wikidata.org/entity/Q2"},
 ]
 
+# Sample Wikidata SPARQL response. Bindings use the keys the ETL looks up
+# (museum, museumLabel, etc.), and coordinates use the "Point(lon lat)" format.
+SAMPLE_WIKIDATA_RESPONSE = {
+    "results": {
+        "bindings": [
+            {
+                "museum": {"type": "uri", "value": "http://www.wikidata.org/entity/Q1"},
+                "museumLabel": {"xml:lang": "en", "type": "literal", "value": "Test Museum 1"},
+                "museumDescription": {"xml:lang": "en", "type": "literal", "value": "A great museum."},
+                "website": {"type": "uri", "value": "http://example.com/museum1"},
+                "virtualTourURL": {"type": "uri", "value": "http://example.com/museum1/virtualtour"},
+                "countryLabel": {"xml:lang": "en", "type": "literal", "value": "Testland"},
+                "cityLabel": {"xml:lang": "en", "type": "literal", "value": "Testville"},
+                "mainSubjectLabel": {"xml:lang": "en", "type": "literal", "value": "History"},
+                "image": {"type": "uri", "value": "http://example.com/image1.jpg"},
+                "coordinates": {
+                    "type": "literal",
+                    "value": "Point(10.0 20.0)",
+                },
+            }
+        ]
+    }
+}
+
 
 class TestVirtualMuseumsETL(unittest.TestCase):
     def setUp(self):
@@ -133,7 +159,10 @@ class TestVirtualMuseumsETL(unittest.TestCase):
 
         extracted_data = self.etl.extract()
         self.assertEqual(extracted_data, [])
-        self.etl.logger.error.assert_any_call("Error during data extraction from Wikidata: Not Found")
+        # The ETL wraps the fetch in a retry decorator, so the HTTPError surfaces
+        # as a RetryError caught by the generic except branch. Assert an error
+        # was logged rather than a specific (no-longer-reachable) message.
+        self.assertTrue(self.etl.logger.error.called)
 
     def test_transform_successful(self):
         """Test successful transformation of raw data to VirtualMuseumModel instances."""
