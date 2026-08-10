@@ -230,6 +230,26 @@ warn_unused_ignores = true
 show_error_codes = true
 exclude = ["src/miners/udemy-universal"]
 
+# Third-party libraries that ship without type stubs. Listing them here clears
+# the [import-untyped] noise so mypy can surface the real type errors in src/.
+[[tool.mypy.overrides]]
+module = [
+    "dash_bootstrap_components",
+    "feedparser",
+    "plotly",
+    "plotly.express",
+    "plotly.graph_objects",
+    "plotly.subplots",
+    "yt_dlp",
+    "psutil",
+    "cloudscraper",
+    "nltk",
+    "pytesseract",
+    "sklearn.preprocessing",
+    "sklearn.feature_extraction.text",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["Tests"]
 python_files = ["test_*.py", "*_test.py"]
