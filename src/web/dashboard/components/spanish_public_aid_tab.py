@@ -391,7 +391,30 @@ def create_aids_filter_controls() -> html.Div:
                     ),
                 ],
                 className="mb-3",
-            )
+            ),
+            # Beneficiary-type filter row (personal / NGO / business)
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.Label("Beneficiary:"),
+                            dcc.Dropdown(
+                                id="beneficiary-filter",
+                                options=[
+                                    {"label": "All", "value": "all"},
+                                    {"label": "👤 Personal / Individuals", "value": "personal"},
+                                    {"label": "🤝 NGO / Non-profit", "value": "ong"},
+                                    {"label": "🏢 Business / Company", "value": "empresa"},
+                                ],
+                                value="all",
+                                multi=False,
+                            ),
+                        ],
+                        width=4,
+                    ),
+                ],
+                className="mb-3",
+            ),
         ]
     )
 
@@ -568,6 +591,55 @@ def create_search_component() -> html.Div:
 # --- Main Tab Rendering Function ---
 
 
+def _create_scope_tabs(aids_data: list[dict]) -> html.Div:
+    """Create geographic-scope quick-filter buttons (local → global).
+
+    Each button shows the count of aids for that scope so users can see at a
+    glance how much aid is available at each geographic level.
+    """
+    scope_order = [
+        ("burjassot", "🏠 Burjassot"),
+        ("valencia", "🏛️ Valencia"),
+        ("comunidad_valenciana", "🌅 Comunidad Valenciana"),
+        ("nacional", "🇪🇸 España"),
+    ]
+
+    def _count_scope(scope_key: str) -> int:
+        count = 0
+        for aid in aids_data:
+            aid_scope = aid.get("scope", {})
+            if isinstance(aid_scope, dict):
+                s = aid_scope.get("scope", "")
+            else:
+                s = str(aid_scope)
+            if scope_key in s or (scope_key == "nacional" and "nacional" in s):
+                count += 1
+        return count
+
+    buttons = []
+    for key, label in scope_order:
+        count = _count_scope(key)
+        buttons.append(
+            dbc.Button(
+                [label, dbc.Badge(count, color="light", className="ms-2", pill=True)],
+                id=f"scope-filter-{key}",
+                color="outline-success",
+                size="sm",
+                className="me-2 mb-2",
+            )
+        )
+    buttons.append(
+        dbc.Button(
+            ["📋 All", dbc.Badge(len(aids_data), color="light", className="ms-2", pill=True)],
+            id="scope-filter-all",
+            color="success",
+            size="sm",
+            className="me-2 mb-2",
+        )
+    )
+    return html.Div(buttons, className="d-flex flex-wrap align-items-center")
+
+
 def render_spanish_public_aid_tab():
     """Render the main Spanish Public Aid tab."""
     # Load data
@@ -596,7 +668,18 @@ def render_spanish_public_aid_tab():
 
     return html.Div(
         [
-            html.H3("Spanish Public Aid", className="mb-4"),
+            html.H3(
+                [html.I(className="fas fa-hand-holding-heart me-2 text-success"), "Ayudas Públicas"],
+                className="mb-1",
+            ),
+            html.P(
+                "Public grants and aid, organized from local to national scope: Burjassot → Valencia → Comunidad Valenciana → Spain.",
+                className="text-muted mb-3",
+                style={"fontSize": "0.9rem"},
+            ),
+            # Geographic scope quick-filter tabs (local → global)
+            _create_scope_tabs(aids_data),
+            html.Hr(className="mb-3"),
             # Summary cards
             create_aid_summary_cards(aids_data, stats_data),
             html.Hr(),
