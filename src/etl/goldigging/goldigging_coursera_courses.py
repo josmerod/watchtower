@@ -1,3 +1,10 @@
+"""Scrape Class Central's Coursera provider catalog into data/coursera/.
+
+Scrapes classcentral.com/provider/coursera (not coursera.org). The dashboard
+Learning tab prefers data/classcentral/coursera_courses.json and falls back to
+this ETL's output.
+"""
+
 import asyncio
 import json
 import logging

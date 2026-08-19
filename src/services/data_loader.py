@@ -101,12 +101,16 @@ NEWS_SOURCES_CONFIG = {
         "name": "Kagi Spain",
     },
     "microsiervos": {
-        "path": get_data_path("news", "microsiervos_latest.json"),
+        "path": get_data_path("microsiervos", "output", "microsiervos_latest.json"),
         "name": "Microsiervos",
     },
     "spanish_tech": {
         "path": get_data_path("news", "spanish_tech_latest.json"),
         "name": "Spanish Tech (Xataka, Hipertextual, Genbeta)",
+    },
+    "tldr": {
+        "path": get_data_path("tldr", "tldr_news.json"),
+        "name": "tldr.tech (Tech/AI/Data)",
     },
 }
 

@@ -1,4 +1,6 @@
 import json
+import os
+import re
 from datetime import timezone
 from pathlib import Path
 from typing import Any
@@ -17,6 +19,21 @@ logger = get_logger("ScavengingETL")
 # Constants
 CONFIG_FILE = Path(__file__).parent / "scavenging.json"
 BASE_OUTPUT_DIR = "data/scavenging"
+
+# ${VAR} tokens in config URLs are expanded from environment variables at
+# runtime. Credentials must never be committed to this file.
+_ENV_TOKEN = re.compile(r"\$\{([A-Z0-9_]+)\}")
+
+
+def _expand_env_tokens(url: str) -> tuple[str, list[str]]:
+    """Expand ``${VAR}`` tokens in a URL from the environment.
+
+    Returns the expanded URL and the list of environment variable names that
+    were missing (empty when the URL is fully expanded).
+    """
+    missing = [name for name in _ENV_TOKEN.findall(url) if not os.environ.get(name)]
+    expanded = _ENV_TOKEN.sub(lambda m: os.environ.get(m.group(1), m.group(0)), url)
+    return expanded, missing
 
 
 def load_config() -> dict[str, Any]:
@@ -78,6 +95,10 @@ def process_category(category: str, sources: dict[str, dict[str, str]]) -> None:
         url = source_info.get("url")
         if not url:
             logger.warning(f"Missing URL for source {source_name} in category {category}")
+            continue
+        url, missing_env = _expand_env_tokens(url)
+        if missing_env:
+            logger.warning(f"Skipping source {source_name} in category {category}: missing env vars {missing_env} (set them in .env, e.g. IPT_USER_ID / IPT_PASSKEY)")
             continue
         logger.info(f"Fetching {category}/{source_name} -> {url}")
         entries = fetch_rss_entries(url)

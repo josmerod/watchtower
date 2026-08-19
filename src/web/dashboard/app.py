@@ -22,14 +22,25 @@ from src.web.dashboard.components.deals_tab import (
     render_deals_tab,
 )
 from src.web.dashboard.components.fourchan_tab import (
+    register_fourchan_callbacks,
     render_fourchan_tab,
 )
+from src.web.dashboard.components.games_tab import render_games_tab
 from src.web.dashboard.components.knowledge_garden_tab import (
+    register_knowledge_garden_callbacks,
     render_knowledge_garden_tab,
+)
+from src.web.dashboard.components.metrics_tab import (
+    register_metrics_callbacks,
+    render_metrics_tab,
 )
 from src.web.dashboard.components.news_tab import (
     register_news_search_callbacks,
     render_news_tab,
+)
+from src.web.dashboard.components.notifications_tab import (
+    register_notifications_callbacks,
+    render_notifications_tab,
 )
 from src.web.dashboard.components.scavenging_tab import (
     register_scavenging_callbacks,
@@ -40,6 +51,25 @@ from src.web.dashboard.components.shortcuts_tab import (
     register_shortcuts_callbacks,
     render_shortcuts_tab,
 )
+
+
+def _palette_shortcuts_json() -> str:
+    """Serialize shortcuts for the Ctrl/Cmd+K palette (name/url/category)."""
+    import json as _json
+
+    try:
+        data = get_shortcuts_data() or {}
+        records = []
+        for category, entries in (data or {}).items():
+            if not isinstance(entries, list):
+                continue
+            for entry in entries:
+                if isinstance(entry, dict) and entry.get("url"):
+                    records.append({"name": str(entry.get("name", ""))[:80], "url": entry["url"], "category": str(category)[:30]})
+        return _json.dumps(records[:300], ensure_ascii=False)
+    except Exception:
+        return "[]"
+
 
 # Removed notifications tab import as per UI cleanup
 from src.web.dashboard.components.spanish_public_aid_tab import (
@@ -101,6 +131,9 @@ app.index_string = """
 # Main layout with Tabs
 app.layout = dbc.Container(
     [
+        # Hidden shortcuts payload for the Ctrl/Cmd+K command palette
+        # (see assets/js/command_palette.js; refreshed on page load)
+        html.Div(_palette_shortcuts_json(), id="palette-data", style={"display": "none"}),
         # Skip to content link removed
         # Hero header and operational summary
         dbc.Row(
@@ -208,6 +241,18 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="🛰️ Tech Radar",
                             tab_id="tab-tech-radar",
+                        ),
+                        dbc.Tab(
+                            label="🎮 Games",
+                            tab_id="tab-games",
+                        ),
+                        dbc.Tab(
+                            label="🔔 Notifications",
+                            tab_id="tab-notifications",
+                        ),
+                        dbc.Tab(
+                            label="📊 Metrics",
+                            tab_id="tab-metrics",
                         ),
                     ],
                 )
@@ -537,6 +582,9 @@ _TAB_RENDERERS = {
     "tab-deals": render_deals_tab,
     "tab-benchmarks": render_benchmarks_tab,
     "tab-tech-radar": render_tech_radar_tab,
+    "tab-games": render_games_tab,
+    "tab-notifications": render_notifications_tab,
+    "tab-metrics": render_metrics_tab,
 }
 
 
@@ -594,18 +642,22 @@ def update_ops_summary(_n_intervals):
 
 
 # Register callbacks from other modules
+register_fourchan_callbacks(app)
 register_video_callbacks(app)
 register_courses_callbacks(app)
 register_spanish_aid_callbacks(app)
 register_arxiv_callbacks(app)
 
 register_news_search_callbacks(app)
+register_knowledge_garden_callbacks(app)
 register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
 register_shortcuts_callbacks(app)
 register_deals_callbacks(app)
 register_benchmarks_callbacks(app)
 register_tech_radar_callbacks(app)
+register_notifications_callbacks(app)
+register_metrics_callbacks(app)
 
 
 if __name__ == "__main__":

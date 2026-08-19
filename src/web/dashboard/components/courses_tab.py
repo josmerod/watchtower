@@ -1,21 +1,32 @@
 import os
+import time
 from datetime import datetime, timezone
 
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, dcc, html
+from dash import Input, Output, State, dcc, html
 
 # Import shared utilities
+from src.services.data_loader import load_data_from_file
+from src.web.dashboard.components.shared.table import render_items_table
 from src.web.dashboard.utils import file_exists, get_data_path
 
 # --- Constants ---
-COURSERA_DATA_PATH = get_data_path("classcentral", "coursera_courses.json")
+# Two registered ETLs scrape Class Central's Coursera provider page and write
+# different output dirs (data/classcentral and data/coursera). Try both so the
+# tab shows data regardless of which one ran last.
+COURSERA_DATA_PATHS = [
+    get_data_path("classcentral", "coursera_courses.json"),
+    get_data_path("coursera", "coursera_courses.json"),
+]
+COURSERA_DATA_PATH = COURSERA_DATA_PATHS[0]
 UDEMY_DATA_PATH = get_data_path("udemy", "udemy_courses.json")
 MS_APPLIED_SKILLS_DATA_PATH = get_data_path("courses", "ms_applied_skills.json")
 AWS_SKILL_BUILDER_DATA_PATH = get_data_path("courses", "aws_skill_builder.json")
 GCP_SKILLS_BOOST_DATA_PATH = get_data_path("courses", "gcp_skills_boost.json")
 FREECODECAMP_DATA_PATH = get_data_path("news", "freecodecamp_latest.json")
+HF_LEARN_DATA_PATH = get_data_path("courses", "hf_learn.json")
 
 ALL_COURSES_DATA = {
     "coursera": pd.DataFrame(),
@@ -73,10 +84,10 @@ def parse_course_date(date_str, source_format=None):
 # --- Data Loading Functions ---
 def load_coursera_data():
     global ALL_COURSES_DATA, COURSES_DATA_LOADED
-    file_path = COURSERA_DATA_PATH
+    file_path = next((p for p in COURSERA_DATA_PATHS if file_exists(p)), None)
 
-    if not file_exists(file_path):
-        print(f"Warning (Coursera): File not found at {file_path}")
+    if file_path is None:
+        print(f"Warning (Coursera): No data file found at any of: {COURSERA_DATA_PATHS}")
         ALL_COURSES_DATA["coursera"] = pd.DataFrame()
         COURSES_DATA_LOADED["coursera"] = True  # Mark as attempt to prevent reload loop
         return
@@ -309,12 +320,31 @@ def load_gcp_skills_boost_data():
 
 
 def load_all_courses_data():
+    global _COURSES_LOADED_AT
+    # Allow a fresh reload when the previous one is older than the TTL
+    for key in COURSES_DATA_LOADED:
+        COURSES_DATA_LOADED[key] = False
     load_coursera_data()
     load_udemy_data()
     load_ms_applied_skills_data()
     load_aws_skill_builder_data()
     load_gcp_skills_boost_data()
+    _COURSES_LOADED_AT = time.time()
     print("Attempted to load all courses data.")
+
+
+_COURSES_LOADED_AT = 0.0
+COURSES_DATA_TTL_SECONDS = 900  # Re-read the ETL files at most every 15 minutes
+
+
+def ensure_courses_data(force_refresh: bool = False):
+    """Reload course data when the in-memory copy is older than the TTL.
+
+    The tab is lazily re-rendered on every visit (TAB_RENDERERS), so this
+    makes new ETL output visible on the next tab switch without a restart.
+    """
+    if force_refresh or (time.time() - _COURSES_LOADED_AT) > COURSES_DATA_TTL_SECONDS:
+        load_all_courses_data()
 
 
 load_all_courses_data()
@@ -711,28 +741,29 @@ def render_gcp_skills_courses_sub_tab(df):
     )
 
 
-def render_freecodecamp_sub_tab():
-    """Render freeCodeCamp articles as a learning resource list."""
+def render_articles_sub_tab(data_path, source_label):
+    """Render a list of articles/courses as cards (freeCodeCamp, HF Learn…)."""
     import json
 
-    if not file_exists(FREECODECAMP_DATA_PATH):
-        return dbc.Alert("No freeCodeCamp data available. Run the ETL to populate.", color="info", className="mt-3")
+    if not file_exists(data_path):
+        return dbc.Alert(f"No {source_label} data available. Run the ETL to populate.", color="info", className="mt-3")
 
     try:
-        with open(FREECODECAMP_DATA_PATH, encoding="utf-8") as f:
+        with open(data_path, encoding="utf-8") as f:
             articles = json.load(f)
     except (OSError, ValueError):
-        return dbc.Alert("Failed to load freeCodeCamp data.", color="danger", className="mt-3")
+        return dbc.Alert(f"Failed to load {source_label} data.", color="danger", className="mt-3")
 
     if not articles:
-        return html.P("No freeCodeCamp articles found.", className="text-muted mt-3")
+        return html.P(f"No {source_label} items found.", className="text-muted mt-3")
 
     cards = []
     for article in articles[:50]:
         title = article.get("title", "Untitled")
-        link = article.get("link", "#")
-        summary = article.get("summary", "")
-        published = article.get("published", "")
+        link = article.get("link") or article.get("url") or "#"
+        summary = article.get("summary") or article.get("description") or ""
+        published = article.get("published") or article.get("published_at") or ""
+        source_tag = article.get("source", "")
         cards.append(
             dbc.Card(
                 dbc.CardBody(
@@ -741,7 +772,7 @@ def render_freecodecamp_sub_tab():
                             html.A(title, href=link, target="_blank", className="text-decoration-none"),
                             className="mb-1",
                         ),
-                        html.Small(published, className="text-muted") if published else None,
+                        html.Small(f"{source_tag} · {published}" if published else source_tag, className="text-muted") if (source_tag or published) else None,
                         html.P(summary[:200] + "…" if len(summary) > 200 else summary, className="small text-muted mt-1 mb-0") if summary else None,
                     ]
                 ),
@@ -751,14 +782,98 @@ def render_freecodecamp_sub_tab():
 
     return html.Div(
         [
-            html.P(f"{len(articles)} freeCodeCamp articles available.", className="text-muted small mb-3"),
+            html.P(f"{len(articles)} {source_label} items available.", className="text-muted small mb-3"),
             *cards,
         ]
     )
 
 
+def render_freecodecamp_sub_tab():
+    """Render freeCodeCamp articles as a learning resource list."""
+    return render_articles_sub_tab(FREECODECAMP_DATA_PATH, "freeCodeCamp")
+
+
+def render_hf_learn_sub_tab():
+    """Render the Hugging Face Learn course catalog."""
+    return render_articles_sub_tab(HF_LEARN_DATA_PATH, "Hugging Face Learn")
+
+
 # --- Main Layout ---
+def _normalize_course(record: dict, provider: str) -> dict:
+    """Normalize one course record across providers for the unified catalog."""
+    title = record.get("title") or record.get("name") or record.get("course_title") or ""
+    url = record.get("url") or record.get("link") or ""
+    free_flag = record.get("is_free") or record.get("free") or (str(record.get("price", "")).lower() in ("free", "0", "0.0"))
+    date_value = record.get("published") or record.get("date") or record.get("last_updated") or ""
+    return {"title": str(title), "url": url, "provider": provider, "is_free": bool(free_flag), "date": str(date_value)}
+
+
+def render_all_courses_sub_tab() -> html.Div:
+    """Unified multi-provider catalog (spec 05 F1): search + provider badges."""
+    ensure_courses_data()
+    unified: list[dict] = []
+
+    def _collect(key: str, provider: str):
+        data = ALL_COURSES_DATA.get(key)
+        if data is None:
+            return
+        records = data.to_dict("records") if hasattr(data, "to_dict") else (data if isinstance(data, list) else [])
+        unified.extend(_normalize_course(r, provider) for r in records if isinstance(r, dict))
+
+    _collect("coursera", "Coursera")
+    _collect("udemy", "Udemy")
+    _collect("ms_skills", "Microsoft")
+    _collect("aws_skills", "AWS")
+    _collect("gcp_skills", "Google Cloud")
+
+    # HF Learn articles live in their own file
+    try:
+        hf_records = load_data_from_file(HF_LEARN_DATA_PATH) or []
+        if isinstance(hf_records, list):
+            unified.extend(_normalize_course(r, "HF Learn") for r in hf_records if isinstance(r, dict))
+    except Exception:
+        pass
+
+    unified = [c for c in unified if c["title"]]
+    store_data = unified[:2000]
+
+    return html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Input(id="courses-global-search", placeholder=f"🔎 Buscar en {len(unified)} cursos de todos los proveedores…", type="text", debounce=True),
+                        width=True,
+                    ),
+                    dbc.Col(dbc.Checkbox(id="courses-free-only", label="Solo gratis"), width="auto", className="pt-2"),
+                ],
+                className="mb-3",
+            ),
+            html.Div(_unified_courses_table(unified), id="courses-global-results"),
+            dcc.Store(id="courses-global-store", data=store_data),
+        ]
+    )
+
+
+def _unified_courses_table(courses: list[dict]):
+    """Render the unified catalog table (search filter applied upstream)."""
+    if not courses:
+        return dbc.Alert("Sin resultados.", color="info")
+    columns = [
+        {
+            "header": "Title",
+            "cell": lambda c: html.A(c["title"], href=c["url"] or "#", target="_blank", className="text-decoration-none") if c["url"] else c["title"],
+        },
+        {"header": "Provider", "cell": lambda c: dbc.Badge(c["provider"], color="secondary")},
+        {"header": "Free", "cell": lambda c: "✅" if c["is_free"] else "—"},
+        {"header": "Date", "cell": lambda c: c["date"][:10] if c["date"] else ""},
+    ]
+    return render_items_table(courses[:100], columns, empty_message="Sin resultados.", wrap_scroll=False)
+
+
 def render_courses_tab():
+    # Refresh data if the in-memory copy is stale (lazy tab re-render)
+    ensure_courses_data()
     print(f"DEBUG: render_courses_tab called. Loaded status: {COURSES_DATA_LOADED}")
     # Initial check if any data was loaded to provide a general message
     # More specific messages are handled by individual sub-tab render functions
@@ -777,8 +892,13 @@ def render_courses_tab():
             html.H3("Cursos Online", className="mb-3"),
             dbc.Tabs(
                 id="courses-main-tabs",
-                active_tab="tab-coursera",
-                children=[  # Default to Coursera
+                active_tab="tab-all-courses",
+                children=[  # Unified catalog first (spec 05 F1)
+                    dbc.Tab(
+                        label="🔎 Todos",
+                        tab_id="tab-all-courses",
+                        children=render_all_courses_sub_tab(),
+                    ),
                     dbc.Tab(
                         label="Coursera",
                         tab_id="tab-coursera",
@@ -809,6 +929,11 @@ def render_courses_tab():
                         tab_id="tab-freecodecamp",
                         children=render_freecodecamp_sub_tab(),
                     ),
+                    dbc.Tab(
+                        label="🤗 HF Learn",
+                        tab_id="tab-hf-learn",
+                        children=render_hf_learn_sub_tab(),
+                    ),
                 ],
             ),
         ]
@@ -818,6 +943,27 @@ def render_courses_tab():
 # --- Callbacks ---
 def register_courses_callbacks(app):
     print("DEBUG: register_courses_callbacks called")
+
+    # Unified catalog search (spec 05 F1)
+    @app.callback(
+        Output("courses-global-results", "children"),
+        [Input("courses-global-search", "value"), Input("courses-free-only", "checked")],
+        State("courses-global-store", "data"),
+        prevent_initial_call=True,
+    )
+    def search_unified_catalog(search_term, free_only, store_data):
+        """Filter the combined catalog by term and free flag."""
+        try:
+            courses = store_data or []
+            term = (search_term or "").strip().lower()
+            if free_only:
+                courses = [c for c in courses if c.get("is_free")]
+            if term:
+                courses = [c for c in courses if term in c.get("title", "").lower() or term in c.get("provider", "").lower()]
+            header = dbc.Alert(f"🔎 {len(courses)} cursos" + (f" para '{search_term}'" if term else "") + (" · solo gratis" if free_only else ""), color="success", className="mb-2")
+            return html.Div([header, _unified_courses_table(courses)])
+        except Exception as e:
+            return dbc.Alert(f"Error buscando cursos: {e}", color="danger")
 
     @app.callback(
         Output("coursera-table-container", "children"),

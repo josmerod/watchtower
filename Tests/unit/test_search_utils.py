@@ -30,11 +30,11 @@ class TestHighlightMatches:
         assert "<mark>test</mark>" in result
 
     def test_case_insensitive_highlight(self):
-        """Test case-insensitive highlighting"""
+        """Test case-insensitive highlighting (original case preserved)."""
         text = "This is a Test String"
         query = "test"
         result = highlight_matches(text, query)
-        assert "<mark>test</mark>" in result
+        assert "<mark>Test</mark>" in result
 
     def test_no_query(self):
         """Test that empty query returns original text"""
@@ -71,7 +71,7 @@ class TestFilterContent:
     """Test the filter_content function"""
 
     def test_basic_filtering(self):
-        """Test basic content filtering"""
+        """Test basic content filtering (pure filter, no field mutation)."""
         content = [
             {"title": "Test Article", "description": "A test description"},
             {"title": "Other Article", "description": "Something else"},
@@ -79,8 +79,7 @@ class TestFilterContent:
         query = "test"
         result = filter_content(query, content)
         assert len(result) == 1
-        # filter_content adds highlighting by default
-        assert result[0]["title"] == "<mark>test</mark> Article"
+        assert result[0]["title"] == "Test Article"
 
     def test_case_insensitive_filtering(self):
         """Test case-insensitive content filtering"""
