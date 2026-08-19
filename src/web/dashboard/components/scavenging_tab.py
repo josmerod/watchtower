@@ -16,15 +16,21 @@ from src.services.data_loader import (
     get_sortable_date,
     load_data_from_file,
 )
+from src.web.dashboard.components.shared.table import (
+    render_items_table,
+    text_cell,
+    title_cell,
+)
 from src.web.dashboard.search_utils import (
     create_search_input,
     filter_content,
 )
+from src.web.dashboard.utils import get_data_path
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-DATA_DIR = Path("data/scavenging")
+DATA_DIR = Path(get_data_path("scavenging"))
 
 # --- Data Loading ---
 
@@ -54,6 +60,11 @@ def discover_categories() -> dict[str, Path]:
         if humble_file.exists():
             categories["humble_books"] = humble_file
 
+        # Add Epic Games free promotions if they exist
+        epic_file = DATA_DIR / "epic_free_games.json"
+        if epic_file.exists():
+            categories["epic_free"] = epic_file
+
         logger.info(f"Discovered {len(categories)} scavenging categories: {list(categories.keys())}")
         return categories
     except Exception as e:
@@ -74,77 +85,45 @@ def get_scavenging_data(category_key):
 MAX_ITEMS_PER_TAB = 100
 
 
-def create_scavenging_table(items):
-    """Create a premium dbc.Table from scavenging items."""
-    if not items:
-        return dbc.Alert("No entries found matching your criteria.", color="info", className="mt-3")
+def create_scavenging_table(items, search_term: str = ""):
+    """Create the scavenging table via the shared builder (spec 15 M1).
 
-    table_header = [
-        html.Thead(
-            html.Tr(
-                [
-                    html.Th("Title / Resource"),
-                    html.Th("Details"),
-                    html.Th("Price/Type"),
-                    html.Th("Date Added"),
-                ]
-            )
-        )
+    Title/summary cells render with real highlight marks when searching
+    (see search_utils.highlight_segments).
+    """
+    columns = [
+        {
+            "header": "Title / Resource",
+            "cell": lambda item: title_cell(
+                item,
+                search_term,
+                title_fields=("title",),
+                url_fields=("link", "url"),
+                subtitle=f"Source: {item['source']}" if item.get("source") else None,
+            ),
+        },
+        {
+            "header": "Details",
+            "cell": lambda item: text_cell(
+                item.get("summary") if isinstance(item.get("summary"), str) else str(item.get("summary", "")), search_term, className="small", style={"maxWidth": "400px", "whiteSpace": "normal"}
+            ),
+        },
+        {"header": "Price/Type", "cell": _scavenging_price_badges},
+        {"header": "Date Added", "cell": lambda item: str(format_article_date_shared(item)), "td_kwargs": {"className": "text-nowrap font-monospace small"}},
     ]
+    return render_items_table(items, columns, empty_message="No entries found matching your criteria.", wrap_scroll=False)
 
-    table_body_rows = []
-    for item in items:
-        title = item.get("title", "Unknown Title")
-        url = item.get("link") or item.get("url")
-        summary = item.get("summary", "")
-        # Handle cases where summary is a dict or list (though usually it's a string here)
-        if not isinstance(summary, str):
-            summary = str(summary)
 
-        source = item.get("source", "")
-        price = item.get("price", "N/A")
-        deal_type = item.get("deal_type") or item.get("category", "General")
-        date_display = format_article_date_shared(item)
-
-        # Title cell with link
-        title_cell = html.Div(
-            [
-                html.A(str(title), href=url, target="_blank", className="fw-bold text-decoration-none text-info") if url else html.Span(str(title), className="fw-bold"),
-                html.Div(f"Source: {source}", className="small text-muted") if source else None,
-            ]
-        )
-
-        # Details cell
-        details_cell = html.Div(str(summary), className="small", style={"maxWidth": "400px", "whiteSpace": "normal"})
-
-        # Price/Type cell
-        price_badges = []
-        if price and price != "N/A":
-            price_badges.append(dbc.Badge(f"💰 {price}", color="success", className="me-1"))
-        if deal_type:
-            price_badges.append(dbc.Badge(deal_type.upper(), color="primary", className="me-1"))
-
-        table_body_rows.append(
-            html.Tr(
-                [
-                    html.Td(title_cell),
-                    html.Td(details_cell),
-                    html.Td(html.Div(price_badges)),
-                    html.Td(str(date_display), className="text-nowrap font-monospace small"),
-                ]
-            )
-        )
-
-    return dbc.Table(
-        table_header + [html.Tbody(table_body_rows)],
-        bordered=True,
-        hover=True,
-        responsive=True,
-        striped=True,
-        size="sm",
-        color="dark",
-        className="mb-0",
-    )
+def _scavenging_price_badges(item):
+    """Price + deal-type badges for the scavenging table."""
+    badges = []
+    price = item.get("price", "N/A")
+    if price and price != "N/A":
+        badges.append(dbc.Badge(f"💰 {price}", color="success", className="me-1"))
+    deal_type = item.get("deal_type") or item.get("category", "General")
+    if deal_type:
+        badges.append(dbc.Badge(str(deal_type).upper(), color="primary", className="me-1"))
+    return html.Div(badges)
 
 
 def render_scavenging_tab() -> html.Div:
@@ -180,7 +159,9 @@ def render_scavenging_tab() -> html.Div:
                     ],
                     className="mb-3 mt-3",
                 ),
-                dcc.Store(id=f"{tab_search_id}-data", data=initial_data[:MAX_ITEMS_PER_TAB]),
+                # Full dataset in the Store so search reaches history beyond
+                # the display cap; the cap is applied at render time only.
+                dcc.Store(id=f"{tab_search_id}-data", data=initial_data),
                 html.Div(create_scavenging_table(initial_data[:MAX_ITEMS_PER_TAB]), id=f"{tab_search_id}-results", style={"maxHeight": "800px", "overflowY": "auto"}),
             ],
             className="p-3",
@@ -211,17 +192,22 @@ def register_scavenging_callbacks(app):
             [Input(search_id, "value")],
             State(f"{search_id}-data", "data"),
         )
-        def update_scavenging_search(search_term, cached_data):
+        def update_scavenging_search(search_term, cached_data, current_search_id=search_id):
             if not cached_data:
                 return dbc.Alert("No data loaded.", color="info")
 
             if search_term:
                 searchable_fields = ["title", "summary", "source", "seller", "deal_type", "category"]
                 filtered_items = filter_content(search_term, cached_data, searchable_fields)
-            else:
-                filtered_items = cached_data[:MAX_ITEMS_PER_TAB]
+                table = create_scavenging_table(filtered_items, search_term=search_term)
+                return html.Div(
+                    [
+                        dbc.Alert(f"⛏️ Found {len(filtered_items)} items matching '{search_term}'", color="success", className="mb-3"),
+                        table,
+                    ]
+                )
 
-            return create_scavenging_table(filtered_items)
+            return create_scavenging_table(cached_data[:MAX_ITEMS_PER_TAB])
 
         @app.callback(
             Output(search_id, "value", allow_duplicate=True),

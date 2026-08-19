@@ -1,3 +1,5 @@
+import json
+
 import feedparser
 
 from src.etl.base import SimpleETL
@@ -12,6 +14,17 @@ SOURCE_NAME = "microsiervos"
 class MicrosiervosETL(SimpleETL):
     def __init__(self):
         super().__init__(name=SOURCE_NAME, batch_size=50)
+
+    def load(self, data: list[dict]) -> None:
+        """Persist the timestamped snapshot (SimpleETL) plus a stable latest file.
+
+        The dashboard news tab reads ``microsiervos_latest.json``, which the
+        base SimpleETL.load() does not produce.
+        """
+        super().load(data)
+        latest = self.output_dir / f"{self.name}_latest.json"
+        latest.write_text(json.dumps(data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+        logger.info(f"Latest data saved to {latest}")
 
     def parse_date(self, date_str: str) -> str:
         """Parses date string to ISO format."""

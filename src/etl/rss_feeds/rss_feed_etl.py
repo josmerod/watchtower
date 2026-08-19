@@ -18,6 +18,18 @@ DEFAULT_FEEDS: list[dict[str, str]] = [
         "url": "https://tom-doerr.github.io/repo_posts/feed.xml",
         "name": "Tom Doerr Repo Posts",
     },
+    {
+        "url": "https://research.google/blog/rss/",
+        "name": "Google Research Blog",
+    },
+    {
+        "url": "https://netflixtechblog.com/feed",
+        "name": "Netflix TechBlog",
+    },
+    {
+        "url": "https://engineering.fb.com/feed/",
+        "name": "Meta Engineering",
+    },
 ]
 
 

@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from pathlib import Path
 
 import dash_bootstrap_components as dbc
@@ -30,6 +31,11 @@ def get_trending_items_map() -> dict[str, dict]:
     return {t["item_id"]: t for t in trends if t.get("is_trending")}
 
 
+def get_trend_terms(trending_map: dict[str, dict]) -> set[str]:
+    """Return the set of trending terms present in the map's records."""
+    return {t.get("term") for t in trending_map.values() if t.get("term")}
+
+
 def render_trend_badge(trend_data: dict | None) -> html.Span | None:
     """Renders a trend badge if data is present."""
     if not trend_data:
@@ -47,13 +53,40 @@ def render_trend_badge(trend_data: dict | None) -> html.Span | None:
     )
 
 
-def is_item_trending(item: dict, trending_map: dict[str, dict]) -> bool:
-    """Checks if an item is trending."""
-    # Check by specific ID if available
+def match_item_trend(item: dict, trending_map: dict[str, dict]) -> dict | None:
+    """Return the trend record matching an item, or None.
+
+    Match order: item id, item url, category/source, then trending term in
+    the title (word boundary). The term fallback covers sources whose items
+    carry no stable id (most RSS-shaped news files).
+    """
+    if not trending_map:
+        return None
+
     item_id = item.get("id")
     if item_id and item_id in trending_map:
-        return True
+        return trending_map[item_id]
 
-    # Check by category/source
+    item_url = item.get("url") or item.get("link")
+    if item_url:
+        for record in trending_map.values():
+            if record.get("url") and record["url"] == item_url:
+                return record
+
     source = item.get("source")
-    return bool(source and f"category:{source}" in trending_map)
+    if source and f"category:{source}" in trending_map:
+        return trending_map[f"category:{source}"]
+
+    title = str(item.get("title") or item.get("name") or "")
+    if title:
+        title_lower = title.lower()
+        for record in trending_map.values():
+            term = record.get("term")
+            if term and re.search(rf"\b{re.escape(term)}\b", title_lower):
+                return record
+    return None
+
+
+def is_item_trending(item: dict, trending_map: dict[str, dict]) -> bool:
+    """Checks if an item is trending."""
+    return match_item_trend(item, trending_map) is not None

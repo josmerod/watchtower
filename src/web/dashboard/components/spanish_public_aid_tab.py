@@ -1,5 +1,6 @@
 """Spanish Public Aid Dashboard Component."""
 
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,8 @@ from src.repositories import BaseRepository
 
 # Import shared utilities
 from src.web.dashboard.utils import get_data_path, parse_date_universal
+
+logger = logging.getLogger(__name__)
 
 # --- Data Loading ---
 
@@ -83,24 +86,32 @@ spanish_aid_repo = SpanishAidRepository()
 spanish_aid_stats_repo = SpanishAidStatsRepository()
 
 
-def load_spanish_aid_data():
+def load_spanish_aid_data(force_refresh: bool = False):
     """Load Spanish public aid data using repository pattern (NEW)."""
     aids_data = []
     stats_data = {}
 
     try:
-        aids_data = spanish_aid_repo.get()
+        aids_data = spanish_aid_repo.get(force_refresh=force_refresh)
         if not aids_data:
             aids_data = []
 
-        stats_data = spanish_aid_stats_repo.get()
+        stats_data = spanish_aid_stats_repo.get(force_refresh=force_refresh)
         if not stats_data:
             stats_data = {}
 
     except Exception as e:
-        print(f"Warning: Could not load Spanish aid data: {e}")
+        logger.warning(f"Could not load Spanish aid data: {e}")
 
     return aids_data, stats_data
+
+
+def get_data_last_updated() -> str:
+    """Return the mtime of the aids data file as an honest freshness signal."""
+    path = Path(get_data_path("spanish_public_aid", "output", "spanish_public_aid_latest.json"))
+    if path.exists():
+        return datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+    return "no data file"
 
 
 def parse_aid_date(date_str: str) -> datetime | None:
@@ -133,6 +144,11 @@ def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Di
     # Get most common category
     categories = [aid.get("category", "otros") for aid in aids_data]
     most_common_category = max(set(categories), key=categories.count) if categories else "N/A"
+
+    # Per-source stats from the ETL (spanish_public_aid_stats_latest.json):
+    # how many sources contributed and how fresh each run was.
+    source_stats = stats_data.get("sources", {}) if isinstance(stats_data, dict) else {}
+    contributing_sources = len([s for s, v in source_stats.items() if isinstance(v, dict) and v.get("count")])
 
     cards = [
         dbc.Card(
@@ -182,9 +198,20 @@ def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Di
             ],
             className="text-center mb-3",
         ),
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    [
+                        html.H4(f"{contributing_sources or '—'}", className="card-title text-secondary"),
+                        html.P("ETL Sources", className="card-text"),
+                    ]
+                )
+            ],
+            className="text-center mb-3",
+        ),
     ]
 
-    return dbc.Row([dbc.Col(card, width=3) for card in cards])
+    return dbc.Row([dbc.Col(card, width=3) for card in cards], className="g-2")
 
 
 def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
@@ -400,11 +427,15 @@ def create_aids_filter_controls() -> html.Div:
                             html.Label("Beneficiary:"),
                             dcc.Dropdown(
                                 id="beneficiary-filter",
+                                # Values match SpanishPublicAidModel.beneficiary_type enum
                                 options=[
                                     {"label": "All", "value": "all"},
-                                    {"label": "👤 Personal / Individuals", "value": "personal"},
-                                    {"label": "🤝 NGO / Non-profit", "value": "ong"},
+                                    {"label": "👤 Individuals (persona física)", "value": "persona_fisica"},
                                     {"label": "🏢 Business / Company", "value": "empresa"},
+                                    {"label": "🤝 NGO / Non-profit", "value": "ong"},
+                                    {"label": "🏛️ Public body", "value": "entidad_publica"},
+                                    {"label": "🎓 Educational institution", "value": "institucion_educativa"},
+                                    {"label": "🔀 Mixed", "value": "mixto"},
                                 ],
                                 value="all",
                                 multi=False,
@@ -706,7 +737,7 @@ def render_spanish_public_aid_tab():
             html.Hr(),
             # Aids table
             html.Div(id="filtered-aids-table", children=[create_aids_table(aids_data)]),
-            # Last updated info
+            # Last updated info (data file mtime — reflects actual data freshness)
             html.Div(
                 [
                     html.Hr(),
@@ -715,16 +746,9 @@ def render_spanish_public_aid_tab():
                             html.Small(
                                 [
                                     "Last updated: ",
-                                    html.Span(
-                                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                        id="last-updated-time",
-                                    ),
+                                    html.Span(get_data_last_updated(), id="last-updated-time"),
                                     " | ",
-                                    html.A(
-                                        "View source code",
-                                        href="https://github.com/your-repo/watchtower/tree/main/src/etl/spanish_public_aid",
-                                        target="_blank",
-                                    ),
+                                    "Data: data/spanish_public_aid/output/spanish_public_aid_latest.json (ETL runs via run_all_etl.sh)",
                                 ],
                                 className="text-muted",
                             )
@@ -753,6 +777,13 @@ def register_spanish_aid_callbacks(app):
             Input("search-input", "value"),
             Input("search-button", "n_clicks"),
             Input("refresh-data-button", "n_clicks"),
+            Input("beneficiary-filter", "value"),
+            # Geographic quick-filter buttons
+            Input("scope-filter-burjassot", "n_clicks"),
+            Input("scope-filter-valencia", "n_clicks"),
+            Input("scope-filter-comunidad_valenciana", "n_clicks"),
+            Input("scope-filter-nacional", "n_clicks"),
+            Input("scope-filter-all", "n_clicks"),
         ],
     )
     def update_aids_table(
@@ -763,10 +794,30 @@ def register_spanish_aid_callbacks(app):
         search_text,
         search_clicks,
         refresh_clicks,
+        beneficiary_filter,
+        burjassot_clicks,
+        valencia_clicks,
+        cv_clicks,
+        nacional_clicks,
+        all_clicks,
     ):
         """Update the aids table based on filters."""
-        # Load fresh data
-        aids_data, _ = load_spanish_aid_data()
+        # Determine what triggered this callback
+        ctx = dash.callback_context
+        quick_scope = None
+        force_refresh = False
+        if ctx.triggered:
+            trigger_prop = ctx.triggered[0]["prop_id"]
+            trigger_id = trigger_prop.split(".")[0]
+            if trigger_id.startswith("scope-filter-") and not trigger_id.startswith("scope-filter-all"):
+                quick_scope = trigger_id.removeprefix("scope-filter-")
+            elif trigger_id == "scope-filter-all":
+                quick_scope = "all"
+            elif trigger_id == "refresh-data-button":
+                force_refresh = True
+
+        # Load fresh data (bypass the repository cache when refreshing)
+        aids_data, _ = load_spanish_aid_data(force_refresh=force_refresh)
 
         if not aids_data:
             return dbc.Alert("No data available.", color="info")
@@ -782,17 +833,30 @@ def register_spanish_aid_callbacks(app):
         if status_filter and status_filter != "all":
             filtered_data = [aid for aid in filtered_data if aid.get("status") == status_filter]
 
-        # Scope filter
-        if scope_filter and scope_filter != "all":
+        # Geographic quick-filter button (finer-grained than the dropdown)
+        if quick_scope and quick_scope != "all":
+            quick_filtered = []
+            for aid in filtered_data:
+                aid_scope = aid.get("scope", {})
+                s = aid_scope.get("scope", "") if isinstance(aid_scope, dict) else str(aid_scope)
+                if quick_scope in s:
+                    quick_filtered.append(aid)
+            filtered_data = quick_filtered
+        elif scope_filter and scope_filter != "all":
+            # Scope dropdown
             filtered_data = [aid for aid in filtered_data if aid.get("scope", {}).get("scope") == scope_filter]
 
-        # Urgent filter
+        # Beneficiary filter (values match SpanishPublicAidModel.beneficiary_type)
+        if beneficiary_filter and beneficiary_filter != "all":
+            filtered_data = [aid for aid in filtered_data if aid.get("beneficiary_type") == beneficiary_filter]
+
+        # Urgent filter: closing within the next 7 days (not already closed)
         if "urgent" in (urgent_filter or []):
             urgent_aids = []
             for aid in filtered_data:
                 if aid.get("closing_date"):
                     closing_date = parse_aid_date(aid["closing_date"])
-                    if closing_date and (closing_date - datetime.now()).days <= 7:
+                    if closing_date and 0 <= (closing_date - datetime.now()).days <= 7:
                         urgent_aids.append(aid)
             filtered_data = urgent_aids
 
@@ -814,16 +878,18 @@ def register_spanish_aid_callbacks(app):
             Output("scope-filter", "value"),
             Output("urgent-filter", "value"),
             Output("search-input", "value"),
+            Output("beneficiary-filter", "value"),
         ],
         Input("clear-filters-button", "n_clicks"),
     )
     def clear_filters(n_clicks):
         """Clear all filters."""
         if n_clicks and n_clicks > 0:
-            return "all", "all", "all", [], ""
+            return "all", "all", "all", [], "", "all"
 
         # Return current values (no change)
         return (
+            dash.no_update,
             dash.no_update,
             dash.no_update,
             dash.no_update,

@@ -63,6 +63,7 @@ def filter_content(
     search_query: str,
     content: list[dict[str, Any]],
     searchable_fields: list[str] = None,
+    highlight: bool = False,
 ) -> list[dict[str, Any]]:
     """Filter content based on search query using case-insensitive substring matching.
 
@@ -70,9 +71,12 @@ def filter_content(
         search_query: Search query string
         content: List of content items (dictionaries)
         searchable_fields: List of fields to search in (default: common fields)
+        highlight: When True, mutate copies with ``<mark>`` HTML (legacy
+            behaviour — Dash escapes it, so prefer leaving False and rendering
+            with :func:`highlight_segments` instead)
 
     Returns:
-        Filtered content with highlighted matches
+        Filtered content (items are copies when highlight=True)
     """
     if not search_query or not content:
         return content
@@ -105,6 +109,10 @@ def filter_content(
 
         # Check if query matches any part of searchable text
         if query_lower in searchable_text:
+            if not highlight:
+                filtered_content.append(item)
+                continue
+
             # Create a copy with highlighted fields
             item_copy = item.copy()
 
@@ -116,6 +124,43 @@ def filter_content(
             filtered_content.append(item_copy)
 
     return filtered_content
+
+
+def highlight_segments(text: Any, query: str) -> list:
+    """Split text into Dash children with ``html.Mark`` around query matches.
+
+    Unlike :func:`highlight_matches` (which returns an HTML string that Dash
+    escapes), this returns a component list that renders real highlights.
+
+    Args:
+        text: The text to render (any stray ``<mark>`` tags are stripped first)
+        query: The search term to highlight (case-insensitive)
+
+    Returns:
+        List of strings and html.Mark components
+    """
+    from dash import html
+
+    if text is None:
+        return []
+    clean = str(text).replace("<mark>", "").replace("</mark>", "")
+    if not query or not clean:
+        return [clean] if clean else []
+
+    try:
+        pattern = re.compile(re.escape(query), re.IGNORECASE)
+        segments: list = []
+        last_end = 0
+        for match in pattern.finditer(clean):
+            if match.start() > last_end:
+                segments.append(clean[last_end : match.start()])
+            segments.append(html.Mark(match.group(0)))
+            last_end = match.end()
+        if last_end < len(clean):
+            segments.append(clean[last_end:])
+        return segments if segments else [clean]
+    except re.error:
+        return [clean]
 
 
 def create_search_input(input_id: str, placeholder: str = "Search...", clear_button: bool = True):

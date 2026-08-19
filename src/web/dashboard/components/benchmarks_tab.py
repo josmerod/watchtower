@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import Any
 
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import Input, Output, dcc, html
 
 logger = logging.getLogger(__name__)
 
@@ -665,16 +665,41 @@ def _render_aa_llm_section() -> html.Div:
             ]
         )
 
-    # Sort/filter controls (static — Dash callbacks could make these dynamic)
-    filter_info = html.Div(
+    # Sort/filter controls (wired to the callback in register_benchmarks_callbacks)
+    filter_controls = dbc.Row(
         [
-            html.Small(
-                [
-                    "💡 Showing top 100. Data is sorted by Intelligence Index by default. Use the API endpoint for custom filtering: ",
-                    html.Code("/api/v1/benchmarks/artificial-analysis?model_type=llm", style={"fontSize": "0.75rem"}),
-                ],
-                className="text-muted",
-                style={"fontSize": "0.8rem"},
+            dbc.Col(
+                dcc.Dropdown(
+                    id="aa-llm-filter-open",
+                    options=[
+                        {"label": "All models", "value": "all"},
+                        {"label": "Open weights", "value": "open"},
+                        {"label": "Proprietary", "value": "proprietary"},
+                    ],
+                    value="all",
+                    clearable=False,
+                ),
+                width=6,
+                md=3,
+            ),
+            dbc.Col(
+                dcc.Dropdown(
+                    id="aa-llm-sort-by",
+                    options=[
+                        {"label": "Intelligence", "value": "intelligence_index"},
+                        {"label": "Coding", "value": "coding_index"},
+                        {"label": "Math", "value": "math_index"},
+                        {"label": "MMLU-Pro", "value": "mmlu_pro"},
+                        {"label": "Price In ($/1M)", "value": "price_input_per_1m"},
+                        {"label": "Price Out ($/1M)", "value": "price_output_per_1m"},
+                        {"label": "Speed (tokens/s)", "value": "median_output_tps"},
+                        {"label": "Name", "value": "name"},
+                    ],
+                    value="intelligence_index",
+                    clearable=False,
+                ),
+                width=6,
+                md=3,
             ),
         ],
         className="mb-2",
@@ -691,8 +716,8 @@ def _render_aa_llm_section() -> html.Div:
                 className="mb-3",
             ),
             dbc.Row(summary_cards),
-            filter_info,
-            _build_aa_llm_table(models),
+            filter_controls,
+            html.Div(_build_aa_llm_table(models), id="aa-llm-table-container"),
         ]
     )
 
@@ -919,13 +944,6 @@ def _build_pricing_table(pricing: list[dict[str, Any]], limit: int = 100) -> htm
     )
 
 
-def _fmt_score(value: Any) -> str:
-    """Format a numeric score for display, or '—' when absent."""
-    if isinstance(value, (int, float)):
-        return f"{value:.3f}" if value <= 1 else f"{value:.2f}"
-    return "—"
-
-
 def _render_community_leaderboard_section() -> html.Div:
     """Render the community LLM leaderboard (scores + pricing sub-tabs)."""
     data = _load_community_leaderboard()
@@ -1038,7 +1056,20 @@ def render_benchmarks_tab() -> html.Div:
 
 
 def register_benchmarks_callbacks(app):
-    """Register callbacks for the benchmarks tab (if needed)."""
-    # Benchmarks tab is mostly static (data loaded from JSON files).
-    # No dynamic callbacks needed unless we add live-refresh.
-    pass
+    """Register callbacks for the benchmarks tab."""
+
+    @app.callback(
+        Output("aa-llm-table-container", "children"),
+        Input("aa-llm-filter-open", "value"),
+        Input("aa-llm-sort-by", "value"),
+        prevent_initial_call=True,
+    )
+    def update_aa_llm_table(filter_open, sort_by):
+        """Re-render the AA LLM leaderboard with the chosen filter and sort."""
+        try:
+            models, _ = _load_aa_data("artificial_analysis_llms.json")
+            if not models:
+                return dbc.Alert("No Artificial Analysis data loaded.", color="info")
+            return _build_aa_llm_table(models, filter_open=filter_open or "all", sort_by=sort_by or "intelligence_index")
+        except Exception as e:
+            return dbc.Alert(f"Error updating leaderboard: {e}", color="danger")

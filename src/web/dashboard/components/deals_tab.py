@@ -1,13 +1,10 @@
-import json
 import logging
-import sys
-from pathlib import Path
+import time
+from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, dcc, html
-
-sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from src.services.data_loader import (
     DEALS_SOURCES_CONFIG,
@@ -16,6 +13,11 @@ from src.services.data_loader import (
 )
 from src.services.data_loader import (
     format_article_date as format_article_date_shared,
+)
+from src.web.dashboard.components.shared.table import (
+    badges_cell,
+    render_items_table,
+    title_cell,
 )
 from src.web.dashboard.search_utils import (
     create_search_input,
@@ -27,11 +29,17 @@ logger = logging.getLogger(__name__)
 
 # --- Data Loading ---
 
+MAX_DEALS_PER_SOURCE = 50
+
+# Single source of truth for subtabs — search ids are derived from it so a
+# new source can never end up with a dead search box.
+DEALS_TAB_DEFINITIONS = [
+    {"label": "Lifetimo Lifetime Deals", "keys": "lifetimo", "id": "lifetimo"},
+]
+
 
 def get_all_deals_data():
-    """Load fresh deals data from all configured sources."""
-    import time
-
+    """Load fresh deals data from all configured sources (60s TTL cache)."""
     global _DEALS_CACHE
     now = time.time()
     try:
@@ -50,17 +58,40 @@ def format_deal_date(deal):
     return format_article_date_shared(deal)
 
 
-# --- Layout Generation ---
+def _deals_search_id(tab_def: dict) -> str:
+    keys = tab_def["keys"]
+    if isinstance(keys, str):
+        return f"v2-deals-search-{keys}"
+    return f"v2-deals-search-{'-'.join(keys)}"
 
-MAX_DEALS_PER_SOURCE = 50
+
+def create_deals_table(deals: list[dict[str, Any]], search_term: str = "") -> Any:
+    """Render the deals table via the shared builder (real search highlights)."""
+    columns = [
+        {
+            "header": "Deal Title",
+            "cell": lambda deal: title_cell(
+                deal,
+                search_term,
+                title_fields=("title",),
+                url_fields=("url", "link"),
+                subtitle=deal.get("description") or None,
+            ),
+        },
+        {"header": "Categories", "cell": lambda deal: badges_cell(deal.get("categories", []), fallback="General", color="info")},
+        {"header": "Date Added", "cell": lambda deal: str(format_deal_date(deal))},
+    ]
+    return render_items_table(deals, columns, empty_message="No deals found matching your criteria.", wrap_scroll=False)
 
 
 def create_deals_source_tab_content(source_keys, combined_name=None):
     """Creates the content for a deals tab as a table with search functionality."""
     if isinstance(source_keys, str):
         source_keys = [source_keys]
-        source_display_name = DEALS_SOURCES_CONFIG[source_keys[0]]["name"]
-        tab_search_id = f"v2-deals-search-{'-'.join(source_keys)}"
+    # Assign display name for BOTH single and combined sources (the list
+    # branch used to raise NameError on source_display_name).
+    source_display_name = combined_name or DEALS_SOURCES_CONFIG[source_keys[0]]["name"]
+    tab_search_id = f"v2-deals-search-{'-'.join(source_keys)}"
 
     all_deals_data = get_all_deals_data()
     all_deals_for_tab = []
@@ -73,54 +104,15 @@ def create_deals_source_tab_content(source_keys, combined_name=None):
 
     all_deals_for_tab.sort(key=get_sortable_date, reverse=True)
 
+    # Full dataset in the Store (search reaches beyond the display cap);
+    # the cap is applied at render time only.
     deals_data_store = dcc.Store(
-        data=json.dumps(all_deals_for_tab[:MAX_DEALS_PER_SOURCE]),
+        data=all_deals_for_tab,
         id=f"{tab_search_id}-data",
     )
 
     if not all_deals_for_tab:
         return dbc.Alert(f"No deals available for {source_display_name}.", color="info")
-
-    table_header = [
-        html.Thead(
-            html.Tr(
-                [
-                    html.Th("Deal Title"),
-                    html.Th("Categories"),
-                    html.Th("Date Added"),
-                ]
-            )
-        )
-    ]
-
-    table_body_rows = []
-    for deal in all_deals_for_tab[:MAX_DEALS_PER_SOURCE]:
-        title = deal.get("title", "No Title")
-        url = deal.get("url") or deal.get("link")
-        categories = deal.get("categories", [])
-        categories_display = ", ".join(categories) if categories else "General"
-        date_display = format_deal_date(deal)
-
-        table_body_rows.append(
-            html.Tr(
-                [
-                    html.Td(html.A(str(title), href=url, target="_blank") if url else str(title)),
-                    html.Td(dbc.Badge(str(categories_display), color="info", className="me-1")),
-                    html.Td(str(date_display)),
-                ]
-            )
-        )
-
-    table = dbc.Table(
-        table_header + [html.Tbody(table_body_rows)],
-        bordered=True,
-        hover=True,
-        responsive=True,
-        striped=True,
-        size="sm",
-        color="dark",
-        className="mb-0",
-    )
 
     return html.Div(
         [
@@ -139,7 +131,7 @@ def create_deals_source_tab_content(source_keys, combined_name=None):
             ),
             deals_data_store,
             html.Div(
-                table,
+                create_deals_table(all_deals_for_tab[:MAX_DEALS_PER_SOURCE]),
                 id=f"{tab_search_id}-results",
                 style={"maxHeight": "800px", "overflowY": "auto"},
             ),
@@ -149,8 +141,7 @@ def create_deals_source_tab_content(source_keys, combined_name=None):
 
 def register_deals_callbacks(app):
     """Register search callbacks for deals tabs."""
-    # Add IDs for potential multiple deal sources
-    search_ids = ["v2-deals-search-lifetimo"]
+    search_ids = [_deals_search_id(tab_def) for tab_def in DEALS_TAB_DEFINITIONS]
 
     for search_id in search_ids:
 
@@ -159,49 +150,27 @@ def register_deals_callbacks(app):
             [Input(search_id, "value")],
             State(f"{search_id}-data", "data"),
         )
-        def update_deals_search(search_term, deals_data_json, current_search_id=search_id):
-            if not deals_data_json:
-                source_key = current_search_id.replace("v2-deals-search-", "")
-                all_deals_data = get_all_deals_data()
-                deals_data = all_deals_data.get(source_key, [])
-            else:
-                deals_data = json.loads(deals_data_json) if isinstance(deals_data_json, str) else deals_data_json
+        def update_deals_search(search_term, deals_data, current_search_id=search_id):
+            try:
+                if not deals_data:
+                    source_key = current_search_id.replace("v2-deals-search-", "")
+                    all_deals_data = get_all_deals_data()
+                    deals_data = all_deals_data.get(source_key, [])
 
-            if search_term:
-                searchable_fields = ["title", "description", "categories"]
-                filtered_deals = filter_content(search_term, deals_data, searchable_fields)
-            else:
-                filtered_deals = deals_data[:MAX_DEALS_PER_SOURCE]
-
-            table_body_rows = []
-            for deal in filtered_deals:
-                title = deal.get("title", "No Title")
-                url = deal.get("url") or deal.get("link")
-                categories = deal.get("categories", [])
-                categories_display = ", ".join(categories) if categories else "General"
-                date_display = format_deal_date(deal)
-
-                table_body_rows.append(
-                    html.Tr(
+                if search_term:
+                    searchable_fields = ["title", "description", "categories"]
+                    filtered_deals = filter_content(search_term, deals_data, searchable_fields)
+                    return html.Div(
                         [
-                            html.Td(html.A(str(title), href=url, target="_blank") if url else str(title)),
-                            html.Td(dbc.Badge(str(categories_display), color="info", className="me-1")),
-                            html.Td(str(date_display)),
+                            dbc.Alert(f"🏷️ Found {len(filtered_deals)} deals matching '{search_term}'", color="success", className="mb-3"),
+                            create_deals_table(filtered_deals, search_term=search_term),
                         ]
                     )
-                )
 
-            table = dbc.Table(
-                [html.Thead(html.Tr([html.Th("Deal Title"), html.Th("Categories"), html.Th("Date Added")])), html.Tbody(table_body_rows)],
-                bordered=True,
-                hover=True,
-                responsive=True,
-                striped=True,
-                size="sm",
-                color="dark",
-            )
-
-            return table
+                return create_deals_table(deals_data[:MAX_DEALS_PER_SOURCE])
+            except Exception as e:
+                logger.error(f"Error in deals search callback for {current_search_id}: {e}")
+                return dbc.Alert(f"Error searching deals: {e}", color="danger")
 
         @app.callback(
             Output(search_id, "value", allow_duplicate=True),
@@ -216,12 +185,8 @@ def register_deals_callbacks(app):
 
 def render_deals_tab():
     """Render the Deals tab with Lifetimo sub-tab."""
-    tab_definitions = [
-        {"label": "Lifetimo Lifetime Deals", "keys": "lifetimo", "id": "lifetimo"},
-    ]
-
     tabs_children = []
-    for tab_def in tab_definitions:
+    for tab_def in DEALS_TAB_DEFINITIONS:
         content = create_deals_source_tab_content(tab_def["keys"], combined_name=tab_def["label"])
         tabs_children.append(
             dbc.Tab(
@@ -234,6 +199,6 @@ def render_deals_tab():
     return html.Div(
         [
             html.H3("Exclusive Lifetime Deals", className="mb-3"),
-            dbc.Tabs(id="deals-source-tabs", children=tabs_children, active_tab="deals-tab-lifetimo"),
+            dbc.Tabs(id="deals-source-tabs", children=tabs_children, active_tab=f"deals-tab-{DEALS_TAB_DEFINITIONS[0]['id']}"),
         ]
     )

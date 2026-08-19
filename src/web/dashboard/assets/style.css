@@ -1168,3 +1168,8 @@ div[data-dash-is-loading="true"] {
     background-color: #1E1E2E !important;
     color: #CDD6F4 !important;
 }
+
+/* Read/unread state (spec 01 F2) */
+.wt-item-read {
+  opacity: 0.45;
+}

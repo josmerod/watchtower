@@ -1,3 +1,10 @@
+"""Scrape Class Central's Coursera provider catalog into data/classcentral/.
+
+Despite the historical filename, this ETL does NOT touch deeplearning.ai; it
+scrapes classcentral.com/provider/coursera. Its output feeds the dashboard
+Learning tab (Coursera subtab).
+"""
+
 import asyncio
 import json
 import logging

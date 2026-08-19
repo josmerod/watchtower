@@ -27,161 +27,196 @@ DATA_DIR = get_data_path("")  # Root data directory
 
 class MetricsManager:
     """Manages metrics data loading and processing for the dashboard.
-    Follows the VideoManager pattern for consistency.
+
+    Primary source is the orchestrator aggregate ``data/metrics/etl_runs_latest.json``
+    (one record per ETL). Run history for trends/errors is rebuilt from per-component
+    ``run_summary_*.json`` files, but only those modified within the recent window —
+    the data directory can hold tens of thousands of historical summaries and reading
+    them all blocks the dashboard for minutes.
     """
+
+    RECENT_WINDOW_DAYS = 7
+    RELOAD_TTL_SECONDS = 300
+    MAX_HISTORY_FILES = 2000
 
     def __init__(self):
         """Initialize the MetricsManager."""
-        self.metrics_data = []
+        self.metrics_data: list[dict] = []
+        self._history: list[dict] = []
         self.loaded = False
-        self.last_updated = None
+        self.last_updated: datetime | None = None
 
-    def load_data(self):
-        """Load metrics data from the metrics directory."""
+    def load_data(self, force_refresh: bool = False):
+        """Load per-source metrics from the orchestrator summary plus recent runs."""
+        now = datetime.now(timezone.utc)
+        if self.loaded and not force_refresh and self.last_updated and (now - self.last_updated).total_seconds() < self.RELOAD_TTL_SECONDS:
+            return
+
         logger.info("Loading metrics data...")
         self.metrics_data = []
+        self._history = []
 
         try:
-            # Find all run summary JSON files in any output directory
-            # Pattern: data/*/output/run_summary_*.json
             root_path = Path(DATA_DIR)
-            logger.info(f"Searching for metrics in: {root_path}")
-            files = list(root_path.glob("**/output/run_summary_*.json"))
-            logger.info(f"Found {len(files)} metrics files")
 
-            for metrics_file in files:
-                try:
-                    with open(metrics_file, encoding="utf-8") as f:
-                        data = json.load(f)
+            # 1) Latest run per ETL from the orchestrator aggregate
+            latest_by_name: dict[str, dict] = {}
+            runs_file = root_path / "metrics" / "etl_runs_latest.json"
+            if runs_file.exists():
+                with open(runs_file, encoding="utf-8") as f:
+                    payload = json.load(f)
+                records = payload.get("runs", {}) if isinstance(payload, dict) else {}
+                if isinstance(records, dict):
+                    for name, rec in records.items():
+                        if isinstance(rec, dict):
+                            latest_by_name[name] = rec
+                elif isinstance(records, list):
+                    for rec in records:
+                        if isinstance(rec, dict) and rec.get("etl_name"):
+                            latest_by_name[rec["etl_name"]] = rec
+            logger.info(f"Latest-run records from orchestrator summary: {len(latest_by_name)}")
 
-                    if isinstance(data, list) and data:
-                        # Ensure each metric record has required fields
-                        for metric in data:
-                            processed_metric = self._process_metric_record(metric)
-                            if processed_metric:
-                                self.metrics_data.append(processed_metric)
-                    elif isinstance(data, dict):
-                        # Handle single metric record (new format)
-                        processed_metric = self._process_metric_record(data)
-                        if processed_metric:
-                            self.metrics_data.append(processed_metric)
+            # 2) Recent run history (bounded by mtime window) for trends and error counts
+            self._history = self._load_recent_history(root_path, now)
+            logger.info(f"Recent run events loaded: {len(self._history)}")
 
-                        logger.info(f"Loaded metric from {metrics_file.name}")
+            # 3) Aggregate history per source
+            stats: dict[str, dict] = {}
+            for event in self._history:
+                entry = stats.setdefault(
+                    event["name"],
+                    {"runs": 0, "success_runs": 0, "errors": 0, "durations": [], "last": None},
+                )
+                entry["runs"] += 1
+                entry["success_runs"] += 1 if event["success"] else 0
+                entry["errors"] += event["error_count"]
+                entry["durations"].append(event["duration"])
+                if entry["last"] is None or event["timestamp"] > entry["last"]:
+                    entry["last"] = event["timestamp"]
 
-                except Exception as e:
-                    logger.error(f"Error loading metrics from {metrics_file}: {e}")
-                    continue
+            # 4) Build one record per source (history sources plus orchestrator summary)
+            names = set(stats) | set(latest_by_name)
+            for name in names:
+                entry = stats.get(name, {"runs": 0, "success_runs": 0, "errors": 0, "durations": [], "last": None})
+                latest = latest_by_name.get(name, {})
+                last_run_time = self._parse_datetime(latest.get("end_time")) or entry["last"]
+                durations = entry["durations"]
+                avg_duration = round(sum(durations) / len(durations), 3) if durations else latest.get("duration_seconds", 0.0)
+                runs_total = entry["runs"]
+                success_rate = round(entry["success_runs"] / runs_total * 100, 1) if runs_total else (100.0 if latest.get("success") else 0.0)
+                self.metrics_data.append(
+                    {
+                        "name": name,
+                        "last_run_time": last_run_time,
+                        "items_processed": latest.get("records_loaded", 0),
+                        "success_count": entry["success_runs"],
+                        "error_count": entry["errors"] if runs_total else latest.get("error_count", 0),
+                        "avg_duration": avg_duration,
+                        "total_duration": round(sum(durations), 3),
+                        "error_details": latest.get("errors_detail", latest.get("error_details", [])),
+                        "status": "success" if latest.get("success") else ("failed" if latest else "unknown"),
+                        "start_time": self._parse_datetime(latest.get("start_time")),
+                        "end_time": last_run_time,
+                        "success_rate": success_rate,
+                        "runs_7d": runs_total,
+                    }
+                )
 
             # Sort by last run time (newest first)
             self.metrics_data.sort(
-                key=lambda x: x.get("last_run_time", datetime.min.replace(tzinfo=timezone.utc)),
+                key=lambda x: x.get("last_run_time") or datetime.min.replace(tzinfo=timezone.utc),
                 reverse=True,
             )
 
-            self.last_updated = datetime.now(timezone.utc)
-            logger.info(f"Total metrics loaded: {len(self.metrics_data)}")
+            self.last_updated = now
+            self.loaded = True
+            logger.info(f"Total metrics loaded: {len(self.metrics_data)} sources")
 
         except Exception as e:
             logger.error(f"Error loading metrics data: {e}")
+            self.loaded = True
 
-        self.loaded = True
-
-    def _process_metric_record(self, metric):
-        """Process and validate a single metric record."""
+    def _load_recent_history(self, root_path: Path, now: datetime) -> list[dict]:
+        """Collect run events from run_summary files modified within the recent window."""
+        cutoff = now - timedelta(days=self.RECENT_WINDOW_DAYS)
+        events: list[dict] = []
+        files_read = 0
         try:
-            # Ensure required fields exist
-            if not isinstance(metric, dict):
-                return None
-
-            # Required fields for display
-            processed = {
-                "name": metric.get("etl_name", metric.get("name", "Unknown ETL")),
-                "last_run_time": self._parse_datetime(metric.get("end_time", metric.get("last_run_time"))),
-                "items_processed": metric.get("records_loaded", metric.get("items_processed", 0)),
-                "success_count": metric.get("success_count", 0),
-                "error_count": metric.get("error_count", 0),
-                "avg_duration": metric.get("duration_seconds", metric.get("avg_duration", 0.0)),
-                "total_duration": metric.get("duration_seconds", metric.get("total_duration", 0.0)),
-                "error_details": metric.get("errors_detail", metric.get("error_details", [])),
-                "status": metric.get("status", "unknown"),
-                "start_time": self._parse_datetime(metric.get("start_time")),
-                "end_time": self._parse_datetime(metric.get("end_time")),
-            }
-
-            # Calculate success rate
-            total_runs = processed["success_count"] + processed["error_count"]
-            if total_runs > 0:
-                processed["success_rate"] = (processed["success_count"] / total_runs) * 100
-            else:
-                processed["success_rate"] = 0.0
-
-            return processed
-
+            for component_dir in root_path.iterdir():
+                output_dir = component_dir / "output"
+                if not output_dir.is_dir():
+                    continue
+                for summary_file in output_dir.glob("run_summary_*.json"):
+                    try:
+                        mtime = datetime.fromtimestamp(summary_file.stat().st_mtime, tz=timezone.utc)
+                        if mtime < cutoff:
+                            continue
+                        if files_read >= self.MAX_HISTORY_FILES:
+                            logger.warning("History scan hit MAX_HISTORY_FILES cap; trends may be partial")
+                            return events
+                        with open(summary_file, encoding="utf-8") as f:
+                            data = json.load(f)
+                        records = data if isinstance(data, list) else [data]
+                        for rec in records:
+                            if not isinstance(rec, dict):
+                                continue
+                            ts = self._parse_datetime(rec.get("end_time") or rec.get("start_time"))
+                            if ts is None:
+                                continue
+                            events.append(
+                                {
+                                    "name": rec.get("etl_name", rec.get("name", "Unknown ETL")),
+                                    "timestamp": ts,
+                                    "duration": rec.get("duration_seconds", 0.0),
+                                    "success": bool(rec.get("success", rec.get("status") == "success")),
+                                    "error_count": rec.get("error_count", 0),
+                                }
+                            )
+                        files_read += 1
+                    except Exception as e:
+                        logger.debug(f"Skipping metrics file {summary_file}: {e}")
+                        continue
         except Exception as e:
-            logger.warning(f"Error processing metric record: {e}")
-            return None
+            logger.error(f"Error scanning run summaries: {e}")
+        return events
 
     def _parse_datetime(self, date_str):
-        """Parse datetime string with multiple format support."""
-        if not date_str:
+        """Parse an ISO datetime string into a timezone-aware UTC datetime."""
+        if not date_str or not isinstance(date_str, str):
             return None
-
         try:
-            dt = None
-            # Try parsing ISO format first
-            if isinstance(date_str, str) and "T" in date_str:
-                dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-            else:
-                # Try other formats or timestamp
-                if isinstance(date_str, (int, float)):
-                    dt = datetime.fromtimestamp(date_str, tz=timezone.utc)
-                else:
-                    dt = datetime.strptime(str(date_str), "%Y-%m-%d %H:%M:%S")
-
-            # Ensure timezone awareness
-            if dt and dt.tzinfo is None:
+            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             return dt
-
-        except Exception as e:
-            logger.warning(f"Error parsing datetime '{date_str}': {e}")
+        except ValueError:
             return None
 
     def get_metrics_summary(self):
-        """Get summary statistics of all metrics."""
+        """Get summary statistics across all ETL sources."""
         if not self.loaded:
             self.load_data()
 
         if not self.metrics_data:
             return {
                 "total_sources": 0,
-                "avg_success_rate": 0,
+                "avg_success_rate": 0.0,
                 "total_items_processed": 0,
                 "total_errors": 0,
                 "last_24h_errors": 0,
+                "last_updated": self.last_updated,
             }
 
-        total_sources = len(self.metrics_data)
-
-        # Calculate averages
-        success_rates = [m["success_rate"] for m in self.metrics_data if m["success_rate"] > 0]
-        avg_success_rate = sum(success_rates) / len(success_rates) if success_rates else 0.0
-
-        total_items = sum(m["items_processed"] for m in self.metrics_data)
-        total_errors = sum(m["error_count"] for m in self.metrics_data)
-
-        # Calculate last 24h errors
+        success_rates = [m["success_rate"] for m in self.metrics_data]
         now = datetime.now(timezone.utc)
-        last_24h_errors = 0
-        for metric in self.metrics_data:
-            if metric["last_run_time"] and (now - metric["last_run_time"]).total_seconds() <= 86400:
-                last_24h_errors += metric["error_count"]
+        day_ago = now - timedelta(hours=24)
+        last_24h_errors = sum(m["error_count"] for m in self.metrics_data if m["last_run_time"] and m["last_run_time"] >= day_ago)
 
         return {
-            "total_sources": total_sources,
-            "avg_success_rate": round(avg_success_rate, 1),
-            "total_items_processed": total_items,
-            "total_errors": total_errors,
+            "total_sources": len(self.metrics_data),
+            "avg_success_rate": round(sum(success_rates) / len(success_rates), 1),
+            "total_items_processed": sum(m["items_processed"] for m in self.metrics_data),
+            "total_errors": sum(m["error_count"] for m in self.metrics_data),
             "last_24h_errors": last_24h_errors,
             "last_updated": self.last_updated,
         }
@@ -193,41 +228,35 @@ class MetricsManager:
 
         error_counts = {}
         now = datetime.now(timezone.utc)
+        day_ago = now - timedelta(hours=24)
 
-        for metric in self.metrics_data:
-            if metric["error_count"] > 0:
-                # Check if error is recent (within last 24 hours)
-                if metric["last_run_time"] and (now - metric["last_run_time"]).total_seconds() <= 86400:
-                    error_counts[metric["name"]] = metric["error_count"]
+        for event in self._history:
+            if event["error_count"] > 0 and day_ago <= event["timestamp"] <= now:
+                error_counts[event["name"]] = error_counts.get(event["name"], 0) + event["error_count"]
 
-        return error_counts
+        return dict(sorted(error_counts.items(), key=lambda kv: kv[1], reverse=True))
 
     def get_time_series_data(self, days=7):
-        """Get time series data for the specified number of days."""
+        """Get per-run time series data for the specified number of days."""
         if not self.loaded:
             self.load_data()
 
-        # Filter for data within the specified time range
         now = datetime.now(timezone.utc)
         cutoff_date = now - timedelta(days=days)
 
-        recent_data = [metric for metric in self.metrics_data if metric["last_run_time"] and metric["last_run_time"] >= cutoff_date]
+        time_series = [
+            {
+                "timestamp": event["timestamp"],
+                "name": event["name"],
+                "duration": event["duration"],
+                "success_rate": 100.0 if event["success"] else 0.0,
+                "status": "success" if event["success"] else "failed",
+                "error_count": event["error_count"],
+            }
+            for event in self._history
+            if event["timestamp"] >= cutoff_date
+        ]
 
-        # Create time series data for charts
-        time_series = []
-        for metric in recent_data:
-            if metric["last_run_time"]:
-                time_series.append(
-                    {
-                        "timestamp": metric["last_run_time"],
-                        "name": metric["name"],
-                        "duration": metric["avg_duration"],
-                        "success_rate": metric["success_rate"],
-                        "status": metric["status"],
-                    }
-                )
-
-        # Sort by timestamp
         time_series.sort(key=lambda x: x["timestamp"])
         return time_series
 
@@ -390,6 +419,7 @@ def render_metrics_tab():
                                         [
                                             dcc.Graph(
                                                 id="metrics-time-series-chart",
+                                                figure=create_time_series_chart(metrics_manager.get_time_series_data(days=7)),
                                                 style={"height": "400px"},
                                             ),
                                         ]
@@ -410,6 +440,7 @@ def render_metrics_tab():
                                         [
                                             dcc.Graph(
                                                 id="metrics-error-chart",
+                                                figure=create_error_chart(metrics_manager.get_error_counts()),
                                                 style={"height": "400px"},
                                             ),
                                         ]
@@ -433,7 +464,13 @@ def render_metrics_tab():
                                     dbc.CardHeader([html.H5("ETL Sources Details", className="mb-0")]),
                                     dbc.CardBody(
                                         [
-                                            html.Div(id="metrics-table-container"),
+                                            # Auto-refresh trigger lives here so the
+                                            # callback is registered against the layout
+                                            dcc.Interval(id="metrics-update-interval", interval=60 * 1000, n_intervals=0),
+                                            html.Div(
+                                                create_metrics_table(metrics_manager.metrics_data),
+                                                id="metrics-table-container",
+                                            ),
                                         ]
                                     ),
                                 ]
@@ -474,7 +511,7 @@ def register_metrics_callbacks(app):
         """Update metrics charts and table."""
         try:
             # Reload data to get latest metrics
-            metrics_manager.load_data()
+            metrics_manager.load_data(force_refresh=True)
 
             # Get time series data for charts
             time_series_data = metrics_manager.get_time_series_data(days=7)
@@ -515,11 +552,10 @@ def register_metrics_callbacks(app):
 
             # Get row and column from active_cell
             row = active_cell["row"]
-            col = active_cell["column"]
 
-            # Get source name from the first column (name)
-            if col == 0 and row < len(table_data):
-                source_name = table_data[row][0]
+            # table_data rows are dicts keyed by column id
+            if row < len(table_data) and "name" in table_data[row]:
+                source_name = table_data[row]["name"]
 
                 # Find metrics data for this source
                 source_metric = metrics_manager.get_source_by_name(source_name)
@@ -548,36 +584,49 @@ def create_time_series_chart(time_series_data):
 
     # Create DataFrame for easier plotting
     df = pd.DataFrame(time_series_data)
+    df["date"] = df["timestamp"].dt.date
 
-    # Group by date for daily aggregates
-    df["date"] = df["timestamp"].dt.date()
-    daily_data = df.groupby(["date", "name"]).agg({"duration": "mean", "success_rate": "mean"}).reset_index()
+    # Daily aggregates: run count, error count and mean duration across sources
+    daily_data = df.groupby("date").agg(runs=("name", "count"), errors=("error_count", "sum"), duration=("duration", "mean")).reset_index()
 
-    # Create scatter plot for each ETL source
     fig = go.Figure()
-
-    # Add trace for each ETL source
-    for source_name in daily_data["name"].unique():
-        source_data = daily_data[daily_data["name"] == source_name]
-        if not source_data.empty:
-            fig.add_tracego(
-                go.Scatter(
-                    x=source_data["date"],
-                    y=source_data["duration"],
-                    mode="lines+markers",
-                    name=source_name,
-                    line={"width": 2},
-                    marker={"size": 8},
-                )
-            )
+    fig.add_trace(
+        go.Bar(
+            x=daily_data["date"],
+            y=daily_data["runs"],
+            name="Runs",
+            marker_color="rgba(31,119,180,0.55)",
+        )
+    )
+    fig.add_trace(
+        go.Bar(
+            x=daily_data["date"],
+            y=daily_data["errors"],
+            name="Errors",
+            marker_color="rgba(214,39,40,0.75)",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=daily_data["date"],
+            y=daily_data["duration"],
+            mode="lines+markers",
+            name="Avg duration (s)",
+            yaxis="y2",
+            line={"width": 2},
+            marker={"size": 6},
+        )
+    )
 
     fig.update_layout(
         title="ETL Performance Trends (Last 7 Days)",
         xaxis_title="Date",
-        yaxis_title="Duration (seconds)",
+        yaxis_title="Runs / Errors",
+        yaxis2={"title": "Avg duration (s)", "overlaying": "y", "side": "right"},
         hovermode="x unified",
         template="plotly_white",
         height=400,
+        barmode="group",
         legend={"orientation": "h", "yanchor": "bottom"},
     )
 
@@ -634,6 +683,7 @@ def create_metrics_table(metrics_data):
             "name": metric["name"],
             "last_run_time": _format_datetime(metric["last_run_time"]),
             "items_processed": metric["items_processed"],
+            "runs_7d": metric.get("runs_7d", 0),
             "success_rate": f"{metric['success_rate']:.1f}%",
             "avg_duration": f"{metric['avg_duration']:.2f}s",
             "error_count": metric["error_count"],
@@ -649,6 +699,7 @@ def create_metrics_table(metrics_data):
         columns=[
             {"name": "name", "id": "name", "deletable": False},
             {"name": "last_run_time", "id": "last_run_time", "deletable": False},
+            {"name": "runs_7d", "id": "runs_7d", "deletable": False},
             {"name": "items_processed", "id": "items_processed", "deletable": False},
             {"name": "success_rate", "id": "success_rate", "deletable": False},
             {"name": "avg_duration", "id": "avg_duration", "deletable": False},
@@ -680,15 +731,9 @@ def create_metrics_table(metrics_data):
 
     return html.Div(
         [
-            # Auto-refresh every 30 seconds
-            dcc.Interval(
-                id="metrics-update-interval",
-                interval=30 * 1000,  # 30 seconds
-                n_intervals=0,
-            ),
             table,
             html.Small(
-                f"Last updated: {_format_datetime(metrics_manager.last_updated or datetime.now(timezone.utc))} | Auto-refresh every 30 seconds",
+                f"Last updated: {_format_datetime(metrics_manager.last_updated or datetime.now(timezone.utc))} | Auto-refresh every 60 seconds",
                 className="text-muted mt-3",
             ),
         ]
@@ -753,7 +798,3 @@ def _format_datetime(dt):
     if dt is None:
         return "N/A"
     return dt.strftime("%Y-%m-%d %H:%M:%S")
-
-
-# Load data when module is imported
-metrics_manager.load_data()
