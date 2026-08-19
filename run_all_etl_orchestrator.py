@@ -18,6 +18,7 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_genai_medium.py",
     "src/etl/news/news_get_gooddevs.py",
     "src/etl/news/news_get_selfhosted.py",
+    "src/etl/news/news_get_verge_ai.py",  # The Verge AI feed — feeds Tech Radar tab
     "src/etl/news/news_get_indiehackers.py",
     "src/etl/news/news_get_kagi.py",
     "src/etl/news/news_get_kdnuggets.py",

@@ -34,6 +34,7 @@ RSS_FEEDS: dict[str, str] = {
     "techcrunch_enterprise": "https://techcrunch.com/category/enterprise/feed/",
     "techcrunch_funding": "https://techcrunch.com/category/venture/feed/",
     "techcrunch_apps": "https://techcrunch.com/category/apps/feed/",
+    "techcrunch_ai": "https://techcrunch.com/category/artificial-intelligence/feed/",
 }
 
 
@@ -170,6 +171,7 @@ def _get_category_from_source(source: str) -> str:
         "techcrunch_enterprise": "enterprise",
         "techcrunch_funding": "funding",
         "techcrunch_apps": "apps",
+        "techcrunch_ai": "ai",
     }
     return category_map.get(source, "general")
 

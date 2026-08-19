@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 # Source definitions: key -> (label, data file path relative to data/, icon)
 RADAR_SOURCES: list[dict[str, str]] = [
     {"key": "google_ai", "label": "🧠 Google AI Blog", "file": "news/google_ai_blog_latest.json", "category": "AI"},
+    {"key": "verge_ai", "label": "⚡ The Verge AI", "file": "news/verge_ai_latest.json", "category": "AI"},
     {"key": "kdnuggets", "label": "📊 KDNuggets", "file": "kdnuggets/kdnuggets.json", "category": "Data Science"},
     {"key": "cloud_updates", "label": "☁️ Cloud Updates", "file": "cloud_updates/cloud_updates_latest.json", "category": "Cloud"},
     {"key": "selfhosted", "label": "🏠 Self-Hosted", "file": "selfhosted/selfhosted_latest.json", "category": "Self-Hosting"},
