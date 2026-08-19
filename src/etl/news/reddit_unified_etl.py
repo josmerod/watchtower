@@ -61,6 +61,10 @@ SUBREDDITS_CONFIG = {
     "aws": {"type": "json", "category": "devops"},
     "sysadmin": {"type": "json", "category": "devops"},
     "homelab": {"type": "json", "category": "devops"},
+    # Self-Hosting (spec 13: community pulse for the Tech Radar tab).
+    # RSS type: reddit's JSON API 403-blocks some client IPs; the RSS feed
+    # works from the same networks.
+    "SelfHosted": {"type": "rss", "category": "selfhosting"},
     # News Aggregators
     "hypeurls": {"type": "json", "category": "news", "pagination": True},
     # Open Source (Mapped to Knowledge Garden Open Source Tab)
@@ -107,24 +111,17 @@ def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
                 "subreddit": subreddit,
                 "title": entry.get("title", "No title"),
                 "url": entry.get("link", ""),
-                "published": entry.get("published", ""),
+                "published": entry.get("published", "") or entry.get("updated", ""),
                 "summary": entry.get("summary", ""),
                 "author": entry.get("author", "Anonymous"),
                 "fetch_method": "rss",
             }
 
-            # Parse RSS date
-            if post["published"] and hasattr(entry, "published_parsed") and entry.published_parsed:
+            # Parse RSS/atom date (atom feeds expose <updated> instead of <published>)
+            parsed_date = getattr(entry, "published_parsed", None) or getattr(entry, "updated_parsed", None)
+            if post["published"] and isinstance(parsed_date, time.struct_time):
                 try:
-                    time_tuple = entry.published_parsed
-                    if isinstance(time_tuple, time.struct_time):
-                        post["published"] = (
-                            datetime(
-                                time_tuple.tm_year, time_tuple.tm_mon, time_tuple.tm_mday, time_tuple.tm_hour, time_tuple.tm_min, time_tuple.tm_sec, time_tuple.tm_wday, time_tuple.tm_yday, time_tuple.tm_isdst
-                            )
-                            .replace(tzinfo=timezone.utc)
-                            .isoformat()
-                        )
+                    post["published"] = datetime(*parsed_date[:6], tzinfo=timezone.utc).isoformat()
                 except (TypeError, IndexError, ValueError, AttributeError):
                     post["published"] = ""
 
@@ -273,12 +270,15 @@ def save_reddit_data(all_posts: dict[str, list[dict[str, Any]]]) -> None:
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Save individual subreddit files
+    # Save individual subreddit files (timestamped + latest so per-subreddit
+    # consumers like the Tech Radar pulse column have a stable path)
     for subreddit, posts in all_posts.items():
         if posts:
             subreddit_file = os.path.join(output_dir, f"{subreddit}_{timestamp}.json")
             with open(subreddit_file, "w", encoding="utf-8") as f:
                 json.dump(posts, f, indent=2)
+            subreddit_latest = os.path.join(output_dir, f"{subreddit}_latest.json")
+            shutil.copy2(subreddit_file, subreddit_latest)
 
     # Save combined file
     combined_posts = []

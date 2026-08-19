@@ -1,8 +1,10 @@
-"""Self-Hosted News ETL — self-hosting and homelab news from selfh.st.
+"""Self-Hosted News ETL — self-hosting and homelab news aggregator.
 
-Fetches the selfh.st RSS feed — a curated news source covering self-hosted
-applications, homelab tools, and open-source infrastructure. Complements the
-Technology Radar tab's cloud/GenAI/AI focus with the self-hosting perspective.
+Aggregates RSS feeds covering self-hosted applications, homelab tools, and
+open-source infrastructure for the Technology Radar tab's Self-Hosting
+column:
+- selfh.st (curated self-hosted app news)
+- LinuxServer.io blog (the docker images that power most homelabs)
 
 Usage:
     uv run python -m src.etl.news.news_get_selfhosted
@@ -27,22 +29,39 @@ from src.utils.retry import with_retry
 
 logger = get_logger("SelfHostedETL")
 
-RSS_FEED = "https://selfh.st/rss/"
+RSS_FEEDS: list[dict[str, str]] = [
+    {"url": "https://selfh.st/rss/", "platform": "selfh.st", "source": "selfhosted"},
+    {"url": "https://www.linuxserver.io/blog.rss", "platform": "linuxserver.io", "source": "linuxserver"},
+]
 
 
 @with_retry
 def fetch_selfhosted_feed() -> list[dict[str, Any]]:
-    """Fetch and parse the selfh.st RSS feed."""
+    """Fetch and parse all self-hosting RSS feeds, merged and date-sorted."""
+    all_entries: list[dict[str, Any]] = []
+    for feed_info in RSS_FEEDS:
+        entries = _fetch_single_feed(feed_info)
+        all_entries.extend(entries)
+
+    # Newest first across feeds (unparseable dates sort last).
+    all_entries.sort(key=lambda e: e.get("published") or "", reverse=True)
+    logger.info(f"Retrieved {len(all_entries)} items across {len(RSS_FEEDS)} self-hosting feeds")
+    return all_entries
+
+
+def _fetch_single_feed(feed_info: dict[str, str]) -> list[dict[str, Any]]:
+    """Fetch one RSS feed and normalize its entries."""
+    url, platform, source = feed_info["url"], feed_info["platform"], feed_info["source"]
     entries: list[dict[str, Any]] = []
-    logger.info(f"Fetching selfh.st RSS feed from {RSS_FEED}")
+    logger.info(f"Fetching {platform} RSS feed from {url}")
     try:
-        response = requests.get(RSS_FEED, headers={"User-Agent": SCRAPER_DEFAULT_USER_AGENT}, timeout=30)
+        response = requests.get(url, headers={"User-Agent": SCRAPER_DEFAULT_USER_AGENT}, timeout=30)
         response.raise_for_status()
         feed = feedparser.parse(response.content)
         if feed.bozo:
-            logger.warning(f"Feed parse warning: {feed.bozo_exception}")
+            logger.warning(f"{platform} feed parse warning: {feed.bozo_exception}")
     except requests.RequestException as exc:
-        logger.error(f"Could not fetch selfh.st feed: {exc}")
+        logger.error(f"Could not fetch {platform} feed: {exc}")
         return entries
 
     for entry in feed.entries:
@@ -53,7 +72,7 @@ def fetch_selfhosted_feed() -> list[dict[str, Any]]:
             summary = re.sub(r"<[^>]+>", "", entry.summary).strip()
         entries.append(
             {
-                "source": "selfhosted",
+                "source": source,
                 "source_category": "self_hosting",
                 "title": entry.get("title", ""),
                 "link": entry.get("link", ""),
@@ -63,13 +82,13 @@ def fetch_selfhosted_feed() -> list[dict[str, Any]]:
                 "categories": [t.term for t in getattr(entry, "tags", []) if hasattr(t, "term")],
                 "guid": entry.get("id", ""),
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
-                "platform": "selfh.st",
+                "platform": platform,
                 "content_type": "news_article",
                 "language": "en",
                 "region": "global",
             }
         )
-    logger.info(f"Retrieved {len(entries)} items from selfh.st RSS feed")
+    logger.info(f"Retrieved {len(entries)} items from {platform} RSS feed")
     return entries
 
 
