@@ -105,6 +105,12 @@ def save_entries(entries: list[dict[str, Any]]) -> None:
     with open(latest, "w", encoding="utf-8") as f:
         json.dump(entries, f, indent=2, ensure_ascii=False)
 
+    # Timestamped snapshot for history/trend analyses (spec 13 M5)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    snapshot = os.path.join(output_dir, f"cloud_updates_{timestamp}.json")
+    with open(snapshot, "w", encoding="utf-8") as f:
+        json.dump(entries, f, indent=2, ensure_ascii=False)
+
     logger.info(f"Saved {len(entries)} entries to {latest}")
 
 

@@ -1,7 +1,13 @@
-"""ETL for BridgeBench.ai — cross-benchmark AI coding leaderboard.
+"""ETL for BridgeBench.ai — AI coding arena leaderboard (Elo).
 
-Fetches rankings from bridgebench.ai pages and saves as JSON.
-Runnable standalone: python -m src.etl.benchmarks.bridgebench_etl
+BridgeBench restructured its site (2026): the old per-category pages
+(/overall, /security, …) are gone. The reliable, server-rendered surface is
+now the arena Elo leaderboard at /arena/leaderboard (rank, model, Elo, W-L,
+Win%, 3-0 sweeps). This ETL scrapes that table and writes
+``data/benchmarks/bridgebench_overall.json`` — the same filename the
+dashboard tab already reads — so the BridgeBench section works again.
+
+Runnable standalone: ``uv run python -m src.etl.benchmarks.bridgebench_etl``
 """
 
 import json
@@ -10,6 +16,7 @@ import os
 import re
 import urllib.request
 from datetime import datetime, timezone
+from html import unescape
 
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 
@@ -17,14 +24,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://bridgebench.ai"
-PAGES = {
-    "overall": "/overall",
-    "security": "/security",
-    "debugging": "/debugging",
-    "refactoring": "/refactoring",
-    "hallucination": "/hallucination",
-    "reasoning": "/reasoning",
-}
+LEADERBOARD_PATH = "/arena/leaderboard"
 
 HEADERS = {
     "User-Agent": SCRAPER_DEFAULT_USER_AGENT,
@@ -37,199 +37,95 @@ def get_data_dir() -> str:
     return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "data", "benchmarks")
 
 
-def fetch_page(path: str) -> str:
-    """Fetch a page from bridgebench.ai."""
-    url = f"{BASE_URL}{path}"
+def fetch_leaderboard_html() -> str:
+    """Fetch the arena leaderboard page HTML."""
+    url = f"{BASE_URL}{LEADERBOARD_PATH}"
     logger.info(f"Fetching {url}...")
     req = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(req, timeout=30) as resp:
         return resp.read().decode("utf-8", errors="replace")
 
 
-def parse_markdown_tables(html: str) -> list[dict[str, str]]:
-    """Parse bridgebench.ai HTML to extract table data as list of dicts.
+def _clean(cell_html: str) -> str:
+    """Strip tags/entities and collapse whitespace from a table cell."""
+    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", cell_html))).strip()
 
-    The site renders markdown tables inside the HTML. We look for the
-    structured table data in the Next.js SSR output.
+
+def parse_leaderboard(html: str) -> list[dict]:
+    """Parse the Elo leaderboard HTML table into model records.
+
+    Expected columns: #, Model, Elo, W-L, Win%, 3-0.
     """
-    results = []
-
-    # Strategy 1: Look for JSON data embedded in Next.js script tags
-    # bridgebench.ai uses Next.js — the data might be in __NEXT_DATA__ or
-    # in script tags with type="application/ld+json"
-    next_data_match = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.DOTALL)
-    if next_data_match:
-        try:
-            next_json = json.loads(next_data_match.group(1))
-            # Check if there's table data in the props
-            props = next_json.get("props", {}).get("pageProps", {})
-            if props:
-                # The data might be nested in various ways
-                for _key, val in props.items():
-                    if isinstance(val, dict) and "models" in val:
-                        results = val["models"]
-                        logger.info(f"Found {len(results)} models from __NEXT_DATA__")
-                        return results
-                    elif isinstance(val, list) and len(val) > 0 and isinstance(val[0], dict) and "model" in str(val[0]).lower():
-                        results = val
-                        logger.info(f"Found {len(results)} models from __NEXT_DATA__ list")
-                        return results
-        except (json.JSONDecodeError, KeyError, TypeError) as e:
-            logger.debug(f"Could not parse __NEXT_DATA__: {e}")
-
-    # Strategy 2: Parse HTML table elements directly
-    table_pattern = re.compile(r"<table[^>]*>(.*?)</table>", re.DOTALL)
-    tables = table_pattern.findall(html)
-
-    if not tables:
-        logger.warning("No tables found in HTML")
-        return results
-
-    # Use the last/largest table (likely the main rankings)
-    table_html = max(tables, key=len) if tables else ""
-
-    # Extract rows
-    row_pattern = re.compile(r"<tr[^>]*>(.*?)</tr>", re.DOTALL)
-    rows = row_pattern.findall(table_html)
-
-    if not rows:
-        logger.warning("No rows found in table")
-        return results
-
-    # Extract headers from first row
-    header_pattern = re.compile(r"<th[^>]*>(.*?)</th>", re.DOTALL)
-    headers = []
-    th_matches = header_pattern.findall(rows[0])
-    for h in th_matches:
-        clean = re.sub(r"<[^>]+>", "", h).strip().lower()
-        if clean:
-            headers.append(clean)
-
-    # If no th headers, try td in first row
-    if not headers:
-        td_pattern = re.compile(r"<td[^>]*>(.*?)</td>", re.DOTALL)
-        td_matches = td_pattern.findall(rows[0])
-        for h in td_matches:
-            clean = re.sub(r"<[^>]+>", "", h).strip().lower()
-            if clean and clean != "---":
-                headers.append(clean)
-
-    logger.info(f"Table headers: {headers}")
-
-    # Parse data rows (skip header row)
-    td_pattern = re.compile(r"<td[^>]*>(.*?)</td>", re.DOTALL)
-    for row in rows[1:]:
-        cells = td_pattern.findall(row)
-        if not cells or len(cells) < 2:
+    results: list[dict] = []
+    for table_html in re.findall(r"<table[^>]*>(.*?)</table>", html, re.S | re.I):
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table_html, re.S | re.I)
+        if not rows:
             continue
-
-        row_data = {}
-        for i, cell in enumerate(cells):
-            if i < len(headers):
-                clean_val = re.sub(r"<[^>]+>", "", cell).strip()
-                # Skip separator rows
-                if clean_val and clean_val != "---":
-                    row_data[headers[i]] = clean_val
-            else:
-                break
-
-        # Must have at least a model name
-        model = row_data.get("model", "")
-        if model:
-            results.append(row_data)
-
-    logger.info(f"Parsed {len(results)} rows from HTML table")
+        header_cells = [_clean(c) for c in re.findall(r"<th[^>]*>(.*?)</th>", rows[0], re.S | re.I)]
+        if not header_cells or "Model" not in header_cells or "Elo" not in header_cells:
+            continue
+        for i, row in enumerate(rows[1:], start=1):
+            cells = [_clean(c) for c in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S | re.I)]
+            if len(cells) < 4:
+                continue
+            # Cell 1 is the model name (header col 0 is '#'); cells may carry
+            # badges like "Provisional" appended to the name — keep them.
+            model = cells[1] if len(cells) > 1 else cells[0]
+            record = {
+                "rank": _try_parse_int(cells[0], default=i),
+                "model": model,
+                "elo": _try_parse_int(cells[2]) if len(cells) > 2 else None,
+                "win_loss": cells[3] if len(cells) > 3 else "",
+                "win_percentage": _try_parse_float(cells[4].rstrip("%")) if len(cells) > 4 else None,
+                "sweeps_3_0": _try_parse_int(cells[5]) if len(cells) > 5 else None,
+            }
+            results.append(record)
+        break  # only the first (main) leaderboard table
     return results
 
 
-def normalize_rank(data: list[dict]) -> list[dict]:
-    """Ensure all entries have a numeric rank. Top models may have empty rank."""
-    for i, entry in enumerate(data):
-        rank = entry.get("rank", "")
-        if rank == "" or rank is None:
-            entry["rank"] = i + 1
-        else:
-            try:
-                entry["rank"] = int(rank)
-            except (ValueError, TypeError):
-                entry["rank"] = i + 1
-    return data
-
-
-def try_parse_float(val) -> float | str:
-    """Try to parse a value as float, return string if not possible."""
-    if isinstance(val, (int, float)):
-        return float(val)
-    s = str(val).strip()
+def _try_parse_int(value: str, default: int | None = None) -> int | None:
+    """Best-effort int parse."""
     try:
-        return float(s)
-    except ValueError:
-        return s
+        return int(value.strip())
+    except (ValueError, AttributeError):
+        return default
 
 
-def normalize_scores(data: list[dict], source: str) -> list[dict]:
-    """Convert score values to floats where possible."""
-    # Columns that should be numeric
-    if source == "overall":
-        numeric_cols = ["quality", "vibe", "security", "debugging", "refactoring", "hallucination", "reasoning", "ui"]
-    else:
-        numeric_cols = ["score", "visible", "hidden", "repro", "regress", "diagnose", "intent", "accuracy", "evidence", "tasks"]
-
-    for entry in data:
-        for col in numeric_cols:
-            if col in entry:
-                entry[col] = try_parse_float(entry[col])
-
-        # Standardize model name key
-        for key in list(entry.keys()):
-            if key.lower() in ("model", "model name", "name"):
-                if "model" not in entry:
-                    entry["model"] = entry.pop(key)
-
-    return data
+def _try_parse_float(value: str) -> float | None:
+    """Best-effort float parse."""
+    try:
+        return float(value.strip())
+    except (ValueError, AttributeError):
+        return None
 
 
-def save_json(data: list[dict], filepath: str):
-    """Save data as JSON with metadata."""
+def save_json(data: list[dict], filepath: str) -> None:
+    """Save leaderboard data to JSON."""
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    output = {
-        "source": "bridgebench.ai",
+    payload = {
+        "source": "bridgebench.ai/arena/leaderboard",
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "count": len(data),
         "models": data,
     }
     with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(output, f, indent=2, ensure_ascii=False)
+        json.dump(payload, f, indent=2, ensure_ascii=False)
     logger.info(f"Saved {len(data)} models to {filepath}")
 
 
 def run():
-    """Main ETL runner."""
-    data_dir = get_data_dir()
-    os.makedirs(data_dir, exist_ok=True)
-
-    for source, path in PAGES.items():
-        try:
-            html = fetch_page(path)
-            raw_data = parse_markdown_tables(html)
-
-            if not raw_data:
-                logger.warning(f"No data parsed for {source}, trying alternate parsing...")
-                continue
-
-            raw_data = normalize_rank(raw_data)
-            raw_data = normalize_scores(raw_data, source)
-
-            filepath = os.path.join(data_dir, f"bridgebench_{source}.json")
-            save_json(raw_data, filepath)
-
-        except Exception as e:
-            logger.error(f"Failed to process {source}: {e}")
-            import traceback
-
-            traceback.print_exc()
-
-    logger.info("BridgeBench ETL complete.")
+    """Fetch the BridgeBench arena leaderboard and persist it."""
+    try:
+        html = fetch_leaderboard_html()
+        models = parse_leaderboard(html)
+        if not models:
+            logger.warning("No leaderboard rows parsed — site layout may have changed again.")
+            return
+        save_json(models, os.path.join(get_data_dir(), "bridgebench_overall.json"))
+    except Exception as e:
+        logger.error(f"BridgeBench ETL failed: {e}")
+        raise
 
 
 if __name__ == "__main__":

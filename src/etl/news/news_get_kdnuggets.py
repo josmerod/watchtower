@@ -162,11 +162,18 @@ def main():
 
         processed_articles = process_kdnuggets_articles(articles)
 
-        # Save to JSON file
+        # Save to JSON file (stable path the dashboard reads + timestamped
+        # snapshot so trend analyses have history — spec 13 M5)
         output_file = os.path.join(output_dir, "kdnuggets.json")
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(processed_articles, f, indent=2)
         logger.debug(f"Saved JSON data to {output_file}")
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        snapshot_file = os.path.join(output_dir, f"kdnuggets_{timestamp}.json")
+        with open(snapshot_file, "w", encoding="utf-8") as f:
+            json.dump(processed_articles, f, indent=2)
+        logger.debug(f"Saved timestamped snapshot to {snapshot_file}")
 
         # Also save as CSV for easier viewing
         csv_file = os.path.join(output_dir, "kdnuggets.csv")
