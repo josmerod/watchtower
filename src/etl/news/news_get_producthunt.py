@@ -9,7 +9,7 @@ Usage:
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import requests
@@ -55,7 +55,7 @@ class ProductHuntETL:
             }
         }
         """ % (
-            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ"),
             limit,
         )
 

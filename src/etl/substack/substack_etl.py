@@ -17,6 +17,8 @@ from src.etl.base import BaseETL
 DEFAULT_NEWSLETTERS: list[str] = [
     "aimadesimple0",  # AI Made Simple by Nitin Sharma
     "adhdweasel",  # The ADHD Weasel
+    "interconnects",  # Interconnects (AI research) by Nathan Lambert
+    "thepragmaticengineer",  # The Pragmatic Engineer (redirects to custom domain)
 ]
 
 

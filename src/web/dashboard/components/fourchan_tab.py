@@ -1,20 +1,24 @@
 """4chan Generals Tab Component for Watchtower Dashboard"""
 
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import dash_table, dcc, html
+from dash import Input, Output, dash_table, dcc, html
 
 # Import repository pattern (NEW)
+from src.etl.fourchan.fourchan_generals_etl import DEFAULT_BOARDS
 from src.repositories import BaseRepository
+from src.web.dashboard.components.shared.table import render_items_table
+from src.web.dashboard.utils import get_data_path
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-DATA_FILE = Path("data/4chan_generals/output/latest.json")
+DATA_FILE = Path(get_data_path("4chan_generals", "output", "latest.json"))
 
 
 # NEW: Repository-based loading (SOLID Pattern)
@@ -86,25 +90,34 @@ def load_4chan_data() -> list[dict[str, Any]]:
 
 
 def get_board_description(board: str) -> str:
-    """Get a description for a board"""
-    board_descriptions = {
-        "g": "Technology - Programming, hardware, software, and tech discussions",
-        "vg": "Video Games Generals - Ongoing game discussions and threads",
-        "t": "Torrents - File sharing and technology discussions",
-        "pol": "Politically Incorrect - Political discussions and current events",
-        "biz": "Business & Finance - Economics, investing, and career advice",
-        "sci": "Science & Math - Scientific discussions and research",
-        "tv": "Television & Film - TV shows, movies, and entertainment",
-        "fit": "Fitness - Health, exercise, and wellness discussions",
-        "mu": "Music - All genres, artists, and music production",
-        "v": "Video Games - General gaming discussions",
-        "k": "Weapons - Firearms, military equipment, and tactics",
-        "o": "Auto - Cars, motorcycles, and automotive discussions",
-        "diy": "Do It Yourself - Home improvement and crafting projects",
-        "his": "History & Humanities - Historical discussions and academia",
-        "int": "International - Cultural exchange and world discussions",
-    }
-    return board_descriptions.get(board, f"Board /{board}/")
+    """Get a description for a board (canonical list lives in the ETL module)."""
+    return DEFAULT_BOARDS.get(board, f"Board /{board}/")
+
+
+def _relative_date(unix_ts) -> str:
+    """Format a unix timestamp as a short relative date ('3h', '2d', '45m')."""
+    try:
+        delta = datetime.now() - datetime.fromtimestamp(int(unix_ts))
+        seconds = int(delta.total_seconds())
+        if seconds < 0:
+            return "now"
+        if seconds < 3600:
+            return f"{max(1, seconds // 60)}m"
+        if seconds < 86400:
+            return f"{seconds // 3600}h"
+        return f"{seconds // 86400}d"
+    except (ValueError, TypeError, OSError):
+        return str(unix_ts)
+
+
+def _activity_score(thread: dict[str, Any]) -> float:
+    """Replies per hour since the thread's last activity (spec 06 FA4)."""
+    try:
+        replies = float(thread.get("replies") or 0)
+        hours = max(1.0, (datetime.now() - datetime.fromtimestamp(int(thread.get("last_modified") or 0))).total_seconds() / 3600)
+        return round(replies / hours, 2)
+    except (ValueError, TypeError, OSError):
+        return 0.0
 
 
 def create_board_table(board: str, threads: list[dict[str, Any]]) -> html.Div:
@@ -120,36 +133,46 @@ def create_board_table(board: str, threads: list[dict[str, Any]]) -> html.Div:
         # Prepare data for dash_table
         df = pd.DataFrame(threads)
 
+        # Activity score column (replies/hour, spec FA4)
+        if "replies" in df.columns:
+            df["Activity"] = df.apply(lambda row: _activity_score(row.to_dict()), axis=1)
+            threads = df.to_dict("records")
+            threads.sort(key=_activity_score, reverse=True)
+            df = pd.DataFrame(threads)
+
         # Select and rename columns for display
-        display_columns = ["subject", "replies", "images", "last_modified", "url"]
+        display_columns = ["subject", "replies", "images", "last_modified", "comment", "url", "Activity"]
+        display_columns = [c for c in display_columns if c in df.columns]
         display_df = df[display_columns].copy()
 
         # Format the data
         display_df["url"] = display_df["url"].apply(lambda x: f"[View Thread]({x})")
+        if "last_modified" in display_df.columns:
+            display_df["Last Modified"] = display_df["last_modified"].apply(_relative_date)
+        if "comment" in display_df.columns:
+            # OP preview in the table + full text in the tooltip
+            display_df["OP"] = display_df["comment"].apply(lambda c: f"{str(c)[:120]}…" if len(str(c)) > 120 else str(c))
+        drop = [c for c in ("last_modified", "comment", "subject", "replies", "images") if c in display_df.columns]
+        display_df = display_df.drop(columns=drop)
+
         display_df.columns = [
-            "Subject",
-            "Replies",
-            "Images",
-            "Last Modified",
-            "Thread URL",
+            {
+                "url": "Thread URL",
+                "OP": "OP (preview)",
+                "Last Modified": "Last Modified",
+                "Activity": "Activity (replies/h)",
+            }.get(col, col)
+            for col in display_df.columns
         ]
+        # Stable column order
+        order = ["Subject", "Replies", "Images", "Activity (replies/h)", "Last Modified", "OP (preview)", "Thread URL"]
+        display_df = display_df[[c for c in order if c in display_df.columns]]
 
         # Create table with dark theme styling
         table = dash_table.DataTable(
             id=f"4chan-table-{board}",
             data=display_df.to_dict("records"),
-            columns=[
-                {"name": "Subject", "id": "Subject", "type": "text"},
-                {"name": "Replies", "id": "Replies", "type": "numeric"},
-                {"name": "Images", "id": "Images", "type": "numeric"},
-                {"name": "Last Modified", "id": "Last Modified", "type": "numeric"},
-                {
-                    "name": "Thread URL",
-                    "id": "Thread URL",
-                    "type": "text",
-                    "presentation": "markdown",
-                },
-            ],
+            columns=[{"name": col, "id": col, "type": "numeric" if col in ("Replies", "Images") else "text", "presentation": "markdown" if col == "Thread URL" else "text"} for col in display_df.columns],
             style_cell={
                 "textAlign": "left",
                 "padding": "12px 16px",
@@ -180,8 +203,12 @@ def create_board_table(board: str, threads: list[dict[str, Any]]) -> html.Div:
                     "backgroundColor": "#A37FFF",
                     "color": "#1E1E2E",
                 },
+                # Activity color coding (spec FA4)
+                {"if": {"filter_query": "{Activity (replies/h)} >= 20", "column_id": "Activity (replies/h)"}, "backgroundColor": "#1B4332", "color": "#95D5B2", "fontWeight": "600"},
+                {"if": {"filter_query": "{Activity (replies/h)} >= 5 && {Activity (replies/h)} < 20", "column_id": "Activity (replies/h)"}, "backgroundColor": "#4A4E2B", "color": "#D8E48B"},
             ],
             sort_action="native",
+            sort_by=[{"column_id": "Activity (replies/h)", "direction": "desc"}] if "Activity (replies/h)" in display_df.columns else None,
             filter_action="native",
             page_action="native",
             page_current=0,
@@ -289,6 +316,15 @@ def render_fourchan_tab() -> html.Div:
                     ],
                     className="mb-4",
                 ),
+                # Cross-board global search (spec FA1)
+                dcc.Input(
+                    id="4chan-global-search",
+                    type="text",
+                    placeholder="🔎 Buscar en todos los boards (subject + OP)… ej. /dpt/, rust, homelab",
+                    debounce=True,
+                    className="form-control mb-2",
+                ),
+                html.Div(id="4chan-global-results", className="mb-3"),
                 # Tabs for different boards
                 dcc.Tabs(
                     id="4chan-boards-tabs",
@@ -320,6 +356,49 @@ def render_fourchan_tab() -> html.Div:
 
 
 def register_fourchan_callbacks(app):
-    """Register callbacks for 4chan tab"""
-    # No special callbacks needed for this tab currently
-    pass
+    """Register callbacks for 4chan tab."""
+
+    # Cross-board global search (spec FA1)
+    @app.callback(
+        Output("4chan-global-results", "children"),
+        Input("4chan-global-search", "value"),
+        prevent_initial_call=True,
+    )
+    def fourchan_global_search(search_term):
+        """Search subject + OP text across every board at once."""
+        try:
+            term = (search_term or "").strip().lower()
+            if not term:
+                return html.Div()
+
+            data = load_4chan_data()
+            matches = [t for t in data if term in str(t.get("subject") or "").lower() or term in str(t.get("comment") or "").lower()]
+            if not matches:
+                return dbc.Alert(f"Sin resultados para '{search_term}' en ningún board.", color="info")
+
+            matches.sort(key=_activity_score, reverse=True)
+            columns = [
+                {"header": "Board", "cell": lambda t: dbc.Badge(f"/{t.get('board', '?')}/", color="secondary")},
+                {
+                    "header": "Subject",
+                    "cell": lambda t: html.A(
+                        str(t.get("subject") or "(sin subject)")[:100],
+                        href=t.get("url"),
+                        target="_blank",
+                        className="text-decoration-none",
+                    ),
+                },
+                {"header": "Activity/h", "cell": lambda t: _activity_score(t)},
+                {"header": "Replies", "cell": lambda t: t.get("replies", 0)},
+                {"header": "Last Modified", "cell": lambda t: _relative_date(t.get("last_modified"))},
+            ]
+            board_count = len({t.get("board") for t in matches})
+            return html.Div(
+                [
+                    dbc.Alert(f"🔎 {len(matches)} threads en {board_count} boards para '{search_term}'", color="success", className="mb-2"),
+                    render_items_table(matches[:50], columns, empty_message="Sin resultados.", wrap_scroll=False),
+                ]
+            )
+        except Exception as e:
+            logger.error(f"Error in 4chan global search: {e}")
+            return dbc.Alert(f"Error en la búsqueda: {e}", color="danger")

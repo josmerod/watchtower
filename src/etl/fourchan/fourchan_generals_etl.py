@@ -5,8 +5,7 @@ threads whose OP (subject or comment) contains the word "General" (case-
 insensitive), and stores a consolidated list in the Watchtower data directory.
 
 Output files (one dated and one `latest.json`) are written to
-`data/4chan_generals/output/` so that Streamlit components can visualise the
-information easily.
+`data/4chan_generals/output/` for the dashboard's 4chan Generals tab.
 """
 
 from __future__ import annotations
@@ -26,6 +25,26 @@ from src.utils.logging import get_logger
 # Filter out BeautifulSoup warnings for URL-like content
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
+# Canonical board list + descriptions. The dashboard tab imports these so a
+# board is added/removed in exactly one place.
+DEFAULT_BOARDS: dict[str, str] = {
+    "g": "Technology - hardware, software, programming",
+    "vg": "Video Games Generals - per-game general threads",
+    "t": "Torrents/Technology - file sharing and tech",
+    "pol": "Politically Incorrect - news and politics",
+    "biz": "Business & Finance - markets, crypto, entrepreneurship",
+    "sci": "Science & Math - research and study",
+    "tv": "Television & Film - shows and movies",
+    "fit": "Fitness - training and health",
+    "mu": "Music - artists, genres, production",
+    "v": "Video Games - gaming discussion",
+    "k": "Weapons - firearms and militaria",
+    "o": "Auto - cars and motorcycles",
+    "diy": "Do It Yourself - home improvement, maker projects",
+    "his": "History & Humanities - historical discussion",
+    "int": "International - country/culture generals",
+}
+
 
 class FourChanGeneralsETL(SimpleETL):
     """ETL for 4chan *General* threads."""
@@ -33,23 +52,7 @@ class FourChanGeneralsETL(SimpleETL):
     CATALOG_URL = "https://a.4cdn.org/{board}/catalog.json"
 
     def __init__(self, boards: list[str] | None = None, **kwargs: Any):
-        self.boards = boards or [
-            "g",  # Technology
-            "vg",  # Video Games Generals
-            "t",  # Torrents/Technology
-            "pol",  # Politically Incorrect
-            "biz",  # Business & Finance
-            "sci",  # Science & Math
-            "tv",  # Television & Film
-            "fit",  # Fitness
-            "mu",  # Music
-            "v",  # Video Games
-            "k",  # Weapons
-            "o",  # Auto
-            "diy",  # Do It Yourself
-            "his",  # History & Humanities
-            "int",  # International
-        ]
+        self.boards = boards or list(DEFAULT_BOARDS.keys())
         super().__init__(name="4chan_generals", **kwargs)
         # Replace logger name to something shorter / clearer
         self.logger = get_logger("ETL.4chan_generals")

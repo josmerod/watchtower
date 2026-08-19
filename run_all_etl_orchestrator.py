@@ -29,6 +29,13 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_gittrends.py",
     "src/etl/news/news_get_uneed.py",
     "src/etl/news/news_get_producthunt.py",  # Was orphan — not in ETL_SCRIPTS, causing stale Product Hunt data
+    "src/etl/news/news_get_devto.py",  # Dev.to public API — feeds Knowledge Garden "Dev.to" subtab
+    "src/etl/news/news_get_stackoverflow_trends.py",  # StackExchange API — feeds Knowledge Garden "Stack Overflow" subtab
+    "src/etl/news/news_get_tldr.py",  # tldr.tech newsletters (Tech/AI/Data) — feeds News tab
+    "src/etl/news/news_get_infoq.py",  # InfoQ feed — feeds Tech Radar tab
+    "src/etl/news/news_get_thenewstack.py",  # The New Stack feed — feeds Tech Radar tab
+    "src/etl/news/news_get_changelog.py",  # changelog.com feed — feeds Tech Radar tab
+    "src/etl/analytics/trends_etl.py",  # Cross-source trend analysis — feeds 🔥 badges (News/ArXiv). Local files only; must run after news ETLs
     "src/etl/news/valencia_events_etl.py",  # Feeds dashboard Valencia Events tab
     "src/etl/news/news_get_spanish_tech.py",  # Xataka, Hipertextual, Genbeta
     "src/etl/news/news_get_cloud_updates.py",  # AWS, GCP, CNCF, GitHub Blog
@@ -47,6 +54,9 @@ ETL_SCRIPTS = [
     "src/etl/goldigging/audible_releases_etl.py",
     "src/etl/goldigging/viajeros_piratas_etl.py",
     "src/etl/goldigging/humble_books_etl.py",
+    # BLOCKED: Epic's storefront API host (store-site.ak.epicgames.com) returns NXDOMAIN
+    # globally and the HTML page is bot-protected. ETL kept for when an endpoint returns.
+    # "src/etl/goldigging/epic_free_games_etl.py",
     # Arxiv
     "src/etl/arxiv/arxiv_etl.py",
     # AI Platforms
@@ -59,6 +69,7 @@ ETL_SCRIPTS = [
     "src/etl/youtube_shorts_ocr_etl.py",
     # Courses
     "src/etl/courses/udemy_spreadsheet_etl.py",
+    "src/etl/courses/hf_learn_etl.py",  # Hugging Face Learn catalog — feeds Learning tab
     "src/etl/courses/ms_applied_skills_etl.py",
     "src/etl/courses/aws_skill_builder_etl.py",
     "src/etl/courses/gcp_skills_boost_etl.py",

@@ -10,12 +10,13 @@ from dash import html
 
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
+from src.web.dashboard.utils import get_data_path
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 # Data file paths
-VALENCIA_EVENTS_FILE = Path("data/valencia_events/valencia_events.json")
+VALENCIA_EVENTS_FILE = Path(get_data_path("valencia_events", "valencia_events.json"))
 
 
 # NEW: Repository-based loading (SOLID Pattern)
@@ -261,14 +262,27 @@ def render_valencia_events_tab() -> html.Div:
         # Filter data for different views
         tech_events_data = [e for e in events_data if "tech" in e.get("category", "").lower() or "tecnología" in e.get("category", "").lower()]
 
-        upcoming_events_data = [e for e in events_data if e.get("start_date") and _is_upcoming_event(e.get("start_date", ""), datetime.now() + timedelta(days=30))]
+        _now = datetime.now()
+        upcoming_events_data = [e for e in events_data if e.get("start_date") and _is_upcoming_event(e.get("start_date", ""), _now, _now + timedelta(days=30))]
 
         # Statistics
         total_events = len(events_data)
         categories = {event.get("category", "General") for event in events_data}
         tech_events_count = len(tech_events_data)
-        len(upcoming_events_data)
-        free_events = len([e for e in events_data if e.get("cost", 0) == 0])
+        # ValenciaEvent has no cost field yet; only claim "free" when the value
+        # is explicitly present (a missing cost must not count as free).
+
+        def _is_free_event(event: dict) -> bool:
+            cost = event.get("cost")
+            if cost is None:
+                return False
+            try:
+                return float(str(cost).replace(",", ".")) == 0
+            except ValueError:
+                return False
+
+        _has_cost_info = any(e.get("cost") is not None for e in events_data)
+        free_events = len([e for e in events_data if _is_free_event(e)]) if _has_cost_info else None
 
         def _stat_card(value: str, label: str, icon: str) -> dbc.Card:
             return dbc.Card(
@@ -292,7 +306,7 @@ def render_valencia_events_tab() -> html.Div:
                 dbc.Col(_stat_card(str(total_events), "Total Events", "📋"), xs=6, md=3, className="mb-3"),
                 dbc.Col(_stat_card(str(len(categories)), "Categories", "🏷️"), xs=6, md=3, className="mb-3"),
                 dbc.Col(_stat_card(str(tech_events_count), "Tech Events", "💻"), xs=6, md=3, className="mb-3"),
-                dbc.Col(_stat_card(str(free_events), "Free Events", "🎟️"), xs=6, md=3, className="mb-3"),
+                dbc.Col(_stat_card(str(free_events) if free_events is not None else "N/D", "Free Events (con precio)", "🎟️"), xs=6, md=3, className="mb-3"),
             ],
             className="mb-4",
         )
@@ -366,23 +380,33 @@ def render_valencia_events_tab() -> html.Div:
         )
 
 
-def _is_upcoming_event(date_str: str, cutoff_date: datetime) -> bool:
-    """Check if an event date is within the next 30 days."""
+def _parse_event_date(date_str: str) -> datetime | None:
+    """Parse an event date in DD/MM/YYYY or ISO (YYYY-MM-DD) format."""
+    if not date_str or not isinstance(date_str, str):
+        return None
     try:
-        if not date_str or "/" not in date_str:
-            return False
-
-        # Parse DD/MM/YYYY format
-        parts = date_str.split("/")
-        if len(parts) == 3:
-            day, month, year = parts
-            event_date = datetime(int(year), int(month), int(day))
-
-            return event_date <= cutoff_date
-    except Exception:
+        # ISO format first (start_date may be YYYY-MM-DD or full ISO)
+        iso_part = date_str.split("T")[0]
+        if "-" in iso_part:
+            parts = iso_part.split("-")
+            if len(parts) == 3:
+                return datetime(int(parts[0]), int(parts[1]), int(parts[2]))
+        # Spanish DD/MM/YYYY
+        if "/" in date_str:
+            parts = date_str.split("/")
+            if len(parts) == 3:
+                return datetime(int(parts[2]), int(parts[1]), int(parts[0]))
+    except (ValueError, TypeError):
         pass
+    return None
 
-    return False
+
+def _is_upcoming_event(date_str: str, now: datetime, cutoff_date: datetime) -> bool:
+    """Check if an event happens between now and the cutoff date."""
+    event_date = _parse_event_date(date_str)
+    if event_date is None:
+        return False
+    return now <= event_date <= cutoff_date
 
 
 def register_valencia_events_callbacks(app):

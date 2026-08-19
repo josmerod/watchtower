@@ -1,9 +1,10 @@
+import logging
 from pathlib import Path
 from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import Input, Output, State, dcc, html
 
 # Import shared utilities
 # Import repository pattern (NEW)
@@ -15,6 +16,23 @@ from src.services.data_loader import (
 from src.services.data_loader import (
     format_article_date as format_article_date_shared,
 )
+from src.web.dashboard.components import saved_items
+from src.web.dashboard.components.shared.cache import TTLDataCache
+from src.web.dashboard.components.shared.health import source_health_dots
+from src.web.dashboard.components.shared.table import (
+    create_refresh_button,
+    paginate,
+    pagination_controls,
+    render_items_table,
+    title_cell,
+)
+from src.web.dashboard.search_utils import (
+    create_search_input,
+    filter_content,
+    highlight_segments,
+)
+
+logger = logging.getLogger(__name__)
 
 # KNOWLEDGE GARDEN TAB - Reddit, dev communities, and similar sources
 # KNOWLEDGE_SOURCES_CONFIG imported from data_loader
@@ -87,21 +105,8 @@ rss_feeds_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["rss_feeds"]
 
 
 # Load knowledge data dynamically instead of at import time
-def get_all_knowledge_data():
-    """Load fresh knowledge data from all configured sources using repository pattern (NEW)."""
-    # Simple TTL cache to avoid re-reading dozens of files on each tab switch
-    # Cache in module state for ~60 seconds
-    import time
-
-    global _KNOWLEDGE_CACHE
-    now = time.time()
-    try:
-        if _KNOWLEDGE_CACHE and now - _KNOWLEDGE_CACHE.get("ts", 0) < 60:
-            return _KNOWLEDGE_CACHE["data"]
-    except NameError:
-        pass
-
-    # Use repository pattern instead of manual file loading
+def _load_all_knowledge_data():
+    """Read every configured source through its repository."""
     repository_map = {
         "opensource": opensource_repo,
         "reddit_opensource": reddit_opensource_repo,
@@ -131,8 +136,16 @@ def get_all_knowledge_data():
         except Exception:
             # Gracefully handle missing/corrupt data files (e.g. ETL not yet run)
             data[source_key] = []
-    _KNOWLEDGE_CACHE = {"ts": now, "data": data}
     return data
+
+
+# Module cache via the shared TTL helper (spec 15 M2 — no NameError antipattern)
+_knowledge_cache = TTLDataCache(ttl_seconds=60)
+
+
+def get_all_knowledge_data(force_refresh: bool = False):
+    """Load knowledge data from all configured sources (60s module cache)."""
+    return _knowledge_cache.get(_load_all_knowledge_data, force_refresh=force_refresh)
 
 
 # --- Helper function to parse dates ---
@@ -143,6 +156,42 @@ def get_all_knowledge_data():
 
 MAX_ARTICLES_PER_SOURCE = 50  # Limit number of articles displayed per source initially
 
+# Single source of truth for the subtab list; search input IDs are derived
+# from it so every subtab's search box is guaranteed to be wired.
+KNOWLEDGE_TAB_DEFINITIONS = [
+    {"label": "LessWrong", "keys": "lesswrong", "id": "lw"},
+    {"label": "Good Devs", "keys": "gooddevs", "id": "gd"},
+    {"label": "Podcasts", "keys": "podcasts", "id": "pod"},
+    {"label": "Reddit AI/ML", "keys": "reddit_ai_ml", "id": "reddit_ai_ml"},
+    {
+        "label": "Reddit Programming",
+        "keys": "reddit_programming",
+        "id": "reddit_prog",
+    },
+    {"label": "Reddit Tech", "keys": "reddit_tech", "id": "reddit_tech"},
+    {"label": "Reddit DevOps", "keys": "reddit_devops", "id": "reddit_devops"},
+    {"label": "Reddit All", "keys": "reddit_unified", "id": "reddit_all"},
+    {"label": "Git Trends", "keys": "gittrends", "id": "gt"},
+    {"label": "HN Ask", "keys": "hackernews_ask", "id": "hn_ask"},
+    {"label": "Stack Overflow", "keys": "stackoverflow_trends", "id": "so"},
+    {"label": "Product Hunt", "keys": "product_hunt", "id": "ph"},
+    # Developer community tab
+    {"label": "Dev.to", "keys": "devto", "id": "devto"},
+    {"label": "HypeURLs", "keys": "hypeurls", "id": "hypeurls"},
+    {"label": "Open Source", "keys": ["opensource", "reddit_opensource"], "id": "opensource"},
+    {"label": "Substack", "keys": "substack", "id": "substack"},
+    {"label": "TrendShift", "keys": "trendshift", "id": "trendshift"},
+    {"label": "RSS Feeds", "keys": "rss_feeds", "id": "rss_feeds"},
+]
+
+
+def _knowledge_search_id(tab_def: dict) -> str:
+    """Derive the search input ID for a tab definition (layout and callbacks agree)."""
+    keys = tab_def["keys"]
+    if isinstance(keys, str):
+        return f"knowledge-search-{keys}"
+    return f"knowledge-search-{'-'.join(keys)}"
+
 
 # format_article_date removed (using shared logic)
 def format_article_date(article):
@@ -150,109 +199,338 @@ def format_article_date(article):
     return format_article_date_shared(article)
 
 
-def create_knowledge_source_tab_content(source_keys, combined_name=None):
-    """Creates the content for a knowledge tab as a table, potentially combining multiple sources.
+# hash -> full item dict, filled at render time so the toggle callback can
+# create a saved record on first star (the button id only carries the hash)
+_SAVE_REGISTRY: dict[str, dict] = {}
 
-    Sorts articles by date before limiting.
+
+def _save_button(article: dict) -> dbc.Button:
+    """Star/unstar button for a knowledge item (pattern-matching id per hash)."""
+    h = saved_items.item_hash(article.get("url") or article.get("link"), article.get("title") or article.get("name"))
+    _SAVE_REGISTRY[h] = article
+    saved = saved_items.is_saved(h)
+    return dbc.Button(
+        "★" if saved else "☆",
+        id={"type": "kg-save-btn", "hash": h},
+        color="warning" if saved else "outline-secondary",
+        size="sm",
+        className="ms-1 p-0 border-0",
+        title="Quitar de guardados" if saved else "Guardar para luego",
+    )
+
+
+def _render_saved_subtab() -> html.Div:
+    """Render the '⭐ Guardados' subtab content (read-it-later list)."""
+    saved = saved_items.load_saved()
+    container = html.Div(id="kg-saved-results")
+    if not saved:
+        container.children = dbc.Alert("Todavía no has guardado nada. Pulsa la estrella ☆ de cualquier item de la garden.", color="info")
+        return container
+    rows = [
+        html.Tr(
+            [
+                html.Td(_save_button({"url": s.get("url"), "title": s.get("title"), "source": s.get("source")})),
+                html.Td(html.A(s.get("title", ""), href=s.get("url"), target="_blank")),
+                html.Td(s.get("source", "")),
+                html.Td(s.get("saved_at", "")),
+            ]
+        )
+        for s in saved
+    ]
+    table = dbc.Table(
+        [html.Thead(html.Tr([html.Th(""), html.Th("Title"), html.Th("Source"), html.Th("Saved")]))] + [html.Tbody(rows)],
+        bordered=True,
+        hover=True,
+        striped=True,
+        size="sm",
+        color="dark",
+    )
+    container.children = html.Div(table, style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"})
+    return container
+
+
+def build_knowledge_table(source_keys, search_term: str = "", display_name: str = "Knowledge", page: int = 1):
+    """Build the knowledge items table, optionally filtered, highlighted and paginated.
+
+    Returns:
+        Tuple of (content, current_page): content is the pagination controls +
+        shared items table; current_page is the clamped page actually rendered.
     """
+    if isinstance(source_keys, str):
+        source_keys = [source_keys]
+
+    # Load fresh data each time (60s module cache)
+    all_knowledge_data = get_all_knowledge_data()
+
     all_articles_for_tab = []
-    if isinstance(source_keys, str):  # Single source key
+    for key in source_keys:
+        articles_from_source = all_knowledge_data.get(key, [])
+        for article in articles_from_source:
+            article["source_display_name"] = article.get("source", KNOWLEDGE_SOURCES_CONFIG[key]["name"])
+        all_articles_for_tab.extend(articles_from_source)
+
+    all_articles_for_tab.sort(key=get_sortable_date, reverse=True)
+
+    if not all_articles_for_tab:
+        return dbc.Alert(f"No knowledge items available for {display_name}.", color="info"), 1
+
+    if search_term:
+        searchable_fields = ["title", "name", "full_name", "summary", "description", "source", "source_display_name"]
+        all_articles_for_tab = filter_content(search_term, all_articles_for_tab, searchable_fields)
+
+    if not all_articles_for_tab:
+        return dbc.Alert(f"No knowledge items matching '{search_term}'.", color="info"), 1
+
+    page_items, total_pages, page = paginate(all_articles_for_tab, page, MAX_ARTICLES_PER_SOURCE)
+
+    columns = [
+        {
+            "header": "",
+            "cell": lambda article: _save_button(article),
+            "td_kwargs": {"style": {"width": "2rem"}},
+        },
+        {
+            "header": "Title",
+            "cell": lambda article: title_cell(article, search_term, title_fields=("title", "name", "full_name"), url_fields=("url", "link", "html_url", "website")),
+        },
+        {"header": "Source", "cell": lambda article: article.get("source_display_name", display_name)},
+        {"header": "Date", "cell": lambda article: format_article_date(article)},
+    ]
+    table = render_items_table(page_items, columns, empty_message=f"No knowledge items matching '{search_term}'.", wrap_scroll=False)
+
+    search_id = f"knowledge-search-{'-'.join(source_keys)}"
+    controls = pagination_controls(
+        "kg",
+        page=page,
+        total_pages=total_pages,
+        showing=len(page_items),
+        total=len(all_articles_for_tab),
+        id_prefix=search_id,
+    )
+
+    content = html.Div([table], style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"})
+    if search_term:
+        content = html.Div(
+            [
+                dbc.Alert(f"🌱 Found {len(all_articles_for_tab)} items matching '{search_term}'", color="success", className="mb-3"),
+                table,
+            ]
+        )
+    return html.Div([controls, content]), page
+
+
+def create_knowledge_source_tab_content(source_keys, combined_name=None):
+    """Creates the content for a knowledge tab: search input + results container."""
+    if isinstance(source_keys, str):
         source_keys = [source_keys]
         source_display_name = KNOWLEDGE_SOURCES_CONFIG[source_keys[0]]["name"]
     else:  # List of source keys (for combined tabs)
         source_display_name = combined_name or "Combined Knowledge"
 
-    # Load fresh data each time
-    all_knowledge_data = get_all_knowledge_data()
+    tab_search_id = f"knowledge-search-{'-'.join(source_keys)}"
 
-    for key in source_keys:
-        articles_from_source = all_knowledge_data.get(key, [])
-        # Add source name to each article for display in the table
-        for article in articles_from_source:
-            # Use 'source_display' to ensure we have a consistent field for the table
-            article["source_display_name"] = article.get("source", KNOWLEDGE_SOURCES_CONFIG[key]["name"])
-        all_articles_for_tab.extend(articles_from_source)
+    initial_content, _ = build_knowledge_table(source_keys, display_name=source_display_name)
 
-    # Sort all articles by date (descending)
-    all_articles_for_tab.sort(key=get_sortable_date, reverse=True)
-
-    articles_to_display = all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]
-
-    if not articles_to_display:
-        return dbc.Alert(f"No knowledge items available for {source_display_name}.", color="info")
-
-    # Create table header
-    table_header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")]))]
-
-    # Create table body with robust field fallbacks for heterogeneous sources
-    table_body_rows = []
-    for article in articles_to_display:
-        # Title fallbacks: common across Product Hunt/GitHub Trends/others
-        title = article.get("title") or article.get("name") or article.get("full_name") or "No Title"
-        # URL fallbacks
-        url = article.get("url") or article.get("link") or article.get("html_url") or article.get("website")
-        # Use the 'source_display_name' we added earlier
-        source_for_display = article.get("source_display_name", source_display_name)
-        date_display = format_article_date(article)
-
-        table_body_rows.append(
-            html.Tr(
+    return html.Div(
+        [
+            dbc.Row(
                 [
-                    html.Td(html.A(title, href=url, target="_blank") if url else title),
-                    html.Td(source_for_display),
-                    html.Td(date_display),
-                ]
-            )
-        )
-
-    table_body = [html.Tbody(table_body_rows)]
-
-    # Combine header and body into a dbc.Table
-    table = dbc.Table(
-        table_header + table_body,
-        bordered=True,
-        hover=True,
-        responsive=True,  # Makes table scroll horizontally on small screens
-        striped=True,
-        size="sm",
-        color="dark",
-        className="table-responsive mb-0",  # Remove default bottom margin if wrapped in Div with padding
+                    dbc.Col(
+                        create_search_input(
+                            input_id=tab_search_id,
+                            placeholder=f"Filter {source_display_name} by term...",
+                            clear_button=True,
+                        ),
+                        width=True,
+                    ),
+                    dbc.Col(
+                        dbc.Button(
+                            "🔄 Refresh",
+                            id=f"{tab_search_id}-refresh",
+                            color="secondary",
+                            size="sm",
+                            className="float-end",
+                        ),
+                        width="auto",
+                    ),
+                ],
+                className="mb-3",
+            ),
+            html.Div(
+                initial_content,
+                id=f"{tab_search_id}-results",
+                style={"maxHeight": "860px", "overflowY": "auto", "paddingRight": "15px"},
+            ),
+            dcc.Store(id=f"{tab_search_id}-page", data=1),
+        ]
     )
 
-    # Return the table wrapped in a Div for consistent styling (e.g. maxHeight, overflow)
-    return html.Div(table, style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"})
+
+def register_knowledge_garden_callbacks(app):
+    """Register per-subtab controllers (search + pagination + refresh).
+
+    Every subtab is rendered eagerly, so literal component ids referenced here
+    are always present in the layout (no renderer dead-callback risk).
+    """
+    for tab_def in KNOWLEDGE_TAB_DEFINITIONS:
+        search_id = _knowledge_search_id(tab_def)
+        keys = tab_def["keys"]
+        label = tab_def["label"]
+
+        @app.callback(
+            [Output(f"{search_id}-results", "children"), Output(f"{search_id}-page", "data")],
+            [
+                Input(search_id, "value"),
+                Input(f"{search_id}-prev", "n_clicks"),
+                Input(f"{search_id}-next", "n_clicks"),
+                Input(f"{search_id}-refresh", "n_clicks"),
+            ],
+            [State(f"{search_id}-page", "data")],
+            prevent_initial_call=True,
+        )
+        def update_knowledge_controller(search_term, _prev, _next, _refresh, current_page, keys=keys, label=label, search_id=search_id):
+            try:
+                ctx = dash.ctx.triggered_id
+                page = int(current_page or 1)
+                force_refresh = False
+                if ctx == f"{search_id}-prev":
+                    page -= 1
+                elif ctx == f"{search_id}-next":
+                    page += 1
+                elif ctx == f"{search_id}-refresh":
+                    force_refresh = True
+                else:
+                    # Any search-term change resets to the first page
+                    page = 1
+                if force_refresh:
+                    get_all_knowledge_data(force_refresh=True)
+                content, page = build_knowledge_table(keys, search_term=(search_term or "").strip(), display_name=label, page=page)
+                return content, page
+            except Exception as e:
+                logger.error(f"Error in knowledge controller for {label}: {e}")
+                return dbc.Alert(f"Error searching: {e}", color="danger"), 1
+
+        @app.callback(
+            Output(search_id, "value", allow_duplicate=True),
+            Input(f"{search_id}-clear", "n_clicks"),
+            prevent_initial_call=True,
+        )
+        def clear_knowledge_search(n_clicks):
+            if n_clicks:
+                return ""
+            return dash.no_update
+
+    # Save/unsave toggle (spec 03 F3): one dynamic callback per starred item
+    @app.callback(
+        Output({"type": "kg-save-btn", "hash": dash.MATCH}, "children"),
+        Output({"type": "kg-save-btn", "hash": dash.MATCH}, "color"),
+        Output({"type": "kg-save-btn", "hash": dash.MATCH}, "title"),
+        Output("kg-saved-results", "children", allow_duplicate=True),
+        Input({"type": "kg-save-btn", "hash": dash.MATCH}, "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def toggle_saved_item(n_clicks):
+        try:
+            h = dash.ctx.triggered_id.hash
+            # Unstar: the record lives in the saved file. First star: the item
+            # comes from the render-time registry (the id only carries a hash).
+            saved = saved_items.load_saved()
+            record = next((s for s in saved if s.get("hash") == h), None)
+            if record is None:
+                record = _SAVE_REGISTRY.get(h)
+            if record is None:
+                return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            new_state = saved_items.toggle_saved(record)
+            updated = _render_saved_subtab().children
+            if new_state:
+                return "★", "warning", "Quitar de guardados", updated
+            return "☆", "outline-secondary", "Guardar para luego", updated
+        except Exception as e:
+            logger.error(f"Error toggling saved item: {e}")
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+    # Garden global search across every source (spec 03 F1)
+    @app.callback(
+        Output("kg-global-results", "children"),
+        Input("kg-global-search-input", "value"),
+        prevent_initial_call=True,
+    )
+    def kg_global_search(search_term):
+        """Search every knowledge source and group results by source."""
+        try:
+            term = (search_term or "").strip()
+            if not term:
+                return dbc.Alert("Escribe un término para comenzar.", color="secondary")
+
+            all_data = get_all_knowledge_data()
+            searchable_fields = ["title", "name", "full_name", "summary", "description", "source"]
+
+            groups = []
+            total = 0
+            for key, articles in all_data.items():
+                if not articles:
+                    continue
+                source_name = KNOWLEDGE_SOURCES_CONFIG.get(key, {}).get("name", key)
+                candidates = [dict(a) for a in articles]
+                matches = filter_content(term, candidates, searchable_fields)
+                if matches:
+                    matches.sort(key=get_sortable_date, reverse=True)
+                    groups.append((source_name, matches))
+                    total += len(matches)
+
+            if not groups:
+                return dbc.Alert(f"Sin resultados para '{term}' en la garden.", color="info")
+
+            groups.sort(key=lambda g: len(g[1]), reverse=True)
+            summary = dbc.Alert(
+                f"🌱 {total} resultados en {len(groups)} fuentes para '{term}'",
+                color="success",
+                className="mb-3",
+            )
+
+            sections = [summary]
+            for source_name, matches in groups[:12]:
+                sections.append(
+                    html.Div(
+                        [
+                            html.H6(
+                                [
+                                    f"{source_name} ",
+                                    dbc.Badge(len(matches), color="secondary", pill=True),
+                                ],
+                                className="mt-3 mb-1",
+                            ),
+                            render_items_table(
+                                matches[:15],
+                                [
+                                    {"header": "Title", "cell": lambda a: title_cell(a, term)},
+                                    {"header": "Date", "cell": lambda a: format_article_date(a)},
+                                ],
+                                empty_message="Sin resultados.",
+                                wrap_scroll=False,
+                            ),
+                        ]
+                    )
+                )
+            return html.Div(sections)
+        except Exception as e:
+            logger.error(f"Error in KG global search: {e}")
+            return dbc.Alert(f"Error en la búsqueda global: {e}", color="danger")
 
 
 # Main function to render the knowledge garden tab
 def render_knowledge_garden_tab():
     """Render the complete knowledge garden tab with all sub-tabs."""
-    tab_definitions = [
-        {"label": "LessWrong", "keys": "lesswrong", "id": "lw"},
-        {"label": "Good Devs", "keys": "gooddevs", "id": "gd"},
-        {"label": "Podcasts", "keys": "podcasts", "id": "pod"},
-        {"label": "Reddit AI/ML", "keys": "reddit_ai_ml", "id": "reddit_ai_ml"},
-        {
-            "label": "Reddit Programming",
-            "keys": "reddit_programming",
-            "id": "reddit_prog",
-        },
-        {"label": "Reddit Tech", "keys": "reddit_tech", "id": "reddit_tech"},
-        {"label": "Reddit DevOps", "keys": "reddit_devops", "id": "reddit_devops"},
-        {"label": "Reddit All", "keys": "reddit_unified", "id": "reddit_all"},
-        {"label": "Git Trends", "keys": "gittrends", "id": "gt"},
-        {"label": "HN Ask", "keys": "hackernews_ask", "id": "hn_ask"},
-        {"label": "Stack Overflow", "keys": "stackoverflow_trends", "id": "so"},
-        {"label": "Product Hunt", "keys": "product_hunt", "id": "ph"},
-        # Developer community tab
-        {"label": "Dev.to", "keys": "devto", "id": "devto"},
-        {"label": "HypeURLs", "keys": "hypeurls", "id": "hypeurls"},
-        {"label": "Open Source", "keys": ["opensource", "reddit_opensource"], "id": "opensource"},
-        {"label": "Substack", "keys": "substack", "id": "substack"},
-        {"label": "TrendShift", "keys": "trendshift", "id": "trendshift"},
-        {"label": "RSS Feeds", "keys": "rss_feeds", "id": "rss_feeds"},
-    ]
+    tab_definitions = KNOWLEDGE_TAB_DEFINITIONS
 
-    tabs_children = []
+    tabs_children = [
+        dbc.Tab(
+            label="⭐ Guardados",
+            tab_id="knowledge-tab-saved",
+            children=_render_saved_subtab(),
+            id="knowledge-tab-saved-container",
+        )
+    ]
 
     # 2. Standard Knowledge Sources (Table Layout)
     for tab_def in tab_definitions:
@@ -267,9 +545,26 @@ def render_knowledge_garden_tab():
             )
         )
 
+    # Health dots for every configured source (spec 03 F4)
+    health_sources = {cfg["name"]: cfg.get("path", "") for cfg in KNOWLEDGE_SOURCES_CONFIG.values() if cfg.get("path")}
+
     return html.Div(
         [
             html.H3("Knowledge Garden", className="mb-3"),
+            source_health_dots(health_sources, title="Salud de fuentes:"),
+            # Garden global search — one query across every source (spec 03 F1)
+            dcc.Input(
+                id="kg-global-search-input",
+                type="text",
+                placeholder="🔎 Buscar en todas las fuentes de la garden… (ej. kubernetes rust)",
+                debounce=True,
+                className="form-control mb-2",
+            ),
+            html.Div(
+                dbc.Alert("Escribe un término para buscar en todas las fuentes a la vez; los resultados se agrupan por fuente.", color="secondary"),
+                id="kg-global-results",
+                className="mb-3",
+            ),
             dbc.Tabs(
                 id="knowledge-source-tabs-main",
                 children=tabs_children,

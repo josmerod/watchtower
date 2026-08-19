@@ -28,7 +28,7 @@ from src.web.dashboard.search_utils import (
 )
 from src.web.dashboard.trend_utils import (
     get_trending_items_map,
-    is_item_trending,
+    match_item_trend,
     render_trend_badge,
 )
 
@@ -78,13 +78,6 @@ def create_arxiv_category_tab_content(source_key):
     all_arxiv_data = get_all_arxiv_data()
     papers_from_source = all_arxiv_data.get(source_key, [])
 
-    # Store all papers in a hidden div for search filtering
-    papers_data_store = html.Div(
-        papers_from_source[:MAX_PAPERS_PER_TAB],
-        id=f"{tab_search_id}-data",
-        style={"display": "none"},
-    )
-
     if not papers_from_source:
         return dbc.Alert(f"No papers available for {source_display_name}.", color="info", className="mt-3")
 
@@ -110,12 +103,9 @@ def create_arxiv_category_tab_content(source_key):
     # Create table body with robust field fallbacks
     table_body_rows = []
     for _i, paper in enumerate(papers_from_source[:MAX_PAPERS_PER_TAB]):
-        # Check trend status
-        is_trending = is_item_trending(paper, trending_map)
-
-        # Use primary category for trend checking if available
-        primary_cat = paper.get("categories", [""])[0] if isinstance(paper.get("categories"), list) and paper.get("categories") else ""
-        trend_badge = render_trend_badge(trending_map.get(f"category:{primary_cat}") or trending_map.get(paper.get("id"))) if is_trending else None
+        # Match by id, url, source or trending term in the title
+        trend_record = match_item_trend(paper, trending_map)
+        trend_badge = render_trend_badge(trend_record)
 
         # Title
         title = paper.get("title", "Unknown Title")
@@ -135,7 +125,7 @@ def create_arxiv_category_tab_content(source_key):
         date_display = format_article_date(paper)
 
         # Add trending class for styling
-        row_class = "trending-item" if is_trending else ""
+        row_class = "trending-item" if trend_record is not None else ""
 
         title_elements = [
             html.A(title, href=url, target="_blank", className="text-decoration-none fw-bold") if url else title,
@@ -197,8 +187,6 @@ def create_arxiv_category_tab_content(source_key):
                 ],
                 className="mb-3 mt-3 align-items-center",
             ),
-            # Hidden data storage for search filtering
-            papers_data_store,
             # Container for filtered results
             html.Div(
                 table,
@@ -223,9 +211,8 @@ def register_arxiv_callbacks(app):
         @app.callback(
             Output(f"{search_id}-results", "children"),
             [Input(search_id, "value")],
-            State(f"{search_id}-data", "children"),
         )
-        def update_arxiv_search(search_term, _unused_state_data, current_search_id=search_id):
+        def update_arxiv_search(search_term, current_search_id=search_id):
             """Update ArXiv display based on search term."""
             try:
                 # 1. Determine Source Key from Search ID
@@ -272,10 +259,9 @@ def register_arxiv_callbacks(app):
 
                 table_body_rows = []
                 for _i, paper in enumerate(filtered_papers):
-                    # Check trend status
-                    is_trending = is_item_trending(paper, trending_map)
-                    primary_cat = paper.get("categories", [""])[0] if isinstance(paper.get("categories"), list) and paper.get("categories") else ""
-                    trend_badge = render_trend_badge(trending_map.get(f"category:{primary_cat}") or trending_map.get(paper.get("id"))) if is_trending else None
+                    # Match by id, url, source or trending term in the title
+                    trend_record = match_item_trend(paper, trending_map)
+                    trend_badge = render_trend_badge(trend_record)
 
                     title = str(paper.get("title", "Unknown Title")).replace("\n", " ").strip()
                     url = paper.get("link") or paper.get("id")
@@ -286,7 +272,7 @@ def register_arxiv_callbacks(app):
 
                     date_display = format_article_date(paper)
 
-                    row_class = "trending-item" if is_trending else ""
+                    row_class = "trending-item" if trend_record is not None else ""
 
                     title_elements = [
                         html.A(title, href=url, target="_blank", className="text-decoration-none fw-bold") if url else title,

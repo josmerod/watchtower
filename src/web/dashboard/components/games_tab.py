@@ -787,6 +787,21 @@ def render_games_tab():
                 id="games-sub-tabs",
                 children=[
                     dbc.Tab(
+                        label="💰 Deals",
+                        tab_id="subtab-deals",
+                        children=render_deals_sub_tab(ALL_GAMES_DATA["deals"]),
+                    ),
+                    dbc.Tab(
+                        label="📦 Bundles",
+                        tab_id="subtab-bundles",
+                        children=render_bundles_sub_tab(ALL_GAMES_DATA["bundles"]),
+                    ),
+                    dbc.Tab(
+                        label="🔥 Itch.io Trending",
+                        tab_id="subtab-trending",
+                        children=render_trending_sub_tab(ALL_GAMES_DATA["trending"]),
+                    ),
+                    dbc.Tab(
                         label="Reviews (Metacritic)",
                         tab_id="subtab-metacritic",
                         children=render_metacritic_sub_tab(ALL_GAMES_DATA["metacritic"]),
