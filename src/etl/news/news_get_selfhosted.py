@@ -43,7 +43,7 @@ def fetch_selfhosted_feed() -> list[dict[str, Any]]:
         entries = _fetch_single_feed(feed_info)
         all_entries.extend(entries)
 
-    # Newest first across feeds (unparseable dates sort last).
+    # Newest first across feeds; entries without a parseable date sort last.
     all_entries.sort(key=lambda e: e.get("published") or "", reverse=True)
     logger.info(f"Retrieved {len(all_entries)} items across {len(RSS_FEEDS)} self-hosting feeds")
     return all_entries
