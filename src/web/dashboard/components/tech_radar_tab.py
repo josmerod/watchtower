@@ -4,35 +4,49 @@ Aggregates technology news from multiple sources to track the latest trends
 and updates across cloud computing, generative AI, artificial intelligence,
 and self-hosted applications/tools. Consolidates sources that were previously
 scattered across the News tab (Google AI Blog, KDNuggets, Cloud Updates) plus
-new dedicated sources (selfh.st for self-hosting).
+dedicated sources: selfh.st + LinuxServer.io (self-hosting), the Hacker News
+front page via Algolia (discussion), and the r/SelfHosted + r/homelab
+community pulse from the reddit_unified ETL (spec 13 source table).
 """
 
 import json
 import logging
 import os
 import re
+from datetime import datetime
 from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from dash import Input, Output, dcc, html
+from dash import ALL, Input, Output, dcc, html
 
 from src.utils.file_system import get_project_root
+from src.web.dashboard.components.shared.cache import TTLDataCache
+from src.web.dashboard.components.shared.table import create_refresh_button
 from src.web.dashboard.search_utils import create_search_input, filter_content
 
 logger = logging.getLogger(__name__)
 
-# Source definitions: key -> (label, data file path relative to data/, icon)
-RADAR_SOURCES: list[dict[str, str]] = [
+# Source definitions: key -> (label, data file path relative to data/, icon).
+# A source may read several files ("files") which are merged and de-duplicated
+# — used by the community-pulse column (r/SelfHosted + r/homelab, spec 13).
+RADAR_SOURCES: list[dict[str, Any]] = [
     {"key": "google_ai", "label": "🧠 Google AI Blog", "file": "news/google_ai_blog_latest.json", "category": "AI"},
     {"key": "verge_ai", "label": "⚡ The Verge AI", "file": "news/verge_ai_latest.json", "category": "AI"},
     {"key": "kdnuggets", "label": "📊 KDNuggets", "file": "kdnuggets/kdnuggets.json", "category": "Data Science"},
     {"key": "cloud_updates", "label": "☁️ Cloud Updates", "file": "cloud_updates/cloud_updates_latest.json", "category": "Cloud"},
     {"key": "selfhosted", "label": "🏠 Self-Hosted", "file": "selfhosted/selfhosted_latest.json", "category": "Self-Hosting"},
+    {
+        "key": "reddit_pulse",
+        "label": "💬 r/SelfHosted + r/homelab",
+        "files": ["reddit_unified/SelfHosted_latest.json", "reddit_unified/homelab_latest.json"],
+        "category": "Self-Hosting",
+    },
     {"key": "infoq", "label": "🏗️ InfoQ", "file": "infoq/infoq_news.json", "category": "Engineering"},
     {"key": "thenewstack", "label": "🧱 The New Stack", "file": "thenewstack/thenewstack_news.json", "category": "Cloud-Native"},
     {"key": "changelog", "label": "🔄 Changelog", "file": "changelog/changelog_news.json", "category": "Open Source"},
+    {"key": "hn_frontpage", "label": "🗞️ Hacker News", "file": "news/hn_frontpage_latest.json", "category": "Discussion"},
 ]
 
 MAX_ITEMS_PER_SOURCE = 25
@@ -40,9 +54,18 @@ MAX_ITEMS_PER_SOURCE = 25
 # Fields checked (with nested metadata fallback) when searching/filtering.
 _SEARCHABLE_FIELDS = ["title", "summary", "description"]
 
+# Spec 13 M4: read-through cache (5 min TTL) so the tab stops hitting disk on
+# every render; the refresh button bypasses it via force_refresh.
+_RADAR_CACHE = TTLDataCache(ttl_seconds=300)
 
-def _load_source_data(file_rel: str) -> list[dict[str, Any]]:
-    """Load articles from a data file relative to the project data dir."""
+
+def _source_files(source: dict[str, Any]) -> list[str]:
+    """Return every data file a radar source reads (one or many)."""
+    return list(source.get("files") or [source.get("file")])
+
+
+def _read_file(file_rel: str) -> list[dict[str, Any]]:
+    """Read one data file relative to the project data dir."""
     data_path = os.path.join(get_project_root(), "data", file_rel)
     if not os.path.exists(data_path):
         return []
@@ -54,17 +77,70 @@ def _load_source_data(file_rel: str) -> list[dict[str, Any]]:
         return []
 
 
+def _load_all_source_data(force_refresh: bool = False) -> dict[str, list[dict[str, Any]]]:
+    """Load every radar file once per TTL window into a {file: articles} map."""
+
+    def _loader() -> dict[str, list[dict[str, Any]]]:
+        files = {f for source in RADAR_SOURCES for f in _source_files(source) if f}
+        return {file_rel: _read_file(file_rel) for file_rel in sorted(files)}
+
+    return _RADAR_CACHE.get(_loader, force_refresh=force_refresh)
+
+
+def _load_source_data(source: dict[str, Any], all_data: dict[str, list[dict[str, Any]]] | None = None) -> list[dict[str, Any]]:
+    """Load a source's articles, merging + de-duplicating when it reads several files."""
+    if all_data is None:
+        all_data = _load_all_source_data()
+    articles: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for file_rel in _source_files(source):
+        for raw in all_data.get(file_rel, []):
+            if not isinstance(raw, dict):
+                continue
+            key = raw.get("link") or raw.get("url") or raw.get("title", "")
+            if key and key in seen:
+                continue
+            if key:
+                seen.add(key)
+            articles.append(raw)
+    return articles
+
+
+def _sortable_date(article: dict[str, Any]) -> float:
+    """Best-effort epoch for date-desc sorting; undated articles sort last."""
+    raw = str(article.get("published") or article.get("published_at") or article.get("fetched_at") or "")
+    if not raw:
+        return 0.0
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        pass
+    for fmt in ("%a, %d %b %Y %H:%M:%S %z", "%a, %d %b %Y %H:%M:%S %Z", "%Y-%m-%d %H:%M:%S"):
+        try:
+            return datetime.strptime(raw, fmt).timestamp()
+        except ValueError:
+            continue
+    return 0.0
+
+
 def _normalize_article(article: dict[str, Any]) -> dict[str, Any]:
     """Flatten nested metadata so heterogeneous ETL outputs render uniformly.
 
     The KDNuggets ETL nests summary/tags inside ``metadata`` and uses
     ``published_at`` instead of ``published``; other ETLs use top-level keys.
+    Reddit posts (community-pulse column) carry score/comments instead of a
+    summary, so one is synthesized for the cards.
     """
     if not isinstance(article, dict):
         return {}
     metadata = article.get("metadata") or {}
     if not article.get("summary"):
         article["summary"] = metadata.get("summary", "") or metadata.get("description", "")
+    if not article.get("summary") and ("score" in article or "num_comments" in article):
+        article["summary"] = f"⬆ {article.get('score', 0)} · 💬 {article.get('num_comments', 0)} · r/{article.get('subreddit', '')}"
+    if article.get("summary"):
+        # Reddit/atom summaries arrive as HTML fragments — show plain text.
+        article["summary"] = re.sub(r"<[^>]+>", "", article["summary"]).strip()
     if not article.get("description"):
         article["description"] = article.get("summary", "")
     if not article.get("published"):
@@ -97,9 +173,9 @@ def _build_article_card(article: dict[str, Any]) -> dbc.Card:
     )
 
 
-def _render_source_section(source: dict[str, str], search_term: str | None = None) -> list:
+def _render_source_section(source: dict[str, Any], search_term: str | None = None, all_data: dict[str, list[dict[str, Any]]] | None = None) -> list:
     """Render one source's articles as a column of cards, optionally filtered."""
-    articles = [_normalize_article(a) for a in _load_source_data(source["file"])]
+    articles = [_normalize_article(a) for a in _load_source_data(source, all_data)]
     if not articles:
         return [
             html.H6(source["label"], className="mb-2"),
@@ -112,6 +188,8 @@ def _render_source_section(source: dict[str, str], search_term: str | None = Non
                 html.H6(source["label"], className="mb-2"),
                 dbc.Alert(f"No articles matching '{search_term}'.", color="light", className="small"),
             ]
+    # Spec 13 M4: newest first regardless of file order; undated last.
+    articles.sort(key=_sortable_date, reverse=True)
     articles = articles[:MAX_ITEMS_PER_SOURCE]
     return [
         html.H6(source["label"], className="mb-2"),
@@ -208,15 +286,17 @@ _QUADRANT_ORDER = ["Techniques", "Tools", "Platforms", "Languages & Frameworks"]
 _RING_ORDER = ["Adopt", "Trial", "Assess", "Hold"]
 
 
-def _extract_tech_mentions() -> list[dict[str, Any]]:
+def _extract_tech_mentions(all_data: dict[str, list[dict[str, Any]]] | None = None) -> list[dict[str, Any]]:
     """Scan every radar source for dictionary-tech mentions.
 
     Returns one record per detected technology with mention counts, the
     sources that mentioned it and example articles for the hover.
     """
+    if all_data is None:
+        all_data = _load_all_source_data()
     combined: dict[str, dict[str, Any]] = {}
     for source in RADAR_SOURCES:
-        for raw in _load_source_data(source["file"]):
+        for raw in _load_source_data(source, all_data):
             article = _normalize_article(raw)
             text = f"{article.get('title', '')} {article.get('summary', '')}".lower()
             for tech, quadrant in TECH_DICTIONARY.items():
@@ -314,6 +394,7 @@ def _render_radar_plot() -> dbc.Card:
 def render_tech_radar_tab() -> html.Div:
     """Render the Technology Radar tab with source columns."""
     search = create_search_input("tech-radar-search", placeholder="Search tech radar…", clear_button=True)
+    refresh = create_refresh_button("tech-radar")
 
     # Build a responsive grid of source sections
     source_cols = [dbc.Col(_render_source_section(source), id=f"tech-radar-col-{source['key']}", width=12, lg=6, xl=3, className="mb-3") for source in RADAR_SOURCES]
@@ -333,7 +414,13 @@ def render_tech_radar_tab() -> html.Div:
                     ),
                 ]
             ),
-            search,
+            dbc.Row(
+                [
+                    dbc.Col(search, width="auto", className="flex-grow-1"),
+                    dbc.Col(refresh, width="auto", className="align-self-end pb-1"),
+                ],
+                className="g-2",
+            ),
             _render_radar_plot(),
             dbc.Row(source_cols, className="mt-2"),
         ]
@@ -344,18 +431,26 @@ def register_tech_radar_callbacks(app):
     """Register callbacks for the Technology Radar tab."""
 
     @app.callback(
-        [Output(f"tech-radar-col-{source['key']}", "children") for source in RADAR_SOURCES],
-        Input("tech-radar-search", "value"),
+        [Output(f"tech-radar-col-{source['key']}", "children") for source in RADAR_SOURCES] + [Output("tech-radar-plot", "figure")],
+        [Input("tech-radar-search", "value"), Input({"type": "tech-radar-refresh", "tab": ALL}, "n_clicks")],
         prevent_initial_call=True,
     )
-    def update_radar_search(search_term):
-        """Filter every source column by the search term."""
+    def update_radar(search_term, refresh_clicks):
+        """Filter every source column by the search term; refresh reloads data.
+
+        Single controller for both inputs (spec 15 pattern): a refresh click
+        bypasses the TTL cache and re-renders columns + radar figure.
+        """
         try:
+            is_refresh = dash.callback_context.triggered_id and getattr(dash.callback_context.triggered_id, "get", lambda _k: None)("type") == "tech-radar-refresh"
+            all_data = _load_all_source_data(force_refresh=bool(is_refresh))
             term = (search_term or "").strip() or None
-            return [_render_source_section(source, search_term=term) for source in RADAR_SOURCES]
+            sections = [_render_source_section(source, search_term=term, all_data=all_data) for source in RADAR_SOURCES]
+            figure = _build_radar_figure(_extract_tech_mentions(all_data))
+            return sections + [figure]
         except Exception as e:
-            logger.error(f"Error in tech radar search: {e}")
-            return [[dbc.Alert(f"Error searching: {e}", color="danger")] for _ in RADAR_SOURCES]
+            logger.error(f"Error in tech radar update: {e}")
+            return [[dbc.Alert(f"Error searching: {e}", color="danger")] for _ in RADAR_SOURCES] + [dash.no_update]
 
     @app.callback(
         Output("tech-radar-search", "value", allow_duplicate=True),
