@@ -21,56 +21,59 @@ from src.utils.logging import get_logger
 logger = get_logger("RedditUnifiedETL")
 STATE_FILE = os.path.join(get_project_root(), "data/reddit_unified/etl_state.json")
 
-# Extended list of relevant subreddits for tech/AI/ML/programming content
+# Extended list of relevant subreddits for tech/AI/ML/programming content.
+# All RSS since 2026-08-27: reddit's non-OAuth JSON API (hot.json) started
+# returning 403 from both the home and Unraid server IPs; the RSS feeds work
+# from both. The JSON fetcher is kept for a future OAuth migration.
 SUBREDDITS_CONFIG = {
     # AI/ML Focus
     "MachineLearning": {"type": "rss", "category": "ai_ml"},
     "artificial": {"type": "rss", "category": "ai_ml"},
-    "deeplearning": {"type": "json", "category": "ai_ml"},
-    "MLQuestions": {"type": "json", "category": "ai_ml"},
-    "datascience": {"type": "json", "category": "ai_ml"},
-    "statistics": {"type": "json", "category": "ai_ml"},
-    "LearnMachineLearning": {"type": "json", "category": "ai_ml"},
-    "LocalLLaMA": {"type": "json", "category": "ai_ml"},
-    "ChatGPT": {"type": "json", "category": "ai_ml"},
-    "OpenAI": {"type": "json", "category": "ai_ml"},
+    "deeplearning": {"type": "rss", "category": "ai_ml"},
+    "MLQuestions": {"type": "rss", "category": "ai_ml"},
+    "datascience": {"type": "rss", "category": "ai_ml"},
+    "statistics": {"type": "rss", "category": "ai_ml"},
+    "LearnMachineLearning": {"type": "rss", "category": "ai_ml"},
+    "LocalLLaMA": {"type": "rss", "category": "ai_ml"},
+    "ChatGPT": {"type": "rss", "category": "ai_ml"},
+    "OpenAI": {"type": "rss", "category": "ai_ml"},
     # Programming/Development
-    "programming": {"type": "json", "category": "programming"},
-    "coding": {"type": "json", "category": "programming"},
-    "webdev": {"type": "json", "category": "programming"},
-    "Python": {"type": "json", "category": "programming"},
-    "javascript": {"type": "json", "category": "programming"},
-    "reactjs": {"type": "json", "category": "programming"},
-    "node": {"type": "json", "category": "programming"},
-    "golang": {"type": "json", "category": "programming"},
-    "rust": {"type": "json", "category": "programming"},
-    "cpp": {"type": "json", "category": "programming"},
-    "java": {"type": "json", "category": "programming"},
-    "learnpython": {"type": "json", "category": "programming"},
+    "programming": {"type": "rss", "category": "programming"},
+    "coding": {"type": "rss", "category": "programming"},
+    "webdev": {"type": "rss", "category": "programming"},
+    "Python": {"type": "rss", "category": "programming"},
+    "javascript": {"type": "rss", "category": "programming"},
+    "reactjs": {"type": "rss", "category": "programming"},
+    "node": {"type": "rss", "category": "programming"},
+    "golang": {"type": "rss", "category": "programming"},
+    "rust": {"type": "rss", "category": "programming"},
+    "cpp": {"type": "rss", "category": "programming"},
+    "java": {"type": "rss", "category": "programming"},
+    "learnpython": {"type": "rss", "category": "programming"},
     # Tech/Business
-    "technology": {"type": "json", "category": "tech"},
-    "tech": {"type": "json", "category": "tech"},
-    "startups": {"type": "json", "category": "tech"},
-    "entrepreneur": {"type": "json", "category": "tech"},
-    "SideProject": {"type": "json", "category": "tech"},
-    "Futurology": {"type": "json", "category": "tech"},
+    "technology": {"type": "rss", "category": "tech"},
+    "tech": {"type": "rss", "category": "tech"},
+    "startups": {"type": "rss", "category": "tech"},
+    "entrepreneur": {"type": "rss", "category": "tech"},
+    "SideProject": {"type": "rss", "category": "tech"},
+    "Futurology": {"type": "rss", "category": "tech"},
     # DevOps/Infrastructure
-    "devops": {"type": "json", "category": "devops"},
-    "docker": {"type": "json", "category": "devops"},
-    "kubernetes": {"type": "json", "category": "devops"},
-    "aws": {"type": "json", "category": "devops"},
-    "sysadmin": {"type": "json", "category": "devops"},
-    "homelab": {"type": "json", "category": "devops"},
+    "devops": {"type": "rss", "category": "devops"},
+    "docker": {"type": "rss", "category": "devops"},
+    "kubernetes": {"type": "rss", "category": "devops"},
+    "aws": {"type": "rss", "category": "devops"},
+    "sysadmin": {"type": "rss", "category": "devops"},
+    "homelab": {"type": "rss", "category": "devops"},
     # Self-Hosting (spec 13: community pulse for the Tech Radar tab).
     # RSS type: reddit's JSON API 403-blocks some client IPs; the RSS feed
     # works from the same networks.
     "SelfHosted": {"type": "rss", "category": "selfhosting"},
     # News Aggregators
-    "hypeurls": {"type": "json", "category": "news", "pagination": True},
+    "hypeurls": {"type": "rss", "category": "news", "pagination": True},
     # Open Source (Mapped to Knowledge Garden Open Source Tab)
-    "coolgithubprojects": {"type": "json", "category": "opensource"},
-    "opensource": {"type": "json", "category": "opensource"},
-    "github": {"type": "json", "category": "opensource"},
+    "coolgithubprojects": {"type": "rss", "category": "opensource"},
+    "opensource": {"type": "rss", "category": "opensource"},
+    "github": {"type": "rss", "category": "opensource"},
 }
 
 
@@ -101,8 +104,18 @@ def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
     headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT}
 
     try:
-        response = requests.get(rss_url, headers=headers, timeout=10)
-        response.raise_for_status()
+        try:
+            response = requests.get(rss_url, headers=headers, timeout=10)
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 429:
+                # Reddit RSS rate-limits bursts; back off once and retry
+                logger.warning(f"r/{subreddit} RSS rate-limited (429) — backing off 30s")
+                time.sleep(30)
+                response = requests.get(rss_url, headers=headers, timeout=10)
+                response.raise_for_status()
+            else:
+                raise
         feed = feedparser.parse(response.content)
 
         posts = []
@@ -251,8 +264,8 @@ def fetch_all_subreddits() -> dict[str, list[dict[str, Any]]]:
 
             all_posts[subreddit] = posts
 
-            # Rate limiting
-            time.sleep(0.5)
+            # Rate limiting — reddit RSS 429s bursts; ~30 req/min per IP
+            time.sleep(2)
 
         except Exception as e:
             logger.error(f"Error processing r/{subreddit}: {e}")
