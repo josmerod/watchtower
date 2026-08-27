@@ -47,6 +47,8 @@ RADAR_SOURCES: list[dict[str, Any]] = [
     {"key": "thenewstack", "label": "🧱 The New Stack", "file": "thenewstack/thenewstack_news.json", "category": "Cloud-Native"},
     {"key": "changelog", "label": "🔄 Changelog", "file": "changelog/changelog_news.json", "category": "Open Source"},
     {"key": "hn_frontpage", "label": "🗞️ Hacker News", "file": "news/hn_frontpage_latest.json", "category": "Discussion"},
+    {"key": "wired", "label": "🔗 Wired", "file": "news/wired_latest.json", "category": "Tech Media"},
+    {"key": "mit_techreview", "label": "🔬 MIT Tech Review", "file": "news/mit_techreview_latest.json", "category": "Emerging Tech"},
 ]
 
 MAX_ITEMS_PER_SOURCE = 25

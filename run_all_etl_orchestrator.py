@@ -20,6 +20,8 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_selfhosted.py",
     "src/etl/news/news_get_verge_ai.py",  # The Verge AI feed — feeds Tech Radar tab
     "src/etl/news/news_get_hn_frontpage.py",  # HN front page via Algolia (spec 13) — feeds Tech Radar tab
+    "src/etl/news/news_get_wired.py",  # Wired feed — feeds Tech Radar tab
+    "src/etl/news/news_get_mit_techreview.py",  # MIT Tech Review feed — feeds Tech Radar tab
     "src/etl/news/news_get_indiehackers.py",
     "src/etl/news/news_get_kagi.py",
     "src/etl/news/news_get_kdnuggets.py",
