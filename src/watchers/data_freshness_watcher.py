@@ -50,6 +50,8 @@ SOURCE_FILES: list[dict[str, Any]] = [
     # Benchmarks (BridgeBench is known-flaky: site mid-V3 migration)
     {"key": "llm_leaderboard", "label": "LLM leaderboard", "path": "benchmarks/llm_leaderboard.json", "warn_hours": 72, "critical_hours": 336},
     {"key": "bridgebench", "label": "BridgeBench Elo", "path": "benchmarks/bridgebench_overall.json", "warn_hours": 336, "critical_hours": 1440},
+    # Markets
+    {"key": "coingecko", "label": "CoinGecko markets", "path": "markets/coingecko_latest.json", "warn_hours": 26, "critical_hours": 168},
     # Games
     {"key": "humblebundles", "label": "Humble bundles", "path": "games/humblebundles.json", "warn_hours": 72, "critical_hours": 336},
     {"key": "itchio_trending", "label": "Itch.io trending", "path": "games/itchio_trending.json", "warn_hours": 72, "critical_hours": 336},
@@ -145,9 +147,7 @@ class DataFreshnessWatcher(BaseWatcher):
             }
         )
         counts = summary["counts"]
-        logger.info(
-            f"Freshness check: {counts['fresh']} fresh, {counts['stale']} stale, {counts['critical']} critical — summary at {self.output_file}"
-        )
+        logger.info(f"Freshness check: {counts['fresh']} fresh, {counts['stale']} stale, {counts['critical']} critical — summary at {self.output_file}")
         return summary
 
 

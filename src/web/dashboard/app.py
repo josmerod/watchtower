@@ -30,6 +30,7 @@ from src.web.dashboard.components.knowledge_garden_tab import (
     register_knowledge_garden_callbacks,
     render_knowledge_garden_tab,
 )
+from src.web.dashboard.components.markets_tab import render_markets_tab
 from src.web.dashboard.components.metrics_tab import (
     register_metrics_callbacks,
     render_metrics_tab,
@@ -237,6 +238,10 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="🏆 Benchmarks",
                             tab_id="tab-benchmarks",
+                        ),
+                        dbc.Tab(
+                            label="📈 Markets",
+                            tab_id="tab-markets",
                         ),
                         dbc.Tab(
                             label="🛰️ Tech Radar",
@@ -581,6 +586,7 @@ _TAB_RENDERERS = {
     "tab-arxiv-research": render_arxiv_research_tab,
     "tab-deals": render_deals_tab,
     "tab-benchmarks": render_benchmarks_tab,
+    "tab-markets": render_markets_tab,
     "tab-tech-radar": render_tech_radar_tab,
     "tab-games": render_games_tab,
     "tab-notifications": render_notifications_tab,
