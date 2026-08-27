@@ -362,8 +362,10 @@ def render_arxiv_research_tab():
 
     tabs_children = []
 
-    # Order of tabs to display (All first, then categories)
+    # Order of tabs to display (HF trending first — the community-ranked feed,
+    # then All, then categories)
     ordered_keys = [
+        "hf_trending",
         "all_arxiv",
         "machine_learning",
         "computer_vision",

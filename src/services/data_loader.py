@@ -122,6 +122,10 @@ DEALS_SOURCES_CONFIG = {
 }
 
 ARXIV_SOURCES_CONFIG = {
+    "hf_trending": {
+        "path": get_data_path("arxiv", "hf_daily_papers_latest.json"),
+        "name": "🔥 HF Trending",
+    },
     "all_arxiv": {
         "path": get_data_path("arxiv", "arxiv_papers_latest.json"),
         "name": "All Papers",

@@ -61,8 +61,8 @@ ETL_SCRIPTS = [
     # "src/etl/goldigging/epic_free_games_etl.py",
     # Arxiv
     "src/etl/arxiv/arxiv_etl.py",
+    "src/etl/arxiv/hf_daily_papers_etl.py",  # HF trending papers — PWC successor (old ETL deleted: API dead, 0 consumers)
     # AI Platforms
-    "src/etl/ai_platforms/papers_with_code_etl.py",
     "src/etl/ai_platforms/replicate_models_etl.py",
     "src/etl/ai_platforms/replicate_explore_playwright_etl.py",
     # Watchers
