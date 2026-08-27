@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 from datetime import datetime, timezone
@@ -262,10 +263,15 @@ def _format_views(views) -> str | None:
 
 
 def create_video_card(video):
-    """Create a video card component."""
+    """Create a video card component.
+
+    Cards carry ``data-video-hash`` (md5 of the URL) so ``video_state.js``
+    can persist 👁 seen / ▶ watch-later state in localStorage (spec 04 F1).
+    """
     thumbnail_url = video.get("thumbnail", "")
     duration = _format_duration(video.get("length"))
     views = _format_views(video.get("views"))
+    video_hash = hashlib.md5((video.get("url") or video.get("title", "")).encode("utf-8")).hexdigest()
 
     # Thumbnail
     if thumbnail_url:
@@ -325,7 +331,9 @@ def create_video_card(video):
         channel_line = f"{channel_line} · {views}"
 
     return dbc.Col(
-        [
+        # html.Div wrapper carries the data-* attribute (dbc components don't
+        # accept wildcards); video_state.js keys on it
+        html.Div(
             dbc.Card(
                 [
                     thumbnail,
@@ -363,12 +371,33 @@ def create_video_card(video):
                                 className="card-text text-muted",
                                 style={"fontSize": "0.8rem", "marginBottom": "0"},
                             ),
+                            html.Div(
+                                [
+                                    html.Button(
+                                        "👁",
+                                        className="btn btn-sm btn-outline-secondary wt-video-seen-btn p-1",
+                                        title="Marcar como visto",
+                                        type="button",
+                                    ),
+                                    html.Button(
+                                        "▶",
+                                        className="btn btn-sm btn-outline-secondary wt-video-later-btn p-1 ms-1",
+                                        title="Ver más tarde",
+                                        type="button",
+                                    ),
+                                ],
+                                className="mt-2",
+                            ),
                         ]
                     ),
                 ],
                 className="h-100",
-            )
-        ],
+            ),
+            # html wrapper carries the data-* attribute (dbc components don't
+            # accept wildcards); video_state.js keys on it
+            className="h-100",
+            **{"data-video-hash": video_hash},
+        ),
         xs=12,
         sm=6,
         md=4,
@@ -555,6 +584,8 @@ def render_videos_tab():
                         [
                             html.Label("Preset:", className="form-label small"),
                             dcc.Dropdown(id="videos-preset-selector", options=[], placeholder="Presets guardados…", clearable=True, className="mb-3"),
+                            # Filled client-side by video_state.js (👁 visto / ▶ ver más tarde)
+                            html.Div(id="videos-state-toolbar"),
                         ],
                         width=12,
                         md=2,
