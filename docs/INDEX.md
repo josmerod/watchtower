@@ -13,7 +13,10 @@ Python 3.10+ with UV. Data persists as timestamped JSON under `data/` (gitignore
 | [architecture.md](architecture.md) | System architecture (3 layers) |
 | [project-overview.md](project-overview.md) | What the platform does |
 | [PRD.md](PRD.md) | Product requirements |
-| [TASK_BOARD.md](TASK_BOARD.md) | **Single source of truth for actionable work** |
+| [ROADMAP.md](ROADMAP.md) | **Horizonte priorizado**: valor entregado, gaps, backlog y anti-backlog |
+| [TASK_BOARD.md](TASK_BOARD.md) | **Single source of truth for actionable work** (solo tareas abiertas) |
+| [TASK_BOARD_ARCHIVE.md](TASK_BOARD_ARCHIVE.md) | Tareas cerradas + changelog histórico (compactación del board) |
+| [FEEDBACK.md](FEEDBACK.md) | Cajón de sastre del usuario — se triajea a tareas cada sesión |
 
 ## Technical guides (`docs/technical/`)
 
