@@ -17,10 +17,13 @@ try:
 except ImportError:
     _PLAYWRIGHT_AVAILABLE = False
 
-pytestmark = pytest.mark.skipif(
-    not _PLAYWRIGHT_AVAILABLE,
-    reason="Playwright not available — install pytest-playwright and run the dashboard for visual tests",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        not _PLAYWRIGHT_AVAILABLE,
+        reason="Playwright not available — install pytest-playwright and run the dashboard for visual tests",
+    ),
+    pytest.mark.e2e,  # spawns a real dashboard server — skipped unless pytest-playwright is installed
+]
 
 # Constants
 DASHBOARD_URL = "http://localhost:7778"

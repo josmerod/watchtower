@@ -24,10 +24,23 @@ _SKIP_REASON = (
 
 
 def pytest_collection_modifyitems(config, items):
-    """Skip all E2E tests when pytest-playwright is unavailable."""
-    if not _PYTEST_PLAYWRIGHT_AVAILABLE:
-        skip_marker = pytest.mark.skip(reason=_SKIP_REASON)
-        for item in items:
+    """Skip only the tests that need pytest-playwright (the ``page`` fixture).
+
+    The hook receives every item collected in the session — guard by fixture
+    usage / e2e directory, not session-wide, or ``pytest Tests/`` skips the
+    whole suite when the plugin is absent (that no-op green hid real CI value).
+    """
+    if _PYTEST_PLAYWRIGHT_AVAILABLE:
+        return
+    e2e_dir = Path(__file__).parent
+    skip_marker = pytest.mark.skip(reason=_SKIP_REASON)
+    for item in items:
+        needs_playwright = (
+            "page" in getattr(item, "fixturenames", ())
+            or e2e_dir in Path(str(item.fspath)).parents
+            or item.get_closest_marker("e2e") is not None  # tests that spawn/need a live server
+        )
+        if needs_playwright:
             item.add_marker(skip_marker)
 from playwright.sync_api import Page
 

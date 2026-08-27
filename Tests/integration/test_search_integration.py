@@ -50,7 +50,7 @@ class TestNewsSearchIntegration:
 
         assert len(result) == 1
         # "Python" is highlighted in the title -> the mark tag splits the phrase.
-        assert "<mark>Python</mark> 3.12" in result[0]["title"]
+        assert result[0]["title"] == "Python 3.12 Released"  # pure filter: titles stay unmutated (batch C)
         assert result[0]["source_display_name"] == "Ars Technica"
 
     def test_news_description_search(self):
@@ -72,7 +72,7 @@ class TestNewsSearchIntegration:
 
         assert len(result) == 1
         # source_display_name is searchable, so the match is highlighted.
-        assert result[0]["source_display_name"] == "<mark>TechCrunch</mark>"
+        assert result[0]["source_display_name"] == "TechCrunch"
 
     def test_news_multiple_field_search(self):
         """Test searching across multiple news fields"""
@@ -141,7 +141,7 @@ class TestDealsSearchIntegration:
         assert len(result) == 1
         # "Software" is highlighted in the title -> the mark tag splits the
         # original phrase, so assert on the platform and the mark tag instead.
-        assert "<mark>Software</mark>" in result[0]["title"]
+        assert result[0]["title"] == "50% Off Software Bundle"
         assert result[0]["platform"] == "StackSocial"
 
     def test_deals_platform_search(self):
@@ -153,7 +153,7 @@ class TestDealsSearchIntegration:
 
         assert len(result) == 1
         # "Udemy" is itself a searchable field, so it gets highlighted.
-        assert result[0]["platform"] == "<mark>Udemy</mark>"
+        assert result[0]["platform"] == "Udemy"
 
     def test_deals_category_search(self):
         """Test searching deals by category"""
@@ -164,7 +164,7 @@ class TestDealsSearchIntegration:
 
         assert len(result) == 1
         # source_category is a searchable field, so "Hardware" is highlighted.
-        assert result[0]["source_category"] == "<mark>Hardware</mark>"
+        assert result[0]["source_category"] == "Hardware"
 
     def test_deals_description_search(self):
         """Test searching deals by description"""

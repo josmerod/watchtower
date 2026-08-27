@@ -359,6 +359,9 @@ class BaseWatcher(ABC):
                     "first_seen": self.previous_state["first_seen"],
                 }
                 self._save_state(new_state)
+                # Advance in-memory state too — without this every check kept
+                # taking the first-run branch and trigger_alarm could never fire
+                self.previous_state = new_state
                 return
 
             # Check if value has changed

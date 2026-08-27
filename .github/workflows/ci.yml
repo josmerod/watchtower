@@ -33,7 +33,8 @@ jobs:
 
       - name: Run tests
         run: uv run pytest Tests/ -v
-        continue-on-error: true # T-023: pre-existing failures from API drift
+        # T-049: blocking since the suite went green (260+ unit + integration;
+        # e2e/visual tests skip without pytest-playwright via the conftest guard)
 
       - name: Validate Dockerfile
         run: docker build -f deployment/Dockerfile --check . 2>/dev/null || docker build -f deployment/Dockerfile --quiet . 2>&1 | head -5

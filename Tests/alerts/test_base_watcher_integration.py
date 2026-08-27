@@ -13,23 +13,26 @@ from src.alerts.models import AlertRule, KeywordMatchCondition, NotificationChan
 from src.watchers.base_watcher import BaseWatcher
 
 
+class MockWatcher(BaseWatcher):
+    """Concrete watcher for tests (hoisted: the fixture-local class raised
+    NameError in tests that re-instantiated it directly)."""
+
+    def extract_value(self, html_content: str):
+        return f"Extracted value from {self.name}"
+
+    def has_changed(self, old_value, new_value):
+        return old_value != new_value
+
+    def fetch_page(self):
+        return "<html>Mock HTML content</html>"
+
+
 class TestBaseWatcherIntegration:
     """Test BaseWatcher integration with alert system."""
 
     @pytest.fixture()
     def mock_watcher(self):
         """Create a mock BaseWatcher for testing."""
-
-        class MockWatcher(BaseWatcher):
-            def extract_value(self, html_content: str):
-                return f"Extracted value from {self.name}"
-
-            def has_changed(self, old_value, new_value):
-                return old_value != new_value
-
-            def fetch_page(self):
-                return "<html>Mock HTML content</html>"
-
         return MockWatcher(
             name="test_watcher",
             url="https://example.com/test",
@@ -182,8 +185,10 @@ class TestBaseWatcherIntegration:
 
     def test_prepare_content_for_alerts_error_handling(self, mock_watcher):
         """Test error handling in content preparation."""
-        # Mock datetime.now() to raise an exception
-        with patch("src.watchers.base_watcher.datetime", side_effect=Exception("Time error")):
+        # Patch the module's datetime so .now() raises — patching the class
+        # itself does not raise on attribute access (the old form never failed)
+        with patch("src.watchers.base_watcher.datetime") as mock_dt:
+            mock_dt.now.side_effect = Exception("Time error")
             content = mock_watcher._prepare_content_for_alerts("old", "new")
             assert content is None
 
@@ -197,27 +202,24 @@ class TestBaseWatcherIntegration:
 
     def test_full_watcher_workflow_with_alerts(self, mock_watcher):
         """Test the complete watcher workflow with alert integration."""
-        # Setup initial state
-        initial_state = {
+        # check() reads self.previous_state (loaded at __init__ from disk —
+        # persisted between runs), so set it directly for determinism
+        mock_watcher.previous_state = {
             "last_check": datetime.now().isoformat(),
             "last_value": None,
             "first_seen": datetime.now().isoformat(),
         }
 
-        with patch.object(mock_watcher, "_load_state", return_value=initial_state):
-            with patch.object(mock_watcher, "_save_state"):
-                with patch.object(mock_watcher.alert_engine, "_load_user_rules", return_value=[]):
-                    with patch.object(mock_watcher, "fetch_page", return_value="<html>test</html>"):
-                        with patch.object(mock_watcher, "extract_value", return_value="test_value"):
-                            # First check (no previous value)
+        with patch.object(mock_watcher, "_save_state"):
+            with patch.object(mock_watcher.alert_engine, "_load_user_rules", return_value=[]):
+                with patch.object(mock_watcher, "fetch_page", return_value="<html>test</html>"):
+                    # Alarm mocked before any check; the extracted value changes
+                    # between checks so exactly one change is detected
+                    with patch.object(mock_watcher, "trigger_alarm") as mock_alarm:
+                        with patch.object(mock_watcher, "extract_value", side_effect=["value_1", "value_2"]):
                             mock_watcher.check()
-
-                            # Second check (change detected)
-                            mock_watcher.trigger_alarm = Mock()  # Mock to verify call
                             mock_watcher.check()
-
-                            # Verify trigger_alarm was called
-                            mock_watcher.trigger_alarm.assert_called_once()
+                            mock_alarm.assert_called_once()
 
     def test_watcher_with_multiple_alert_events(self, mock_watcher):
         """Test watcher triggering multiple alert events."""
