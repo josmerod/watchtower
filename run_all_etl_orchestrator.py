@@ -40,6 +40,7 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_thenewstack.py",  # The New Stack feed — feeds Tech Radar tab
     "src/etl/news/news_get_changelog.py",  # changelog.com feed — feeds Tech Radar tab
     "src/etl/analytics/trends_etl.py",  # Cross-source trend analysis — feeds 🔥 badges (News/ArXiv). Local files only; must run after news ETLs
+    "src/watchers/data_freshness_watcher.py",  # MUST BE LAST — flags sources that failed to refresh this run (feeds Metrics card)
     "src/etl/news/valencia_events_etl.py",  # Feeds dashboard Valencia Events tab
     "src/etl/news/news_get_spanish_tech.py",  # Xataka, Hipertextual, Genbeta
     "src/etl/news/news_get_cloud_updates.py",  # AWS, GCP, CNCF, GitHub Blog

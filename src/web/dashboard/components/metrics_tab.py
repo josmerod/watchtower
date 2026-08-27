@@ -20,6 +20,71 @@ from src.web.dashboard.utils import get_data_path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+_FRESHNESS_STYLES = {
+    "fresh": ("🟢", "success"),
+    "stale": ("🟡", "warning"),
+    "critical": ("🔴", "danger"),
+}
+
+
+def _load_freshness_summary() -> dict | None:
+    """Load the data-freshness watcher's latest summary, if it exists."""
+    path = Path(DATA_DIR) / "watchers" / "data_freshness" / "freshness_latest.json"
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _render_freshness_card() -> html.Div:
+    """Source-freshness card (data_freshness_watcher output) for the Metrics tab."""
+    summary = _load_freshness_summary()
+    if not summary:
+        return html.Div()  # watcher hasn't run yet — render nothing
+    counts = summary.get("counts", {})
+    offenders = [s for s in summary.get("sources", []) if s["status"] != "fresh"]
+    offenders.sort(key=lambda s: (s["status"] != "critical", -(s["age_hours"] or 1e9)))
+
+    chips = [
+        dbc.Badge(f"🟢 {counts.get('fresh', 0)} frescos", color="success", className="me-2"),
+        dbc.Badge(f"🟡 {counts.get('stale', 0)} stale", color="warning", className="me-2"),
+        dbc.Badge(f"🔴 {counts.get('critical', 0)} críticos", color="danger", className="me-2"),
+    ]
+    rows = [
+        html.Li(
+            [
+                dbc.Badge(f"{age_badge} {s['label']}", color=age_color, className="me-2"),
+                html.Small(
+                    f"{s['age_hours']:.0f}h" if s["age_hours"] is not None else "sin fichero",
+                    className="text-muted",
+                ),
+            ],
+            className="mb-1",
+        )
+        for s in offenders[:8]
+        for age_badge, age_color in [_FRESHNESS_STYLES.get(s["status"], ("❔", "secondary"))]
+    ] or [html.Li("Todas las fuentes están frescas ✨", className="text-success")]
+
+    return dbc.Card(
+        [
+            dbc.CardHeader(html.H5("🩺 Source Freshness", className="mb-0")),
+            dbc.CardBody(
+                [
+                    html.Div(chips, className="mb-2"),
+                    html.Ul(rows, className="mb-0 ms-3"),
+                    html.Small(
+                        f"Último check: {str(summary.get('checked_at', ''))[:19]} (data_freshness_watcher, tras cada run del orquestador)",
+                        className="text-muted",
+                    ),
+                ]
+            ),
+        ],
+        className="mb-4",
+    )
+
+
 # Constants
 # Constants
 DATA_DIR = get_data_path("")  # Root data directory
@@ -399,6 +464,7 @@ def render_metrics_tab():
                     )
                 ]
             ),
+            _render_freshness_card(),
             # Charts and tables
             dbc.Row(
                 [
