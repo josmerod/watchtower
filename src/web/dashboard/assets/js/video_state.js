@@ -25,44 +25,47 @@
     localStorage.setItem(key, JSON.stringify(Array.from(set).slice(-5000)));
   }
 
-  function buildToolbar() {
-    var slot = document.getElementById("videos-state-toolbar");
-    if (!slot || slot.childElementCount) return;
+  function updateToolbar() {
     var later = readSet(LATER_KEY);
     var seen = readSet(SEEN_KEY);
-    slot.innerHTML =
-      '<button type="button" id="wt-video-filter-btn" class="btn btn-sm btn-outline-secondary me-2 mb-2">' +
-      "▶ Ver más tarde</button>" +
-      '<button type="button" id="wt-video-hide-seen-btn" class="btn btn-sm btn-outline-secondary mb-2">' +
-      "👁 Ocultar vistos</button>" +
-      '<span id="wt-video-counts" class="text-muted small ms-2"></span>';
-    updateToolbar();
-    document.getElementById("wt-video-filter-btn").addEventListener("click", function () {
-      localStorage.setItem(FILTER_KEY, localStorage.getItem(FILTER_KEY) === "1" ? "0" : "1");
-      updateToolbar();
-      apply();
-    });
-    document.getElementById("wt-video-hide-seen-btn").addEventListener("click", function () {
-      localStorage.setItem(HIDE_SEEN_KEY, localStorage.getItem(HIDE_SEEN_KEY) === "1" ? "0" : "1");
-      updateToolbar();
-      apply();
-    });
-    function updateToolbar() {
-      var filterOn = localStorage.getItem(FILTER_KEY) === "1";
-      var hideOn = localStorage.getItem(HIDE_SEEN_KEY) === "1";
-      var f = document.getElementById("wt-video-filter-btn");
-      var h = document.getElementById("wt-video-hide-seen-btn");
-      if (f) {
-        f.classList.toggle("btn-secondary", filterOn);
-        f.classList.toggle("btn-outline-secondary", !filterOn);
-        f.textContent = (filterOn ? "▶ Solo ver más tarde (" : "▶ Ver más tarde (") + later.size + ")";
-      }
-      if (h) {
-        h.classList.toggle("btn-secondary", hideOn);
-        h.classList.toggle("btn-outline-secondary", !hideOn);
-        h.textContent = hideOn ? "👁 Mostrando vistos (" + seen.size + ")" : "👁 Ocultar vistos (" + seen.size + ")";
-      }
+    var filterOn = localStorage.getItem(FILTER_KEY) === "1";
+    var hideOn = localStorage.getItem(HIDE_SEEN_KEY) === "1";
+    var f = document.getElementById("wt-video-filter-btn");
+    var h = document.getElementById("wt-video-hide-seen-btn");
+    if (f) {
+      f.classList.toggle("btn-secondary", filterOn);
+      f.classList.toggle("btn-outline-secondary", !filterOn);
+      f.textContent = (filterOn ? "▶ Solo ver más tarde (" : "▶ Ver más tarde (") + later.size + ")";
     }
+    if (h) {
+      h.classList.toggle("btn-secondary", hideOn);
+      h.classList.toggle("btn-outline-secondary", !hideOn);
+      h.textContent = hideOn ? "👁 Mostrando vistos (" + seen.size + ")" : "👁 Ocultar vistos (" + seen.size + ")";
+    }
+  }
+
+  function buildToolbar() {
+    var slot = document.getElementById("videos-state-toolbar");
+    if (!slot) return;
+    if (!slot.childElementCount) {
+      slot.innerHTML =
+        '<button type="button" id="wt-video-filter-btn" class="btn btn-sm btn-outline-secondary me-2 mb-2">' +
+        "▶ Ver más tarde</button>" +
+        '<button type="button" id="wt-video-hide-seen-btn" class="btn btn-sm btn-outline-secondary mb-2">' +
+        "👁 Ocultar vistos</button>" +
+        '<span id="wt-video-counts" class="text-muted small ms-2"></span>';
+      document.getElementById("wt-video-filter-btn").addEventListener("click", function () {
+        localStorage.setItem(FILTER_KEY, localStorage.getItem(FILTER_KEY) === "1" ? "0" : "1");
+        updateToolbar();
+        apply();
+      });
+      document.getElementById("wt-video-hide-seen-btn").addEventListener("click", function () {
+        localStorage.setItem(HIDE_SEEN_KEY, localStorage.getItem(HIDE_SEEN_KEY) === "1" ? "0" : "1");
+        updateToolbar();
+        apply();
+      });
+    }
+    updateToolbar();
   }
 
   function apply() {
