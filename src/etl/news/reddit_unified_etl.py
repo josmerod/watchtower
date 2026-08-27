@@ -98,8 +98,14 @@ def save_state(state: dict) -> None:
         logger.error(f"Error saving state file: {e}")
 
 
-def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
-    """Fetch posts from subreddit RSS feed."""
+def fetch_subreddit_rss(subreddit: str, stats: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """Fetch posts from subreddit RSS feed.
+
+    Args:
+        subreddit: Subreddit name without the r/ prefix.
+        stats: Optional mutable dict; sets ``stats["rate_limited"]`` when the
+            fetch hits a 429 so the caller can slow down its feed pacing.
+    """
     rss_url = f"https://www.reddit.com/r/{subreddit}/.rss"
     headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT}
 
@@ -110,8 +116,10 @@ def fetch_subreddit_rss(subreddit: str) -> list[dict[str, Any]]:
         except requests.HTTPError as exc:
             if exc.response is not None and exc.response.status_code == 429:
                 # Reddit RSS rate-limits bursts; back off once and retry
-                logger.warning(f"r/{subreddit} RSS rate-limited (429) — backing off 30s")
-                time.sleep(30)
+                if stats is not None:
+                    stats["rate_limited"] = True
+                logger.warning(f"r/{subreddit} RSS rate-limited (429) — backing off 60s")
+                time.sleep(60)
                 response = requests.get(rss_url, headers=headers, timeout=10)
                 response.raise_for_status()
             else:
@@ -234,11 +242,14 @@ def fetch_all_subreddits() -> dict[str, list[dict[str, Any]]]:
     """Fetch posts from all configured subreddits."""
     all_posts = {}
     state = load_state()
+    # Adaptive pacing state shared with fetch_subreddit_rss via the stats dict
+    feed_delay = 3.0
+    feed_stats: dict[str, Any] = {"rate_limited": False}
 
     for subreddit, config in SUBREDDITS_CONFIG.items():
         try:
             if config["type"] == "rss":
-                posts = fetch_subreddit_rss(subreddit)
+                posts = fetch_subreddit_rss(subreddit, stats=feed_stats)
             else:  # json
                 use_pagination = config.get("pagination", False)
                 last_id = state.get(subreddit) if use_pagination else None
@@ -264,8 +275,12 @@ def fetch_all_subreddits() -> dict[str, list[dict[str, Any]]]:
 
             all_posts[subreddit] = posts
 
-            # Rate limiting — reddit RSS 429s bursts; ~30 req/min per IP
-            time.sleep(2)
+            # Rate limiting — adaptive pacing: reddit RSS 429s sustained bursts;
+            # slow down permanently after every rate-limit hit (3s -> 8s cap)
+            time.sleep(feed_delay)
+            if feed_stats.get("rate_limited"):
+                feed_delay = min(8.0, feed_delay + 1)
+                feed_stats["rate_limited"] = False
 
         except Exception as e:
             logger.error(f"Error processing r/{subreddit}: {e}")
@@ -293,7 +308,13 @@ def save_reddit_data(all_posts: dict[str, list[dict[str, Any]]]) -> None:
             subreddit_latest = os.path.join(output_dir, f"{subreddit}_latest.json")
             shutil.copy2(subreddit_file, subreddit_latest)
 
-    # Save combined file
+    # Save combined file — but never let a partial run (heavy rate-limiting)
+    # replace a fuller previous snapshot: keep the last-good latest instead
+    populated = sum(1 for posts in all_posts.values() if posts)
+    if populated < len(SUBREDDITS_CONFIG) // 2:
+        logger.warning(f"Partial run ({populated}/{len(SUBREDDITS_CONFIG)} feeds) — keeping previous combined/category latest files")
+        return
+
     combined_posts = []
     for posts in all_posts.values():
         combined_posts.extend(posts)
