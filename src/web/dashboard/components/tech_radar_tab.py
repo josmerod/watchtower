@@ -518,8 +518,7 @@ def register_tech_radar_callbacks(app):
     """Register callbacks for the Technology Radar tab."""
 
     @app.callback(
-        [Output(f"tech-radar-col-{source['key']}", "children") for source in RADAR_SOURCES]
-        + [Output("tech-radar-plot", "figure"), Output("tech-radar-unified-feed", "children")],
+        [Output(f"tech-radar-col-{source['key']}", "children") for source in RADAR_SOURCES] + [Output("tech-radar-plot", "figure"), Output("tech-radar-unified-feed", "children")],
         [
             Input("tech-radar-search", "value"),
             Input({"type": "tech-radar-refresh", "tab": ALL}, "n_clicks"),
