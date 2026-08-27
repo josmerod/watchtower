@@ -71,6 +71,7 @@ def fetch_kev() -> list[dict[str, Any]]:
                 "published": vuln.get("dateAdded", ""),
                 "summary": summary_line[:500],
                 "severity": "known-exploited",
+                "ransomware_use": ransomware,
                 "due_date": vuln.get("dueDate", ""),
                 "required_action": vuln.get("requiredAction", "")[:300],
                 "fetched_at": datetime.now(timezone.utc).isoformat(),

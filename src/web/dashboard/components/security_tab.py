@@ -55,7 +55,7 @@ def _render_summary_cards(entries: list[dict[str, Any]]) -> dbc.Row:
     now = datetime.now(timezone.utc)
     week_ago = now - timedelta(days=7)
     recent = [e for e in kev if (d := _parse_date(e.get("published", ""))) and d >= week_ago]
-    ransomware = [e for e in kev if "known" in str(e.get("summary", "")).lower().replace("known ransomware campaign use: unknown", "")]
+    ransomware = [e for e in kev if e.get("ransomware_use") == "Known"]
 
     def card(value: str, label: str, extra: str = "") -> dbc.Col:
         return dbc.Col(
