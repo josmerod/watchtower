@@ -47,6 +47,7 @@ from src.web.dashboard.components.scavenging_tab import (
     register_scavenging_callbacks,
     render_scavenging_tab,
 )
+from src.web.dashboard.components.security_tab import render_security_tab
 from src.web.dashboard.components.shortcuts_tab import (
     get_shortcuts_data,
     register_shortcuts_callbacks,
@@ -242,6 +243,10 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="📈 Markets",
                             tab_id="tab-markets",
+                        ),
+                        dbc.Tab(
+                            label="🛡️ Security",
+                            tab_id="tab-security",
                         ),
                         dbc.Tab(
                             label="🛰️ Tech Radar",
@@ -587,6 +592,7 @@ _TAB_RENDERERS = {
     "tab-deals": render_deals_tab,
     "tab-benchmarks": render_benchmarks_tab,
     "tab-markets": render_markets_tab,
+    "tab-security": render_security_tab,
     "tab-tech-radar": render_tech_radar_tab,
     "tab-games": render_games_tab,
     "tab-notifications": render_notifications_tab,

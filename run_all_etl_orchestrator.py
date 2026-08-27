@@ -45,6 +45,7 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_spanish_tech.py",  # Xataka, Hipertextual, Genbeta
     "src/etl/news/news_get_cloud_updates.py",  # AWS, GCP, CNCF, GitHub Blog
     "src/etl/markets/coingecko_etl.py",  # Top-50 crypto — feeds Markets tab (T-043)
+    "src/etl/security/security_feeds_etl.py",  # CISA KEV + security news — feeds Security tab (T-050)
     "src/etl/news/news_get_valencia_local.py",  # 20minutos CV, Metro Valencia
     # Reddit
     "src/etl/news/reddit_unified_etl.py",

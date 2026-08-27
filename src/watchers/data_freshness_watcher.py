@@ -52,6 +52,8 @@ SOURCE_FILES: list[dict[str, Any]] = [
     {"key": "bridgebench", "label": "BridgeBench Elo", "path": "benchmarks/bridgebench_overall.json", "warn_hours": 336, "critical_hours": 1440},
     # Markets
     {"key": "coingecko", "label": "CoinGecko markets", "path": "markets/coingecko_latest.json", "warn_hours": 26, "critical_hours": 168},
+    # Security
+    {"key": "security", "label": "Security feed (KEV + news)", "path": "security/security_latest.json", "warn_hours": 26, "critical_hours": 168},
     # Games
     {"key": "humblebundles", "label": "Humble bundles", "path": "games/humblebundles.json", "warn_hours": 72, "critical_hours": 336},
     {"key": "itchio_trending", "label": "Itch.io trending", "path": "games/itchio_trending.json", "warn_hours": 72, "critical_hours": 336},
