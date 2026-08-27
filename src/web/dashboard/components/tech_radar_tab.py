@@ -24,7 +24,7 @@ from dash import ALL, Input, Output, dcc, html
 from src.utils.file_system import get_project_root
 from src.web.dashboard.components.shared.cache import TTLDataCache
 from src.web.dashboard.components.shared.table import create_refresh_button
-from src.web.dashboard.search_utils import create_search_input, filter_content
+from src.web.dashboard.search_utils import create_search_input, filter_content, highlight_segments
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ RADAR_SOURCES: list[dict[str, Any]] = [
 ]
 
 MAX_ITEMS_PER_SOURCE = 25
+MAX_UNIFIED_ITEMS = 100  # cap for the TR-F3 "Todos" merged feed
 
 # Fields checked (with nested metadata fallback) when searching/filtering.
 _SEARCHABLE_FIELDS = ["title", "summary", "description"]
@@ -393,8 +394,68 @@ def _render_radar_plot() -> dbc.Card:
     )
 
 
+def _render_unified_row(article: dict[str, Any], source_label: str, category: str, search_term: str | None) -> html.Li:
+    """One row of the TR-F3 merged feed: source badge + date + linked title."""
+    title = article.get("title", "Untitled")
+    link = article.get("link") or article.get("url") or "#"
+    published = str(article.get("published") or "")[:10]
+    highlighted = highlight_segments(title, search_term) if search_term else title
+    return html.Li(
+        [
+            dbc.Badge(source_label, color="info", className="me-2", pill=True),
+            html.Small(f"{published} · {category}", className="text-muted me-2"),
+            html.A(highlighted if isinstance(highlighted, list) else title, href=link, target="_blank", className="text-decoration-none"),
+        ],
+        className="mb-2",
+    )
+
+
+def _render_unified_feed(search_term: str | None = None, source_filter: str = "all", category_filter: str = "all", all_data: dict[str, list[dict[str, Any]]] | None = None) -> html.Div:
+    """TR-F3: chronological merge of every radar source with filters."""
+    if all_data is None:
+        all_data = _load_all_source_data()
+    rows: list[tuple[float, dict[str, Any], dict[str, Any]]] = []
+    for source in RADAR_SOURCES:
+        if source_filter != "all" and source["key"] != source_filter:
+            continue
+        if category_filter != "all" and source["category"] != category_filter:
+            continue
+        for raw in _load_source_data(source, all_data):
+            article = _normalize_article(raw)
+            if search_term:
+                title = str(article.get("title", ""))
+                summary = str(article.get("summary") or article.get("description") or "")
+                term = search_term.lower()
+                if term not in title.lower() and term not in summary.lower():
+                    continue
+            rows.append((_sortable_date(article), article, source))
+    rows.sort(key=lambda r: r[0], reverse=True)
+
+    if not rows:
+        return dbc.Alert("Nada que mostrar con estos filtros.", color="info", className="mt-3")
+
+    items = html.Ul([_render_unified_row(article, source["label"], source["category"], search_term) for _, article, source in rows[:MAX_UNIFIED_ITEMS]], className="mb-0")
+    return html.Div(
+        [
+            html.Small(f"{len(rows)} artículos ({min(len(rows), MAX_UNIFIED_ITEMS)} mostrados) — todas las fuentes, orden cronológico.", className="text-muted d-block mb-2"),
+            items,
+        ]
+    )
+
+
+def _unified_source_options() -> list[dict[str, str]]:
+    """Dropdown options for the TR-F3 source filter."""
+    return [{"label": "📋 Todas las fuentes", "value": "all"}, *[{"label": s["label"], "value": s["key"]} for s in RADAR_SOURCES]]
+
+
+def _unified_category_options() -> list[dict[str, str]]:
+    """Dropdown options for the TR-F3 category filter (distinct RADAR_SOURCES categories)."""
+    categories = sorted({s["category"] for s in RADAR_SOURCES})
+    return [{"label": f"🏷️ {c}", "value": c} for c in categories]
+
+
 def render_tech_radar_tab() -> html.Div:
-    """Render the Technology Radar tab with source columns."""
+    """Render the Technology Radar tab: unified feed (TR-F3) + per-source columns."""
     search = create_search_input("tech-radar-search", placeholder="Search tech radar…", clear_button=True)
     refresh = create_refresh_button("tech-radar")
 
@@ -423,8 +484,32 @@ def render_tech_radar_tab() -> html.Div:
                 ],
                 className="g-2",
             ),
-            _render_radar_plot(),
-            dbc.Row(source_cols, className="mt-2"),
+            dbc.Tabs(
+                [
+                    dbc.Tab(
+                        [
+                            _render_radar_plot(),
+                            dbc.Row(
+                                [
+                                    dbc.Col(dcc.Dropdown(id="tech-radar-source-filter", options=_unified_source_options(), value="all", clearable=False, placeholder="Fuente…"), width=12, md=4),
+                                    dbc.Col(dcc.Dropdown(id="tech-radar-category-filter", options=_unified_category_options(), value="all", clearable=False, placeholder="Categoría…"), width=12, md=4),
+                                ],
+                                className="mb-1 mt-2",
+                            ),
+                            html.Div(id="tech-radar-unified-feed", children=_render_unified_feed()),
+                        ],
+                        label="🔄 Todos",
+                        tab_id="tech-radar-tab-all",
+                    ),
+                    dbc.Tab(
+                        html.Div(dbc.Row(source_cols, className="mt-2")),
+                        label="🗂️ Por fuente",
+                        tab_id="tech-radar-tab-sources",
+                    ),
+                ],
+                id="tech-radar-view-tabs",
+                active_tab="tech-radar-tab-all",
+            ),
         ]
     )
 
@@ -433,15 +518,22 @@ def register_tech_radar_callbacks(app):
     """Register callbacks for the Technology Radar tab."""
 
     @app.callback(
-        [Output(f"tech-radar-col-{source['key']}", "children") for source in RADAR_SOURCES] + [Output("tech-radar-plot", "figure")],
-        [Input("tech-radar-search", "value"), Input({"type": "tech-radar-refresh", "tab": ALL}, "n_clicks")],
+        [Output(f"tech-radar-col-{source['key']}", "children") for source in RADAR_SOURCES]
+        + [Output("tech-radar-plot", "figure"), Output("tech-radar-unified-feed", "children")],
+        [
+            Input("tech-radar-search", "value"),
+            Input({"type": "tech-radar-refresh", "tab": ALL}, "n_clicks"),
+            Input("tech-radar-source-filter", "value"),
+            Input("tech-radar-category-filter", "value"),
+        ],
         prevent_initial_call=True,
     )
-    def update_radar(search_term, refresh_clicks):
-        """Filter every source column by the search term; refresh reloads data.
+    def update_radar(search_term, refresh_clicks, source_filter, category_filter):
+        """Single controller (spec 15 pattern) for search, filters and refresh.
 
-        Single controller for both inputs (spec 15 pattern): a refresh click
-        bypasses the TTL cache and re-renders columns + radar figure.
+        Search filters the per-source columns; the source/category dropdowns
+        drive the TR-F3 unified feed; a refresh click bypasses the TTL cache
+        and re-renders everything.
         """
         try:
             is_refresh = dash.callback_context.triggered_id and getattr(dash.callback_context.triggered_id, "get", lambda _k: None)("type") == "tech-radar-refresh"
@@ -449,10 +541,16 @@ def register_tech_radar_callbacks(app):
             term = (search_term or "").strip() or None
             sections = [_render_source_section(source, search_term=term, all_data=all_data) for source in RADAR_SOURCES]
             figure = _build_radar_figure(_extract_tech_mentions(all_data))
-            return sections + [figure]
+            feed = _render_unified_feed(
+                search_term=term,
+                source_filter=source_filter or "all",
+                category_filter=category_filter or "all",
+                all_data=all_data,
+            )
+            return sections + [figure, feed]
         except Exception as e:
             logger.error(f"Error in tech radar update: {e}")
-            return [[dbc.Alert(f"Error searching: {e}", color="danger")] for _ in RADAR_SOURCES] + [dash.no_update]
+            return [[dbc.Alert(f"Error searching: {e}", color="danger")] for _ in RADAR_SOURCES] + [dash.no_update, dash.no_update]
 
     @app.callback(
         Output("tech-radar-search", "value", allow_duplicate=True),

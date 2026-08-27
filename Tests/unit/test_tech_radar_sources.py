@@ -149,3 +149,47 @@ def test_pulse_subreddits_configured(subreddit):
     assert subreddit in SUBREDDITS_CONFIG
     if subreddit == "SelfHosted":
         assert SUBREDDITS_CONFIG[subreddit]["category"] == "selfhosting"
+
+
+# ---------------------------------------------------------------------------
+# TR-F3: unified feed (T-041)
+# ---------------------------------------------------------------------------
+
+def test_unified_feed_merges_and_orders_chronologically(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write(tmp_path, "news/hn_frontpage_latest.json", [{"title": "old hn", "url": "https://x/1", "published": "2026-08-20T10:00:00+00:00"}])
+    _write(tmp_path, "news/verge_ai_latest.json", [{"title": "new verge", "url": "https://x/2", "published": "2026-08-27T09:00:00+00:00"}])
+    feed = str(tab._render_unified_feed())
+    assert "old hn" in feed and "new verge" in feed
+    assert feed.index("new verge") < feed.index("old hn")  # newest first
+
+
+def test_unified_feed_filters_by_source_and_category(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write(tmp_path, "news/hn_frontpage_latest.json", [{"title": "hn item", "url": "https://x/1", "published": "2026-08-27T10:00:00+00:00"}])
+    _write(tmp_path, "news/verge_ai_latest.json", [{"title": "verge item", "url": "https://x/2", "published": "2026-08-27T09:00:00+00:00"}])
+    only_hn = str(tab._render_unified_feed(source_filter="hn_frontpage"))
+    assert "hn item" in only_hn and "verge item" not in only_hn
+    hn_source = next(s for s in tab.RADAR_SOURCES if s["key"] == "hn_frontpage")
+    only_discussion = str(tab._render_unified_feed(category_filter=hn_source["category"]))
+    assert "hn item" in only_discussion and "verge item" not in only_discussion
+
+
+def test_unified_feed_search_term_and_cap(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write(tmp_path, "news/hn_frontpage_latest.json", [{"title": "kubernetes rocks", "url": "https://x/1"}, {"title": "unrelated", "url": "https://x/2"}])
+    searched = str(tab._render_unified_feed(search_term="kubernetes"))
+    # highlight_segments splits the title around the match — check both halves
+    assert "kubernetes" in searched and "rocks" in searched and "unrelated" not in searched
+    monkeypatch.setattr(tab, "MAX_UNIFIED_ITEMS", 1)
+    capped = str(tab._render_unified_feed())
+    assert "mostrados" in capped and "1 mostrados" in capped
+
+
+def test_unified_category_options_distinct():
+    options = tab._unified_category_options()
+    values = [o["value"] for o in options]
+    assert len(values) == len(set(values)) and "AI" in values
