@@ -80,7 +80,8 @@ NEWS_TAB_DEFINITIONS = [
         "id": "top_tech",
     },
     {"label": "freeCodeCamp", "keys": "freecodecamp", "id": "fcc"},
-    {"label": "Google AI Blog", "keys": "google_ai_blog", "id": "gaib"},
+    # Google AI Blog, KDnuggets y Cloud Updates viven SOLO en Tech Radar (spec 13 M3):
+    # su contenido sigue encontrable vía "🔎 Global" y el radar los muestra con más contexto.
     {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"},
     {
         "label": "FutureTools & Ben's Bites",
@@ -90,7 +91,6 @@ NEWS_TAB_DEFINITIONS = [
     {"label": "Hacker News", "keys": "hackernews", "id": "hn"},
     {"label": "tldr.tech", "keys": "tldr", "id": "tldr"},
     {"label": "Medium GenAI", "keys": "medium_genai", "id": "med_genai"},
-    {"label": "KDnuggets", "keys": "kdnuggets", "id": "kdn"},
     {"label": "Meneame General", "keys": "meneame_general", "id": "men_gen"},
     {"label": "Meneame Tech", "keys": "meneame_tecnologia", "id": "men_tec"},
     {"label": "Indie Hackers", "keys": "indiehackers", "id": "ih"},
@@ -104,7 +104,6 @@ NEWS_TAB_DEFINITIONS = [
     {"label": "Kagi Spain", "keys": "kagi_spain", "id": "kagi_spain"},
     {"label": "Microsiervos", "keys": "microsiervos", "id": "microsiervos"},
     {"label": "🇪🇸 Spanish Tech", "keys": "spanish_tech", "id": "spanish_tech"},
-    {"label": "☁️ Cloud Updates", "keys": "cloud_updates", "id": "cloud_updates"},
     {"label": "📍 Valencia Local", "keys": "valencia_local", "id": "valencia_local"},
 ]
 

@@ -49,7 +49,8 @@ class TestNewsSearchIds:
     """Every tab definition must yield exactly one wired search input ID."""
 
     def test_definitions_exist(self):
-        assert len(NEWS_TAB_DEFINITIONS) >= 22
+        # 20 desde T-044 (Google AI/KDNuggets/Cloud Updates viven solo en Tech Radar)
+        assert len(NEWS_TAB_DEFINITIONS) >= 20
 
     def test_search_id_for_single_source(self):
         tab = {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"}
@@ -63,12 +64,15 @@ class TestNewsSearchIds:
         ("label", "expected_key"),
         [
             ("🇪🇸 Spanish Tech", "spanish_tech"),
-            ("☁️ Cloud Updates", "cloud_updates"),
             ("📍 Valencia Local", "valencia_local"),
         ],
     )
     def test_previously_dead_subtabs_have_search_ids(self, label, expected_key):
-        """The three subtabs whose search boxes were dead before the fix."""
+        """Subtabs whose search boxes were dead before the fix.
+
+        (Cloud Updates se movió a Tech-Radar-only en T-044; su búsqueda ya no
+        es un subtab de News.)
+        """
         tab = next(t for t in NEWS_TAB_DEFINITIONS if t["label"] == label)
         assert _search_id_for_tab(tab) == f"news-search-{expected_key}"
 
