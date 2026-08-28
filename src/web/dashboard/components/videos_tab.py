@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -48,6 +49,113 @@ def _date_sort_key(video: dict):
     if date_value is None or pd.isna(date_value):
         return (0, datetime.min.replace(tzinfo=timezone.utc))
     return (1, date_value)
+
+
+# Matches the video id in every URL shape the ETLs emit: youtube.com/watch?v=
+# (v first or after other params), /shorts/, /embed/, /live/, legacy /v/ and
+# /e/, youtube-nocookie.com embeds, and youtu.be/ short links.
+_YT_ID_PATTERN = re.compile(
+    r"(?:youtube(?:-nocookie)?\.com/(?:watch\?(?:[\w=&%.-]*&)?v=|v/|e/|shorts/|embed/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})",
+    re.IGNORECASE,
+)
+
+
+def _extract_youtube_id(url) -> str | None:
+    """Extract the 11-character YouTube video id from a URL.
+
+    Args:
+        url: Raw video URL as stored by the ETLs (``webpage_url`` from
+            yt-dlp: ``watch?v=``, ``shorts/``, ``youtu.be/`` shapes).
+
+    Returns:
+        The video id, or None when the URL is empty/unknown — callers must
+        degrade gracefully (no preview button, no embed).
+    """
+    if not url:
+        return None
+    match = _YT_ID_PATTERN.search(str(url))
+    return match.group(1) if match else None
+
+
+# hash -> minimal record for the embed-preview modal (spec 04 F3). Cards
+# register themselves at render time so the pattern-matching callback can
+# resolve {"type": "wt-video-preview-btn", "index": <hash>} back to a video.
+_VIDEO_REGISTRY_MAX = 5000
+_video_registry: dict[str, dict] = {}
+
+
+def _register_video(video_hash: str, video: dict) -> None:
+    """Remember the minimal fields a modal needs for a rendered card.
+
+    The registry is capped: when it overflows it is cleared, which is safe
+    because any card still on screen re-registers on the next container
+    re-render.
+    """
+    if len(_video_registry) >= _VIDEO_REGISTRY_MAX:
+        _video_registry.clear()
+    _video_registry[video_hash] = {
+        "title": video.get("title", "No Title"),
+        "url": video.get("url", ""),
+        "channel": video.get("channel", ""),
+    }
+
+
+def _published_iso(video: dict) -> str | None:
+    """Best-effort ISO 8601 publish timestamp for client-side NUEVO badges.
+
+    Prefers the parsed ``published_date``; falls back to the raw
+    ``published_at`` string. Returns None for undated videos (the JS skips
+    cards without the attribute).
+    """
+    pub = video.get("published_date")
+    try:
+        if pub is not None and not pd.isna(pub):
+            return pub.isoformat()
+    except (TypeError, ValueError):
+        pass
+    raw = video.get("published_at")
+    return str(raw) if raw else None
+
+
+def _build_video_modal_content(video: dict) -> tuple:
+    """Build the (title, body, footer) children for the embed-preview modal.
+
+    Args:
+        video: Minimal record from ``_video_registry`` (title, url, channel).
+
+    Returns:
+        Tuple of (modal title children, body children with a responsive
+        16:9 privacy-enhanced embed, footer children with the YouTube link
+        and the close button).
+    """
+    video_id = _extract_youtube_id(video.get("url"))
+    title = video.get("title", "No Title")
+    watch_url = video.get("url") or f"https://www.youtube.com/watch?v={video_id}"
+    channel = video.get("channel", "")
+
+    # Padding-bottom trick: a responsive 16:9 box without aspect-ratio support
+    # requirements; the iframe absolutely fills it.
+    body = html.Div(
+        html.Iframe(
+            src=f"https://www.youtube-nocookie.com/embed/{video_id}",
+            title=f"YouTube embed: {title}",
+            # "fullscreen" replaces the allowFullScreen attribute (dash 4.x
+            # html.Iframe only exposes the standard allow= permission string)
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen",
+            style={"position": "absolute", "top": 0, "left": 0, "width": "100%", "height": "100%", "border": 0},
+        ),
+        style={"position": "relative", "width": "100%", "paddingBottom": "56.25%", "height": 0},
+    )
+
+    footer = html.Div(
+        [
+            html.Span(channel, className="text-muted small me-auto align-self-center"),
+            dbc.Button("Ver en YouTube ↗", href=watch_url, target="_blank", external_link=True, color="primary", outline=True, size="sm"),
+            dbc.Button("Cerrar", id="wt-video-modal-close", color="secondary", outline=True, size="sm", className="ms-2"),
+        ],
+        className="d-flex w-100",
+    )
+    return title, body, footer
 
 
 class VideoManager:
@@ -272,6 +380,45 @@ def create_video_card(video):
     duration = _format_duration(video.get("length"))
     views = _format_views(video.get("views"))
     video_hash = hashlib.md5((video.get("url") or video.get("title", "")).encode("utf-8")).hexdigest()
+    video_id = _extract_youtube_id(video.get("url"))
+    published_iso = _published_iso(video)
+
+    # The modal callback resolves this card's video via the registry (spec 04 F3)
+    _register_video(video_hash, video)
+
+    # Circular ▶ overlay on the thumbnail: opens the in-dashboard embed modal
+    # (spec 04 F3). Only rendered when the URL yields a video id.
+    preview_button = (
+        html.Button(
+            "▶",
+            id={"type": "wt-video-preview-btn", "index": video_hash},
+            className="wt-video-preview-btn",
+            title="Vista previa (embed en el dashboard)",
+            type="button",
+            style={
+                "position": "absolute",
+                "top": "50%",
+                "left": "50%",
+                "transform": "translate(-50%, -50%)",
+                "width": "44px",
+                "height": "44px",
+                "borderRadius": "50%",
+                "backgroundColor": "rgba(0,0,0,.55)",
+                "border": "2px solid rgba(255,255,255,.85)",
+                "color": "#fff",
+                "fontSize": "1rem",
+                "lineHeight": 1,
+                "display": "flex",
+                "alignItems": "center",
+                "justifyContent": "center",
+                "cursor": "pointer",
+                "padding": 0,
+                "zIndex": 2,
+            },
+        )
+        if video_id
+        else None
+    )
 
     # Thumbnail
     if thumbnail_url:
@@ -302,6 +449,7 @@ def create_video_card(video):
                 )
                 if duration
                 else None,
+                preview_button,
             ],
             style={"position": "relative"},
         )
@@ -314,8 +462,10 @@ def create_video_card(video):
                 ),
                 html.Br(),
                 html.Span("Video", style={"color": "#A37FFF"}),
+                preview_button,
             ],
             style={
+                "position": "relative",
                 "height": "180px",
                 "display": "flex",
                 "flexDirection": "column",
@@ -396,7 +546,12 @@ def create_video_card(video):
             # html wrapper carries the data-* attribute (dbc components don't
             # accept wildcards); video_state.js keys on it
             className="h-100",
-            **{"data-video-hash": video_hash},
+            **{
+                "data-video-hash": video_hash,
+                # Consumed by video_state.js for the NUEVO badge (spec 04 F5);
+                # empty on undated cards, which the script then skips.
+                "data-published-at": published_iso or "",
+            },
         ),
         xs=12,
         sm=6,
@@ -464,6 +619,22 @@ def get_initial_video_display(limit=48):
 
     except Exception as e:
         return [dbc.Alert(f"Error loading videos: {e}", color="danger")]
+
+
+def _video_modal_layout():
+    """The embed-preview modal shell (spec 04 F3); content filled per video."""
+    return dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle(id="wt-video-modal-title"), close_button=True),
+            dbc.ModalBody(id="wt-video-modal-body"),
+            dbc.ModalFooter(id="wt-video-modal-footer"),
+        ],
+        id="wt-video-modal",
+        is_open=False,
+        size="lg",
+        centered=True,
+        scrollable=True,
+    )
 
 
 def render_videos_tab():
@@ -637,6 +808,10 @@ def render_videos_tab():
             ),
             # Pagination info
             html.Div(id="videos-pagination", className="d-flex justify-content-center mt-3"),
+            # Embed-preview modal (spec 04 F3): opened by the ▶ overlay on a
+            # card thumbnail; title/body/footer are rebuilt per video by
+            # toggle_video_preview_modal.
+            _video_modal_layout(),
             # Script to initialize items-per-page selector from localStorage
             html.Script(load_initial_preference("videos")),
         ]
@@ -769,6 +944,45 @@ def register_video_callbacks(app):
         except Exception as e:
             logger.error(f"Error updating videos: {e}")
             return [dbc.Alert(f"Error loading videos: {e}", color="danger")], None, 1
+
+    # Embed-preview modal (spec 04 F3): one callback owns every modal output.
+    # Pattern-matching Input on the per-card ▶ overlay buttons + the modal's
+    # own close button; is_open toggles and the content is rebuilt per video.
+    @app.callback(
+        Output("wt-video-modal", "is_open"),
+        Output("wt-video-modal-title", "children"),
+        Output("wt-video-modal-body", "children"),
+        Output("wt-video-modal-footer", "children"),
+        Input({"type": "wt-video-preview-btn", "index": ALL}, "n_clicks"),
+        Input("wt-video-modal-close", "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def toggle_video_preview_modal(preview_clicks, close_clicks):
+        """Open the embed modal for the clicked card, or close it."""
+        untouched = (dash.no_update, dash.no_update, dash.no_update, dash.no_update)
+        try:
+            import dash as _dash
+
+            # ctx.triggered_id is the id object for a real pattern-matching
+            # click, the literal id string for the close button, and None (or
+            # the wildcard token) when cards are merely (re)rendered — the
+            # only cases that must change the modal.
+            triggered_id = _dash.ctx.triggered_id
+
+            if triggered_id == "wt-video-modal-close":
+                return False, dash.no_update, dash.no_update, dash.no_update
+
+            if isinstance(triggered_id, dict) and triggered_id.get("type") == "wt-video-preview-btn":
+                video = _video_registry.get(triggered_id.get("index"))
+                if not video:
+                    return untouched
+                title, body, footer = _build_video_modal_content(video)
+                return True, title, body, footer
+
+            return untouched
+        except Exception as e:
+            logger.error(f"Error toggling video preview modal: {e}")
+            return untouched
 
     # Register client-side callback for items-per-page preference saving
     register_items_per_page_callback("videos")
