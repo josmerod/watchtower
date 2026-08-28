@@ -1,5 +1,6 @@
 """New Valencia Events Tab Component with Subtabs for Watchtower Dashboard"""
 
+import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -265,6 +266,11 @@ def render_valencia_events_tab() -> html.Div:
         _now = datetime.now()
         upcoming_events_data = [e for e in events_data if e.get("start_date") and _is_upcoming_event(e.get("start_date", ""), _now, _now + timedelta(days=30))]
 
+        # Clientside .ics export payload (T-068): upcoming-from-today events
+        # embedded as compact JSON for the assets/js/valencia_ics.js handler.
+        ics_events = _exportable_upcoming_events(events_data, _now)
+        ics_payload = json.dumps(_build_ics_payload(ics_events), ensure_ascii=False, separators=(",", ":"))
+
         # Statistics
         total_events = len(events_data)
         categories = {event.get("category", "General") for event in events_data}
@@ -360,7 +366,31 @@ def render_valencia_events_tab() -> html.Div:
                                     className="text-muted",
                                 ),
                             ]
-                        )
+                        ),
+                        # Clientside .ics export (T-068): hidden payload Div always
+                        # present; the button only renders when there is something
+                        # to export. dbc rejects data-* kwargs, hence html.Div.
+                        dbc.Col(
+                            [
+                                html.Div(id="valencia-ics-events", hidden=True, **{"data-events": ics_payload}),
+                                *(
+                                    [
+                                        dbc.Button(
+                                            f"⬇ .ics ({len(ics_events)})",
+                                            id="valencia-ics-export-btn",
+                                            color="outline-secondary",
+                                            size="sm",
+                                            className="mb-3",
+                                            title="Download upcoming events as a calendar file (.ics)",
+                                        )
+                                    ]
+                                    if ics_events
+                                    else []
+                                ),
+                            ],
+                            width="auto",
+                            className="d-flex align-items-end ms-md-auto",
+                        ),
                     ],
                     className="mb-4",
                 ),
@@ -407,6 +437,60 @@ def _is_upcoming_event(date_str: str, now: datetime, cutoff_date: datetime) -> b
     if event_date is None:
         return False
     return now <= event_date <= cutoff_date
+
+
+def _exportable_upcoming_events(events: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
+    """Return the events eligible for the .ics export: parseable start date today or later.
+
+    Unlike the 30-day window used by the "Upcoming Events" subtab, the calendar
+    export keeps every future event ("from today", no upper cutoff). Events whose
+    start_date cannot be parsed are skipped (they cannot become VEVENTs).
+
+    Args:
+        events: Raw event dictionaries from the repository.
+        now: Reference datetime; events dated before its day are excluded.
+
+    Returns:
+        List of event dictionaries, original order preserved.
+    """
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    exportable: list[dict[str, Any]] = []
+    for event in events:
+        parsed = _parse_event_date(str(event.get("start_date") or ""))
+        if parsed is not None and parsed >= today:
+            exportable.append(event)
+    return exportable
+
+
+def _build_ics_payload(events: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """Build the compact JSON payload consumed by the clientside .ics exporter.
+
+    Only the fields the JS VCALENDAR builder needs are kept so the embedded
+    data-events attribute stays small. The location is read from the event
+    itself or from metadata (venue/location keys) when present.
+
+    Args:
+        events: Exportable event dictionaries (already filtered to upcoming).
+
+    Returns:
+        List of dicts with title/start_date/end_date/url and, when available,
+        location.
+    """
+    payload: list[dict[str, str]] = []
+    for event in events:
+        metadata = event.get("metadata")
+        metadata = metadata if isinstance(metadata, dict) else {}
+        location = str(event.get("location") or metadata.get("location") or metadata.get("venue") or "")
+        item = {
+            "title": str(event.get("title") or "Untitled"),
+            "start_date": str(event.get("start_date") or ""),
+            "end_date": str(event.get("end_date") or ""),
+            "url": str(event.get("url") or ""),
+        }
+        if location:
+            item["location"] = location
+        payload.append(item)
+    return payload
 
 
 def register_valencia_events_callbacks(app):
