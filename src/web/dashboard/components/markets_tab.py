@@ -11,15 +11,22 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import dash
 import dash_bootstrap_components as dbc
 from dash import html
 
 from src.utils.file_system import get_project_root
+from src.web.dashboard.components import saved_items
 from src.web.dashboard.components.shared.table import render_items_table
 
 logger = logging.getLogger(__name__)
 
 DATA_FILE = "markets/coingecko_latest.json"
+
+# ⭐ Saved-items toggle (T-053): every coin row gets a star. Pattern id type
+# per tab, shared persistence with Knowledge Garden via
+# data/garden/saved_items.json.
+MARKETS_SAVE_BTN_TYPE = "markets-save-btn"
 
 
 def _load_coins() -> list[dict[str, Any]]:
@@ -110,11 +117,28 @@ def _render_summary_cards(coins: list[dict[str, Any]]) -> dbc.Row:
     )
 
 
+def _coin_save_record(coin: dict[str, Any]) -> dict[str, Any]:
+    """Saved-items record for a coin row (market rows have no article URL)."""
+    name = f"{coin.get('name', '?')} ({coin.get('symbol', '')})"
+    url = f"https://www.coingecko.com/en/coins/{coin['id']}" if coin.get("id") else None
+    return {"title": name, "url": url, "source": "Markets (CoinGecko)"}
+
+
+def _save_button(coin: dict[str, Any]):
+    """⭐ toggle for one coin row (shared saved-items builder)."""
+    return saved_items.save_button(_coin_save_record(coin), MARKETS_SAVE_BTN_TYPE, tab="markets")
+
+
 def render_markets_tab() -> html.Div:
     """Render the Markets tab: summary cards + top-50 coins table."""
     coins = _load_coins()
 
     columns = [
+        {
+            "header": "",
+            "cell": lambda c: _save_button(c),
+            "td_kwargs": {"style": {"width": "2rem"}},
+        },
         {"header": "#", "cell": lambda c: str(c.get("rank") or "—")},
         {
             "header": "Coin",
@@ -152,3 +176,13 @@ def render_markets_tab() -> html.Div:
             render_items_table(coins, columns, empty_message="No market data yet. Run the CoinGecko ETL (`uv run python -m src.etl.markets.coingecko_etl`)."),
         ]
     )
+
+
+def register_markets_callbacks(app: dash.Dash) -> None:
+    """Register Markets tab callbacks.
+
+    Currently only the ⭐ saved-items toggles on coin rows (T-053): a
+    pattern-matching callback on the star buttons, targeting new outputs.
+    Wired from app.py alongside the other tabs' register functions.
+    """
+    saved_items.register_save_toggle_callback(app, MARKETS_SAVE_BTN_TYPE)

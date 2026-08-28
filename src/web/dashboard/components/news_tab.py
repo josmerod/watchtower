@@ -15,6 +15,7 @@ from src.services.data_loader import (
 from src.services.data_loader import (
     format_article_date as format_article_date_shared,
 )
+from src.web.dashboard.components import saved_items
 from src.web.dashboard.components.duplicate_filter import create_duplicate_toggle
 from src.web.dashboard.components.shared.table import render_items_table, title_cell
 from src.web.dashboard.deduplication_utils import (
@@ -83,6 +84,11 @@ MAX_ARTICLES_PER_SOURCE = 50  # Limit number of articles displayed per source in
 TOP_TECH_PER_PAGE_OPTIONS = (25, 50, 100, 250)
 TOP_TECH_DEFAULT_PER_PAGE = 50
 TOP_TECH_COMPONENT_ID = "news-toptech"
+
+# ⭐ Saved-items toggle (T-053): only the "🔎 Global" search results get a star
+# (NOT the per-source subtabs, NOT Top Tech). Pattern id type per tab, shared
+# persistence with Knowledge Garden via data/garden/saved_items.json.
+NEWS_SAVE_BTN_TYPE = "news-save-btn"
 
 # Single source of truth for the subtab list. render_news_tab() builds the
 # dbc.Tabs from it and register_news_search_callbacks() derives the search
@@ -484,6 +490,34 @@ def create_news_source_tab_content(source_keys, combined_name=None, with_paginat
     )
 
 
+def _build_global_results_table(results: list[dict[str, Any]], search_term: str | None = None) -> Any:
+    """Build the "🔎 Global" results table (⭐ save column + Title/Fuente/Date).
+
+    Extracted from the global-search callback (T-053) so the static renderer,
+    the callback and the tests all render the identical star column.
+    """
+    trending_map = get_trending_items_map()
+    columns = [
+        {
+            "header": "",
+            "cell": lambda a: saved_items.save_button(a, NEWS_SAVE_BTN_TYPE, tab="news"),
+            "td_kwargs": {"style": {"width": "2rem"}},
+        },
+        {
+            "header": "Title",
+            "cell": lambda a: html.Div(
+                [
+                    title_cell(a, search_term, title_fields=("title", "name", "full_name")),
+                    render_trend_badge(match_item_trend(a, trending_map)),
+                ]
+            ),
+        },
+        {"header": "Fuente", "cell": lambda a: a.get("source_display_name", "?")},
+        {"header": "Date", "cell": lambda a: format_article_date(a)},
+    ]
+    return render_items_table(results, columns, empty_message="Sin resultados.", wrap_scroll=False)
+
+
 def register_news_search_callbacks(app):
     """Register search callbacks for all news tabs."""
     # Derive search IDs from the same tab definitions used to build the layout
@@ -782,21 +816,7 @@ def register_news_search_callbacks(app):
                 hint = f" Fuentes sin datos ahora mismo: {', '.join(empty_sources[:8])}" if empty_sources else ""
                 return dbc.Alert(f"Sin resultados para '{term}'.{hint}", color="info")
 
-            trending_map = get_trending_items_map()
-            columns = [
-                {
-                    "header": "Title",
-                    "cell": lambda a: html.Div(
-                        [
-                            title_cell(a, term, title_fields=("title", "name", "full_name")),
-                            render_trend_badge(match_item_trend(a, trending_map)),
-                        ]
-                    ),
-                },
-                {"header": "Fuente", "cell": lambda a: a.get("source_display_name", "?")},
-                {"header": "Date", "cell": lambda a: format_article_date(a)},
-            ]
-            table = render_items_table(results[:200], columns, empty_message="Sin resultados.", wrap_scroll=False)
+            table = _build_global_results_table(results[:200], term)
             return html.Div([header_alert, html.Div(table, style={"maxHeight": "700px", "overflowY": "auto", "paddingRight": "15px"})])
         except Exception as e:
             logger.error(f"Error in news global search: {e}")
@@ -841,6 +861,11 @@ def register_news_search_callbacks(app):
         except Exception as e:
             logger.error(f"Error exporting news subtab: {e}")
             return dash.no_update
+
+    # ⭐ Save/unsave toggles for the "🔎 Global" results (T-053): pattern-
+    # matching callback on the star buttons only; targets new outputs so the
+    # controllers above are untouched.
+    saved_items.register_save_toggle_callback(app, NEWS_SAVE_BTN_TYPE)
 
 
 # Main function to render the news tab

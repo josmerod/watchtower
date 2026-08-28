@@ -199,24 +199,28 @@ def format_article_date(article):
     return format_article_date_shared(article)
 
 
-# hash -> full item dict, filled at render time so the toggle callback can
-# create a saved record on first star (the button id only carries the hash)
-_SAVE_REGISTRY: dict[str, dict] = {}
+# hash -> full item dict at render time. The registry itself now lives in the
+# shared saved-items module (also used by News, Tech Radar and Markets, T-053);
+# this alias keeps the historical name working for this tab's toggle callback.
+_SAVE_REGISTRY: dict[str, dict] = saved_items.SAVE_CANDIDATES
+
+KG_SAVE_BTN_TYPE = "kg-save-btn"
 
 
 def _save_button(article: dict) -> dbc.Button:
     """Star/unstar button for a knowledge item (pattern-matching id per hash)."""
-    h = saved_items.item_hash(article.get("url") or article.get("link"), article.get("title") or article.get("name"))
-    _SAVE_REGISTRY[h] = article
-    saved = saved_items.is_saved(h)
-    return dbc.Button(
-        "★" if saved else "☆",
-        id={"type": "kg-save-btn", "hash": h},
-        color="warning" if saved else "outline-secondary",
-        size="sm",
-        className="ms-1 p-0 border-0",
-        title="Quitar de guardados" if saved else "Guardar para luego",
-    )
+    return saved_items.save_button(article, KG_SAVE_BTN_TYPE, tab="knowledge_garden")
+
+
+# Friendly labels for the saved-record "tab" field (T-053: News / Tech Radar /
+# Markets now star into the same file). Old KG entries predate the field.
+_SAVED_TAB_LABELS = {"knowledge_garden": "garden", "news": "news", "tech_radar": "radar", "markets": "markets"}
+
+
+def _saved_tab_badge(tab: str | None) -> dbc.Badge:
+    """Origin badge for a saved row (defaults to the garden for old records)."""
+    label = _SAVED_TAB_LABELS.get(tab or "", tab or "garden")
+    return dbc.Badge(label, color="secondary", pill=True, className="text-lowercase")
 
 
 def _render_saved_subtab() -> html.Div:
@@ -232,13 +236,14 @@ def _render_saved_subtab() -> html.Div:
                 html.Td(_save_button({"url": s.get("url"), "title": s.get("title"), "source": s.get("source")})),
                 html.Td(html.A(s.get("title", ""), href=s.get("url"), target="_blank")),
                 html.Td(s.get("source", "")),
+                html.Td(_saved_tab_badge(s.get("tab"))),
                 html.Td(s.get("saved_at", "")),
             ]
         )
         for s in saved
     ]
     table = dbc.Table(
-        [html.Thead(html.Tr([html.Th(""), html.Th("Title"), html.Th("Source"), html.Th("Saved")]))] + [html.Tbody(rows)],
+        [html.Thead(html.Tr([html.Th(""), html.Th("Title"), html.Th("Source"), html.Th("Tab"), html.Th("Saved")]))] + [html.Tbody(rows)],
         bordered=True,
         hover=True,
         striped=True,
@@ -434,10 +439,7 @@ def register_knowledge_garden_callbacks(app):
             h = dash.ctx.triggered_id.hash
             # Unstar: the record lives in the saved file. First star: the item
             # comes from the render-time registry (the id only carries a hash).
-            saved = saved_items.load_saved()
-            record = next((s for s in saved if s.get("hash") == h), None)
-            if record is None:
-                record = _SAVE_REGISTRY.get(h)
+            record = saved_items.lookup_candidate(h)
             if record is None:
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update
             new_state = saved_items.toggle_saved(record)

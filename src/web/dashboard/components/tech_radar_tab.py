@@ -22,6 +22,7 @@ import plotly.graph_objects as go
 from dash import ALL, Input, Output, dcc, html
 
 from src.utils.file_system import get_project_root
+from src.web.dashboard.components import saved_items
 from src.web.dashboard.components.shared.cache import TTLDataCache
 from src.web.dashboard.components.shared.table import create_refresh_button
 from src.web.dashboard.search_utils import create_search_input, filter_content, highlight_segments
@@ -68,6 +69,11 @@ RADAR_SOURCES: list[dict[str, Any]] = [
 
 MAX_ITEMS_PER_SOURCE = 25
 MAX_UNIFIED_ITEMS = 100  # cap for the TR-F3 "Todos" merged feed
+
+# ⭐ Saved-items toggle (T-053): only the unified "🔄 Todos" feed rows get a
+# star (NOT the per-source card columns). Pattern id type per tab, shared
+# persistence with Knowledge Garden via data/garden/saved_items.json.
+TECH_RADAR_SAVE_BTN_TYPE = "tech-radar-save-btn"
 
 # Fields checked (with nested metadata fallback) when searching/filtering.
 _SEARCHABLE_FIELDS = ["title", "summary", "description"]
@@ -441,20 +447,28 @@ def _render_radar_plot() -> dbc.Card:
     )
 
 
-def _render_unified_row(article: dict[str, Any], source_label: str, category: str, search_term: str | None) -> html.Li:
-    """One row of the TR-F3 merged feed: source badge + date + linked title."""
+def _render_unified_row(article: dict[str, Any], source_label: str, category: str, search_term: str | None, with_save: bool = False) -> html.Li:
+    """One row of the TR-F3 merged feed: source badge + date + linked title.
+
+    ``with_save`` prepends the shared ⭐ toggle — enabled for the unified
+    "🔄 Todos" feed (T-053); the per-source columns render plain rows.
+    """
     title = article.get("title", "Untitled")
     link = article.get("link") or article.get("url") or "#"
     published = str(article.get("published") or "")[:10]
     highlighted = highlight_segments(title, search_term) if search_term else title
-    return html.Li(
+    children: list[Any] = []
+    if with_save:
+        record = {**article, "source_display_name": article.get("source_display_name") or article.get("source") or source_label}
+        children.append(saved_items.save_button(record, TECH_RADAR_SAVE_BTN_TYPE, tab="tech_radar", class_name="me-1 p-0 border-0"))
+    children.extend(
         [
             dbc.Badge(source_label, color="info", className="me-2", pill=True),
             html.Small(f"{published} · {category}", className="text-muted me-2"),
             html.A(highlighted if isinstance(highlighted, list) else title, href=link, target="_blank", className="text-decoration-none"),
-        ],
-        className="mb-2",
+        ]
     )
+    return html.Li(children, className="mb-2")
 
 
 def _render_unified_feed(search_term: str | None = None, source_filter: str = "all", category_filter: str = "all", all_data: dict[str, list[dict[str, Any]]] | None = None) -> html.Div:
@@ -481,7 +495,10 @@ def _render_unified_feed(search_term: str | None = None, source_filter: str = "a
     if not rows:
         return dbc.Alert("Nada que mostrar con estos filtros.", color="info", className="mt-3")
 
-    items = html.Ul([_render_unified_row(article, _row_label(article, source), source["category"], search_term) for _, article, source in rows[:MAX_UNIFIED_ITEMS]], className="mb-0")
+    items = html.Ul(
+        [_render_unified_row(article, _row_label(article, source), source["category"], search_term, with_save=True) for _, article, source in rows[:MAX_UNIFIED_ITEMS]],
+        className="mb-0",
+    )
     return html.Div(
         [
             html.Small(f"{len(rows)} artículos ({min(len(rows), MAX_UNIFIED_ITEMS)} mostrados) — todas las fuentes, orden cronológico.", className="text-muted d-block mb-2"),
@@ -638,3 +655,8 @@ def register_tech_radar_callbacks(app):
         if n_clicks:
             return ""
         return dash.no_update
+
+    # ⭐ Save/unsave toggles for the unified "🔄 Todos" feed rows (T-053):
+    # pattern-matching callback on the star buttons only; targets new outputs
+    # so the radar controller above is untouched.
+    saved_items.register_save_toggle_callback(app, TECH_RADAR_SAVE_BTN_TYPE)
