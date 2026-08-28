@@ -39,6 +39,8 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_infoq.py",  # InfoQ feed — feeds Tech Radar tab
     "src/etl/news/news_get_thenewstack.py",  # The New Stack feed — feeds Tech Radar tab
     "src/etl/news/news_get_changelog.py",  # changelog.com feed — feeds Tech Radar tab
+    "src/etl/news/news_get_phoronix.py",  # Phoronix feed — feeds Tech Radar tab (T-070)
+    "src/etl/news/news_get_unraid_forums.py",  # Unraid forums (Invision RSS) — feeds Tech Radar tab (T-070)
     "src/etl/analytics/trends_etl.py",  # Cross-source trend analysis — feeds 🔥 badges (News/ArXiv). Local files only; must run after news ETLs
     "src/etl/analytics/weekly_digest_etl.py",  # Weekly digest (T-054) — compiles trends/radar/markets/watchers into data/insights/. Local files only; feeds 📅 Digest tab
     "src/watchers/data_freshness_watcher.py",  # MUST BE LAST — flags sources that failed to refresh this run (feeds Metrics card)
@@ -133,6 +135,7 @@ ETL_SCRIPTS = [
     "src/etl/benchmarks/bridgebench_etl.py",
     "src/etl/benchmarks/llm_leaderboard_etl.py",
     "src/etl/benchmarks/livebench_etl.py",  # LiveBench leaderboard via browserless (T-069)
+    "src/etl/benchmarks/openrouter_models_etl.py",  # OpenRouter new-models feed, keyless (T-071)
     "src/etl/trendshift/trendshift_etl.py",
     "src/etl/rss_feeds/rss_feed_etl.py",
     "src/etl/museums/museum_etl.py",
