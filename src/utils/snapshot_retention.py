@@ -4,15 +4,15 @@ The ~95 ETLs append a new ``{name}_{YYYYMMDD_HHMMSS}.json`` snapshot on every
 run (roughly every 2h), so ``data/`` grows without bound on the server volume.
 This module plans and applies a conservative keep-the-newest-N retention pass:
 
-- Groups timestamped ``.json`` files by their prefix (the stable part before
-  the filename timestamp) *and* their directory, so ``run_summary_*`` files
-  under ``data/a/output/`` never compete with snapshots under ``data/b/``.
+- Groups timestamped ``.json``/``.csv`` files by their prefix (the stable part
+  before the filename timestamp) *and* their directory, so ``run_summary_*``
+  files under ``data/a/output/`` never compete with snapshots under ``data/b/``.
 - Marks everything beyond the newest ``keep_last`` files per group for
   deletion.
-- NEVER touches: ``*_latest.json`` (any filename containing ``latest``),
+- NEVER touches: ``*_latest.*`` (any filename containing ``latest``),
   ``state.json`` / ``etl_state.json``, anything under ``data/watchers/``
   (event history is append-only), files without a parseable timestamp, and
-  anything that is not ``.json`` (e.g. timestamped ``.csv`` exports).
+  any extension other than ``.json``/``.csv``.
 
 Deletion is opt-in: the CLI defaults to dry-run and only deletes when passed
 ``--apply`` (or ``--dry-run=false``).
@@ -37,6 +37,7 @@ logger = logging.getLogger(f"watchtower.{__name__}")
 
 #: Filename stems that hold mutable state and must never be pruned.
 _PROTECTED_NAMES = {"state.json", "etl_state.json"}
+_PRUNABLE_EXTENSIONS = {".json", ".csv"}
 
 #: Top-level data/ subdirectory that is skipped entirely (append-only history).
 _SKIPPED_TOP_LEVEL_DIRS = {"watchers"}
@@ -58,7 +59,7 @@ _TIMESTAMP_PATTERNS: tuple[re.Pattern[str], ...] = (
 
 @dataclass(frozen=True)
 class TimestampedFile:
-    """A prunable ``.json`` file whose filename encodes a snapshot instant."""
+    """A prunable ``.json``/``.csv`` file whose filename encodes a snapshot instant."""
 
     path: Path
     group: str
@@ -148,7 +149,7 @@ def _scan_timestamped_files(data_dir: Path) -> tuple[list[TimestampedFile], int]
     """Walk ``data_dir`` and collect every prunable timestamped JSON file.
 
     Skips (without counting as skipped) everything that is protected by
-    design: non-``.json`` files, ``data/watchers/**``, filenames containing
+    design: files outside ``.json``/``.csv``, ``data/watchers/**``, filenames containing
     ``latest``, and state files. Files that look timestamped but carry an
     unparseable/invalid token are counted as skipped so the report can flag
     them.
@@ -165,7 +166,7 @@ def _scan_timestamped_files(data_dir: Path) -> tuple[list[TimestampedFile], int]
         logger.warning("Data directory %s does not exist; nothing to scan.", data_dir)
         return files, skipped_unparseable
 
-    for path in sorted(data_dir.rglob("*.json")):
+    for path in sorted([*data_dir.rglob("*.json"), *data_dir.rglob("*.csv")]):
         if not path.is_file():
             continue
         relative = path.relative_to(data_dir)
@@ -257,7 +258,7 @@ def apply_prune(actions: list[PruneAction], dry_run: bool = True) -> PruneReport
     """Execute (or simulate) a list of prune actions.
 
     Each action is re-checked before deletion — defense in depth against
-    hand-built action lists: only ``.json`` files whose name does not contain
+    hand-built action lists: only ``.json``/``.csv`` files whose name does not contain
     ``latest`` are ever unlinked. Deletion errors are recorded in the report
     instead of aborting the pass.
 
@@ -272,7 +273,7 @@ def apply_prune(actions: list[PruneAction], dry_run: bool = True) -> PruneReport
     report = PruneReport(dry_run=dry_run)
     for action in actions:
         name = action.path.name.lower()
-        if not name.endswith(".json") or "latest" in name:
+        if not name.lower().endswith(tuple(_PRUNABLE_EXTENSIONS)) or "latest" in name.lower():
             report.failed += 1
             report.errors.append(f"Refused unsafe prune target: {action.path}")
             continue

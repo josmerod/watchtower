@@ -180,17 +180,32 @@ class TestApplyPrune:
         assert report.bytes_freed == sizes["20260101_000000"] + sizes["20260102_000000"]
         assert report.per_prefix[".::stack::.json"]["bytes_freed"] == report.bytes_freed
 
-    def test_unparseable_and_non_json_skipped(self, tmp_path):
-        """Bad timestamps are counted as skipped; non-JSON files are ignored entirely."""
+    def test_unparseable_and_unknown_extensions_skipped(self, tmp_path):
+        """Bad timestamps are counted as skipped; unknown extensions are ignored entirely."""
         _snapshots(tmp_path, "foo", "bar", ["20260101_000000", "20260102_000000"])
         _write(tmp_path / "foo/bar_notes_12345.json")  # digits but no valid token
         _write(tmp_path / "foo/bar_20261332_999999.json")  # impossible date
-        _write(tmp_path / "foo/bar_20260101_000000.csv")  # timestamped but not JSON
+        _write(tmp_path / "foo/bar_20260101_000000.txt")  # timestamped but unknown extension
         report = run_retention(tmp_path, keep_last=1, dry_run=True)
         assert report.skipped_unparseable == 2
         marked = {a.path.name for a in plan_prune(tmp_path, keep_last=1)}
         assert marked == {"bar_20260101_000000.json"}
-        assert (tmp_path / "foo/bar_20260101_000000.csv").exists()
+        assert (tmp_path / "foo/bar_20260101_000000.txt").exists()
+
+    def test_timestamped_csv_pruned_with_json(self, tmp_path):
+        """Timestamped .csv snapshots join the same keep-last groups as .json."""
+        _write(tmp_path / "news/vb_20260101_000000.csv", "a,b")
+        _write(tmp_path / "news/vb_20260102_000000.csv", "a,b")
+        _write(tmp_path / "news/vb_20260103_000000.csv", "a,b")
+        _write(tmp_path / "news/vb_latest.csv", "a,b")
+        marked = {a.path.name for a in plan_prune(tmp_path, keep_last=1)}
+        assert marked == {"vb_20260101_000000.csv", "vb_20260102_000000.csv"}
+        assert (tmp_path / "news/vb_latest.csv").exists()
+        run_retention(tmp_path, keep_last=1, dry_run=False)
+        assert not (tmp_path / "news/vb_20260101_000000.csv").exists()
+        assert not (tmp_path / "news/vb_20260102_000000.csv").exists()
+        assert (tmp_path / "news/vb_20260103_000000.csv").exists()
+        assert (tmp_path / "news/vb_latest.csv").exists()
 
     def test_apply_refuses_unsafe_handbuilt_actions(self, tmp_path):
         """Hand-built actions pointing at *_latest.json are refused, not deleted."""
