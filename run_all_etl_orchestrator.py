@@ -40,6 +40,7 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_thenewstack.py",  # The New Stack feed — feeds Tech Radar tab
     "src/etl/news/news_get_changelog.py",  # changelog.com feed — feeds Tech Radar tab
     "src/etl/analytics/trends_etl.py",  # Cross-source trend analysis — feeds 🔥 badges (News/ArXiv). Local files only; must run after news ETLs
+    "src/etl/analytics/weekly_digest_etl.py",  # Weekly digest (T-054) — compiles trends/radar/markets/watchers into data/insights/. Local files only; feeds 📅 Digest tab
     "src/watchers/data_freshness_watcher.py",  # MUST BE LAST — flags sources that failed to refresh this run (feeds Metrics card)
     "src/etl/news/valencia_events_etl.py",  # Feeds dashboard Valencia Events tab
     "src/etl/news/news_get_spanish_tech.py",  # Xataka, Hipertextual, Genbeta
@@ -205,6 +206,20 @@ def main():
     print(f"ETL Workflow finished in {total_duration:.1f}s.")
     print(f"Successful: {success_count} | Failed: {fail_count}")
     print("=" * 50)
+
+    # T-055: prune old timestamped JSON snapshots (keep newest 30 per prefix).
+    # Runs AFTER the pool so every ETL has finished writing; *_latest.json /
+    # watchers / state files are never touched by design.
+    retention_script = "src/utils/snapshot_retention.py"
+    if os.path.exists(retention_script):
+        print(f"[{datetime.now()}] Pruning old data snapshots (keep-last 30)...")
+        cmd = ["uv", "run", "python", "-m", "src.utils.snapshot_retention", "--keep-last", "30", "--apply"]
+        with open("logs/snapshot_retention.log", "w", encoding="utf-8") as f:
+            result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
+        if result.returncode == 0:
+            print(f"[{datetime.now()}] Snapshot retention completed successfully.")
+        else:
+            print(f"[{datetime.now()}] Snapshot retention failed. Check logs/snapshot_retention.log.")
 
     backup_script = "run_backup.py"
     if os.path.exists(backup_script):

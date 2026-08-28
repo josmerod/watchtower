@@ -21,6 +21,10 @@ from src.web.dashboard.components.deals_tab import (
     register_deals_callbacks,
     render_deals_tab,
 )
+from src.web.dashboard.components.digest_tab import (
+    register_digest_callbacks,
+    render_digest_tab,
+)
 from src.web.dashboard.components.fourchan_tab import (
     register_fourchan_callbacks,
     render_fourchan_tab,
@@ -30,7 +34,7 @@ from src.web.dashboard.components.knowledge_garden_tab import (
     register_knowledge_garden_callbacks,
     render_knowledge_garden_tab,
 )
-from src.web.dashboard.components.markets_tab import render_markets_tab
+from src.web.dashboard.components.markets_tab import register_markets_callbacks, render_markets_tab
 from src.web.dashboard.components.metrics_tab import (
     register_metrics_callbacks,
     render_metrics_tab,
@@ -279,6 +283,10 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="📊 Metrics",
                             tab_id="tab-metrics",
+                        ),
+                        dbc.Tab(
+                            label="📅 Digest",
+                            tab_id="tab-digest",
                         ),
                     ],
                 )
@@ -614,6 +622,7 @@ _TAB_RENDERERS = {
     "tab-games": render_games_tab,
     "tab-notifications": render_notifications_tab,
     "tab-metrics": render_metrics_tab,
+    "tab-digest": render_digest_tab,
 }
 
 
@@ -697,8 +706,10 @@ register_shortcuts_callbacks(app)
 register_deals_callbacks(app)
 register_benchmarks_callbacks(app)
 register_tech_radar_callbacks(app)
+register_markets_callbacks(app)
 register_notifications_callbacks(app)
 register_metrics_callbacks(app)
+register_digest_callbacks(app)
 
 
 if __name__ == "__main__":
