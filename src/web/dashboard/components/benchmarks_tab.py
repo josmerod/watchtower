@@ -1,8 +1,10 @@
-"""AI Benchmarks Tab — community leaderboard + BridgeBench + Artificial Analysis.
+"""AI Benchmarks Tab — community leaderboard + LiveBench + BridgeBench + Artificial Analysis.
 
 Displays model performance across multiple benchmark sources:
 - Community LLM Leaderboard: LMArena MT-bench/MMLU scores + provider pricing
   (no-auth, always-available aggregate of public sources)
+- LiveBench: contamination-free LLM benchmark with per-category scores
+  (reasoning, coding, agentic coding, mathematics, ...)
 - BridgeBench.ai: AI coding benchmarks (Overall, Security, Debugging, etc.)
 - Artificial Analysis: LLM benchmarks (intelligence, coding, math, pricing, speed)
   and Image Model Arena (ELO ratings from text-to-image evaluations)
@@ -1017,18 +1019,175 @@ def _render_community_leaderboard_section() -> html.Div:
 
 
 # ═══════════════════════════════════════════════════════════════
+# LiveBench (livebench.ai)
+# ═══════════════════════════════════════════════════════════════
+
+
+def _load_livebench() -> dict[str, Any]:
+    """Load the LiveBench leaderboard JSON.
+
+    Returns an empty dict when the file is absent (the ETL has not run yet).
+    """
+    data_path = os.path.join(_get_project_root(), "data", "benchmarks", "livebench_latest.json")
+    if not os.path.exists(data_path):
+        return {}
+    try:
+        with open(data_path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _fmt_cost(val) -> str:
+    """Format a per-successful-task cost as a dollar string."""
+    if val is None:
+        return "—"
+    try:
+        return f"${float(val):.3f}"
+    except (ValueError, TypeError):
+        return "—"
+
+
+def _category_label(key: str) -> str:
+    """Convert a snake_case category key to a display label."""
+    return key.replace("_", " ").title()
+
+
+def _build_livebench_table(models: list[dict[str, Any]], categories: list[str]) -> html.Div:
+    """Build a styled table of LiveBench per-category scores."""
+    header = html.Tr(
+        [
+            html.Th("#", className="text-end"),
+            html.Th("Model"),
+            *[_category_label(c) for c in categories],
+            html.Th("Cost / Task", className="text-end"),
+        ],
+        className="table-light",
+    )
+
+    rows: list[html.Tr] = []
+    medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+    for item in models:
+        rank = item.get("rank")
+        badge = medals.get(rank, str(rank) if rank is not None else "")
+        rows.append(
+            html.Tr(
+                [
+                    html.Td(badge, className="text-end fw-bold"),
+                    html.Td(item.get("model", "—")),
+                    *[html.Td(_fmt_score(item.get(c)), className="text-end") for c in categories],
+                    html.Td(_fmt_cost(item.get("cost_per_successful_task")), className="text-end"),
+                ]
+            )
+        )
+
+    return html.Div(
+        dbc.Table(
+            [header, *rows],
+            bordered=True,
+            hover=True,
+            responsive=True,
+            size="sm",
+            className="align-middle",
+        ),
+        style={"maxHeight": "60vh", "overflowY": "auto"},
+    )
+
+
+def _render_livebench_section() -> html.Div:
+    """Render the LiveBench leaderboard section."""
+    data = _load_livebench()
+    if not data:
+        return html.Div(
+            [
+                html.H4("🧪 LiveBench", className="mb-1", style={"fontWeight": "700"}),
+                html.Div(
+                    [
+                        html.I(className="fas fa-database me-2", style={"fontSize": "2rem", "color": "#6c757d"}),
+                        html.H5("No benchmark data yet", className="mt-2"),
+                        html.P(
+                            [
+                                "Run the ETL to populate: ",
+                                html.Code("uv run python -m src.etl.benchmarks.livebench_etl", className="text-primary"),
+                            ],
+                            className="text-muted mb-0",
+                        ),
+                    ],
+                    className="text-center p-5",
+                ),
+            ],
+            className="p-3",
+        )
+
+    models = data.get("models", [])
+    categories = data.get("categories", [])
+    release = data.get("release", "—")
+    fetched_at = data.get("fetched_at", "")
+    top_model = models[0] if models else None
+
+    summary_cards = dbc.Row(
+        [
+            dbc.Col(dbc.Card(dbc.CardBody([html.H6(f"{len(models)}", className="mb-0 text-primary"), html.Small("Ranked models", className="text-muted")]), className="text-center shadow-sm"), width=4),
+            dbc.Col(
+                dbc.Card(dbc.CardBody([html.H6(str(release), className="mb-0 text-info", style={"fontSize": "1rem"}), html.Small("Release", className="text-muted")]), className="text-center shadow-sm"), width=4
+            ),
+            dbc.Col(
+                dbc.Card(
+                    dbc.CardBody(
+                        [
+                            html.H6(top_model.get("model", "—") if top_model else "—", className="mb-0 text-success", style={"fontSize": "1rem"}),
+                            html.Small(f"Overall leader · {_fmt_score(top_model.get('overall')) if top_model else '—'}", className="text-muted"),
+                        ]
+                    ),
+                    className="text-center shadow-sm",
+                ),
+                width=4,
+            ),
+        ],
+        className="mb-3",
+    )
+
+    source_link = html.A("livebench.ai", href="https://livebench.ai/", target="_blank", rel="noopener noreferrer", style={"color": "#6c757d"})
+
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.H4("🧪 LiveBench", className="mb-1", style={"fontWeight": "700"}),
+                    html.P(
+                        [
+                            "Contamination-free LLM benchmark — per-category scores across reasoning, coding, agentic coding, mathematics and more. ",
+                            html.Small([source_link, f" · Last fetched: {fetched_at[:10]}" if fetched_at else ""], className="text-muted"),
+                        ],
+                        className="text-muted mb-3",
+                        style={"fontSize": "0.9rem"},
+                    ),
+                ]
+            ),
+            summary_cards,
+            _build_livebench_table(models, categories),
+        ]
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
 # MAIN: Combined Benchmarks Tab
 # ═══════════════════════════════════════════════════════════════
 
 
 def render_benchmarks_tab() -> html.Div:
     """Render the full benchmarks tab with top-level source tabs."""
-    # Top-level tabs: Community Leaderboard | BridgeBench | Artificial Analysis
+    # Top-level tabs: Community Leaderboard | LiveBench | BridgeBench | Artificial Analysis
     top_tabs = [
         dbc.Tab(
             label="🌐 Community Leaderboard",
             tab_id="benchmarks-community",
             children=[_render_community_leaderboard_section()],
+        ),
+        dbc.Tab(
+            label="🧪 LiveBench",
+            tab_id="benchmarks-livebench",
+            children=[_render_livebench_section()],
         ),
         dbc.Tab(
             label="🏆 BridgeBench.ai",

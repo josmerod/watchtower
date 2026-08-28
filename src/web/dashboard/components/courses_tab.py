@@ -27,6 +27,7 @@ AWS_SKILL_BUILDER_DATA_PATH = get_data_path("courses", "aws_skill_builder.json")
 GCP_SKILLS_BOOST_DATA_PATH = get_data_path("courses", "gcp_skills_boost.json")
 FREECODECAMP_DATA_PATH = get_data_path("news", "freecodecamp_latest.json")
 HF_LEARN_DATA_PATH = get_data_path("courses", "hf_learn.json")
+DEEPLEARNING_AI_DATA_PATH = get_data_path("courses", "deeplearning_ai_latest.json")
 
 ALL_COURSES_DATA = {
     "coursera": pd.DataFrame(),
@@ -794,8 +795,13 @@ def render_freecodecamp_sub_tab():
 
 
 def render_hf_learn_sub_tab():
-    """Render the Hugging Face Learn course catalog."""
+    """Render the Hugging Face Learn catalog."""
     return render_articles_sub_tab(HF_LEARN_DATA_PATH, "Hugging Face Learn")
+
+
+def render_deeplearning_ai_sub_tab():
+    """Render the DeepLearning.AI course catalog."""
+    return render_articles_sub_tab(DEEPLEARNING_AI_DATA_PATH, "DeepLearning.AI")
 
 
 # --- Main Layout ---
@@ -831,6 +837,14 @@ def render_all_courses_sub_tab() -> html.Div:
         hf_records = load_data_from_file(HF_LEARN_DATA_PATH) or []
         if isinstance(hf_records, list):
             unified.extend(_normalize_course(r, "HF Learn") for r in hf_records if isinstance(r, dict))
+    except Exception:
+        pass
+
+    # DeepLearning.AI courses live in their own file
+    try:
+        dlai_records = load_data_from_file(DEEPLEARNING_AI_DATA_PATH) or []
+        if isinstance(dlai_records, list):
+            unified.extend(_normalize_course(r, "DeepLearning.AI") for r in dlai_records if isinstance(r, dict))
     except Exception:
         pass
 
@@ -933,6 +947,11 @@ def render_courses_tab():
                         label="🤗 HF Learn",
                         tab_id="tab-hf-learn",
                         children=render_hf_learn_sub_tab(),
+                    ),
+                    dbc.Tab(
+                        label="🧠 DeepLearning.AI",
+                        tab_id="tab-deeplearning-ai",
+                        children=render_deeplearning_ai_sub_tab(),
                     ),
                 ],
             ),
