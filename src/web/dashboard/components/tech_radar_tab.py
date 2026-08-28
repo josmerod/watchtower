@@ -37,6 +37,9 @@ logger = logging.getLogger(__name__)
 RADAR_SOURCES: list[dict[str, Any]] = [
     {"key": "google_ai", "label": "🧠 Google AI Blog", "file": "news/google_ai_blog_latest.json", "category": "AI"},
     {"key": "verge_ai", "label": "⚡ The Verge AI", "file": "news/verge_ai_latest.json", "category": "AI"},
+    # T-075: newest models from the public ollama.com/library (server-rendered,
+    # verified stable). ETL: src/etl/ai_platforms/ollama_library_etl.py.
+    {"key": "ollama", "label": "🦙 Ollama", "file": "ai_platforms/ollama_library_latest.json", "category": "Local LLM"},
     {"key": "kdnuggets", "label": "📊 KDNuggets", "file": "kdnuggets/kdnuggets.json", "category": "Data Science"},
     {"key": "cloud_updates", "label": "☁️ Cloud Updates", "file": "cloud_updates/cloud_updates_latest.json", "category": "Cloud"},
     {"key": "selfhosted", "label": "🏠 Self-Hosted", "file": "selfhosted/selfhosted_latest.json", "category": "Self-Hosting"},
@@ -47,9 +50,11 @@ RADAR_SOURCES: list[dict[str, Any]] = [
         "category": "Self-Hosting",
     },
     # T-070: Unraid community threads — Invision feed from forums.unraid.net
-    # (the user runs Unraid; forums.unraid.tv is dead). ETL:
+    # (the user runs Unraid; forums.unraid.tv is dead). T-075 switched the feed
+    # to the focused News & Announcements forum (/forum/7-announcements.xml/,
+    # signal over noise) with the all-topics aggregate as fallback. ETL:
     # src/etl/news/news_get_unraid_forums.py.
-    {"key": "unraid_forums", "label": "🟠 Unraid Forums", "file": "news/unraid_forums_latest.json", "category": "Self-Hosting"},
+    {"key": "unraid_forums", "label": "🟠 Unraid Announcements", "file": "news/unraid_forums_latest.json", "category": "Self-Hosting"},
     {"key": "infoq", "label": "🏗️ InfoQ", "file": "infoq/infoq_news.json", "category": "Engineering"},
     {"key": "thenewstack", "label": "🧱 The New Stack", "file": "thenewstack/thenewstack_news.json", "category": "Cloud-Native"},
     # T-070: Phoronix — Linux/hardware news for the homelab angle. ETL:

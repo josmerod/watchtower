@@ -4,6 +4,7 @@ import json
 import logging
 import logging.handlers
 import sys
+from collections.abc import MutableMapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -159,7 +160,9 @@ class WatchtowerLogger:
 
         # Add extra fields adapter if provided
         if extra_fields:
-            logger = LoggerAdapter(logger, extra_fields)
+            # LoggerAdapter is duck-compatible with Logger for all logging calls;
+            # the declared return type stays Logger to avoid breaking callers.
+            logger = LoggerAdapter(logger, extra_fields)  # type: ignore[assignment]
 
         return logger
 
@@ -177,7 +180,7 @@ class LoggerAdapter(logging.LoggerAdapter):
         super().__init__(logger, {})
         self.extra_fields = extra_fields
 
-    def process(self, msg: str, kwargs: dict[str, Any]) -> tuple:
+    def process(self, msg: str, kwargs: MutableMapping[str, Any]) -> tuple:
         """Process the log record to add extra fields.
 
         Args:
@@ -205,7 +208,7 @@ class PerformanceLogger:
             logger: Base logger to use.
         """
         self.logger = logger
-        self.start_time = None
+        self.start_time: datetime | None = None
 
     def start(self, operation: str) -> None:
         """Start timing an operation.

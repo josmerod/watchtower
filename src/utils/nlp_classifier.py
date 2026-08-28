@@ -12,10 +12,10 @@ from typing import Any
 
 import nltk
 import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.decomposition import TruncatedSVD
+from sklearn.cluster import KMeans  # type: ignore[import-untyped]  # sklearn ships no stubs for this module
+from sklearn.decomposition import TruncatedSVD  # type: ignore[import-untyped]  # sklearn ships no stubs for this module
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline  # type: ignore[import-untyped]  # sklearn ships no stubs for this module
 from sklearn.preprocessing import Normalizer
 
 from src.utils.file_system import ensure_directories, get_project_root
@@ -49,10 +49,10 @@ class NLPContentClassifier:
         ensure_directories([f"data/models/nlp/{self.name}"])
 
         # Initialize models
-        self.vectorizer = None
-        self.dimension_reducer = None
-        self.clustering = None
-        self.top_keywords_per_cluster = {}
+        self.vectorizer: TfidfVectorizer | None = None
+        self.dimension_reducer: TruncatedSVD | None = None
+        self.clustering: KMeans | None = None
+        self.top_keywords_per_cluster: dict[int, list[str]] = {}
 
     def _download_nltk_resources(self):
         """Download necessary NLTK resources."""
@@ -147,6 +147,7 @@ class NLPContentClassifier:
         X_lsa = lsa_pipeline.fit_transform(texts)
 
         # Cluster documents
+        assert self.clustering is not None  # assigned above; narrows for mypy
         self.clustering.fit(X_lsa)
 
         # Extract top keywords for each cluster
@@ -234,6 +235,7 @@ class NLPContentClassifier:
 
         # Transform the document
         X = self.vectorizer.transform([text])
+        assert self.dimension_reducer is not None  # set together with vectorizer in train_classifier
         X_lsa = self.dimension_reducer.transform(X)
         X_normalized = Normalizer(copy=False).transform(X_lsa)
 
@@ -270,6 +272,7 @@ class NLPContentClassifier:
 
         # Transform all documents at once (more efficient)
         X = self.vectorizer.transform(texts)
+        assert self.dimension_reducer is not None  # set together with vectorizer in train_classifier
         X_lsa = self.dimension_reducer.transform(X)
         X_normalized = Normalizer(copy=False).transform(X_lsa)
 

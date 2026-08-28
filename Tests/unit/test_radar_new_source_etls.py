@@ -7,6 +7,7 @@ All feeds are exercised through fixture XML + monkeypatched ``requests.get``
 
 import json
 
+import feedparser
 import requests
 
 from src.etl.news import news_get_lobsters as lobsters_etl
@@ -110,8 +111,47 @@ def test_unraid_parses_fixture_feed(monkeypatch):
     assert first["platform"] == "forums.unraid.net" and first["content_type"] == "forum_thread"
 
 
-def test_unraid_uses_discovered_invision_url():
-    assert unraid_etl.RSS_FEED == "https://forums.unraid.net/rss/1-all-unraid-topics.xml/"
+def test_unraid_uses_focused_announcements_feed_with_fallback():
+    # T-075: primary is the News & Announcements forum feed (id 7); the noisy
+    # all-topics aggregate is only a fallback.
+    assert unraid_etl.NEWS_FEED_URL == "https://forums.unraid.net/forum/7-announcements.xml/"
+    assert unraid_etl.ALL_TOPICS_FEED_URL == "https://forums.unraid.net/rss/1-all-unraid-topics.xml/"
+
+
+def test_unraid_marks_items_with_serving_feed(monkeypatch):
+    monkeypatch.setattr(unraid_etl.requests, "get", lambda *a, **kw: _BytesResponse(UNRAID_FEED))
+    entries = unraid_etl.fetch_unraid_forums()
+    assert all(e["feed"] == "announcements" for e in entries)
+
+
+def _parse_entries(response):
+    """Feed-parse helper mirroring _fetch_feed's parsing step."""
+    return list(feedparser.parse(response.content).entries)
+
+
+def test_unraid_falls_back_to_all_topics_when_news_feed_fails(monkeypatch):
+    calls = []
+
+    def _flaky_fetch(url):
+        calls.append(url)
+        if url == unraid_etl.NEWS_FEED_URL:
+            raise requests.ConnectionError("news feed down")
+        return _parse_entries(_BytesResponse(UNRAID_FEED))
+
+    monkeypatch.setattr(unraid_etl, "_fetch_feed", _flaky_fetch)
+    entries = unraid_etl.fetch_unraid_forums()
+    assert calls == [unraid_etl.NEWS_FEED_URL, unraid_etl.ALL_TOPICS_FEED_URL]
+    assert len(entries) == 2
+    assert all(e["feed"] == "all_topics" for e in entries)
+
+
+def test_unraid_falls_back_when_news_feed_is_empty(monkeypatch):
+    def _empty_then_feed(url):
+        return [] if url == unraid_etl.NEWS_FEED_URL else _parse_entries(_BytesResponse(UNRAID_FEED))
+
+    monkeypatch.setattr(unraid_etl, "_fetch_feed", _empty_then_feed)
+    entries = unraid_etl.fetch_unraid_forums()
+    assert len(entries) == 2 and entries[0]["feed"] == "all_topics"
 
 
 def test_unraid_caps_items_at_25(monkeypatch):

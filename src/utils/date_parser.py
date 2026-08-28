@@ -38,7 +38,7 @@ class DateParser:
 
     def __init__(
         self,
-        default_timezone: datetime.timezone = timezone.utc,
+        default_timezone: timezone = timezone.utc,
         raise_on_error: bool = False,
     ) -> None:
         """Initialize the date parser.

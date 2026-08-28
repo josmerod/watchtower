@@ -430,3 +430,72 @@ def test_t070_per_source_render_cap(tmp_path, monkeypatch):
     section = str(tab._render_source_section(source))
     assert f"{tab.MAX_ITEMS_PER_SOURCE} articles" in section  # capped at render like every sibling
     assert "story 29" not in section
+
+
+# ---------------------------------------------------------------------------
+# T-075: Ollama library ("modelos locales") radar source + Unraid label switch
+# ---------------------------------------------------------------------------
+
+
+def test_t075_ollama_source_registered_with_unique_key_and_column():
+    keys = [s["key"] for s in tab.RADAR_SOURCES]
+    assert len(keys) == len(set(keys)), "RADAR_SOURCES keys must stay unique"
+    assert "ollama" in keys
+    source = next(s for s in tab.RADAR_SOURCES if s["key"] == "ollama")
+    assert source["file"] == "ai_platforms/ollama_library_latest.json"
+    assert source["category"] == "Local LLM"
+    assert source.get("file") and not source.get("files")
+    assert not source.get("own_tab"), "ollama renders as a normal Por-fuente column"
+    layout = str(tab.render_tech_radar_tab())
+    assert layout.count("tech-radar-col-ollama") == 1  # one column id, in the grid
+    assert "🦙 Ollama" in layout
+
+
+def _write_t075_fixture(tmp_path):
+    _write(
+        tmp_path,
+        "ai_platforms/ollama_library_latest.json",
+        [
+            {"title": "qwen3.5", "name": "qwen3.5", "link": "https://ollama.com/library/qwen3.5", "published": "2026-08-27T18:00:00+00:00", "summary": "⬇ 1.2M pulls · 8b", "source": "ollama_library"},
+            {"title": "gemma4", "name": "gemma4", "link": "https://ollama.com/library/gemma4", "published": "2026-08-20T09:00:00+00:00", "summary": "⬇ 800K pulls · 12b", "source": "ollama_library"},
+        ],
+    )
+
+
+def test_t075_ollama_renders_in_por_fuente_grid(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_t075_fixture(tmp_path)
+    source = next(s for s in tab.RADAR_SOURCES if s["key"] == "ollama")
+    section = str(tab._render_source_section(source))
+    assert source["label"] in section and "qwen3.5" in section
+    assert section.index("qwen3.5") < section.index("gemma4")  # newest first
+
+
+def test_t075_ollama_in_unified_feed_and_dropdowns(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_t075_fixture(tmp_path)
+    _write(tmp_path, "news/hn_frontpage_latest.json", [{"title": "hn item", "url": "https://x/hn", "published": "2026-08-26T10:00:00+00:00"}])
+
+    merged = str(tab._render_unified_feed())
+    assert "qwen3.5" in merged
+    assert merged.index("qwen3.5") < merged.index("hn item")  # newer first
+
+    only_ollama = str(tab._render_unified_feed(source_filter="ollama"))
+    assert "qwen3.5" in only_ollama and "hn item" not in only_ollama
+    local_llm = str(tab._render_unified_feed(category_filter="Local LLM"))
+    assert "gemma4" in local_llm and "hn item" not in local_llm
+
+    assert "ollama" in [o["value"] for o in tab._unified_source_options()]
+    categories = [o["value"] for o in tab._unified_category_options()]
+    assert "Local LLM" in categories and len(categories) == len(set(categories))
+
+
+def test_t075_unraid_column_relabeled_to_announcements():
+    # The feed switch (news_get_unraid_forums) is surfaced in the tab label.
+    source = next(s for s in tab.RADAR_SOURCES if s["key"] == "unraid_forums")
+    assert source["label"] == "🟠 Unraid Announcements"
+    assert source["file"] == "news/unraid_forums_latest.json"  # data file unchanged
+    layout = str(tab.render_tech_radar_tab())
+    assert layout.count("tech-radar-col-unraid_forums") == 1

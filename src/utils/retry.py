@@ -59,7 +59,7 @@ _RETRY_BASE: tuple[type[BaseException], ...] = (
 )
 
 try:
-    from requests.exceptions import RequestException as _RequestsRequestException  # type: ignore[import-untyped]
+    from requests.exceptions import RequestException as _RequestsRequestException
 
     RETRYABLE_ERRORS: tuple[type[BaseException], ...] = (
         *_RETRY_BASE,
@@ -111,7 +111,7 @@ def with_retry(func: F | None = None, *, max_retries: int = 3) -> F:
     kw = {**_TENACITY_KW, "stop": stop_after_attempt(max_retries + 1)}
 
     def _decorator(fn: F) -> F:
-        return retry(**kw)(fn)  # type: ignore[return-value]
+        return retry(**kw)(fn)
 
     if func is not None:
         return _decorator(func)

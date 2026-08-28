@@ -2,6 +2,7 @@
 
 import os
 import shutil
+from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import BaseModel, Field, validator
@@ -21,8 +22,8 @@ class DirectoryInfo(BaseModel):
     path: Path = Field(..., description="Directory path")
     exists: bool = Field(description="Whether directory exists")
     is_writable: bool = Field(description="Whether directory is writable")
-    size_bytes: int | None = Field(None, description="Directory size in bytes")
-    file_count: int | None = Field(None, description="Number of files in directory")
+    size_bytes: int | None = Field(default=None, description="Directory size in bytes")
+    file_count: int | None = Field(default=None, description="Number of files in directory")
 
     @validator("path", pre=True)
     def convert_to_path(cls, v):
@@ -117,7 +118,7 @@ class FileSystemManager:
                 context={"directory": str(abs_path), "error": str(e)},
             ) from e
 
-    def ensure_directories(self, directories: list[str | Path], mode: int = 0o755) -> list[DirectoryInfo]:
+    def ensure_directories(self, directories: Sequence[str | Path], mode: int = 0o755) -> list[DirectoryInfo]:
         """Ensure multiple directories exist.
 
         Args:

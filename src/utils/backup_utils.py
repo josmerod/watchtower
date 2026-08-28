@@ -7,9 +7,9 @@ from pathlib import Path
 # Ensure PyDrive2 is installed. If not, this will fail at runtime.
 # It should be in requirements.txt
 try:
-    from pydrive2.auth import GoogleAuth
-    from pydrive2.drive import GoogleDrive
-    from pydrive2.files import GoogleDriveFile  # For type hinting
+    from pydrive2.auth import GoogleAuth  # type: ignore[import-not-found]  # optional dependency
+    from pydrive2.drive import GoogleDrive  # type: ignore[import-not-found]  # optional dependency
+    from pydrive2.files import GoogleDriveFile  # type: ignore[import-not-found]  # optional dependency  # For type hinting
 except ImportError:
     # This allows the module to be imported and potentially used for other things
     # if pydrive2 is missing, but gdrive functions will fail.
@@ -141,6 +141,8 @@ class BackupManager:
         Returns:
             Path to the created zip file.
         """
+        # Settings auto-detects project_root in its constructor, so it is never None here.
+        assert self.settings.project_root is not None
         project_root = Path(self.settings.project_root)
         # Store temporary zip in project_root or a designated temp subfolder
         # For simplicity, using project_root for now.
@@ -484,7 +486,7 @@ if __name__ == "__main__":
             module_logger.info(f"Credentials file: {mock_settings_instance.google_drive.credentials_file}")
             module_logger.info(f"Backup Folder ID: {mock_settings_instance.google_drive.backup_folder_id}")
 
-            manager = BackupManager(mock_settings_instance)
+            manager = BackupManager(mock_settings_instance)  # type: ignore[arg-type]  # demo-only duck-typed mock, not a real Settings
 
             # Folders to backup are specified relative to project_root for consistency with settings
             folders_to_backup_list = [

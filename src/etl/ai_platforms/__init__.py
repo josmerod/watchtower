@@ -1,27 +1,17 @@
-"""AI Platform Monitoring ETL Module.
+"""AI Platform Monitoring ETL module.
 
-This module implements comprehensive monitoring for AI/ML platforms including:
-- OpenAI API ecosystem
-- Anthropic Claude platform
-- Google AI (Gemini/Bard)
-- Microsoft Copilot suite (placeholder)
-- Meta AI research (placeholder)
-- GitHub Copilot usage
-- Hugging Face model trends
-
-Based on Watchtower Platform Expansion Proposals: AI & ML Platform Monitoring.
+Monitors AI/ML platforms: Anthropic Claude, GitHub Copilot usage, and the
+Replicate/Ollama model catalogs. Older submodules (OpenAI platform, Hugging
+Face trends, the class-based AIMonitoringETL) were removed in earlier
+cleanups — keep this init importable so module-level ETLs in this package
+(anthropic, github_copilot, replicate, ollama_library) can be imported for
+tests and tooling.
 """
 
-from .ai_monitoring_etl import AIMonitoringETL
 from .anthropic_etl import AnthropicETL
 from .github_copilot_etl import GitHubCopilotETL
-from .huggingface_etl import HuggingFaceETL
-from .openai_platform_etl import OpenAIPlatformETL
 
 __all__ = [
-    "AIMonitoringETL",
     "AnthropicETL",
     "GitHubCopilotETL",
-    "HuggingFaceETL",
-    "OpenAIPlatformETL",
 ]

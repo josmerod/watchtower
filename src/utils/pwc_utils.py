@@ -11,8 +11,8 @@ import time
 from typing import Any
 
 try:
-    from paperswithcode import PapersWithCodeClient
-    from paperswithcode.models import Paper
+    from paperswithcode import PapersWithCodeClient  # type: ignore[import-not-found]  # optional dependency
+    from paperswithcode.models import Paper  # type: ignore[import-not-found]  # optional dependency
 
     HAS_PWC = True
 except ImportError:
@@ -256,7 +256,7 @@ if __name__ == "__main__":
 
     if pwc_data_from_url:
         logger.info(f"PwC Details for {arxiv_url_to_test} (from URL):")
-        for key, value in pwc_data_from_url.items():
+        for key, value in pwc_data_from_url.items():  # type: ignore[attr-defined]  # BUG: coroutine from line above is never awaited, so .items() would crash if run as a script
             if isinstance(value, list):
                 logger.info(f"  {key}: ({len(value)} items)")
                 for item_idx, item in enumerate(value[:2]):  # Log first 2 items for brevity

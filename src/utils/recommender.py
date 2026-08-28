@@ -11,7 +11,7 @@ from typing import Any
 
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity  # type: ignore[import-untyped]  # sklearn ships no stubs for this module
 
 from src.utils.file_system import get_project_root
 from src.utils.logging import get_logger
@@ -50,9 +50,9 @@ class PersonalRecommender:
         self.vectorizer = TfidfVectorizer(max_df=0.7, min_df=2, stop_words="english")
 
         # Cache for item features
-        self.item_features = {}
+        self.item_features: dict[str, dict[str, Any]] = {}
         self.item_vectors = None
-        self.item_ids = []
+        self.item_ids: list[str] = []
 
         self.logger.info(f"Recommender {name} initialized")
 
@@ -294,14 +294,15 @@ class PersonalRecommender:
         """
         return self.item_vectors is not None and len(self.item_ids) > 0
 
-    def _calculate_user_vector(self, profile: dict[str, Any]) -> tuple[np.ndarray, float]:
+    def _calculate_user_vector(self, profile: dict[str, Any]) -> tuple[np.ndarray | None, float]:
         """Calculate a user's interest vector based on their profile.
 
         Args:
             profile (Dict[str, Any]): User profile
 
         Returns:
-            Tuple[np.ndarray, float]: User interest vector and confidence score
+            Tuple[np.ndarray | None, float]: User interest vector (None if no items
+            are loaded) and confidence score.
         """
         if self.item_vectors is None or len(self.item_ids) == 0:
             self.logger.error("No items loaded in recommender")
