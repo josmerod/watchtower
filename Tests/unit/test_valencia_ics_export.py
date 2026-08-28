@@ -95,7 +95,7 @@ def test_render_contains_button_and_payload(monkeypatch):
     rendered = str(layout)
 
     assert "valencia-ics-export-btn" in rendered
-    assert "⬇ .ics (3)" in rendered  # today + 2 future, past/unparseable excluded
+    assert "⬇ .ics (3)" in rendered  # today + 2 future, past/unparsable excluded
 
     holders = _find_by_id(layout, "valencia-ics-events")
     assert len(holders) == 1

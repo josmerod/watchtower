@@ -77,7 +77,7 @@ def _read_json(path: Path, missing: list[str] | None = None) -> Any:
 
 
 def _parse_epoch(raw: Any) -> float:
-    """Best-effort epoch for a date string; unparseable/missing values give 0.0."""
+    """Best-effort epoch for a date string; unparsable/missing values give 0.0."""
     text = str(raw or "")
     if not text:
         return 0.0
@@ -115,7 +115,9 @@ def load_trends_terms(data_root: Path | None = None, max_terms: int = MAX_TERMS,
     return ([{"term": term, "mentions": stats["mentions"], "sources": stats["sources"]} for term, stats in top_terms[:max_terms]], hot_terms)
 
 
-def load_radar_best(data_root: Path | None = None, hot_terms: dict[str, dict[str, int]] | None = None, max_items: int = MAX_RADAR_ITEMS, now: datetime | None = None, missing: list[str] | None = None) -> list[dict[str, Any]]:
+def load_radar_best(
+    data_root: Path | None = None, hot_terms: dict[str, dict[str, int]] | None = None, max_items: int = MAX_RADAR_ITEMS, now: datetime | None = None, missing: list[str] | None = None
+) -> list[dict[str, Any]]:
     """Pick the week's best radar articles, ranked by 🔥 mentions then recency.
 
     Articles whose title matches a trending term (or whose URL is directly
