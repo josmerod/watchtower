@@ -151,7 +151,7 @@ def _scan_timestamped_files(data_dir: Path) -> tuple[list[TimestampedFile], int]
     Skips (without counting as skipped) everything that is protected by
     design: files outside ``.json``/``.csv``, ``data/watchers/**``, filenames containing
     ``latest``, and state files. Files that look timestamped but carry an
-    unparseable/invalid token are counted as skipped so the report can flag
+    unparsable/invalid token are counted as skipped so the report can flag
     them.
 
     Args:
