@@ -80,6 +80,8 @@ ETL_SCRIPTS = [
     "src/etl/courses/ms_applied_skills_etl.py",
     "src/etl/courses/aws_skill_builder_etl.py",
     "src/etl/courses/gcp_skills_boost_etl.py",
+    "src/etl/courses/deeplearning_ai_etl.py",  # DeepLearning.AI catalog — feeds Learning tab (T-069)
+    "src/watchers/courses_watcher.py",  # Diffs course catalogs, emits new_matching_course events (T-066); best after courses ETLs
     # Intelligence
     "src/etl/intelligence/sec_edgar_rss.py",
     "src/etl/intelligence/who_outbreaks_rss.py",
@@ -122,12 +124,14 @@ ETL_SCRIPTS = [
     "src/miners/crypto_sentiment_miner.py",
     # Open Source Projects
     "src/etl/opensource/opensource_projects_etl.py",
+    "src/etl/github/stack_releases_etl.py",  # TR-F4: GitHub releases of the self-hosted stack — Radar "Mi stack" (T-051)
     # Knowledge Garden
     "src/etl/substack/substack_etl.py",
     # Benchmarks
     "src/etl/benchmarks/artificial_analysis_etl.py",
     "src/etl/benchmarks/bridgebench_etl.py",
     "src/etl/benchmarks/llm_leaderboard_etl.py",
+    "src/etl/benchmarks/livebench_etl.py",  # LiveBench leaderboard via browserless (T-069)
     "src/etl/trendshift/trendshift_etl.py",
     "src/etl/rss_feeds/rss_feed_etl.py",
     "src/etl/museums/museum_etl.py",
