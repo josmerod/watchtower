@@ -1,0 +1,80 @@
+{
+  "id": 1128344,
+  "organo": {
+    "nivel1": "LOCAL",
+    "nivel2": "DIPUTACIÓN PROV. DE LLEIDA",
+    "nivel3": "DIPUTACIÓN PROVINCIAL DE LLEIDA"
+  },
+  "sedeElectronica": null,
+  "codigoBDNS": "926783",
+  "fechaRecepcion": "2026-08-27",
+  "instrumentos": [
+    {
+      "descripcion": "SUBVENCIÓN Y ENTREGA DINERARIA SIN CONTRAPRESTACIÓN "
+    }
+  ],
+  "tipoConvocatoria": "Concesión directa - instrumental",
+  "presupuestoTotal": 2400.76,
+  "mrr": false,
+  "descripcion": "Subvenció complementària Aj. Fulleda (redacció o revisió DUPROCIM 2023).",
+  "descripcionLeng": null,
+  "tiposBeneficiarios": [
+    {
+      "descripcion": "GRAN EMPRESA"
+    },
+    {
+      "descripcion": "PERSONAS FÍSICAS QUE NO DESARROLLAN ACTIVIDAD ECONÓMICA"
+    },
+    {
+      "descripcion": "PERSONAS JURÍDICAS QUE NO DESARROLLAN ACTIVIDAD ECONÓMICA"
+    },
+    {
+      "descripcion": "PYME Y PERSONAS FÍSICAS QUE DESARROLLAN ACTIVIDAD ECONÓMICA"
+    }
+  ],
+  "sectores": [
+    {
+      "descripcion": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+      "codigo": "N"
+    }
+  ],
+  "regiones": [
+    {
+      "descripcion": "ES513 - Lleida"
+    }
+  ],
+  "descripcionFinalidad": "Otras actuaciones de carácter económico",
+  "descripcionBasesReguladoras": "Bases generals reguladores de l`atorgament de subvencions de la Diputació de Lleida i dels seus organismes autònoms (2025)",
+  "urlBasesReguladoras": "https://ebop.diputaciolleida.cat/aplicacions/bop/bopV1/fitxers/pdf/2025/58/20255802322.pdf",
+  "sePublicaDiarioOficial": false,
+  "abierto": false,
+  "fechaInicioSolicitud": "2026-01-01",
+  "fechaFinSolicitud": "2026-12-31",
+  "textInicio": "http://diputaciolleida.cat",
+  "textFin": "http://diputaciolleida.cat",
+  "ayudaEstado": null,
+  "urlAyudaEstado": null,
+  "fondos": [],
+  "reglamento": null,
+  "objetivos": [],
+  "sectoresProductos": [],
+  "documentos": [
+    {
+      "id": 1513832,
+      "descripcion": "Texto en otra lengua de la convocatoria",
+      "nombreFic": "Decret_Nº_2026_2644_Decret_atorgament_ajut_directe_excepcional_DUPROCIM_Fulleda.PDF",
+      "long": 757318,
+      "datMod": "2026-08-27",
+      "datPublicacion": "2026-08-27"
+    },
+    {
+      "id": 1513831,
+      "descripcion": "Texto en castellano de la convocatoria",
+      "nombreFic": "Decreto_otorgamiento_ayuda_directa_excepcional_DUPROCIM_Fulleda.pdf",
+      "long": 545811,
+      "datMod": "2026-08-27",
+      "datPublicacion": "2026-08-27"
+    }
+  ],
+  "anuncios": []
+}

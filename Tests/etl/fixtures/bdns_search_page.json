@@ -1,0 +1,47 @@
+{
+  "content": [
+    {
+      "id": 1128344,
+      "mrr": false,
+      "numeroConvocatoria": "926783",
+      "descripcion": "Subvenció complementària Aj. Fulleda (redacció o revisió DUPROCIM 2023).",
+      "descripcionLeng": null,
+      "fechaRecepcion": "2026-08-27",
+      "nivel1": "LOCAL",
+      "nivel2": "DIPUTACIÓN PROV. DE LLEIDA",
+      "nivel3": "DIPUTACIÓN PROVINCIAL DE LLEIDA",
+      "codigoInvente": null
+    },
+    {
+      "id": 1128343,
+      "mrr": false,
+      "numeroConvocatoria": "926782",
+      "descripcion": "Promoción y Fomento del Deporte, Subvención a SC León y Pulido para Competición Telamón Rules en Puerto Calero 2026.",
+      "descripcionLeng": null,
+      "fechaRecepcion": "2026-08-27",
+      "nivel1": "LOCAL",
+      "nivel2": "YAIZA",
+      "nivel3": "AYUNTAMIENTO DE YAIZA",
+      "codigoInvente": null
+    },
+    {
+      "id": 1128342,
+      "mrr": false,
+      "numeroConvocatoria": "926781",
+      "descripcion": "Convenio entre el Ayuntamiento de Campo de Criptana y Asoc. Cultural Peña Los Bartoleros",
+      "descripcionLeng": null,
+      "fechaRecepcion": "2026-08-27",
+      "nivel1": "LOCAL",
+      "nivel2": "CAMPO DE CRIPTANA",
+      "nivel3": "AYUNTAMIENTO DE CAMPO DE CRIPTANA",
+      "codigoInvente": null
+    }
+  ],
+  "totalElements": 1778,
+  "totalPages": 36,
+  "last": false,
+  "first": true,
+  "number": 0,
+  "size": 50,
+  "empty": false
+}

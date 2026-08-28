@@ -86,6 +86,58 @@ spanish_aid_repo = SpanishAidRepository()
 spanish_aid_stats_repo = SpanishAidStatsRepository()
 
 
+class BdnsConvocatoriasRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for BDNS convocatorias data (SNPSAP API ETL output)."""
+
+    def __init__(self):
+        """Initialize BDNS convocatorias repository."""
+        data_path = get_data_path("spanish_public_aid", "output", "bdns_convocatorias_latest.json")
+        super().__init__(
+            data_path=Path(data_path),
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
+        )
+
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        """Transform JSON data into list of BDNS convocatoria items.
+
+        Args:
+            raw_data: Raw JSON data
+
+        Returns:
+            List of convocatoria dictionaries
+        """
+        if isinstance(raw_data, list):
+            return [item for item in raw_data if isinstance(item, dict)]
+        elif isinstance(raw_data, dict):
+            items = raw_data.get("items")
+            if isinstance(items, list):
+                return [item for item in items if isinstance(item, dict)]
+        return []
+
+
+# Create singleton instance
+bdns_convocatorias_repo = BdnsConvocatoriasRepository()
+
+
+def load_bdns_convocatorias(force_refresh: bool = False) -> list[dict[str, Any]]:
+    """Load BDNS convocatorias data using the repository pattern."""
+    try:
+        items = bdns_convocatorias_repo.get(force_refresh=force_refresh)
+        return items or []
+    except Exception as e:
+        logger.warning(f"Could not load BDNS convocatorias data: {e}")
+        return []
+
+
+def get_bdns_last_updated() -> str:
+    """Return the mtime of the BDNS convocatorias file as a freshness signal."""
+    path = Path(get_data_path("spanish_public_aid", "output", "bdns_convocatorias_latest.json"))
+    if path.exists():
+        return datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+    return "no data file"
+
+
 def load_spanish_aid_data(force_refresh: bool = False):
     """Load Spanish public aid data using repository pattern (NEW)."""
     aids_data = []
@@ -622,6 +674,156 @@ def create_search_component() -> html.Div:
 # --- Main Tab Rendering Function ---
 
 
+def _format_bdns_amount(item: dict) -> str:
+    """Format the BDNS budget for the table (Spanish style, dash when unknown)."""
+    amounts = item.get("amounts") or {}
+    budget = amounts.get("total_budget")
+    if budget is None:
+        return "—"
+    text = f"{budget:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"{text} €"
+
+
+def _bdns_days_left(item: dict) -> int | str:
+    """Days until the BDNS application deadline, or dash when unknown."""
+    deadline = parse_aid_date(str(item.get("deadline_date") or ""))
+    if not deadline:
+        return "—"
+    return max(0, (deadline - datetime.now()).days)
+
+
+def create_bdns_section(convocatorias: list[dict]) -> html.Div:
+    """Create the BDNS recent convocatorias section (spec 09 M1).
+
+    Shows convocatorias fetched from the public SNPSAP API with real dates
+    and amounts — data the scraped sources cannot provide.
+
+    Args:
+        convocatorias: Normalized BDNS convocatoria items.
+
+    Returns:
+        Dash layout for the section.
+    """
+    if not convocatorias:
+        return html.Div(
+            [
+                html.Hr(),
+                html.H4("🏛️ BDNS — Convocatorias recientes"),
+                dbc.Alert(
+                    [
+                        "Sin datos de BDNS todavía. Ejecuta el ETL: ",
+                        html.Code("uv run python src/etl/spanish_public_aid/bdns_convocatorias_etl.py"),
+                    ],
+                    color="info",
+                ),
+            ]
+        )
+
+    total = len(convocatorias)
+    with_deadline = len([c for c in convocatorias if c.get("deadline_date")])
+    with_budget = len([c for c in convocatorias if (c.get("amounts") or {}).get("total_budget") is not None])
+    closing_soon = len([c for c in convocatorias if isinstance(_bdns_days_left(c), int) and 0 < _bdns_days_left(c) <= 7])
+
+    badges = dbc.Row(
+        [
+            dbc.Col(dbc.Badge(f"Total: {total}", color="primary", pill=True, className="me-2")),
+            dbc.Col(dbc.Badge(f"Con plazo: {with_deadline}", color="info", pill=True, className="me-2")),
+            dbc.Col(dbc.Badge(f"Con cuantía: {with_budget}", color="success", pill=True, className="me-2")),
+            dbc.Col(dbc.Badge(f"Cierran ≤ 7 días: {closing_soon}", color="warning", pill=True, className="me-2")),
+        ],
+        className="mb-3 g-1",
+    )
+
+    table_data = []
+    for item in convocatorias:
+        title = item.get("title", "Sin título")
+        url = item.get("url", "")
+        deadline = parse_aid_date(str(item.get("deadline_date") or ""))
+        deadline_str = deadline.strftime("%Y-%m-%d") if deadline else ("indefinido" if item.get("open_ended") else "—")
+        registered = parse_aid_date(str(item.get("registered_date") or ""))
+        table_data.append(
+            {
+                "title": f"[{title}]({url})" if url else title,
+                "org": item.get("org", "N/A"),
+                "scope": item.get("scope", "N/A"),
+                "amount": _format_bdns_amount(item),
+                "registered": registered.strftime("%Y-%m-%d") if registered else "—",
+                "deadline": deadline_str,
+                "days_left": _bdns_days_left(item),
+                "bdns_id": item.get("bdns_id", ""),
+            }
+        )
+
+    table = dash_table.DataTable(
+        id="bdns-convocatorias-table",
+        data=table_data,
+        columns=[
+            {"name": "Convocatoria", "id": "title", "type": "text", "presentation": "markdown"},
+            {"name": "Organismo", "id": "org", "type": "text"},
+            {"name": "Ámbito", "id": "scope", "type": "text"},
+            {"name": "Cuantía", "id": "amount", "type": "text"},
+            {"name": "Registro", "id": "registered", "type": "datetime"},
+            {"name": "Fin de plazo", "id": "deadline", "type": "datetime"},
+            {"name": "Días", "id": "days_left", "type": "numeric"},
+            {"name": "BDNS", "id": "bdns_id", "type": "text"},
+        ],
+        page_size=15,
+        sort_action="native",
+        filter_action="native",
+        style_cell={
+            "textAlign": "left",
+            "fontSize": "13px",
+            "fontFamily": "Arial, sans-serif",
+            "padding": "8px",
+            "overflow": "hidden",
+            "textOverflow": "ellipsis",
+            "maxWidth": 0,
+        },
+        style_header={
+            "backgroundColor": "rgb(30, 30, 30)",
+            "color": "white",
+            "fontWeight": "bold",
+            "border": "1px solid #444",
+        },
+        style_data={
+            "backgroundColor": "#2c2c2c",
+            "color": "white",
+            "border": "1px solid #444",
+        },
+        style_data_conditional=[
+            {
+                "if": {"column_id": "title"},
+                "width": "45%",
+            },
+            {
+                "if": {"filter_query": "{days_left} <= 7 && {days_left} > 0"},
+                "backgroundColor": "#3e2723",
+                "color": "#ffcdd2",
+            },
+        ],
+        markdown_options={"link_target": "_blank"},
+    )
+
+    return html.Div(
+        [
+            html.Hr(),
+            html.H4("🏛️ BDNS — Convocatorias recientes", className="mb-1"),
+            html.P(
+                [
+                    "Últimas convocatorias registradas en la Base de Datos Nacional de Subvenciones (API pública SNPSAP), ",
+                    "con plazos y cuantías reales. Fuente: ",
+                    html.A("infosubvenciones", href="https://www.infosubvenciones.es/bdnstrans/GE/es/bdnstrans/convocatorias", target="_blank"),
+                    f" · Datos actualizados: {get_bdns_last_updated()}",
+                ],
+                className="text-muted mb-2",
+                style={"fontSize": "0.85rem"},
+            ),
+            badges,
+            table,
+        ]
+    )
+
+
 def _create_scope_tabs(aids_data: list[dict]) -> html.Div:
     """Create geographic-scope quick-filter buttons (local → global).
 
@@ -675,6 +877,7 @@ def render_spanish_public_aid_tab():
     """Render the main Spanish Public Aid tab."""
     # Load data
     aids_data, stats_data = load_spanish_aid_data()
+    bdns_convocatorias = load_bdns_convocatorias()
 
     if not aids_data:
         return dbc.Container(
@@ -692,7 +895,9 @@ def render_spanish_public_aid_tab():
                     ],
                     color="warning",
                     className="mt-3",
-                )
+                ),
+                # BDNS section still renders when only the API-based ETL has run
+                *([] if not bdns_convocatorias else [create_bdns_section(bdns_convocatorias)]),
             ],
             fluid=True,
         )
@@ -737,6 +942,8 @@ def render_spanish_public_aid_tab():
             html.Hr(),
             # Aids table
             html.Div(id="filtered-aids-table", children=[create_aids_table(aids_data)]),
+            # BDNS recent convocatorias (API data with real deadlines/amounts)
+            create_bdns_section(bdns_convocatorias),
             # Last updated info (data file mtime — reflects actual data freshness)
             html.Div(
                 [
@@ -748,7 +955,7 @@ def render_spanish_public_aid_tab():
                                     "Last updated: ",
                                     html.Span(get_data_last_updated(), id="last-updated-time"),
                                     " | ",
-                                    "Data: data/spanish_public_aid/output/spanish_public_aid_latest.json (ETL runs via run_all_etl.sh)",
+                                    "Data: data/spanish_public_aid/output/spanish_public_aid_latest.json + bdns_convocatorias_latest.json (ETL runs via run_all_etl.sh)",
                                 ],
                                 className="text-muted",
                             )
