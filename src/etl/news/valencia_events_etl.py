@@ -2,6 +2,7 @@
 
 import json
 import re
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -17,10 +18,136 @@ from src.models.base import TimestampedModel
 _NOW = datetime.now()
 _VALID_YEARS = {str(_NOW.year), str(_NOW.year + 1), str(_NOW.year - 1)}
 
+# Date normalisation helpers ---------------------------------------------------
+#
+# Each source exposes dates differently: visitvalencia cards print Spanish text
+# like "17/08/2026 - 30/08/2026", Eventbrite embeds a schema.org ItemList with
+# ISO startDate/endDate per item, and Meetup embeds a JSON-LD array of Events
+# with full ISO timestamps ("2026-08-28T18:30:00.000Z"). Everything is
+# normalised to plain ISO calendar dates (YYYY-MM-DD) — the format the
+# dashboard tab's _parse_event_date and the .ics exporter accept directly.
+
+_ISO_DATE_RE = re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})")
+_ES_DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
+
 
 def _has_valid_year(text: str) -> bool:
     """Check if text contains a plausible event year (current, next, or prev)."""
     return any(y in text for y in _VALID_YEARS)
+
+
+def _to_iso_date(raw: Any) -> str:
+    """Normalise a raw date value to an ISO calendar date (YYYY-MM-DD).
+
+    Accepts Spanish DD/MM/YYYY, ISO YYYY-MM-DD and full ISO timestamps;
+    timezone suffixes (``+02:00``, ``Z``) and bracketed zone names are
+    ignored, so timed events collapse to their calendar date.
+
+    Args:
+        raw: Raw date value; non-strings are coerced, falsy values yield "".
+
+    Returns:
+        YYYY-MM-DD string, or "" when no plausible date can be extracted.
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return ""
+    match = _ISO_DATE_RE.search(text)
+    if match:
+        year, month, day = (int(group) for group in match.groups())
+    else:
+        match = _ES_DATE_RE.search(text)
+        if not match:
+            return ""
+        day, month, year = (int(group) for group in match.groups())
+    try:
+        return datetime(year, month, day).strftime("%Y-%m-%d")
+    except ValueError:
+        return ""
+
+
+def _parse_dates_from_text(text: Any) -> tuple[str, str]:
+    """Extract a (start, end) ISO date pair from free-form date text.
+
+    Handles "Del DD/MM/YYYY al DD/MM/YYYY", "DD/MM/YYYY - DD/MM/YYYY",
+    "Fecha: ..." prefixes and bare ISO/Spanish date tokens, in any
+    combination the sources print them.
+
+    Args:
+        text: Raw date text as shown on the listing.
+
+    Returns:
+        Tuple of (start_date, end_date). end_date is "" for single-day
+        events; both are "" when the text carries no date at all.
+    """
+    value = str(text or "").strip()
+    if not value:
+        return "", ""
+    tokens: list[str] = []
+    for token in re.findall(r"\d{1,2}/\d{1,2}/\d{4}|\d{4}-\d{1,2}-\d{1,2}", value):
+        iso = _to_iso_date(token)
+        if iso:
+            tokens.append(iso)
+    if not tokens:
+        return "", ""
+    # Deduplicate preserving order: a repeated identical date is a one-day
+    # event, not a range.
+    unique = list(dict.fromkeys(tokens))
+    return unique[0], unique[1] if len(unique) > 1 else ""
+
+
+def _iter_jsonld_items(soup: BeautifulSoup) -> Iterator[dict[str, Any]]:
+    """Yield every object embedded in the page's application/ld+json blocks.
+
+    Handles blocks holding a single object, an array of objects, or an object
+    with a @graph. Malformed blocks are skipped silently.
+
+    Args:
+        soup: Parsed page.
+
+    Yields:
+        Individual schema.org node dictionaries.
+    """
+    for block in soup.find_all("script", type="application/ld+json"):
+        raw = block.string or block.get_text()
+        if not raw:
+            continue
+        try:
+            data = json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        queue = data if isinstance(data, list) else [data]
+        for node in queue:
+            if not isinstance(node, dict):
+                continue
+            graph = node.get("@graph")
+            if isinstance(graph, list):
+                yield from (item for item in graph if isinstance(item, dict))
+            else:
+                yield node
+
+
+def _jsonld_location(node: dict[str, Any]) -> str:
+    """Best-effort human-readable location from a schema.org event node.
+
+    Args:
+        node: schema.org Event (or ItemList item) dictionary.
+
+    Returns:
+        "street, city" (or whichever parts exist), "" when no location.
+    """
+    location = node.get("location")
+    if isinstance(location, str):
+        return location
+    if not isinstance(location, dict):
+        return ""
+    address = location.get("address")
+    if isinstance(address, str):
+        return address
+    if isinstance(address, dict):
+        parts = [address.get("streetAddress"), address.get("addressLocality")]
+        return ", ".join(str(part) for part in parts if part)
+    return str(location.get("name") or "")
 
 
 class ValenciaEvent(TimestampedModel):
@@ -80,7 +207,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         self.logger.info(f"Fetching events from {url}")
 
         # Send GET request to the webpage with increased timeout
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, headers={"User-Agent": SCRAPER_DEFAULT_USER_AGENT}, timeout=30)
         response.raise_for_status()  # Raise exception for HTTP errors
 
         # Parse HTML content
@@ -91,25 +218,69 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         # The events appear to be in a list with each event having h3 headers
         events = []
 
-        # APPROACH 1: Based on the example HTML, events seem to be contained in
+        # APPROACH 0 (primary): structured listing cards. The agenda renders each
+        # event as a div.standard-card whose heading, link and date paragraph
+        # ("17/08/2026 - 30/08/2026") carry stable BEM class names, so dates can
+        # be read straight from the listing without extra requests.
+        for card in soup.select("div.standard-card"):
+            try:
+                heading = card.select_one(".standard-card__heading") or card.find(["h2", "h3"])
+                title = heading.get_text(strip=True) if heading else ""
+                if not title:
+                    continue
+
+                dates_element = card.select_one(".standard-card__dates")
+                date_text = dates_element.get_text(" ", strip=True) if dates_element else ""
+                start_date, end_date = _parse_dates_from_text(date_text)
+
+                link = card.select_one("a.standard-card__link") or card.find("a", href=True)
+                event_url = ""
+                if link is not None:
+                    href = link.get("href", "")
+                    if href:
+                        event_url = href if href.startswith("http") else f"https://www.visitvalencia.com{href}"
+
+                events.append(
+                    {
+                        "title": title,
+                        "url": event_url,
+                        "date_text": date_text,
+                        "start_date": start_date,
+                        "end_date": end_date,
+                        "category": "",
+                        "description": "",
+                        "source": "visitvalencia.com",
+                    }
+                )
+            except Exception as e:
+                self.logger.error(f"Error parsing standard-card event: {e!s}")
+                continue
+
+        self.logger.debug(f"Approach 0: extracted {len(events)} events from standard cards")
+
+        # APPROACH 1 (fallback): Based on the example HTML, events seem to be contained in
         # elements with specific text in their titles
-        event_blocks = soup.find_all(
-            lambda tag: (
-                tag.name
-                and tag.find(["h2", "h3"])
-                and tag.find(["h2", "h3"]).text
-                and any(
-                    x in tag.find(["h2", "h3"]).text
-                    for x in [
-                        "Exposición",
-                        "Concierto",
-                        "Festival",
-                        "Visita",
-                        "Descubre",
-                        "Siente",
-                    ]
+        event_blocks = (
+            soup.find_all(
+                lambda tag: (
+                    tag.name
+                    and tag.find(["h2", "h3"])
+                    and tag.find(["h2", "h3"]).text
+                    and any(
+                        x in tag.find(["h2", "h3"]).text
+                        for x in [
+                            "Exposición",
+                            "Concierto",
+                            "Festival",
+                            "Visita",
+                            "Descubre",
+                            "Siente",
+                        ]
+                    )
                 )
             )
+            if not events
+            else []
         )
 
         self.logger.debug(f"Approach 1: Found {len(event_blocks)} event blocks")
@@ -399,9 +570,36 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
             soup = BeautifulSoup(response.content, "html.parser")
 
+            # Primary: Meetup embeds a JSON-LD array of schema.org Events with
+            # full ISO startDate/endDate (UTC) plus name/url/description. The
+            # interactive event cards render client-side, so the static-HTML
+            # card scraping further below only acts as a fallback.
+            jsonld_events: list[dict[str, Any]] = []
+            for node in _iter_jsonld_items(soup):
+                if node.get("@type") != "Event" or not str(node.get("name") or "").strip():
+                    continue
+                title = str(node.get("name")).strip()
+                jsonld_events.append(
+                    {
+                        "title": title,
+                        "url": str(node.get("url") or ""),
+                        "date_text": str(node.get("startDate") or ""),
+                        "start_date": _to_iso_date(node.get("startDate")),
+                        "end_date": _to_iso_date(node.get("endDate")),
+                        "category": "meetup",
+                        "description": str(node.get("description") or "").strip(),
+                        "source": "meetup.com",
+                        "metadata": {"location": _jsonld_location(node)},
+                    }
+                )
+
+            if jsonld_events:
+                self.logger.info(f"Found {len(jsonld_events)} events from Meetup.com JSON-LD")
+                return jsonld_events[:20]
+
             events = []
 
-            # Look for event cards in Meetup's search results
+            # Fallback: look for event cards in Meetup's search results
             event_cards = soup.find_all("div", {"data-testid": "event-card"})
 
             for card in event_cards[:20]:  # Limit to first 20 events
@@ -479,6 +677,47 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             response.raise_for_status()
 
             soup = BeautifulSoup(response.content, "html.parser")
+
+            # Primary: Eventbrite embeds a schema.org ItemList in JSON-LD whose
+            # ListItem entries carry ISO startDate/endDate, name, url and
+            # location per event — far more reliable than the JS-rendered cards.
+            jsonld_events: list[dict[str, Any]] = []
+            for node in _iter_jsonld_items(soup):
+                if node.get("@type") != "ItemList":
+                    continue
+                for list_item in node.get("itemListElement") or []:
+                    if not isinstance(list_item, dict):
+                        continue
+                    item = list_item.get("item")
+                    if not isinstance(item, dict):
+                        continue
+                    title = str(item.get("name") or "").strip()
+                    if not title:
+                        continue
+                    category = "eventbrite"
+                    if any(word in title.lower() for word in ["tech", "tecnología", "startup"]):
+                        category = "tecnología"
+                    elif any(word in title.lower() for word in ["música", "concierto", "festival"]):
+                        category = "música"
+                    jsonld_events.append(
+                        {
+                            "title": title,
+                            "url": str(item.get("url") or ""),
+                            "date_text": str(item.get("startDate") or ""),
+                            "start_date": _to_iso_date(item.get("startDate")),
+                            "end_date": _to_iso_date(item.get("endDate")),
+                            "category": category,
+                            "description": str(item.get("description") or "").strip(),
+                            "source": "eventbrite.com",
+                            "metadata": {"location": _jsonld_location(item)},
+                        }
+                    )
+                if jsonld_events:
+                    break  # only the first ItemList matters
+
+            if jsonld_events:
+                self.logger.info(f"Found {len(jsonld_events)} events from Eventbrite JSON-LD")
+                return jsonld_events[:15]
 
             events = []
 
@@ -604,54 +843,15 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
         for event in events:
             try:
-                # Parse dates from text if available
-                date_info = event.get("date_text", "")
-                start_date = ""
-                end_date = ""
-
-                # Enhanced date parsing for Spanish format
-
-                # Pattern 1: "Del DD/MM/YYYY al DD/MM/YYYY" (with optional extra spaces)
-                del_al_pattern = re.search(
-                    r"Del\s+(\d{1,2}/\d{1,2}/\d{4})\s*al\s+(\d{1,2}/\d{1,2}/\d{4})",
-                    date_info,
-                    re.IGNORECASE,
-                )
-                if del_al_pattern:
-                    start_date = del_al_pattern.group(1)
-                    end_date = del_al_pattern.group(2)
-                # Pattern 2: "Del DD/MM/YYYY" (single date)
-                elif re.search(r"Del\s+(\d{1,2}/\d{1,2}/\d{4})", date_info, re.IGNORECASE):
-                    del_pattern = re.search(r"Del\s+(\d{1,2}/\d{1,2}/\d{4})", date_info, re.IGNORECASE)
-                    start_date = del_pattern.group(1) if del_pattern else ""
-                # Pattern 3: "Fecha: Del DD/MM/YYYY al DD/MM/YYYY" (with "Fecha:" prefix)
-                elif re.search(
-                    r"Fecha:\s*Del\s+(\d{1,2}/\d{1,2}/\d{4})\s*al\s+(\d{1,2}/\d{1,2}/\d{4})",
-                    date_info,
-                    re.IGNORECASE,
-                ):
-                    fecha_pattern = re.search(
-                        r"Fecha:\s*Del\s+(\d{1,2}/\d{1,2}/\d{4})\s*al\s+(\d{1,2}/\d{1,2}/\d{4})",
-                        date_info,
-                        re.IGNORECASE,
-                    )
-                    start_date = fecha_pattern.group(1) if fecha_pattern else ""
-                    end_date = fecha_pattern.group(2) if fecha_pattern else ""
-                # Pattern 4: Look for any dates in YYYY-MM-DD or DD/MM/YYYY format
-                elif re.search(r"\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}", date_info):
-                    date_matches = re.findall(r"\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}", date_info)
-                    if date_matches:
-                        start_date = date_matches[0]
-                        if len(date_matches) > 1:
-                            end_date = date_matches[1]
-                # Pattern 5: Look for month names and years
-                elif re.search(
-                    r"(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)",
-                    date_info,
-                    re.IGNORECASE,
-                ):
-                    # Keep the original text if it contains month names
-                    pass
+                # Dates: extractors may already carry ISO start/end dates (JSON-LD
+                # or structured listing cards); otherwise parse them from the
+                # Spanish/free-form date text. Everything ends up ISO (YYYY-MM-DD)
+                # or empty — undated events stay undated by design.
+                date_info = str(event.get("date_text", "") or "")
+                start_date = _to_iso_date(event.get("start_date", ""))
+                end_date = _to_iso_date(event.get("end_date", ""))
+                if not start_date:
+                    start_date, end_date = _parse_dates_from_text(date_info)
 
                 # Clean up titles (sometimes they contain the event type)
                 title = event.get("title", "").strip()
@@ -721,6 +921,17 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 if not description:
                     description = title
 
+                # Metadata: scraper defaults plus whatever the extractor carried
+                # (e.g. location from JSON-LD sources) — the dashboard .ics
+                # exporter reads metadata.location / metadata.venue when present.
+                metadata: dict[str, Any] = {
+                    "api_source": "valencia_scraper",
+                    "processed_at": datetime.now().isoformat(),
+                }
+                raw_metadata = event.get("metadata")
+                if isinstance(raw_metadata, dict):
+                    metadata.update({key: value for key, value in raw_metadata.items() if value})
+
                 processed_event = {
                     "title": title,
                     "url": event.get("url", ""),
@@ -730,10 +941,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     "start_date": start_date,
                     "end_date": end_date,
                     "date_text": date_info,
-                    "metadata": {
-                        "api_source": "valencia_scraper",
-                        "processed_at": datetime.now().isoformat(),
-                    },
+                    "metadata": metadata,
                 }
                 processed_events.append(processed_event)
                 self.logger.debug(f"Processed event: {processed_event['title']}")
@@ -792,6 +1000,11 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 if len(event.get("date_text", "")) > len(merged_event.get("date_text", "")):
                     merged_event["date_text"] = event.get("date_text")
                     merged_event["start_date"] = event.get("start_date", "")
+                    merged_event["end_date"] = event.get("end_date", "")
+
+                # Prefer dated duplicates over undated ones
+                if not merged_event.get("start_date") and event.get("start_date"):
+                    merged_event["start_date"] = event.get("start_date")
                     merged_event["end_date"] = event.get("end_date", "")
 
             unique_events.append(merged_event)
