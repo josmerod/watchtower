@@ -1097,13 +1097,19 @@ def register_video_callbacks(app):
             # ctx.triggered_id is the id object for a real pattern-matching
             # click, the literal id string for the close button, and None (or
             # the wildcard token) when cards are merely (re)rendered — the
-            # only cases that must change the modal.
+            # only cases that must change the modal. Lazily-rendered cards
+            # ALSO fire this callback with their concrete id (component-added
+            # fire), so a real click additionally requires n_clicks >= 1.
             triggered_id = _dash.ctx.triggered_id
 
-            if triggered_id == "wt-video-modal-close":
+            if triggered_id == "wt-video-modal-close" and (close_clicks or 0) >= 1:
                 return False, dash.no_update, dash.no_update, dash.no_update
 
-            if isinstance(triggered_id, dict) and triggered_id.get("type") == "wt-video-preview-btn":
+            if (
+                isinstance(triggered_id, dict)
+                and triggered_id.get("type") == "wt-video-preview-btn"
+                and (preview_clicks or 0) >= 1
+            ):
                 video = _video_registry.get(triggered_id.get("index"))
                 if not video:
                     return untouched
