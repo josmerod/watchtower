@@ -124,14 +124,14 @@ def fetch_ask_hn_posts(session: requests.Session, max_posts: int = 100) -> list[
             except requests.exceptions.RequestException as e:
                 logger.warning(f"Error fetching story {story_id}: {e}")
                 continue
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, AttributeError, OverflowError, OSError) as e:
                 logger.warning(f"Unexpected error processing story {story_id}: {e}")
                 continue
 
         logger.info(f"Found {len(posts)} Ask HN posts")
         return posts
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole per-story fetch wrapper incl. network
         logger.error(f"Error fetching Ask HN posts: {e}")
         return []
 
@@ -306,7 +306,7 @@ def process_ask_hn_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
             processed_posts.append(processed_post)
 
-        except Exception as e:
+        except (ValueError, TypeError, KeyError, AttributeError, OverflowError, OSError) as e:
             logger.warning(f"Error processing post {post.get('id', 'unknown')}: {e}")
             continue
 
@@ -419,7 +419,7 @@ def main():
             top_categories = Counter(categories).most_common(10)
             logger.info(f"Top categories: {top_categories}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"HackerNews Ask ETL failed: {e}")
         raise
 

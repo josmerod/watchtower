@@ -119,7 +119,7 @@ def main() -> None:
             return
         save_phoronix_entries(entries)
         logger.info(f"Phoronix ETL complete: {len(entries)} articles.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Phoronix ETL failed: {exc}")
         raise
 

@@ -95,7 +95,7 @@ def fetch_json(url: str, api_key: str | None = None) -> list[dict] | dict | None
     except urllib.error.URLError as e:
         logger.error(f"Connection error: {e.reason}")
         return None
-    except Exception as e:
+    except Exception as e:  # broad by design: residual transport edge cases (e.g. http.client) beyond HTTPError/URLError
         logger.error(f"Fetch error: {e}")
         import traceback
 

@@ -64,13 +64,13 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                         # Rate limiting
                         await asyncio.sleep(random.uniform(2, 4))
 
-                    except Exception as e:
+                    except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
                         self.logger.error(f"Error extracting page {page_num}: {e}")
                         continue
 
                 await browser.close()
 
-        except Exception as e:
+        except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
             self.logger.error(f"Error in async extraction: {e}")
 
         self.logger.info(f"Extracted {len(courses)} courses total")
@@ -144,11 +144,11 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                                         "type": "playwright_element",
                                     }
                                     course_elements.append(element_data)
-                            except Exception as e:
+                            except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
                                 self.logger.debug(f"Error extracting from element: {e}")
                                 continue
                         break
-                except Exception as e:
+                except Exception as e:  # broad by design: Playwright selector strategy attempts on messy DOM
                     self.logger.debug(f"Selector {selector} failed: {e}")
                     continue
 
@@ -177,7 +177,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
 
             return courses
 
-        except Exception as e:
+        except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
             self.logger.error(f"Error extracting page {page_num}: {e}")
             return []
 
@@ -285,7 +285,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
 
             return course_data
 
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError, IndexError) as e:
             self.logger.warning(f"Error extracting course from element: {e}")
             return None
 
@@ -323,7 +323,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                 course = PluralsightCourseModel(**item)
                 transformed.append(course)
 
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
                 self.logger.warning(f"Error transforming course data: {e}")
                 self.metrics.records_failed += 1
                 continue
@@ -387,10 +387,10 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                 self.logger.info(f"Also saved courses to CSV: {csv_file}")
             except ImportError:
                 self.logger.info("Pandas not available, skipping CSV export")
-            except Exception as e:
+            except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
                 self.logger.warning(f"Could not save to CSV: {e}")
 
-        except Exception as e:
+        except Exception as e:  # broad by design: whole save function incl. json + pandas
             self.logger.error(f"Error saving courses: {e}")
             raise
 

@@ -106,7 +106,7 @@ def main() -> None:
             return
         save_hn_entries(entries)
         logger.info(f"HN front-page ETL complete: {len(entries)} stories.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"HN front-page ETL failed: {exc}")
         raise
 

@@ -123,7 +123,7 @@ def run():
             logger.warning("No leaderboard rows parsed — site layout may have changed again.")
             return
         save_json(models, os.path.join(get_data_dir(), "bridgebench_overall.json"))
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"BridgeBench ETL failed: {e}")
         raise
 

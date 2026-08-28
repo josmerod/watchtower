@@ -133,7 +133,7 @@ def main() -> None:
             return
         save_selfhosted_entries(entries)
         logger.info(f"Selfh.st ETL complete: {len(entries)} articles.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Selfh.st ETL failed: {exc}")
         raise
 

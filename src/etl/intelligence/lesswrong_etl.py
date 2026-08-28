@@ -82,7 +82,7 @@ def fetch_lesswrong() -> list[dict[str, Any]]:
                     # Usually ISO format 2023-01-01T12:00:00.000Z
                     dt = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
                     published = dt.isoformat()
-                except Exception:
+                except (ValueError, TypeError):
                     published = published_str
 
             # Extract tags
@@ -120,7 +120,7 @@ def fetch_lesswrong() -> list[dict[str, Any]]:
 
         return entries
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole GraphQL fetch wrapper incl. network
         logger.error(f"Failed to fetch LessWrong GraphQL: {e}")
         return []
 

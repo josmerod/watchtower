@@ -86,7 +86,7 @@ def fetch_feeds() -> list[dict[str, Any]]:
                     }
                 )
 
-        except Exception as e:
+        except (requests.RequestException, ValueError, TypeError, KeyError, AttributeError) as e:
             logger.error(f"Failed to fetch {source}: {e}")
             continue
 

@@ -57,7 +57,7 @@ def fetch_venturebeat_feeds() -> list[dict[str, Any]]:
             if feed.bozo:
                 logger.warning(f"Error parsing feed from {source}: {feed.bozo_exception}")
                 # Continue if we have entries despite bozo error
-        except Exception as e:
+        except Exception as e:  # broad by design: cloudscraper JS-challenge fetch of bot-protected site
             logger.error(f"Could not fetch or parse feed from {source}: {e}")
             continue
 
@@ -97,7 +97,7 @@ def fetch_venturebeat_feeds() -> list[dict[str, Any]]:
                         except (ValueError, TypeError):
                             raise ValueError(f"Unknown date format: {published_raw}") from None
 
-            except Exception as e:
+            except (ValueError, TypeError, OverflowError, OSError) as e:
                 logger.warning(f"Could not parse publication date '{published_raw}' for entry '{entry.get('title')}' from {source}: {e}. Using raw value.")
                 published = published_raw
 
@@ -503,7 +503,7 @@ def main():
         logger.info(f"Industry categories covered: {', '.join(sorted(categories))}")
         logger.info(f"Technology trends identified: {', '.join(sorted(trends))}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"VentureBeat ETL failed: {e}")
         raise
 

@@ -83,7 +83,7 @@ def get_stackoverflow_questions(pagesize: int = 50, max_retries: int = 3, retry_
                     },
                 }
             )
-        except Exception as e:
+        except (ValueError, TypeError, KeyError, AttributeError, OverflowError, OSError) as e:
             logger.error(f"Error parsing Stack Overflow question: {e!s}")
 
     logger.info(f"Retrieved {len(questions)} Stack Overflow questions")
@@ -113,7 +113,7 @@ def main():
 
         pd.DataFrame(questions).to_csv(csv_file, index=False)
         logger.info(f"Saved CSV data to {csv_file}")
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in Stack Overflow Trends ETL process: {e!s}", exc_info=True)
 
 

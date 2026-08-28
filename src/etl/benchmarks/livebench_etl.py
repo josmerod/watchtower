@@ -164,7 +164,7 @@ def _wait_for_table(page, timeout_s: int = 30) -> None:
         try:
             if page.evaluate("document.querySelectorAll('table tr').length") > 1:
                 return
-        except Exception:
+        except Exception:  # broad by design: Playwright evaluate during page load (transient failures expected)
             pass
         time.sleep(1)
 
@@ -188,7 +188,7 @@ def scrape_leaderboard() -> dict[str, Any] | None:
                 body = response.text()
                 if body.lstrip().startswith("model,"):
                     raw_csv = body
-            except Exception:
+            except Exception:  # broad by design: Playwright response body access (best-effort provenance capture)
                 pass
 
     try:
@@ -198,7 +198,7 @@ def scrape_leaderboard() -> dict[str, Any] | None:
                 logger.info(f"Connecting to remote browser at {browserless_ws}")
                 browser = p.chromium.connect_over_cdp(browserless_ws)
                 context = browser.new_context(viewport={"width": 1920, "height": 1080}, user_agent=SCRAPER_DEFAULT_USER_AGENT)
-            except Exception as e:
+            except Exception as e:  # broad by design: Playwright remote-browser connection fallback
                 logger.warning(f"Could not connect to remote browser: {e}. Falling back to local launch.")
                 browser = p.chromium.launch(headless=True)
                 context = browser.new_context(viewport={"width": 1920, "height": 1080}, user_agent=SCRAPER_DEFAULT_USER_AGENT)
@@ -213,7 +213,7 @@ def scrape_leaderboard() -> dict[str, Any] | None:
             finally:
                 context.close()
                 browser.close()
-    except Exception as e:
+    except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
         logger.error(f"LiveBench scrape failed: {type(e).__name__}: {e}")
         return None
 

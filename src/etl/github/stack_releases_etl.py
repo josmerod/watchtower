@@ -166,7 +166,7 @@ def fetch_repo_releases(repo_cfg: dict[str, Any]) -> list[dict[str, Any]]:
     logger.info(f"Fetching releases feed for {repo_cfg['owner']}/{repo_cfg['repo']}")
     try:
         content = _fetch_feed(url)
-    except Exception as exc:
+    except requests.RequestException as exc:
         logger.error(f"Could not fetch {url}: {exc}")
         return []
     releases = parse_repo_releases(content, repo_cfg)
@@ -257,7 +257,7 @@ def main() -> None:
             logger.info(f"Mi-stack ETL complete: {len(releases)} releases from {stats['repos_ok']}/{stats['repos_total']} repos.")
         else:
             logger.warning("Mi-stack ETL produced no usable data; previous outputs kept.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Mi-stack ETL failed: {exc}")
         raise
 

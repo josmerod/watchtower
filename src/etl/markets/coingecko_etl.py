@@ -111,7 +111,7 @@ def main() -> None:
             return
         save_markets(records)
         logger.info(f"CoinGecko markets ETL complete: {len(records)} coins.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"CoinGecko markets ETL failed: {exc}")
         raise
 

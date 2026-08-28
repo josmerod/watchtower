@@ -171,7 +171,7 @@ def main() -> None:
             return
         save_futuretools_entries(entries)
         logger.info(f"FutureTools ETL complete: {len(entries)} articles.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"FutureTools ETL failed: {exc}")
         raise
 

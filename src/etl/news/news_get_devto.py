@@ -78,7 +78,7 @@ def get_devto_articles(per_page: int = 50, max_retries: int = 3, retry_delay: in
                     },
                 }
             )
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
             logger.error(f"Error parsing Dev.to article: {e!s}")
 
     logger.info(f"Retrieved {len(articles)} Dev.to articles")
@@ -108,7 +108,7 @@ def main():
 
         pd.DataFrame(articles).to_csv(csv_file, index=False)
         logger.info(f"Saved CSV data to {csv_file}")
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in Dev.to ETL process: {e!s}", exc_info=True)
 
 

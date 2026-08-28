@@ -252,7 +252,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                         "source": "visitvalencia.com",
                     }
                 )
-            except Exception as e:
+            except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
                 self.logger.error(f"Error parsing standard-card event: {e!s}")
                 continue
 
@@ -358,7 +358,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                         }
                     )
                     self.logger.debug(f"Approach 1: Extracted event: {title}")
-            except Exception as e:
+            except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
                 self.logger.error(f"Error in Approach 1 parsing event: {e!s}")
                 continue
 
@@ -467,7 +467,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                             }
                         )
                         self.logger.debug(f"Approach 2: Extracted event: {title}")
-                except Exception as e:
+                except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
                     self.logger.error(f"Error in Approach 2 parsing event: {e!s}")
                     continue
 
@@ -547,7 +547,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                         }
                     )
                     self.logger.debug(f"Approach 3: Extracted event: {title}")
-                except Exception as e:
+                except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
                     self.logger.error(f"Error in Approach 3 parsing event: {e!s}")
                     continue
 
@@ -652,14 +652,14 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                             }
                         )
 
-                except Exception as e:
+                except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
                     self.logger.error(f"Error parsing Meetup event: {e}")
                     continue
 
             self.logger.info(f"Found {len(events)} events from Meetup.com")
             return events
 
-        except Exception as e:
+        except Exception as e:  # broad by design: whole source fetch wrapper (network + scraping)
             self.logger.error(f"Error fetching Meetup events: {e}")
             return []
 
@@ -776,14 +776,14 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                             }
                         )
 
-                except Exception as e:
+                except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
                     self.logger.error(f"Error parsing Eventbrite event: {e}")
                     continue
 
             self.logger.info(f"Found {len(events)} events from Eventbrite")
             return events
 
-        except Exception as e:
+        except Exception as e:  # broad by design: whole source fetch wrapper (network + scraping)
             self.logger.error(f"Error fetching Eventbrite events: {e}")
             return []
 
@@ -807,7 +807,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             all_events.extend(next_month_events)
 
             self.logger.info(f"Retrieved {len(current_month_events) + len(next_month_events)} events from visitvalencia.com")
-        except Exception as e:
+        except Exception as e:  # broad by design: per-source fetch wrapper (network + scraping)
             self.logger.error(f"Failed to fetch visitvalencia.com events: {e}")
 
         # 2. Get events from Meetup.com
@@ -815,7 +815,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             meetup_events = self.get_meetup_events()
             all_events.extend(meetup_events)
             self.logger.info(f"Retrieved {len(meetup_events)} events from meetup.com")
-        except Exception as e:
+        except Exception as e:  # broad by design: per-source fetch wrapper (network + scraping)
             self.logger.error(f"Failed to fetch meetup.com events: {e}")
 
         # 3. Get events from Eventbrite
@@ -823,7 +823,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             eventbrite_events = self.get_eventbrite_events()
             all_events.extend(eventbrite_events)
             self.logger.info(f"Retrieved {len(eventbrite_events)} events from eventbrite.com")
-        except Exception as e:
+        except Exception as e:  # broad by design: per-source fetch wrapper (network + scraping)
             self.logger.error(f"Failed to fetch eventbrite.com events: {e}")
 
         self.logger.info(f"Total events collected from all sources: {len(all_events)}")
@@ -946,7 +946,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 processed_events.append(processed_event)
                 self.logger.debug(f"Processed event: {processed_event['title']}")
 
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, AttributeError, OverflowError, OSError) as e:
                 self.logger.error(f"Error processing event: {e!s}")
                 continue
 
@@ -1028,7 +1028,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         for event in unique_events:
             try:
                 models.append(ValenciaEvent(**event))
-            except Exception as e:
+            except (ValueError, TypeError) as e:
                 self.logger.error(f"Failed to create model for event: {e}")
                 continue
 
@@ -1068,7 +1068,7 @@ def main():
     try:
         metrics = etl.run()
         etl.logger.info(f"ETL completed successfully. Metrics: {metrics.model_dump()}")
-    except Exception as e:
+    except Exception as e:  # broad by design: wrapper around BaseETL.run() pipeline
         etl.logger.error(f"ETL failed: {e}", exc_info=True)
         raise
 

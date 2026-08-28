@@ -229,7 +229,7 @@ class HumbleBundleScraper:
 
             if bundles_found_bs == 0 or bundle_type == "all":  # "all" type might have more JS data
                 await self._extract_bundles_from_js(page, bundle_type, all_bundles)
-        except Exception as e:
+        except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
             logger.error(f"Error scraping {bundle_type} bundles from {url}: {e}")
 
     async def scrape_bundles(self) -> list[dict[str, Any]]:
@@ -266,23 +266,23 @@ class HumbleBundleScraper:
 
             self._post_process_bundles(all_bundles)
 
-        except Exception as e:
+        except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
             logger.error(f"Error in scrape_bundles main try-block: {e!s}", exc_info=True)
         finally:
             if page:
                 try:
                     await page.close()
-                except Exception:
+                except Exception:  # broad by design: Playwright best-effort cleanup
                     pass
             if context:
                 try:
                     await context.close()
-                except Exception:
+                except Exception:  # broad by design: Playwright best-effort cleanup
                     pass
             if browser:
                 try:
                     await browser.close()
-                except Exception:
+                except Exception:  # broad by design: Playwright best-effort cleanup
                     pass
 
         if not all_bundles:
@@ -501,7 +501,7 @@ class HumbleBundleScraper:
                 "type": actual_type,
             }
 
-        except Exception as e:
+        except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
             logger.debug(f"Failed to extract bundle info: {e!s}")
             return None
 
@@ -666,7 +666,7 @@ class HumbleBundleScraper:
                 "type": actual_type,
             }
 
-        except Exception as e:
+        except Exception as e:  # broad by design: JS-object bundle extraction from scraped page
             logger.debug(f"Failed to extract bundle from JS object: {e!s}")
             return None
 
@@ -717,7 +717,7 @@ def get_humblebundle_data() -> list[dict[str, Any]]:
             asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
         return asyncio.run(get_humblebundle_data_async())
-    except Exception as e:
+    except Exception as e:  # broad by design: asyncio entry point incl. event-loop policy setup
         logger.error(f"Error in get_humblebundle_data: {e!s}")
 
         # Return placeholder bundle data in case of failure
@@ -742,7 +742,7 @@ async def main_async() -> None:
         bundles = await get_humblebundle_data_async()
         save_humblebundle_bundles(bundles)
         logger.info("Humble Bundle ETL process completed successfully")
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Error during Humble Bundle ETL process: {e!s}")
         sys.exit(1)
 
@@ -760,7 +760,7 @@ def main() -> None:
     except KeyboardInterrupt:
         logger.info("Script interrupted by user")
         sys.exit(0)
-    except Exception as e:
+    except Exception as e:  # broad by design: script entry point
         logger.error(f"Unhandled exception: {e}")
         sys.exit(1)
 

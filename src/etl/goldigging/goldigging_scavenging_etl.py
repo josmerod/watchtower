@@ -62,7 +62,7 @@ def parse_published(date_str: str) -> str:
         else:
             dt = dt.astimezone(timezone.utc)
         return dt.isoformat()
-    except Exception:
+    except (ValueError, TypeError, OverflowError):
         return date_str  # Fallback to raw string
 
 
@@ -82,7 +82,7 @@ def fetch_rss_entries(url: str) -> list[dict[str, Any]]:
                     "summary": entry.get("summary", entry.get("description", "")),
                 }
             )
-    except Exception as e:
+    except Exception as e:  # broad by design: feedparser network fetch + parse of external feed
         logger.error(f"Failed fetching {url}: {e}")
     return items
 
@@ -138,13 +138,13 @@ def _write_output(entries: list[dict[str, Any]], json_path: Path, csv_path: Path
     try:
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(entries, f, indent=2, ensure_ascii=False)
-    except Exception as e:
+    except (OSError, TypeError, ValueError) as e:
         logger.error(f"Error writing JSON to {json_path}: {e}")
 
     try:
         df = pd.DataFrame(entries)
         df.to_csv(csv_path, index=False, encoding="utf-8")
-    except Exception as e:
+    except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
         logger.error(f"Error writing CSV to {csv_path}: {e}")
 
 

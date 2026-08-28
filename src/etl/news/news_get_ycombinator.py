@@ -130,7 +130,7 @@ def get_ycombinator_data(max_stories: int = 150) -> list[dict[str, Any]]:
                         domain = urlparse(story_data["url"]).netloc
                         if domain:
                             article["source"] = domain.replace("www.", "")
-                    except Exception:
+                    except (ValueError, TypeError, AttributeError):
                         pass
 
                 articles.append(article)
@@ -140,11 +140,11 @@ def get_ycombinator_data(max_stories: int = 150) -> list[dict[str, Any]]:
                 # Be nice to the API
                 time.sleep(0.05)
 
-            except Exception as e:
+            except (requests.RequestException, KeyError, TypeError, ValueError, OverflowError, OSError) as e:
                 logger.warning(f"Error fetching story {story_id}: {e}")
                 continue
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole fetch wrapper incl. network
         logger.error(f"Error fetching data from Hacker News API: {e}", exc_info=True)
         return []
 
@@ -179,7 +179,7 @@ def process_ycombinator_articles(articles: list[dict[str, Any]]) -> list[dict[st
                 },
             }
             processed_articles.append(processed_article)
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
             logger.error(f"Error processing article: {e!s}")
             continue
 
@@ -235,7 +235,7 @@ def main():
 
         logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in Hacker News ETL process: {e!s}", exc_info=True)
 
 

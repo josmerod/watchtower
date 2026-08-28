@@ -158,7 +158,7 @@ def process_indie_posts(posts: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
             processed_posts.append(processed_post)
 
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
             logger.error(f"Error processing post: {e}")
             continue
 
@@ -204,7 +204,7 @@ def main():
 
         logger.info(f"Saved {len(processed_posts)} processed posts to {output_file} and {csv_file}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in Indie Hackers Reddit ETL process: {e!s}", exc_info=True)
 
 

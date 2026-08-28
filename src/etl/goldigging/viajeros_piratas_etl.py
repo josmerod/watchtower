@@ -164,13 +164,13 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                     with open(debug_file, "w", encoding="utf-8") as f:
                         f.write(debug_content)
                     self.logger.info(f"Saved debug HTML to {debug_file}")
-                except Exception as e:
+                except Exception as e:  # broad by design: Playwright page.content() debug dump
                     self.logger.warning(f"Failed to save debug HTML: {e}")
 
             # Wait for deal elements to be present
             try:
                 await page.wait_for_selector("article, .deal, .offer, .post", timeout=self.wait_timeout)
-            except Exception as e:
+            except Exception as e:  # broad by design: Playwright navigation on external site
                 self.logger.warning(f"Timeout waiting for selectors: {e}")
                 # Continue to try parsing anyway, as content might be there just not matching selectors exactly
 
@@ -213,13 +213,13 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                     if deal_data:
                         deals.append(deal_data)
 
-                except Exception as e:
+                except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
                     self.logger.warning(f"Error extracting deal {idx} on page {page_num}: {e}")
                     continue
 
             self.logger.info(f"Extracted {len(deals)} deals from page {page_num}")
 
-        except Exception as e:
+        except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
             self.logger.error(f"Error extracting deals from page {page_num}: {e}")
 
         return deals
@@ -322,7 +322,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                 fetched_at=datetime.utcnow(),
             )
 
-        except Exception as e:
+        except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
             self.logger.warning(f"Error extracting single deal: {e}")
             return None
 
@@ -408,7 +408,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                     except PlaywrightTimeoutError:
                         self.logger.error(f"Timeout on page {page_num}")
                         break
-                    except Exception as e:
+                    except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
                         self.logger.error(f"Error on page {page_num}: {e}")
                         continue
 
@@ -452,7 +452,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                 if deal:
                     transformed_deals.append(deal)
 
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, AttributeError, OverflowError) as e:
                 self.logger.error(f"Error transforming deal {raw_deal.deal_id}: {e}")
                 continue
 
@@ -495,7 +495,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
                 source="viajeros_piratas",
             )
 
-        except Exception as e:
+        except (ValueError, TypeError, KeyError, AttributeError, OverflowError) as e:
             self.logger.error(f"Error parsing deal data for {raw_deal.deal_id}: {e}")
             return None
 
@@ -516,7 +516,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             with open(json_file, "w", encoding="utf-8") as f:
                 json.dump(deals_data, f, indent=2, ensure_ascii=False, default=str)
             self.logger.info(f"Saved {len(deals_data)} deals to {json_file}")
-        except Exception as e:
+        except (OSError, TypeError, ValueError) as e:
             self.logger.error(f"Error saving JSON file: {e}")
 
         # Save as CSV
@@ -527,7 +527,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             df = pd.DataFrame(deals_data)
             df.to_csv(csv_file, index=False, encoding="utf-8")
             self.logger.info(f"Saved {len(deals_data)} deals to {csv_file}")
-        except Exception as e:
+        except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
             self.logger.error(f"Error saving CSV file: {e}")
 
 
@@ -551,7 +551,7 @@ def main():
     try:
         metrics = scraper.run()
         logger.info(f"Scraper completed successfully: {metrics}")
-    except Exception as e:
+    except Exception as e:  # broad by design: wrapper around scraper.run() pipeline
         logger.error(f"Scraper failed: {e}")
         raise
 

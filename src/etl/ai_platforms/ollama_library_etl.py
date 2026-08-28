@@ -183,7 +183,7 @@ def main() -> None:
             return
         save_ollama_library(records)
         logger.info(f"Ollama library ETL complete: {len(records)} newest models.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Ollama library ETL failed: {exc}")
         raise
 

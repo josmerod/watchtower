@@ -137,7 +137,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                                 )
                             )
 
-                        except Exception as e:
+                        except (KeyError, TypeError, ValueError, AttributeError) as e:
                             self.logger.warning(f"Error extracting product {idx} at offset {from_offset}: {e}")
                             continue
                 else:
@@ -147,7 +147,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                 self.logger.error(f"Failed to parse JSON response at offset {from_offset}: {e}")
                 return products
 
-        except Exception as e:
+        except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
             self.logger.error(f"Error extracting products at offset {from_offset}: {e}")
 
         return products
@@ -188,7 +188,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                 # If we can't parse JSON, assume no more results
                 return False
 
-        except Exception as e:
+        except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
             self.logger.warning(f"Error checking for more results: {e}")
             return False
 
@@ -214,14 +214,14 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                         item["parsed_at"] = datetime.fromisoformat(item["parsed_at"].replace("Z", "+00:00"))
 
                     products.append(GumroadProduct(**item))
-                except Exception as e:
+                except (ValueError, TypeError, KeyError, AttributeError) as e:
                     self.logger.warning(f"Error parsing existing product: {e}")
                     continue
 
             self.logger.info(f"Loaded {len(products)} existing products from {json_file}")
             return products
 
-        except Exception as e:
+        except (OSError, ValueError, TypeError, KeyError, AttributeError) as e:
             self.logger.error(f"Error loading existing data: {e}")
             return []
 
@@ -353,7 +353,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                     except PlaywrightTimeoutError:
                         self.logger.error(f"Timeout at offset {current_offset}")
                         break
-                    except Exception as e:
+                    except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
                         self.logger.error(f"Error at offset {current_offset}: {e}")
                         continue
 
@@ -400,7 +400,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
                 if product:
                     transformed_products.append(product)
 
-            except Exception as e:
+            except Exception as e:  # broad by design: transform wraps BeautifulSoup HTML parsing of raw scraped page
                 self.logger.error(f"Error transforming product {raw_product.product_id}: {e}")
                 continue
 
@@ -484,7 +484,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
         except json.JSONDecodeError as e:
             self.logger.error(f"Error parsing JSON for product {raw_product.product_id}: {e}")
             return None
-        except Exception as e:
+        except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
             self.logger.error(f"Error parsing product data for {raw_product.product_id}: {e}")
             return None
 
@@ -510,7 +510,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             with open(json_file, "w", encoding="utf-8") as f:
                 json.dump(products_data, f, indent=2, ensure_ascii=False, default=str)
             self.logger.info(f"Saved {len(products_data)} products to {json_file}")
-        except Exception as e:
+        except (OSError, TypeError, ValueError) as e:
             self.logger.error(f"Error saving JSON file: {e}")
 
         # Save as CSV
@@ -521,7 +521,7 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             df = pd.DataFrame(products_data)
             df.to_csv(csv_file, index=False, encoding="utf-8")
             self.logger.info(f"Saved {len(products_data)} products to {csv_file}")
-        except Exception as e:
+        except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
             self.logger.error(f"Error saving CSV file: {e}")
 
 
@@ -546,7 +546,7 @@ def main():
     try:
         metrics = scraper.run()
         logger.info(f"Scraper completed successfully: {metrics}")
-    except Exception as e:
+    except Exception as e:  # broad by design: wrapper around scraper.run() pipeline
         logger.error(f"Scraper failed: {e}")
         raise
 

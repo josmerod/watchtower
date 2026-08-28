@@ -57,7 +57,7 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
                 logger.info(f"Connecting to remote browser at {browserless_ws}")
                 try:
                     browser = p.chromium.connect_over_cdp(browserless_ws)
-                except Exception as e:
+                except Exception as e:  # broad by design: Playwright remote-browser connection fallback
                     logger.warning(f"Could not connect to remote browser: {e}. Falling back to local launch.")
                     browser = p.chromium.launch(headless=True)
             else:
@@ -115,7 +115,7 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
                         # Navigate to the page and wait for content (relaxed condition)
                         try:
                             response = page.goto(current_url, wait_until="domcontentloaded", timeout=60000)
-                        except Exception as nav_err:
+                        except Exception as nav_err:  # broad by design: Playwright navigation on external site
                             logger.warning(f"Navigation timeout/error on page {page_num + 1}: {nav_err}")
                             if attempt < max_retries - 1:
                                 continue
@@ -144,7 +144,7 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
 
                         logger.warning(f"Page {page_num + 1} content not found")
 
-                    except Exception as e:
+                    except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
                         if attempt < max_retries - 1:
                             logger.warning(f"Failed to load page {page_num + 1}, attempt {attempt + 1}/{max_retries}: {e!s}")
                             time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
@@ -224,7 +224,7 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
                         all_articles.append(article_data)
                         logger.debug(f"Extracted article: {article_data['title']}")
 
-                    except Exception as e:
+                    except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
                         logger.error(f"Error processing article: {e!s}")
                         continue
 
@@ -233,7 +233,7 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
             context.close()
             browser.close()
 
-    except Exception as e:
+    except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
         logger.error(f"Error during scraping: {e!s}")
         return []
 
@@ -271,7 +271,7 @@ def process_bensbites_articles(articles: list[dict[str, Any]]) -> list[dict[str,
             }
             processed_articles.append(processed_article)
             logger.debug(f"Processed article: {processed_article['title']}")
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
             logger.error(f"Error processing article: {e!s}")
             continue
 
@@ -313,7 +313,7 @@ def main():
 
         logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in Ben's Bites ETL process: {e!s}", exc_info=True)
 
 

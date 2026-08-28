@@ -80,7 +80,7 @@ def get_podcast_episodes(max_retries: int = 3, retry_delay: int = 5) -> list[dic
                     }
                     episodes.append(episode)
                 break
-            except Exception as e:
+            except Exception as e:  # broad by design: retry loop deliberately raises bare Exception on HTTP status
                 logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e}")
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
@@ -162,7 +162,7 @@ def main():
         df.to_csv(latest_csv, index=False)
 
         logger.info(f"Saved {len(processed)} episodes to {json_file} and {csv_file}")
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in Podcasts ETL process: {e}", exc_info=True)
 
 

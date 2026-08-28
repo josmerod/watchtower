@@ -29,10 +29,10 @@ def _parse_date(date_str: str | None) -> str | None:
         return None
     try:
         return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z").isoformat()
-    except Exception:
+    except (ValueError, TypeError, OverflowError):
         try:
             return datetime.fromisoformat(date_str.replace("Z", "+00:00")).isoformat()
-        except Exception:
+        except (ValueError, TypeError, OverflowError):
             return date_str
 
 
@@ -42,7 +42,7 @@ def fetch_who_outbreaks() -> list[dict[str, Any]]:
     try:
         content = fetch_with_retry(FEED_URL)
         feed = feedparser.parse(content)
-    except Exception as e:
+    except Exception as e:  # broad by design: fetch_with_retry (infra) + feedparser parse of external feed
         logger.error(f"Failed to fetch WHO Outbreaks RSS: {e}")
         return entries
 

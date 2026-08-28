@@ -78,11 +78,11 @@ def get_kdnuggets_data(max_retries: int = 3, retry_delay: int = 5) -> list[dict[
 
                     articles.append(article)
                     logger.debug(f"Extracted article: {title}")
-                except Exception as e:
+                except (AttributeError, KeyError, TypeError) as e:
                     logger.error(f"Error parsing RSS entry: {e!s}")
             break
 
-        except Exception as e:
+        except Exception as e:  # broad by design: feedparser network fetch + parse of external feed (retry loop)
             logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {e!s}")
             if attempt < max_retries - 1:
                 logger.info(f"Retrying in {retry_delay} seconds...")
@@ -139,7 +139,7 @@ def process_kdnuggets_articles(
 
             processed_articles.append(processed_article)
             logger.debug(f"Processed article: {processed_article['title']}")
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
             logger.error(f"Error processing article: {e!s}")
             continue
 
@@ -183,7 +183,7 @@ def main():
         logger.debug(f"Saved CSV data to {csv_file}")
 
         logger.info(f"Saved {len(processed_articles)} processed articles to {output_file} and {csv_file}")
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in KDnuggets ETL process: {e!s}", exc_info=True)
 
 

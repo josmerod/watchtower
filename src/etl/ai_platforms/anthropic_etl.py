@@ -65,7 +65,7 @@ class AnthropicETL(BaseETL):
 
             self.logger.info(f"Extracted {len(extracted_data)} Anthropic records")
 
-        except Exception as e:
+        except Exception as e:  # broad by design: extract wrapper around web fetch + parse helpers
             self.logger.error(f"Failed to extract Anthropic data: {e}")
             self.metrics.records_failed += 1
 
@@ -168,7 +168,7 @@ class AnthropicETL(BaseETL):
                 transformed_data.append(transformed_record)
                 self.metrics.records_transformed += 1
 
-            except Exception as e:
+            except (KeyError, TypeError, ValueError, AttributeError) as e:
                 self.logger.error(f"Failed to transform Anthropic record: {e}")
                 self.metrics.records_failed += 1
 
@@ -262,7 +262,7 @@ class AnthropicETL(BaseETL):
                 destination=str(output_file),
                 destination_type="file",
             ) from e
-        except Exception as e:  # Catch any other unexpected errors during load
+        except Exception as e:  # Catch any other unexpected errors during load [broad by design: save fallback after OSError (mixed json/serialization ops)]
             self.logger.error(
                 f"An unexpected error occurred during saving Anthropic data: {e}",
                 exc_info=True,

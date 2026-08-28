@@ -94,13 +94,13 @@ def fetch_replicate_explore(max_items: int = 100) -> list[dict[str, Any]]:
                     )
                     if len(items) >= max_items:
                         break
-                except Exception:
+                except Exception:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
                     continue
 
             page.close()
             context.close()
             browser.close()
-    except Exception as e:
+    except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
         logger.error(f"Error scraping Replicate Explore: {e}")
         return []
 

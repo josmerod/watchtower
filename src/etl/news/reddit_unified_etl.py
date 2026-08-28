@@ -83,7 +83,7 @@ def load_state() -> dict:
         try:
             with open(STATE_FILE) as f:
                 return json.load(f)
-        except Exception as e:
+        except (OSError, json.JSONDecodeError, ValueError) as e:
             logger.error(f"Error loading state file: {e}")
     return {}
 
@@ -94,7 +94,7 @@ def save_state(state: dict) -> None:
         ensure_directories([os.path.dirname(STATE_FILE)])
         with open(STATE_FILE, "w") as f:
             json.dump(state, f, indent=2)
-    except Exception as e:
+    except (OSError, TypeError, ValueError) as e:
         logger.error(f"Error saving state file: {e}")
 
 
@@ -151,7 +151,7 @@ def fetch_subreddit_rss(subreddit: str, stats: dict[str, Any] | None = None) -> 
         logger.info(f"Fetched {len(posts)} posts from r/{subreddit} via RSS")
         return posts
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole per-subreddit fetch wrapper incl. network
         logger.error(f"Error fetching r/{subreddit} via RSS: {e}")
         return []
 
@@ -230,7 +230,7 @@ def fetch_subreddit_json(subreddit: str, limit: int = 25, use_pagination: bool =
 
             time.sleep(1)  # Polite pagination delay
 
-        except Exception as e:
+        except Exception as e:  # broad by design: JSON API pagination page loop (network)
             logger.error(f"Error fetching r/{subreddit} via JSON (page loop): {e}")
             break
 
@@ -282,7 +282,7 @@ def fetch_all_subreddits() -> dict[str, list[dict[str, Any]]]:
                 feed_delay = min(8.0, feed_delay + 1)
                 feed_stats["rate_limited"] = False
 
-        except Exception as e:
+        except Exception as e:  # broad by design: per-subreddit processing incl. network fetch
             logger.error(f"Error processing r/{subreddit}: {e}")
             all_posts[subreddit] = []
 
@@ -357,7 +357,7 @@ def main():
     try:
         all_posts = fetch_all_subreddits()
         save_reddit_data(all_posts)
-    except Exception:
+    except Exception:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.exception("Fatal error in Reddit Unified ETL")
 
     logger.info("Unified Reddit ETL process completed")

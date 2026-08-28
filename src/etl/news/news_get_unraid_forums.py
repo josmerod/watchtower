@@ -147,7 +147,7 @@ def main() -> None:
             return
         save_unraid_forums_entries(entries)
         logger.info(f"Unraid forums ETL complete: {len(entries)} threads.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Unraid forums ETL failed: {exc}")
         raise
 

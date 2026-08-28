@@ -169,7 +169,7 @@ def get_trending_repositories(session: requests.Session, language: str = None, s
                         source="github_trends",
                         source_url=None,
                     )
-                except Exception as e:
+                except (ValueError, TypeError, KeyError, AttributeError) as e:
                     logger.warning(f"Validation failed for GitHub repo {processed_repo.get('full_name', '')}: {e}")
 
                 repositories.append(processed_repo)
@@ -180,7 +180,7 @@ def get_trending_repositories(session: requests.Session, language: str = None, s
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching {lang} repositories: {e}")
             continue
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
             logger.error(f"Unexpected error for {lang}: {e}")
             continue
 
@@ -232,7 +232,7 @@ def get_github_topics(session: requests.Session) -> list[dict[str, Any]]:
 
         return topics
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole fetch wrapper incl. network pagination
         logger.error(f"Error fetching GitHub topics: {e}")
         return []
 
@@ -371,7 +371,7 @@ def process_github_data(repositories: list[dict[str, Any]], topics: list[dict[st
 
             processed_repos.append(processed_repo)
 
-        except Exception as e:
+        except (ValueError, TypeError, KeyError, AttributeError, OverflowError, OSError) as e:
             logger.warning(f"Error processing repository {repo.get('full_name', 'unknown')}: {e}")
             continue
 
@@ -489,7 +489,7 @@ def main():
             top_languages = Counter(languages).most_common(10)
             logger.info(f"Top programming languages: {top_languages}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"GitHub Trends ETL failed: {e}")
         raise
 

@@ -53,7 +53,7 @@ def get_tldr_articles(max_retries: int = 3, retry_delay: int = 5) -> list[dict[s
                     break
                 logger.warning(f"No entries in {url}")
                 feed = None
-            except Exception as e:
+            except Exception as e:  # broad by design: feedparser network fetch + parse of external feed (retry loop)
                 logger.warning(f"Attempt {attempt + 1}/{max_retries} for {source_name} failed: {e!s}")
                 feed = None
                 time.sleep(retry_delay)
@@ -80,7 +80,7 @@ def get_tldr_articles(max_retries: int = 3, retry_delay: int = 5) -> list[dict[s
                         },
                     }
                 )
-            except Exception as e:
+            except (AttributeError, KeyError, TypeError) as e:
                 logger.error(f"Error parsing entry from {source_name}: {e!s}")
 
     # Deduplicate by URL (same story can appear in several editions)
@@ -119,7 +119,7 @@ def main():
 
         pd.DataFrame(articles).to_csv(csv_file, index=False)
         logger.info(f"Saved CSV data to {csv_file}")
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in tldr.tech ETL process: {e!s}", exc_info=True)
 
 

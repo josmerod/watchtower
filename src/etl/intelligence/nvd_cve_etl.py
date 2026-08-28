@@ -89,7 +89,7 @@ class NVDEtl(BaseETL):
 
             self.metrics.records_extracted += len(recent_vulns)
 
-        except Exception as e:
+        except Exception as e:  # broad by design: proxied session fetch via proxy_manager infra + NVD API
             self.logger.error(f"Extraction failed: {e}")
             self.metrics.records_failed += 1
 
@@ -148,7 +148,7 @@ class NVDEtl(BaseETL):
                     }
                 )
                 self.metrics.records_transformed += 1
-            except Exception as e:
+            except (KeyError, TypeError, ValueError, AttributeError) as e:
                 self.logger.error(f"Transform failed for CVE {record.get('id')}: {e}")
                 self.metrics.records_failed += 1
 
@@ -176,7 +176,7 @@ class NVDEtl(BaseETL):
         except OSError as e:
             self.logger.error(f"Failed to save info to {output_file}: {e}")
             raise LoadError(f"Failed to save data: {e}", destination=str(output_file), destination_type="file") from e
-        except Exception as e:
+        except Exception as e:  # broad by design: save fallback after OSError (mixed json/serialization ops)
             raise LoadError(f"Unexpected error: {e}", destination=str(output_file), destination_type="file") from e
 
 

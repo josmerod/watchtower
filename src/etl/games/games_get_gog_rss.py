@@ -28,10 +28,10 @@ def _parse_date(date_str: str | None) -> str | None:
         return None
     try:
         return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z").isoformat()
-    except Exception:
+    except (ValueError, TypeError, OverflowError):
         try:
             return datetime.fromisoformat(date_str.replace("Z", "+00:00")).isoformat()
-        except Exception:
+        except (ValueError, TypeError, OverflowError):
             return date_str
 
 
@@ -42,7 +42,7 @@ def _extract_price(text: str) -> float | None:
     if match:
         try:
             return float(match.group(1))
-        except Exception:
+        except ValueError:
             return None
     return None
 
@@ -52,7 +52,7 @@ def fetch_gog() -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(FEED_URL)
-    except Exception as e:
+    except Exception as e:  # broad by design: feedparser network fetch + parse of external feed
         logger.error(f"Failed to fetch GOG RSS: {e}")
         return entries
 

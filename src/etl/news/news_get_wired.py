@@ -117,7 +117,7 @@ def main() -> None:
             return
         save_wired_entries(entries)
         logger.info(f"Wired ETL complete: {len(entries)} articles.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Wired ETL failed: {exc}")
         raise
 

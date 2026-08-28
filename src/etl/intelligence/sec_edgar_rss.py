@@ -62,10 +62,10 @@ def _parse_date(date_str: str | None) -> str | None:
     try:
         # Try ISO format first
         return datetime.fromisoformat(date_str.replace("Z", "+00:00")).isoformat()
-    except Exception:
+    except (ValueError, TypeError, OverflowError):
         try:
             return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z").isoformat()
-        except Exception:
+        except (ValueError, TypeError, OverflowError):
             # Fallback: return original string
             return date_str
 
@@ -127,7 +127,7 @@ def fetch_sec_edgar() -> list[dict[str, Any]]:
     try:
         content = fetch_with_retry(FEED_URL, timeout=60, headers=HEADERS)
         feed = feedparser.parse(content)
-    except Exception as e:
+    except Exception as e:  # broad by design: fetch_with_retry (infra) + feedparser parse of external feed
         logger.error(f"Failed to fetch SEC EDGAR feed after retries: {e}")
         return entries
 

@@ -96,14 +96,14 @@ def get_kagi_rss_data(max_retries: int = 3, retry_delay: int = 5) -> dict[str, l
                         articles.append(article)
                         logger.debug(f"Extracted Kagi {category} article: {title}")
 
-                    except Exception as e:
+                    except (AttributeError, KeyError, TypeError) as e:
                         logger.error(f"Error parsing Kagi {category} RSS entry: {e}")
                         continue
 
                 # Break out of retry loop if successful
                 break
 
-            except Exception as e:
+            except Exception as e:  # broad by design: feedparser network fetch + parse of external feed (retry loop)
                 logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for Kagi {category}: {e}")
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying in {retry_delay} seconds...")
@@ -157,7 +157,7 @@ def process_kagi_articles(
                 processed_articles.append(processed_article)
                 logger.debug(f"Processed Kagi {category} article: {processed_article['title']}")
 
-            except Exception as e:
+            except (KeyError, TypeError, ValueError, AttributeError) as e:
                 logger.error(f"Error processing Kagi {category} article: {e}")
                 continue
 
@@ -190,7 +190,7 @@ def save_kagi_articles(processed_data: dict[str, list[dict[str, Any]]]) -> None:
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(articles, f, indent=2, ensure_ascii=False)
             logger.info(f"Saved {len(articles)} Kagi {category} articles to {output_file}")
-        except Exception as e:
+        except (OSError, TypeError, ValueError) as e:
             logger.error(f"Error saving Kagi {category} articles to JSON: {e}")
 
         # Also save as CSV for easier viewing
@@ -203,7 +203,7 @@ def save_kagi_articles(processed_data: dict[str, list[dict[str, Any]]]) -> None:
             logger.info(f"Saved Kagi {category} articles to {csv_file}")
         except ImportError:
             logger.warning("pandas library not found. Skipping CSV generation for Kagi articles.")
-        except Exception as e:
+        except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
             logger.error(f"Error saving Kagi {category} articles to CSV: {e}")
 
 
@@ -227,7 +227,7 @@ def main():
         total_articles = sum(len(articles) for articles in processed_data.values())
         logger.info(f"Kagi RSS ETL process completed successfully. Total articles processed: {total_articles}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in Kagi RSS ETL process: {e}", exc_info=True)
 
 

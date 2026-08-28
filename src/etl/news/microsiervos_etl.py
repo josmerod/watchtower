@@ -50,7 +50,7 @@ class MicrosiervosETL(SimpleETL):
             response = self.http_session.get(RSS_URL, timeout=30)
             response.raise_for_status()
             content = response.content
-        except Exception as e:
+        except Exception as e:  # broad by design: proxied session fetch via BaseETL infra (transport/proxy failures)
             logger.error(f"Failed to fetch feed: {e}")
             return []
 
@@ -75,7 +75,7 @@ class MicrosiervosETL(SimpleETL):
                     "tags": [tag.term for tag in entry.get("tags", [])] if "tags" in entry else [],
                 }
                 entries.append(item)
-            except Exception as e:
+            except (AttributeError, KeyError, TypeError) as e:
                 logger.error(f"Error processing entry {entry.get('title', 'Unknown')}: {e}")
 
         return entries

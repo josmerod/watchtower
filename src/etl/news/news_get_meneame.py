@@ -68,12 +68,12 @@ def get_meneame_articles(max_retries: int = 3, retry_delay: int = 5) -> dict[str
                             article["tags"] = []
 
                         feed_articles.append(article)
-                    except Exception as e:
+                    except (AttributeError, KeyError, TypeError) as e:
                         logger.error(f"Error parsing RSS entry: {e}")
                         continue
 
                 break
-            except Exception as e:
+            except Exception as e:  # broad by design: feedparser network fetch + parse of external feed (retry loop)
                 logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for {rss_url}: {e}")
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying in {retry_delay} seconds...")
@@ -128,7 +128,7 @@ def process_meneame_articles(
             }
             processed_articles.append(processed_article)
             logger.debug(f"Processed article: {processed_article['title']}")
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
             logger.error(f"Error processing article: {e}")
             continue
 
@@ -175,7 +175,7 @@ def main():
 
             logger.info(f"Saved {len(processed_articles)} processed articles for {feed_type} to {json_file} and {csv_file}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in Meneame ETL process: {e}", exc_info=True)
 
 

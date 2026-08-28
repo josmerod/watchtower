@@ -88,7 +88,7 @@ class ProductHuntETL:
                 )
             logger.info(f"Fetched {len(products)} products via GraphQL")
             return products
-        except Exception as e:
+        except (requests.RequestException, ValueError, TypeError, KeyError, AttributeError) as e:
             logger.error(f"GraphQL fetch failed: {e}")
             return []
 
@@ -130,7 +130,7 @@ class ProductHuntETL:
                 )
             logger.info(f"Fetched {len(products)} products via RSS")
             return products
-        except Exception as e:
+        except Exception as e:  # broad by design: network fetch + hand-rolled XML parse of external RSS
             logger.error(f"RSS fetch failed: {e}")
             return []
 
@@ -193,7 +193,7 @@ def process_data(raw_products: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "data_source": "product_hunt_graphql" if p.get("_source") == "graphql" else "product_hunt_rss",
                 }
             )
-        except Exception as e:
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
             logger.warning(f"Error processing item {i}: {e}")
             continue
 
@@ -228,7 +228,7 @@ def main():
 
         logger.info(f"Saved {len(processed_data)} products to {latest_json}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"ETL failed: {e}")
         raise
 

@@ -173,7 +173,7 @@ def main() -> None:
             return
         save_security_entries(entries)
         logger.info(f"Security feeds ETL complete: {len(entries)} items.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Security feeds ETL failed: {exc}")
         raise
 

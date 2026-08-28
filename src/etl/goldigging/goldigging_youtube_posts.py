@@ -70,7 +70,7 @@ def get_cached_channel_info(channel_handle: str, ydl: yt_dlp.YoutubeDL) -> dict 
                 CHANNEL_CACHE[channel_handle] = (channel_info, current_time)
                 logger.debug(f"Fetched and cached channel info for {channel_handle}")
                 return channel_info
-        except Exception as e:
+        except Exception as e:  # broad by design: yt-dlp extract_info on external site (failure set spans yt-dlp errors)
             logger.debug(f"Failed URL {url} for {channel_handle}: {e!s}")
             continue
 
@@ -97,7 +97,7 @@ def get_cached_video_info(video_id: str, ydl: yt_dlp.YoutubeDL) -> dict | None:
             VIDEO_CACHE[video_id] = (video_info, current_time)
             logger.debug(f"Fetched and cached video info for {video_id}")
             return video_info
-    except Exception as e:
+    except Exception as e:  # broad by design: yt-dlp extract_info on external site
         logger.debug(f"Failed to fetch video info for {video_id}: {e!s}")
 
     return None
@@ -110,7 +110,7 @@ def rate_limited_fetch(url: str, ydl: yt_dlp.YoutubeDL, delay: float = RATE_LIMI
         if delay > 0:
             time.sleep(delay)
         return result
-    except Exception as e:
+    except Exception as e:  # broad by design: yt-dlp extract_info on external site
         logger.debug(f"Rate limited fetch failed for {url}: {e!s}")
         if delay > 0:
             time.sleep(delay)
@@ -179,7 +179,7 @@ def process_video_batch(video_ids: list[str], ydl: yt_dlp.YoutubeDL) -> list[dic
                     logger.debug(f"Processed video: {video_data['title']}")
                 else:
                     logger.debug(f"Failed to process video: {video_id}")
-            except Exception as e:
+            except Exception as e:  # broad by design: future wraps yt-dlp fetches
                 logger.error(f"Error processing video {video_id}: {e!s}")
 
     return video_data_list
@@ -249,7 +249,7 @@ def get_channel_videos_by_id(
             logger.info(f"Successfully processed {len(filtered_videos)} recent videos from {channel_handle}")
             return filtered_videos
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole channel processing incl. yt-dlp fetches
         logger.error(f"Error al obtener videos para {channel_handle}: {e!s}")
         return []
 
@@ -273,7 +273,7 @@ def process_youtube_channels(channel_handles: list[str], published_after: str = 
                     logger.info(f"Processed successfully {len(channel_videos)} videos from {handle}")
                 else:
                     logger.info(f"No new videos found for {handle}")
-            except Exception as e:
+            except Exception as e:  # broad by design: future wraps channel processing incl. yt-dlp
                 logger.error(f"Error processing channel {handle}: {e!s}")
                 continue  # Continue with other channels even if one fails
 
@@ -336,7 +336,7 @@ def main(topics: list[str] = None):
             else:
                 logger.warning(f"Tema no reconocido: {topic}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Error en el proceso ETL de YouTube: {e!s}", exc_info=True)
 
 

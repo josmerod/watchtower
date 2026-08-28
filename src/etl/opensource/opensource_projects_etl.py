@@ -27,7 +27,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
                         if "url" in item:
                             self.existing_urls.add(item["url"])
                 self.logger.info(f"Loaded {len(self.existing_urls)} existing URLs for duplicate detection.")
-            except Exception as e:
+            except (OSError, ValueError, TypeError, KeyError, AttributeError) as e:
                 self.logger.warning(f"Failed to load existing data: {e}")
 
     async def _extract_async(self) -> list[dict]:
@@ -44,7 +44,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
                     self.logger.info(f"Connecting to remote browser at {browserless_ws}")
                     try:
                         browser = await p.chromium.connect_over_cdp(browserless_ws)
-                    except Exception as e:
+                    except Exception as e:  # broad by design: Playwright remote-browser connection fallback
                         self.logger.warning(f"Could not connect to remote browser: {e}. Falling back to local launch.")
                         browser = await p.chromium.launch(headless=True)
                 else:
@@ -183,7 +183,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
                         self.logger.info("No 'Next' button found on page. Stopping.")
                         break
 
-            except Exception as e:
+            except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
                 self.logger.error(f"Error during extraction loop: {e}")
             finally:
                 if "browser" in locals():
@@ -215,7 +215,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
                         # So we parse here.
                         dt = datetime.fromisoformat(pub_at.replace("Z", "+00:00") if "Z" in pub_at else pub_at)
                         pub_at = dt.replace(tzinfo=None)
-                    except Exception:
+                    except (ValueError, TypeError, OverflowError):
                         pass  # Let Pydantic handle or remain as string if valid
 
                 project = OpenSourceProjectItem(
@@ -227,7 +227,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
                     published_at=pub_at,  # Mapping for base compatibility if needed
                 )
                 transformed.append(project)
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
                 self.logger.warning(f"Error transforming item {item.get('title')}: {e}")
         return transformed
 
@@ -249,7 +249,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
                     # Convert to models
                     for item in old_data_json:
                         final_data.append(OpenSourceProjectItem(**item))
-            except Exception as e:
+            except (OSError, ValueError, TypeError, KeyError, AttributeError) as e:
                 self.logger.warning(f"Could not load existing latest.json for merging: {e}")
 
         # Prepend new data (newest first)

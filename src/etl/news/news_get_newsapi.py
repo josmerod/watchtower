@@ -181,7 +181,7 @@ def transform_articles_to_model(raw_articles: list[dict[str, Any]], query_source
                 metadata=raw_article,  # Store the whole raw article for now
             )
             transformed_articles.append(article_model)
-        except Exception as e:
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
             logger.error(
                 f"Error transforming article: {raw_article.get('title', 'N/A')}. Error: {e}",
                 exc_info=True,
@@ -266,7 +266,7 @@ def save_data(data: list[dict[str, Any]], output_dir: str, source_name: str = "n
 
     except OSError as e:
         logger.error(f"IOError saving data: {e}")
-    except Exception as e:
+    except Exception as e:  # broad by design: save fallback after OSError (mixed csv/json/pandas ops)
         logger.error(f"Unexpected error saving data: {e}", exc_info=True)  # Added exc_info for better debugging
         # Consider re-raising critical errors if needed, or handle more gracefully
         # For now, we log and continue, but for critical save operations, re-raising might be better.

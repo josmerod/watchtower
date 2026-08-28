@@ -119,7 +119,7 @@ def main() -> None:
             return
         save_verge_ai_entries(entries)
         logger.info(f"The Verge AI ETL complete: {len(entries)} articles.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"The Verge AI ETL failed: {exc}")
         raise
 

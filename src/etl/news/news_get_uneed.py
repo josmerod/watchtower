@@ -37,7 +37,7 @@ class UneedScraper:
                 browser = p.chromium.connect_over_cdp(browserless_ws)
                 # Use a new context
                 context = browser.new_context(viewport={"width": 1920, "height": 1080}, user_agent=SCRAPER_DEFAULT_USER_AGENT)
-            except Exception as e:
+            except Exception as e:  # broad by design: Playwright remote-browser connection fallback
                 logger.warning(f"Could not connect to remote browser: {e}. Falling back to local launch.")
                 browser = p.chromium.launch(headless=True)
                 context = browser.new_context()
@@ -113,7 +113,7 @@ class UneedScraper:
                         self.products.append({"name": name, "url": full_url, "description": description, "source": "uneed.best"})
                         self.seen_urls.add(full_url)
 
-            except Exception as e:
+            except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
                 logger.error(f"Scraping session failed: {e}")
             finally:
                 browser.close()
@@ -145,7 +145,7 @@ def process_data(raw_products: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "topics": ["tech", "tools"],
                 }
             )
-        except Exception as e:
+        except (KeyError, TypeError, ValueError) as e:
             logger.warning(f"Error processing item {i}: {e}")
             continue
 
@@ -191,7 +191,7 @@ def main():
 
         logger.info(f"Saved {len(processed_data)} products to {latest_json}")
 
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"ETL failed: {e}")
         raise
 

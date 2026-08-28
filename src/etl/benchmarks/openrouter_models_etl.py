@@ -75,7 +75,7 @@ def fetch_models_catalog() -> list[dict[str, Any]] | None:
     """
     try:
         body = _fetch_raw()
-    except Exception as e:
+    except Exception as e:  # broad by design: fetch seam is patchable; contract is "never raise" (see test_failure_returns_none)
         logger.error(f"OpenRouter catalog fetch failed: {type(e).__name__}: {e}")
         return None
     data = body.get("data") if isinstance(body, dict) else None

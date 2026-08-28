@@ -35,7 +35,7 @@ def fetch_replicate_trending() -> list[dict[str, Any]]:
             logger.error(f"Replicate API returned {resp.status_code}")
             return []
         data = resp.json()
-    except Exception as e:
+    except (requests.RequestException, ValueError) as e:
         logger.error(f"Failed to fetch Replicate models: {e}")
         return []
 
@@ -54,7 +54,7 @@ def fetch_replicate_trending() -> list[dict[str, Any]]:
                     "fetched_at": datetime.now(timezone.utc).isoformat(),
                 }
             )
-        except Exception:
+        except (KeyError, TypeError, ValueError, AttributeError):
             continue
     logger.info(f"Fetched {len(items)} Replicate trending models")
     return items

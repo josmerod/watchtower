@@ -164,13 +164,13 @@ class ClassCentralScraper:
                         # Next page exists, move to next page
                         page_num += 1
 
-                    except Exception as e:
+                    except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
                         logger.error(f"Error processing page {page_num}: {e}")
                         break
 
                 await browser.close()
 
-        except Exception as e:
+        except Exception as e:  # broad by design: Playwright scraping of external site (unpredictable page/DOM failures)
             logger.error(f"Error in scrape_courses: {e}")
 
         logger.info(f"Scraped {len(all_courses)} courses in total")
@@ -263,7 +263,7 @@ class ClassCentralScraper:
             # Add metadata
             course_data["scraped_at"] = datetime.now().isoformat()
 
-        except Exception as e:
+        except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
             logger.error(f"Error extracting course info: {e}")
             return None
 
@@ -310,10 +310,10 @@ class ClassCentralScraper:
                     df = df.drop(columns=["description"])
                 df.to_csv(csv_file, index=False)
                 logger.info(f"Also saved courses to CSV: {csv_file}")
-            except Exception as e:
+            except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
                 logger.warning(f"Could not save courses to CSV: {e}")
 
-        except Exception as e:
+        except Exception as e:  # broad by design: whole save function incl. json + pandas
             logger.error(f"Error saving courses: {e}")
 
     async def run(self) -> None:
@@ -336,7 +336,7 @@ async def main_async(max_pages: int | None = None) -> None:
         scraper = ClassCentralScraper(max_pages=max_pages)
         await scraper.run()
         logger.info("Class Central Coursera course scraping completed successfully")
-    except Exception as e:
+    except Exception as e:  # broad by design: wrapper around Playwright scraper run()
         logger.error(
             f"Error during Class Central Coursera course scraping: {e!s}",
             exc_info=True,
@@ -360,7 +360,7 @@ def main(max_pages: int | None = None) -> None:
     except KeyboardInterrupt:
         logger.info("Script interrupted by user")
         sys.exit(0)
-    except Exception as e:
+    except Exception as e:  # broad by design: asyncio entry point incl. event-loop policy setup
         logger.error(f"Unhandled exception: {e}", exc_info=True)
         sys.exit(1)
 

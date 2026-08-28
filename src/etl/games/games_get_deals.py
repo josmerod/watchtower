@@ -87,7 +87,7 @@ def get_deals():
                 )
                 continue  # Skip to next entry
 
-    except Exception as e:
+    except Exception as e:  # broad by design: feed fetch + parse wrapper (feedparser/network)
         logger.error(f"Failed to fetch or parse deals RSS feed {DEALS_RSS}: {e}", exc_info=True)
         # Decide if we want to return partial data or nothing
         # For now, we'll proceed with what we have in deals_list
@@ -121,7 +121,7 @@ def get_deals():
         logger.error(f"Error saving deals data: {e}", exc_info=True)
     except ImportError:
         logger.error("Pandas library not found. Cannot save deals to CSV/JSON.", exc_info=True)
-    except Exception as e:  # Catch other potential errors during DataFrame ops or saving
+    except Exception as e:  # Catch other potential errors during DataFrame ops or saving [broad by design: pandas DataFrame/CSV serialization of scraped data]
         logger.error(f"An unexpected error occurred while saving deals: {e}", exc_info=True)
 
 
@@ -172,7 +172,7 @@ def get_bundles():
                 )
                 continue
 
-    except Exception as e:
+    except Exception as e:  # broad by design: feed fetch + parse wrapper (feedparser/network)
         logger.error(
             f"Failed to fetch or parse bundles RSS feed {BUNDLES_RSS}: {e}",
             exc_info=True,
@@ -203,7 +203,7 @@ def get_bundles():
         logger.error(f"Error saving bundles data: {e}", exc_info=True)
     except ImportError:
         logger.error("Pandas library not found. Cannot save bundles to CSV/JSON.", exc_info=True)
-    except Exception as e:
+    except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
         logger.error(f"An unexpected error occurred while saving bundles: {e}", exc_info=True)
 
 
@@ -260,7 +260,7 @@ def get_giveaways():
                 )
                 continue
 
-    except Exception as e:
+    except Exception as e:  # broad by design: feed fetch + parse wrapper (feedparser/network)
         logger.error(
             f"Failed to fetch or parse giveaways RSS feed {GIVEAWAYS_RSS}: {e}",
             exc_info=True,
@@ -285,7 +285,7 @@ def get_giveaways():
                 f.write("title|link|published|expires\n")  # Header only
 
             logger.info(f"Empty giveaways files created at {giveaways_json_path} and {giveaways_csv_path}")
-        except Exception as e:
+        except OSError as e:
             logger.error(f"Error creating empty giveaways files: {e}")
         return
 
@@ -314,7 +314,7 @@ def get_giveaways():
             "Pandas library not found. Cannot save giveaways to CSV/JSON.",
             exc_info=True,
         )
-    except Exception as e:
+    except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
         logger.error(f"An unexpected error occurred while saving giveaways: {e}", exc_info=True)
 
 
@@ -325,6 +325,6 @@ if __name__ == "__main__":
         get_bundles()
         get_giveaways()
         logger.info("Games ETL process completed successfully")
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Games ETL process failed: {e}", exc_info=True)
         sys.exit(1)

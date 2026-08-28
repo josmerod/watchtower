@@ -117,7 +117,7 @@ def main() -> None:
             return
         save_mit_techreview_entries(entries)
         logger.info(f"MIT Tech Review ETL complete: {len(entries)} articles.")
-    except Exception as exc:
+    except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"MIT Tech Review ETL failed: {exc}")
         raise
 

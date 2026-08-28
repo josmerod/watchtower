@@ -37,7 +37,7 @@ def get_thenewstack_articles(max_retries: int = 3, retry_delay: int = 5) -> list
             feed = feedparser.parse(RSS_URL)
             entries = feed.entries or []
             break
-        except Exception as e:
+        except Exception as e:  # broad by design: feedparser network fetch + parse of external feed (retry loop)
             logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {e!s}")
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
@@ -57,7 +57,7 @@ def get_thenewstack_articles(max_retries: int = 3, retry_delay: int = 5) -> list
                     "metadata": {"api_source": "thenewstack_rss", "processed_at": datetime.now().isoformat()},
                 }
             )
-        except Exception as e:
+        except (AttributeError, KeyError, TypeError) as e:
             logger.error(f"Error parsing The New Stack entry: {e!s}")
 
     logger.info(f"Retrieved {len(articles)} The New Stack articles")
@@ -87,7 +87,7 @@ def main():
 
         pd.DataFrame(articles).to_csv(csv_file, index=False)
         logger.info(f"Saved CSV data to {csv_file}")
-    except Exception as e:
+    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save) incl. pandas save
         logger.error(f"Error in The New Stack ETL process: {e!s}", exc_info=True)
 
 

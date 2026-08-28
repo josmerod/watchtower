@@ -36,13 +36,13 @@ def _parse_date(date_str: str | None) -> str | None:
             if date_str.endswith("Z"):
                 date_str = date_str[:-1] + "+00:00"
             return datetime.fromisoformat(date_str).isoformat()
-    except Exception:
+    except (ValueError, TypeError, OverflowError):
         pass
     # Fallbacks for RSS-like strings
     for fmt in ("%a, %d %b %Y %H:%M:%S %z", "%a, %d %b %Y %H:%M:%S %Z"):
         try:
             return datetime.strptime(date_str, fmt).isoformat()
-        except Exception:
+        except (ValueError, TypeError, OverflowError):
             continue
     # Give up, return raw
     return date_str
@@ -56,7 +56,7 @@ def fetch_google_ai_blog() -> list[dict[str, Any]]:
             feed = feedparser.parse(url)
             if getattr(feed, "bozo", False):
                 logger.warning(f"Feed parse error: {getattr(feed, 'bozo_exception', 'unknown')}")
-        except Exception as e:
+        except Exception as e:  # broad by design: feedparser network fetch + parse of external feed
             logger.error(f"Failed to fetch Google AI Blog feed: {e}")
             continue
 

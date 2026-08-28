@@ -85,7 +85,7 @@ class HumbleBooksETL(BaseETL[HumbleBundleRaw, HumbleBook]):
                                 fetched_at=datetime.utcnow(),
                             )
                         )
-            except Exception as e:
+            except Exception as e:  # broad by design: requests + BeautifulSoup fetch of bot-protected Humble pages
                 self.logger.error(f"Failed to fetch bundle {bundle.url}: {e}")
 
         self.logger.info(f"Transformed to {len(books)} books across all bundles.")

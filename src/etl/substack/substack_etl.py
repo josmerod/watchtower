@@ -73,7 +73,7 @@ class SubstackETL(BaseETL):
                 all_entries.extend(entries)
                 self.logger.info(f"  → Got {len(entries)} posts from '{slug}'")
 
-            except Exception as e:
+            except Exception as e:  # broad by design: feedparser network fetch + parse of external feed
                 self.logger.error(f"  → Error fetching '{slug}': {e}")
 
         self.logger.info(f"Total extracted posts: {len(all_entries)}")
@@ -123,7 +123,7 @@ class SubstackETL(BaseETL):
                         "newsletter": newsletter_slug,
                     }
                 )
-            except Exception as e:
+            except (AttributeError, KeyError, TypeError, ValueError, IndexError, OverflowError) as e:
                 self.logger.warning(f"Skipping post due to transform error: {e}")
 
         self.logger.info(f"Transformed {len(transformed)} posts")

@@ -48,7 +48,7 @@ def get_itchio_trending() -> None:
             game_items = soup.find_all("a", class_="game_link")
             logger.debug(f"Using alternative selector, found {len(game_items)} items")
 
-    except Exception as e:
+    except (requests.RequestException, ValueError, TypeError, AttributeError) as e:
         logger.error(f"Error fetching itch.io trending games: {e}")
         # Create empty data to avoid breaking the data service
         trending_list = []
@@ -93,7 +93,7 @@ def get_itchio_trending() -> None:
                 }
             )
 
-        except Exception as e:
+        except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
             logger.warning(f"Error processing game item: {e}")
             continue
 
@@ -115,7 +115,7 @@ def get_itchio_trending() -> None:
                 f.write("title|author|price|link|fetched_at\n")  # Header only
 
             logger.info(f"Empty itch.io trending files created at {json_path} and {csv_path}")
-        except Exception as e:
+        except OSError as e:
             logger.error(f"Error creating empty itch.io trending files: {e}")
         return
 

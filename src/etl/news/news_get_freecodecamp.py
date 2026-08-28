@@ -30,11 +30,11 @@ def _parse_date(date_str: str | None) -> str | None:
     for fmt in ("%a, %d %b %Y %H:%M:%S %z", "%a, %d %b %y %H:%M:%S %z"):
         try:
             return datetime.strptime(date_str, fmt).isoformat()
-        except Exception:
+        except (ValueError, TypeError, OverflowError):
             continue
     try:
         return datetime.fromisoformat(date_str.replace("Z", "+00:00")).isoformat()
-    except Exception:
+    except (ValueError, TypeError, OverflowError):
         return date_str
 
 
@@ -43,7 +43,7 @@ def fetch_freecodecamp() -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     try:
         feed = feedparser.parse(FEED_URL)
-    except Exception as e:
+    except Exception as e:  # broad by design: feedparser network fetch + parse of external feed
         logger.error(f"Failed to fetch FreeCodeCamp RSS: {e}")
         return entries
 

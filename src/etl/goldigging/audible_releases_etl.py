@@ -38,7 +38,7 @@ class AudibleReleasesETL(BaseETL[dict[str, Any], dict[str, Any]]):
             self.logger.info(f"Scraping Audible releases page {page}...")
             try:
                 soup = self._get_soup(page)
-            except Exception as e:
+            except Exception as e:  # broad by design: requests + BeautifulSoup fetch of bot-protected Audible pages
                 self.logger.error(f"Failed fetching page {page}: {e}")
                 break
 
@@ -108,7 +108,7 @@ class AudibleReleasesETL(BaseETL[dict[str, Any], dict[str, Any]]):
                     day, month, year = pub_date.split("-")
                     dt = datetime(int(f"20{year}"), int(month), int(day), tzinfo=timezone.utc)
                     iso_date = dt.isoformat()
-                except Exception:
+                except (ValueError, TypeError, IndexError, OverflowError):
                     # Keep fallback current UTC date if it fails to parse
                     pass
 
@@ -148,13 +148,13 @@ class AudibleReleasesETL(BaseETL[dict[str, Any], dict[str, Any]]):
             with open(json_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             self.logger.info(f"Saved {len(data)} entries to {json_file}")
-        except Exception as e:
+        except (OSError, TypeError, ValueError) as e:
             self.logger.error(f"Failed creating JSON: {e}")
 
         try:
             df = pd.DataFrame(data)
             df.to_csv(csv_file, index=False, encoding="utf-8")
-        except Exception as e:
+        except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
             self.logger.error(f"Failed creating CSV: {e}")
 
 
