@@ -5,8 +5,10 @@ and updates across cloud computing, generative AI, artificial intelligence,
 and self-hosted applications/tools. Consolidates sources that were previously
 scattered across the News tab (Google AI Blog, KDNuggets, Cloud Updates) plus
 dedicated sources: selfh.st + LinuxServer.io (self-hosting), the Hacker News
-front page via Algolia (discussion), and the r/SelfHosted + r/homelab
-community pulse from the reddit_unified ETL (spec 13 source table).
+front page via Algolia (discussion), the r/SelfHosted + r/homelab community
+pulse from the reddit_unified ETL, and the T-070 additions: Lobsters
+(dev link-aggregator), Phoronix (Linux/hardware), and the Unraid community
+forums (spec 13 source table).
 """
 
 import json
@@ -44,10 +46,20 @@ RADAR_SOURCES: list[dict[str, Any]] = [
         "files": ["reddit_unified/SelfHosted_latest.json", "reddit_unified/homelab_latest.json"],
         "category": "Self-Hosting",
     },
+    # T-070: Unraid community threads — Invision feed from forums.unraid.net
+    # (the user runs Unraid; forums.unraid.tv is dead). ETL:
+    # src/etl/news/news_get_unraid_forums.py.
+    {"key": "unraid_forums", "label": "🟠 Unraid Forums", "file": "news/unraid_forums_latest.json", "category": "Self-Hosting"},
     {"key": "infoq", "label": "🏗️ InfoQ", "file": "infoq/infoq_news.json", "category": "Engineering"},
     {"key": "thenewstack", "label": "🧱 The New Stack", "file": "thenewstack/thenewstack_news.json", "category": "Cloud-Native"},
+    # T-070: Phoronix — Linux/hardware news for the homelab angle. ETL:
+    # src/etl/news/news_get_phoronix.py.
+    {"key": "phoronix", "label": "🐧 Phoronix", "file": "news/phoronix_latest.json", "category": "Linux/Hardware"},
     {"key": "changelog", "label": "🔄 Changelog", "file": "changelog/changelog_news.json", "category": "Open Source"},
     {"key": "hn_frontpage", "label": "🗞️ Hacker News", "file": "news/hn_frontpage_latest.json", "category": "Discussion"},
+    # T-070: Lobsters — dev link-aggregator (existing ETL hardened to the Wired
+    # pattern): src/etl/news/news_get_lobsters.py. Also feeds the News tab.
+    {"key": "lobsters", "label": "🦞 Lobsters", "file": "news/lobsters_latest.json", "category": "Engineering"},
     {"key": "wired", "label": "🔗 Wired", "file": "news/wired_latest.json", "category": "Tech Media"},
     {"key": "mit_techreview", "label": "🔬 MIT Tech Review", "file": "news/mit_techreview_latest.json", "category": "Emerging Tech"},
     # TR-F4 "Mi stack": GitHub releases of the self-hosted stack, from
@@ -68,7 +80,9 @@ RADAR_SOURCES: list[dict[str, Any]] = [
 ]
 
 MAX_ITEMS_PER_SOURCE = 25
-MAX_UNIFIED_ITEMS = 100  # cap for the TR-F3 "Todos" merged feed
+# T-070: bumped 100 → 120 — three added sources (~75 fresh items) now compete
+# for the newest-first window, so 100 starved older per-source rows.
+MAX_UNIFIED_ITEMS = 120  # cap for the TR-F3 "Todos" merged feed
 
 # ⭐ Saved-items toggle (T-053): only the unified "🔄 Todos" feed rows get a
 # star (NOT the per-source card columns). Pattern id type per tab, shared

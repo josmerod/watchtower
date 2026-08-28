@@ -362,3 +362,71 @@ def test_unified_feed_includes_stack_items_with_repo_badge(tmp_path, monkeypatch
 def test_unified_dropdown_options_include_stack():
     assert "mi_stack" in [o["value"] for o in tab._unified_source_options()]
     assert "Mi Stack" in [o["value"] for o in tab._unified_category_options()]
+
+
+# ---------------------------------------------------------------------------
+# T-070: Lobsters / Phoronix / Unraid-forums radar sources
+# ---------------------------------------------------------------------------
+
+_T070_SOURCES = {"lobsters", "phoronix", "unraid_forums"}
+
+
+def test_t070_sources_registered_with_unique_keys_and_columns():
+    keys = [s["key"] for s in tab.RADAR_SOURCES]
+    assert len(keys) == len(set(keys)), "RADAR_SOURCES keys must stay unique"
+    assert set(keys) >= _T070_SOURCES
+    layout = str(tab.render_tech_radar_tab())
+    for key in _T070_SOURCES:
+        source = next(s for s in tab.RADAR_SOURCES if s["key"] == key)
+        assert source.get("file") and not source.get("files")
+        assert not source.get("own_tab"), "new sources render as normal Por-fuente columns"
+        assert layout.count(f"tech-radar-col-{key}") == 1  # one column id, in the grid
+
+
+def _write_t070_fixture(tmp_path):
+    _write(tmp_path, "news/lobsters_latest.json", [{"title": "lobsters story", "link": "https://lobste.rs/s/1", "published": "2026-08-27T10:00:00+00:00", "source": "lobsters"}])
+    _write(tmp_path, "news/phoronix_latest.json", [{"title": "phoronix story", "link": "https://www.phoronix.com/news/1", "published": "2026-08-26T10:00:00+00:00", "source": "phoronix"}])
+    _write(tmp_path, "news/unraid_forums_latest.json", [{"title": "unraid thread", "link": "https://forums.unraid.net/topic/1", "published": "2026-08-25T10:00:00+00:00", "source": "unraid_forums"}])
+
+
+def test_t070_sources_render_in_por_fuente_grid(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_t070_fixture(tmp_path)
+    for key in _T070_SOURCES:
+        source = next(s for s in tab.RADAR_SOURCES if s["key"] == key)
+        section = str(tab._render_source_section(source))
+        assert source["label"] in section
+    lobsters_section = str(tab._render_source_section(next(s for s in tab.RADAR_SOURCES if s["key"] == "lobsters")))
+    assert "lobsters story" in lobsters_section
+
+
+def test_t070_sources_in_unified_feed_and_dropdowns(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_t070_fixture(tmp_path)
+    _write(tmp_path, "news/hn_frontpage_latest.json", [{"title": "hn item", "url": "https://x/hn", "published": "2026-08-20T10:00:00+00:00"}])
+
+    merged = str(tab._render_unified_feed())
+    assert "lobsters story" in merged and "phoronix story" in merged and "unraid thread" in merged
+    assert merged.index("lobsters story") < merged.index("hn item")  # newer first
+
+    only_unraid = str(tab._render_unified_feed(source_filter="unraid_forums"))
+    assert "unraid thread" in only_unraid and "hn item" not in only_unraid
+    linux_hw = str(tab._render_unified_feed(category_filter="Linux/Hardware"))
+    assert "phoronix story" in linux_hw and "hn item" not in linux_hw
+
+    options = [o["value"] for o in tab._unified_source_options()]
+    assert set(options) >= _T070_SOURCES
+    categories = [o["value"] for o in tab._unified_category_options()]
+    assert "Linux/Hardware" in categories and len(categories) == len(set(categories))
+
+
+def test_t070_per_source_render_cap(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write(tmp_path, "news/phoronix_latest.json", [{"title": f"story {i}", "link": f"https://x/{i}", "published": "2026-08-27T10:00:00+00:00"} for i in range(30)])
+    source = next(s for s in tab.RADAR_SOURCES if s["key"] == "phoronix")
+    section = str(tab._render_source_section(source))
+    assert f"{tab.MAX_ITEMS_PER_SOURCE} articles" in section  # capped at render like every sibling
+    assert "story 29" not in section

@@ -1,7 +1,8 @@
 """Lobsters RSS ETL
 
 Parses the Lobsters technical community RSS feed.
-Outputs canonical latest JSON/CSV under data/news/.
+Outputs canonical latest JSON/CSV under data/news/. Also feeds the Tech
+Radar tab's Engineering column (T-070).
 """
 
 from __future__ import annotations
@@ -13,9 +14,12 @@ from datetime import datetime, timezone
 from typing import Any
 
 import feedparser
+import requests
 
+from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.retry import with_retry
 
 logger = get_logger("LobstersETL")
 
@@ -35,12 +39,18 @@ def _parse_date(date_str: str | None) -> str | None:
             return date_str
 
 
+@with_retry
 def fetch_lobsters() -> list[dict[str, Any]]:
-    logger.info(f"Fetching Lobsters RSS: {FEED_URL}")
+    """Fetch and parse the Lobsters RSS feed (Wired-pattern hardened fetch)."""
     entries: list[dict[str, Any]] = []
+    logger.info(f"Fetching Lobsters RSS: {FEED_URL}")
     try:
-        feed = feedparser.parse(FEED_URL)
-    except Exception as e:
+        response = requests.get(FEED_URL, headers={"User-Agent": SCRAPER_DEFAULT_USER_AGENT}, timeout=30)
+        response.raise_for_status()
+        feed = feedparser.parse(response.content)
+        if feed.bozo:
+            logger.warning(f"Lobsters feed parse warning: {feed.bozo_exception}")
+    except requests.RequestException as e:
         logger.error(f"Failed to fetch Lobsters RSS: {e}")
         return entries
 
