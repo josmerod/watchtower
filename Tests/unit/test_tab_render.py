@@ -8,8 +8,12 @@ raising, plus a couple of expected ids/strings. This catches wiring regressions
 import pytest
 
 RENDERERS = [
-    ("news_tab", "render_news_tab", ["news-global-search-input", "news-mark-all-read", "Salud de fuentes"]),
+    # "Salud de fuentes" dots removed from News (user feedback 2026-08-27 → T-062);
+    # "🔎 Global" is now the LAST subtab (T-061)
+    ("news_tab", "render_news_tab", ["news-global-search-input", "news-mark-all-read"]),
     ("knowledge_garden_tab", "render_knowledge_garden_tab", ["kg-global-search-input", "Guardados", "knowledge-source-tabs-main"]),
+    # Shortcuts tab hidden from nav (user feedback 2026-08-27 → T-060) but the
+    # renderer must keep working for when it comes back
     ("shortcuts_tab", "render_shortcuts_tab", []),
     ("videos_tab", "render_videos_tab", ["videos-sort-by", "videos-container"]),
     ("courses_tab", "render_courses_tab", ["courses-global-search", "courses-main-tabs"]),

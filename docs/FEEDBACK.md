@@ -26,6 +26,10 @@ Ejemplos:
 
 ## Triajeado (archivo histórico)
 
-<!-- El agente mueve aquí las entradas ya convertidas a tareas, con su ID:
-- [x] 2026-08-27 — ... → T-047
--->
+<!-- El agente mueve aquí las entradas ya convertidas a tareas, con su ID -->
+
+- [x] 2026-08-27 — Estaría bien revisar una por una las tab-specs que están en docs y refinar o añadir las fuentes y features que se mencionan → **T-059** (re-audit sistemático de las 15 specs)
+- [x] 2026-08-27 — Descartaría la tab de shortcuts, por el momento → **T-060** (ocultada del nav de forma reversible; palette Ctrl+K intacta)
+- [x] 2026-08-27 — A nivel de news, la tab de búsqueda global la pondría al final o algo, por si acaso → **T-061** (🔎 Global pasa a último subtab; el primero es Top Tech)
+- [x] 2026-08-27 — Los indicadores de estado de las news pueden aportar valor, pero siempre están en gris, creo que ya con el indicador de estado de arriba está bien → **T-062** (dots de News eliminados; el estado vive en la card 🩺 de Metrics)
+- [x] 2026-08-27 — El summary de estado que está arriba del todo debería ser colapsable, no hace falta verlo todo el rato → **T-063** (botón "Estado del sistema", colapsado por defecto)

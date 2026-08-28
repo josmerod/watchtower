@@ -169,7 +169,23 @@ app.layout = dbc.Container(
             className="dashboard-shell",
         ),
         dcc.Interval(id="ops-summary-refresh", interval=300000, n_intervals=0),
-        html.Div(id="ops-summary-cards", className="ops-summary-row"),
+        # Operational summary collapsed by default (user feedback 2026-08-27:
+        # no need to see it all the time) — toggle with the button above it
+        html.Div(
+            [
+                html.Button(
+                    [html.I(className="fas fa-chevron-right me-1", id="ops-summary-caret"), " Estado del sistema"],
+                    id="ops-summary-toggle",
+                    className="btn btn-sm btn-outline-secondary mb-2",
+                    n_clicks=0,
+                ),
+                dbc.Collapse(
+                    html.Div(id="ops-summary-cards", className="ops-summary-row"),
+                    id="ops-summary-collapse",
+                    is_open=False,
+                ),
+            ]
+        ),
         # Header buttons container
         html.Div(
             className="d-none",  # Hidden container specifically for keeping mobile nav happy if it looks for header-buttons
@@ -194,10 +210,10 @@ app.layout = dbc.Container(
                             label="News",
                             tab_id="tab-news",
                         ),
-                        dbc.Tab(
-                            label="Shortcuts",
-                            tab_id="tab-shortcuts",
-                        ),
+                        # Shortcuts tab hidden (user feedback 2026-08-27: "descartaría
+                        # la tab de shortcuts, por el momento"). Code, callbacks and
+                        # the Ctrl+K command palette stay — re-adding is a 2-line change
+                        # (nav dbc.Tab + _TAB_RENDERERS entry).
                         dbc.Tab(
                             label="🌱 Knowledge Garden",
                             tab_id="tab-knowledge-garden",
@@ -580,7 +596,8 @@ def _summary_card(label: str, value, hint: str = "") -> dbc.Col:
 
 _TAB_RENDERERS = {
     "tab-news": render_news_tab,
-    "tab-shortcuts": render_shortcuts_tab,
+    # "tab-shortcuts" hidden (user feedback 2026-08-27) — renderer kept imported
+    # so re-enabling is trivial; register_shortcuts_callbacks stays harmless.
     "tab-knowledge-garden": render_knowledge_garden_tab,
     "tab-videos": render_videos_tab,
     "tab-courses": render_courses_tab,
@@ -611,6 +628,18 @@ def render_active_tab(active_tab):
     """
     renderer = _TAB_RENDERERS.get(active_tab or "tab-news", render_news_tab)
     return html.Div(renderer(), className="lazy-tab-content")
+
+
+@app.callback(
+    [Output("ops-summary-collapse", "is_open"), Output("ops-summary-caret", "className")],
+    Input("ops-summary-toggle", "n_clicks"),
+    prevent_initial_call=True,
+)
+def toggle_ops_summary(n_clicks):
+    """Collapse/expand the operational summary (default collapsed)."""
+    is_open = bool(n_clicks % 2)
+    caret = "fas fa-chevron-down me-1" if is_open else "fas fa-chevron-right me-1"
+    return is_open, caret
 
 
 @app.callback(Output("ops-summary-cards", "children"), Input("ops-summary-refresh", "n_intervals"))

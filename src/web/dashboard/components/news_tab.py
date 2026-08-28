@@ -14,7 +14,6 @@ from src.services.data_loader import (
 from src.services.data_loader import (
     format_article_date as format_article_date_shared,
 )
-from src.web.dashboard.components.shared.health import source_health_dots
 from src.web.dashboard.components.shared.table import render_items_table, title_cell
 from src.web.dashboard.trend_utils import get_trending_items_map, match_item_trend, render_trend_badge
 
@@ -622,7 +621,9 @@ def render_news_tab():
     """Render the complete news tab with all sub-tabs."""
     tab_definitions = NEWS_TAB_DEFINITIONS
 
-    tabs_children = [_build_global_search_tab()]
+    # "🔎 Global" moved to LAST (user feedback 2026-08-27: the daily-driver
+    # sources should come first; global search is the fallback)
+    tabs_children = []
     for tab_def in tab_definitions:
         tab_id = f"news-tab-{tab_def['id']}"
         content = create_news_source_tab_content(tab_def["keys"], combined_name=tab_def["label"])
@@ -634,9 +635,7 @@ def render_news_tab():
                 id=tab_id + "-container",
             )  # Added id to tab for potential future targeting
         )
-
-    # Health dots for every configured source (spec 01 F4)
-    health_sources = {cfg["name"]: cfg.get("path", "") for cfg in _ALL_NEWS_SOURCES.values() if cfg.get("path")}
+    tabs_children.append(_build_global_search_tab())
 
     return html.Div(
         [
@@ -658,12 +657,14 @@ def render_news_tab():
                 ],
                 className="mb-2",
             ),
-            source_health_dots(health_sources, title="Salud de fuentes:"),
+            # Source-health dots removed from News (user feedback 2026-08-27:
+            # always-gray + redundant with the Metrics freshness card); the
+            # shared helper stays available — KG still renders its own row
             dcc.Download(id="news-export-download"),
             dbc.Tabs(
                 id="news-source-tabs-main",
                 children=tabs_children,
-                active_tab="news-tab-global",
+                active_tab=f"news-tab-{tab_definitions[0]['id']}",
             ),
         ]
     )
