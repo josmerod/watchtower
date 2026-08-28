@@ -1105,11 +1105,7 @@ def register_video_callbacks(app):
             if triggered_id == "wt-video-modal-close" and (close_clicks or 0) >= 1:
                 return False, dash.no_update, dash.no_update, dash.no_update
 
-            if (
-                isinstance(triggered_id, dict)
-                and triggered_id.get("type") == "wt-video-preview-btn"
-                and (preview_clicks or 0) >= 1
-            ):
+            if isinstance(triggered_id, dict) and triggered_id.get("type") == "wt-video-preview-btn" and (preview_clicks or 0) >= 1:
                 video = _video_registry.get(triggered_id.get("index"))
                 if not video:
                     return untouched
