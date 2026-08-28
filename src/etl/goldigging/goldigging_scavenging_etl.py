@@ -18,7 +18,9 @@ logger = get_logger("ScavengingETL")
 
 # Constants
 CONFIG_FILE = Path(__file__).parent / "scavenging.json"
-BASE_OUTPUT_DIR = "data/scavenging"
+# Canonical output dir for this ETL. The historical data/scavenging/ dir is no
+# longer written to; the dashboard reads these files via SCAVENGING_SOURCES.
+BASE_OUTPUT_DIR = "data/goldigging_scavenging/output"
 
 # ${VAR} tokens in config URLs are expanded from environment variables at
 # runtime. Credentials must never be committed to this file.
@@ -148,7 +150,7 @@ def _write_output(entries: list[dict[str, Any]], json_path: Path, csv_path: Path
 
 def main() -> None:
     logger.info("Starting Scavenging RSS ETL")
-    ensure_directories([BASE_OUTPUT_DIR])
+    ensure_directories([str(Path(get_project_root()) / BASE_OUTPUT_DIR)])
     config = load_config()
     if not config:
         logger.error("No configuration loaded. Exiting.")

@@ -8,7 +8,6 @@ import asyncio
 import json
 import re
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
 
@@ -530,34 +529,6 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
             self.logger.info(f"Saved {len(deals_data)} deals to {csv_file}")
         except Exception as e:
             self.logger.error(f"Error saving CSV file: {e}")
-
-        # Save in scavenging format for compatibility
-        scavenging_data = []
-        for deal in data:
-            scavenging_data.append(
-                {
-                    "title": deal.title,
-                    "link": str(deal.url),
-                    "published": deal.published_at.isoformat(),
-                    "summary": deal.description,
-                    "category": "viajeros_piratas",
-                    "source": "viajeros_piratas_etl",
-                    "price": f"{deal.price}€" if deal.price > 0 else deal.raw_price,
-                    "deal_type": deal.category,
-                    "currency": deal.currency,
-                }
-            )
-
-        # Save in scavenging format
-        scavenging_file = Path(self.data_dir.parent.parent / "data" / "scavenging" / "viajeros_piratas_deals.json")
-        scavenging_file.parent.mkdir(parents=True, exist_ok=True)
-
-        try:
-            with open(scavenging_file, "w", encoding="utf-8") as f:
-                json.dump(scavenging_data, f, indent=2, ensure_ascii=False, default=str)
-            self.logger.info(f"Saved {len(scavenging_data)} deals in scavenging format to {scavenging_file}")
-        except Exception as e:
-            self.logger.error(f"Error saving scavenging format file: {e}")
 
 
 def main():

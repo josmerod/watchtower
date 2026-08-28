@@ -7,7 +7,6 @@ It handles pagination using the 'from' parameter and supports both regular runs 
 import asyncio
 import json
 from datetime import datetime
-from pathlib import Path
 
 from playwright.async_api import Browser, Page, async_playwright
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
@@ -524,33 +523,6 @@ class GumroadScraperETL(BaseETL[GumroadRawData, GumroadProduct]):
             self.logger.info(f"Saved {len(products_data)} products to {csv_file}")
         except Exception as e:
             self.logger.error(f"Error saving CSV file: {e}")
-
-        # Also save in the scavenging format for compatibility
-        scavenging_data = []
-        for product in data:
-            scavenging_data.append(
-                {
-                    "title": product.name,
-                    "link": str(product.url),
-                    "published": product.fetched_at.isoformat(),
-                    "summary": product.description or "",
-                    "category": "gumroad_free",
-                    "source": "gumroad_scraper",
-                    "price": product.price,
-                    "seller": product.seller,
-                }
-            )
-
-        # Save in scavenging format
-        scavenging_file = Path(self.data_dir.parent.parent / "data" / "scavenging" / "gumroad_free_products.json")
-        scavenging_file.parent.mkdir(parents=True, exist_ok=True)
-
-        try:
-            with open(scavenging_file, "w", encoding="utf-8") as f:
-                json.dump(scavenging_data, f, indent=2, ensure_ascii=False, default=str)
-            self.logger.info(f"Saved {len(scavenging_data)} products in scavenging format to {scavenging_file}")
-        except Exception as e:
-            self.logger.error(f"Error saving scavenging format file: {e}")
 
 
 def main():

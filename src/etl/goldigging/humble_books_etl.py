@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -93,15 +92,16 @@ class HumbleBooksETL(BaseETL[HumbleBundleRaw, HumbleBook]):
         return books
 
     def load(self, structured_data: list[HumbleBook]) -> None:
-        """Saves data into the scavenging format automatically picked up by the dashboard."""
+        """Persist books to the canonical ETL output dir (data/humble_books/output/).
+
+        The records keep the scavenging display shape (title/link/published/
+        summary/category/source/price) that the dashboard Scavenging tab reads
+        via its SCAVENGING_SOURCES config.
+        """
         if not structured_data:
             self.logger.warning("No hooks found to load. Returning early.")
             return
 
-        output_dir = Path("data/scavenging")
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        # Save in the native format expected by the DB/Dashboard
         scavenging_data = []
         for book in structured_data:
             scavenging_data.append(
@@ -116,7 +116,7 @@ class HumbleBooksETL(BaseETL[HumbleBundleRaw, HumbleBook]):
                 }
             )
 
-        output_file = output_dir / "humble_books.json"
+        output_file = self.output_dir / "humble_books_latest.json"
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(scavenging_data, f, indent=2, ensure_ascii=False, default=str)
 

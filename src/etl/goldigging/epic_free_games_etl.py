@@ -2,13 +2,13 @@
 
 Fetches Epic Games Store's free-game promotions from the public storefront
 API (no key required) and writes them in the unified scavenging record shape
-so the Scavenging tab picks the file up automatically.
+so the Scavenging tab picks the file up via its SCAVENGING_SOURCES config.
 
 Usage:
     uv run python src/etl/goldigging/epic_free_games_etl.py
 
 Output:
-    - data/scavenging/epic_free_games.json
+    - data/epic_free_games/output/epic_free_games_latest.json
 """
 
 import json
@@ -26,7 +26,7 @@ logger = get_logger("EpicFreeGamesETL")
 API_URL = "https://store-site.ak.epicgames.com/api/v2/freeGamesPromotions"
 PARAMS = {"locale": "es-ES", "country": "ES"}
 HEADERS = {"User-Agent": "Mozilla/5.0 (WatchtowerBot)"}
-OUTPUT_FILE = Path("data/scavenging/epic_free_games.json")
+OUTPUT_FILE = Path("data/epic_free_games/output/epic_free_games_latest.json")
 
 
 def _store_url(element: dict[str, Any]) -> str:

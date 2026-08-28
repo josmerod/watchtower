@@ -1,6 +1,5 @@
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -9,14 +8,13 @@ from bs4 import BeautifulSoup
 
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import BaseETL
-from src.utils.file_system import ensure_directories
 from src.utils.logging import get_logger
 
 logger = get_logger("AudibleReleasesETL")
 
 
 class AudibleReleasesETL(BaseETL[dict[str, Any], dict[str, Any]]):
-    """ETL to scrape Audible New Releases and format them for the Scavenging tab."""
+    """ETL to scrape Audible New Releases for the Scavenging tab (config-driven read)."""
 
     def __init__(self):
         super().__init__(name="audible_releases", description="Scrapes Audible New Releases (latest 30 days) into the Scavenging ecosystem", enable_checkpointing=True, max_retries=3, retry_delay=5)
@@ -134,16 +132,17 @@ class AudibleReleasesETL(BaseETL[dict[str, Any], dict[str, Any]]):
         return transformed
 
     def load(self, data: list[dict[str, Any]]) -> None:
-        """Write out to data/scavenging/audible_rss_entries.json."""
+        """Write out to the canonical data/audible_releases/output/ directory.
+
+        Records keep the scavenging display shape consumed by the dashboard
+        Scavenging tab (see SCAVENGING_SOURCES in the tab component).
+        """
         if not data:
             self.logger.warning("No data to load for Audible Releases.")
             return
 
-        dest_dir = Path(self.data_dir).parent.parent / "data" / "scavenging"
-        ensure_directories([str(dest_dir)])
-
-        json_file = dest_dir / "audible_rss_entries.json"
-        csv_file = dest_dir / "audible_rss_entries.csv"
+        json_file = self.output_dir / "audible_releases_latest.json"
+        csv_file = self.output_dir / "audible_releases_latest.csv"
 
         try:
             with open(json_file, "w", encoding="utf-8") as f:
