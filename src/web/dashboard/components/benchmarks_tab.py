@@ -6,6 +6,8 @@ Displays model performance across multiple benchmark sources:
 - LiveBench: contamination-free LLM benchmark with per-category scores
   (reasoning, coding, agentic coding, mathematics, ...)
 - BridgeBench.ai: AI coding benchmarks (Overall, Security, Debugging, etc.)
+- New Models: OpenRouter catalog diff — models added to the public listing
+  since the previous run (keyless, with per-Mtok pricing and context)
 - Artificial Analysis: LLM benchmarks (intelligence, coding, math, pricing, speed)
   and Image Model Arena (ELO ratings from text-to-image evaluations)
 """
@@ -1171,13 +1173,185 @@ def _render_livebench_section() -> html.Div:
 
 
 # ═══════════════════════════════════════════════════════════════
+# OpenRouter New Models (openrouter.ai public catalog)
+# ═══════════════════════════════════════════════════════════════
+
+
+def _load_openrouter_models() -> dict[str, Any]:
+    """Load the OpenRouter models snapshot JSON.
+
+    Returns an empty dict when the file is absent (the ETL has not run yet).
+    """
+    data_path = os.path.join(_get_project_root(), "data", "benchmarks", "openrouter_models_latest.json")
+    if not os.path.exists(data_path):
+        return {}
+    try:
+        with open(data_path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _fmt_context(val) -> str:
+    """Format a context length in tokens compactly (e.g. ``1.0M``, ``256K``)."""
+    if val is None:
+        return "—"
+    try:
+        n = int(val)
+    except (ValueError, TypeError):
+        return "—"
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.0f}K"
+    return f"{n:,}"
+
+
+def _fmt_date(iso: str | None) -> str:
+    """Format an ISO timestamp as ``YYYY-MM-DD`` (blank when missing)."""
+    if not iso:
+        return "—"
+    return iso[:10]
+
+
+def _build_new_models_table(new_models: list[dict[str, Any]]) -> html.Div:
+    """Build a styled table of newly detected OpenRouter models."""
+    header = html.Tr(
+        [
+            html.Th("Model"),
+            html.Th("ID"),
+            html.Th("Context", className="text-end"),
+            html.Th("$/Mtok In", className="text-end"),
+            html.Th("$/Mtok Out", className="text-end"),
+            html.Th("Date", className="text-end"),
+        ],
+        className="table-light",
+    )
+
+    rows: list[html.Tr] = []
+    for item in new_models:
+        rows.append(
+            html.Tr(
+                [
+                    html.Td(item.get("name", "—"), style={"fontWeight": "600"}),
+                    html.Td(item.get("id", "—"), style={"fontSize": "0.8rem", "color": "#495057"}),
+                    html.Td(_fmt_context(item.get("context_length")), className="text-end"),
+                    html.Td(_fmt_price(item.get("prompt_price_per_mtok")), className="text-end"),
+                    html.Td(_fmt_price(item.get("completion_price_per_mtok")), className="text-end"),
+                    html.Td(_fmt_date(item.get("first_seen")), className="text-end"),
+                ]
+            )
+        )
+
+    return html.Div(
+        dbc.Table(
+            [header, *rows],
+            bordered=True,
+            hover=True,
+            responsive=True,
+            size="sm",
+            className="align-middle",
+        ),
+        style={"maxHeight": "60vh", "overflowY": "auto"},
+    )
+
+
+def _render_openrouter_new_models_section() -> html.Div:
+    """Render the OpenRouter "new models" feed section."""
+    data = _load_openrouter_models()
+    if not data:
+        return html.Div(
+            [
+                html.H4("🆕 New Models", className="mb-1", style={"fontWeight": "700"}),
+                html.Div(
+                    [
+                        html.I(className="fas fa-database me-2", style={"fontSize": "2rem", "color": "#6c757d"}),
+                        html.H5("No benchmark data yet", className="mt-2"),
+                        html.P(
+                            [
+                                "Run the ETL to populate: ",
+                                html.Code("uv run python -m src.etl.benchmarks.openrouter_models_etl", className="text-primary"),
+                            ],
+                            className="text-muted mb-0",
+                        ),
+                    ],
+                    className="text-center p-5",
+                ),
+            ],
+            className="p-3",
+        )
+
+    new_models = data.get("new_models", [])
+    total_models = data.get("total_models", 0)
+    tracked_since = data.get("tracked_since", "")
+    fetched_at = data.get("generated_at", "")
+
+    source_link = html.A("openrouter.ai/models", href="https://openrouter.ai/models", target="_blank", rel="noopener noreferrer", style={"color": "#6c757d"})
+
+    summary_cards = dbc.Row(
+        [
+            dbc.Col(dbc.Card(dbc.CardBody([html.H6(f"{len(new_models)}", className="mb-0 text-primary"), html.Small("New models", className="text-muted")]), className="text-center shadow-sm"), width=4),
+            dbc.Col(dbc.Card(dbc.CardBody([html.H6(f"{total_models}", className="mb-0 text-success"), html.Small("Models in catalog", className="text-muted")]), className="text-center shadow-sm"), width=4),
+            dbc.Col(
+                dbc.Card(
+                    dbc.CardBody([html.H6(_fmt_date(tracked_since) or "—", className="mb-0 text-info", style={"fontSize": "1rem"}), html.Small("Tracking since", className="text-muted")]),
+                    className="text-center shadow-sm",
+                ),
+                width=4,
+            ),
+        ],
+        className="mb-3",
+    )
+
+    body: html.Div
+    if new_models:
+        body = _build_new_models_table(new_models)
+    else:
+        body = html.Div(
+            [
+                html.I(className="fas fa-seedling me-2", style={"fontSize": "1.5rem", "color": "#28a745"}),
+                html.H5("No new models since the baseline", className="mt-2 mb-1"),
+                html.P(
+                    [
+                        f"The first run established the baseline: all {total_models} models in the current catalog were marked as seen. ",
+                        "Models added to the OpenRouter listing after that run will show up here automatically on the next ETL run.",
+                    ],
+                    className="text-muted mb-0",
+                    style={"fontSize": "0.9rem"},
+                ),
+            ],
+            className="text-center p-5",
+        )
+
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.H4("🆕 New Models", className="mb-1", style={"fontWeight": "700"}),
+                    html.P(
+                        [
+                            f"{len(new_models)} new models since {_fmt_date(tracked_since) or 'baseline'} · {total_models} models in the OpenRouter catalog. ",
+                            html.Small([source_link, f" · Last fetched: {fetched_at[:10]}" if fetched_at else ""], className="text-muted"),
+                        ],
+                        className="text-muted mb-3",
+                        style={"fontSize": "0.9rem"},
+                    ),
+                ]
+            ),
+            summary_cards,
+            body,
+        ]
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
 # MAIN: Combined Benchmarks Tab
 # ═══════════════════════════════════════════════════════════════
 
 
 def render_benchmarks_tab() -> html.Div:
     """Render the full benchmarks tab with top-level source tabs."""
-    # Top-level tabs: Community Leaderboard | LiveBench | BridgeBench | Artificial Analysis
+    # Top-level tabs: Community Leaderboard | LiveBench | New Models | BridgeBench | Artificial Analysis
     top_tabs = [
         dbc.Tab(
             label="🌐 Community Leaderboard",
@@ -1188,6 +1362,11 @@ def render_benchmarks_tab() -> html.Div:
             label="🧪 LiveBench",
             tab_id="benchmarks-livebench",
             children=[_render_livebench_section()],
+        ),
+        dbc.Tab(
+            label="🆕 New Models",
+            tab_id="benchmarks-openrouter-new",
+            children=[_render_openrouter_new_models_section()],
         ),
         dbc.Tab(
             label="🏆 BridgeBench.ai",
