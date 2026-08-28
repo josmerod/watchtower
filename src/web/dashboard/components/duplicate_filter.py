@@ -4,9 +4,38 @@ Reusable component for filtering and showing duplicate content across all tabs.
 """
 
 import dash
+import dash_bootstrap_components as dbc
 from dash import Input, Output, State, dcc, html
 
 from ..deduplication_utils import create_show_duplicates_button, get_duplicate_summary
+
+
+def create_duplicate_toggle(component_id: str, label: str = " mostrar duplicados", checked: bool = False) -> dbc.Checklist:
+    """Build a "mostrar duplicados" switch for tabs with a single controller callback.
+
+    Unlike :func:`create_duplicate_filter_component` (which ships its own
+    ``dcc.Store`` + callback chain), this returns only the static switch: tabs
+    that aggregate data inside one controller callback (e.g. News "Top Tech",
+    spec 01 M4/M5) feed the switch's value into that callback as an extra
+    Input and render the summary line inside their own results container, so
+    no second callback chain owns any output.
+
+    Args:
+        component_id: Base ID; the switch gets id ``{component_id}-show-duplicates``.
+        label: Text shown next to the switch.
+        checked: Initial state (default OFF = duplicates hidden).
+
+    Returns:
+        A dbc.Checklist rendered as a Bootstrap switch.
+    """
+    return dbc.Checklist(
+        id=f"{component_id}-show-duplicates",
+        options=[{"label": label, "value": 1}],
+        value=[1] if checked else [],
+        switch=True,
+        inline=True,
+        className="user-select-none",
+    )
 
 
 def create_duplicate_filter_component(component_id: str, data_store_id: str, data_name: str = "items"):

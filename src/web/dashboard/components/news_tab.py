@@ -1,8 +1,9 @@
 import logging
+from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import Input, Output, dcc, html
+from dash import ALL, Input, Output, State, dcc, html
 
 from src.services.data_loader import (
     CLOUD_UPDATES_SOURCES_CONFIG,
@@ -14,7 +15,14 @@ from src.services.data_loader import (
 from src.services.data_loader import (
     format_article_date as format_article_date_shared,
 )
+from src.web.dashboard.components.duplicate_filter import create_duplicate_toggle
 from src.web.dashboard.components.shared.table import render_items_table, title_cell
+from src.web.dashboard.deduplication_utils import (
+    annotate_duplicate_groups,
+    filter_duplicates,
+    format_duplicate_summary,
+    get_duplicate_summary,
+)
 from src.web.dashboard.trend_utils import get_trending_items_map, match_item_trend, render_trend_badge
 
 # Merge the extra source configs so the news tab can render them as subtabs
@@ -69,6 +77,13 @@ def get_all_news_data():
 
 MAX_ARTICLES_PER_SOURCE = 50  # Limit number of articles displayed per source initially
 
+# Top Tech subtab (spec 01 M4/M5): items-per-page selector (no more blind
+# 50-cap / 800px scroll) + visible cross-source dedup. IDs are namespaced
+# under TOP_TECH_COMPONENT_ID to avoid colliding with the per-source subtabs.
+TOP_TECH_PER_PAGE_OPTIONS = (25, 50, 100, 250)
+TOP_TECH_DEFAULT_PER_PAGE = 50
+TOP_TECH_COMPONENT_ID = "news-toptech"
+
 # Single source of truth for the subtab list. render_news_tab() builds the
 # dbc.Tabs from it and register_news_search_callbacks() derives the search
 # input IDs from it, so a new tab can never end up with a dead search box.
@@ -77,6 +92,8 @@ NEWS_TAB_DEFINITIONS = [
         "label": "Top Tech",
         "keys": ["techcrunch", "venturebeat", "arstechnica", "kagi_ai"],
         "id": "top_tech",
+        # M4 (paginación) + M5 (dedup visible) apply to this aggregated subtab only
+        "paginated": True,
     },
     {"label": "freeCodeCamp", "keys": "freecodecamp", "id": "fcc"},
     # Google AI Blog, KDnuggets y Cloud Updates viven SOLO en Tech Radar (spec 13 M3):
@@ -119,6 +136,153 @@ def _search_id_for_tab(tab_def: dict) -> str:
     return f"news-search-{'-'.join(keys)}"
 
 
+# The Top Tech controller callback is registered separately from the generic
+# per-subtab loop, so its search id must be resolvable from here.
+_TOP_TECH_DEF = next(tab_def for tab_def in NEWS_TAB_DEFINITIONS if tab_def["id"] == "top_tech")
+TOP_TECH_SEARCH_ID = _search_id_for_tab(_TOP_TECH_DEF)
+
+
+def _aggregate_source_articles(source_keys: list[str], all_news_data: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    """Aggregate sources into one date-descending list of copies.
+
+    Copies (never the cached dicts) get ``source_display_name`` injected, per
+    spec 01 N7 — mutating the shared cache leaks display fields across tabs.
+    """
+    articles: list[dict[str, Any]] = []
+    for key in source_keys:
+        for article in all_news_data.get(key, []):
+            item = dict(article)
+            item["source_display_name"] = article.get("source", _ALL_NEWS_SOURCES.get(key, {}).get("name", key))
+            articles.append(item)
+    articles.sort(key=get_sortable_date, reverse=True)
+    return articles
+
+
+def compute_total_pages(total_items: int, per_page: int) -> int:
+    """Return the number of pages needed for total_items at per_page (min 1)."""
+    if per_page <= 0:
+        raise ValueError("per_page must be positive")
+    return max(1, -(-total_items // per_page))
+
+
+def slice_page_items(items: list[dict[str, Any]], page: int, per_page: int) -> list[dict[str, Any]]:
+    """Slice one 1-based page out of a full item list."""
+    return items[(page - 1) * per_page : page * per_page]
+
+
+def _build_news_table(articles: list[dict[str, Any]], search_term: str | None = None) -> dbc.Table:
+    """Build the shared news table (Title/Source/Date, trend badge, read-state hash)."""
+    trending_map = get_trending_items_map()
+
+    table_body_rows = []
+    for article in articles:
+        trend_record = match_item_trend(article, trending_map)
+        trend_badge = render_trend_badge(trend_record)
+
+        title = article.get("title") or article.get("name") or article.get("full_name") or "No Title"
+        url = article.get("url") or article.get("link") or article.get("html_url") or article.get("website")
+        source_for_display = article.get("source_display_name", "Unknown")
+        date_display = format_article_date(article)
+        title_children = highlight_segments(title, search_term) if search_term else title
+
+        table_body_rows.append(
+            html.Tr(
+                [
+                    html.Td(
+                        [
+                            (html.A(title_children, href=url, target="_blank") if url else title_children),
+                            trend_badge,
+                        ]
+                    ),
+                    html.Td(source_for_display),
+                    html.Td(date_display),
+                ],
+                className="trending-item" if trend_record is not None else "",
+                **{"data-item-hash": _news_item_hash(url or "", title or "")},
+            )
+        )
+
+    return dbc.Table(
+        [
+            html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")])),
+            html.Tbody(table_body_rows),
+        ],
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive mb-0",
+    )
+
+
+def _render_top_tech_view(
+    articles: list[dict[str, Any]],
+    search_term: str | None = None,
+    show_duplicates: bool = False,
+    per_page: int = TOP_TECH_DEFAULT_PER_PAGE,
+    page: int = 1,
+) -> tuple[list[Any], int]:
+    """Render the Top Tech results: dedup summary + one page + pager (spec 01 M4/M5).
+
+    Single renderer shared by the static layout and the controller callback so
+    both views are identical (spec 01 N6): annotate cross-source duplicate
+    groups on copies, hide duplicates unless toggled, then slice one page.
+
+    Returns:
+        Tuple of (children for the results container, clamped current page).
+    """
+    annotated = annotate_duplicate_groups(articles)
+    summary = get_duplicate_summary(annotated)
+    visible = filter_duplicates(annotated, show_duplicates=show_duplicates)
+
+    total_pages = compute_total_pages(len(visible), per_page)
+    page = min(max(1, page), total_pages)
+    page_items = slice_page_items(visible, page, per_page)
+
+    children: list[Any] = []
+    if not show_duplicates and summary["duplicate_items"] > 0:
+        children.append(
+            html.Span(
+                format_duplicate_summary(summary),
+                id=f"{TOP_TECH_COMPONENT_ID}-duplicate-summary",
+                className="text-muted small d-block mb-2",
+            )
+        )
+    children.append(_build_news_table(page_items, search_term))
+    if total_pages > 1:
+        children.append(
+            html.Div(
+                [
+                    dbc.Button(
+                        "« Anterior",
+                        id={"type": f"{TOP_TECH_COMPONENT_ID}-page-btn", "dir": "prev"},
+                        color="secondary",
+                        outline=True,
+                        size="sm",
+                        disabled=(page <= 1),
+                        className="me-2",
+                    ),
+                    html.Span(
+                        f"Página {page} de {total_pages} · {len(visible)} items",
+                        className="align-self-center text-muted small me-2",
+                    ),
+                    dbc.Button(
+                        "Siguiente »",
+                        id={"type": f"{TOP_TECH_COMPONENT_ID}-page-btn", "dir": "next"},
+                        color="secondary",
+                        outline=True,
+                        size="sm",
+                        disabled=(page >= total_pages),
+                    ),
+                ],
+                className="d-flex justify-content-center flex-wrap mt-3",
+            )
+        )
+    return children, page
+
+
 # format_article_date removed (using shared logic)
 def format_article_date(article):
     """Wrapper for shared formatting."""
@@ -128,10 +292,18 @@ def format_article_date(article):
 # Removed create_article_card function as it's no longer needed for table view
 
 
-def create_news_source_tab_content(source_keys, combined_name=None):
+def create_news_source_tab_content(source_keys, combined_name=None, with_pagination=False):
     """Creates the content for a news tab as a table with search functionality, potentially combining multiple sources.
 
     Sorts articles by date before limiting.
+
+    Args:
+        source_keys: Single source key or list of keys (combined tabs).
+        combined_name: Display name for combined tabs.
+        with_pagination: Render the M4/M5 controls (items-per-page selector +
+            "mostrar duplicados" toggle) and a paginated, deduplicated results
+            container instead of the capped, 800px-scroll table. Used by the
+            aggregated "Top Tech" subtab.
     """
     all_articles_for_tab = []
     if isinstance(source_keys, str):  # Single source key
@@ -156,9 +328,71 @@ def create_news_source_tab_content(source_keys, combined_name=None):
     # Sort all articles by date (descending)
     all_articles_for_tab.sort(key=get_sortable_date, reverse=True)
 
-    if not all_articles_for_tab:
-        return dbc.Alert(f"No news items available for {source_display_name}.", color="info")
+    # Search + CSV export row (shared by every subtab layout)
+    search_row = dbc.Row(
+        [
+            dbc.Col(
+                # Search input
+                create_search_input(
+                    input_id=tab_search_id,
+                    placeholder=f"Filter {source_display_name} by term...",
+                    clear_button=True,
+                ),
+                width=True,
+            ),
+            dbc.Col(
+                dbc.Button(
+                    "⬇ CSV",
+                    id={"type": "news-export", "keys": "-".join([source_keys] if isinstance(source_keys, str) else source_keys)},
+                    color="secondary",
+                    size="sm",
+                    title="Exportar el dataset de este subtab a CSV",
+                ),
+                width="auto",
+            ),
+            # Trend filter button removed
+        ],
+        className="mb-3 align-items-center",
+    )
 
+    if with_pagination:
+        # Top Tech (spec 01 M4/M5): dedup + first page at the default size,
+        # rendered by the same shared view the controller callback uses.
+        results_children, _page = _render_top_tech_view(all_articles_for_tab)
+        results_container = html.Div(
+            results_children,
+            id=f"{tab_search_id}-results",
+            className="mt-1",  # no 800px scroll: pagination replaces it (M4)
+        )
+        # M4 items-per-page selector + M5 "mostrar duplicados" switch
+        controls_row = dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.Label("Items por página:", className="form-label small mb-0 me-2"),
+                        dcc.Dropdown(
+                            id=f"{TOP_TECH_COMPONENT_ID}-items-per-page",
+                            options=[{"label": str(size), "value": size} for size in TOP_TECH_PER_PAGE_OPTIONS],
+                            value=TOP_TECH_DEFAULT_PER_PAGE,
+                            clearable=False,
+                            style={"minWidth": "90px"},
+                        ),
+                    ],
+                    width="auto",
+                    className="d-flex align-items-center",
+                ),
+                dbc.Col(
+                    create_duplicate_toggle(TOP_TECH_COMPONENT_ID),
+                    width="auto",
+                    className="d-flex align-items-center",
+                ),
+            ],
+            className="mb-3 align-items-center",
+        )
+        tab_children = [search_row, controls_row, results_container, dcc.Store(id=f"{TOP_TECH_COMPONENT_ID}-page", data=1)]
+        return html.Div(tab_children)
+
+    # Legacy (non-paginated) table path: capped, scrollable table
     # Create table header
     table_header = [
         html.Thead(
@@ -235,31 +469,7 @@ def create_news_source_tab_content(source_keys, combined_name=None):
     # Return search input and table container
     return html.Div(
         [
-            dbc.Row(
-                [
-                    dbc.Col(
-                        # Search input
-                        create_search_input(
-                            input_id=tab_search_id,
-                            placeholder=f"Filter {source_display_name} by term...",
-                            clear_button=True,
-                        ),
-                        width=True,
-                    ),
-                    dbc.Col(
-                        dbc.Button(
-                            "⬇ CSV",
-                            id={"type": "news-export", "keys": "-".join([source_keys] if isinstance(source_keys, str) else source_keys)},
-                            color="secondary",
-                            size="sm",
-                            title="Exportar el dataset de este subtab a CSV",
-                        ),
-                        width="auto",
-                    ),
-                    # Trend filter button removed
-                ],
-                className="mb-3 align-items-center",
-            ),
+            search_row,
             # Container for filtered results
             html.Div(
                 table,
@@ -280,7 +490,82 @@ def register_news_search_callbacks(app):
     # so every subtab's search box is guaranteed to be wired.
     search_ids = [_search_id_for_tab(tab_def) for tab_def in NEWS_TAB_DEFINITIONS]
 
+    # --- Top Tech controller (spec 01 M4/M5) ---------------------------------
+    # The SAME single controller pattern as the generic loop below, extended
+    # with extra Inputs instead of a second callback chain: items-per-page
+    # (M4), "mostrar duplicados" toggle (M5) and the pattern-matching pager
+    # buttons all feed this one callback, which stays the only writer of the
+    # results container. prevent_initial_call=True because the static layout
+    # already renders the identical default view via _render_top_tech_view.
+    @app.callback(
+        Output(f"{TOP_TECH_SEARCH_ID}-results", "children"),
+        Output(f"{TOP_TECH_COMPONENT_ID}-page", "data"),
+        Input(TOP_TECH_SEARCH_ID, "value"),
+        Input(f"{TOP_TECH_COMPONENT_ID}-items-per-page", "value"),
+        Input(f"{TOP_TECH_COMPONENT_ID}-show-duplicates", "value"),
+        Input({"type": f"{TOP_TECH_COMPONENT_ID}-page-btn", "dir": ALL}, "n_clicks"),
+        State(f"{TOP_TECH_COMPONENT_ID}-page", "data"),
+        prevent_initial_call=True,
+    )
+    def update_top_tech_view(search_term, items_per_page, show_duplicates_value, _page_btn_clicks, current_page):
+        """Render Top Tech with visible dedup + pagination, fetching fresh data."""
+        try:
+            articles = _aggregate_source_articles(_TOP_TECH_DEF["keys"], get_all_news_data())
+            if not articles:
+                return dbc.Alert("No data available (fetch returned empty)", color="warning"), 1
+
+            if search_term:
+                articles = filter_content(search_term, articles, get_common_searchable_fields("news"))
+
+            # Defensive validation: the page size arrives straight from the client
+            try:
+                per_page = int(items_per_page)
+            except (TypeError, ValueError):
+                per_page = TOP_TECH_DEFAULT_PER_PAGE
+            if per_page not in TOP_TECH_PER_PAGE_OPTIONS:
+                per_page = TOP_TECH_DEFAULT_PER_PAGE
+
+            # Prev/next move within range; any other trigger (search, page size,
+            # dedup toggle) resets to page 1 — same UX as the Videos tab
+            triggered_id = dash.ctx.triggered_id
+            direction = triggered_id.get("dir") if isinstance(triggered_id, dict) else None
+            current_page = current_page or 1
+            if direction == "prev":
+                page = max(1, current_page - 1)
+            elif direction == "next":
+                page = current_page + 1
+            else:
+                page = 1
+
+            results_children, page = _render_top_tech_view(
+                articles,
+                search_term=search_term,
+                show_duplicates=bool(show_duplicates_value),
+                per_page=per_page,
+                page=page,
+            )
+            return results_children, page
+        except Exception as e:
+            logger.error(f"Error in Top Tech view callback: {e}")
+            return dbc.Alert(f"Error loading Top Tech articles: {e}", color="danger"), dash.no_update
+
+    # Top Tech's clear-search button (same contract as the generic loop's,
+    # kept out of the loop because this subtab registers its own controller)
+    @app.callback(
+        Output(TOP_TECH_SEARCH_ID, "value", allow_duplicate=True),
+        Input(f"{TOP_TECH_SEARCH_ID}-clear", "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def clear_top_tech_search(n_clicks):
+        """Clear the Top Tech search input."""
+        if n_clicks:
+            return ""
+        return dash.no_update
+
+    # --- Generic per-subtab controllers --------------------------------------
     for search_id in search_ids:
+        if search_id == TOP_TECH_SEARCH_ID:
+            continue  # Top Tech is fully handled by the controller above
 
         @app.callback(
             Output(f"{search_id}-results", "children"),
@@ -626,7 +911,7 @@ def render_news_tab():
     tabs_children = []
     for tab_def in tab_definitions:
         tab_id = f"news-tab-{tab_def['id']}"
-        content = create_news_source_tab_content(tab_def["keys"], combined_name=tab_def["label"])
+        content = create_news_source_tab_content(tab_def["keys"], combined_name=tab_def["label"], with_pagination=tab_def.get("paginated", False))
         tabs_children.append(
             dbc.Tab(
                 label=tab_def["label"],

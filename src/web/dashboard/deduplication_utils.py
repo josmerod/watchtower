@@ -3,8 +3,11 @@
 Provides functions to filter and display duplicate content in the dashboard.
 """
 
+import hashlib
 import json
 import logging
+import re
+from collections.abc import Callable
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -90,6 +93,102 @@ def get_duplicate_summary(data: list[dict[str, Any]]) -> dict[str, int]:
         "duplicate_items": duplicate_count,
         "duplicate_groups": len(duplicate_groups),
     }
+
+
+def normalize_story_key(text: str) -> str:
+    """Normalize a title into a story-matching key.
+
+    Lowercases, replaces non-alphanumeric runs with single spaces and trims,
+    so "OpenAI launches GPT-5!" and "openai launches gpt 5" collapse to the
+    same key (cross-source duplicates usually differ in punctuation/casing
+    but share the headline).
+
+    Args:
+        text: Raw title text.
+
+    Returns:
+        Normalized key (empty string for blank input).
+    """
+    return " ".join(re.sub(r"[^0-9a-záéíóúüñçäößàèìòùâêîôûåøæ]+", " ", text.lower()).split())
+
+
+def get_story_group_key(item: dict[str, Any]) -> str | None:
+    """Derive the duplicate-group key for an item from its title fields.
+
+    Falls back through the common title field names (title/name/full_name);
+    items without any title get no key and are never grouped.
+
+    Args:
+        item: Data item to key.
+
+    Returns:
+        Normalized story key, or None if the item has no title.
+    """
+    title = item.get("title") or item.get("name") or item.get("full_name")
+    if not title:
+        return None
+    return normalize_story_key(str(title))
+
+
+def annotate_duplicate_groups(
+    data: list[dict[str, Any]],
+    key_func: Callable[[dict[str, Any]], str | None] = get_story_group_key,
+) -> list[dict[str, Any]]:
+    """Annotate items with ``is_duplicate``/``duplicate_group_id`` flags.
+
+    This is the missing front-end half of the dedup pipeline: raw feed items
+    carry no duplicate metadata (the load-time dedup in ``data_loader``
+    silently drops exact matches instead), so cross-source duplicates must be
+    flagged here before ``filter_duplicates``/``get_duplicate_summary`` can
+    act on them. Items are returned as shallow copies — the input list (often
+    a cached dataset) is never mutated. The first item of each group in list
+    order (callers pass date-descending lists, so the newest) stays the
+    original; the rest are flagged as duplicates.
+
+    Args:
+        data: Items to annotate, ideally sorted newest-first.
+        key_func: Returns the group key for an item (None = never grouped).
+
+    Returns:
+        Copies of the items annotated with ``is_duplicate`` and
+        ``duplicate_group_id`` (group members only; the original of each
+        group gets the id too so ``get_duplicate_groups`` keeps working).
+    """
+    annotated = [dict(item) for item in data]
+
+    groups: dict[str, list[int]] = {}
+    for index, item in enumerate(annotated):
+        key = key_func(item)
+        if key:
+            groups.setdefault(key, []).append(index)
+
+    for key, indexes in groups.items():
+        if len(indexes) < 2:
+            continue
+        group_id = f"grp-{hashlib.md5(key.encode('utf-8')).hexdigest()[:12]}"
+        for position, index in enumerate(indexes):
+            annotated[index]["duplicate_group_id"] = group_id
+            annotated[index]["is_duplicate"] = position > 0
+
+    return annotated
+
+
+def format_duplicate_summary(summary: dict[str, int]) -> str:
+    """Render the duplicate summary as the Spanish one-liner from spec 01 M5.
+
+    Args:
+        summary: Statistics dict as returned by ``get_duplicate_summary``.
+
+    Returns:
+        e.g. "2 ocultos en 1 grupo", "1 oculto en 1 grupo" or "sin duplicados".
+    """
+    hidden = summary.get("duplicate_items", 0)
+    groups = summary.get("duplicate_groups", 0)
+    if hidden <= 0:
+        return "sin duplicados"
+    hidden_text = f"{hidden} oculto" if hidden == 1 else f"{hidden} ocultos"
+    groups_text = f"{groups} grupo" if groups == 1 else f"{groups} grupos"
+    return f"{hidden_text} en {groups_text}"
 
 
 def create_show_duplicates_button(
