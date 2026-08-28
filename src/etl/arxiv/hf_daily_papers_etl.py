@@ -29,6 +29,7 @@ import re
 import time
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import quote
 
 import requests
 
@@ -180,7 +181,9 @@ def fetch_citation_by_doi(doi: str) -> dict[str, Any] | None:
         ``{"citation_count": int, "citation_source": "doi", "citation_doi": doi}``
         on success, otherwise ``None``.
     """
-    encoded = requests.utils.quote(doi.strip(), safe="")
+    # requests.utils.quote is literally urllib.parse.quote but untyped in the
+    # requests stubs; import it directly.
+    encoded = quote(doi.strip(), safe="")
     payload = _crossref_get(f"/{encoded}")
     if not payload:
         return None
@@ -199,7 +202,7 @@ def fetch_citation_by_title(title: str, rows: int = 3) -> dict[str, Any] | None:
     preprints with no published version this correctly returns ``None``
     instead of attaching some unrelated paper's count.
     """
-    query = requests.utils.quote(title)
+    query = quote(title)
     payload = _crossref_get(f"?query.bibliographic={query}&rows={rows}")
     if not payload:
         return None
@@ -306,7 +309,7 @@ def enrich_with_citations(
         if not key:
             continue
         entry = cache.get(key)
-        if _cache_entry_is_fresh(entry, now_ts):
+        if entry is not None and _cache_entry_is_fresh(entry, now_ts):
             record["citation_count"] = entry["citation_count"]
             record["citation_source"] = entry.get("citation_source", "")
             record["citation_doi"] = entry.get("citation_doi", "")

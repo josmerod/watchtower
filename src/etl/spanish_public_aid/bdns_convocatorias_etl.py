@@ -27,7 +27,7 @@ import requests
 from pydantic import BaseModel, Field
 
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
-from src.etl.base import SimpleETL
+from src.etl.base import BaseETL
 
 # --- API endpoints (SNPSAP v-public, keyless) ---
 BDNS_API_BASE = "https://www.pap.hacienda.gob.es/bdnstrans/api"
@@ -86,7 +86,7 @@ def parse_bdns_date(value: Any) -> date | None:
         value: Raw date value from the API.
 
     Returns:
-        Parsed date, or None when missing/unparseable.
+        Parsed date, or None when missing/unparsable.
     """
     if value is None:
         return None
@@ -105,7 +105,7 @@ def parse_bdns_date(value: Any) -> date | None:
     return None
 
 
-class BdnsConvocatoriasETL(SimpleETL):
+class BdnsConvocatoriasETL(BaseETL[dict[str, Any], BdnsConvocatoriaModel]):
     """ETL fetching the most recent BDNS convocatorias via the public SNPSAP API."""
 
     def __init__(self):
@@ -149,7 +149,7 @@ class BdnsConvocatoriasETL(SimpleETL):
             "page": page,
             "pageSize": BDNS_PAGE_SIZE,
             "order": "fechaRecepcion",
-            "direccion": "desc",
+            "direccion": "desc",  # codespell:ignore -- BDNS API query param (Spanish, verified live)
             "fechaDesde": fecha_desde,
             "vpd": "GE",
         }
@@ -239,7 +239,8 @@ class BdnsConvocatoriasETL(SimpleETL):
         if not title or not bdns_id:
             return None
 
-        organo = detail.get("organo") if isinstance(detail.get("organo"), dict) else {}
+        raw_organo = detail.get("organo")
+        organo: dict[str, Any] = raw_organo if isinstance(raw_organo, dict) else {}
         org = str(organo.get("nivel3") or raw.get("nivel3") or organo.get("nivel2") or raw.get("nivel2") or "").strip()
         org_level = str(organo.get("nivel1") or raw.get("nivel1") or "").strip()
 

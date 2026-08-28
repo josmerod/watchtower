@@ -416,7 +416,7 @@ class CryptoSentimentMiner:
         Returns:
             Tuple of (sentiment_score, sentiment_label)
         """
-        sentiment_score = 0
+        sentiment_score = 0.0
         word_count = 0
 
         # Score based on sentiment keywords
@@ -566,7 +566,7 @@ class CryptoSentimentMiner:
         logger.info("Aggregating sentiment data")
 
         # Group by cryptocurrency
-        crypto_sentiment = defaultdict(
+        crypto_sentiment: defaultdict[str, dict[str, Any]] = defaultdict(
             lambda: {
                 "total_mentions": 0,
                 "sentiment_scores": [],

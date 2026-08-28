@@ -95,7 +95,7 @@ class TestSearchParams:
         assert params["page"] == 2
         assert params["pageSize"] == BDNS_PAGE_SIZE
         assert params["order"] == "fechaRecepcion"
-        assert params["direccion"] == "desc"
+        assert params["direccion"] == "desc"  # codespell:ignore -- BDNS API query param
 
 
 class TestNormalizeItem:

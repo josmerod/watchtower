@@ -4,6 +4,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from bs4 import BeautifulSoup
 
@@ -26,7 +27,7 @@ class AwsSkillBuilderETL(BaseETL):
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.output_file = self.output_dir / "aws_skill_builder.json"
 
-    def extract(self) -> str:
+    def extract(self) -> str:  # type: ignore[override]  # legacy single-blob shape: run() only len()s and forwards the extract result to transform
         """Fetch the HTML content from ClassCentral."""
         try:
             req = urllib.request.Request(self.url, headers={"User-Agent": SCRAPER_BRANDED_USER_AGENT})
@@ -42,15 +43,16 @@ class AwsSkillBuilderETL(BaseETL):
             logger.error(f"Failed to fetch ClassCentral HTML: {e}")
             raise
 
-    def transform(self, data: str) -> list[dict]:
+    def transform(self, data: str) -> list[dict]:  # type: ignore[override]  # legacy shape: takes the single HTML blob from extract(), not a list
         """Parse HTML to extract courses and assign first_detected_at."""
         soup = BeautifulSoup(data, "html.parser")
 
         # Extract courses using 'course-name' class
-        extracted_courses = []
+        extracted_courses: list[dict[str, Any]] = []
         for a in soup.find_all("a", class_="course-name"):
             title = a.get_text(strip=True)
-            url = "https://www.classcentral.com" + a.get("href", "")
+            raw_href = a.get("href", "")
+            url = "https://www.classcentral.com" + (raw_href if isinstance(raw_href, str) else "")
 
             infos = []
             parent = a.find_parent("li")

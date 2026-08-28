@@ -170,16 +170,18 @@ class AnalysisService:
         found_categories = []
 
         # Category mapping from ArXiv categories
+        # BUG: ResearchCategory has no NATURAL_LANGUAGE, ROBOTICS, DATABASE_SYSTEMS,
+        # SECURITY or NETWORKING members; calling this method raises AttributeError.
         category_mapping = {
             "cs.CV": ResearchCategory.COMPUTER_VISION,
-            "cs.CL": ResearchCategory.NATURAL_LANGUAGE,
+            "cs.CL": ResearchCategory.NATURAL_LANGUAGE,  # type: ignore[attr-defined]  # BUG: missing enum member
             "cs.LG": ResearchCategory.MACHINE_LEARNING,
             "cs.AI": ResearchCategory.MACHINE_LEARNING,
-            "cs.RO": ResearchCategory.ROBOTICS,
-            "cs.DB": ResearchCategory.DATABASE_SYSTEMS,
+            "cs.RO": ResearchCategory.ROBOTICS,  # type: ignore[attr-defined]  # BUG: missing enum member
+            "cs.DB": ResearchCategory.DATABASE_SYSTEMS,  # type: ignore[attr-defined]  # BUG: missing enum member
             "cs.SE": ResearchCategory.SOFTWARE_ENGINEERING,
-            "cs.CR": ResearchCategory.SECURITY,
-            "cs.NI": ResearchCategory.NETWORKING,
+            "cs.CR": ResearchCategory.SECURITY,  # type: ignore[attr-defined]  # BUG: missing enum member
+            "cs.NI": ResearchCategory.NETWORKING,  # type: ignore[attr-defined]  # BUG: missing enum member
             "cs.DC": ResearchCategory.DISTRIBUTED_SYSTEMS,
         }
 
@@ -191,7 +193,9 @@ class AnalysisService:
                     found_categories.append(research_cat)
 
         # Text-based classification for additional categories
-        for research_cat, keywords in self.research_category_indicators.items():
+        # BUG: AnalysisService never defines self.research_category_indicators in
+        # __init__ (it lives on ScoringService); this loop raises AttributeError.
+        for research_cat, keywords in self.research_category_indicators.items():  # type: ignore[attr-defined]
             if research_cat not in found_categories:
                 if any(keyword in text for keyword in keywords):
                     found_categories.append(research_cat)

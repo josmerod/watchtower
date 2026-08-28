@@ -12,7 +12,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from difflib import SequenceMatcher
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel
 
@@ -20,6 +20,11 @@ from src.models.base import TimestampedModel
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def _dump_item(item: TimestampedModel) -> dict[str, Any]:
+    """Serialize a TimestampedModel to a plain dict (models always support model_dump)."""
+    return cast("dict[str, Any]", item.model_dump() if hasattr(item, "model_dump") else item)
 
 
 class DuplicateGroup(BaseModel):
@@ -223,6 +228,8 @@ class DeduplicationEngine:
                 source_name = "coursera"
 
         # Return score for source, or default if unknown
+        if source_name is None:
+            return self.source_reputation_scores["default"]
         return self.source_reputation_scores.get(source_name, self.source_reputation_scores["default"])
 
     def _calculate_recency_score(self, item: TimestampedModel) -> float:
@@ -545,12 +552,10 @@ class DeduplicationEngine:
             return items[0]
 
         # Calculate quality scores for all items
-        scored_items = []
+        scored_items: list[tuple[float, TimestampedModel]] = []
         for item in items:
-            if getattr(item, "quality_score", None) is not None:
-                quality_score = item.quality_score
-            else:
-                quality_score = self._calculate_quality_score(item)
+            existing_score: float | None = getattr(item, "quality_score", None)
+            quality_score = existing_score if existing_score is not None else self._calculate_quality_score(item)
             scored_items.append((quality_score, item))
 
         # Sort by quality score (descending) and return the highest
@@ -587,9 +592,9 @@ class DeduplicationEngine:
 
         return DuplicateGroup(
             group_id=group_id,
-            items=[item.model_dump() if hasattr(item, "model_dump") else item for item in items],
-            primary_item=(primary_item.model_dump() if hasattr(primary_item, "model_dump") else primary_item),
-            duplicate_items=[item.model_dump() if hasattr(item, "model_dump") else item for item in duplicate_items],
+            items=[_dump_item(item) for item in items],
+            primary_item=_dump_item(primary_item),
+            duplicate_items=[_dump_item(item) for item in duplicate_items],
             detection_method=detection_method,
         )
 
@@ -681,8 +686,8 @@ class DeduplicationEngine:
                 unique_items.append(item)
             else:
                 # Find the primary item from duplicate groups and add to unique items
-                for group in duplicate_groups:
-                    primary_item_id = group.primary_item.get("id") if isinstance(group.primary_item, dict) else getattr(group.primary_item, "id", str(group.primary_item))
+                for dup_group in duplicate_groups:
+                    primary_item_id = dup_group.primary_item.get("id") if isinstance(dup_group.primary_item, dict) else getattr(dup_group.primary_item, "id", str(dup_group.primary_item))
                     if getattr(item, "id", str(item)) == primary_item_id:
                         unique_items.append(item)
                         break
@@ -694,21 +699,25 @@ class DeduplicationEngine:
         logger.info(f"Deduplication completed: {len(content)} items -> {len(unique_items)} unique, {duplicates_removed} duplicates removed in {processing_time:.2f}s")
 
         # Convert model instances to dictionaries for Pydantic compatibility
-        unique_items_dict = [item.model_dump() if hasattr(item, "model_dump") else item for item in unique_items]
-        duplicate_groups_dict = []
-        for group in duplicate_groups:
-            if hasattr(group, "model_dump"):
-                duplicate_groups_dict.append(group.model_dump())
+        unique_items_dict = [_dump_item(item) for item in unique_items]
+        duplicate_groups_dict: list[DuplicateGroup] = []
+        for dup_group in duplicate_groups:
+            if hasattr(dup_group, "model_dump"):
+                # The dumped dict is coerced back into a DuplicateGroup by Pydantic
+                # when DeduplicationResult validates this list below.
+                duplicate_groups_dict.append(cast("DuplicateGroup", dup_group.model_dump()))
             else:
-                # Convert items to dictionaries
-                group_dict = {
-                    "group_id": group.group_id,
-                    "items": [item.model_dump() if hasattr(item, "model_dump") else item for item in group.items],
-                    "primary_item": (group.primary_item.model_dump() if hasattr(group.primary_item, "model_dump") else group.primary_item),
-                    "duplicate_items": [item.model_dump() if hasattr(item, "model_dump") else item for item in group.duplicate_items],
-                    "detection_method": group.detection_method,
-                }
-                duplicate_groups_dict.append(DuplicateGroup(**group_dict))
+                # Unreachable in practice (DuplicateGroup is a BaseModel); kept for
+                # parity with the original fallback. Fields are already dicts here.
+                duplicate_groups_dict.append(
+                    DuplicateGroup(
+                        group_id=dup_group.group_id,
+                        items=list(dup_group.items),
+                        primary_item=dup_group.primary_item,
+                        duplicate_items=list(dup_group.duplicate_items),
+                        detection_method=dup_group.detection_method,
+                    )
+                )
 
         return DeduplicationResult(
             total_items=len(content),
@@ -719,14 +728,14 @@ class DeduplicationEngine:
             detection_stats=self.stats.copy(),
         )
 
-    def deduplicate_content(self, content: list[TimestampedModel]) -> list[TimestampedModel]:
+    def deduplicate_content(self, content: list[TimestampedModel]) -> list[dict[str, Any]]:
         """Deduplicate content and return unique items only.
 
         Args:
             content: List of content items to deduplicate.
 
         Returns:
-            List of unique content items (highest quality from each duplicate group).
+            List of unique content items as dicts (highest quality from each group).
         """
         result = self.find_duplicates(content)
         return result.unique_items

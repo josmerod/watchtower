@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup, Tag
 from pydantic import ValidationError
 
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
-from src.etl.base import SimpleETL
+from src.etl.base import BaseETL
 from src.models.spanish_public_aid import (
     AidCategory,
     AidScope,
@@ -26,7 +26,7 @@ from src.models.spanish_public_aid import (
 )
 
 
-class SpanishPublicAidETL(SimpleETL):
+class SpanishPublicAidETL(BaseETL[dict[str, Any], SpanishPublicAidModel]):
     """ETL process for Spanish public aid convocations."""
 
     def __init__(self):
@@ -415,7 +415,8 @@ class SpanishPublicAidETL(SimpleETL):
             desc_elem = (
                 detail_soup.find("meta", attrs={"name": "description"})
                 or detail_soup.find(["p", "div"], class_=re.compile(r".*desc.*|.*resumen.*|.*content.*|.*entry.*", re.I))
-                or detail_soup.find(["p", "div"], string=re.compile(r".{50,}", re.I))
+                # bs4 overloads don't cover name+string combos (see bs4's own TODO); runtime supports it.
+                or detail_soup.find(["p", "div"], string=re.compile(r".{50,}", re.I))  # type: ignore[call-overload]
             )
             if not isinstance(desc_elem, Tag):
                 return ""
@@ -490,7 +491,7 @@ class SpanishPublicAidETL(SimpleETL):
 
         return extracted_data
 
-    def _parse_bdns_aid(self, element: BeautifulSoup, source_config: dict[str, Any]) -> dict[str, Any] | None:
+    def _parse_bdns_aid(self, element: Tag, source_config: dict[str, Any]) -> dict[str, Any] | None:
         """Parse BDNS aid element."""
         try:
             # More flexible title extraction
@@ -534,7 +535,8 @@ class SpanishPublicAidETL(SimpleETL):
 
             # Extract link
             link_elem = element.find("a", href=True) or element if element.name == "a" else None
-            link = urljoin(source_config["url"], link_elem["href"]) if link_elem and link_elem.get("href") else source_config["url"]
+            href = link_elem.get("href") if link_elem else None
+            link = urljoin(source_config["url"], href) if isinstance(href, str) and href else source_config["url"]
 
             return {
                 "title": title_text,
@@ -550,7 +552,7 @@ class SpanishPublicAidETL(SimpleETL):
             self.logger.debug(f"Error parsing BDNS element: {e}")
             return None
 
-    def _parse_gva_aid(self, element: BeautifulSoup, source_config: dict[str, Any]) -> dict[str, Any] | None:
+    def _parse_gva_aid(self, element: Tag, source_config: dict[str, Any]) -> dict[str, Any] | None:
         """Parse GVA aid element."""
         try:
             # More flexible title extraction for GVA
@@ -596,7 +598,8 @@ class SpanishPublicAidETL(SimpleETL):
 
             # Extract link
             link_elem = element.find("a", href=True) or element if element.name == "a" else None
-            link = urljoin("https://www.gva.es", link_elem["href"]) if link_elem and link_elem.get("href") else source_config["url"]
+            href = link_elem.get("href") if link_elem else None
+            link = urljoin("https://www.gva.es", href) if isinstance(href, str) and href else source_config["url"]
 
             return {
                 "title": title_text,
@@ -612,7 +615,7 @@ class SpanishPublicAidETL(SimpleETL):
             self.logger.debug(f"Error parsing GVA element: {e}")
             return None
 
-    def _parse_valencia_aid(self, element: BeautifulSoup, source_config: dict[str, Any]) -> dict[str, Any] | None:
+    def _parse_valencia_aid(self, element: Tag, source_config: dict[str, Any]) -> dict[str, Any] | None:
         """Parse Valencia city aid element."""
         try:
             # More flexible title extraction for Valencia
@@ -653,7 +656,8 @@ class SpanishPublicAidETL(SimpleETL):
 
             # Extract link
             link_elem = element.find("a", href=True) or element if element.name == "a" else None
-            link = urljoin("https://www.valencia.es", link_elem["href"]) if link_elem and link_elem.get("href") else source_config["url"]
+            href = link_elem.get("href") if link_elem else None
+            link = urljoin("https://www.valencia.es", href) if isinstance(href, str) and href else source_config["url"]
 
             return {
                 "title": title_text,
@@ -669,7 +673,7 @@ class SpanishPublicAidETL(SimpleETL):
             self.logger.debug(f"Error parsing Valencia element: {e}")
             return None
 
-    def _parse_labora_aid(self, element: BeautifulSoup, source_config: dict[str, Any]) -> dict[str, Any] | None:
+    def _parse_labora_aid(self, element: Tag, source_config: dict[str, Any]) -> dict[str, Any] | None:
         """Parse LABORA aid element."""
         try:
             # More flexible title extraction for LABORA
@@ -717,7 +721,8 @@ class SpanishPublicAidETL(SimpleETL):
 
             # Extract link
             link_elem = element.find("a", href=True) or element if element.name == "a" else None
-            link = urljoin("https://labora.gva.es", link_elem["href"]) if link_elem and link_elem.get("href") else source_config["url"]
+            href = link_elem.get("href") if link_elem else None
+            link = urljoin("https://labora.gva.es", href) if isinstance(href, str) and href else source_config["url"]
 
             return {
                 "title": title_text,
@@ -761,12 +766,14 @@ class SpanishPublicAidETL(SimpleETL):
                             class_=re.compile(r".*desc.*|.*resumen.*|.*content.*", re.I),
                         )
                         or detail_soup.find("meta", attrs={"name": "description"})
-                        or detail_soup.find(["p", "div"], string=re.compile(r".{50,}", re.I))  # Long text
+                        # bs4 overloads don't cover name+string combos; runtime supports it.
+                        or detail_soup.find(["p", "div"], string=re.compile(r".{50,}", re.I))  # type: ignore[call-overload]  # Long text
                     )
 
                     if desc_elem:
                         if desc_elem.name == "meta":
-                            description = desc_elem.get("content", "")
+                            meta_content = desc_elem.get("content", "")
+                            description = meta_content if isinstance(meta_content, str) else ""
                         else:
                             description = desc_elem.get_text(strip=True)[:500]  # Limit length
             except Exception:
@@ -815,12 +822,14 @@ class SpanishPublicAidETL(SimpleETL):
                             class_=re.compile(r".*desc.*|.*resumen.*|.*content.*", re.I),
                         )
                         or detail_soup.find("meta", attrs={"name": "description"})
-                        or detail_soup.find(["p", "div"], string=re.compile(r".{50,}", re.I))
+                        # bs4 overloads don't cover name+string combos; runtime supports it.
+                        or detail_soup.find(["p", "div"], string=re.compile(r".{50,}", re.I))  # type: ignore[call-overload]
                     )
 
                     if desc_elem:
                         if desc_elem.name == "meta":
-                            description = desc_elem.get("content", "")
+                            meta_content = desc_elem.get("content", "")
+                            description = meta_content if isinstance(meta_content, str) else ""
                         else:
                             description = desc_elem.get_text(strip=True)[:500]
 
@@ -1068,7 +1077,7 @@ class SpanishPublicAidETL(SimpleETL):
     def _calculate_quality_score(self, raw_data: dict[str, Any]) -> float:
         """Calculate data quality score based on completeness and content quality."""
         score = 0.0
-        total_factors = 0
+        total_factors = 0.0
 
         # Title quality (weight: 0.3)
         if raw_data.get("title"):
@@ -1155,7 +1164,7 @@ class SpanishPublicAidETL(SimpleETL):
         if not data:
             return {}
 
-        stats = {
+        stats: dict[str, Any] = {
             "total_aids": len(data),
             "active_aids": sum(1 for aid in data if aid.is_active),
             "by_category": {},

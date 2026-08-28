@@ -8,7 +8,8 @@ from src.utils.github_utils import find_github_links_in_text, get_github_repo_in
 from src.utils.pwc_utils import get_pwc_details_for_paper
 
 try:
-    from paperswithcode import PapersWithCodeClient
+    # Optional dependency (absent from the locked env); usage is guarded below.
+    from paperswithcode import PapersWithCodeClient  # type: ignore[import-not-found]
 except ImportError:
     PapersWithCodeClient = None
 
@@ -66,9 +67,11 @@ class IntegrationService:
             repo_url = github_links[0]
             logger.debug(f"Found GitHub repo: {repo_url}")
 
-            repo_info = get_github_repo_info(repo_url, token=github_token)
+            repo_info = get_github_repo_info(repo_url, token=github_token)  # type: ignore[call-arg]  # BUG: util expects `github_token=`, not `token=`; TypeError is swallowed by the except below, so GitHub info never loads
             if repo_info:
-                return GitHubRepositoryModel(
+                # BUG: GitHubRepositoryModel has no `url`/`name` fields (see html_url);
+                # these kwargs are ignored by Pydantic, producing an empty-ish model.
+                return GitHubRepositoryModel(  # type: ignore[call-arg]
                     url=repo_url,
                     name=repo_info.get("name", ""),
                     description=repo_info.get("description", ""),
@@ -107,16 +110,21 @@ class IntegrationService:
             logger.debug(f"Searching PapersWithCode for: {paper_id}")
 
             # Get PWC details
+            # BUG: get_pwc_details_for_paper is an async function — calling it without
+            # await returns a coroutine (always truthy), so the `.get` calls below raise
+            # AttributeError and this method always falls into the except handler.
             pwc_details = get_pwc_details_for_paper(paper_id, title)
             if pwc_details:
-                return PapersWithCodeModel(
+                # BUG: PapersWithCodeModel has none of these fields (it defines
+                # pwc_id, pwc_url, pwc_title, ...); every kwarg is ignored by Pydantic.
+                return PapersWithCodeModel(  # type: ignore[call-arg]
                     paper_id=paper_id,
-                    title=pwc_details.get("title", title),
-                    url=pwc_details.get("url", ""),
-                    frameworks=pwc_details.get("frameworks", []),
-                    datasets=pwc_details.get("datasets", []),
-                    tasks=pwc_details.get("tasks", []),
-                    stars=pwc_details.get("stars", 0),
+                    title=pwc_details.get("title", title),  # type: ignore[attr-defined]
+                    url=pwc_details.get("url", ""),  # type: ignore[attr-defined]
+                    frameworks=pwc_details.get("frameworks", []),  # type: ignore[attr-defined]
+                    datasets=pwc_details.get("datasets", []),  # type: ignore[attr-defined]
+                    tasks=pwc_details.get("tasks", []),  # type: ignore[attr-defined]
+                    stars=pwc_details.get("stars", 0),  # type: ignore[attr-defined]
                 )
 
             return None
@@ -161,6 +169,8 @@ class IntegrationService:
             return False
 
         try:
+            # BUG: same unawaited-async issue as get_papers_with_code_info — the
+            # result is a coroutine (never None), so this always returns True.
             pwc_details = get_pwc_details_for_paper(paper_id, paper_data.get("title", ""))
             return pwc_details is not None
         except Exception:

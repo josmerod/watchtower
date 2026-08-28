@@ -50,7 +50,8 @@ def fetch_courses(max_retries: int = 3) -> list[dict[str, Any]]:
 
     # Course cards link to /learn/<slug>; the card also carries the course name.
     for anchor in soup.select('a[href^="/learn/"]'):
-        href = anchor.get("href", "")
+        raw_href = anchor.get("href", "")
+        href = raw_href if isinstance(raw_href, str) else ""
         slug = href.removeprefix("/learn/").strip("/")
         if not slug or slug in seen:
             continue

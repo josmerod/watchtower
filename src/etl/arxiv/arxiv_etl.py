@@ -12,7 +12,7 @@ import pandas as pd
 try:
     from paperswithcode import PapersWithCodeClient  # type: ignore
 except Exception:
-    PapersWithCodeClient = None  # type: ignore
+    PapersWithCodeClient = None
 
 from src.etl.base import BaseETL
 from src.utils.github_utils import find_github_links_in_text, get_github_repo_info, get_github_repo_info_batch
@@ -321,7 +321,7 @@ class ArxivETL(BaseETL[dict[str, Any], dict[str, Any]]):
             return
 
         # Count papers per cluster
-        cluster_counts = {}
+        cluster_counts: dict[int, int] = {}
         for paper in papers:
             cluster_id = paper.get("cluster_id")
             if cluster_id is not None:

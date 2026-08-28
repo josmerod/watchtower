@@ -6,6 +6,8 @@ using either an ArXiv ID or paper title. It handles API request retries
 and polite request delays.
 """
 
+from __future__ import annotations
+
 import asyncio  # Added for sleep
 import time
 from typing import Any

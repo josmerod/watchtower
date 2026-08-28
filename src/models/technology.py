@@ -69,7 +69,7 @@ class TechnologyMetrics(BaseModel):
     conference_mentions: int | None = Field(default=None, ge=0, description="Conference mentions")
     tutorial_count: int | None = Field(default=None, ge=0, description="Tutorial/course count")
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # mypy limitation: pydantic computed_field over property
     @property
     def total_activity_score(self) -> float:
         """Calculate total activity score from all metrics."""
@@ -147,13 +147,13 @@ class TechnologyModel(TimestampedModel):
             raise ValueError("Technology name cannot be empty")
         return v.strip().lower()
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # mypy limitation: pydantic computed_field over property
     @property
     def display_name_formatted(self) -> str:
         """Get formatted display name."""
         return self.display_name or self.name.title()
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # mypy limitation: pydantic computed_field over property
     @property
     def age_in_years(self) -> float | None:
         """Calculate technology age in years."""
@@ -162,7 +162,7 @@ class TechnologyModel(TimestampedModel):
             return round(delta.days / 365.25, 1)
         return None
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # mypy limitation: pydantic computed_field over property
     @property
     def is_emerging(self) -> bool:
         """Check if technology is emerging (less than 3 years old)."""
@@ -170,7 +170,7 @@ class TechnologyModel(TimestampedModel):
             return self.age_in_years < 3.0
         return False
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # mypy limitation: pydantic computed_field over property
     @property
     def overall_score(self) -> float:
         """Calculate overall technology score."""
@@ -251,7 +251,7 @@ class TechnologyPredictionModel(BaseModel):
     early_adoption_indicators: list[str] = Field(default=[], description="Early adoption indicators")
     competitive_threats: list[str] = Field(default=[], description="Competitive threats")
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # mypy limitation: pydantic computed_field over property
     @property
     def expected_growth_percentage(self) -> float:
         """Calculate expected growth percentage."""
@@ -262,7 +262,7 @@ class TechnologyPredictionModel(BaseModel):
             )
         return 0.0
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # mypy limitation: pydantic computed_field over property
     @property
     def investment_recommendation(self) -> str:
         """Generate investment recommendation based on prediction."""
@@ -305,13 +305,13 @@ class FrameworkBattleModel(BaseModel):
     confidence_score: float = Field(ge=0.0, le=1.0, description="Analysis confidence")
     data_quality_score: float = Field(ge=0.0, le=1.0, description="Data quality score")
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # mypy limitation: pydantic computed_field over property
     @property
     def total_frameworks(self) -> int:
         """Get total number of frameworks in battle."""
         return len(self.frameworks)
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # mypy limitation: pydantic computed_field over property
     @property
     def battle_summary(self) -> str:
         """Generate battle summary."""

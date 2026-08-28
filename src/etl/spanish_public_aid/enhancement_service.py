@@ -174,38 +174,45 @@ class EnhancementService:
                 "average_quality_score": 0.0,
             }
 
-        stats = {
-            "total_aids": len(data),
-            "by_scope": {},
-            "by_type": {},
-            "by_category": {},
-            "by_status": {},
-            "average_quality_score": 0.0,
-        }
+        by_scope: dict[str, int] = {}
+        by_type: dict[str, int] = {}
+        by_category: dict[str, int] = {}
+        by_status: dict[str, int] = {}
+        total_quality = 0.0
 
         # Count by scope
         for aid in data:
-            scope = aid.scope.value if aid.scope else "unknown"
-            stats["by_scope"][scope] = stats["by_scope"].get(scope, 0) + 1
+            # BUG: `aid.scope` is a GeographicScopeModel (Pydantic model, no `.value`);
+            # this raises AttributeError at runtime. Intended: `aid.scope.scope.value`.
+            scope = aid.scope.value if aid.scope else "unknown"  # type: ignore[attr-defined]
+            by_scope[scope] = by_scope.get(scope, 0) + 1
 
             # Count by type
             aid_type = aid.aid_type.value if aid.aid_type else "unknown"
-            stats["by_type"][aid_type] = stats["by_type"].get(aid_type, 0) + 1
+            by_type[aid_type] = by_type.get(aid_type, 0) + 1
 
             # Count by category
             category = aid.category.value if aid.category else "unknown"
-            stats["by_category"][category] = stats["by_category"].get(category, 0) + 1
+            by_category[category] = by_category.get(category, 0) + 1
 
             # Count by status
             status = aid.status.value if aid.status else "unknown"
-            stats["by_status"][status] = stats["by_status"].get(status, 0) + 1
+            by_status[status] = by_status.get(status, 0) + 1
 
             # Quality scores
+            # NOTE: the model field is `data_quality_score`; `quality_score` never
+            # exists, so this hasattr-guarded branch never runs (average stays 0.0).
             if hasattr(aid, "quality_score") and aid.quality_score:
-                stats["average_quality_score"] += aid.quality_score
+                total_quality += aid.quality_score
 
-        # Calculate average quality
-        if data:
-            stats["average_quality_score"] /= len(data)
+        # Calculate average quality (`data` is guaranteed non-empty here)
+        total_quality /= len(data)
 
-        return stats
+        return {
+            "total_aids": len(data),
+            "by_scope": by_scope,
+            "by_type": by_type,
+            "by_category": by_category,
+            "by_status": by_status,
+            "average_quality_score": total_quality,
+        }

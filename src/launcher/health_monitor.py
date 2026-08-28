@@ -13,9 +13,11 @@ import json
 import logging
 import socket
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, cast
 
 import psutil
 import requests
@@ -65,7 +67,7 @@ class RecoveryAction:
     name: str
     description: str
     priority: int  # Lower number = higher priority
-    action_func: callable
+    action_func: Callable[..., Any]
     cooldown_seconds: int = 300  # 5 minutes default cooldown
 
 
@@ -259,20 +261,26 @@ class HealthMonitor:
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Process results
-        metrics.dashboard_healthy = results[0] if not isinstance(results[0], Exception) else False
-        etl_healthy, metrics.active_etl_processes, metrics.total_etl_processes = results[1] if not isinstance(results[1], Exception) else (False, 0, 0)
+        # Process results (gather with return_exceptions=True types them as object)
+        dashboard_result = results[0]
+        metrics.dashboard_healthy = cast(bool, dashboard_result) if not isinstance(dashboard_result, Exception) else False
+        etl_result = results[1] if not isinstance(results[1], Exception) else (False, 0, 0)
+        etl_healthy, metrics.active_etl_processes, metrics.total_etl_processes = cast("tuple[bool, int, int]", etl_result)
         metrics.etl_processes_healthy = etl_healthy
+        system_result = results[2] if not isinstance(results[2], Exception) else (False, 0.0, 0.0, 0.0)
         (
             system_ok,
             metrics.cpu_percent,
             metrics.memory_percent,
             metrics.disk_usage_percent,
-        ) = results[2] if not isinstance(results[2], Exception) else (False, 0, 0, 0)
+        ) = cast("tuple[bool, float, float, float]", system_result)
         metrics.system_resources_ok = system_ok
-        metrics.data_integrity_ok = results[3] if not isinstance(results[3], Exception) else False
-        metrics.network_connectivity_ok = results[4] if not isinstance(results[4], Exception) else False
-        metrics.external_services_ok = results[5] if not isinstance(results[5], Exception) else False
+        data_integrity_result = results[3]
+        metrics.data_integrity_ok = cast(bool, data_integrity_result) if not isinstance(data_integrity_result, Exception) else False
+        network_result = results[4]
+        metrics.network_connectivity_ok = cast(bool, network_result) if not isinstance(network_result, Exception) else False
+        external_services_result = results[5]
+        metrics.external_services_ok = cast(bool, external_services_result) if not isinstance(external_services_result, Exception) else False
 
         # Store in history (keep last 100 checks)
         self.metrics_history.append(metrics)

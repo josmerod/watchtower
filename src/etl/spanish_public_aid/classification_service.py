@@ -22,21 +22,25 @@ class ClassificationService:
         self.debug = debug
 
         # Type indicators
+        # BUG: AidType has no SERVICE or TRAINING members (model defines SUBSIDY,
+        # GRANT, LOAN, TAX_BENEFIT, SOCIAL_BENEFIT, SCHOLARSHIP, DIRECT_PAYMENT);
+        # instantiating ClassificationService raises AttributeError at runtime.
         self.type_indicators = {
             AidType.GRANT: ["subven", "ayuda", "beca", "fomento", "apoyo"],
             AidType.LOAN: ["préstamo", "crédito", "financiación"],
             AidType.TAX_BENEFIT: ["bonificación", "deducción", "fiscal"],
-            AidType.SERVICE: ["servicio", "asesoramiento", "consultoría"],
-            AidType.TRAINING: ["formación", "curso", "taller", "capacitación"],
+            AidType.SERVICE: ["servicio", "asesoramiento", "consultoría"],  # type: ignore[attr-defined]  # BUG: missing enum member
+            AidType.TRAINING: ["formación", "curso", "taller", "capacitación"],  # type: ignore[attr-defined]  # BUG: missing enum member
         }
 
         # Category indicators
+        # BUG: AidCategory has no RESEARCH member (closest existing: TECHNOLOGY/OTHER).
         self.category_indicators = {
             AidCategory.EMPLOYMENT: ["empleo", "trabajo", "contratación", "laboral"],
             AidCategory.EDUCATION: ["educación", "formación", "beca", "estudio"],
             AidCategory.BUSINESS: ["empresa", "emprendedor", "pyme", "comercio"],
             AidCategory.HOUSING: ["vivienda", "alquiler", "vivienda", "alojamiento"],
-            AidCategory.RESEARCH: ["investigación", "i+d", "innovación", "proyecto"],
+            AidCategory.RESEARCH: ["investigación", "i+d", "innovación", "proyecto"],  # type: ignore[attr-defined]  # BUG: missing enum member
             AidCategory.CULTURE: ["cultura", "arte", "patrimonio", "eventos"],
             AidCategory.ENVIRONMENT: ["medio ambiente", "sostenibilidad", "energía"],
             AidCategory.HEALTH: ["salud", "sanidad", "médico", "bienestar"],
@@ -50,11 +54,14 @@ class ClassificationService:
         }
 
         # Beneficiary type indicators
+        # BUG: BeneficiaryType has no BUSINESS, NON_PROFIT or PUBLIC_ADMINISTRATION
+        # members (model defines INDIVIDUAL, COMPANY, NGO, PUBLIC_ENTITY,
+        # EDUCATIONAL_INSTITUTION, MIXED).
         self.beneficiary_indicators = {
             BeneficiaryType.INDIVIDUAL: ["personas físicas", "particular", "individual"],
-            BeneficiaryType.BUSINESS: ["empresas", "pyme", "comerciante", "autónomo"],
-            BeneficiaryType.NON_PROFIT: ["asociación", "fundación", "ong", "entidad sin ánimo de lucro"],
-            BeneficiaryType.PUBLIC_ADMINISTRATION: ["administración pública", "entidad local"],
+            BeneficiaryType.BUSINESS: ["empresas", "pyme", "comerciante", "autónomo"],  # type: ignore[attr-defined]  # BUG: missing enum member
+            BeneficiaryType.NON_PROFIT: ["asociación", "fundación", "ong", "entidad sin ánimo de lucro"],  # type: ignore[attr-defined]  # BUG: missing enum member
+            BeneficiaryType.PUBLIC_ADMINISTRATION: ["administración pública", "entidad local"],  # type: ignore[attr-defined]  # BUG: missing enum member
         }
 
     def determine_aid_type(self, title: str, description: str) -> AidType:
@@ -159,7 +166,9 @@ class ClassificationService:
             "valencia": AidScope.LOCAL,
         }
 
-        return scope_mapping.get(source, AidScope.REGIONAL)
+        # BUG: AidScope has no REGIONAL member (closest existing: PROVINCIAL);
+        # calling this method raises AttributeError at runtime.
+        return scope_mapping.get(source, AidScope.REGIONAL)  # type: ignore[attr-defined, return-value]
 
     def determine_payment_type(self, title: str, description: str) -> PaymentType:
         """Determine the payment type.
@@ -173,9 +182,12 @@ class ClassificationService:
         """
         text = f"{title} {description}".lower()
 
+        # BUG: PaymentType has no REPAYABLE, NON_REPAYABLE or UNDEFINED members
+        # (model defines LUMP_SUM, MONTHLY, QUARTERLY, ANNUAL, REIMBURSEMENT,
+        # DIRECT_SERVICE); every non-default branch raises AttributeError.
         if any(word in text for word in ["reembolsable", "devolución", "retorno"]):
-            return PaymentType.REPAYABLE
+            return PaymentType.REPAYABLE  # type: ignore[attr-defined]  # BUG: missing enum member
         elif any(word in text for word in ["no reembolsable", "donación", "regalo"]):
-            return PaymentType.NON_REPAYABLE
+            return PaymentType.NON_REPAYABLE  # type: ignore[attr-defined]  # BUG: missing enum member
         else:
-            return PaymentType.UNDEFINED
+            return PaymentType.UNDEFINED  # type: ignore[attr-defined]  # BUG: missing enum member

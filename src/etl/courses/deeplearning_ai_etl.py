@@ -87,7 +87,8 @@ def parse_course_cards(html: str) -> dict[str, dict[str, str]]:
     soup = BeautifulSoup(html, "html.parser")
     cards: dict[str, dict[str, str]] = {}
     for anchor in soup.select('a[href^="/courses/"]'):
-        href = anchor.get("href", "")
+        raw_href = anchor.get("href", "")
+        href = raw_href if isinstance(raw_href, str) else ""
         slug = href.removeprefix("/courses/").strip("/")
         if not slug:
             continue
@@ -97,7 +98,8 @@ def parse_course_cards(html: str) -> dict[str, dict[str, str]]:
         title = heading.get_text(" ", strip=True)
         if not title:
             img = anchor.find("img")
-            title = (img.get("alt") or "").strip() if img else ""
+            alt = img.get("alt") if img else None
+            title = (alt or "").strip() if isinstance(alt, str) else ""
         if not title:
             continue
 

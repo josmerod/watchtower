@@ -52,7 +52,8 @@ class TrendShiftETL(BaseETL):
         # TrendShift lists repos as cards/links — try common selectors
         # The site uses <a> tags with repo info inside cards
         for link in soup.select("a[href*='github.com']"):
-            href = link.get("href", "")
+            raw_href = link.get("href", "")
+            href = raw_href if isinstance(raw_href, str) else ""
             if "github.com" not in href:
                 continue
 
@@ -74,7 +75,8 @@ class TrendShiftETL(BaseETL):
                 link_tag = card.find("a", href=True)
                 if not link_tag:
                     continue
-                href = link_tag.get("href", "")
+                raw_href = link_tag.get("href", "")
+                href = raw_href if isinstance(raw_href, str) else ""
                 title_tag = card.find(["h2", "h3", "h4", "a"])
                 title = title_tag.get_text(strip=True) if title_tag else href
 

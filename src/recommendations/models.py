@@ -72,15 +72,15 @@ class Recommendation(BaseModel):
         default_factory=datetime.now,
         description="When this recommendation was generated",
     )
-    expires_at: datetime | None = Field(None, description="When this recommendation expires")
+    expires_at: datetime | None = Field(default=None, description="When this recommendation expires")
 
     # Metadata for different recommendation types
     metadata: dict[str, Any] = Field(default_factory=dict, description="Type-specific metadata")
 
     # User interaction tracking
     dismissed: bool = Field(default=False, description="Whether user has dismissed this recommendation")
-    feedback: bool | None = Field(None, description="User feedback (True=helpful, False=not helpful)")
-    feedback_timestamp: datetime | None = Field(None, description="When feedback was provided")
+    feedback: bool | None = Field(default=None, description="User feedback (True=helpful, False=not helpful)")
+    feedback_timestamp: datetime | None = Field(default=None, description="When feedback was provided")
 
     @validator("expires_at")
     def validate_expiry(cls, v, values):
@@ -164,10 +164,10 @@ class UserActivityProfile(BaseModel):
         self.total_activities = len(activities)
 
         # Calculate top sources and categories
-        source_counts = {}
-        category_counts = {}
-        content_type_counts = {}
-        activity_counts = {}
+        source_counts: dict[str, int] = {}
+        category_counts: dict[str, int] = {}
+        content_type_counts: dict[str, int] = {}
+        activity_counts: dict[str, int] = {}
         session_durations = []
 
         for activity in activities:

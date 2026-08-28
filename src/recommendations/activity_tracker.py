@@ -32,7 +32,10 @@ class UserActivityTracker:
             data_dir: Directory to store activity data. Defaults to project data/users/
         """
         self.settings = get_settings()
-        self.data_dir = data_dir or Path(self.settings.project_root) / "data" / "users"
+        # Settings' model validator always populates project_root, but its type is str | None.
+        project_root = self.settings.project_root
+        assert project_root is not None
+        self.data_dir = data_dir or Path(project_root) / "data" / "users"
         self.activity_window_days = 30
 
         # Ensure data directory exists
@@ -291,8 +294,8 @@ class UserActivityTracker:
 
             # Calculate statistics
             unique_content = {a.content_id for a in activities}
-            activity_types = {}
-            content_types = {}
+            activity_types: dict[str, int] = {}
+            content_types: dict[str, int] = {}
             durations = [a.duration_seconds for a in activities if a.duration_seconds]
 
             for activity in activities:

@@ -50,7 +50,10 @@ class RecommendationEngine:
         """
         self.settings = get_settings()
         self.activity_tracker = activity_tracker or UserActivityTracker(data_dir)
-        self.data_dir = data_dir or Path(self.settings.project_root) / "data" / "users"
+        # Settings' model validator always populates project_root, but its type is str | None.
+        project_root = self.settings.project_root
+        assert project_root is not None
+        self.data_dir = data_dir or Path(project_root) / "data" / "users"
         self.recommendation_window_days = 7  # Recommendations stay fresh for 7 days
 
         # Ensure data directory exists
@@ -228,6 +231,10 @@ class RecommendationEngine:
             ]  # Limit to 10 recent items
 
             for _i, activity in enumerate(recent_interactions):
+                # recent_interactions is pre-filtered on `a.title` above, so this
+                # guard only narrows the type; it never skips a real interaction.
+                if not activity.title:
+                    continue
                 # Find similar content based on title
                 similar_content = self._find_similar_content(activity.title, activity.content_type)
 
@@ -278,7 +285,10 @@ class RecommendationEngine:
         # For now, we'll simulate by looking at available data files
 
         content_items = []
-        data_dir = Path(self.settings.project_root) / "data"
+        # Settings' model validator always populates project_root, but its type is str | None.
+        project_root = self.settings.project_root
+        assert project_root is not None
+        data_dir = Path(project_root) / "data"
 
         # Try different data sources based on content type
         if content_type == "arxiv_paper":

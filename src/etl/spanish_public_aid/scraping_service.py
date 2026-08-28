@@ -6,7 +6,7 @@ import time
 from typing import Any
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 
 class ScrapingService:
@@ -232,11 +232,11 @@ class ScrapingService:
 
         return extracted_data
 
-    def _parse_element(self, element: BeautifulSoup, source: str) -> dict[str, Any] | None:
+    def _parse_element(self, element: Tag, source: str) -> dict[str, Any] | None:
         """Parse an aid element from any source.
 
         Args:
-            element: BeautifulSoup element
+            element: BeautifulSoup Tag element
             source: Source identifier
 
         Returns:

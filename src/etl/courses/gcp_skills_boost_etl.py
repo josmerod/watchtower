@@ -26,7 +26,7 @@ class GcpSkillsBoostETL(BaseETL):
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.output_file = self.output_dir / "gcp_skills_boost.json"
 
-    def extract(self) -> str:
+    def extract(self) -> str:  # type: ignore[override]  # legacy single-blob shape: run() only len()s and forwards the extract result to transform
         """Fetch the JSON payload from GCP Skills Boost."""
         try:
             req = urllib.request.Request(self.url, headers={"User-Agent": SCRAPER_BRANDED_USER_AGENT, "Accept": "application/json"})
@@ -39,7 +39,7 @@ class GcpSkillsBoostETL(BaseETL):
             logger.error(f"Failed to fetch GCP Skills Boost JSON: {e}")
             raise
 
-    def transform(self, data: str) -> list[dict]:
+    def transform(self, data: str) -> list[dict]:  # type: ignore[override]  # legacy shape: takes the single JSON blob from extract(), not a list
         """Parse JSON response and assign first_detected_at."""
         try:
             items = json.loads(data)

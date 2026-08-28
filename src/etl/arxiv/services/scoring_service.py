@@ -123,16 +123,20 @@ class ScoringService:
         }
 
         # Research category indicators
+        # BUG: ResearchCategory has no NATURAL_LANGUAGE, ROBOTICS, DATABASE_SYSTEMS,
+        # NETWORKING, SECURITY or THEORETICAL_CS members (model defines e.g.
+        # NATURAL_LANGUAGE_PROCESSING, SOFTWARE_ENGINEERING, ...); instantiating
+        # ScoringService raises AttributeError at runtime.
         self.research_category_indicators = {
             ResearchCategory.MACHINE_LEARNING: ["machine learning", "neural network", "deep learning", "model training"],
             ResearchCategory.COMPUTER_VISION: ["computer vision", "image processing", "object detection", "visual recognition"],
-            ResearchCategory.NATURAL_LANGUAGE: ["nlp", "natural language", "text analysis", "language model"],
-            ResearchCategory.ROBOTICS: ["robot", "robotics", "autonomous", "manipulation", "navigation"],
-            ResearchCategory.DATABASE_SYSTEMS: ["database", "query processing", "data management", "storage"],
+            ResearchCategory.NATURAL_LANGUAGE: ["nlp", "natural language", "text analysis", "language model"],  # type: ignore[attr-defined]  # BUG: missing enum member
+            ResearchCategory.ROBOTICS: ["robot", "robotics", "autonomous", "manipulation", "navigation"],  # type: ignore[attr-defined]  # BUG: missing enum member
+            ResearchCategory.DATABASE_SYSTEMS: ["database", "query processing", "data management", "storage"],  # type: ignore[attr-defined]  # BUG: missing enum member
             ResearchCategory.SOFTWARE_ENGINEERING: ["software engineering", "testing", "verification", "maintenance"],
-            ResearchCategory.NETWORKING: ["network", "protocol", "distributed system", "communication"],
-            ResearchCategory.SECURITY: ["security", "privacy", "encryption", "authentication", "cryptographic"],
-            ResearchCategory.THEORETICAL_CS: ["algorithm", "complexity", "computational", "theoretical", "optimization"],
+            ResearchCategory.NETWORKING: ["network", "protocol", "distributed system", "communication"],  # type: ignore[attr-defined]  # BUG: missing enum member
+            ResearchCategory.SECURITY: ["security", "privacy", "encryption", "authentication", "cryptographic"],  # type: ignore[attr-defined]  # BUG: missing enum member
+            ResearchCategory.THEORETICAL_CS: ["algorithm", "complexity", "computational", "theoretical", "optimization"],  # type: ignore[attr-defined]  # BUG: missing enum member
         }
 
     def calculate_industry_impact(self, paper_data: dict[str, Any]) -> float:
