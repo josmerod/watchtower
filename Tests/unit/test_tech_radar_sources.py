@@ -1,20 +1,23 @@
 """Unit tests for the spec-13 Tech Radar additions.
 
 Covers the HN front-page ETL normalization, the radar tab's multi-file
-community-pulse merging/dedup, date-desc sorting, and the reddit RSS
-atom-date parsing fix.
+community-pulse merging/dedup, date-desc sorting, the reddit RSS
+atom-date parsing fix, and the T-051 "Mi stack" GitHub releases ETL +
+subtab (TR-F4).
 """
 
 import json
 
 import pytest
 
+from src.etl.github import stack_releases_etl as stack_etl
 from src.etl.news import news_get_hn_frontpage as hn_etl
 from src.web.dashboard.components import tech_radar_tab as tab
 
 # ---------------------------------------------------------------------------
 # HN front-page ETL (Algolia)
 # ---------------------------------------------------------------------------
+
 
 class _FakeResponse:
     def __init__(self, payload):
@@ -58,6 +61,7 @@ def test_hn_normalization_falls_back_to_hn_discussion_link(monkeypatch):
 # Radar tab: multi-file sources, dedup, sorting, normalization
 # ---------------------------------------------------------------------------
 
+
 def _write(tmp_path, rel, articles):
     target = tmp_path / "data" / rel
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -86,7 +90,7 @@ def test_sortable_date_orders_newest_first_undated_last():
 
 
 def test_normalize_synthesizes_and_strips_summary():
-    reddit_post = {"title": "t", "url": "u", "score": 42, "num_comments": 7, "subreddit": "SelfHosted", "summary": '<div>hello <b>world</b></div>'}
+    reddit_post = {"title": "t", "url": "u", "score": 42, "num_comments": 7, "subreddit": "SelfHosted", "summary": "<div>hello <b>world</b></div>"}
     normalized = tab._normalize_article(reddit_post)
     assert normalized["summary"] == "hello world"
     assert normalized["link"] == "u"
@@ -155,6 +159,7 @@ def test_pulse_subreddits_configured(subreddit):
 # TR-F3: unified feed (T-041)
 # ---------------------------------------------------------------------------
 
+
 def test_unified_feed_merges_and_orders_chronologically(tmp_path, monkeypatch):
     monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
     monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
@@ -193,3 +198,167 @@ def test_unified_category_options_distinct():
     options = tab._unified_category_options()
     values = [o["value"] for o in options]
     assert len(values) == len(set(values)) and "AI" in values
+
+
+# ---------------------------------------------------------------------------
+# T-051 TR-F4: "Mi stack" GitHub releases ETL + subtab
+# ---------------------------------------------------------------------------
+
+_IMMICH_CFG = {"owner": "immich-app", "repo": "immich", "max_releases": 5}
+_N8N_CFG = {"owner": "n8n-io", "repo": "n8n", "max_releases": 5}
+
+
+def _release_entry(owner: str, repo: str, tag: str, updated: str, notes_html: str = "<p>Initial stable release.</p>") -> str:
+    """One releases.atom <entry> with XML-escaped HTML release notes."""
+    escaped = notes_html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return (
+        "  <entry>\n"
+        f"    <title>{tag}</title>\n"
+        f'    <link href="https://github.com/{owner}/{repo}/releases/tag/{tag}"/>\n'
+        "    <id>tag:github.com,2008:repository/1234</id>\n"
+        f"    <updated>{updated}</updated>\n"
+        f'    <content type="html">{escaped}</content>\n'
+        "  </entry>\n"
+    )
+
+
+def _stack_atom(entries_xml: str) -> bytes:
+    """Wrap entry XML into a minimal GitHub-style atom feed body."""
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom">\n' + entries_xml + "</feed>\n").encode()
+
+
+def test_stack_repos_configured():
+    repos = {f"{cfg['owner']}/{cfg['repo']}" for cfg in stack_etl.STACK_REPOS}
+    assert {"n8n-io/n8n", "home-assistant/core", "immich-app/immich", "jellyfin/jellyfin", "JustArchiNET/ArchiSteamFarm", "HaveAGitGat/Tdarr"} == repos
+    # HA core releases almost daily (incl. betas) — it must carry a tighter cap.
+    ha = next(cfg for cfg in stack_etl.STACK_REPOS if cfg["repo"] == "core")
+    assert ha["max_releases"] < stack_etl.DEFAULT_MAX_RELEASES
+
+
+def test_stack_etl_parses_atom_releases():
+    feed = _stack_atom(
+        _release_entry(
+            "immich-app",
+            "immich",
+            "v3.1.0",
+            "2026-08-27T20:37:47Z",
+            '<h2><a href="https://github.com/immich-app/immich/compare/v3.0.0...v3.1.0">v3.1.0</a> (2026-08-27)</h2> <ul><li>Fix **thumbnail** generation.</li></ul>',
+        )
+        + _release_entry("immich-app", "immich", "v3.0.0", "2026-07-29T14:26:17Z")
+    )
+    releases = stack_etl.parse_repo_releases(feed, _IMMICH_CFG)
+    assert len(releases) == 2
+    first = releases[0]
+    assert first["repo"] == "immich" and first["owner"] == "immich-app"
+    assert first["tag"] == "v3.1.0" and first["version"] == "3.1.0"
+    assert first["title"] == "v3.1.0"
+    assert first["link"] == "https://github.com/immich-app/immich/releases/tag/v3.1.0"
+    assert first["published"] == "2026-08-27T20:37:47+00:00"  # atom updated_parsed -> ISO UTC
+    assert first["summary"] == "v3.1.0 (2026-08-27) Fix thumbnail generation."  # HTML + markdown stripped, first sentence
+    assert first["source_category"] == "mi_stack"
+
+
+def test_stack_etl_summary_strips_markup_and_caps_length():
+    markup = "<h2><a href='x'>2.37.3</a> (2026-08-27)</h2> <ul><li>Fix **login** &amp; session bug. Second sentence.</li></ul>"
+    assert stack_etl._summarize(markup) == "2.37.3 (2026-08-27) Fix login & session bug."
+    assert stack_etl._summarize("") == ""
+    wall = "no sentence ends here " * 30
+    capped = stack_etl._summarize(f"<p>{wall}</p>")
+    assert len(capped) <= stack_etl.SUMMARY_MAX_CHARS and capped.endswith("…")
+
+
+def test_stack_etl_per_repo_cap():
+    # GitHub atom feeds list releases newest-first; the cap keeps the first N.
+    entries = "".join(_release_entry("immich-app", "immich", f"v1.{i}.0", f"2026-08-{i:02d}T10:00:00Z") for i in range(7, 0, -1))
+    feed = _stack_atom(entries)
+    assert [r["tag"] for r in stack_etl.parse_repo_releases(feed, _IMMICH_CFG)] == ["v1.7.0", "v1.6.0", "v1.5.0", "v1.4.0", "v1.3.0"]  # default cap 5, feed order kept
+    tight = dict(_IMMICH_CFG, max_releases=3)
+    assert len(stack_etl.parse_repo_releases(feed, tight)) == 3
+
+
+def test_stack_etl_tag_from_percent_encoded_link():
+    assert stack_etl._tag_from_link("https://github.com/n8n-io/n8n/releases/tag/n8n%402.37.3") == "n8n@2.37.3"
+    assert stack_etl._tag_from_link("https://github.com/n8n-io/n8n") == ""
+    assert stack_etl._version_from_tag("n8n@2.37.3") == "2.37.3"  # scoped tag -> bare version
+    assert stack_etl._version_from_tag("v3.1.0") == "3.1.0" and stack_etl._version_from_tag("beta") == "beta"
+
+
+def test_stack_etl_save_writes_latest_and_run_summary(tmp_path, monkeypatch):
+    monkeypatch.setattr(stack_etl, "get_project_root", lambda: str(tmp_path))
+    releases = [
+        {"repo": "immich", "owner": "immich-app", "tag": "v3.1.0", "version": "3.1.0", "title": "v3.1.0", "link": "https://x/1", "published": "2026-08-27T20:37:47+00:00", "summary": "s"},
+        {"repo": "n8n", "owner": "n8n-io", "tag": "n8n@2.37.3", "version": "2.37.3", "title": "n8n@2.37.3", "link": "https://x/2", "published": "2026-08-25T13:03:52+00:00", "summary": "s"},
+    ]
+    stats = {"repos_total": 6, "repos_ok": 6, "releases_per_repo": {"immich": 1, "n8n": 1}}
+    assert stack_etl.save_stack_releases(releases, stats) is True
+
+    data_dir = tmp_path / "data" / "github"
+    latest = json.loads((data_dir / "stack_releases_latest.json").read_text(encoding="utf-8"))
+    assert isinstance(latest, list) and len(latest) == 2  # the tab reads files that are plain lists
+    snapshots = [p for p in data_dir.glob("stack_releases_*.json") if p.name != "stack_releases_latest.json"]
+    assert len(snapshots) == 1
+    summary = json.loads((data_dir / "run_summary_latest.json").read_text(encoding="utf-8"))
+    assert summary["etl_name"] == "stack_releases" and summary["success"] is True
+    assert summary["records_loaded"] == 2 and summary["repos_ok"] == 6 and "releases_per_repo" in summary
+
+
+def test_stack_etl_save_keeps_last_good_on_empty_or_partial_run(tmp_path, monkeypatch):
+    monkeypatch.setattr(stack_etl, "get_project_root", lambda: str(tmp_path))
+    good = [{"repo": "n8n", "title": "LAST-GOOD"}]
+    assert stack_etl.save_stack_releases(good, {"repos_total": 6, "repos_ok": 6, "releases_per_repo": {}}) is True
+    latest_path = tmp_path / "data" / "github" / "stack_releases_latest.json"
+
+    assert stack_etl.save_stack_releases([], {"repos_total": 6, "repos_ok": 0, "releases_per_repo": {}}) is False
+    assert stack_etl.save_stack_releases(good, {"repos_total": 6, "repos_ok": 1, "releases_per_repo": {}}) is False  # 1/6 repos < majority
+    assert json.loads(latest_path.read_text(encoding="utf-8")) == good  # last-good untouched
+
+    assert stack_etl.save_stack_releases(good, {"repos_total": 6, "repos_ok": 3, "releases_per_repo": {}}) is True  # majority writes
+    assert json.loads(latest_path.read_text(encoding="utf-8")) == good
+
+
+def _write_stack_fixture(tmp_path):
+    _write(
+        tmp_path,
+        "github/stack_releases_latest.json",
+        [
+            {"repo": "n8n", "owner": "n8n-io", "title": "n8n@2.37.3", "link": "https://github.com/n8n-io/n8n/releases/tag/n8n@2.37.3", "published": "2026-08-25T13:03:52+00:00", "summary": "Bug fixes."},
+            {"repo": "immich", "owner": "immich-app", "title": "v3.2.0-rc.1", "link": "https://x/immich", "published": "2026-08-27T20:37:47+00:00", "summary": "chore: version v3.2.0-rc.1"},
+        ],
+    )
+
+
+def test_stack_tab_label_and_single_column():
+    layout = str(tab.render_tech_radar_tab())
+    assert "🧮 Mi stack" in layout and "tech-radar-tab-stack" in layout
+    assert layout.count("tech-radar-col-mi_stack") == 1  # column lives on the Mi stack tab only, id stays unique
+
+
+def test_stack_section_renders_release_rows(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_stack_fixture(tmp_path)
+    source = next(s for s in tab.RADAR_SOURCES if s["key"] == "mi_stack")
+    section = str(tab._render_source_section(source))
+    assert "Mi stack" in section and "release" in section
+    assert section.index("v3.2.0-rc.1") < section.index("n8n@2.37.3")  # newest first
+    assert "immich" in section and "n8n" in section  # repo badge per row
+
+
+def test_unified_feed_includes_stack_items_with_repo_badge(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_stack_fixture(tmp_path)
+    _write(tmp_path, "news/hn_frontpage_latest.json", [{"title": "hn item", "url": "https://x/hn", "published": "2026-08-26T10:00:00+00:00"}])
+
+    merged = str(tab._render_unified_feed())
+    assert "v3.2.0-rc.1" in merged and "n8n@2.37.3" in merged and "immich" in merged  # repo badge shows in the merged feed
+
+    only_stack = str(tab._render_unified_feed(source_filter="mi_stack"))
+    assert "n8n@2.37.3" in only_stack and "hn item" not in only_stack
+    stack_category = str(tab._render_unified_feed(category_filter="Mi Stack"))
+    assert "v3.2.0-rc.1" in stack_category and "hn item" not in stack_category
+
+
+def test_unified_dropdown_options_include_stack():
+    assert "mi_stack" in [o["value"] for o in tab._unified_source_options()]
+    assert "Mi Stack" in [o["value"] for o in tab._unified_category_options()]

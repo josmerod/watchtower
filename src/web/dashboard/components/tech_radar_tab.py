@@ -49,6 +49,21 @@ RADAR_SOURCES: list[dict[str, Any]] = [
     {"key": "hn_frontpage", "label": "🗞️ Hacker News", "file": "news/hn_frontpage_latest.json", "category": "Discussion"},
     {"key": "wired", "label": "🔗 Wired", "file": "news/wired_latest.json", "category": "Tech Media"},
     {"key": "mit_techreview", "label": "🔬 MIT Tech Review", "file": "news/mit_techreview_latest.json", "category": "Emerging Tech"},
+    # TR-F4 "Mi stack": GitHub releases of the self-hosted stack, from
+    # src/etl/github/stack_releases_etl.py. ``own_tab`` keeps its column out
+    # of the "Por fuente" grid (it lives on its dedicated subtab) while the
+    # single controller callback still owns its output id; ``per_item_label``
+    # badges each unified-feed row with the release's repo name; ``row_style``
+    # renders it as release rows instead of article cards.
+    {
+        "key": "mi_stack",
+        "label": "🧮 Mi stack",
+        "file": "github/stack_releases_latest.json",
+        "category": "Mi Stack",
+        "own_tab": True,
+        "per_item_label": "repo",
+        "row_style": "release",
+    },
 ]
 
 MAX_ITEMS_PER_SOURCE = 25
@@ -178,6 +193,8 @@ def _build_article_card(article: dict[str, Any]) -> dbc.Card:
 
 def _render_source_section(source: dict[str, Any], search_term: str | None = None, all_data: dict[str, list[dict[str, Any]]] | None = None) -> list:
     """Render one source's articles as a column of cards, optionally filtered."""
+    if source.get("row_style") == "release":
+        return _render_stack_section(source, search_term=search_term, all_data=all_data)
     articles = [_normalize_article(a) for a in _load_source_data(source, all_data)]
     if not articles:
         return [
@@ -198,6 +215,36 @@ def _render_source_section(source: dict[str, Any], search_term: str | None = Non
         html.H6(source["label"], className="mb-2"),
         html.Small(f"{len(articles)} articles", className="text-muted mb-2 d-block"),
         *[_build_article_card(a) for a in articles],
+    ]
+
+
+def _render_stack_section(source: dict[str, Any], search_term: str | None = None, all_data: dict[str, list[dict[str, Any]]] | None = None) -> list:
+    """Render the TR-F4 "Mi stack" releases as unified-style rows (one row per release).
+
+    Each row badges the repo name (the "service I run") and the release
+    category, reusing the unified-feed row style; newest release first.
+    """
+    releases = [_normalize_article(a) for a in _load_source_data(source, all_data)]
+    if not releases:
+        return [
+            html.H6(source["label"], className="mb-2"),
+            dbc.Alert(f"No data yet. Run the ETL for {source['label'].split(' ', 1)[-1]} (src/etl/github/stack_releases_etl.py).", color="light", className="small"),
+        ]
+    if search_term:
+        releases = filter_content(search_term, releases, _SEARCHABLE_FIELDS)
+        if not releases:
+            return [
+                html.H6(source["label"], className="mb-2"),
+                dbc.Alert(f"No releases matching '{search_term}'.", color="light", className="small"),
+            ]
+    releases.sort(key=_sortable_date, reverse=True)
+    releases = releases[:MAX_ITEMS_PER_SOURCE]
+    repos = sorted({str(r.get("repo")) for r in releases if r.get("repo")})
+    rows = [_render_unified_row(release, str(release.get("repo") or source["label"]), "release", search_term) for release in releases]
+    return [
+        html.H6(source["label"], className="mb-2"),
+        html.Small(f"{len(releases)} releases · {', '.join(repos)}", className="text-muted mb-2 d-block"),
+        html.Ul(rows, className="mb-0"),
     ]
 
 
@@ -434,13 +481,26 @@ def _render_unified_feed(search_term: str | None = None, source_filter: str = "a
     if not rows:
         return dbc.Alert("Nada que mostrar con estos filtros.", color="info", className="mt-3")
 
-    items = html.Ul([_render_unified_row(article, source["label"], source["category"], search_term) for _, article, source in rows[:MAX_UNIFIED_ITEMS]], className="mb-0")
+    items = html.Ul([_render_unified_row(article, _row_label(article, source), source["category"], search_term) for _, article, source in rows[:MAX_UNIFIED_ITEMS]], className="mb-0")
     return html.Div(
         [
             html.Small(f"{len(rows)} artículos ({min(len(rows), MAX_UNIFIED_ITEMS)} mostrados) — todas las fuentes, orden cronológico.", className="text-muted d-block mb-2"),
             items,
         ]
     )
+
+
+def _row_label(article: dict[str, Any], source: dict[str, Any]) -> str:
+    """Badge label for a unified-feed row.
+
+    Sources may opt into a per-item label field (``per_item_label``) — the
+    "Mi stack" source badges each row with its release's ``repo`` name so
+    n8n/Immich/Jellyfin updates are distinguishable in the merged feed.
+    """
+    field = source.get("per_item_label")
+    if field and article.get(field):
+        return str(article[field])
+    return source["label"]
 
 
 def _unified_source_options() -> list[dict[str, str]]:
@@ -459,8 +519,11 @@ def render_tech_radar_tab() -> html.Div:
     search = create_search_input("tech-radar-search", placeholder="Search tech radar…", clear_button=True)
     refresh = create_refresh_button("tech-radar")
 
-    # Build a responsive grid of source sections
-    source_cols = [dbc.Col(_render_source_section(source), id=f"tech-radar-col-{source['key']}", width=12, lg=6, xl=3, className="mb-3") for source in RADAR_SOURCES]
+    # Build a responsive grid of source sections ("Por fuente"); sources with
+    # ``own_tab`` render their column on their dedicated subtab instead — the
+    # controller callback still owns every tech-radar-col-* output id.
+    source_cols = [dbc.Col(_render_source_section(source), id=f"tech-radar-col-{source['key']}", width=12, lg=6, xl=3, className="mb-3") for source in RADAR_SOURCES if not source.get("own_tab")]
+    stack_sources = [source for source in RADAR_SOURCES if source.get("own_tab")]
 
     return html.Div(
         [
@@ -505,6 +568,20 @@ def render_tech_radar_tab() -> html.Div:
                         html.Div(dbc.Row(source_cols, className="mt-2")),
                         label="🗂️ Por fuente",
                         tab_id="tech-radar-tab-sources",
+                    ),
+                    # TR-F4: releases of the self-hosted stack ("Mi stack").
+                    dbc.Tab(
+                        html.Div(
+                            [
+                                dbc.Row(
+                                    dbc.Col(_render_source_section(source), id=f"tech-radar-col-{source['key']}", width=12, lg=8, className="mb-3"),
+                                    className="mt-2",
+                                )
+                                for source in stack_sources
+                            ]
+                        ),
+                        label="🧮 Mi stack",
+                        tab_id="tech-radar-tab-stack",
                     ),
                 ],
                 id="tech-radar-view-tabs",
