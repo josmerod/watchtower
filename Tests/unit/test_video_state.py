@@ -122,7 +122,11 @@ def test_modal_content_contains_nocookie_embed():
     # 16:9 responsive box
     assert "56.25%" in body_str
     footer_str = str(footer)
-    assert "wt-video-modal-close" in footer_str
+    # The close button lives in the STATIC modal shell (a string-id callback
+    # Input must exist in the initial layout), not in the dynamic footer.
+    from src.web.dashboard.components.videos_tab import _video_modal_layout
+
+    assert "wt-video-modal-close" in str(_video_modal_layout())
     assert "https://www.youtube.com/watch?v=dQw4w9WgXcQ" in footer_str
 
 

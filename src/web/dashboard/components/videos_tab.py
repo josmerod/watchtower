@@ -151,7 +151,6 @@ def _build_video_modal_content(video: dict) -> tuple:
         [
             html.Span(channel, className="text-muted small me-auto align-self-center"),
             dbc.Button("Ver en YouTube ↗", href=watch_url, target="_blank", external_link=True, color="primary", outline=True, size="sm"),
-            dbc.Button("Cerrar", id="wt-video-modal-close", color="secondary", outline=True, size="sm", className="ms-2"),
         ],
         className="d-flex w-100",
     )
@@ -627,7 +626,15 @@ def _video_modal_layout():
         [
             dbc.ModalHeader(dbc.ModalTitle(id="wt-video-modal-title"), close_button=True),
             dbc.ModalBody(id="wt-video-modal-body"),
-            dbc.ModalFooter(id="wt-video-modal-footer"),
+            # The close button must exist statically in the layout: a Dash
+            # callback Input with a string id that only appears inside another
+            # callback's output raises ReferenceError in the renderer.
+            dbc.ModalFooter(
+                [
+                    html.Div(id="wt-video-modal-footer", className="d-flex w-100 align-items-center"),
+                    dbc.Button("Cerrar", id="wt-video-modal-close", color="secondary", outline=True, size="sm", className="ms-2"),
+                ]
+            ),
         ],
         id="wt-video-modal",
         is_open=False,
