@@ -1,0 +1,148 @@
+"""Unit tests for the shared alert-rule store (src/alerts/rules_store.py).
+
+All tests run against tmp_path rule files — the real ``data/alerts/rules.json``
+is never touched.
+"""
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+from src.alerts.rules_store import (
+    SEVERITY_BY_FRESHNESS,
+    build_freshness_rule,
+    load_rules,
+    resolve_rule,
+    sync_freshness_rules,
+    upsert_rule,
+)
+
+NOW = 1_800_000_000.0
+
+
+def _record(status="stale", age_hours=30.0, key="t", label="Test", exists=True):
+    return {"key": key, "label": label, "path": f"{key}_latest.json", "exists": exists, "age_hours": age_hours, "status": status}
+
+
+def _summary(*records):
+    return {"checked_at": "2026-08-28T00:00:00+00:00", "counts": {}, "sources": list(records)}
+
+
+class TestSeverityMapping:
+    """Freshness status maps to alert severity."""
+
+    def test_mapping(self):
+        assert SEVERITY_BY_FRESHNESS == {"stale": "medium", "critical": "high"}
+
+
+class TestBuildFreshnessRule:
+    """Rule construction from a freshness record."""
+
+    def test_stale_rule_shape_and_message(self):
+        rule = build_freshness_rule(_record(), now=NOW)
+        assert rule["id"] == "data_freshness_t"
+        assert rule["severity"] == "medium"
+        assert rule["active"] is True
+        expected_since = datetime.fromtimestamp(NOW - 30 * 3600, tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
+        assert rule["description"] == f"Fuente Test sin datos desde {expected_since} UTC (30h)"
+
+    def test_critical_rule_is_high(self):
+        rule = build_freshness_rule(_record(status="critical", age_hours=200.0), now=NOW)
+        assert rule["severity"] == "high"
+        assert rule["description"].endswith("(200h)")
+
+    def test_missing_file_rule(self):
+        rule = build_freshness_rule(_record(status="critical", age_hours=None, exists=False), now=NOW)
+        assert rule["severity"] == "high"
+        assert rule["description"] == "Fuente Test sin datos (archivo ausente)"
+
+
+class TestLoadSave:
+    """Store read/write robustness."""
+
+    def test_load_missing_file_is_empty(self, tmp_path: Path):
+        assert load_rules(tmp_path / "nope.json") == []
+
+    def test_load_wraps_lone_dict(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        f.write_text(json.dumps({"id": "r1"}), encoding="utf-8")
+        assert load_rules(f) == [{"id": "r1"}]
+
+    def test_load_invalid_json_is_empty(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        f.write_text("{not json", encoding="utf-8")
+        assert load_rules(f) == []
+
+
+class TestUpsertRule:
+    """Idempotent upsert-by-id semantics."""
+
+    def test_created_then_unchanged(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        rule = build_freshness_rule(_record(), now=NOW)
+        assert upsert_rule(rule, rules_file=f) == "created"
+        assert upsert_rule(dict(rule), rules_file=f) == "unchanged"
+        rules = load_rules(f)
+        assert len(rules) == 1
+        assert rules[0]["created_at"] == rules[0]["updated_at"]  # unchanged pass never rewrites
+
+    def test_update_changes_payload_and_keeps_created_at(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        upsert_rule(build_freshness_rule(_record(), now=NOW), rules_file=f)
+        before = load_rules(f)[0]
+        assert upsert_rule(build_freshness_rule(_record(age_hours=31.0), now=NOW), rules_file=f) == "updated"
+        after = load_rules(f)
+        assert len(after) == 1
+        assert after[0]["created_at"] == before["created_at"]
+        assert after[0]["description"].endswith("(31h)")
+
+    def test_upsert_never_duplicates_and_keeps_manual_rules(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        f.write_text(json.dumps([{"id": "manual", "name": "Manual", "active": True}]), encoding="utf-8")
+        for _ in range(3):
+            upsert_rule(build_freshness_rule(_record(), now=NOW), rules_file=f)
+        assert sorted(r["id"] for r in load_rules(f)) == ["data_freshness_t", "manual"]
+
+
+class TestResolveRule:
+    """Resolve (clear) semantics."""
+
+    def test_removes_only_target(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        f.write_text(json.dumps([{"id": "a"}, {"id": "data_freshness_t"}, {"id": "b"}]), encoding="utf-8")
+        assert resolve_rule("data_freshness_t", rules_file=f) is True
+        assert [r["id"] for r in load_rules(f)] == ["a", "b"]
+
+    def test_absent_id_is_false(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        f.write_text(json.dumps([{"id": "a"}]), encoding="utf-8")
+        assert resolve_rule("nope", rules_file=f) is False
+        assert resolve_rule("nope", rules_file=tmp_path / "nope.json") is False
+
+
+class TestSyncFreshnessRules:
+    """Full summary -> store sync."""
+
+    def test_raise_idempotent_recover_lifecycle(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        stale_summary = _summary(_record(), _record(key="ok", label="OK", status="fresh", age_hours=1.0))
+
+        assert sync_freshness_rules(stale_summary, rules_file=f, now=NOW) == {"created": 1, "updated": 0, "unchanged": 0, "resolved": 0}
+        assert sync_freshness_rules(stale_summary, rules_file=f, now=NOW)["unchanged"] == 1  # idempotent re-check
+
+        recovered = _summary(_record(status="fresh", age_hours=1.0), _record(key="ok", label="OK", status="fresh", age_hours=1.0))
+        assert sync_freshness_rules(recovered, rules_file=f, now=NOW)["resolved"] == 1
+        assert load_rules(f) == []
+
+    def test_all_fresh_leaves_store_untouched(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        fresh = _summary(_record(status="fresh", age_hours=1.0))
+        assert sync_freshness_rules(fresh, rules_file=f, now=NOW) == {"created": 0, "updated": 0, "unchanged": 0, "resolved": 0}
+        assert not f.exists()
+
+    def test_deregistered_source_gets_cleaned_up(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        sync_freshness_rules(_summary(_record(key="gone")), rules_file=f, now=NOW)
+        assert len(load_rules(f)) == 1
+        sync_freshness_rules(_summary(_record(key="other", label="Other")), rules_file=f, now=NOW)
+        assert [r["id"] for r in load_rules(f)] == ["data_freshness_other"]

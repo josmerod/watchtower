@@ -153,3 +153,49 @@ class TestRenderFunctions:
         ]
         layout = render_rules_list(rules)
         assert layout is not None
+
+
+def _iter_text(component: Any) -> Any:
+    """Yield every text string in a Dash component tree."""
+    if isinstance(component, str):
+        yield component
+        return
+    children = getattr(component, "children", None)
+    if children is None:
+        return
+    if isinstance(children, (list, tuple)):
+        for child in children:
+            yield from _iter_text(child)
+    else:
+        yield from _iter_text(children)
+
+
+class TestRenderSeverityBadge:
+    """Watcher-managed rules carry a severity; the rules list surfaces it (T-052)."""
+
+    FRESHNESS_RULE: dict[str, Any] = {
+        "id": "data_freshness_t",
+        "name": "Freshness: Test",
+        "description": "Fuente Test sin datos desde 2026-08-26 18:00 UTC (30h)",
+        "severity": "high",
+        "active": True,
+    }
+
+    def test_high_severity_badge_and_message_render(self) -> None:
+        """A high-severity freshness rule shows its badge and message."""
+        texts = list(_iter_text(render_rules_list([self.FRESHNESS_RULE])))
+        assert "HIGH" in texts
+        assert any("Fuente Test sin datos" in t for t in texts)
+        assert any("(30h)" in t for t in texts)
+
+    def test_medium_severity_badge(self) -> None:
+        """A medium-severity rule renders a MEDIUM badge."""
+        rule = {**self.FRESHNESS_RULE, "severity": "medium"}
+        assert "MEDIUM" in list(_iter_text(render_rules_list([rule])))
+
+    def test_rules_without_severity_render_without_badge(self) -> None:
+        """Plain user rules keep the original rendering (no severity badge)."""
+        texts = list(_iter_text(render_rules_list([{"id": "r1", "name": "Plain", "active": True}])))
+        assert "HIGH" not in texts
+        assert "MEDIUM" not in texts
+        assert "Active" in texts

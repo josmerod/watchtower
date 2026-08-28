@@ -283,6 +283,16 @@ def render_rules_list(rules: list[Any]) -> dbc.Container:
             className="me-2",
         )
 
+        # Watcher-managed rules (e.g. data freshness) carry a severity.
+        severity = str(rule.get("severity", "")).lower()
+        if severity:
+            status_badges = [
+                status_badge,
+                dbc.Badge(severity.upper(), color="danger" if severity == "high" else "warning", className="ms-1"),
+            ]
+        else:
+            status_badges = [status_badge]
+
         card = dbc.Card(
             [
                 dbc.CardBody(
@@ -301,7 +311,7 @@ def render_rules_list(rules: list[Any]) -> dbc.Container:
                                 ),
                                 dbc.Col(
                                     [
-                                        status_badge,
+                                        *status_badges,
                                     ],
                                     width=4,
                                     className="text-end",

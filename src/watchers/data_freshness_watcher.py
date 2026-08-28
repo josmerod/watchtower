@@ -8,15 +8,22 @@ threshold (fresh → stale → critical). The summary lands in
 dead (this is the check that would have caught the 2026-08-27 deploy gap and
 the silent reddit 403s without anyone looking manually).
 
+Stale/critical sources are also mirrored into the shared alert-rule store
+(``data/alerts/rules.json``, severity: critical→high, stale→medium) so they
+surface in the Notifications tab; recovery to fresh resolves the rule. See
+:mod:`src.alerts.rules_store`.
+
 Usage:
     uv run python -m src.watchers.data_freshness_watcher
 """
 
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from src.alerts.rules_store import sync_freshness_rules
 from src.utils.file_system import get_project_root
 from src.utils.logging import get_logger
 from src.watchers.base_watcher import BaseWatcher
@@ -69,8 +76,6 @@ def assess_freshness(source_files: list[dict[str, Any]] | None = None, data_dir:
     Returns:
         Summary dict with per-source records and fresh/stale/critical counts.
     """
-    import time
-
     root = data_dir if data_dir is not None else Path(get_project_root()) / "data"
     now = now if now is not None else time.time()
     records: list[dict[str, Any]] = []
@@ -118,9 +123,19 @@ class DataFreshnessWatcher(BaseWatcher):
         """Not used — transition detection is handled per-source in check()."""
         return True
 
-    def check_freshness(self) -> dict[str, Any]:
-        """Assess freshness, persist the summary, and record transition events."""
-        summary = assess_freshness()
+    def check_freshness(self, data_dir: Path | None = None, now: float | None = None, rules_file: Path | None = None) -> dict[str, Any]:
+        """Assess freshness, persist the summary, record transition events, and sync alert rules.
+
+        Args:
+            data_dir: Data root to check (defaults to the project's ``data/``).
+            now: Epoch for staleness math (defaults to the current time).
+            rules_file: Alert-rule store to write (defaults to ``data/alerts/rules.json``).
+
+        Returns:
+            The freshness summary dict (unchanged schema).
+        """
+        now = time.time() if now is None else now
+        summary = assess_freshness(data_dir=data_dir, now=now)
         previous_statuses: dict[str, str] = self.previous_state.get("statuses", {})
 
         for record in summary["sources"]:
@@ -141,15 +156,23 @@ class DataFreshnessWatcher(BaseWatcher):
                 )
 
         self.output_file.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
-        self._save_state(
-            {
-                "last_check": summary["checked_at"],
-                "statuses": {r["key"]: r["status"] for r in summary["sources"]},
-                "first_seen": self.previous_state.get("first_seen", datetime.now().isoformat()),
-            }
-        )
+        new_state = {
+            "last_check": summary["checked_at"],
+            "statuses": {r["key"]: r["status"] for r in summary["sources"]},
+            "first_seen": self.previous_state.get("first_seen", datetime.now().isoformat()),
+        }
+        self._save_state(new_state)
+        # Advance in-memory state too — without this a second in-process check kept
+        # seeing the pre-check statuses and transition events could never fire.
+        self.previous_state = new_state
         counts = summary["counts"]
         logger.info(f"Freshness check: {counts['fresh']} fresh, {counts['stale']} stale, {counts['critical']} critical — summary at {self.output_file}")
+
+        try:
+            alert_counts = sync_freshness_rules(summary, rules_file=rules_file, now=now)
+            logger.info(f"Freshness alert rules: {alert_counts['created']} created, {alert_counts['updated']} updated, {alert_counts['unchanged']} unchanged, {alert_counts['resolved']} resolved")
+        except Exception as e:  # alert wiring must never break the freshness check
+            logger.error(f"Failed to sync freshness alert rules: {e}")
         return summary
 
 
