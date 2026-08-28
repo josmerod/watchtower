@@ -254,12 +254,73 @@ def _render_saved_subtab() -> html.Div:
     return container
 
 
-def build_knowledge_table(source_keys, search_term: str = "", display_name: str = "Knowledge", page: int = 1):
-    """Build the knowledge items table, optionally filtered, highlighted and paginated.
+# Card-view toggle (spec 03 F2): available views and the label the toggle
+# button shows while a given view is active (i.e. what a click switches TO).
+KG_VIEWS = ("list", "cards")
+KG_VIEW_TOGGLE_LABELS = {"list": "▦ Tarjetas", "cards": "☰ Lista"}
+
+# Fields probed (first hit wins) for the card snippet text.
+_KG_SNIPPET_FIELDS = ("summary", "description")
+
+
+def _knowledge_card(article: dict, search_term: str = "") -> dbc.Col:
+    """Build one minimalist result card (title, source, snippet, link + star).
+
+    Mirrors the videos-tab card pattern (2-line clamped title, muted metadata)
+    so both grids feel like the same design language.
+    """
+    title = next((str(article.get(f)) for f in ("title", "name", "full_name") if article.get(f)), "No Title")
+    url = next((article.get(f) for f in ("url", "link", "html_url", "website") if article.get(f)), None)
+    snippet = next((str(article.get(f)) for f in _KG_SNIPPET_FIELDS if article.get(f)), "")
+
+    title_children = highlight_segments(title, search_term) if search_term else title
+    snippet_children = highlight_segments(snippet, search_term) if (search_term and snippet) else snippet
+
+    header = html.Div(
+        [
+            _save_button(article),
+            dbc.Badge(article.get("source_display_name", "Knowledge"), color="secondary", pill=True, className="text-lowercase ms-auto"),
+        ],
+        className="d-flex align-items-center mb-1",
+    )
+
+    body = [
+        header,
+        html.H6(
+            html.A(title_children, href=url, target="_blank", style={"color": "#A37FFF", "textDecoration": "none"}) if url else html.Span(title_children),
+            className="card-title mb-1",
+            style={"fontSize": "0.9rem", "overflow": "hidden", "textOverflow": "ellipsis", "display": "-webkit-box", "-webkitLineClamp": "2", "-webkitBoxOrient": "vertical", "minHeight": "2.5em"},
+        ),
+    ]
+    if snippet:
+        body.append(
+            html.P(
+                snippet_children,
+                className="card-text text-muted mb-1",
+                style={"fontSize": "0.8rem", "overflow": "hidden", "textOverflow": "ellipsis", "display": "-webkit-box", "-webkitLineClamp": "2", "-webkitBoxOrient": "vertical"},
+            )
+        )
+    body.append(html.P(format_article_date(article), className="card-text text-muted mb-0", style={"fontSize": "0.75rem"}))
+
+    return dbc.Col(
+        dbc.Card(dbc.CardBody(body), className="h-100"),
+        xs=12,
+        sm=6,
+        md=4,
+        className="mb-3",
+    )
+
+
+def build_knowledge_table(source_keys, search_term: str = "", display_name: str = "Knowledge", page: int = 1, view: str = "list"):
+    """Build the knowledge items list or card grid, filtered, highlighted and paginated.
+
+    Args:
+        view: ``"list"`` renders the shared items table; ``"cards"`` renders
+            the card grid (spec 03 F2 toggle).
 
     Returns:
         Tuple of (content, current_page): content is the pagination controls +
-        shared items table; current_page is the clamped page actually rendered.
+        table or card grid; current_page is the clamped page actually rendered.
     """
     if isinstance(source_keys, str):
         source_keys = [source_keys]
@@ -288,6 +349,29 @@ def build_knowledge_table(source_keys, search_term: str = "", display_name: str 
 
     page_items, total_pages, page = paginate(all_articles_for_tab, page, MAX_ARTICLES_PER_SOURCE)
 
+    search_id = f"knowledge-search-{'-'.join(source_keys)}"
+    controls = pagination_controls(
+        "kg",
+        page=page,
+        total_pages=total_pages,
+        showing=len(page_items),
+        total=len(all_articles_for_tab),
+        id_prefix=search_id,
+    )
+
+    if view == "cards":
+        # Card grid (spec 03 F2): same page slice, same controls, premium cards
+        cards = html.Div([_knowledge_card(article, search_term) for article in page_items], className="row")
+        body = html.Div(cards, style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"})
+        if search_term:
+            body = html.Div(
+                [
+                    dbc.Alert(f"🌱 Found {len(all_articles_for_tab)} items matching '{search_term}'", color="success", className="mb-3"),
+                    cards,
+                ]
+            )
+        return html.Div([controls, body]), page
+
     columns = [
         {
             "header": "",
@@ -302,16 +386,6 @@ def build_knowledge_table(source_keys, search_term: str = "", display_name: str 
         {"header": "Date", "cell": lambda article: format_article_date(article)},
     ]
     table = render_items_table(page_items, columns, empty_message=f"No knowledge items matching '{search_term}'.", wrap_scroll=False)
-
-    search_id = f"knowledge-search-{'-'.join(source_keys)}"
-    controls = pagination_controls(
-        "kg",
-        page=page,
-        total_pages=total_pages,
-        showing=len(page_items),
-        total=len(all_articles_for_tab),
-        id_prefix=search_id,
-    )
 
     content = html.Div([table], style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"})
     if search_term:
@@ -349,13 +423,23 @@ def create_knowledge_source_tab_content(source_keys, combined_name=None):
                         width=True,
                     ),
                     dbc.Col(
-                        dbc.Button(
-                            "🔄 Refresh",
-                            id=f"{tab_search_id}-refresh",
-                            color="secondary",
-                            size="sm",
-                            className="float-end",
-                        ),
+                        [
+                            dbc.Button(
+                                KG_VIEW_TOGGLE_LABELS["list"],
+                                id=f"{tab_search_id}-view-toggle",
+                                color="secondary",
+                                size="sm",
+                                className="float-end ms-2",
+                                title="Alternar entre vista lista y tarjetas (spec 03 F2)",
+                            ),
+                            dbc.Button(
+                                "🔄 Refresh",
+                                id=f"{tab_search_id}-refresh",
+                                color="secondary",
+                                size="sm",
+                                className="float-end",
+                            ),
+                        ],
                         width="auto",
                     ),
                 ],
@@ -367,6 +451,7 @@ def create_knowledge_source_tab_content(source_keys, combined_name=None):
                 style={"maxHeight": "860px", "overflowY": "auto", "paddingRight": "15px"},
             ),
             dcc.Store(id=f"{tab_search_id}-page", data=1),
+            dcc.Store(id=f"{tab_search_id}-view", data="list"),
         ]
     )
 
@@ -383,20 +468,22 @@ def register_knowledge_garden_callbacks(app):
         label = tab_def["label"]
 
         @app.callback(
-            [Output(f"{search_id}-results", "children"), Output(f"{search_id}-page", "data")],
+            [Output(f"{search_id}-results", "children"), Output(f"{search_id}-page", "data"), Output(f"{search_id}-view", "data"), Output(f"{search_id}-view-toggle", "children")],
             [
                 Input(search_id, "value"),
                 Input(f"{search_id}-prev", "n_clicks"),
                 Input(f"{search_id}-next", "n_clicks"),
                 Input(f"{search_id}-refresh", "n_clicks"),
+                Input(f"{search_id}-view-toggle", "n_clicks"),
             ],
-            [State(f"{search_id}-page", "data")],
+            [State(f"{search_id}-page", "data"), State(f"{search_id}-view", "data")],
             prevent_initial_call=True,
         )
-        def update_knowledge_controller(search_term, _prev, _next, _refresh, current_page, keys=keys, label=label, search_id=search_id):
+        def update_knowledge_controller(search_term, _prev, _next, _refresh, _view_toggle, current_page, current_view, keys=keys, label=label, search_id=search_id):
             try:
                 ctx = dash.ctx.triggered_id
                 page = int(current_page or 1)
+                view = current_view if current_view in KG_VIEWS else "list"
                 force_refresh = False
                 if ctx == f"{search_id}-prev":
                     page -= 1
@@ -404,16 +491,19 @@ def register_knowledge_garden_callbacks(app):
                     page += 1
                 elif ctx == f"{search_id}-refresh":
                     force_refresh = True
+                elif ctx == f"{search_id}-view-toggle":
+                    # List ↔ cards toggle (spec 03 F2): keep the current page
+                    view = "cards" if view == "list" else "list"
                 else:
                     # Any search-term change resets to the first page
                     page = 1
                 if force_refresh:
                     get_all_knowledge_data(force_refresh=True)
-                content, page = build_knowledge_table(keys, search_term=(search_term or "").strip(), display_name=label, page=page)
-                return content, page
+                content, page = build_knowledge_table(keys, search_term=(search_term or "").strip(), display_name=label, page=page, view=view)
+                return content, page, view, KG_VIEW_TOGGLE_LABELS[view]
             except Exception as e:
                 logger.error(f"Error in knowledge controller for {label}: {e}")
-                return dbc.Alert(f"Error searching: {e}", color="danger"), 1
+                return dbc.Alert(f"Error searching: {e}", color="danger"), 1, dash.no_update, dash.no_update
 
         @app.callback(
             Output(search_id, "value", allow_duplicate=True),

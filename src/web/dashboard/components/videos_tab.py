@@ -257,6 +257,49 @@ class VideoManager:
                 seen[key] = raw
         return list(seen.values())
 
+    def get_channel_stats(self) -> list[dict]:
+        """Per-channel summary for the 📡 Canales admin view (spec 04 F4).
+
+        Groups variant directory names under their canonical channel (same
+        fold as ``get_channels``) and returns one row per channel with its
+        stored video count, the newest publish date seen and whether the
+        directory is a theme bucket (``aa-*`` / ``zz-*``).
+
+        Returns:
+            Rows sorted by video count (desc), each with keys
+            ``channel``, ``count``, ``last_seen`` (``YYYY-MM-DD`` or None)
+            and ``is_theme``.
+        """
+        self.ensure_loaded()
+        grouped: dict[str, dict] = {}
+        for raw_name in sorted(self.video_data):
+            entry = grouped.setdefault(
+                _canonical_channel(raw_name),
+                {"channel": raw_name, "count": 0, "last_seen": None},
+            )
+            df = self.video_data[raw_name]
+            entry["count"] += len(df)
+            if "published_date" in df.columns:
+                dates = df["published_date"].dropna()
+                if not dates.empty:
+                    newest = dates.max()
+                    if entry["last_seen"] is None or newest > entry["last_seen"]:
+                        entry["last_seen"] = newest
+
+        stats = []
+        for entry in grouped.values():
+            last_seen = entry["last_seen"]
+            stats.append(
+                {
+                    "channel": entry["channel"],
+                    "count": entry["count"],
+                    "last_seen": last_seen.strftime("%Y-%m-%d") if last_seen is not None else None,
+                    "is_theme": entry["channel"].startswith(("aa-", "zz-")),
+                }
+            )
+        stats.sort(key=lambda s: (-s["count"], s["channel"].lower()))
+        return stats
+
     def get_videos(self, channel=None, search_term=None, days_filter=None, limit=None):
         """Get filtered videos (``limit=None`` returns everything, for pagination)."""
         self.ensure_loaded()
@@ -644,6 +687,58 @@ def _video_modal_layout():
     )
 
 
+def _channels_admin_section(stats: list[dict]) -> dbc.Card:
+    """Build the read-only 📡 Canales summary card (spec 04 F4).
+
+    Args:
+        stats: Rows from ``VideoManager.get_channel_stats()``.
+
+    Returns:
+        Dark themed card with a compact table: channel, type (theme bucket
+        vs real channel), stored video count and last publish date seen.
+    """
+    if not stats:
+        return dbc.Card(dbc.CardBody("Sin canales cargados."), className="border-0 shadow-sm mb-3")
+
+    total_videos = sum(s["count"] for s in stats)
+    theme_count = sum(1 for s in stats if s["is_theme"])
+    rows = [
+        html.Tr(
+            [
+                html.Td(html.Span(s["channel"], className="fw-bold" if s["is_theme"] else "")),
+                html.Td(dbc.Badge("tema", color="info", pill=True, className="fw-normal") if s["is_theme"] else dbc.Badge("canal", color="secondary", pill=True, className="fw-normal")),
+                html.Td(f"{s['count']:,}", className="text-end"),
+                html.Td(s["last_seen"] or "—", className="small text-muted"),
+            ]
+        )
+        for s in stats
+    ]
+    table = dbc.Table(
+        [html.Thead(html.Tr([html.Th("Canal"), html.Th("Tipo"), html.Th("Vídeos"), html.Th("Último vídeo")]))] + [html.Tbody(rows)],
+        bordered=True,
+        hover=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="mb-0",
+    )
+    return dbc.Card(
+        [
+            dbc.CardHeader(
+                html.Span(
+                    [
+                        f"{len(stats)} canales · {total_videos:,} vídeos · ",
+                        html.Span(f"{theme_count} temas (aa-*/zz-*)", className="text-muted small"),
+                    ],
+                    className="small",
+                )
+            ),
+            dbc.CardBody(html.Div(table, style={"maxHeight": "420px", "overflowY": "auto"}), className="p-2"),
+        ],
+        className="mb-3",
+    )
+
+
 def render_videos_tab():
     """Render the videos tab."""
     # Load available channels
@@ -803,6 +898,25 @@ def render_videos_tab():
                 ],
                 className="mb-3",
             ),
+            # Channels admin view (spec 04 F4): read-only summary table, collapsed
+            html.Div(
+                [
+                    dbc.Button(
+                        f"📡 Canales ({len(ordered_channels)})",
+                        id="videos-channels-toggle",
+                        color="secondary",
+                        outline=True,
+                        size="sm",
+                        className="mb-2",
+                        title="Resumen por canal: nº de vídeos y último vídeo visto (spec 04 F4)",
+                    ),
+                    dbc.Collapse(
+                        _channels_admin_section(video_manager.get_channel_stats()),
+                        id="videos-channels-collapse",
+                        is_open=False,
+                    ),
+                ]
+            ),
             # Current page for pagination (server-side slice)
             dcc.Store(id="videos-page", data=1),
             # Saved filter presets, persisted across sessions (spec 15 M3)
@@ -827,6 +941,16 @@ def render_videos_tab():
 
 def register_video_callbacks(app):
     """Register video callbacks for filtering and pagination."""
+
+    # Channels admin view (spec 04 F4): show/hide the read-only summary table
+    @app.callback(
+        Output("videos-channels-collapse", "is_open"),
+        Input("videos-channels-toggle", "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def toggle_videos_channels_section(n_clicks):
+        """Toggle the 📡 Canales collapsible (odd clicks open)."""
+        return bool(n_clicks and n_clicks % 2)
 
     @app.callback(
         Output("videos-container", "children"),
