@@ -112,8 +112,7 @@ def _radar_card(digest: dict[str, Any]) -> dbc.Card:
                     [
                         html.A(a.get("title", "Untitled"), href=a.get("url") or "#", target="_blank", className="text-decoration-none fw-semibold"),
                         html.Div(
-                            [html.Small(a.get("source", ""), className="text-muted")]
-                            + [dbc.Badge(f"🔥 {term}", color="danger", pill=True, className="ms-1") for term in a.get("trending_terms", [])],
+                            [html.Small(a.get("source", ""), className="text-muted")] + [dbc.Badge(f"🔥 {term}", color="danger", pill=True, className="ms-1") for term in a.get("trending_terms", [])],
                             className="mt-1",
                         ),
                     ],
