@@ -7,53 +7,10 @@ from typing import ClassVar
 class URLExtractor:
     """Extracts and validates URLs from OCR text with error correction."""
 
-    # Primary URL pattern - comprehensive regex for URL detection
+    # Primary URL pattern - protocol/domain/port/path/query/fragment
     PRIMARY_URL_PATTERN: ClassVar[re.Pattern] = re.compile(
-        r"""
-        (?:
-            # HTTP/HTTPS protocol
-            (?:https?://|www\.)
-
-            # Domain (case-insensitive)
-            (?:
-                [a-zA-Z0-9-]+\.)+
-
-                # TLD (2-6 letters for standard TLDs, or new longer TLDs)
-                [a-zA-Z]{2,6}
-            )
-
-            # Optional port
-            (?::\d+)?
-
-            # Path (optional)
-            (?:
-                /
-                [^\s\]\[}]{0,300}?
-
-                # Allow certain characters at end without space
-                [^\s\]\[},.;!?]?
-            )?
-
-            # Query string (optional)
-            (?:
-                \?
-                [^\s\]\[}]{0,200}?
-
-                # Allow certain characters at end without space
-                [^\s\]\[},.;!?]?
-            )?
-
-            # Fragment (optional)
-            (?:
-                \#
-                [^\s\]\[}]{0,100}?
-
-                # Allow certain characters at end without space
-                [^\s\]\[},.;!?]?
-            )?
-        )
-        """,
-        re.VERBOSE | re.IGNORECASE,
+        r"(?:https?://|www\.)(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(?::\d+)?(?:/[^\s<>\"']*)?(?:\?[^\s<>\"']*)?(?:\#[^\s<>\"']*)?",
+        re.IGNORECASE,
     )
 
     # Fallback URL patterns for URLs that might have OCR errors

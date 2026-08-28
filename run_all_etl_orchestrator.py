@@ -73,6 +73,7 @@ ETL_SCRIPTS = [
     # AI Platforms
     "src/etl/ai_platforms/replicate_models_etl.py",
     "src/etl/ai_platforms/replicate_explore_playwright_etl.py",
+    "src/etl/ai_platforms/ollama_library_etl.py",  # T-075: newest ollama.com/library models — Radar "🦙 Ollama"
     # Watchers
     "src/watchers/ms_skills_watcher.py",
     # Youtube
@@ -111,6 +112,7 @@ ETL_SCRIPTS = [
     "src/etl/ecommerce/shoppy_etl.py",
     # Spanish Public Aid
     "src/etl/spanish_public_aid/spanish_public_aid_etl.py",
+    "src/etl/spanish_public_aid/bdns_convocatorias_etl.py",  # BDNS API: fechas/cuantías reales (T-076)
     # 4chan
     "src/etl/fourchan/fourchan_generals_etl.py",
     # Expanded Phase 1

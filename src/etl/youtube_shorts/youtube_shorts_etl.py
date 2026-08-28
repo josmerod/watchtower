@@ -10,14 +10,15 @@ import shutil
 import time
 from typing import Any
 
-from src.utils.logging_utils import get_project_root, setup_logger
+from src.utils.file_system import get_project_root
+from src.utils.logging import get_logger
 
 from .config import DEFAULT_CONFIG, YouTubeOCRConfig
 from .domain.models import VideoProcessingResult
 from .services import CheckpointService, OCRService, VideoService
 
 # Setup logging
-logger = setup_logger("youtube_shorts_ocr")
+logger = get_logger("youtube_shorts_ocr")
 
 
 class YouTubeShortsETL:
