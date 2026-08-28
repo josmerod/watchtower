@@ -60,10 +60,60 @@ def get_all_arxiv_data():
 
 MAX_PAPERS_PER_TAB = 150  # Limit initial papers displayed per category
 
+# Subtab that gets the CrossRef citations column (enriched by the HF papers ETL)
+CITATIONS_SOURCE_KEY = "hf_trending"
+
 
 def format_article_date(paper):
     """Wrapper for shared formatting."""
     return format_article_date_shared(paper)
+
+
+def citation_count_display(paper):
+    """Return the paper's citation count as a non-negative int, or None when absent/invalid."""
+    count = paper.get("citation_count")
+    if isinstance(count, bool) or not isinstance(count, (int, float)) or count < 0:
+        return None
+    return int(count)
+
+
+def render_citation_cell(paper):
+    """Render the 📝 Citas table cell for a paper (em dash when no data)."""
+    count = citation_count_display(paper)
+    if count is None:
+        return html.Td("—", className="small text-muted")
+    source = str(paper.get("citation_source") or "").strip()
+    tooltip_parts = ["CrossRef citation count"]
+    if source:
+        tooltip_parts.append(f"matched by {source}")
+    doi = str(paper.get("citation_doi") or "").strip()
+    badge = dbc.Badge(
+        f"📝 {count:,}",
+        color="secondary",
+        pill=True,
+        className="fw-normal",
+        style={"fontSize": "0.75rem"},
+    )
+    if doi:
+        tooltip_parts.append(f"doi.org/{doi}")
+        return html.Td(
+            html.A(
+                badge,
+                href=f"https://doi.org/{doi}",
+                target="_blank",
+                title=" · ".join(tooltip_parts),
+                className="text-decoration-none",
+            )
+        )
+    return html.Td(badge, title=" · ".join(tooltip_parts))
+
+
+def arxiv_table_header(show_citations):
+    """Build the table header row, with the optional 📝 Citas column appended."""
+    columns = [html.Th("Title"), html.Th("Authors"), html.Th("Published Date")]
+    if show_citations:
+        columns.append(html.Th("📝 Citas"))
+    return [html.Thead(html.Tr(columns))]
 
 
 def create_arxiv_category_tab_content(source_key):
@@ -84,18 +134,9 @@ def create_arxiv_category_tab_content(source_key):
     # Sort all papers by date (descending)
     papers_from_source.sort(key=get_sortable_date, reverse=True)
 
-    # Create table header
-    table_header = [
-        html.Thead(
-            html.Tr(
-                [
-                    html.Th("Title"),
-                    html.Th("Authors"),
-                    html.Th("Published Date"),
-                ]
-            )
-        )
-    ]
+    # Citations column only exists for the CrossRef-enriched HF Trending feed
+    show_citations = source_key == CITATIONS_SOURCE_KEY
+    table_header = arxiv_table_header(show_citations)
 
     # Load trend data
     trending_map = get_trending_items_map()
@@ -145,13 +186,17 @@ def create_arxiv_category_tab_content(source_key):
         if trend_badge:
             title_elements.append(html.Span(trend_badge, className="ms-2"))
 
+        row_cells = [
+            html.Td(title_elements),
+            html.Td(authors_display, className="small text-muted"),
+            html.Td(date_display, className="small text-muted"),
+        ]
+        if show_citations:
+            row_cells.append(render_citation_cell(paper))
+
         table_body_rows.append(
             html.Tr(
-                [
-                    html.Td(title_elements),
-                    html.Td(authors_display, className="small text-muted"),
-                    html.Td(date_display, className="small text-muted"),
-                ],
+                row_cells,
                 className=row_class,
             )
         )
@@ -241,18 +286,9 @@ def register_arxiv_callbacks(app):
                 else:
                     filtered_papers = papers_data[:MAX_PAPERS_PER_TAB]  # Limit initial view
 
-                # Create table for filtered results
-                table_header = [
-                    html.Thead(
-                        html.Tr(
-                            [
-                                html.Th("Title"),
-                                html.Th("Authors"),
-                                html.Th("Published Date"),
-                            ]
-                        )
-                    )
-                ]
+                # Create table for filtered results (citations column for the HF feed)
+                show_citations = source_key == CITATIONS_SOURCE_KEY
+                table_header = arxiv_table_header(show_citations)
 
                 # Load trend data for rendering badges
                 trending_map = get_trending_items_map()
@@ -292,13 +328,17 @@ def register_arxiv_callbacks(app):
                     if trend_badge:
                         title_elements.append(html.Span(trend_badge, className="ms-2"))
 
+                    row_cells = [
+                        html.Td(title_elements),
+                        html.Td(authors_display, className="small text-muted"),
+                        html.Td(date_display, className="small text-muted"),
+                    ]
+                    if show_citations:
+                        row_cells.append(render_citation_cell(paper))
+
                     table_body_rows.append(
                         html.Tr(
-                            [
-                                html.Td(title_elements),
-                                html.Td(authors_display, className="small text-muted"),
-                                html.Td(date_display, className="small text-muted"),
-                            ],
+                            row_cells,
                             className=row_class,
                         )
                     )
