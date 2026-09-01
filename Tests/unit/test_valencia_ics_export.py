@@ -8,14 +8,14 @@ everything it needs (well-formed JSON with the expected fields).
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from dash.development.base_component import Component
 
 from src.web.dashboard.components import valencia_events_new_tab as vet
 
-NOW = datetime(2026, 8, 28, 15, 30)
+NOW = datetime.now().replace(microsecond=0)
 
 
 def _event(title: str, start_date: str, **extra: Any) -> dict[str, Any]:
@@ -39,10 +39,10 @@ def _find_by_id(component: Any, comp_id: str) -> list[Component]:
 
 
 FIXTURE_EVENTS = [
-    _event("Past Event", "2026-08-01"),
-    _event("Today Event", "2026-08-28"),
-    _event("Future ISO Event", "2026-09-15T19:30:00", end_date="2026-09-15T21:00:00"),
-    _event("Future Spanish Date", "30/09/2026"),
+    _event("Past Event", (NOW - timedelta(days=27)).strftime("%Y-%m-%d")),
+    _event("Today Event", NOW.strftime("%Y-%m-%d")),
+    _event("Future ISO Event", (NOW + timedelta(days=18)).strftime("%Y-%m-%dT19:30:00"), end_date=(NOW + timedelta(days=18)).strftime("%Y-%m-%dT21:00:00")),
+    _event("Future Spanish Date", (NOW + timedelta(days=33)).strftime("%d/%m/%Y")),
     _event("No Date Event", "TBC"),
     _event("Empty Date Event", ""),
 ]
@@ -64,7 +64,7 @@ def test_exportable_upcoming_no_upper_cutoff():
 
 def test_exportable_upcoming_includes_today_midnight():
     """An event earlier today still counts (cutoff is the day, not the hour)."""
-    exportable = vet._exportable_upcoming_events([_event("Tonight", "2026-08-28")], NOW)
+    exportable = vet._exportable_upcoming_events([_event("Tonight", NOW.strftime("%Y-%m-%d"))], NOW)
     assert len(exportable) == 1
 
 
