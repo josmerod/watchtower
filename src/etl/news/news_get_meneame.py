@@ -89,7 +89,7 @@ def get_meneame_articles(max_retries: int = 3, retry_delay: int = 5) -> dict[str
             identifier = art.get("article_id") if art.get("article_id") else art.get("url", "")
             if title and title not in unique_titles and identifier not in unique_articles:
                 unique_titles.add(title)
-                unique_articles[identifier] = art
+                unique_articles[identifier] = art  # type: ignore[index]  # identifier is Any|None to mypy; plain dicts accept it and the fallback "" keeps it str in practice
 
         articles_by_feed[feed_type] = list(unique_articles.values())
 

@@ -129,7 +129,7 @@ class VirtualMuseumsETL(SimpleETL):
 
         return extracted_items
 
-    def transform(self, data: list[dict[str, Any]]) -> list[VirtualMuseumModel]:
+    def transform(self, data: list[dict[str, Any]]) -> list[VirtualMuseumModel]:  # type: ignore[override]  # returns models where SimpleETL declares dicts; load() below duck-types both
         self.logger.info(f"Starting data transformation for {len(data)} raw items.")
 
         transformed_models: list[VirtualMuseumModel] = []

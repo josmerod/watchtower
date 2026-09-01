@@ -166,7 +166,7 @@ def load_radar_best(
             )
     # De-duplicate across sources that may mirror the same article.
     seen: set[str] = set()
-    unique = [c for c in candidates if not (c["url"] in seen or seen.add(c["url"]))]
+    unique = [c for c in candidates if not (c["url"] in seen or seen.add(c["url"]))]  # type: ignore[func-returns-value]  # dedup idiom: add() returns None (falsy) by design
     recent = [c for c in unique if c["_epoch"] >= cutoff]
     pool = recent if len(recent) >= max_items else unique
     pool.sort(key=lambda c: (-c["score"], -c["_epoch"]))
@@ -218,7 +218,8 @@ def load_freshness_context(data_root: Path | None = None, missing: list[str] | N
     freshness = _read_json(_data_dir(data_root) / "watchers" / "data_freshness" / "freshness_latest.json", missing)
     if not isinstance(freshness, dict):
         return None
-    counts = freshness.get("counts") if isinstance(freshness.get("counts"), dict) else {}
+    raw_counts = freshness.get("counts")
+    counts = raw_counts if isinstance(raw_counts, dict) else {}
     return {"checked_at": str(freshness.get("checked_at") or ""), "counts": {k: int(counts.get(k) or 0) for k in ("fresh", "stale", "critical")}}
 
 

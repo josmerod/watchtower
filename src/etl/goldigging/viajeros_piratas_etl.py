@@ -150,7 +150,7 @@ class ViajerosPrivatasETL(BaseETL[TravelDealRawData, TravelDeal]):
 
     async def _extract_deal_data(self, page: Page, page_num: int) -> list[TravelDealRawData]:
         """Extract deal data from a page."""
-        deals = []
+        deals: list[TravelDealRawData] = []
 
         try:
             # Wait for the page to load

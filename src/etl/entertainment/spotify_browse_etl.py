@@ -87,10 +87,11 @@ def fetch_spotify() -> dict[str, list[dict[str, Any]]]:
     headers = {"Authorization": f"Bearer {token}", "User-Agent": "Watchtower/1.0"}
     out: dict[str, list[dict[str, Any]]] = {"playlists": [], "new_releases": []}
     try:
+        params: dict[str, str | int] = {"country": "US", "limit": 20}
         r1 = requests.get(
             BROWSE_PLAYLISTS_URL,
             headers=headers,
-            params={"country": "US", "limit": 20},
+            params=params,
             timeout=30,
         )
         if r1.status_code == 200:
@@ -113,7 +114,7 @@ def fetch_spotify() -> dict[str, list[dict[str, Any]]]:
         r2 = requests.get(
             NEW_RELEASES_URL,
             headers=headers,
-            params={"country": "US", "limit": 20},
+            params=params,
             timeout=30,
         )
         if r2.status_code == 200:

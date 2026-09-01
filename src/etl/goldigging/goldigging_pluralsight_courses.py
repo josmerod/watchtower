@@ -5,8 +5,9 @@ import json
 import random
 import re
 from datetime import datetime
+from typing import Any, cast
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import BaseETL
@@ -110,7 +111,9 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
             courses = []
 
             # Look for course cards with better selectors for modern Pluralsight
-            course_elements = []
+            # (Playwright path appends dicts, BeautifulSoup fallback appends Tags; the
+            # consumer _extract_course_from_element duck-types both)
+            course_elements: list[dict[str, str] | Tag] = []
 
             # Try multiple selectors that might match Pluralsight's structure
             selectors_to_try = [
@@ -157,10 +160,13 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
                 self.logger.info("No elements found with Playwright selectors, trying BeautifulSoup parsing")
                 # Try finding course links in the rendered HTML
                 all_links = soup.find_all("a", href=True)
-                course_links = [link for link in all_links if "/courses/" in link.get("href", "")]
+                # href is single-valued; cast only drops bs4's AttributeValueList union
+                course_links = [link for link in all_links if "/courses/" in cast("str", link.get("href", ""))]
 
                 if course_links:
-                    course_elements = course_links[:20]
+                    # list invariance: list[Tag] -> list[dict | Tag] needs the cast; the
+                    # consumer duck-types both element kinds anyway
+                    course_elements = cast("list[dict[str, str] | Tag]", course_links[:20])
                     self.logger.info(f"Found {len(course_elements)} course links via BeautifulSoup")
 
             self.logger.info(f"Found {len(course_elements)} course elements on page {page_num}")
@@ -354,7 +360,7 @@ class PluralsightETL(BaseETL[dict, PluralsightCourseModel]):
 
         # Combine and deduplicate by URL
         all_courses = existing_courses + courses_data
-        unique_courses = {}
+        unique_courses: dict[str, dict[str, Any]] = {}
 
         for course in all_courses:
             url = course.get("url")

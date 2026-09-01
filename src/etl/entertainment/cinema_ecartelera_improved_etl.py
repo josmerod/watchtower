@@ -135,7 +135,7 @@ class CinemaECarteleraImprovedETL(BaseETL[dict, CinemaMovie]):
         # Log summary
         self.logger.info(f"Extracted {len(all_movies)} movies from all cinemas")
         if all_movies:
-            cinema_counts = {}
+            cinema_counts: dict[str, int] = {}
             for movie in all_movies:
                 cinema = movie.get("cinema_name", "Unknown")
                 cinema_counts[cinema] = cinema_counts.get(cinema, 0) + 1

@@ -261,7 +261,9 @@ class ADHDPublicationETL(BaseETL):
             latest_csv_file_path = os.path.join(csv_dir, "latest_papers.csv")
             df.to_csv(latest_csv_file_path, index=False, encoding="utf-8")
             self.logger.info(f"Successfully updated latest_papers.csv at {latest_csv_file_path}")
-        except pd.errors.PandasError as e:
+        # BUG: pandas 3.x removed errors.PandasError — if to_csv raises, evaluating this
+        # clause raises AttributeError, which escapes the sibling handlers below
+        except pd.errors.PandasError as e:  # type: ignore[attr-defined]
             self.logger.error(f"Pandas DataFrame error during CSV saving: {e}")
         except OSError as e:
             self.logger.error(f"Error saving CSV file: {e}")

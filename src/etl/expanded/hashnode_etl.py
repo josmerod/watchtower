@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from src.etl.base import BaseETL
 from src.models.hashnode import (
@@ -157,7 +157,7 @@ class HashnodeETL(BaseETL[dict[str, Any], HashnodePostModel]):
         }
         """
 
-        posts = []
+        posts: list[dict[str, Any]] = []
         page = 1
         has_next = True
 
@@ -223,7 +223,7 @@ class HashnodeETL(BaseETL[dict[str, Any], HashnodePostModel]):
                 self.api_metrics.popular_tags[tag] = self.api_metrics.popular_tags.get(tag, 0) + 1
 
         if transformed:
-            self.api_metrics.avg_views = self.api_metrics.avg_views / len(transformed)
+            self.api_metrics.avg_views = (self.api_metrics.avg_views or 0) / len(transformed)
             self.api_metrics.avg_read_time = self.api_metrics.total_read_time_minutes / len(transformed)
 
         self.logger.info(f"Transformed {len(transformed)} posts")
@@ -283,7 +283,8 @@ class HashnodeETL(BaseETL[dict[str, Any], HashnodePostModel]):
         return HashnodePostModel(
             post_id=post_id,
             title=title,
-            slug=slug,
+            # a missing slug is rejected by pydantic and skipped by the caller's except
+            slug=cast("str", slug),
             url=f"https://hashnode.com/{author_username}/{slug}" if publication_id is None else f"https://{publication_domain or publication_name + '.hashnode.dev'}/{slug}",
             content=content_markdown,
             excerpt=raw.get("brief"),

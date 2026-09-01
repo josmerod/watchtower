@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import requests
@@ -53,7 +53,8 @@ class AudibleReleasesETL(BaseETL[dict[str, Any], dict[str, Any]]):
                     continue
                 a_tag = title_span.find("a")
                 title = a_tag.text.strip() if a_tag else title_span.text.strip()
-                link = "https://www.audible.es" + a_tag["href"] if a_tag and "href" in a_tag.attrs else ""
+                # href is single-valued; the cast only drops bs4's AttributeValueList union
+                link = "https://www.audible.es" + cast("str", a_tag["href"]) if a_tag and "href" in a_tag.attrs else ""
 
                 author_span = p.find("li", class_="authorLabel")
                 author = author_span.text.replace("De:", "").strip() if author_span else ""

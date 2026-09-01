@@ -7,6 +7,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import cast
 
 from pydantic import BaseModel
 
@@ -41,7 +42,8 @@ class CircuitBreaker:
         self.recovery_timeout_minutes = recovery_timeout_minutes
 
         settings = get_settings()
-        base_path = base_path or (Path(settings.project_root) / "data" / etl_name)
+        # settings' validator backfills project_root, so it is never None here
+        base_path = base_path or (Path(cast("str", settings.project_root)) / "data" / etl_name)
         self.state_file = base_path / "circuit_breaker.json"
 
         # Ensure directory exists

@@ -5,14 +5,30 @@ import re
 from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import BaseETL
 from src.models.base import TimestampedModel
+
+
+def _href_str(tag: Tag) -> str:
+    """Read a tag's href as a plain str.
+
+    bs4 types attribute values as ``str | AttributeValueList`` because
+    multi-valued attributes (e.g. ``class``) come back as lists; ``href`` is
+    never multi-valued, so the cast is typing-only and runtime-neutral.
+    """
+    return cast("str", tag.get("href", ""))
+
+
+def _is_meetup_date_text(text: str | None) -> bool:
+    """Match span text carrying a year or a Spanish month abbreviation (Meetup fallback)."""
+    return bool(text and ("202" in text or "ene" in text.lower() or "feb" in text.lower()))
+
 
 # Dynamic year matching — prevents the recurring "hardcoded year" bug.
 _NOW = datetime.now()
@@ -236,7 +252,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 link = card.select_one("a.standard-card__link") or card.find("a", href=True)
                 event_url = ""
                 if link is not None:
-                    href = link.get("href", "")
+                    href = _href_str(link)
                     if href:
                         event_url = href if href.startswith("http") else f"https://www.visitvalencia.com{href}"
 
@@ -326,7 +342,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
                 # Extract URL
                 link = block.find("a")
-                event_url = link.get("href", "") if link else ""
+                event_url = _href_str(link) if link else ""
                 if event_url and not event_url.startswith("http"):
                     event_url = f"https://www.visitvalencia.com{event_url}"
 
@@ -334,8 +350,9 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 category = ""
                 category_tags = block.find_all(["span", "div"], class_=True)
                 for tag in category_tags:
-                    if tag.get("class") and isinstance(tag.get("class"), list):
-                        class_text = " ".join(tag.get("class"))
+                    classes = tag.get("class")
+                    if classes and isinstance(classes, list):
+                        class_text = " ".join(classes)
                         if any(c in class_text.lower() for c in ["música", "exposición", "deporte"]):
                             category = tag.text.strip()
                             break
@@ -366,7 +383,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         if not events:
             self.logger.debug("Trying Approach 2: Looking for specific event patterns")
             # Based on the provided HTML, events might be listed with a specific structure
-            event_entries = []
+            event_entries: list[Tag] = []
 
             # Try finding events with the format from the example
             potential_entries = soup.find_all(class_=lambda x: x and isinstance(x, str) and (x.startswith("###") or "event" in x.lower()))
@@ -413,14 +430,15 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     event_url = ""
                     link = entry.find("a") or (entry.parent.find("a") if entry.parent else None)
                     if link:
-                        event_url = link.get("href", "")
+                        event_url = _href_str(link)
                         if event_url and not event_url.startswith("http"):
                             event_url = f"https://www.visitvalencia.com{event_url}"
 
                     # Extract category if possible
                     category = ""
-                    if entry.get("class"):
-                        class_text = " ".join(entry.get("class") if isinstance(entry.get("class"), list) else [entry.get("class")])
+                    entry_classes = entry.get("class")
+                    if entry_classes:
+                        class_text = " ".join(entry_classes if isinstance(entry_classes, list) else [entry_classes])
                         for cat in [
                             "exposición",
                             "música",
@@ -487,7 +505,10 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
                     # Look for date information in nearby elements
                     date_text = ""
-                    parent = heading.parent
+                    # find_all over h2/h3/h4 headings always yields nested tags (only the
+                    # soup root has no parent); if that invariant ever broke, the broad
+                    # except below still catches the AttributeError — cast is typing-only.
+                    parent = cast(Tag, heading.parent)
 
                     # Check for date text in siblings
                     for sibling in list(parent.children):
@@ -508,7 +529,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     event_url = ""
                     link = heading.find("a") or parent.find("a")
                     if link:
-                        event_url = link.get("href", "")
+                        event_url = _href_str(link)
                         if event_url and not event_url.startswith("http"):
                             event_url = f"https://www.visitvalencia.com{event_url}"
 
@@ -611,9 +632,9 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                         continue
 
                     # Extract date information
-                    date_element = card.find("time") or card.find(
+                    date_element = card.find("time") or card.find(  # type: ignore[call-overload]  # bs4 accepts name+string together at runtime; stubs force string=None when name is given
                         "span",
-                        string=lambda t: t and ("202" in t or "ene" in t.lower() or "feb" in t.lower()),
+                        string=_is_meetup_date_text,
                     )
                     date_text = date_element.get("datetime", "") if date_element else ""
                     if not date_text and date_element:
@@ -623,7 +644,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     link = card.find("a")
                     event_url = ""
                     if link and "href" in link.attrs:
-                        href = link["href"]
+                        href = _href_str(link)
                         if href.startswith("/"):
                             event_url = f"https://meetup.com{href}"
                         else:
@@ -747,7 +768,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     link = card.find("a")
                     event_url = ""
                     if link and "href" in link.attrs:
-                        href = link["href"]
+                        href = _href_str(link)
                         if href.startswith("/"):
                             event_url = f"https://eventbrite.com{href}"
                         else:
@@ -965,7 +986,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         self.logger.info(f"Removing duplicates from {len(events)} events")
 
         # Group events by title
-        event_groups = {}
+        event_groups: dict[str, list[dict[str, Any]]] = {}
         for event in events:
             title = event.get("title", "")
             if title:

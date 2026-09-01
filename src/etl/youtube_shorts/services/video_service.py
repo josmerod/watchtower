@@ -5,6 +5,7 @@ import shutil
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
@@ -96,7 +97,7 @@ class VideoService:
             "max_sleep_interval": 5,
         }
 
-        videos_info = []
+        videos_info: list[VideoMetadata] = []
 
         logger.info(f"[INFO] Checkpoint status: {len(processed_ids)} already processed, {len(failed_ids)} failed")
         logger.info(f"[INFO] Searching for videos from the last {lookback_days} days (limit: {limit})...")
@@ -368,7 +369,7 @@ class VideoService:
             final_text = " | ".join(unique_texts[:10])  # Limit to top 10
 
         # Process URL results (deduplicate)
-        unique_urls = {}
+        unique_urls: dict[str, dict[str, Any]] = {}
         for url_dict in all_urls:
             key = url_dict.get("cleaned_url", url_dict.get("url", ""))
             if key and (key not in unique_urls or url_dict.get("confidence", 0) > unique_urls[key].get("confidence", 0)):

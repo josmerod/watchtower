@@ -2,7 +2,7 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import requests
 from bs4 import BeautifulSoup
@@ -48,7 +48,7 @@ class LifetimoETL(BaseETL[dict[str, Any], dict[str, Any]]):
                     continue
                 a_tag = title_tag.find("a")
                 title = a_tag.text.strip() if a_tag else title_tag.text.strip()
-                url = a_tag["href"] if a_tag and "href" in a_tag.attrs else ""
+                url = cast("str", a_tag["href"]) if a_tag and "href" in a_tag.attrs else ""  # href is single-valued
 
                 excerpt_tag = art.find("div", class_="elementor-post__excerpt")
                 description = excerpt_tag.text.strip() if excerpt_tag else ""
@@ -57,7 +57,8 @@ class LifetimoETL(BaseETL[dict[str, Any], dict[str, Any]]):
                 date_str = date_tag.text.strip() if date_tag else ""
 
                 # Categories from classes (e.g. platform-ai, platform-productivity)
-                classes = art.get("class", [])
+                # class is bs4's only multi-valued attribute: at runtime it yields list[str]
+                classes = cast("list[str]", art.get("class", []))  # type: ignore[arg-type]  # stubs type the default as str|AttributeValueList|None
                 categories = [c.replace("platform-", "") for c in classes if c.startswith("platform-")]
 
                 # Deduce deal_id from URL or Title

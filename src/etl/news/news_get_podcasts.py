@@ -94,7 +94,7 @@ def get_podcast_episodes(max_retries: int = 3, retry_delay: int = 5) -> list[dic
         title = ep.get("title", "").strip()
         if title and title not in seen_titles and identifier not in unique:
             seen_titles.add(title)
-            unique[identifier] = ep
+            unique[identifier] = ep  # type: ignore[index]  # episode_id is Any|None to mypy; plain dicts accept it and the fetch step always sets it
     return list(unique.values())
 
 

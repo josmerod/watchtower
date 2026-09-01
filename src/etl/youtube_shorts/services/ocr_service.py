@@ -143,7 +143,7 @@ class OCRService:
         Returns:
             Dictionary with text, URLs, and metadata
         """
-        result = {
+        result: dict[str, Any] = {
             "text": "",
             "confidence": 0.0,
             "method": "none",

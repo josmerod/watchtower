@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 from datetime import datetime
+from typing import Any
 
 from playwright.async_api import async_playwright
 
@@ -125,7 +126,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
                         time_el = await card.query_selector("time.card-date")
                         date_str = await time_el.get_attribute("datetime") if time_el else None
 
-                        item = {"title": title.strip(), "description": description.strip(), "url": url, "tags": tags, "published_at": date_str}
+                        item: dict[str, Any] = {"title": title.strip(), "description": description.strip(), "url": url, "tags": tags, "published_at": date_str}
                         extracted_items.append(item)
                         items_on_page += 1
 
@@ -144,7 +145,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
 
                     for btn in pagination_buttons:
                         txt = await btn.text_content()  # text_content includes hidden text
-                        txt = txt.strip()
+                        txt = txt.strip()  # type: ignore[union-attr]  # None only for detached nodes; the broad except below stops extraction
                         self.logger.info(f"Button text: '{txt}'")
 
                         if "next" in txt.lower():
@@ -222,9 +223,11 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
                     title=title,
                     description=item.get("description"),
                     url=url,
-                    item_url=url,
+                    item_url=url,  # type: ignore[call-arg]  # not a model field; pydantic's default extra='ignore' silently drops this kwarg (no-op)
                     tags=item.get("tags", []),
-                    published_at=pub_at,  # Mapping for base compatibility if needed
+                    # str fallback (unparsable date) is rejected by pydantic and caught by the
+                    # except below, so the union is safe at runtime
+                    published_at=pub_at,  # type: ignore[arg-type]  # Mapping for base compatibility if needed
                 )
                 transformed.append(project)
             except (ValueError, TypeError, KeyError, AttributeError) as e:

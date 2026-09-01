@@ -11,7 +11,7 @@ import urllib.error
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, cast
 
 import certifi
 import requests
@@ -63,7 +63,7 @@ from src.config.settings import get_settings
 from src.data_quality.deduplication import DeduplicationEngine
 from src.etl.circuit_breaker import CircuitBreaker
 from src.etl.proxy_manager import ProxyManager
-from src.exceptions.base import handle_exception
+from src.exceptions.base import WatchtowerError, handle_exception
 from src.exceptions.etl import CheckpointError, ETLError
 from src.models.base import TimestampedModel
 from src.utils.logging import get_logger, get_performance_logger
@@ -137,7 +137,7 @@ class ETLMetrics(BaseModel):
             context: Additional context about the error
             input_data: Input data that caused the error (sanitized)
         """
-        error_detail = {
+        error_detail: dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat(),
             "message": error_message,
             "type": error_type,
@@ -201,7 +201,8 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
         self.perf_logger = get_performance_logger(f"ETL.{name}")
         self.metrics = ETLMetrics(start_time=datetime.utcnow())
         self.current_checkpoint: ETLCheckpoint | None = None
-        self.data_dir = Path(self.settings.project_root) / "data" / name
+        # settings' validator backfills project_root via _find_project_root(), so it is never None here
+        self.data_dir = Path(cast("str", self.settings.project_root)) / "data" / name
         self.checkpoint_dir = self.data_dir / "checkpoints"
         self.output_dir = self.data_dir / "output"
 
@@ -498,7 +499,7 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             return data
 
         # Filter for items that inherit from TimestampedModel
-        timestamped_data = []
+        timestamped_data: list[OutputType] = []
         for item in data:
             if isinstance(item, TimestampedModel):
                 timestamped_data.append(item)
@@ -507,7 +508,8 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                 timestamped_data.append(item)
 
         # Only deduplicate TimestampedModel items
-        deduplicable_items = [item for item in timestamped_data if isinstance(item, TimestampedModel)]
+        # (isinstance cannot narrow the unbounded OutputType TypeVar, hence the cast)
+        deduplicable_items = cast("list[TimestampedModel]", [item for item in timestamped_data if isinstance(item, TimestampedModel)])
         non_deduplicable_items = [item for item in timestamped_data if not isinstance(item, TimestampedModel)]
 
         if not deduplicable_items:
@@ -535,7 +537,8 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             if deduplicable_items and unique_items and isinstance(unique_items[0], dict):
                 model_class = type(deduplicable_items[0])
                 try:
-                    unique_items = [model_class(**item) for item in unique_items]
+                    # Deliberate re-typing of unique_items: dicts -> original model class
+                    unique_items = [model_class(**item) for item in unique_items]  # type: ignore[misc]
                 except Exception as e:
                     self.logger.warning(f"Failed to convert deduplicated items back to model {model_class.__name__}: {e}")
                     # Fallback to returning dicts if conversion fails, though this might cause downstream issues
@@ -545,7 +548,9 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             # Update record count for transformed items
             self.metrics.records_transformed = len(final_items)
 
-            return final_items
+            # On the dict fallback path above, callers receive plain dicts despite the
+            # list[OutputType] signature (pre-existing, acknowledged wart in the warning log)
+            return cast("list[OutputType]", final_items)
 
         except Exception as e:
             self.logger.error(f"Deduplication failed: {e}")
@@ -625,7 +630,9 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                     from src.intelligence.enrichment import ContentEnricher
 
                     enricher = ContentEnricher()
-                    enriched = enricher.enrich_batch(deduplicated)
+                    # Enrichment is only enabled for ETLs whose OutputType is a BaseModel;
+                    # the unbounded OutputType TypeVar cannot express that bound, hence the casts.
+                    enriched = cast("list[OutputType]", enricher.enrich_batch(cast("list[BaseModel]", deduplicated)))
                 except Exception as e:
                     self.logger.warning(f"AI Enrichment failed: {e}")
                     enriched = deduplicated  # Fallback to unenriched
@@ -672,7 +679,9 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
             )
 
             wt_err = handle_exception(e, logger=self.logger, reraise=False, add_context=err_ctx)
-            final_msg = f"ETL process '{self.name}' failed: {wt_err.message}"
+            # reraise=False guarantees handle_exception returns a WatchtowerError (the
+            # None path only exists for the reraise=True branch, which raises instead)
+            final_msg = f"ETL process '{self.name}' failed: {cast('WatchtowerError', wt_err).message}"
             if isinstance(e, ETLError) and hasattr(e, "context") and e.context.get("original_message_preserved"):
                 final_msg = str(e)
             raise ETLError(final_msg, context=err_ctx, cause=e) from e
@@ -709,8 +718,8 @@ class BaseETL(ABC, Generic[InputType, OutputType]):
                     encoding="utf-8",
                 )
 
-                # Update global aggregated metrics
-                metrics_dir = Path(self.settings.project_root) / "data" / "metrics"
+                # Update global aggregated metrics (project_root is validator-backfilled, never None)
+                metrics_dir = Path(cast("str", self.settings.project_root)) / "data" / "metrics"
                 metrics_dir.mkdir(parents=True, exist_ok=True)
                 agg_path = metrics_dir / "etl_runs_latest.json"
                 try:

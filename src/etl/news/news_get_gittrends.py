@@ -16,12 +16,12 @@ import json
 import os
 import time
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import requests
 
 from src.etl.proxy_manager import ProxyManager
-from src.models.github import GitHubRepositoryModel
+from src.models.github import GitHubRepositoryModel, RepositoryLanguage, TrendingPeriod
 
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
@@ -100,7 +100,7 @@ def get_trending_repositories(session: requests.Session, language: str = None, s
             # Search for repositories with high recent activity
             query = f"language:{lang} created:>{date_filter[since]} stars:>1"
 
-            params = {"q": query, "sort": "stars", "order": "desc", "per_page": 20}
+            params: dict[str, str | int] = {"q": query, "sort": "stars", "order": "desc", "per_page": 20}
 
             logger.info(f"Fetching trending {lang} repositories for {since} period")
             response = session.get(base_url, params=params, timeout=30)
@@ -161,8 +161,10 @@ def get_trending_repositories(session: requests.Session, language: str = None, s
                         repository_created_at=processed_repo.get("created_at"),
                         repository_updated_at=processed_repo.get("updated_at"),
                         pushed_at=processed_repo.get("pushed_at"),
-                        trending_period=since,
-                        trending_language=processed_repo.get("language") or "all",
+                        # pydantic coerces both raw values at validation time (str enums
+                        # + before-validators), so plain str/None are the intended input.
+                        trending_period=cast(TrendingPeriod, since),
+                        trending_language=cast(RepositoryLanguage, processed_repo.get("language") or "all"),
                         rss_title=None,
                         rss_link=None,
                         rss_published=None,
@@ -200,7 +202,7 @@ def get_github_topics(session: requests.Session) -> list[dict[str, Any]]:
     try:
         # Search for trending topics
         base_url = "https://api.github.com/search/topics"
-        params = {
+        params: dict[str, str | int] = {
             "q": "repositories:>1000",
             "sort": "updated",
             "order": "desc",

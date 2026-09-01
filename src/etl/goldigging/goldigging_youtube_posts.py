@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import yt_dlp
@@ -262,7 +262,9 @@ def process_youtube_channels(channel_handles: list[str], published_after: str = 
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Create a future for each channel processing task
-        future_to_channel = {executor.submit(get_channel_videos_by_id, handle, published_after): handle for handle in channel_handles}
+        # (published_after is only None via the unused default path; the callee's
+        # broad except turns the eventual TypeError into an empty result)
+        future_to_channel = {executor.submit(get_channel_videos_by_id, handle, cast("str", published_after)): handle for handle in channel_handles}
 
         for future in concurrent.futures.as_completed(future_to_channel):
             handle = future_to_channel[future]
@@ -327,7 +329,7 @@ def main(topics: list[str] = None):
 
         # If topics is None or empty, process all topics
         if not topics:
-            topics = CHANNEL_TOPICS.keys()
+            topics = list(CHANNEL_TOPICS)
 
         # Process each specified topic
         for topic in topics:

@@ -312,7 +312,8 @@ def compute_trends(items: list[dict[str, Any]], min_sources: int = MIN_SOURCES, 
             stats = hot_terms.get(token)
             if stats and (best_stats is None or stats["score"] > best_stats["score"]):
                 best_term, best_stats = token, stats
-        if not best_term:
+        # best_stats is None exactly when best_term is unset (tuple-assigned in lockstep above)
+        if not best_term or best_stats is None:
             continue
         records.append(
             {

@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import cast
 
 import requests
 from bs4 import BeautifulSoup
@@ -52,7 +53,9 @@ class HumbleBooksETL(BaseETL[HumbleBundleRaw, HumbleBook]):
             if sibling.name == "h2" and "Past Bundles" in sibling.text:
                 break
             for link in sibling.find_all("a"):
-                href = link.get("href")
+                # href is never a multi-valued attribute, so the cast only
+                # discards bs4's conservative AttributeValueList union.
+                href = cast("str", link.get("href"))
                 if href and "/bundles/" in href:
                     title = link.text.strip()
                     if href.startswith("/"):

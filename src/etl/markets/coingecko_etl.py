@@ -35,16 +35,17 @@ def fetch_markets() -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     logger.info(f"Fetching CoinGecko markets from {API_URL}")
     try:
+        params: dict[str, str | int] = {
+            "vs_currency": "usd",
+            "order": "market_cap_desc",
+            "per_page": PER_PAGE,
+            "page": 1,
+            "sparkline": "false",
+            "price_change_percentage": "24h,7d",
+        }
         response = requests.get(
             API_URL,
-            params={
-                "vs_currency": "usd",
-                "order": "market_cap_desc",
-                "per_page": PER_PAGE,
-                "page": 1,
-                "sparkline": "false",
-                "price_change_percentage": "24h,7d",
-            },
+            params=params,
             headers={"User-Agent": SCRAPER_DEFAULT_USER_AGENT},
             timeout=30,
         )

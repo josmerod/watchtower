@@ -29,7 +29,7 @@ def fetch_itad_deals(limit: int = 50) -> list[dict[str, Any]]:
         logger.info("IsThereAnyDeal API key not set; skipping.")
         return []
 
-    params = {
+    params: dict[str, str | int] = {
         "key": api_key,
         "limit": limit,
         "region": "us",

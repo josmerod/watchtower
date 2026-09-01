@@ -65,7 +65,9 @@ class OCRResult:
     """Result of OCR processing on video frames."""
 
     text: str
-    urls: list[ExtractedURL] = field(default_factory=list)
+    # NOTE: despite the field's history, process_video_frames stores plain dicts
+    # here (ExtractedURL.to_dict() outputs), never ExtractedURL instances.
+    urls: list[dict[str, Any]] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     # Performance metrics
@@ -78,7 +80,10 @@ class OCRResult:
         """Convert to dictionary for JSON serialization."""
         return {
             "text": self.text,
-            "urls": [url.to_dict() for url in self.urls],
+            # urls already hold dicts; the per-item to_dict() pass-through is kept
+            # as-is (this method is currently unused) and must be revisited if
+            # ExtractedURL objects are ever stored in urls again
+            "urls": [url.to_dict() for url in self.urls],  # type: ignore[attr-defined]
             "metadata": self.metadata,
             "processed_frames": self.processed_frames,
             "skipped_frames": self.skipped_frames,

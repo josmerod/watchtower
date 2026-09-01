@@ -9,7 +9,7 @@ import os
 import shutil
 import time
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, TypedDict
 
 import feedparser
 import requests
@@ -21,11 +21,25 @@ from src.utils.logging import get_logger
 logger = get_logger("RedditUnifiedETL")
 STATE_FILE = os.path.join(get_project_root(), "data/reddit_unified/etl_state.json")
 
+
 # Extended list of relevant subreddits for tech/AI/ML/programming content.
 # All RSS since 2026-08-27: reddit's non-OAuth JSON API (hot.json) started
 # returning 403 from both the home and Unraid server IPs; the RSS feeds work
 # from both. The JSON fetcher is kept for a future OAuth migration.
-SUBREDDITS_CONFIG = {
+class _SubredditConfig(TypedDict, total=False):
+    """Per-subreddit feed wiring (rss vs json + dashboard category).
+
+    ``pagination`` is only present on the few JSON feeds that page through
+    history, hence ``total=False``; ``type`` and ``category`` are always set
+    on every entry in practice.
+    """
+
+    type: str
+    category: str
+    pagination: bool
+
+
+SUBREDDITS_CONFIG: dict[str, _SubredditConfig] = {
     # AI/ML Focus
     "MachineLearning": {"type": "rss", "category": "ai_ml"},
     "artificial": {"type": "rss", "category": "ai_ml"},
@@ -328,7 +342,7 @@ def save_reddit_data(all_posts: dict[str, list[dict[str, Any]]]) -> None:
     shutil.copy2(combined_file, latest_combined)
 
     # Save by category
-    categories = {}
+    categories: dict[str, list[dict[str, Any]]] = {}
     for posts in all_posts.values():
         for post in posts:
             category = post.get("category", "uncategorized")

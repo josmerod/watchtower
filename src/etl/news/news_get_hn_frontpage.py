@@ -35,9 +35,10 @@ def fetch_hn_frontpage() -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     logger.info(f"Fetching HN front page from {HN_ALGOLIA_URL}")
     try:
+        params: dict[str, str | int] = {"tags": "front_page", "hitsPerPage": HITS_PER_PAGE}
         response = requests.get(
             HN_ALGOLIA_URL,
-            params={"tags": "front_page", "hitsPerPage": HITS_PER_PAGE},
+            params=params,
             headers={"User-Agent": SCRAPER_DEFAULT_USER_AGENT},
             timeout=30,
         )

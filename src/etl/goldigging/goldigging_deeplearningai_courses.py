@@ -100,7 +100,7 @@ class ClassCentralScraper:
                 await page.goto("https://www.classcentral.com/", timeout=60000)
                 await page.wait_for_timeout(3000)
 
-                while page_num <= self.max_pages:
+                while page_num <= self.max_pages:  # type: ignore[operator]  # __init__ resolves the None default to MAX_PAGES_*_RUN, so max_pages is always int here
                     url = f"{self.BASE_URL}?sort=created-up&page={page_num}"
                     logger.info(f"Fetching page {page_num}: {url}")
 
@@ -176,7 +176,7 @@ class ClassCentralScraper:
         logger.info(f"Scraped {len(all_courses)} courses in total")
         return all_courses
 
-    def extract_course_info(self, course_element, soup) -> dict[str, Any]:
+    def extract_course_info(self, course_element, soup) -> dict[str, Any] | None:
         """Extract course information from a course element.
 
         Args:

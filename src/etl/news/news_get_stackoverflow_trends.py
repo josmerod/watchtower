@@ -44,7 +44,7 @@ def get_stackoverflow_questions(pagesize: int = 50, max_retries: int = 3, retry_
     Returns:
         List of question dictionaries in the standard news-item shape.
     """
-    params = {"order": "desc", "sort": "hot", "site": "stackoverflow", "pagesize": pagesize}
+    params: dict[str, str | int] = {"order": "desc", "sort": "hot", "site": "stackoverflow", "pagesize": pagesize}
 
     for attempt in range(max_retries):
         try:

@@ -129,8 +129,10 @@ def parse_model(raw: dict[str, Any]) -> dict[str, Any] | None:
         created = int(created) if created is not None else None
     except (ValueError, TypeError):
         created = None
-    architecture = raw.get("architecture") if isinstance(raw.get("architecture"), dict) else {}
-    pricing = raw.get("pricing") if isinstance(raw.get("pricing"), dict) else {}
+    raw_architecture = raw.get("architecture")
+    architecture = raw_architecture if isinstance(raw_architecture, dict) else {}
+    raw_pricing = raw.get("pricing")
+    pricing = raw_pricing if isinstance(raw_pricing, dict) else {}
     return {
         "id": model_id,
         "name": name,

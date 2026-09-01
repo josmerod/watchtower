@@ -240,7 +240,7 @@ class HumbleBundleScraper:
         """
         from playwright.async_api import async_playwright
 
-        all_bundles = []
+        all_bundles: list[dict[str, Any]] = []
         bundle_sources = [
             ("https://www.humblebundle.com/games", "games"),
             ("https://www.humblebundle.com/books", "books"),
@@ -490,7 +490,7 @@ class HumbleBundleScraper:
 
             # We'd need to visit individual bundle pages for the game list
             # which is resource-intensive
-            games = []
+            games: list[str] = []
 
             return {
                 "title": title,
@@ -687,7 +687,7 @@ def save_humblebundle_bundles(bundles: list[dict[str, Any]]) -> None:
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(bundles, f, indent=2)
 
-    import pandas as pd  # type: ignore
+    import pandas as pd
 
     df = pd.DataFrame(bundles)
     df.to_csv(csv_path, index=False)

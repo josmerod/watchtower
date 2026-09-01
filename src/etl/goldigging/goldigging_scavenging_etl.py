@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import feedparser
-import pandas as pd  # type: ignore
+import pandas as pd
 from dateutil import parser as date_parser
 
 from src.utils.file_system import ensure_directories, get_project_root

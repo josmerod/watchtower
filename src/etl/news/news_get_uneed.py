@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import ElementHandle, sync_playwright
 
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.utils.file_system import ensure_directories, get_project_root
@@ -90,7 +90,7 @@ class UneedScraper:
 
                     # Try to find description in parent card
                     # Walk up
-                    card = link
+                    card: ElementHandle | None = link
                     description = ""
                     for _ in range(3):
                         if not card:

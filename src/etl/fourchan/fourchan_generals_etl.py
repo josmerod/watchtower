@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning  # type: ignore
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 
 from src.etl.base import SimpleETL
 from src.utils.logging import get_logger

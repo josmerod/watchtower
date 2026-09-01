@@ -4,6 +4,7 @@
 
 import os
 from datetime import datetime, timezone
+from typing import Any, cast
 
 import pandas as pd
 import requests
@@ -51,7 +52,7 @@ def get_itchio_trending() -> None:
     except (requests.RequestException, ValueError, TypeError, AttributeError) as e:
         logger.error(f"Error fetching itch.io trending games: {e}")
         # Create empty data to avoid breaking the data service
-        trending_list = []
+        trending_list: list[dict[str, Any]] = []
         df = pd.DataFrame(trending_list)
         output_dir = os.path.join(get_project_root(), "data/games")
         ensure_directories(["data/games"])
@@ -79,7 +80,7 @@ def get_itchio_trending() -> None:
 
             # Get the link
             link_elem = item.find("a") if item.name != "a" else item
-            url = link_elem.get("href", "") if link_elem else ""
+            url = cast("str", link_elem.get("href", "")) if link_elem else ""  # href is never multi-valued; cast drops bs4's AttributeValueList union
             if url and not url.startswith("http"):
                 url = f"https://itch.io{url}"
 

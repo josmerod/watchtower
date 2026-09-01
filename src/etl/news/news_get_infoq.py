@@ -30,7 +30,7 @@ SOURCE_NAME = "infoq.com"
 
 def get_infoq_articles(max_retries: int = 3, retry_delay: int = 5) -> list[dict[str, Any]]:
     """Fetch articles from the InfoQ RSS feed."""
-    entries = []
+    entries: list[Any] = []
     for attempt in range(max_retries):
         try:
             logger.info(f"Fetching RSS feed from {RSS_URL}")

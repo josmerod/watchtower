@@ -20,8 +20,8 @@ try:
     from src.utils.file_system import get_project_root
 except Exception:  # pragma: no cover - fallback for tests
 
-    def get_project_root() -> Path:
-        return Path(__file__).resolve().parents[3]
+    def get_project_root() -> str:  # same signature as src.utils.file_system.get_project_root
+        return str(Path(__file__).resolve().parents[3])
 
 
 DATA_DIR = Path(get_project_root()) / "data" / "shoppy"  # Path() wraps str from get_project_root()

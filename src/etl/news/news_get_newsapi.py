@@ -3,14 +3,14 @@ import json
 import os
 import time
 from datetime import datetime
-from typing import Any  # Added typing imports
+from typing import Any, cast  # Added typing imports
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from src.config.settings import get_settings
-from src.models.news import NewsArticleModel
+from src.models.news import ContentLanguage, NewsArticleModel
 from src.utils.file_system import ensure_directories, get_project_root
 
 # Add project root to Python path
@@ -54,7 +54,7 @@ def get_newsapi_articles(
     fetched_count = 0
 
     while fetched_count < max_articles_to_fetch:
-        params = {
+        params: dict[str, str | int] = {
             "q": query,
             "language": language,
             "pageSize": min(page_size, max_articles_to_fetch - fetched_count),  # Adjust page size if near max
@@ -107,7 +107,7 @@ def get_newsapi_articles(
 
 def transform_articles_to_model(raw_articles: list[dict[str, Any]], query_source: str, language_code: str = "en") -> list[NewsArticleModel]:
     """Transforms raw article data from NewsAPI into a list of NewsArticleModel objects."""
-    transformed_articles = []
+    transformed_articles: list[NewsArticleModel] = []
     if not raw_articles:
         return transformed_articles
 
@@ -175,7 +175,9 @@ def transform_articles_to_model(raw_articles: list[dict[str, Any]], query_source
                 source_id=source_id,
                 category=query_source,  # Main query term as category
                 tags=tags,
-                language=article_language,  # Store the input language code
+                # Store the raw input language code: pydantic coerces ISO 639-1 codes
+                # like "en"/"es" into the str-based ContentLanguage enum at validation.
+                language=cast(ContentLanguage, article_language),
                 original_id=url,  # URL is usually a good unique ID for news articles
                 scraped_at=datetime.utcnow(),
                 metadata=raw_article,  # Store the whole raw article for now

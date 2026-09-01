@@ -121,8 +121,8 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
                                 continue
                             break
 
-                        if not response.ok:
-                            logger.warning(f"Page {page_num + 1} returned status {response.status}")
+                        if not response.ok:  # type: ignore[union-attr]  # goto returns None only for same-document navs; the broad except below retries/skips
+                            logger.warning(f"Page {page_num + 1} returned status {response.status}")  # type: ignore[union-attr]
                             if attempt < max_retries - 1:
                                 continue
                             break
@@ -213,7 +213,8 @@ def get_bensbites_data(max_retries: int = 3, retry_delay: int = 5, max_pages: in
 
                         article_data = {
                             "title": title,
-                            "url": (url if url.startswith("http") else f"https://news.bensbites.com{url}"),
+                            # get_attribute may return None; the per-article except below skips those
+                            "url": (url if url.startswith("http") else f"https://news.bensbites.com{url}"),  # type: ignore[union-attr]
                             "published_at": published_at,
                             "source": source,
                             "votes": votes,
