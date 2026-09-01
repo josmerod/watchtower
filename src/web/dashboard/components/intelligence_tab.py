@@ -13,7 +13,11 @@ from typing import Any
 
 import dash_bootstrap_components as dbc
 import plotly.express as px
-from dash import Input, Output, dash_table, dcc, html
+from dash import Input, Output, dcc, html
+
+# dash_table's package __init__ is untyped ("# type: ignore"); the concrete
+# module carries the real stubs, so import DataTable from there.
+from dash.dash_table.DataTable import DataTable
 
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
@@ -77,7 +81,7 @@ nvd_cve_repo = IntelligenceRepository(INTEL_SOURCES_CONFIG["nvd_cve"]["path"])
 #         with open(file_path, encoding="utf-8") as f:
 #             data = json.load(f)
 #         if isinstance(data, list):
-#             return [process_intel_item(item) for item in data if process_intel_item(item)]
+#             return [processed for item in data if (processed := process_intel_item(item))]
 #         return []
 #     except Exception as e:
 #         logger.error(f"Error loading intelligence data from {file_path}: {e}")
@@ -106,7 +110,7 @@ def load_intel_data(file_path: str) -> list[dict[str, Any]]:
             return []
 
         if isinstance(data, list):
-            return [process_intel_item(item) for item in data if process_intel_item(item)]
+            return [processed for item in data if (processed := process_intel_item(item))]
         return []
     except Exception as e:
         logger.error(f"Error loading intelligence data from {file_path}: {e}")
@@ -324,7 +328,7 @@ def create_intel_summary_cards() -> list[html.Div]:
     return cards
 
 
-def create_intel_table(source_id: str, items: list[dict[str, Any]]) -> html.Div:
+def create_intel_table(source_id: str, items: list[dict[str, Any]]) -> html.Div | DataTable:
     if not items:
         return dbc.Alert("No intelligence items available for this source.", color="info")
 
@@ -335,7 +339,8 @@ def create_intel_table(source_id: str, items: list[dict[str, Any]]) -> html.Div:
         reverse=True,
     )
 
-    df_rows = []
+    # DataTable stubs type keys as str|float|int and dict is invariant
+    df_rows: list[dict[str | float | int, Any]] = []
     for it in sorted_items:
         date_str = it["published"].strftime("%Y-%m-%d %H:%M") if it.get("published") else "N/A"
         df_rows.append(
@@ -348,7 +353,7 @@ def create_intel_table(source_id: str, items: list[dict[str, Any]]) -> html.Div:
             }
         )
 
-    columns = [
+    columns: list[DataTable.Columns] = [
         {"name": "Title", "id": "Title", "type": "text"},
         {"name": "Date", "id": "Date", "type": "text"},
         {"name": "Type", "id": "Type", "type": "text"},
@@ -360,7 +365,7 @@ def create_intel_table(source_id: str, items: list[dict[str, Any]]) -> html.Div:
     for row in df_rows:
         row["URL"] = f"[Open]({row['URL']})" if row["URL"] and row["URL"] != "#" else "N/A"
 
-    return dash_table.DataTable(
+    return DataTable(
         data=df_rows,
         columns=columns,
         page_size=10,
@@ -385,11 +390,12 @@ def create_intel_table(source_id: str, items: list[dict[str, Any]]) -> html.Div:
             "whiteSpace": "normal",
             "height": "auto",
         },
-        style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "#252343"}],
+        # Dash's stubs only declare the "if" key; style keys like backgroundColor are valid at runtime
+        style_data_conditional=[{"if": {"row_index": "odd"}, "backgroundColor": "#252343"}],  # type: ignore[typeddict-unknown-key]
     )
 
 
-def create_timeline_chart(items: list[dict[str, Any]]) -> html.Div:
+def create_timeline_chart(items: list[dict[str, Any]]) -> html.Div | dcc.Graph:
     dates = [it["published"].strftime("%Y-%m-%d") for it in items if it.get("published")]
     if not dates:
         return html.Div("No date data available for timeline")

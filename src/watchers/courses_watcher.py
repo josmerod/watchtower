@@ -156,7 +156,7 @@ def assess_new_courses(
         if first_run:
             continue
 
-        previous_courses = previous_catalogs.get(key)
+        previous_courses = (previous_catalogs or {}).get(key)
         if not previous_courses:
             # Provider was missing (or brand new) on the previous run: record this
             # catalog as its baseline instead of flooding events with courses that

@@ -570,7 +570,7 @@ class EnhancedArxivWatcher(BaseWatcher):
 
     def _calculate_area_distribution(self, papers: list[dict[str, Any]]) -> dict[str, int]:
         """Calculate distribution of papers across research areas."""
-        distribution = {}
+        distribution: dict[str, int] = {}
         for paper in papers:
             for area in paper.get("research_areas", []):
                 distribution[area] = distribution.get(area, 0) + 1

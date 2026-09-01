@@ -16,7 +16,7 @@ try:
 except ImportError:
     try:
         # Handle case when run as script from src/launcher directory
-        from main import ExecutionMode, WatchtowerLauncher
+        from main import ExecutionMode, WatchtowerLauncher  # type: ignore[import-not-found,no-redef]
     except ImportError:
         # Handle case when run from project root
         import sys
@@ -280,7 +280,8 @@ class WatchtowerCLI:
                     env=env,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
-                    preexec_fn=os.setsid if os.name != "nt" else None,
+                    # os.setsid does not exist on Windows; resolve it defensively
+                    preexec_fn=getattr(os, "setsid", None) if os.name != "nt" else None,
                 )
                 print("Watchtower started in background")
                 print("Check logs for status: logs/launcher.log")

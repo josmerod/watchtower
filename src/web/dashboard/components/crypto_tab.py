@@ -7,7 +7,11 @@ from typing import Any
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
-from dash import dash_table, dcc, html
+from dash import dcc, html
+
+# dash_table's package __init__ is untyped ("# type: ignore"); the concrete
+# module carries the real stubs, so import DataTable from there.
+from dash.dash_table.DataTable import DataTable
 from plotly.subplots import make_subplots
 
 # Import repository pattern (NEW)
@@ -660,13 +664,13 @@ def create_advanced_metrics_cards(data):
     return cards
 
 
-def create_coingecko_table(data: list[dict[str, Any]]) -> html.Div:
+def create_coingecko_table(data: list[dict[str, Any]]) -> html.Div | DataTable:
     """Create a table of top CoinGecko cryptocurrency assets."""
     if not data:
         return dbc.Alert("No CoinGecko market data available.", color="info")
 
-    # Prepare data for table
-    table_data = []
+    # Prepare data for table (DataTable stubs type keys as str|float|int and dict is invariant)
+    table_data: list[dict[str | float | int, Any]] = []
     for item in data[:50]:  # Show top 50
         table_data.append(
             {
@@ -680,7 +684,7 @@ def create_coingecko_table(data: list[dict[str, Any]]) -> html.Div:
             }
         )
 
-    columns = [
+    columns: list[DataTable.Columns] = [
         {"name": "Rank", "id": "rank", "type": "numeric"},
         {"name": "Symbol", "id": "symbol", "type": "text"},
         {"name": "Name", "id": "name", "type": "text"},
@@ -690,7 +694,7 @@ def create_coingecko_table(data: list[dict[str, Any]]) -> html.Div:
         {"name": "Volume (24h)", "id": "volume", "type": "text"},
     ]
 
-    return dash_table.DataTable(
+    return DataTable(
         data=table_data,
         columns=columns,
         filter_action="native",
@@ -711,12 +715,13 @@ def create_coingecko_table(data: list[dict[str, Any]]) -> html.Div:
             "color": "#cdd6f4",
             "border": "1px solid #313244",
         },
+        # Dash's stubs only declare the "if" key; style keys like color are valid at runtime
         style_data_conditional=[
-            {
+            {  # type: ignore[typeddict-unknown-key]
                 "if": {"filter_query": "{change} contains '-'"},
                 "color": "#f38ba8",  # Red for negative
             },
-            {
+            {  # type: ignore[typeddict-unknown-key]
                 "if": {"filter_query": "{change} ! contains '-'"},
                 "color": "#a6e3a1",  # Green for positive
             },
@@ -769,7 +774,7 @@ def create_advanced_data_table(data):
         {"name": "Content", "id": "content", "type": "text"},
     ]
 
-    return dash_table.DataTable(
+    return DataTable(
         data=table_data,
         columns=columns,
         filter_action="native",

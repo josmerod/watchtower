@@ -13,13 +13,13 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
-from src.api.models import MarketsResponse, RadarResponse
+from src.api.models import MarketsResponse, RadarItem, RadarResponse
 from src.utils.file_system import get_project_root
 
 logger = logging.getLogger(__name__)
@@ -139,7 +139,7 @@ def _max_generated_at(items: list[dict[str, Any]], keys: tuple[str, ...]) -> str
 
 
 @public_router.get("/markets", response_model=MarketsResponse)
-async def get_markets(response: Response, limit: int = Query(RADAR_DEFAULT_LIMIT, ge=1, le=500, description="Max items to return")) -> MarketsResponse:
+async def get_markets(response: Response, limit: int = Query(RADAR_DEFAULT_LIMIT, ge=1, le=500, description="Max items to return")):
     """Get top crypto market quotes (CoinGecko snapshot).
 
     Reads ``data/markets/coingecko_latest.json`` and returns the stored coin
@@ -161,7 +161,7 @@ async def get_markets(response: Response, limit: int = Query(RADAR_DEFAULT_LIMIT
 
 
 @public_router.get("/radar", response_model=RadarResponse)
-async def get_radar(response: Response, limit: int = Query(RADAR_DEFAULT_LIMIT, ge=1, le=500, description="Max items to return")) -> RadarResponse:
+async def get_radar(response: Response, limit: int = Query(RADAR_DEFAULT_LIMIT, ge=1, le=500, description="Max items to return")):
     """Get the merged technology-radar feed (newest first).
 
     Merges the same source files as the dashboard's Tech Radar tab: per-source
@@ -218,11 +218,11 @@ async def get_radar(response: Response, limit: int = Query(RADAR_DEFAULT_LIMIT, 
     rows.sort(key=lambda row: row[0], reverse=True)
     items = [item for _, item in rows[:limit]]
     response.headers["Cache-Control"] = "no-store"
-    return RadarResponse(generated_at=newest_mtime, count=len(items), items=items)
+    return RadarResponse(generated_at=newest_mtime, count=len(items), items=cast("list[RadarItem]", items))
 
 
 @public_router.get("/freshness")
-async def get_freshness(response: Response) -> dict[str, Any]:
+async def get_freshness(response: Response):
     """Get the data-freshness summary plus a convenience ``stale_sources`` list.
 
     Reads ``data/watchers/data_freshness/freshness_latest.json`` and returns

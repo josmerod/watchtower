@@ -30,20 +30,22 @@ from pathlib import Path
 import psutil
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+from watchdog.observers.api import BaseObserver
 
 try:
     from .health_monitor import HealthMonitor
 except ImportError:
     try:
         # Handle case when run as script from src/launcher directory
-        from health_monitor import HealthMonitor
+        from health_monitor import HealthMonitor  # type: ignore[no-redef]
     except ImportError:
         # Handle case when run from project root
         import sys
         from pathlib import Path
 
         sys.path.insert(0, str(Path(__file__).parent.parent))
-        from health_monitor import HealthMonitor
+        # runtime sys.path fallback; unresolvable statically
+        from health_monitor import HealthMonitor  # type: ignore[import-not-found,no-redef]
 
 
 class ExecutionMode(Enum):
@@ -316,7 +318,8 @@ class WatchtowerLauncher:
         self.mode = mode
         self.etl_scheduler: ETLScheduler | None = None
         self.dashboard_process: ProcessInfo | None = None
-        self.hot_reload_observer: Observer | None = None
+        # watchdog's Observer is a platform-dependent factory binding, so annotate with its base class
+        self.hot_reload_observer: BaseObserver | None = None
         self.health_monitor: HealthMonitor | None = None
         self.running = False
 

@@ -158,25 +158,25 @@ class VulnerabilityModel(TimestampedModel):
     tags: list[str] = Field(default=[], description="Vulnerability tags")
     metadata: dict[str, Any] | None = Field(default=None, description="Additional vulnerability metadata")
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def is_critical(self) -> bool:
         """Check if vulnerability is critical."""
         return self.severity_score >= 9.0 and self.risk_level == RiskLevel.CRITICAL
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def days_since_published(self) -> int:
         """Calculate days since vulnerability was published."""
         return (datetime.utcnow() - self.published_date).days
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def is_recent(self) -> bool:
         """Check if vulnerability was published in the last 30 days."""
         return self.days_since_published <= 30
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def needs_urgent_attention(self) -> bool:
         """Check if vulnerability needs urgent attention."""

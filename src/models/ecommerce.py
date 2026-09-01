@@ -146,7 +146,7 @@ if __name__ == "__main__":
         price="10.99 USD",
         seller="TrustedSeller",
         description="This is a fantastic example product.",
-        url="https://shoppy.gg/product/example123",
+        url="https://shoppy.gg/product/example123",  # type: ignore[arg-type]  # pydantic coerces str into HttpUrl
         fetched_at=datetime.now(),
         parsed_at=datetime.now(),
         category="Digital Goods",

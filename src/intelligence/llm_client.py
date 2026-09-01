@@ -3,7 +3,7 @@
 import abc
 import json
 import logging
-from typing import Any
+from typing import Any, TypeVar
 
 from openai import OpenAI
 from pydantic import BaseModel
@@ -31,8 +31,11 @@ class LLMClient(abc.ABC):
         """
         pass
 
+    # TModel: concrete pydantic class passed in as `schema`; the return is an instance of it
+    TModel = TypeVar("TModel", bound=BaseModel)
+
     @abc.abstractmethod
-    def extract_structured_data(self, text: str, schema: BaseModel, prompt: str) -> BaseModel | None:
+    def extract_structured_data(self, text: str, schema: type[TModel], prompt: str) -> TModel | None:
         """Extract structured data matching a Pydantic schema.
 
         Args:
@@ -41,7 +44,7 @@ class LLMClient(abc.ABC):
             prompt: Instructions for extraction.
 
         Returns:
-            Optional[BaseModel]: Instance of schema or None if failure.
+            Optional[TModel]: Instance of schema or None if failure.
         """
         pass
 

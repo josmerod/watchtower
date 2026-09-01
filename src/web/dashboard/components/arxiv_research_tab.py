@@ -45,7 +45,7 @@ def get_all_arxiv_data():
     """Load fresh ArXiv data from all configured category sources."""
     # Simple TTL cache to avoid re-reading files on each tab switch
     # Cache in module state for ~60 seconds
-    global _ARXIV_CACHE  # type: ignore
+    global _ARXIV_CACHE
     now = time.time()
     try:
         if _ARXIV_CACHE and now - _ARXIV_CACHE.get("ts", 0) < 60:

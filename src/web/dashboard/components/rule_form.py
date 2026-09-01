@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import dash_bootstrap_components as dbc
 from dash import html
@@ -20,14 +20,15 @@ def render_condition_editor(condition: AlertCondition, condition_index: int) -> 
     """Render editor for a single condition."""
     condition_type = condition.condition_type
 
+    # condition_type is the pydantic discriminator, so a match implies the subclass
     if condition_type == "source_match":
-        return render_source_condition_editor(condition, condition_index)
+        return render_source_condition_editor(cast(SourceMatchCondition, condition), condition_index)
     elif condition_type == "keyword_match":
-        return render_keyword_condition_editor(condition, condition_index)
+        return render_keyword_condition_editor(cast(KeywordMatchCondition, condition), condition_index)
     elif condition_type == "category_match":
-        return render_category_condition_editor(condition, condition_index)
+        return render_category_condition_editor(cast(CategoryMatchCondition, condition), condition_index)
     elif condition_type == "price_threshold":
-        return render_price_condition_editor(condition, condition_index)
+        return render_price_condition_editor(cast(PriceThresholdCondition, condition), condition_index)
     else:
         return dbc.Alert(f"Unknown condition type: {condition_type}", color="warning")
 

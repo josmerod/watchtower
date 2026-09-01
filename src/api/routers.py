@@ -2,6 +2,7 @@
 
 import json
 import logging
+from collections.abc import Collection
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import ValidationError
@@ -37,9 +38,9 @@ router = APIRouter()
 
 def _load_and_process_items(config_dict: dict, source_filter: str | None = None, limit: int = 10000) -> list[UnifiedItem]:
     """Helper to load items from config and convert to UnifiedItem."""
-    items = []
+    items: list[UnifiedItem] = []
 
-    sources_to_load = config_dict.keys()
+    sources_to_load: Collection[str] = config_dict.keys()
     if source_filter:
         if source_filter in config_dict:
             sources_to_load = [source_filter]
@@ -77,21 +78,22 @@ def _load_and_process_items(config_dict: dict, source_filter: str | None = None,
     # Remove duplicates across combined sources before applying the response limit.
     # Keep first-seen item, preserving source order and source-specific recency order.
     seen = set()
-    unique_items = []
-    for item in items:
-        key = get_item_dedupe_key(item.model_dump())
-        if key and key in seen:
+    unique_items: list[UnifiedItem] = []
+    # separate name from the raw-dict `item` loop above so each keeps its true type
+    for unified in items:
+        dedupe_key = get_item_dedupe_key(unified.model_dump())
+        if dedupe_key and dedupe_key in seen:
             continue
-        if key:
-            seen.add(key)
-        unique_items.append(item)
+        if dedupe_key:
+            seen.add(dedupe_key)
+        unique_items.append(unified)
 
     return unique_items[:limit] if limit > 0 else unique_items
 
 
 def _load_benchmarks(source_filter: str | None = None) -> dict:
     """Load benchmark data as raw dicts (not UnifiedItem) for table display."""
-    sources_to_load = BENCHMARKS_SOURCES_CONFIG.keys()
+    sources_to_load: Collection[str] = BENCHMARKS_SOURCES_CONFIG.keys()
     if source_filter:
         if source_filter in BENCHMARKS_SOURCES_CONFIG:
             sources_to_load = [source_filter]

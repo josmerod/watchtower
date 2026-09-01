@@ -371,7 +371,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
 
                 # Remove duplicates based on URL (in case of overlap between pages)
                 if all_skills_with_urls:
-                    seen_urls = {}
+                    seen_urls: dict[str, dict] = {}
                     for skill in all_skills_with_urls:
                         url = skill["url"]
                         if url not in seen_urls or len(skill["name"]) > len(seen_urls[url]["name"]):
@@ -545,7 +545,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
             'div[data-bi-name*="credential"]',  # BI name patterns
         ]
 
-        found_cards = []
+        found_cards: list[Any] = []
 
         # First, try to find the container and any cards within it
         content_container = soup.select_one('#content-browser-container, [data-bi-name="content-browser"]')
@@ -687,7 +687,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
 
         # Deduplicate based on URL
         if skills_with_urls:
-            seen_urls = {}
+            seen_urls: dict[str, dict] = {}
             for skill in skills_with_urls:
                 url = skill["url"]
                 if url not in seen_urls or len(skill["name"]) > len(seen_urls[url]["name"]):
@@ -701,7 +701,7 @@ class MSAppliedSkillsWatcher(BaseWatcher):
         if not skills_with_urls:
             self.logger.warning("No Applied Skills found. Debug info:")
             all_links = soup.select("a[href]")
-            applied_skills_links = [link for link in all_links if "applied-skills" in link.get("href", "").lower()]
+            applied_skills_links = [link for link in all_links if "applied-skills" in link.get("href", "").lower()]  # type: ignore[union-attr]  # bs4 attrs are nominally multi-valued; href is always str here
             self.logger.warning(f"Total links found: {len(all_links)}")
             self.logger.warning(f"Applied Skills links found: {len(applied_skills_links)}")
 

@@ -131,7 +131,7 @@ class ArchitectureRecommender:
 
         user_size = user_profile.team_size.lower()
         # Handle string vs Enum
-        rec_size = pattern.recommended_team_size if isinstance(pattern.recommended_team_size, str) else pattern.recommended_team_size.value
+        rec_size: str = pattern.recommended_team_size if isinstance(pattern.recommended_team_size, str) else pattern.recommended_team_size.value
         rec_size = rec_size.lower()
 
         # Direct match
@@ -164,7 +164,7 @@ class ArchitectureRecommender:
         skill = user_profile.skill_level.value.lower() if hasattr(user_profile.skill_level, "value") else user_profile.skill_level.lower()
 
         # Handle string vs Enum
-        complexity = pattern.complexity if isinstance(pattern.complexity, str) else pattern.complexity.value
+        complexity: str = pattern.complexity if isinstance(pattern.complexity, str) else pattern.complexity.value
         complexity = complexity.lower()
 
         if skill == "beginner":

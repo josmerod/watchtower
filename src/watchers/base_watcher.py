@@ -19,8 +19,8 @@ from src.utils.logging import get_logger
 
 try:
     from src.alerts.engine import AlertEngine
-except ImportError:
-    AlertEngine = None
+except ImportError:  # optional dependency sentinel
+    AlertEngine = None  # type: ignore[assignment,misc]
 
 from src.etl.proxy_manager import ProxyManager
 
@@ -290,7 +290,8 @@ class BaseWatcher(ABC):
                 default_user_id = "default_user"
 
                 # Evaluate content against alert rules (async to avoid blocking)
-                alert_events = self.alert_engine.evaluate_content(content, default_user_id)
+                # alert_engine may be None when alerts are unavailable; the AttributeError is caught below
+                alert_events = self.alert_engine.evaluate_content(content, default_user_id)  # type: ignore[union-attr]
 
                 if alert_events:
                     self.logger.info(f"Generated {len(alert_events)} alert events for watcher {self.name}")

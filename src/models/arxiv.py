@@ -92,7 +92,7 @@ class GitHubRepositoryModel(TimestampedModel):
     watchers: int | None = Field(default=None, ge=0, description="Number of watchers")
     open_issues: int | None = Field(default=None, ge=0, description="Number of open issues")
     last_updated: datetime | None = Field(default=None, description="Last update timestamp")
-    created_at: datetime | None = Field(default=None, description="Repository creation timestamp")
+    created_at: datetime | None = Field(default=None, description="Repository creation timestamp")  # type: ignore[assignment]  # pydantic permits narrowing the base's datetime
     language: str | None = Field(default=None, description="Primary language")
     languages: dict[str, int] | None = Field(default=None, description="Language breakdown")
     topics: list[str] = Field(default=[], description="Repository topics")
@@ -200,7 +200,7 @@ class EnhancedArxivPaperModel(ArxivPaperModel):
     quality_indicators: dict[str, float] = Field(default={}, description="Various quality indicators and their scores")
     trends_alignment: dict[str, float] = Field(default={}, description="Alignment with current technology trends")
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def overall_significance_score(self) -> float:
         """Calculate overall significance score based on multiple factors."""
@@ -231,13 +231,13 @@ class EnhancedArxivPaperModel(ArxivPaperModel):
 
         return round(overall_score, 2)
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def is_breakthrough(self) -> bool:
         """Determine if this paper represents a potential breakthrough."""
         return self.industry_impact_score >= 8.0 or self.innovation_score >= 8.0 or self.overall_significance_score >= 7.5
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def implementation_feasibility(self) -> str:
         """Assess implementation feasibility based on TRL and other factors."""

@@ -265,7 +265,7 @@ def render_recommendations_container_data(
             )
 
         # Group recommendations by type
-        grouped_recommendations = {}
+        grouped_recommendations: dict[Any, list[Any]] = {}
         for rec in recommendations:
             rec_type = rec["type"]
             if rec_type not in grouped_recommendations:

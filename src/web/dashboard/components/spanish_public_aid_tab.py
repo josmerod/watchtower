@@ -9,7 +9,11 @@ import dash
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import Input, Output, dash_table, dcc, html
+from dash import Input, Output, dcc, html
+
+# dash_table's package __init__ is untyped ("# type: ignore"); the concrete
+# module carries the real stubs, so import DataTable from there.
+from dash.dash_table.DataTable import DataTable
 
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
@@ -189,9 +193,7 @@ def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Di
     """Create summary cards with key statistics."""
     total_aids = len(aids_data)
     active_aids = len([aid for aid in aids_data if aid.get("status") == "abierta"])
-    closing_soon = len(
-        [aid for aid in aids_data if aid.get("status") == "abierta" and aid.get("closing_date") and parse_aid_date(aid["closing_date"]) and (parse_aid_date(aid["closing_date"]) - datetime.now()).days <= 7]
-    )
+    closing_soon = len([aid for aid in aids_data if aid.get("status") == "abierta" and aid.get("closing_date") and (aid_date := parse_aid_date(aid["closing_date"])) and (aid_date - datetime.now()).days <= 7])
 
     # Get most common category
     categories = [aid.get("category", "otros") for aid in aids_data]
@@ -272,7 +274,7 @@ def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
         return dcc.Graph(figure={"data": [], "layout": {"title": "No data available"}})
 
     # Count aids by category
-    category_counts = {}
+    category_counts: dict[str, int] = {}
     for aid in aids_data:
         category = aid.get("category", "otros")
         category_counts[category] = category_counts.get(category, 0) + 1
@@ -296,7 +298,7 @@ def create_scope_chart(aids_data: list[dict]) -> dcc.Graph:
         return dcc.Graph(figure={"data": [], "layout": {"title": "No data available"}})
 
     # Count aids by scope
-    scope_counts = {}
+    scope_counts: dict[str, int] = {}
     for aid in aids_data:
         scope = aid.get("scope", {}).get("scope", "nacional")
         scope_name = {
@@ -507,11 +509,11 @@ def create_aids_table(aids_data: list[dict]) -> html.Div:
     if not aids_data:
         return dbc.Alert("No aid data available.", color="info")
 
-    # Prepare data for table
-    table_data = []
+    # Prepare data for table (DataTable stubs type keys as str|float|int and dict is invariant)
+    table_data: list[dict[str | float | int, Any]] = []
     for aid in aids_data:
         closing_date_str = "N/A"
-        days_left = "N/A"
+        days_left: int | str = "N/A"
 
         if aid.get("closing_date"):
             closing_date = parse_aid_date(aid["closing_date"])
@@ -545,7 +547,7 @@ def create_aids_table(aids_data: list[dict]) -> html.Div:
         )
 
     # Create DataTable
-    table = dash_table.DataTable(
+    table = DataTable(
         id="aids-table",
         data=table_data,
         columns=[
@@ -587,16 +589,17 @@ def create_aids_table(aids_data: list[dict]) -> html.Div:
             "border": "1px solid #444",
         },
         style_data_conditional=[
-            {
+            # Dash's stubs only declare the "if" key; style keys like width/backgroundColor are valid at runtime
+            {  # type: ignore[typeddict-unknown-key]
                 "if": {"column_id": "title"},
                 "width": "50%",  # Explicit width for Title
             },
-            {
+            {  # type: ignore[typeddict-unknown-key]
                 "if": {"filter_query": "{days_left} <= 7 && {days_left} > 0"},
                 "backgroundColor": "#3e2723",  # Dark reddish background for urgency
                 "color": "#ffcdd2",  # Light red text
             },
-            {
+            {  # type: ignore[typeddict-unknown-key]
                 "if": {"filter_query": "{status} = Cerrada"},
                 "backgroundColor": "#212121",
                 "color": "#757575",
@@ -722,7 +725,7 @@ def create_bdns_section(convocatorias: list[dict]) -> html.Div:
     total = len(convocatorias)
     with_deadline = len([c for c in convocatorias if c.get("deadline_date")])
     with_budget = len([c for c in convocatorias if (c.get("amounts") or {}).get("total_budget") is not None])
-    closing_soon = len([c for c in convocatorias if isinstance(_bdns_days_left(c), int) and 0 < _bdns_days_left(c) <= 7])
+    closing_soon = len([c for c in convocatorias if isinstance(days := _bdns_days_left(c), int) and 0 < days <= 7])
 
     badges = dbc.Row(
         [
@@ -734,7 +737,7 @@ def create_bdns_section(convocatorias: list[dict]) -> html.Div:
         className="mb-3 g-1",
     )
 
-    table_data = []
+    table_data: list[dict[str | float | int, Any]] = []
     for item in convocatorias:
         title = item.get("title", "Sin título")
         url = item.get("url", "")
@@ -754,7 +757,7 @@ def create_bdns_section(convocatorias: list[dict]) -> html.Div:
             }
         )
 
-    table = dash_table.DataTable(
+    table = DataTable(
         id="bdns-convocatorias-table",
         data=table_data,
         columns=[
@@ -791,11 +794,12 @@ def create_bdns_section(convocatorias: list[dict]) -> html.Div:
             "border": "1px solid #444",
         },
         style_data_conditional=[
-            {
+            # Dash's stubs only declare the "if" key; style keys like width/backgroundColor are valid at runtime
+            {  # type: ignore[typeddict-unknown-key]
                 "if": {"column_id": "title"},
                 "width": "45%",
             },
-            {
+            {  # type: ignore[typeddict-unknown-key]
                 "if": {"filter_query": "{days_left} <= 7 && {days_left} > 0"},
                 "backgroundColor": "#3e2723",
                 "color": "#ffcdd2",

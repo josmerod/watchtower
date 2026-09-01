@@ -245,7 +245,7 @@ def validate_search_performance(content_size: int, max_items: int = 10000) -> bo
 
 
 # Cache for search results to improve performance
-_search_cache = {}
+_search_cache: dict[str, Any] = {}
 
 
 def cached_filter_content(

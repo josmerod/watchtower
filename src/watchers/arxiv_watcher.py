@@ -357,7 +357,7 @@ class ArxivWatcher(BaseWatcher):
 
     def _fetch_query(self, categories_list: list[str], target_count: int) -> list[dict[str, Any]]:
         """Fetch one category group with pagination (shared query logic)."""
-        all_papers = []
+        all_papers: list[dict[str, Any]] = []
         start = 0
         page_size = 100  # Fetch 100 at a time
 

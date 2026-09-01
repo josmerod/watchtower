@@ -284,7 +284,8 @@ class DIContainer:
             List of dependency names
         """
         try:
-            sig = inspect.signature(service_type.__init__)
+            # reflective constructor introspection for DI wiring
+            sig = inspect.signature(service_type.__init__)  # type: ignore[misc]
             params = sig.parameters
 
             # Skip 'self' parameter

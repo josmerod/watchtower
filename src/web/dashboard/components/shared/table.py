@@ -10,6 +10,7 @@ from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import html
+from dash.development.base_component import Component
 
 from src.web.dashboard.search_utils import highlight_segments
 
@@ -92,7 +93,7 @@ def title_cell(
     title_children = highlight_segments(title, search_term) if search_term else title
     title_component = html.A(title_children, href=url, target="_blank", className="fw-bold text-decoration-none text-info") if url else html.Span(title_children, className="fw-bold")
 
-    children = [title_component]
+    children: list[Component] = [title_component]
     if subtitle:
         if search_term:
             subtitle_children: Any = highlight_segments(subtitle, search_term)[:subtitle_max_chars]

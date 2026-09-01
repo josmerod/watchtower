@@ -3,11 +3,15 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import Input, Output, dash_table, dcc, html
+from dash import Input, Output, dcc, html
+
+# dash_table's package __init__ is untyped ("# type: ignore"); the concrete
+# module carries the real stubs, so import DataTable from there.
+from dash.dash_table.DataTable import DataTable
 
 # Import repository pattern (NEW)
 from src.etl.fourchan.fourchan_generals_etl import DEFAULT_BOARDS
@@ -136,7 +140,8 @@ def create_board_table(board: str, threads: list[dict[str, Any]]) -> html.Div:
         # Activity score column (replies/hour, spec FA4)
         if "replies" in df.columns:
             df["Activity"] = df.apply(lambda row: _activity_score(row.to_dict()), axis=1)
-            threads = df.to_dict("records")
+            # pandas stubs type to_dict("records") keys as Hashable; DataFrame columns are str here
+            threads = cast("list[dict[str, Any]]", df.to_dict("records"))
             threads.sort(key=_activity_score, reverse=True)
             df = pd.DataFrame(threads)
 
@@ -169,10 +174,12 @@ def create_board_table(board: str, threads: list[dict[str, Any]]) -> html.Div:
         display_df = display_df[[c for c in order if c in display_df.columns]]
 
         # Create table with dark theme styling
-        table = dash_table.DataTable(
+        table = DataTable(
             id=f"4chan-table-{board}",
-            data=display_df.to_dict("records"),
-            columns=[{"name": col, "id": col, "type": "numeric" if col in ("Replies", "Images") else "text", "presentation": "markdown" if col == "Thread URL" else "text"} for col in display_df.columns],
+            # pandas stubs type to_dict("records") keys as Hashable; column labels are str here
+            data=cast("list[dict[str | float | int, Any]]", display_df.to_dict("records")),
+            # "text" is not in the stub's presentation literals; Dash's frontend treats it as the default text rendering
+            columns=[{"name": col, "id": col, "type": "numeric" if col in ("Replies", "Images") else "text", "presentation": "markdown" if col == "Thread URL" else "text"} for col in display_df.columns],  # type: ignore[typeddict-item]
             style_cell={
                 "textAlign": "left",
                 "padding": "12px 16px",
@@ -196,16 +203,17 @@ def create_board_table(board: str, threads: list[dict[str, Any]]) -> html.Div:
                 "color": "#CDD6F4",
                 "border": "1px solid #3C3970",
             },
+            # Dash's stubs only declare the "if" key; style keys like backgroundColor/color are valid at runtime
             style_data_conditional=[
-                {"if": {"row_index": "odd"}, "backgroundColor": "#252343"},
-                {
+                {"if": {"row_index": "odd"}, "backgroundColor": "#252343"},  # type: ignore[typeddict-unknown-key]
+                {  # type: ignore[typeddict-unknown-key]
                     "if": {"state": "selected"},
                     "backgroundColor": "#A37FFF",
                     "color": "#1E1E2E",
                 },
                 # Activity color coding (spec FA4)
-                {"if": {"filter_query": "{Activity (replies/h)} >= 20", "column_id": "Activity (replies/h)"}, "backgroundColor": "#1B4332", "color": "#95D5B2", "fontWeight": "600"},
-                {"if": {"filter_query": "{Activity (replies/h)} >= 5 && {Activity (replies/h)} < 20", "column_id": "Activity (replies/h)"}, "backgroundColor": "#4A4E2B", "color": "#D8E48B"},
+                {"if": {"filter_query": "{Activity (replies/h)} >= 20", "column_id": "Activity (replies/h)"}, "backgroundColor": "#1B4332", "color": "#95D5B2", "fontWeight": "600"},  # type: ignore[typeddict-unknown-key]
+                {"if": {"filter_query": "{Activity (replies/h)} >= 5 && {Activity (replies/h)} < 20", "column_id": "Activity (replies/h)"}, "backgroundColor": "#4A4E2B", "color": "#D8E48B"},  # type: ignore[typeddict-unknown-key]
             ],
             sort_action="native",
             sort_by=[{"column_id": "Activity (replies/h)", "direction": "desc"}] if "Activity (replies/h)" in display_df.columns else None,
@@ -267,13 +275,13 @@ def render_fourchan_tab() -> html.Div:
             )
 
         # Group threads by board
-        boards = {item["board"] for item in data}
-        grouped = {b: [] for b in boards}
+        board_names = {item["board"] for item in data}
+        grouped: dict[str, list[dict[str, Any]]] = {b: [] for b in board_names}
         for item in data:
             grouped[item["board"]].append(item)
 
         # Sort boards by activity (number of threads), then alphabetically
-        boards = sorted(boards, key=lambda b: (-len(grouped[b]), b))
+        boards = sorted(board_names, key=lambda b: (-len(grouped[b]), b))
 
         # Create tabs for each board
         board_content = []

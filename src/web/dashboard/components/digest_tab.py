@@ -15,6 +15,7 @@ from typing import Any
 
 import dash_bootstrap_components as dbc
 from dash import ALL, Dash, Input, Output, html
+from dash.development.base_component import Component
 
 from src.utils.file_system import get_project_root
 from src.web.dashboard.components.shared.table import create_refresh_button
@@ -151,12 +152,11 @@ def _movers_card(digest: dict[str, Any]) -> dbc.Card:
     if not gainers and not losers:
         body = html.P("Sin datos de mercado.", className="text-muted mb-0 p-3")
     else:
-        body = html.Div(
-            [html.Small("Top ganadores 24h", className="text-success fw-semibold px-3 pt-3")]
-            + _rows(gainers, "success")
-            + [html.Small("Top perdedores 24h", className="text-danger fw-semibold px-3 pt-3")]
-            + _rows(losers, "danger")
-        )
+        movers_rows: list[Component] = [html.Small("Top ganadores 24h", className="text-success fw-semibold px-3 pt-3")]
+        movers_rows += _rows(gainers, "success")
+        movers_rows += [html.Small("Top perdedores 24h", className="text-danger fw-semibold px-3 pt-3")]
+        movers_rows += _rows(losers, "danger")
+        body = html.Div(movers_rows)
     return _card("Movers 📈", body, badge_text=str(len(gainers) + len(losers)) if (gainers or losers) else None, color="success")
 
 

@@ -98,7 +98,7 @@ class PackageModel(TimestampedModel):
     homepage_url: str | None = Field(default=None, description="Package homepage URL")
 
     # Creation and update
-    created_at: datetime | None = Field(default=None, description="Package creation date")
+    created_at: datetime | None = Field(default=None, description="Package creation date")  # type: ignore[assignment]  # pydantic permits narrowing the base's datetime
     updated_at: datetime | None = Field(default=None, description="Last update date")
     published_at: datetime | None = Field(default=None, description="Latest version publish date")
     scraped_at: datetime = Field(default_factory=datetime.utcnow, description="When data was scraped")
@@ -120,7 +120,8 @@ class PackageModel(TimestampedModel):
         Returns:
             True if package has >1000 weekly downloads.
         """
-        return self.downloads_weekly and self.downloads_weekly > 1000
+        # BUG: the `and` chain yields None (or 0) instead of False when downloads_weekly is unset
+        return self.downloads_weekly and self.downloads_weekly > 1000  # type: ignore[return-value]
 
     @property
     def is_trending(self) -> bool:

@@ -11,8 +11,8 @@ from __future__ import annotations
 import statistics
 from typing import Any
 
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor  # type: ignore[import-untyped]  # sklearn ships no stubs
+from sklearn.linear_model import LinearRegression  # type: ignore[import-untyped]  # sklearn ships no stubs
 from sklearn.preprocessing import StandardScaler
 
 from src.exceptions.base import WatchtowerError

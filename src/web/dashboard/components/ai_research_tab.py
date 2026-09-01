@@ -8,7 +8,11 @@ from typing import Any
 
 import dash_bootstrap_components as dbc
 import plotly.express as px
-from dash import dash_table, dcc, html
+from dash import dcc, html
+
+# dash_table's package __init__ is untyped ("# type: ignore"); the concrete
+# module carries the real stubs, so import DataTable from there.
+from dash.dash_table.DataTable import DataTable
 
 from src.models.ai_research_model import ImplementationComplexity
 
@@ -163,7 +167,7 @@ def create_summary_cards(data: list[dict[str, Any]]) -> dbc.Row:
     return dbc.Row(cols, className="mb-4")
 
 
-def create_papers_table(data: list[dict[str, Any]]) -> html.Div:
+def create_papers_table(data: list[dict[str, Any]]) -> html.Div | DataTable:
     """Create a table of AI research papers."""
     if not data:
         return dbc.Alert("No AI research papers found.", color="info")
@@ -171,7 +175,7 @@ def create_papers_table(data: list[dict[str, Any]]) -> html.Div:
     # Sort by trend score descending
     sorted_data = sorted(data, key=lambda x: x.get("trend_score", 0), reverse=True)
 
-    table_data = []
+    table_data: list[dict[str | float | int, Any]] = []
     for p in sorted_data:
         table_data.append(
             {
@@ -183,7 +187,7 @@ def create_papers_table(data: list[dict[str, Any]]) -> html.Div:
             }
         )
 
-    columns = [
+    columns: list[DataTable.Columns] = [
         {"name": "Title", "id": "Title", "type": "text"},
         {"name": "Domain", "id": "Domain", "type": "text"},
         {"name": "Trend", "id": "Trend", "type": "numeric"},
@@ -191,7 +195,7 @@ def create_papers_table(data: list[dict[str, Any]]) -> html.Div:
         {"name": "Link", "id": "Link", "type": "text", "presentation": "markdown"},
     ]
 
-    return dash_table.DataTable(
+    return DataTable(
         data=table_data,
         columns=columns,
         page_size=10,
@@ -212,18 +216,18 @@ def create_papers_table(data: list[dict[str, Any]]) -> html.Div:
             "border": "1px solid #313244",
         },
         style_data_conditional=[
-            {"if": {"filter_query": '{Complexity} = "Low"'}, "color": "#a6e3a1"},
-            {"if": {"filter_query": '{Complexity} = "High"'}, "color": "#f38ba8"},
+            {"if": {"filter_query": '{Complexity} = "Low"'}, "color": "#a6e3a1"},  # type: ignore[typeddict-unknown-key]
+            {"if": {"filter_query": '{Complexity} = "High"'}, "color": "#f38ba8"},  # type: ignore[typeddict-unknown-key]
         ],
     )
 
 
-def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div:
+def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div | DataTable:
     """Create a table of HuggingFace models and datasets."""
     if not data:
         return dbc.Alert("No HuggingFace ecosystem data found.", color="info")
 
-    table_data = []
+    table_data: list[dict[str | float | int, Any]] = []
     for d in data:
         name = d.get("model_name") or d.get("dataset_name", "Unknown")
         item_type = d.get("data_type", "unknown").replace("_release", "").title()
@@ -239,7 +243,7 @@ def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div:
             }
         )
 
-    columns = [
+    columns: list[DataTable.Columns] = [
         {"name": "Name", "id": "Name", "type": "text"},
         {"name": "Type", "id": "Type", "type": "text"},
         {"name": "Downloads", "id": "Downloads", "type": "numeric"},
@@ -247,7 +251,7 @@ def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div:
         {"name": "Link", "id": "Link", "type": "text", "presentation": "markdown"},
     ]
 
-    return dash_table.DataTable(
+    return DataTable(
         data=table_data,
         columns=columns,
         page_size=10,
@@ -270,12 +274,12 @@ def create_huggingface_table(data: list[dict[str, Any]]) -> html.Div:
     )
 
 
-def create_semantic_scholar_table(data: list[dict[str, Any]]) -> html.Div:
+def create_semantic_scholar_table(data: list[dict[str, Any]]) -> html.Div | DataTable:
     """Create a table of Semantic Scholar research papers."""
     if not data:
         return dbc.Alert("No Semantic Scholar data found.", color="info")
 
-    table_data = []
+    table_data: list[dict[str | float | int, Any]] = []
     for d in data:
         authors_truncated = ", ".join(d.get("authors", [])[:3])
         if len(d.get("authors", [])) > 3:
@@ -293,7 +297,7 @@ def create_semantic_scholar_table(data: list[dict[str, Any]]) -> html.Div:
             }
         )
 
-    columns = [
+    columns: list[DataTable.Columns] = [
         {"name": "Title", "id": "Title", "type": "text"},
         {"name": "Authors", "id": "Authors", "type": "text"},
         {"name": "Citations", "id": "Citations", "type": "numeric"},
@@ -301,7 +305,7 @@ def create_semantic_scholar_table(data: list[dict[str, Any]]) -> html.Div:
         {"name": "Link", "id": "Link", "type": "text", "presentation": "markdown"},
     ]
 
-    return dash_table.DataTable(
+    return DataTable(
         data=table_data,
         columns=columns,
         page_size=10,

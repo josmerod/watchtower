@@ -54,7 +54,7 @@ def get_duplicate_groups(data: list[dict[str, Any]]) -> dict[str, list[dict[str,
     Returns:
         Dictionary mapping group_id to list of items in that group.
     """
-    groups = {}
+    groups: dict[Any, list[dict[str, Any]]] = {}
 
     for item in data:
         group_id = item.get("duplicate_group_id")

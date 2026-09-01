@@ -37,7 +37,9 @@ class UnifiedGiveawayModel(BaseModel):
             return v
         return v
 
-    @field_validator("platform", mode="before")
+    # BUG: pydantic v2 passes a ValidationInfo (not a dict) as `values`, so the
+    # isinstance guard below always fails and the 'store' alias never applies
+    @field_validator("platform", mode="before")  # type: ignore[type-var]
     @classmethod
     def coerce_platform(cls, v: Any, values: dict[str, Any]) -> Any:
         # Accept 'store' as an alias
@@ -63,7 +65,9 @@ class UnifiedGiveawayModel(BaseModel):
                 return None
         return None
 
-    @field_validator("is_active", mode="before")
+    # BUG: pydantic v2 passes ValidationInfo as `values`; a non-bool is_active
+    # input makes values.get(...) raise AttributeError at runtime
+    @field_validator("is_active", mode="before")  # type: ignore[type-var]
     @classmethod
     def compute_is_active(cls, v: Any, values: dict[str, Any]) -> bool:
         # If explicitly provided, respect it

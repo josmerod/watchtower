@@ -16,7 +16,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any
+from typing import Any, TypedDict
 
 import dash_bootstrap_components as dbc
 from dash import Input, Output, dcc, html
@@ -46,7 +46,16 @@ def _load_benchmark_category(category: str) -> list[dict]:
     return data.get("models", [])
 
 
-BENCHMARK_CATEGORIES = {
+class _BenchmarkCategory(TypedDict):
+    """Shape of one BENCHMARK_CATEGORIES entry (keys stay str at runtime)."""
+
+    label: str
+    description: str
+    columns: list[str]
+    numeric_cols: set[str]
+
+
+BENCHMARK_CATEGORIES: dict[str, _BenchmarkCategory] = {
     "overall": {
         "label": "🏆 Overall",
         "description": "Composite leaderboard across all BridgeBench suites. Ranked by Quality (mean of cohort-normalized scores on 7 quality benchmarks).",
@@ -143,7 +152,7 @@ def _rank_cell(rank: int) -> html.Td:
     return html.Td(str(rank), style={"textAlign": "center", "color": "#6c757d"})
 
 
-def _build_table(models: list[dict], category: str) -> html.Table:
+def _build_table(models: list[dict], category: str) -> html.Div | html.Table:
     """Build a styled table for benchmark data."""
     if not models:
         return html.Div("No data available.", className="text-muted p-3")
@@ -433,12 +442,12 @@ def _build_aa_llm_table(models: list[dict], filter_open: str = "all", sort_by: s
     if sort_by in ("price_input_per_1m", "price_output_per_1m", "price_blended_3_to_1", "median_ttft"):
         # Lower is better for price and TTFT
         reverse = False
-        filtered.sort(key=lambda m: m.get(sort_key) if m.get(sort_key) is not None else float("inf"), reverse=reverse)
+        filtered.sort(key=lambda m: val if (val := m.get(sort_key)) is not None else float("inf"), reverse=reverse)
     elif sort_by == "name":
         filtered.sort(key=lambda m: m.get("name", "").lower())
         reverse = False
     else:
-        filtered.sort(key=lambda m: m.get(sort_key) if m.get(sort_key) is not None else float("-inf"), reverse=True)
+        filtered.sort(key=lambda m: val if (val := m.get(sort_key)) is not None else float("-inf"), reverse=True)
 
     if not filtered:
         return html.Div("No models match the current filter.", className="text-muted p-3")
@@ -872,7 +881,7 @@ def _build_scores_table(scores: list[dict[str, Any]], limit: int = 100) -> html.
     medals = {1: "🥇", 2: "🥈", 3: "🥉"}
     for item in scores[:limit]:
         rank = item.get("rank")
-        badge = medals.get(rank, str(rank) if rank is not None else "")
+        badge = medals.get(rank, str(rank)) if rank is not None else ""
         rows.append(
             html.Tr(
                 [
@@ -1071,7 +1080,7 @@ def _build_livebench_table(models: list[dict[str, Any]], categories: list[str]) 
     medals = {1: "🥇", 2: "🥈", 3: "🥉"}
     for item in models:
         rank = item.get("rank")
-        badge = medals.get(rank, str(rank) if rank is not None else "")
+        badge = medals.get(rank, str(rank)) if rank is not None else ""
         rows.append(
             html.Tr(
                 [

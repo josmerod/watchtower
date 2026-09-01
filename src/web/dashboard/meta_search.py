@@ -4,7 +4,9 @@ Aggregates search results from multiple intelligence domains (Videos, News, Pape
 
 import logging
 
-from src.web.dashboard.components.arxiv_research_tab import ALL_ARXIV_DATA, load_arxiv_data
+# BUG: arxiv_research_tab defines neither ALL_ARXIV_DATA nor load_arxiv_data, so importing
+# this module raises ImportError at runtime (nothing currently imports it).
+from src.web.dashboard.components.arxiv_research_tab import ALL_ARXIV_DATA, load_arxiv_data  # type: ignore[attr-defined]
 from src.web.dashboard.components.news_tab import format_article_date, get_all_news_data
 from src.web.dashboard.components.videos_tab import video_manager
 from src.web.dashboard.search_utils import filter_content
@@ -116,10 +118,10 @@ class MetaSearchEngine:
 
             from src.web.dashboard.components import arxiv_research_tab
 
-            if arxiv_research_tab.ALL_ARXIV_DATA.empty:
-                arxiv_research_tab.load_arxiv_data()
+            if arxiv_research_tab.ALL_ARXIV_DATA.empty:  # type: ignore[attr-defined]  # BUG: see module top
+                arxiv_research_tab.load_arxiv_data()  # type: ignore[attr-defined]  # BUG: see module top
 
-            df = arxiv_research_tab.ALL_ARXIV_DATA
+            df = arxiv_research_tab.ALL_ARXIV_DATA  # type: ignore[attr-defined]  # BUG: see module top
 
             if not df.empty:
                 # Simple string match

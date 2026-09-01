@@ -25,8 +25,8 @@ class WatcherState(TimestampedModel):
     """Model for watcher state persistence."""
 
     watcher_name: str = Field(..., description="Name of the watcher")
-    last_check: datetime | None = Field(None, description="Last check timestamp")
-    last_value: str | None = Field(None, description="Last extracted value")
+    last_check: datetime | None = Field(default=None, description="Last check timestamp")
+    last_value: str | None = Field(default=None, description="Last extracted value")
     check_count: int = Field(default=0, description="Total number of checks performed")
     error_count: int = Field(default=0, description="Number of errors encountered")
     success_rate: float = Field(default=0.0, description="Success rate percentage")

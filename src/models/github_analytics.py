@@ -67,7 +67,7 @@ class GithubRepoModel(TimestampedModel):
     last_release_at: datetime | None = Field(default=None, description="Last release timestamp")
 
     # Creation and metadata
-    created_at: datetime | None = Field(default=None, description="Repository creation date")
+    created_at: datetime | None = Field(default=None, description="Repository creation date")  # type: ignore[assignment]  # pydantic permits narrowing the base's datetime
     updated_at: datetime | None = Field(default=None, description="Last update date")
     pushed_at: datetime | None = Field(default=None, description="Last push date")
     scraped_at: datetime = Field(default_factory=datetime.utcnow, description="When data was scraped")

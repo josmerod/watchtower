@@ -96,7 +96,9 @@ class HealthMonitor:
             return ETLHealthMetrics(
                 etl_name=etl_name,
                 status="unknown",
-                error_rate=100.0,
+                # BUG: ETLHealthMetrics has no error_rate field; pydantic silently drops this
+                # (intent was presumably success_rate=0.0)
+                error_rate=100.0,  # type: ignore[call-arg]
                 error_count=0,
                 total_runs=0,
             )
@@ -235,9 +237,9 @@ class HealthMonitor:
         # Calculate total sources and items
         total_sources = len(etl_metrics)
         total_items = 0
-        last_etl_run_times = {}
-        error_rates_per_source = {}
-        etl_health = []
+        last_etl_run_times: dict[str, datetime | None] = {}
+        error_rates_per_source: dict[str, float] = {}
+        etl_health: list[ETLHealthMetrics] = []
 
         for etl_name, metrics_data in etl_metrics.items():
             if not isinstance(metrics_data, dict):

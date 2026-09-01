@@ -177,7 +177,7 @@ class ScraperManager:
         if strategy_class is None:
             raise ScraperManagerError(f"Unsupported scraping method: {context.method}")
 
-        return strategy_class(context)
+        return strategy_class(context)  # type: ignore[abstract]  # dispatch map only holds concrete subclasses
 
     def _execute_with_retry(self, strategy: ScrapingStrategy) -> ScrapingResult:
         """Execute strategy with retry logic.

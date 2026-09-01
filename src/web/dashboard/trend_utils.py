@@ -33,7 +33,7 @@ def get_trending_items_map() -> dict[str, dict]:
 
 def get_trend_terms(trending_map: dict[str, dict]) -> set[str]:
     """Return the set of trending terms present in the map's records."""
-    return {t.get("term") for t in trending_map.values() if t.get("term")}
+    return {term for t in trending_map.values() if (term := t.get("term"))}
 
 
 def render_trend_badge(trend_data: dict | None) -> html.Span | None:

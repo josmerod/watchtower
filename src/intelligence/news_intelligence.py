@@ -48,7 +48,7 @@ class TrendDetector:
         all_words = []
         stop_words = {"the", "a", "an", "in", "on", "at", "for", "to", "of", "and", "or", "is", "are", "with", "by", "from", "how", "why", "what", "new", "show", "hn"}
 
-        item_map = {}  # keyword -> [item_ids]
+        item_map: dict[str, list[str]] = {}  # keyword -> [item_ids]
 
         for item in items:
             words = re.findall(r"\w+", item.title.lower())

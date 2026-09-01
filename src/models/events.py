@@ -186,13 +186,13 @@ class TechEventModel(TimestampedModel):
                 raise ValueError("End date must be after start date")
         return v
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def is_upcoming(self) -> bool:
         """Check if event is upcoming."""
         return self.start_date > datetime.utcnow()
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def is_ongoing(self) -> bool:
         """Check if event is currently ongoing."""
@@ -203,7 +203,7 @@ class TechEventModel(TimestampedModel):
             # If no end date, consider ongoing for 24 hours
             return self.start_date <= now <= (self.start_date + timedelta(hours=24))
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def days_until_event(self) -> int:
         """Calculate days until event starts."""
@@ -212,13 +212,13 @@ class TechEventModel(TimestampedModel):
             return delta.days
         return 0
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def is_high_quality(self) -> bool:
         """Check if event is considered high quality."""
         return self.quality_score >= 75.0 and self.speaker_influence_score >= 60.0 and len(self.speakers) > 0
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def registration_status(self) -> str:
         """Get registration status."""
@@ -254,7 +254,7 @@ class EventRecommendationModel(TimestampedModel):
     potential_connections: list[str] = Field(default=[], description="Potential networking connections")
     learning_outcomes: list[str] = Field(default=[], description="Expected learning outcomes")
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # pydantic v2 idiom; needs the pydantic mypy plugin to model
     @property
     def is_highly_recommended(self) -> bool:
         """Check if event is highly recommended."""

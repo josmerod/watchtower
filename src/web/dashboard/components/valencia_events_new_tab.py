@@ -372,7 +372,8 @@ def render_valencia_events_tab() -> html.Div:
                         # to export. dbc rejects data-* kwargs, hence html.Div.
                         dbc.Col(
                             [
-                                html.Div(id="valencia-ics-events", hidden=True, **{"data-events": ics_payload}),
+                                # data-* wildcard props are valid at runtime but absent from Dash's generated stubs
+                                html.Div(id="valencia-ics-events", hidden=True, **{"data-events": ics_payload}),  # type: ignore[arg-type]
                                 *(
                                     [
                                         dbc.Button(

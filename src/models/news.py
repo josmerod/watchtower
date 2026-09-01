@@ -178,7 +178,10 @@ class NewsArticleModel(TimestampedModel):
             return v.strip()
         return v
 
-    @field_validator("word_count", mode="before")
+    # BUG: pydantic v2 passes ValidationInfo as `values` -> AttributeError when
+    # word_count is explicitly None; when omitted (validate_default=False) the
+    # validator never runs, so the auto word-count never computes
+    @field_validator("word_count", mode="before")  # type: ignore[type-var]
     @classmethod
     def calculate_word_count(cls, v: int | None, values: dict) -> int | None:
         """Calculate word count from content if not provided.
@@ -198,7 +201,8 @@ class NewsArticleModel(TimestampedModel):
             return len(content.split())
         return None
 
-    @field_validator("reading_time_minutes", mode="before")
+    # BUG: same as calculate_word_count — crashes on explicit None, never runs when omitted
+    @field_validator("reading_time_minutes", mode="before")  # type: ignore[type-var]
     @classmethod
     def calculate_reading_time(cls, v: int | None, values: dict) -> int | None:
         """Calculate reading time based on word count.

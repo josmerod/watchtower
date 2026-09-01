@@ -77,7 +77,7 @@ def _get_index() -> ContentSearchIndex:
 @search_router.get("/search", response_model=SearchResponse)
 async def global_search(
     response: Response, q: str = Query(..., description="Search term (case-insensitive substring)"), limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT, description="Max items to return")
-) -> SearchResponse | JSONResponse:
+):
     """Search every indexed collection (news, releases, coins, videos, papers).
 
     Returns ``{query, count, items}`` ranked by relevance (title prefix >

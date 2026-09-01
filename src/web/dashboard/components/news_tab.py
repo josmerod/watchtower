@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, TypedDict
 
 import dash
 import dash_bootstrap_components as dbc
@@ -57,7 +57,7 @@ def get_all_news_data():
     # Cache in module state for ~60 seconds
     import time
 
-    global _NEWS_CACHE  # type: ignore
+    global _NEWS_CACHE
     now = time.time()
     try:
         if _NEWS_CACHE and now - _NEWS_CACHE.get("ts", 0) < 60:
@@ -90,10 +90,25 @@ TOP_TECH_COMPONENT_ID = "news-toptech"
 # persistence with Knowledge Garden via data/garden/saved_items.json.
 NEWS_SAVE_BTN_TYPE = "news-save-btn"
 
+
 # Single source of truth for the subtab list. render_news_tab() builds the
 # dbc.Tabs from it and register_news_search_callbacks() derives the search
 # input IDs from it, so a new tab can never end up with a dead search box.
-NEWS_TAB_DEFINITIONS = [
+class _NewsTabDefRequired(TypedDict):
+    """Keys every NEWS_TAB_DEFINITIONS entry must carry."""
+
+    label: str
+    keys: str | list[str]
+    id: str
+
+
+class _NewsTabDef(_NewsTabDefRequired, total=False):
+    """Optional keys (only some subtabs paginate)."""
+
+    paginated: bool
+
+
+NEWS_TAB_DEFINITIONS: list[_NewsTabDef] = [
     {
         "label": "Top Tech",
         "keys": ["techcrunch", "venturebeat", "arstechnica", "kagi_ai"],
@@ -130,7 +145,7 @@ NEWS_TAB_DEFINITIONS = [
 ]
 
 
-def _search_id_for_tab(tab_def: dict) -> str:
+def _search_id_for_tab(tab_def: _NewsTabDef) -> str:
     """Derive the search input ID for a tab definition.
 
     Mirrors the logic in create_news_source_tab_content so layout and
@@ -189,7 +204,8 @@ def _build_news_table(articles: list[dict[str, Any]], search_term: str | None = 
         url = article.get("url") or article.get("link") or article.get("html_url") or article.get("website")
         source_for_display = article.get("source_display_name", "Unknown")
         date_display = format_article_date(article)
-        title_children = highlight_segments(title, search_term) if search_term else title
+        # Dash children legitimately accept str | list[Component]; keep the dynamic union explicit.
+        title_children: Any = highlight_segments(title, search_term) if search_term else title
 
         table_body_rows.append(
             html.Tr(
@@ -204,7 +220,8 @@ def _build_news_table(articles: list[dict[str, Any]], search_term: str | None = 
                     html.Td(date_display),
                 ],
                 className="trending-item" if trend_record is not None else "",
-                **{"data-item-hash": _news_item_hash(url or "", title or "")},
+                # data-* wildcard props are valid at runtime but absent from Dash's generated stubs
+                **{"data-item-hash": _news_item_hash(url or "", title or "")},  # type: ignore[arg-type]
             )
         )
 
@@ -507,7 +524,7 @@ def _build_global_results_table(results: list[dict[str, Any]], search_term: str 
             "header": "Title",
             "cell": lambda a: html.Div(
                 [
-                    title_cell(a, search_term, title_fields=("title", "name", "full_name")),
+                    title_cell(a, search_term or "", title_fields=("title", "name", "full_name")),
                     render_trend_badge(match_item_trend(a, trending_map)),
                 ]
             ),
