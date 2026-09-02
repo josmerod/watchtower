@@ -41,6 +41,8 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_changelog.py",  # changelog.com feed — feeds Tech Radar tab
     "src/etl/news/news_get_phoronix.py",  # Phoronix feed — feeds Tech Radar tab (T-070)
     "src/etl/news/news_get_unraid_forums.py",  # Unraid forums (Invision RSS) — feeds Tech Radar tab (T-070)
+    "src/etl/news/news_get_sth.py",  # ServeTheHome feed — feeds Tech Radar tab (T-078)
+    "src/etl/news/news_get_xataka.py",  # Xataka feed — feeds Tech Radar tab (T-078)
     "src/etl/analytics/trends_etl.py",  # Cross-source trend analysis — feeds 🔥 badges (News/ArXiv). Local files only; must run after news ETLs
     "src/etl/analytics/weekly_digest_etl.py",  # Weekly digest (T-054) — compiles trends/radar/markets/watchers into data/insights/. Local files only; feeds 📅 Digest tab
     "src/watchers/data_freshness_watcher.py",  # MUST BE LAST — flags sources that failed to refresh this run (feeds Metrics card)
@@ -130,6 +132,7 @@ ETL_SCRIPTS = [
     # Open Source Projects
     "src/etl/opensource/opensource_projects_etl.py",
     "src/etl/github/stack_releases_etl.py",  # TR-F4: GitHub releases of the self-hosted stack — Radar "Mi stack" (T-051)
+    "src/etl/github/github_trending_etl.py",  # T-078: github.com/trending repos — Radar "🐙 GH Trending"
     # Knowledge Garden
     "src/etl/substack/substack_etl.py",
     # Benchmarks
