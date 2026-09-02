@@ -88,9 +88,19 @@ tecnología) ya tiene productor de datos corriendo. → **T-048**
 
 ## 5. Horizontes
 
+> Refrescado 2026-09-02 tras ejecutar TODO el horizonte original (T-049..T-080
+> cerrados en 6 oleadas paralelas). Fuente de ejecución: `docs/TASK_BOARD.md`.
+
 | Horizonte | Tareas |
-| :--- | :--- |
-| **Ahora (P1)** | T-049 CI bloqueante · T-050 Security keyless |
-| **Próximo (P2)** | T-051 Mi stack · T-052 watcher→alerts · T-053 guardados multi-tab · T-054 digest · T-048 momentum (desde ~09-16) |
-| **Después (P3)** | T-055 retención · T-056 API pública · T-057 búsqueda global · T-058 CrossRef (investigar) · T-047 BridgeBench V3 |
-| **Bloqueado** | T-038 Artificial Analysis (requiere key del usuario) · T-003/T-010 (deuda mypy/excepciones, avance gradual) |
+| :--- | :-- |
+| **Ahora (P2)** | T-081 CVEs KEV×mi-stack (la personalización más valiosa pendiente) · T-082 probes fuentes #3 (Lemmy, PH, Azure/GCP) · T-083 resumen diario de eventos · T-048 momentum (desde ~09-16) |
+| **Después (P3)** | T-084 API n8n · T-085 KG first_seen · T-086 portfolio · T-088 dropdown temas · T-089 modal novedades · T-090 backup-verify · T-010 chunk 2 |
+| **Bloqueado** | T-038 Artificial Analysis (key del usuario) · T-047 BridgeBench (espera V3) |
+
+### Anti-backlog (revisado 2026-09-02)
+
+Entradas anteriores SUPERADAS por eventos: "DeepLearning.AI — requiere
+Playwright" (implementado vía sitemap estático, T-069); "mypy 433 errores"
+(cerrado a 0, T-003). Siguen descartados: Google News tech (duplicaría radar),
+Reddit OAuth, APIs con key (Twitter/LinkedIn/Semantic Scholar/Ticketmaster),
+Epic free games (endpoint NXDOMAIN), AA modalidades (T-038).
