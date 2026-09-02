@@ -37,6 +37,7 @@ FRESHNESS_FILE = "watchers/data_freshness/freshness_latest.json"
 RADAR_SOURCES: list[dict[str, Any]] = [
     {"key": "google_ai", "files": ["news/google_ai_blog_latest.json"], "category": "AI"},
     {"key": "verge_ai", "files": ["news/verge_ai_latest.json"], "category": "AI"},
+    {"key": "ollama", "files": ["ai_platforms/ollama_library_latest.json"], "category": "Local LLM"},
     {"key": "kdnuggets", "files": ["kdnuggets/kdnuggets.json"], "category": "Data Science"},
     {"key": "cloud_updates", "files": ["cloud_updates/cloud_updates_latest.json"], "category": "Cloud"},
     {"key": "selfhosted", "files": ["selfhosted/selfhosted_latest.json"], "category": "Self-Hosting"},
@@ -45,12 +46,18 @@ RADAR_SOURCES: list[dict[str, Any]] = [
         "files": ["reddit_unified/SelfHosted_latest.json", "reddit_unified/homelab_latest.json"],
         "category": "Self-Hosting",
     },
+    {"key": "unraid_forums", "files": ["news/unraid_forums_latest.json"], "category": "Self-Hosting"},
     {"key": "infoq", "files": ["infoq/infoq_news.json"], "category": "Engineering"},
     {"key": "thenewstack", "files": ["thenewstack/thenewstack_news.json"], "category": "Cloud-Native"},
+    {"key": "phoronix", "files": ["news/phoronix_latest.json"], "category": "Linux/Hardware"},
+    {"key": "servethehome", "files": ["news/servethehome_latest.json"], "category": "Linux/Hardware"},
     {"key": "changelog", "files": ["changelog/changelog_news.json"], "category": "Open Source"},
+    {"key": "github_trending", "files": ["github/github_trending_latest.json"], "category": "Open Source"},
     {"key": "hn_frontpage", "files": ["news/hn_frontpage_latest.json"], "category": "Discussion"},
+    {"key": "lobsters", "files": ["news/lobsters_latest.json"], "category": "Engineering"},
     {"key": "wired", "files": ["news/wired_latest.json"], "category": "Tech Media"},
     {"key": "mit_techreview", "files": ["news/mit_techreview_latest.json"], "category": "Emerging Tech"},
+    {"key": "xataka", "files": ["news/xataka_latest.json"], "category": "Tech Media ES"},
     {"key": "mi_stack", "files": ["github/stack_releases_latest.json"], "category": "Mi Stack"},
 ]
 
