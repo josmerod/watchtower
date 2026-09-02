@@ -62,8 +62,16 @@ def get_all_arxiv_data():
 
 MAX_PAPERS_PER_TAB = 150  # Limit initial papers displayed per category
 
-# Subtab that gets the CrossRef citations column (enriched by the HF papers ETL)
+# Subtab that gets the citations column (enriched by the HF papers ETL:
+# OpenAlex primary, CrossRef fallback)
 CITATIONS_SOURCE_KEY = "hf_trending"
+
+# Provenance tooltip per citation_source value ("openalex" | "doi" | "title")
+_CITATION_SOURCE_TOOLTIPS = {
+    "openalex": "OpenAlex citation count · matched by title",
+    "doi": "CrossRef citation count · matched by DOI",
+    "title": "CrossRef citation count · matched by title",
+}
 
 
 def format_article_date(paper):
@@ -79,15 +87,18 @@ def citation_count_display(paper):
     return int(count)
 
 
+def citation_tooltip_label(source):
+    """Return the provenance line for the citation badge tooltip (source-aware)."""
+    return _CITATION_SOURCE_TOOLTIPS.get(source, "Citation count")
+
+
 def render_citation_cell(paper):
     """Render the 📝 Citas table cell for a paper (em dash when no data)."""
     count = citation_count_display(paper)
     if count is None:
         return html.Td("—", className="small text-muted")
     source = str(paper.get("citation_source") or "").strip()
-    tooltip_parts = ["CrossRef citation count"]
-    if source:
-        tooltip_parts.append(f"matched by {source}")
+    tooltip_parts = [citation_tooltip_label(source)]
     doi = str(paper.get("citation_doi") or "").strip()
     badge = dbc.Badge(
         f"📝 {count:,}",

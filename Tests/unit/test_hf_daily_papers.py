@@ -1,4 +1,4 @@
-"""Unit tests for the HF daily papers ETL (T-040 — PWC successor, T-058 — CrossRef citations)."""
+"""Unit tests for the HF daily papers ETL (T-040 — PWC successor, T-058 — CrossRef citations, T-079 — OpenAlex primary)."""
 
 from datetime import datetime, timedelta, timezone
 
@@ -183,6 +183,65 @@ def test_fetch_citation_survives_request_error(monkeypatch):
     monkeypatch.setattr(hf_etl.requests, "get", boom)
     assert hf_etl.fetch_citation_by_doi("10.1/x") is None
     assert hf_etl.fetch_citation_by_title("Whatever") is None
+    assert hf_etl.fetch_citation_from_openalex("Whatever Long Enough Title") is None
+
+
+# --- T-079: OpenAlex citation enrichment (primary source, fixtures only) ---
+
+
+def _openalex_payload(*results):
+    return {"meta": {"count": len(results)}, "results": list(results)}
+
+
+def _openalex_item(name, cites, doi=None, year=2026):
+    return {"display_name": name, "cited_by_count": cites, "doi": doi, "publication_year": year}
+
+
+def test_fetch_citation_from_openalex_accepts_strong_match(monkeypatch):
+    title = "RECAP-Forcing: Retaining Content Appearances for Long Video Generation"
+    captured = {}
+
+    def fake_get(url, **kwargs):
+        captured["url"] = url
+        return _FakeResponse(
+            _openalex_payload(
+                _openalex_item("Structure Matters: Cognitive Hallucination Mitigation for Long Video Generation", 3, "https://doi.org/10.48550/arxiv.2507.05001"),
+                _openalex_item(title, 12, "https://doi.org/10.48550/arxiv.2608.26671"),
+            )
+        )
+
+    monkeypatch.setattr(hf_etl.requests, "get", fake_get)
+    result = hf_etl.fetch_citation_from_openalex(title)
+    assert result == {"citation_count": 12, "citation_source": "openalex", "citation_doi": "10.48550/arxiv.2608.26671"}
+    assert "filter=title.search:" in captured["url"]
+    assert "mailto=" in captured["url"]  # polite pool
+    assert "per_page=3" in captured["url"]
+
+
+def test_fetch_citation_from_openalex_rejects_weak_match(monkeypatch):
+    payload = _openalex_payload(_openalex_item("Real-time brain state-coupled network-targeted dual-site TMS enhances working memory", 0))
+    monkeypatch.setattr(hf_etl.requests, "get", lambda *a, **kw: _FakeResponse(payload))
+    assert hf_etl.fetch_citation_from_openalex("VoiceMem: Streaming Dual-Brain Memory for Real-Time Interaction") is None
+
+
+def test_fetch_citation_from_openalex_omits_doi_when_absent(monkeypatch):
+    title = "Safin-1: Safety from Within through Memory-Native State Evolution"
+    monkeypatch.setattr(hf_etl.requests, "get", lambda *a, **kw: _FakeResponse(_openalex_payload(_openalex_item(title, 2))))
+    assert hf_etl.fetch_citation_from_openalex(title) == {"citation_count": 2, "citation_source": "openalex"}
+
+
+def test_fetch_citation_from_openalex_handles_bad_payloads(monkeypatch):
+    title = "Whatever Title Here Long Enough To Match"
+    monkeypatch.setattr(hf_etl.requests, "get", lambda *a, **kw: _FakeResponse({"results": []}))
+    assert hf_etl.fetch_citation_from_openalex(title) is None
+    monkeypatch.setattr(hf_etl.requests, "get", lambda *a, **kw: _FakeResponse({"results": [_openalex_item(title, "not-an-int")]}))
+    assert hf_etl.fetch_citation_from_openalex(title) is None
+    monkeypatch.setattr(hf_etl.requests, "get", lambda *a, **kw: _FakeResponse({"results": [_openalex_item(title, True)]}))
+    assert hf_etl.fetch_citation_from_openalex(title) is None  # bools are not counts
+    monkeypatch.setattr(hf_etl.requests, "get", lambda *a, **kw: _FakeResponse({"results": "nope"}))
+    assert hf_etl.fetch_citation_from_openalex(title) is None
+    monkeypatch.setattr(hf_etl.requests, "get", lambda *a, **kw: _FakeResponse(["not", "a", "dict"]))
+    assert hf_etl.fetch_citation_from_openalex(title) is None
 
 
 # --- sidecar cache ---
@@ -243,7 +302,7 @@ def test_enrich_uses_fresh_cache_hit_without_network(monkeypatch):
     def fail_fetch(*a, **kw):
         raise AssertionError("network must not be touched on a cache hit")
 
-    result = hf_etl.enrich_with_citations([record], cache, doi_fetcher=fail_fetch, title_fetcher=fail_fetch, sleep_fn=sleeps.append, now_ts=now)
+    result = hf_etl.enrich_with_citations([record], cache, openalex_fetcher=fail_fetch, doi_fetcher=fail_fetch, title_fetcher=fail_fetch, sleep_fn=sleeps.append, now_ts=now)
     assert record["citation_count"] == 8021
     assert record["citation_source"] == "title"
     assert record["citation_doi"] == "10.1145/x"
@@ -251,34 +310,62 @@ def test_enrich_uses_fresh_cache_hit_without_network(monkeypatch):
     assert sleeps == []
 
 
-def test_enrich_queries_on_miss_and_caches(monkeypatch):
+def test_enrich_openalex_wins_and_crossref_never_runs():
+    record = _paper("DiagEvo: Diagnosis-Guided Self-Evolution via Hierarchical Error Memory", upvotes=7)
+    key = hf_etl._citation_cache_key(record)
+    sleeps = []
+
+    def fake_openalex(title):
+        assert title == record["title"]
+        return {"citation_count": 3, "citation_source": "openalex", "citation_doi": "10.48550/arxiv.2608.99999"}
+
+    def title_must_not_run(title):
+        raise AssertionError("CrossRef fallback must not run when OpenAlex matches")
+
+    cache = hf_etl.enrich_with_citations([record], {}, openalex_fetcher=fake_openalex, doi_fetcher=None, title_fetcher=title_must_not_run, sleep_fn=sleeps.append)
+    assert record["citation_count"] == 3
+    assert record["citation_source"] == "openalex"
+    assert record["citation_doi"] == "10.48550/arxiv.2608.99999"
+    assert cache[key]["citation_source"] == "openalex"  # sidecar entry persisted for the source
+    assert cache[key]["checked_at"]
+    assert sleeps == []  # single remote call -> no pacing sleep
+
+
+def test_enrich_falls_back_to_crossref_when_openalex_misses():
     record = _paper("Optuna: A Next Generation Hyperparameter Optimization Framework", upvotes=5)
     key = hf_etl._citation_cache_key(record)  # capture before enrichment adds a citation_doi
     now = datetime.now(timezone.utc).timestamp()
+    calls = []
     sleeps = []
 
-    def fake_title_fetcher(title):
-        assert title == record["title"]
+    def fake_openalex(title):
+        calls.append(("openalex", title))
+        return None  # not indexed yet / mismatched
+
+    def fake_crossref_title(title):
+        calls.append(("crossref", title))
         return {"citation_count": 42, "citation_source": "title", "citation_doi": "10.1/abc"}
 
-    cache = hf_etl.enrich_with_citations([record], {}, doi_fetcher=None, title_fetcher=fake_title_fetcher, sleep_fn=sleeps.append, now_ts=now)
+    cache = hf_etl.enrich_with_citations([record], {}, openalex_fetcher=fake_openalex, doi_fetcher=None, title_fetcher=fake_crossref_title, sleep_fn=sleeps.append, now_ts=now)
+    assert calls == [("openalex", record["title"]), ("crossref", record["title"])]
+    assert sleeps == [hf_etl.CITATION_LOOKUP_DELAY_SECONDS]  # paced between the two remote calls
     assert record["citation_count"] == 42
+    assert record["citation_source"] == "title"
     assert cache[key]["citation_count"] == 42
     assert cache[key]["checked_at"]
-    assert sleeps == []  # single lookup -> no pacing sleep
 
 
 def test_enrich_paces_between_lookups():
     records = [_paper("Paper One", upvotes=9), _paper("Paper Two", upvotes=8)]
     sleeps = []
-    cache = hf_etl.enrich_with_citations(records, {}, doi_fetcher=None, title_fetcher=lambda t: None, sleep_fn=sleeps.append)
-    assert len(sleeps) == 1  # one sleep before the second lookup
+    cache = hf_etl.enrich_with_citations(records, {}, openalex_fetcher=lambda t: None, doi_fetcher=None, title_fetcher=lambda t: None, sleep_fn=sleeps.append)
+    assert len(sleeps) == 3  # paced before each remote call after the first (2 papers x OpenAlex+CrossRef)
     assert cache == {}
 
 
 def test_enrich_failure_leaves_field_absent():
     records = [_paper("Paper One", upvotes=9)]
-    cache = hf_etl.enrich_with_citations(records, {}, doi_fetcher=None, title_fetcher=lambda t: None, sleep_fn=lambda s: None)
+    cache = hf_etl.enrich_with_citations(records, {}, openalex_fetcher=lambda t: None, doi_fetcher=None, title_fetcher=lambda t: None, sleep_fn=lambda s: None)
     assert "citation_count" not in records[0]
     assert "citation_source" not in records[0]
     assert cache == {}
@@ -288,14 +375,14 @@ def test_enrich_stale_entry_is_requeried():
     record = _paper("Paper One", upvotes=9)
     key = hf_etl._citation_cache_key(record)
     now = datetime.now(timezone.utc).timestamp()
-    stale = {"citation_count": 1, "citation_source": "title", "checked_at": (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()}
+    stale = {"citation_count": 1, "citation_source": "openalex", "checked_at": (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()}
     calls = []
 
     def fake_title_fetcher(title):
         calls.append(title)
         return {"citation_count": 99, "citation_source": "title", "citation_doi": "10.1/z"}
 
-    cache = hf_etl.enrich_with_citations([record], {key: stale}, doi_fetcher=None, title_fetcher=fake_title_fetcher, sleep_fn=lambda s: None, now_ts=now)
+    cache = hf_etl.enrich_with_citations([record], {key: stale}, openalex_fetcher=lambda t: None, doi_fetcher=None, title_fetcher=fake_title_fetcher, sleep_fn=lambda s: None, now_ts=now)
     assert calls == [record["title"]]
     assert record["citation_count"] == 99
     assert cache[key]["citation_count"] == 99
@@ -307,8 +394,16 @@ def test_enrich_respects_max_papers_and_skips_records_without_key():
     tail = _paper("Tail Paper", upvotes=1)
     calls = []
 
-    cache = hf_etl.enrich_with_citations([top, second, tail], {}, max_papers=2, doi_fetcher=None, title_fetcher=lambda t: (calls.append(t), None)[1], sleep_fn=lambda s: None)
-    assert calls == [top["title"], second["title"]]  # tail beyond cap is untouched
+    def openalex(title):
+        calls.append(("openalex", title))
+        return None
+
+    def crossref(title):
+        calls.append(("crossref", title))
+        return None
+
+    cache = hf_etl.enrich_with_citations([top, second, tail], {}, max_papers=2, openalex_fetcher=openalex, doi_fetcher=None, title_fetcher=crossref, sleep_fn=lambda s: None)
+    assert calls == [("openalex", top["title"]), ("crossref", top["title"]), ("openalex", second["title"]), ("crossref", second["title"])]  # tail beyond cap is untouched
     assert "citation_count" not in tail
     assert cache == {}
 
@@ -319,7 +414,12 @@ def test_enrich_prefers_doi_when_present():
     def title_must_not_run(title):
         raise AssertionError("title fetcher must not run when a DOI is present")
 
-    cache = hf_etl.enrich_with_citations([record], {}, doi_fetcher=lambda d: {"citation_count": 7, "citation_source": "doi", "citation_doi": d}, title_fetcher=title_must_not_run, sleep_fn=lambda s: None)
+    def openalex_must_not_run(title):
+        raise AssertionError("OpenAlex title search must not run when a DOI is present")
+
+    cache = hf_etl.enrich_with_citations(
+        [record], {}, openalex_fetcher=openalex_must_not_run, doi_fetcher=lambda d: {"citation_count": 7, "citation_source": "doi", "citation_doi": d}, title_fetcher=title_must_not_run, sleep_fn=lambda s: None
+    )
     assert record["citation_count"] == 7
     assert record["citation_source"] == "doi"
     assert "10.1234/doi-path" in cache

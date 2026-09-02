@@ -1,4 +1,4 @@
-"""Render tests for the 📝 Citas column in the 🔥 HF Trending subtab (T-058).
+"""Render tests for the 📝 Citas column in the 🔥 HF Trending subtab (T-058, T-079).
 
 Fixture-based — monkeypatches the tab's data loader, never reads data/ files
 and never touches the network.
@@ -72,6 +72,16 @@ def test_citas_column_renders_with_citation_data(patched_data):
     assert "https://doi.org/10.1145/3292500.3330701" in _hrefs(layout)  # badge links to the matched DOI
 
 
+def test_citas_column_renders_openalex_sourced_counts(patched_data):
+    papers = [_paper("Some Arxiv Preprint", upvotes=30, citation_count=5, citation_source="openalex", citation_doi="10.48550/arxiv.2608.26671")]
+    patched_data(papers)
+    layout = tab.create_arxiv_category_tab_content("hf_trending")
+    texts = _texts(layout)
+    assert "📝 Citas" in texts
+    assert "📝 5" in texts  # OpenAlex-sourced count renders like any other
+    assert "https://doi.org/10.48550/arxiv.2608.26671" in _hrefs(layout)  # arXiv DOI links through
+
+
 def test_citas_column_renders_fine_without_field(patched_data):
     patched_data([_paper("Fresh Preprint", upvotes=5), _paper("Another One", upvotes=4)])
     layout = tab.create_arxiv_category_tab_content("hf_trending")
@@ -107,3 +117,30 @@ def test_citation_cell_without_doi_has_no_link():
     cell = tab.render_citation_cell({"citation_count": 12, "citation_source": "title"})
     assert "📝 12" in _texts(cell)
     assert _hrefs(cell) == []
+
+
+def _anchor(cell):
+    return next(n for n in _walk(cell) if getattr(n, "href", None))
+
+
+def _title_attr(node):
+    return getattr(node, "title", "")
+
+
+def test_citation_cell_tooltip_is_source_aware():
+    # T-079: OpenAlex-sourced counts must not be labelled as CrossRef
+    openalex_cell = tab.render_citation_cell({"citation_count": 5, "citation_source": "openalex", "citation_doi": "10.48550/arxiv.2608.26671"})
+    assert "📝 5" in _texts(openalex_cell)
+    assert _hrefs(openalex_cell) == ["https://doi.org/10.48550/arxiv.2608.26671"]
+    assert _title_attr(_anchor(openalex_cell)) == "OpenAlex citation count · matched by title · doi.org/10.48550/arxiv.2608.26671"
+
+    # CrossRef provenance labels stay stable for the legacy sources
+    doi_cell = tab.render_citation_cell({"citation_count": 7, "citation_source": "doi", "citation_doi": "10.1/x"})
+    assert _title_attr(_anchor(doi_cell)) == "CrossRef citation count · matched by DOI · doi.org/10.1/x"
+    title_cell = tab.render_citation_cell({"citation_count": 8, "citation_source": "title"})
+    assert "📝 8" in _texts(title_cell)
+    assert _title_attr(title_cell) == "CrossRef citation count · matched by title"
+
+    # Unknown/absent source degrades to a generic label, never a crash
+    assert _title_attr(tab.render_citation_cell({"citation_count": 9, "citation_source": ""})) == "Citation count"
+    assert _title_attr(tab.render_citation_cell({"citation_count": 9})) == "Citation count"

@@ -6,14 +6,19 @@ Each paper carries upvotes, GitHub repo/stars when available, and an
 AI-generated summary. Surfaces as the "🔥 HF Trending" subtab of the ArXiv
 Research tab (value: papers → implementations, ranked by community vote).
 
-Optionally enriches the top papers with CrossRef citation counts. The HF API
-exposes no DOIs and arXiv DOIs (10.48550/*) are DataCite-registered, so the
-lookup goes through CrossRef bibliographic title search with a strict
-token-containment matcher (verified live: correct matches score >= 0.9,
-noise hits on fresh preprints score well below). Failures simply leave the
-additive fields (citation_count/citation_source/citation_doi) absent.
-A sidecar cache (data/arxiv/hf_paper_citations.json, TTL ~7 days) keeps
-repeated runs from re-querying CrossRef.
+Optionally enriches the top papers with citation counts. OpenAlex is the
+primary source: unlike CrossRef it indexes arXiv preprints, and most
+trending papers are arXiv-only (the HF API exposes no DOIs and arXiv DOIs
+10.48550/* are DataCite-registered, so CrossRef DOI lookups miss them).
+Lookup goes through OpenAlex title search (keyless, polite pool via mailto)
+with a strict token-containment matcher (verified live: correct matches
+score >= 0.9, noise hits score well below), falling back to CrossRef
+bibliographic title search when OpenAlex finds nothing or mismatches.
+citation_source records which path won ("openalex" | "doi" | "title").
+Failures simply leave the additive fields
+(citation_count/citation_source/citation_doi) absent. A sidecar cache
+(data/arxiv/hf_paper_citations.json, TTL ~7 days) keeps repeated runs from
+re-querying either API.
 
 Usage:
     uv run python -m src.etl.arxiv.hf_daily_papers_etl
@@ -42,18 +47,29 @@ logger = get_logger("HFDailyPapersETL")
 
 HF_DAILY_PAPERS_URL = "https://huggingface.co/api/daily_papers"
 
-# --- CrossRef citation enrichment knobs -----------------------------------
+# --- Citation enrichment knobs (OpenAlex primary, CrossRef fallback) --------
 
-CROSSREF_API_BASE = "https://api.crossref.org/works"
-CROSSREF_MAILTO_ENV = "CROSSREF_MAILTO"
-CROSSREF_MAILTO_DEFAULT = "watchtower@example.com"
-CROSSREF_TIMEOUT_SECONDS = 30
+POLITE_MAILTO_DEFAULT = "watchtower@example.com"
 CITATION_ENRICH_MAX_PAPERS = 30
 CITATION_LOOKUP_DELAY_SECONDS = 1.1
 CITATION_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 CITATION_CACHE_FILENAME = "hf_paper_citations.json"
 CITATION_TITLE_MATCH_THRESHOLD = 0.9
 _TITLE_STOPWORDS = frozenset({"a", "an", "the", "of", "for", "in", "on", "to", "and", "with", "from", "at", "by", "is", "are", "as", "its"})
+
+# --- OpenAlex (primary — keyless, indexes arXiv preprints) -------------------
+
+OPENALEX_API_BASE = "https://api.openalex.org/works"
+OPENALEX_MAILTO_ENV = "OPENALEX_MAILTO"
+OPENALEX_TIMEOUT_SECONDS = 30
+OPENALEX_PER_PAGE = 3
+
+# --- CrossRef (fallback) -----------------------------------------------------
+
+CROSSREF_API_BASE = "https://api.crossref.org/works"
+CROSSREF_MAILTO_ENV = "CROSSREF_MAILTO"
+CROSSREF_MAILTO_DEFAULT = POLITE_MAILTO_DEFAULT
+CROSSREF_TIMEOUT_SECONDS = 30
 
 
 @with_retry
@@ -148,6 +164,76 @@ def title_match_confidence(query_title: str, candidate_title: str) -> float:
     jaccard = intersection / len(set(query_tokens) | set(candidate_tokens))
     containment = intersection / min(len(query_tokens), len(candidate_tokens))
     return max(jaccard, containment)
+
+
+def _openalex_mailto() -> str:
+    """Return the contact email for the OpenAlex polite pool (env-overridable).
+
+    Honors OPENALEX_MAILTO first, then falls back to the shared CROSSREF_MAILTO
+    so a single deployed email config keeps both APIs polite.
+    """
+    mailto = os.getenv(OPENALEX_MAILTO_ENV) or os.getenv(CROSSREF_MAILTO_ENV) or POLITE_MAILTO_DEFAULT
+    return mailto.strip() or POLITE_MAILTO_DEFAULT
+
+
+def _openalex_get(params: str) -> dict[str, Any] | None:
+    """GET an OpenAlex works endpoint fragment and return its JSON, or None on any failure.
+
+    ``params`` is appended to ``OPENALEX_API_BASE`` and must already be
+    URL-encoded. The mailto query parameter keeps us in the polite pool.
+    """
+    url = f"{OPENALEX_API_BASE}{params}"
+    separator = "&" if "?" in params else "?"
+    url = f"{url}{separator}mailto={_openalex_mailto()}"
+    try:
+        response = requests.get(url, headers={"User-Agent": f"{SCRAPER_DEFAULT_USER_AGENT} (mailto:{_openalex_mailto()})"}, timeout=OPENALEX_TIMEOUT_SECONDS)
+        response.raise_for_status()
+        payload = response.json()
+        return payload if isinstance(payload, dict) else None
+    except (requests.RequestException, ValueError) as exc:
+        logger.debug(f"OpenAlex lookup failed for {url}: {exc}")
+        return None
+
+
+def fetch_citation_from_openalex(title: str, per_page: int = OPENALEX_PER_PAGE) -> dict[str, Any] | None:
+    """Find a paper in OpenAlex by title search and return its citation count.
+
+    OpenAlex ``title.search`` is fuzzy and happily returns neighbouring works,
+    so only a hit whose title scores >= CITATION_TITLE_MATCH_THRESHOLD in the
+    token-containment matcher is accepted; on a fresh unindexed preprint this
+    correctly returns ``None`` (and the caller falls back to CrossRef).
+
+    Returns:
+        ``{"citation_count": int, "citation_source": "openalex", "citation_doi"?: str}``
+        on success, otherwise ``None``. OpenAlex reports DOIs as full lowercase
+        URLs — ``citation_doi`` is stripped to the bare DOI, and omitted when
+        the record has none (typical for merged preprint versions).
+    """
+    encoded = quote(title, safe="")  # commas/colons must not break the filter syntax
+    params = f"?filter=title.search:{encoded}&per_page={per_page}&select=display_name,cited_by_count,doi,publication_year"
+    payload = _openalex_get(params)
+    if not payload:
+        return None
+    results = payload.get("results")
+    if not isinstance(results, list):
+        return None
+    best: tuple[float, dict[str, Any]] | None = None
+    for item in results:
+        if not isinstance(item, dict):
+            continue
+        confidence = title_match_confidence(title, str(item.get("display_name") or ""))
+        if best is None or confidence > best[0]:
+            best = (confidence, item)
+    if best is None or best[0] < CITATION_TITLE_MATCH_THRESHOLD:
+        return None
+    count = best[1].get("cited_by_count")
+    if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+        return None
+    result: dict[str, Any] = {"citation_count": count, "citation_source": "openalex"}
+    doi = str(best[1].get("doi") or "").strip()
+    if doi:
+        result["citation_doi"] = doi.removeprefix("https://doi.org/")
+    return result
 
 
 def _crossref_mailto() -> str:
@@ -283,21 +369,26 @@ def enrich_with_citations(
     cache: dict[str, dict[str, Any]] | None = None,
     *,
     max_papers: int = CITATION_ENRICH_MAX_PAPERS,
+    openalex_fetcher=None,
     doi_fetcher=None,
     title_fetcher=None,
     sleep_fn=time.sleep,
     now_ts: float | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Add CrossRef citation counts to the top papers by upvotes (in place).
+    """Add citation counts to the top papers by upvotes (in place).
 
     Only the first ``max_papers`` records are considered — they must already
     be sorted by upvotes (fetch_daily_papers sorts). Fresh cache hits are
-    merged without network calls; misses query CrossRef with polite pacing.
+    merged without network calls; misses query OpenAlex title search first
+    (it indexes arXiv preprints) and fall back to CrossRef when OpenAlex
+    finds nothing or mismatches — by DOI when the record carries one, else
+    by bibliographic title search. Every remote call is politely paced.
     Failures leave the additive citation fields absent, and the updated cache
     is returned so the caller can persist it.
     """
     if cache is None:
         cache = load_citation_cache()
+    openalex_fetcher = openalex_fetcher or fetch_citation_from_openalex
     doi_fetcher = doi_fetcher or fetch_citation_by_doi
     title_fetcher = title_fetcher or fetch_citation_by_title
     now_ts = now_ts if now_ts is not None else datetime.now(timezone.utc).timestamp()
@@ -316,11 +407,23 @@ def enrich_with_citations(
             enriched += 1
             continue
 
-        if lookups:
-            sleep_fn(CITATION_LOOKUP_DELAY_SECONDS)  # pace only between actual network lookups
-        lookups += 1
+        result: dict[str, Any] | None = None
         doi = str(record.get("doi") or "").strip()
-        result = doi_fetcher(doi) if doi else title_fetcher(str(record.get("title") or ""))
+        if doi:
+            # An exact identifier needs no fuzzy title search — straight to CrossRef.
+            if lookups:
+                sleep_fn(CITATION_LOOKUP_DELAY_SECONDS)  # pace only between actual network lookups
+            lookups += 1
+            result = doi_fetcher(doi)
+        else:
+            # OpenAlex first (indexes arXiv), CrossRef title search as fallback.
+            for fetcher in (openalex_fetcher, title_fetcher):
+                if lookups:
+                    sleep_fn(CITATION_LOOKUP_DELAY_SECONDS)
+                lookups += 1
+                result = fetcher(str(record.get("title") or ""))
+                if result is not None:
+                    break
 
         if result is None:
             continue
@@ -330,7 +433,11 @@ def enrich_with_citations(
         record["citation_doi"] = result.get("citation_doi", "")
         enriched += 1
 
-    logger.info(f"Citation enrichment: {enriched}/{min(len(records), max_papers)} top papers carry a citation count (cache now {len(cache)} entries)")
+    tally: dict[str, int] = {}
+    for record in records[:max_papers]:
+        source = str(record.get("citation_source") or "none")
+        tally[source] = tally.get(source, 0) + 1
+    logger.info(f"Citation enrichment: {enriched}/{min(len(records), max_papers)} top papers carry a citation count (by source: {tally}; cache now {len(cache)} entries)")
     return cache
 
 
