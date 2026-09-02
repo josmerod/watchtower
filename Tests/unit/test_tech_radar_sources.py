@@ -499,3 +499,84 @@ def test_t075_unraid_column_relabeled_to_announcements():
     assert source["file"] == "news/unraid_forums_latest.json"  # data file unchanged
     layout = str(tab.render_tech_radar_tab())
     assert layout.count("tech-radar-col-unraid_forums") == 1
+
+
+# ---------------------------------------------------------------------------
+# T-078: GitHub Trending / ServeTheHome / Xataka radar sources
+# ---------------------------------------------------------------------------
+
+_T078_SOURCES = {"github_trending", "servethehome", "xataka"}
+
+
+def test_t078_sources_registered_with_unique_keys_and_columns():
+    keys = [s["key"] for s in tab.RADAR_SOURCES]
+    assert len(keys) == len(set(keys)), "RADAR_SOURCES keys must stay unique"
+    assert set(keys) >= _T078_SOURCES
+    layout = str(tab.render_tech_radar_tab())
+    for key in _T078_SOURCES:
+        source = next(s for s in tab.RADAR_SOURCES if s["key"] == key)
+        assert source.get("file") and not source.get("files")
+        assert not source.get("own_tab"), "new sources render as normal Por-fuente columns"
+        assert layout.count(f"tech-radar-col-{key}") == 1  # one column id, in the grid
+    assert "🐙 GH Trending" in layout and "🔧 ServeTheHome" in layout and "🇪🇸 Xataka" in layout
+
+
+def _write_t078_fixture(tmp_path):
+    _write(
+        tmp_path,
+        "github/github_trending_latest.json",
+        [
+            {
+                "title": "owner/hot-repo",
+                "repo": "owner/hot-repo",
+                "link": "https://github.com/owner/hot-repo",
+                "published": "2026-09-01T09:00:00+00:00",
+                "summary": "⭐ 420 today · Rust · Blazingly fast thing",
+                "source": "github_trending",
+            }
+        ],
+    )
+    _write(tmp_path, "news/servethehome_latest.json", [{"title": "sth story", "link": "https://www.servethehome.com/sth-story/", "published": "2026-08-31T19:00:56+00:00", "source": "servethehome"}])
+    _write(tmp_path, "news/xataka_latest.json", [{"title": "xataka story", "link": "https://www.xataka.com/xataka-story", "published": "2026-08-30T09:14:30+02:00", "source": "xataka"}])
+
+
+def test_t078_sources_render_in_por_fuente_grid(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_t078_fixture(tmp_path)
+    for key in _T078_SOURCES:
+        source = next(s for s in tab.RADAR_SOURCES if s["key"] == key)
+        section = str(tab._render_source_section(source))
+        assert source["label"] in section
+    trending_section = str(tab._render_source_section(next(s for s in tab.RADAR_SOURCES if s["key"] == "github_trending")))
+    assert "owner/hot-repo" in trending_section and "⭐ 420 today" in trending_section
+
+
+def test_t078_sources_in_unified_feed_and_dropdowns(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_t078_fixture(tmp_path)
+    _write(tmp_path, "news/hn_frontpage_latest.json", [{"title": "hn item", "url": "https://x/hn", "published": "2026-08-20T10:00:00+00:00"}])
+
+    merged = str(tab._render_unified_feed())
+    assert "owner/hot-repo" in merged and "sth story" in merged and "xataka story" in merged
+    assert merged.index("owner/hot-repo") < merged.index("hn item")  # newer first
+
+    only_xataka = str(tab._render_unified_feed(source_filter="xataka"))
+    assert "xataka story" in only_xataka and "hn item" not in only_xataka
+    # ServeTheHome shares Phoronix's Linux/Hardware category (T-078 pairing).
+    linux_hw = str(tab._render_unified_feed(category_filter="Linux/Hardware"))
+    assert "sth story" in linux_hw and "xataka story" not in linux_hw and "hn item" not in linux_hw
+    open_source = str(tab._render_unified_feed(category_filter="Open Source"))
+    assert "owner/hot-repo" in open_source and "xataka story" not in open_source
+
+    options = [o["value"] for o in tab._unified_source_options()]
+    assert set(options) >= _T078_SOURCES
+    categories = [o["value"] for o in tab._unified_category_options()]
+    assert "Tech Media ES" in categories and len(categories) == len(set(categories))
+
+
+def test_t078_unified_cap_bumped_to_fit_new_sources():
+    # 120 starved the tail: the three T-078 sources add up to ~55 fresh,
+    # mostly-today items that crowd the newest-first window.
+    assert tab.MAX_UNIFIED_ITEMS == 140

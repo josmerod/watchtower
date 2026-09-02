@@ -6,9 +6,10 @@ and self-hosted applications/tools. Consolidates sources that were previously
 scattered across the News tab (Google AI Blog, KDNuggets, Cloud Updates) plus
 dedicated sources: selfh.st + LinuxServer.io (self-hosting), the Hacker News
 front page via Algolia (discussion), the r/SelfHosted + r/homelab community
-pulse from the reddit_unified ETL, and the T-070 additions: Lobsters
-(dev link-aggregator), Phoronix (Linux/hardware), and the Unraid community
-forums (spec 13 source table).
+pulse from the reddit_unified ETL, the T-070 additions: Lobsters (dev
+link-aggregator), Phoronix (Linux/hardware), and the Unraid community forums
+(spec 13 source table), plus the T-078 additions: GitHub Trending (open
+source), ServeTheHome (server hardware) and Xataka (Spanish tech media).
 """
 
 import json
@@ -60,13 +61,24 @@ RADAR_SOURCES: list[dict[str, Any]] = [
     # T-070: Phoronix — Linux/hardware news for the homelab angle. ETL:
     # src/etl/news/news_get_phoronix.py.
     {"key": "phoronix", "label": "🐧 Phoronix", "file": "news/phoronix_latest.json", "category": "Linux/Hardware"},
+    # T-078: ServeTheHome — server/homelab hardware news next to Phoronix.
+    # ETL: src/etl/news/news_get_sth.py.
+    {"key": "servethehome", "label": "🔧 ServeTheHome", "file": "news/servethehome_latest.json", "category": "Linux/Hardware"},
     {"key": "changelog", "label": "🔄 Changelog", "file": "changelog/changelog_news.json", "category": "Open Source"},
+    # T-078: GitHub trending repos — github.com/trending server-rendered HTML
+    # (verified stable; selectors are structure-based because GitHub A/B-tests
+    # utility class names). ETL: src/etl/github/github_trending_etl.py.
+    {"key": "github_trending", "label": "🐙 GH Trending", "file": "github/github_trending_latest.json", "category": "Open Source"},
     {"key": "hn_frontpage", "label": "🗞️ Hacker News", "file": "news/hn_frontpage_latest.json", "category": "Discussion"},
     # T-070: Lobsters — dev link-aggregator (existing ETL hardened to the Wired
     # pattern): src/etl/news/news_get_lobsters.py. Also feeds the News tab.
     {"key": "lobsters", "label": "🦞 Lobsters", "file": "news/lobsters_latest.json", "category": "Engineering"},
     {"key": "wired", "label": "🔗 Wired", "file": "news/wired_latest.json", "category": "Tech Media"},
     {"key": "mit_techreview", "label": "🔬 MIT Tech Review", "file": "news/mit_techreview_latest.json", "category": "Emerging Tech"},
+    # T-078: Xataka — biggest Spanish tech blog, dedicated radar column
+    # (the News tab's spanish_tech ETL only mixes it into an aggregate).
+    # ETL: src/etl/news/news_get_xataka.py.
+    {"key": "xataka", "label": "🇪🇸 Xataka", "file": "news/xataka_latest.json", "category": "Tech Media ES"},
     # TR-F4 "Mi stack": GitHub releases of the self-hosted stack, from
     # src/etl/github/stack_releases_etl.py. ``own_tab`` keeps its column out
     # of the "Por fuente" grid (it lives on its dedicated subtab) while the
@@ -87,7 +99,10 @@ RADAR_SOURCES: list[dict[str, Any]] = [
 MAX_ITEMS_PER_SOURCE = 25
 # T-070: bumped 100 → 120 — three added sources (~75 fresh items) now compete
 # for the newest-first window, so 100 starved older per-source rows.
-MAX_UNIFIED_ITEMS = 120  # cap for the TR-F3 "Todos" merged feed
+# T-078: bumped 120 → 140 — three more sources add up to ~55 fresh items
+# (trending ≤25, ServeTheHome ~6, Xataka 25) that are mostly "today" news and
+# would otherwise crowd the tail of the window.
+MAX_UNIFIED_ITEMS = 140  # cap for the TR-F3 "Todos" merged feed
 
 # ⭐ Saved-items toggle (T-053): only the unified "🔄 Todos" feed rows get a
 # star (NOT the per-source card columns). Pattern id type per tab, shared
