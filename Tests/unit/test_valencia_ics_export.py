@@ -84,6 +84,81 @@ def test_build_ics_payload_fields():
     assert payload[3]["title"] == "Untitled" and payload[3]["url"] == ""
 
 
+def test_build_ics_payload_prefers_extracted_venue():
+    """The extracted venue name (T-080) wins over address-style locations."""
+    events = [
+        _event("Named venue event", "2026-09-10", venue="Teatro El Musical", location="1 Calle Example", metadata={"location": "1 Carrer de la Vall d'Aiora, València"}),
+        _event("Only address", "2026-09-11", metadata={"location": "10 Carrer de Rugat, València"}),
+    ]
+    payload = vet._build_ics_payload(events)
+    assert payload[0]["location"] == "Teatro El Musical"
+    assert payload[1]["location"] == "10 Carrer de Rugat, València"  # venue absent → address fallback
+
+
+VENUE_PRICE_EVENTS = [
+    _event("Free Meetup", (NOW + timedelta(days=3)).strftime("%Y-%m-%d"), venue="Book Lovers Valencia", price_info="Gratis", is_free=True),
+    _event("Paid Concert", (NOW + timedelta(days=5)).strftime("%Y-%m-%d"), venue="Teatro El Musical", price_info="12,50 €", is_free=False),
+    _event("Undisclosed Price", (NOW + timedelta(days=7)).strftime("%Y-%m-%d"), venue="Café de las Horas"),
+    _event("No Venue Event", (NOW + timedelta(days=9)).strftime("%Y-%m-%d")),
+]
+
+
+def _collect_components(component: Any) -> list[tuple[str, dict[str, Any]]]:
+    """Recursively collect (type name, props) of every Dash component in a tree."""
+    out: list[tuple[str, dict[str, Any]]] = []
+    if component is None or isinstance(component, (str, int, float, bool)) or not isinstance(component, Component):
+        return out
+    data = component.to_plotly_json()
+    props = data.get("props", data)  # Dash 4 nests props; older Dash is flat
+    out.append((type(component).__name__, props))
+    for value in props.values():
+        for item in value if isinstance(value, list) else [value]:
+            out.extend(_collect_components(item))
+    return out
+
+
+def test_events_table_renders_venue_and_price_cells():
+    """Venue column plus honest price cells: green Gratis badge / muted price / dash."""
+    table = vet.create_events_table(VENUE_PRICE_EVENTS)
+    rendered = str(table)
+
+    assert "Venue" in rendered and "Price" in rendered  # new table headers
+    assert "Book Lovers Valencia" in rendered
+    assert "Teatro El Musical" in rendered
+    assert "12,50 €" in rendered
+    assert rendered.count("Gratis") == 1  # badge only — not duplicated as plain text
+
+    badges = [props for name, props in _collect_components(table) if name == "Badge"]
+    gratis = [b for b in badges if b.get("children") == "Gratis"]
+    assert len(gratis) == 1
+    assert gratis[0].get("color") == "success"  # the Gratis badge is green
+
+    spans = [props for name, props in _collect_components(table) if name == "Span"]
+    paid = [s for s in spans if s.get("children") == "12,50 €"]
+    assert len(paid) == 1 and "text-muted" in str(paid[0].get("className"))
+    # Honest dashes: undisclosed price (2 events) + missing venue (1 event)
+    assert len([s for s in spans if s.get("children") == "—"]) == 3
+
+
+def test_render_tab_shows_venue_and_price(monkeypatch):
+    """The full tab layout carries venue names and prices into both tables."""
+    rendered = str(_render_with(monkeypatch, VENUE_PRICE_EVENTS))
+
+    assert "Book Lovers Valencia" in rendered
+    assert "12,50 €" in rendered
+    assert "Free Events" in rendered
+
+
+def test_render_stats_count_real_free_events(monkeypatch):
+    """The free-events stat counts real is_free values, stays N/D without data."""
+    rendered = str(_render_with(monkeypatch, VENUE_PRICE_EVENTS))
+    assert "Free Events" in rendered  # 1 of 4 events is really free
+
+    # No is_free anywhere (older data / sources without offers) → honest N/D
+    no_price = str(_render_with(monkeypatch, FIXTURE_EVENTS))
+    assert "N/D" in no_price
+
+
 def _render_with(monkeypatch, events):
     monkeypatch.setattr(vet, "load_valencia_events", lambda: events)
     return vet.render_valencia_events_tab()

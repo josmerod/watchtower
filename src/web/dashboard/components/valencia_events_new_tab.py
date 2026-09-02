@@ -154,6 +154,8 @@ def create_events_table(events: list[dict[str, Any]]) -> dbc.Table:
                         html.Th("Title"),
                         html.Th("Category"),
                         html.Th("Date"),
+                        html.Th("Venue"),
+                        html.Th("Price"),
                         html.Th("Source"),
                         html.Th("Link"),
                     ]
@@ -188,6 +190,12 @@ def create_events_table(events: list[dict[str, Any]]) -> dbc.Table:
             # Truncate long descriptions
             desc_short = (description[:100] + "…") if len(description) > 100 else description
 
+            # Venue + price (T-080): venue comes from the JSON-LD Place name;
+            # price is only claimed when the source exposed offers (is_free
+            # set) — absent data stays an honest "—" instead of a fake Gratis.
+            venue = str(event.get("venue") or "").strip()
+            price_info = str(event.get("price_info") or "").strip()
+
             table_body_rows.append(
                 html.Tr(
                     [
@@ -199,6 +207,14 @@ def create_events_table(events: list[dict[str, Any]]) -> dbc.Table:
                         ),
                         html.Td(dbc.Badge(category, color=badge_color, pill=True, className="px-2 py-1 text-uppercase small")),
                         html.Td(html.Span(date_text_short, className="text-nowrap small")),
+                        html.Td(html.Span(venue, className="small") if venue else html.Span("—", className="text-muted")),
+                        html.Td(
+                            dbc.Badge("Gratis", color="success", pill=True, className="px-2 py-1 text-uppercase small")
+                            if event.get("is_free") is True
+                            else html.Span(price_info, className="text-nowrap small text-muted")
+                            if price_info
+                            else html.Span("—", className="text-muted")
+                        ),
                         html.Td(html.Span(source, className="small")),
                         html.Td(
                             dbc.Button(
@@ -275,20 +291,9 @@ def render_valencia_events_tab() -> html.Div:
         total_events = len(events_data)
         categories = {event.get("category", "General") for event in events_data}
         tech_events_count = len(tech_events_data)
-        # ValenciaEvent has no cost field yet; only claim "free" when the value
-        # is explicitly present (a missing cost must not count as free).
-
-        def _is_free_event(event: dict) -> bool:
-            cost = event.get("cost")
-            if cost is None:
-                return False
-            try:
-                return float(str(cost).replace(",", ".")) == 0
-            except ValueError:
-                return False
-
-        _has_cost_info = any(e.get("cost") is not None for e in events_data)
-        free_events = len([e for e in events_data if _is_free_event(e)]) if _has_cost_info else None
+        # is_free (T-080) is only set when the source actually exposes a price
+        # via JSON-LD offers; a missing value must not count as free (or paid).
+        free_events = len([e for e in events_data if e.get("is_free") is True]) if any(e.get("is_free") is not None for e in events_data) else None
 
         def _stat_card(value: str, label: str, icon: str) -> dbc.Card:
             return dbc.Card(
@@ -312,7 +317,7 @@ def render_valencia_events_tab() -> html.Div:
                 dbc.Col(_stat_card(str(total_events), "Total Events", "📋"), xs=6, md=3, className="mb-3"),
                 dbc.Col(_stat_card(str(len(categories)), "Categories", "🏷️"), xs=6, md=3, className="mb-3"),
                 dbc.Col(_stat_card(str(tech_events_count), "Tech Events", "💻"), xs=6, md=3, className="mb-3"),
-                dbc.Col(_stat_card(str(free_events) if free_events is not None else "N/D", "Free Events (con precio)", "🎟️"), xs=6, md=3, className="mb-3"),
+                dbc.Col(_stat_card(str(free_events) if free_events is not None else "N/D", "Free Events", "🎟️"), xs=6, md=3, className="mb-3"),
             ],
             className="mb-4",
         )
@@ -467,8 +472,9 @@ def _build_ics_payload(events: list[dict[str, Any]]) -> list[dict[str, str]]:
     """Build the compact JSON payload consumed by the clientside .ics exporter.
 
     Only the fields the JS VCALENDAR builder needs are kept so the embedded
-    data-events attribute stays small. The location is read from the event
-    itself or from metadata (venue/location keys) when present.
+    data-events attribute stays small. The location prefers the extracted
+    venue name (T-080), falling back to the event location or metadata
+    (venue/location keys) when present.
 
     Args:
         events: Exportable event dictionaries (already filtered to upcoming).
@@ -481,7 +487,7 @@ def _build_ics_payload(events: list[dict[str, Any]]) -> list[dict[str, str]]:
     for event in events:
         metadata = event.get("metadata")
         metadata = metadata if isinstance(metadata, dict) else {}
-        location = str(event.get("location") or metadata.get("location") or metadata.get("venue") or "")
+        location = str(event.get("venue") or event.get("location") or metadata.get("venue") or metadata.get("location") or "")
         item = {
             "title": str(event.get("title") or "Untitled"),
             "start_date": str(event.get("start_date") or ""),

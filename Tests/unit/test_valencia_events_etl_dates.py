@@ -16,6 +16,7 @@ from datetime import datetime
 from src.etl.news.valencia_events_etl import (
     ValenciaEvent,
     ValenciaEventsETL,
+    _jsonld_offers,
     _parse_dates_from_text,
     _to_iso_date,
 )
@@ -80,11 +81,19 @@ EVENTBRITE_HTML = (
                         "description": "Connect, recruit and celebrate diversity.",
                         "url": "https://www.eventbrite.co.uk/e/valencia-tech-job-fair",
                         "location": {
+                            "name": "Hotel ILUNION Valencia 4",
                             "address": {
                                 "streetAddress": "1 Carrer de la Vall d'Aiora",
                                 "addressLocality": "València",
                                 "addressCountry": "ES",
-                            }
+                            },
+                        },
+                        "offers": {
+                            "@type": "Offer",
+                            "price": "0.00",
+                            "priceCurrency": "EUR",
+                            "availability": "https://schema.org/InStock",
+                            "url": "https://www.eventbrite.co.uk/e/valencia-tech-job-fair#tickets",
                         },
                     },
                 },
@@ -95,6 +104,7 @@ EVENTBRITE_HTML = (
                         "startDate": f"{_YEAR}-09-05",
                         "name": "Noche de comedia",
                         "url": "https://www.eventbrite.com/e/noche-de-comedia",
+                        "offers": {"@type": "AggregateOffer", "lowPrice": "12.5", "highPrice": "25", "priceCurrency": "EUR"},
                     },
                 },
             ],
@@ -131,6 +141,14 @@ MEETUP_HTML = (
                 "startDate": f"{_YEAR}-09-04T10:00:00+02:00[Europe/Madrid]",
                 "endDate": "",
                 "location": "Café de las Horas",
+            },
+            {
+                "@context": "https://schema.org",
+                "@type": "Event",
+                "name": "Charla online",
+                "url": "https://www.meetup.com/premiumvalencia/events/316214967/",
+                "startDate": f"{_YEAR}-09-12T17:00:00.000Z",
+                "location": {"@type": "VirtualLocation", "url": "https://www.meetup.com/premiumvalencia/events/316214967/"},
             },
         ]
     )
@@ -264,7 +282,7 @@ def test_meetup_jsonld_events_normalize_timestamps_to_dates(monkeypatch):
     etl = ValenciaEventsETL()
     events = etl.get_meetup_events()
 
-    assert len(events) == 2
+    assert len(events) == 3
     beach = events[0]
     assert beach["title"] == "Sunset Beach Party & Dance"
     assert beach["start_date"] == f"{_YEAR}-08-28"  # 18:30Z collapses to its calendar date
@@ -402,3 +420,158 @@ def test_remove_duplicates_prefers_dated_record():
     assert len(merged) == 1
     assert merged[0]["start_date"] == f"{_YEAR}-12-25"
     assert merged[0]["url"] == "https://example.com/1"
+
+
+# ---------------------------------------------------------------------------
+# venue + price extraction (T-080)
+# ---------------------------------------------------------------------------
+
+
+def test_eventbrite_jsonld_extracts_venue_and_price(monkeypatch):
+    monkeypatch.setattr("src.etl.news.valencia_events_etl.requests.get", lambda url, **kw: _BytesResponse(EVENTBRITE_HTML))
+    etl = ValenciaEventsETL()
+    events = etl.get_eventbrite_events()
+
+    job_fair = events[0]
+    assert job_fair["venue"] == "Hotel ILUNION Valencia 4"  # Place name, previously dropped
+    assert job_fair["price_info"] == "Gratis"
+    assert job_fair["is_free"] is True
+    assert job_fair["metadata"]["offers_availability"] == "InStock"  # schema.org URL shortened
+    assert job_fair["metadata"]["offers_url"].endswith("#tickets")
+    # Address-based location keeps flowing alongside the named venue
+    assert job_fair["metadata"]["location"] == "1 Carrer de la Vall d'Aiora, València"
+
+    comedia = events[1]
+    assert comedia["venue"] == ""  # no Place name on this item
+    assert comedia["price_info"] == "12,50 – 25 €"
+    assert comedia["is_free"] is False
+
+
+def test_meetup_jsonld_extracts_venue_names(monkeypatch):
+    monkeypatch.setattr("src.etl.news.valencia_events_etl.requests.get", lambda url, **kw: _BytesResponse(MEETUP_HTML))
+    etl = ValenciaEventsETL()
+    events = etl.get_meetup_events()
+
+    beach = events[0]
+    assert beach["venue"] == "Playa de la Malvarrosa"  # Place name wins for the venue
+    assert beach["metadata"]["location"] == "València"  # address-based location unchanged
+    assert beach["price_info"] == ""  # meetup exposes no offers
+    assert beach["is_free"] is None
+
+    brunch = events[1]
+    assert brunch["venue"] == "Café de las Horas"  # bare string location is its own venue
+
+    online = events[2]
+    assert online["venue"] == ""  # VirtualLocation has no venue name
+    assert online["metadata"]["location"] == ""
+
+
+def test_jsonld_offers_price_shapes():
+    # Plain Offer with comma decimals, Spanish formatting
+    assert _jsonld_offers({"offers": {"price": "12,50", "priceCurrency": "EUR"}}) == {"price_info": "12,50 €", "is_free": False}
+    # Zero price means free, with no currency suffix
+    assert _jsonld_offers({"offers": {"price": 0}}) == {"price_info": "Gratis", "is_free": True}
+    # AggregateOffer range collapses when low == high; availability/url captured
+    agg = _jsonld_offers(
+        {"offers": {"@type": "AggregateOffer", "lowPrice": "5", "highPrice": "5", "priceCurrency": "EUR", "availability": "https://schema.org/SoldOut", "url": "https://www.eventbrite.com/e/x#tickets"}}
+    )
+    assert agg["price_info"] == "5 €"
+    assert agg["is_free"] is False
+    assert agg["offers_availability"] == "SoldOut"
+    assert agg["offers_url"] == "https://www.eventbrite.com/e/x#tickets"
+    # Nested priceSpecification min/max (currency read from the spec)
+    spec = _jsonld_offers({"offers": {"priceSpecification": {"@type": "PriceSpecification", "minPrice": "0", "maxPrice": "10", "priceCurrency": "EUR"}}})
+    assert spec["price_info"] == "0 – 10 €"
+    assert spec["is_free"] is False  # a range starting at 0 still has paid tiers
+    # Offers as a list: first offer with a usable price wins
+    assert _jsonld_offers({"offers": [{"price": "0"}, {"price": "20"}]}) == {"price_info": "Gratis", "is_free": True}
+    # Non-EUR currency keeps its code instead of a fake euro symbol
+    assert _jsonld_offers({"offers": {"price": "10", "priceCurrency": "USD"}}) == {"price_info": "10 USD", "is_free": False}
+    # Only a low price → "Desde"
+    assert _jsonld_offers({"offers": {"lowPrice": "3"}}) == {"price_info": "Desde 3 €", "is_free": False}
+
+
+def test_jsonld_offers_stays_empty_without_usable_prices():
+    # Absent / non-dict / garbage offers stay honestly unknown — never a fake price
+    assert _jsonld_offers({}) == {}
+    assert _jsonld_offers({"offers": "gratis"}) == {}
+    assert _jsonld_offers({"offers": 42}) == {}
+    assert _jsonld_offers({"offers": {"price": "consultar"}}) == {}
+    assert _jsonld_offers({"offers": {"price": "-5"}}) == {}
+    assert _jsonld_offers({"offers": []}) == {}
+
+
+def test_transform_carries_venue_and_price_to_models():
+    etl = ValenciaEventsETL()
+    models = etl.transform(
+        [
+            {
+                "title": "Evento con precio",
+                "url": "https://example.com/1",
+                "source": "eventbrite.com",
+                "start_date": f"{_YEAR}-11-26",
+                "venue": "Teatro El Musical",
+                "price_info": "12,50 €",
+                "is_free": False,
+            },
+            {
+                "title": "Evento sin datos",
+                "url": "https://example.com/2",
+                "source": "visitvalencia.com",
+            },
+        ]
+    )
+    priced = next(m for m in models if m.title == "Evento con precio")
+    assert priced.venue == "Teatro El Musical"
+    assert priced.price_info == "12,50 €"
+    assert priced.is_free is False
+
+    # Sources without venue/price keep the honest defaults, also through a dump
+    bare = next(m for m in models if m.title == "Evento sin datos")
+    assert bare.venue == ""
+    assert bare.price_info == ""
+    assert bare.is_free is None
+    dumped = bare.model_dump()
+    assert dumped["venue"] == "" and dumped["price_info"] == "" and dumped["is_free"] is None
+
+
+def test_process_sanitizes_junk_venue_price_values():
+    etl = ValenciaEventsETL()
+    processed = etl.process_valencia_events(
+        [
+            {
+                "title": "Datos sucios",
+                "source": "eventbrite.com",
+                "venue": "  Hotel Ilusion  ",
+                "price_info": None,
+                "is_free": "yes",  # non-bool junk must not leak in as truthy
+            }
+        ]
+    )
+    assert processed[0]["venue"] == "Hotel Ilusion"
+    assert processed[0]["price_info"] == ""
+    assert processed[0]["is_free"] is None
+
+
+def test_remove_duplicates_merges_venue_and_price():
+    etl = ValenciaEventsETL()
+    merged = etl.remove_duplicates(
+        [
+            {"title": "Feria", "url": "", "source": "eventbrite.com", "date_text": "", "start_date": "", "end_date": "", "venue": "", "price_info": "", "is_free": None},
+            {
+                "title": "Feria",
+                "url": "https://example.com/1",
+                "source": "eventbrite.com",
+                "date_text": f"26/11/{_YEAR}",
+                "start_date": f"{_YEAR}-11-26",
+                "end_date": "",
+                "venue": "Feria de València",
+                "price_info": "Gratis",
+                "is_free": True,
+            },
+        ]
+    )
+    assert len(merged) == 1
+    assert merged[0]["venue"] == "Feria de València"
+    assert merged[0]["price_info"] == "Gratis"
+    assert merged[0]["is_free"] is True

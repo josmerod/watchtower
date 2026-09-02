@@ -166,6 +166,122 @@ def _jsonld_location(node: dict[str, Any]) -> str:
     return str(location.get("name") or "")
 
 
+def _jsonld_venue(node: dict[str, Any]) -> str:
+    """Venue name from a schema.org event node's location.
+
+    Args:
+        node: schema.org Event (or ItemList item) dictionary.
+
+    Returns:
+        The Place's ``name`` (or the location string itself when the source
+        emits a bare string), "" when the location carries no name — online
+        events with a VirtualLocation intentionally yield "".
+    """
+    location = node.get("location")
+    if isinstance(location, str):
+        return location.strip()
+    if not isinstance(location, dict):
+        return ""
+    return str(location.get("name") or "").strip()
+
+
+def _parse_amount(raw: Any) -> float | None:
+    """Parse a non-negative monetary amount from a JSON-LD price field.
+
+    Args:
+        raw: Raw value; numbers and point/comma decimal strings are accepted.
+
+    Returns:
+        The amount as float, or None when missing/negative/unparsable.
+    """
+    text = str(raw if raw is not None else "").strip().replace(",", ".")
+    if not text:
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return None
+    return value if value >= 0 else None
+
+
+def _format_amount(value: float) -> str:
+    """Format an amount Spanish-style without currency: "12" or "12,50"."""
+    if value == int(value):
+        return str(int(value))
+    return f"{value:.2f}".replace(".", ",")
+
+
+def _price_pair(amount: float, suffix: str) -> tuple[str, bool]:
+    """(price_info, is_free) for one exact amount — exactly zero means free."""
+    if amount == 0:
+        return "Gratis", True
+    return f"{_format_amount(amount)} {suffix}", False
+
+
+def _jsonld_offers(node: dict[str, Any]) -> dict[str, Any]:
+    """Extract ticket price information from a schema.org event node's offers.
+
+    Handles the shapes seen in the wild: a single Offer (``price``), an
+    AggregateOffer (``lowPrice``/``highPrice``), a nested priceSpecification
+    (``minPrice``/``maxPrice``) and lists of those. ``is_free`` is True only
+    when the full price is exactly zero — a range starting at 0 still has
+    paid tiers and counts as paid. When several offers exist the first one
+    carrying a usable price wins.
+
+    Args:
+        node: schema.org Event (or ItemList item) dictionary.
+
+    Returns:
+        Dict that may carry ``price_info`` (str), ``is_free`` (bool),
+        ``offers_availability`` (str, short form) and ``offers_url`` (str);
+        empty when the node exposes no usable offers.
+    """
+    offers = node.get("offers")
+    if isinstance(offers, dict):
+        offer_list: list[dict[str, Any]] = [offers]
+    elif isinstance(offers, list):
+        offer_list = [entry for entry in offers if isinstance(entry, dict)]
+    else:
+        offer_list = []
+
+    result: dict[str, Any] = {}
+    for offer in offer_list:
+        spec = offer.get("priceSpecification")
+        spec = spec if isinstance(spec, dict) else {}
+        currency = str(offer.get("priceCurrency") or spec.get("priceCurrency") or "").strip().upper()
+        suffix = "€" if currency in ("", "EUR") else currency
+
+        single = _parse_amount(offer.get("price"))
+        low = _parse_amount(offer.get("lowPrice"))
+        high = _parse_amount(offer.get("highPrice"))
+        if single is None and low is None:
+            low = _parse_amount(spec.get("minPrice"))
+        if single is None and high is None:
+            high = _parse_amount(spec.get("maxPrice"))
+
+        if single is not None:
+            price_info, is_free = _price_pair(single, suffix)
+        elif low is not None and high is not None:
+            price_info, is_free = _price_pair(low, suffix) if low == high else (f"{_format_amount(low)} – {_format_amount(high)} {suffix}", False)
+        elif low is not None:
+            price_info, is_free = f"Desde {_format_amount(low)} {suffix}", False
+        elif high is not None:
+            price_info, is_free = _price_pair(high, suffix)
+        else:
+            continue  # no usable price in this offer — try the next one
+
+        result["price_info"] = price_info
+        result["is_free"] = is_free
+        availability = str(offer.get("availability") or "")
+        if availability:
+            result["offers_availability"] = availability.rsplit("/", 1)[-1]
+        url = str(offer.get("url") or "")
+        if url:
+            result["offers_url"] = url
+        break
+    return result
+
+
 class ValenciaEvent(TimestampedModel):
     """Model for Valencia events."""
 
@@ -177,6 +293,9 @@ class ValenciaEvent(TimestampedModel):
     start_date: str = ""
     end_date: str = ""
     date_text: str = ""
+    venue: str = ""
+    price_info: str = ""
+    is_free: bool | None = None
     metadata: dict[str, Any] = {}
 
 
@@ -600,6 +719,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 if node.get("@type") != "Event" or not str(node.get("name") or "").strip():
                     continue
                 title = str(node.get("name")).strip()
+                offers = _jsonld_offers(node)
                 jsonld_events.append(
                     {
                         "title": title,
@@ -610,7 +730,14 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                         "category": "meetup",
                         "description": str(node.get("description") or "").strip(),
                         "source": "meetup.com",
-                        "metadata": {"location": _jsonld_location(node)},
+                        "venue": _jsonld_venue(node),
+                        "price_info": str(offers.get("price_info") or ""),
+                        "is_free": offers.get("is_free"),
+                        "metadata": {
+                            "location": _jsonld_location(node),
+                            "offers_availability": str(offers.get("offers_availability") or ""),
+                            "offers_url": str(offers.get("offers_url") or ""),
+                        },
                     }
                 )
 
@@ -720,6 +847,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                         category = "tecnología"
                     elif any(word in title.lower() for word in ["música", "concierto", "festival"]):
                         category = "música"
+                    offers = _jsonld_offers(item)
                     jsonld_events.append(
                         {
                             "title": title,
@@ -730,7 +858,14 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                             "category": category,
                             "description": str(item.get("description") or "").strip(),
                             "source": "eventbrite.com",
-                            "metadata": {"location": _jsonld_location(item)},
+                            "venue": _jsonld_venue(item),
+                            "price_info": str(offers.get("price_info") or ""),
+                            "is_free": offers.get("is_free"),
+                            "metadata": {
+                                "location": _jsonld_location(item),
+                                "offers_availability": str(offers.get("offers_availability") or ""),
+                                "offers_url": str(offers.get("offers_url") or ""),
+                            },
                         }
                     )
                 if jsonld_events:
@@ -874,6 +1009,14 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 if not start_date:
                     start_date, end_date = _parse_dates_from_text(date_info)
 
+                # Venue/price: the JSON-LD extractors carry them when the
+                # source actually exposes them (Place name, offers); anything
+                # else stays honestly empty / unknown (is_free None).
+                venue = str(event.get("venue") or "").strip()
+                price_info = str(event.get("price_info") or "").strip()
+                raw_is_free = event.get("is_free")
+                is_free: bool | None = raw_is_free if isinstance(raw_is_free, bool) else None
+
                 # Clean up titles (sometimes they contain the event type)
                 title = event.get("title", "").strip()
 
@@ -962,6 +1105,9 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     "start_date": start_date,
                     "end_date": end_date,
                     "date_text": date_info,
+                    "venue": venue,
+                    "price_info": price_info,
+                    "is_free": is_free,
                     "metadata": metadata,
                 }
                 processed_events.append(processed_event)
@@ -1016,6 +1162,14 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 # Prefer non-empty description
                 if not merged_event.get("description") and event.get("description"):
                     merged_event["description"] = event.get("description")
+
+                # Prefer non-empty venue / price information
+                if not merged_event.get("venue") and event.get("venue"):
+                    merged_event["venue"] = event.get("venue")
+                if not merged_event.get("price_info") and event.get("price_info"):
+                    merged_event["price_info"] = event.get("price_info")
+                if merged_event.get("is_free") is None and event.get("is_free") is not None:
+                    merged_event["is_free"] = event.get("is_free")
 
                 # Prefer more complete date information
                 if len(event.get("date_text", "")) > len(merged_event.get("date_text", "")):
