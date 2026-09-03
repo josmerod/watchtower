@@ -3,9 +3,12 @@
 Aggregates the security feed (CISA KEV catalog + The Hacker News +
 SecurityWeek + Krebs on Security) produced by
 ``src/etl/security/security_feeds_etl.py``. KEV entries (actively exploited
-CVEs) surface first with ransomware-use flags; news follows. Renders via the
-shared table builder, no callbacks — the file is re-read each render so the
-2h orchestrator cycle refreshes it.
+CVEs) surface first with ransomware-use flags; news follows. Since T-081 the
+feed's ``stack_matches`` section (KEV crossed with the self-hosted stack) renders as
+the "🧰 Tu stack" card plus a danger-toned match list — the CVEs actively
+exploited that hit the homelab's own services. Renders via the shared table
+builder, no callbacks — the file is re-read each render so the 2h orchestrator
+cycle refreshes it.
 """
 
 import json
@@ -17,6 +20,7 @@ from typing import Any
 import dash_bootstrap_components as dbc
 from dash import html
 
+from src.etl.security.stack_cves import total_stack_matches
 from src.utils.file_system import get_project_root
 from src.web.dashboard.components.shared.table import render_items_table
 
@@ -26,16 +30,28 @@ DATA_FILE = "security/security_latest.json"
 MAX_ROWS = 120
 
 
-def _load_entries() -> list[dict[str, Any]]:
-    """Load the merged security feed from ``data/security/``."""
+def _load_feed() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Load the merged security feed plus stack matches from ``data/security/``.
+
+    Supports both the current envelope (``{"items": [...], "stack_matches":
+    [...]}``) and the legacy flat-list payload (matches default to empty), so
+    a stale pre-T-081 file still renders.
+    """
     path = Path(get_project_root()) / "data" / DATA_FILE
     if not path.exists():
-        return []
+        return [], []
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        return data if isinstance(data, list) else []
     except (OSError, ValueError):
-        return []
+        return [], []
+    if isinstance(data, dict):
+        items = data.get("items")
+        matches = data.get("stack_matches")
+        return (
+            items if isinstance(items, list) else [],
+            matches if isinstance(matches, list) else [],
+        )
+    return (data if isinstance(data, list) else []), []
 
 
 def _parse_date(raw: str) -> datetime | None:
@@ -83,9 +99,85 @@ def _render_summary_cards(entries: list[dict[str, Any]]) -> dbc.Row:
     )
 
 
+def _render_stack_section(stack_matches: list[dict[str, Any]]) -> list[Any]:
+    """Render the "🧰 Tu stack" card plus, when there are hits, the match list.
+
+    Calm state (0 matches) is a quiet success card: "0 CVEs explotados afectan
+    a tu stack". Any match flips it to danger tones and appends the
+    highlighted list — one row per (service, CVE) with repo badge, NVD link,
+    product, dateAdded and a ransomware badge when KEV flags campaign use.
+    """
+    total = total_stack_matches(stack_matches)
+    if total == 0:
+        return [
+            dbc.Card(
+                dbc.CardBody(
+                    [
+                        html.H5([html.I(className="fas fa-toolbox me-2"), "🧰 Tu stack"], className="small text-muted mb-1"),
+                        html.P(
+                            [html.I(className="fas fa-check-circle me-2"), "0 CVEs explotados afectan a tu stack"],
+                            className="mb-0 text-success fw-bold",
+                        ),
+                    ]
+                ),
+                outline=True,
+                color="success",
+                className="mb-4",
+            )
+        ]
+
+    rows: list[Any] = []
+    for group in stack_matches:
+        label = str(group.get("service_label") or group.get("repo") or "?")
+        cves = group.get("cves")
+        for entry in cves if isinstance(cves, list) else []:
+            if not isinstance(entry, dict):
+                continue
+            cve = str(entry.get("cve") or "?")
+            children: list[Any] = [
+                dbc.Badge(label, color="warning", pill=True, className="me-2"),
+                html.A(
+                    cve,
+                    href=f"https://nvd.nist.gov/vuln/detail/{cve}",
+                    target="_blank",
+                    className="fw-bold text-decoration-none text-danger me-2",
+                ),
+                html.Span(str(entry.get("product") or "—"), className="text-muted me-2"),
+                html.Small(f"añadido {str(entry.get('dateAdded') or '')[:10]}", className="text-muted"),
+            ]
+            if entry.get("ransomware") == "Known":
+                children.append(dbc.Badge("🔐 Ransomware", color="danger", pill=True, className="ms-2"))
+            rows.append(html.Div(children, className="d-flex flex-wrap align-items-center py-1 border-bottom border-secondary-subtle"))
+
+    return [
+        dbc.Card(
+            dbc.CardBody(
+                [
+                    html.H5([html.I(className="fas fa-toolbox me-2"), "🧰 Tu stack"], className="small mb-1"),
+                    html.H4(f"{total}", className="text-danger mb-0"),
+                    html.P("CVEs explotados activamente afectan a tu stack", className="text-danger small mb-0"),
+                ]
+            ),
+            color="danger",
+            className="mb-3",
+        ),
+        dbc.Card(
+            dbc.CardBody(
+                [
+                    html.H6([html.I(className="fas fa-bolt me-2"), "CVEs que afectan a TU stack"], className="text-danger mb-2"),
+                    html.Div(rows),
+                ]
+            ),
+            color="danger",
+            outline=True,
+            className="mb-4",
+        ),
+    ]
+
+
 def render_security_tab() -> html.Div:
     """Render the Security tab: summary cards + severity-ordered feed table."""
-    entries = _load_entries()
+    entries, stack_matches = _load_feed()
     kev = [e for e in entries if e.get("source") == "cisa_kev"]
     news = [e for e in entries if e.get("source") != "cisa_kev"]
 
@@ -124,6 +216,7 @@ def render_security_tab() -> html.Div:
                 ]
             ),
             _render_summary_cards(entries),
+            *_render_stack_section(stack_matches),
             html.H6("🔴 Vulnerabilidades explotadas (KEV — más recientes primero)", className="mb-2"),
             render_items_table(kev, columns, empty_message="No KEV data yet. Run the security ETL.", wrap_scroll=True),
             html.H6("📰 Noticias de seguridad", className="mt-4 mb-2"),

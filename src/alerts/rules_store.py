@@ -11,14 +11,19 @@ small, dependency-free API against that shared file:
 * :func:`sync_freshness_rules` — map a DataFreshnessWatcher summary onto rules:
   stale/critical sources get a rule (critical→high, stale→medium), sources back
   to ``fresh`` get their rule resolved.
+* :func:`sync_stack_cve_rules` — map the security ETL's stack matches onto
+  rules: every CISA KEV CVE hitting a self-hosted stack service gets a HIGH
+  rule; matches that aged out of the KEV window get resolved (T-081).
 
 Rules managed by the freshness sync are namespaced with
-``FRESHNESS_RULE_PREFIX`` so manually-created user rules are never touched.
+``FRESHNESS_RULE_PREFIX`` and stack-CVE rules with ``STACK_CVE_RULE_PREFIX``,
+so manually-created user rules are never touched.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -31,6 +36,10 @@ logger = get_logger("AlertRulesStore")
 
 # Stable id prefix for watcher-managed freshness rules (never collide with user rules).
 FRESHNESS_RULE_PREFIX = "data_freshness_"
+
+# Stable id prefix for security-ETL-managed stack CVE rules (T-081) — KEV
+# entries actively exploited that hit one of the self-hosted stack services.
+STACK_CVE_RULE_PREFIX = "stack_cve_"
 
 # Freshness status -> alert severity (warn-level "stale" -> medium, "critical" -> high).
 SEVERITY_BY_FRESHNESS: dict[str, str] = {"stale": "medium", "critical": "high"}
@@ -207,6 +216,101 @@ def sync_freshness_rules(summary: dict[str, Any], rules_file: Path | None = None
     # Drop rules for sources removed from the registry (keys vanish from SOURCE_FILES).
     for rule in load_rules(rules_file):
         if isinstance(rule, dict) and str(rule.get("id", "")).startswith(FRESHNESS_RULE_PREFIX) and rule.get("id") not in managed_ids:
+            if resolve_rule(str(rule["id"]), rules_file=rules_file):
+                counts["resolved"] += 1
+
+    return counts
+
+
+def stack_cve_rule_id(repo_key: str, cve: str) -> str:
+    """Return the stable rule id for one (stack repo, CVE) pair.
+
+    The repo key (``owner/repo``) is slugified (``/`` and other unsupported
+    characters become ``_``) and the CVE lowercased, so ids stay byte-stable
+    across ETL runs regardless of upstream casing drift.
+    """
+    slug = re.sub(r"[^a-z0-9_-]+", "_", repo_key.lower().strip())
+    return f"{STACK_CVE_RULE_PREFIX}{slug}_{cve.strip().lower()}"
+
+
+def build_stack_cve_rule(repo_key: str, service_label: str, cve: str, product: str = "", date_added: str = "", ransomware: str = "") -> dict[str, Any]:
+    """Build the HIGH alert rule for a KEV CVE hitting one stack service.
+
+    Args:
+        repo_key: Stack repo key (``owner/repo``, lowercase).
+        service_label: Human label from the stack registry (e.g. ``home-assistant``).
+        cve: CVE id (e.g. ``CVE-2026-1234``).
+        product: KEV product name that triggered the match.
+        date_added: KEV ``dateAdded`` for the entry.
+        ransomware: KEV ransomware-campaign use (``Known``/``Unknown``).
+
+    Returns:
+        Rule dict with a stable ``stack_cve_{repo}_{cve}`` id, ``high``
+        severity, and a Spanish message: ``CVE {cve} explotado activamente
+        afecta a {service}``.
+    """
+    return {
+        "id": stack_cve_rule_id(repo_key, cve),
+        "name": f"Stack CVE: {service_label}",
+        "description": f"CVE {cve} explotado activamente afecta a {service_label}",
+        "severity": "high",
+        "status": "known-exploited",
+        "source": "stack_cves",
+        "source_key": repo_key,
+        "cve": cve,
+        "product": product,
+        "date_added": date_added,
+        "ransomware": ransomware,
+        "active": True,
+        "auto_managed": True,
+    }
+
+
+def sync_stack_cve_rules(stack_matches: list[dict[str, Any]], rules_file: Path | None = None) -> dict[str, int]:
+    """Sync stack-matching KEV CVEs onto the shared alert-rule store.
+
+    Every current ``(repo, cve)`` match gets its HIGH rule upserted
+    (idempotent, keyed by ``stack_cve_{repo}_{cve}``); matches that dropped
+    out of the KEV window get their rule resolved (removed). Manually-created
+    and freshness rules are untouched — cleanup only touches the
+    ``stack_cve_`` namespace.
+
+    Args:
+        stack_matches: Match groups from
+            :func:`src.etl.security.stack_cves.match_stack_to_kev`
+            (``{"repo", "service_label", "cves": [...]}``).
+        rules_file: Alert-rule store to write (defaults to ``data/alerts/rules.json``).
+
+    Returns:
+        Counts dict: ``created`` / ``updated`` / ``unchanged`` / ``resolved``.
+    """
+    counts = {"created": 0, "updated": 0, "unchanged": 0, "resolved": 0}
+    managed_ids: set[str] = set()
+
+    for group in stack_matches:
+        repo_key = str(group.get("repo") or "")
+        label = str(group.get("service_label") or repo_key)
+        cves = group.get("cves")
+        if not repo_key or not isinstance(cves, list):
+            continue
+        for cve_entry in cves:
+            cve = str(cve_entry.get("cve") or "") if isinstance(cve_entry, dict) else ""
+            if not cve:
+                continue
+            rule = build_stack_cve_rule(
+                repo_key,
+                label,
+                cve,
+                product=str(cve_entry.get("product") or ""),
+                date_added=str(cve_entry.get("dateAdded") or ""),
+                ransomware=str(cve_entry.get("ransomware") or ""),
+            )
+            managed_ids.add(str(rule["id"]))
+            counts[upsert_rule(rule, rules_file=rules_file)] += 1
+
+    # CVEs aged out of the KEV window (no longer matched) get their rule resolved.
+    for rule in load_rules(rules_file):
+        if isinstance(rule, dict) and str(rule.get("id", "")).startswith(STACK_CVE_RULE_PREFIX) and rule.get("id") not in managed_ids:
             if resolve_rule(str(rule["id"]), rules_file=rules_file):
                 counts["resolved"] += 1
 

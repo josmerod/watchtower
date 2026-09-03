@@ -7,11 +7,19 @@ Three keyless sources merged into one feed (T-050):
 - BleepingComputer RSS — security news + breach/malware reporting.
 - The Hacker News RSS — offensive/defensive security research news.
 
+Since T-081 the KEV records are also crossed against the self-hosted stack
+(:mod:`src.etl.security.stack_cves`) and the matches mirrored as HIGH alert
+rules (:mod:`src.alerts.rules_store`) — CVEs actively exploited that hit one
+of the homelab's own services.
+
 Usage:
     uv run python -m src.etl.security.security_feeds_etl
 
 Output:
-    data/security/security_latest.json (+ timestamped snapshot)
+    data/security/security_latest.json (+ timestamped snapshot) — an envelope
+    ``{"generated_at", "items": [...], "stack_matches": [...]}`` where
+    ``items`` is the flat merged feed (unchanged shape per record) and
+    ``stack_matches`` the per-repo KEV cross matches.
 """
 
 import json
@@ -23,7 +31,9 @@ from typing import Any
 import feedparser
 import requests
 
+from src.alerts.rules_store import sync_stack_cve_rules
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
+from src.etl.security.stack_cves import match_stack_to_kev, total_stack_matches
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
 from src.utils.retry import with_retry
@@ -71,6 +81,9 @@ def fetch_kev() -> list[dict[str, Any]]:
                 "published": vuln.get("dateAdded", ""),
                 "summary": summary_line[:500],
                 "severity": "known-exploited",
+                "cve": cve,
+                "vendor": vendor,
+                "product": product,
                 "ransomware_use": ransomware,
                 "due_date": vuln.get("dueDate", ""),
                 "required_action": vuln.get("requiredAction", "")[:300],
@@ -147,11 +160,21 @@ def fetch_security_feed() -> list[dict[str, Any]]:
     return entries
 
 
-def save_security_entries(entries: list[dict[str, Any]]) -> None:
-    """Persist the security feed under ``data/security/``."""
+def save_security_entries(entries: list[dict[str, Any]], stack_matches: list[dict[str, Any]] | None = None) -> None:
+    """Persist the security feed under ``data/security/`` as an envelope.
+
+    The payload is ``{"generated_at", "items", "stack_matches"}`` — the flat
+    merged feed plus the KEV-vs-stack cross matches (T-081). Readers that only
+    need the feed consume ``items``; the Security tab shows both.
+    """
     if not entries:
         logger.info("No security entries to save. Skipping.")
         return
+    payload: dict[str, Any] = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "items": entries,
+        "stack_matches": stack_matches or [],
+    }
     output_dir = os.path.join(get_project_root(), "data", "security")
     ensure_directories([output_dir])
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -159,8 +182,25 @@ def save_security_entries(entries: list[dict[str, Any]]) -> None:
     snapshot = os.path.join(output_dir, f"security_{timestamp}.json")
     for path in (snapshot, latest):
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(entries, f, indent=2, ensure_ascii=False)
-    logger.info(f"Saved {len(entries)} security entries to {latest}")
+            json.dump(payload, f, indent=2, ensure_ascii=False)
+    logger.info(f"Saved {len(entries)} security entries ({total_stack_matches(payload['stack_matches'])} stack matches) to {latest}")
+
+
+def _sync_stack_cve_alerts(stack_matches: list[dict[str, Any]]) -> None:
+    """Mirror stack-matching KEV CVEs into the shared alert store (best effort).
+
+    Wrapped in try/except so a broken rules store (locked file, bad JSON…)
+    never takes the whole security ETL down — same contract as the data
+    freshness watcher's alert wiring.
+    """
+    try:
+        counts = sync_stack_cve_rules(stack_matches)
+        logger.info(
+            f"Stack CVE alert rules: {counts['created']} created, {counts['updated']} updated, "
+            f"{counts['unchanged']} unchanged, {counts['resolved']} resolved ({total_stack_matches(stack_matches)} active matches)"
+        )
+    except Exception as exc:  # alert wiring must never break the ETL
+        logger.error(f"Failed to sync stack CVE alert rules: {exc}")
 
 
 def main() -> None:
@@ -171,8 +211,11 @@ def main() -> None:
         if not entries:
             logger.warning("No entries fetched from security sources. Exiting.")
             return
-        save_security_entries(entries)
-        logger.info(f"Security feeds ETL complete: {len(entries)} items.")
+        kev_entries = [e for e in entries if e.get("source") == "cisa_kev"]
+        stack_matches = match_stack_to_kev(kev_entries)
+        save_security_entries(entries, stack_matches)
+        _sync_stack_cve_alerts(stack_matches)
+        logger.info(f"Security feeds ETL complete: {len(entries)} items, {total_stack_matches(stack_matches)} stack matches.")
     except Exception as exc:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
         logger.error(f"Security feeds ETL failed: {exc}")
         raise

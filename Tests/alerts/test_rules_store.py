@@ -11,9 +11,12 @@ from pathlib import Path
 from src.alerts.rules_store import (
     SEVERITY_BY_FRESHNESS,
     build_freshness_rule,
+    build_stack_cve_rule,
     load_rules,
     resolve_rule,
+    stack_cve_rule_id,
     sync_freshness_rules,
+    sync_stack_cve_rules,
     upsert_rule,
 )
 
@@ -146,3 +149,75 @@ class TestSyncFreshnessRules:
         assert len(load_rules(f)) == 1
         sync_freshness_rules(_summary(_record(key="other", label="Other")), rules_file=f, now=NOW)
         assert [r["id"] for r in load_rules(f)] == ["data_freshness_other"]
+
+
+def _stack_match(repo="n8n-io/n8n", label="n8n", cve="CVE-2026-1234", product="n8n", ransomware="Known"):
+    """Build one stack match group as produced by match_stack_to_kev."""
+    return {
+        "repo": repo,
+        "service_label": label,
+        "cves": [{"cve": cve, "product": product, "dateAdded": "2026-08-26", "title": f"🔴 {cve} — {product}", "ransomware": ransomware}],
+    }
+
+
+class TestBuildStackCveRule:
+    """Stack CVE rule construction and id stability."""
+
+    def test_rule_shape_and_message(self):
+        rule = build_stack_cve_rule("home-assistant/core", "home-assistant", "CVE-2026-1234", product="HASSIO", date_added="2026-08-20", ransomware="Known")
+        assert rule["id"] == "stack_cve_home-assistant_core_cve-2026-1234"
+        assert rule["name"] == "Stack CVE: home-assistant"
+        assert rule["description"] == "CVE CVE-2026-1234 explotado activamente afecta a home-assistant"
+        assert rule["severity"] == "high"
+        assert rule["source"] == "stack_cves" and rule["auto_managed"] is True and rule["active"] is True
+
+    def test_rule_id_normalizes_repo_slug_and_cve_case(self):
+        assert stack_cve_rule_id("JustArchiNET/ArchiSteamFarm", "CVE-2025-9276") == "stack_cve_justarchinet_archisteamfarm_cve-2025-9276"
+        assert stack_cve_rule_id("n8n-io/n8n", "cve-2026-1234") == stack_cve_rule_id("n8n-io/n8n", "CVE-2026-1234")
+
+
+class TestSyncStackCveRules:
+    """Stack match -> store sync: raise, idempotence, resolve on aging out."""
+
+    def test_raise_idempotent_resolve_lifecycle(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        matches = [_stack_match(), _stack_match(repo="jellyfin/jellyfin", label="jellyfin", cve="CVE-2026-2222", product="JellyFin")]
+
+        assert sync_stack_cve_rules(matches, rules_file=f) == {"created": 2, "updated": 0, "unchanged": 0, "resolved": 0}
+        assert sync_stack_cve_rules(matches, rules_file=f)["unchanged"] == 2  # idempotent re-check
+        assert len(load_rules(f)) == 2
+
+        # One CVE ages out of the KEV window -> only that rule resolves.
+        surviving = [matches[0]]
+        assert sync_stack_cve_rules(surviving, rules_file=f)["resolved"] == 1
+        assert [r["id"] for r in load_rules(f)] == ["stack_cve_n8n-io_n8n_cve-2026-1234"]
+
+        # All clear -> store empty again.
+        assert sync_stack_cve_rules([], rules_file=f)["resolved"] == 1
+        assert load_rules(f) == []
+
+    def test_freshness_sync_and_stack_sync_coexist(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        sync_freshness_rules(_summary(_record()), rules_file=f, now=NOW)
+        sync_stack_cve_rules([_stack_match()], rules_file=f)
+        # Neither cleanup touches the other namespace.
+        sync_freshness_rules(_summary(_record(status="fresh", age_hours=1.0)), rules_file=f, now=NOW)
+        assert [r["id"] for r in load_rules(f)] == ["stack_cve_n8n-io_n8n_cve-2026-1234"]
+        sync_stack_cve_rules([], rules_file=f)
+        assert load_rules(f) == []
+
+    def test_manual_rules_never_touched(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        manual = [{"id": "manual", "name": "Manual", "active": True}, {"id": "data_freshness_t", "name": "Freshness", "active": True}]
+        f.write_text(json.dumps(manual), encoding="utf-8")
+        sync_stack_cve_rules([_stack_match()], rules_file=f)
+        sync_stack_cve_rules([], rules_file=f)
+        assert load_rules(f) == manual  # non-stack namespaces survive both syncs
+
+    def test_new_cve_for_same_repo_gets_its_own_rule(self, tmp_path: Path):
+        f = tmp_path / "rules.json"
+        first = _stack_match(cve="CVE-2026-0001")
+        both = [_stack_match(cve="CVE-2026-0001"), _stack_match(cve="CVE-2026-0002")]
+        sync_stack_cve_rules([first], rules_file=f)
+        sync_stack_cve_rules(both, rules_file=f)  # new CVE joins, old one still matched
+        assert sorted(r["id"] for r in load_rules(f)) == ["stack_cve_n8n-io_n8n_cve-2026-0001", "stack_cve_n8n-io_n8n_cve-2026-0002"]
