@@ -43,6 +43,9 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_unraid_forums.py",  # Unraid forums (Invision RSS) — feeds Tech Radar tab (T-070)
     "src/etl/news/news_get_sth.py",  # ServeTheHome feed — feeds Tech Radar tab (T-078)
     "src/etl/news/news_get_xataka.py",  # Xataka feed — feeds Tech Radar tab (T-078)
+    "src/etl/news/news_get_lemmy.py",  # Lemmy !selfhosted+!homelab merged feed — Radar "🍋 Lemmy" (T-082)
+    "src/etl/news/news_get_producthunt_radar.py",  # PH keyless front-page Atom — Radar "🚀 Product Hunt" (T-082)
+    "src/etl/news/news_get_azure_blog.py",  # Azure blog feed — Radar "☁️ Azure Blog" (T-082)
     "src/etl/analytics/trends_etl.py",  # Cross-source trend analysis — feeds 🔥 badges (News/ArXiv). Local files only; must run after news ETLs
     "src/etl/analytics/weekly_digest_etl.py",  # Weekly digest (T-054) — compiles trends/radar/markets/watchers into data/insights/. Local files only; feeds 📅 Digest tab
     "src/watchers/data_freshness_watcher.py",  # MUST BE LAST — flags sources that failed to refresh this run (feeds Metrics card)
