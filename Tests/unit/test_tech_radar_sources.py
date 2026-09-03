@@ -578,5 +578,86 @@ def test_t078_sources_in_unified_feed_and_dropdowns(tmp_path, monkeypatch):
 
 def test_t078_unified_cap_bumped_to_fit_new_sources():
     # 120 starved the tail: the three T-078 sources add up to ~55 fresh,
-    # mostly-today items that crowd the newest-first window.
-    assert tab.MAX_UNIFIED_ITEMS == 140
+    # mostly-today items that crowd the newest-first window. (T-082 later
+    # raised the cap again to 160 — see test_t082_unified_cap_bumped_to_160.)
+    assert tab.MAX_UNIFIED_ITEMS >= 140
+
+
+# ---------------------------------------------------------------------------
+# T-082: Lemmy / Product Hunt / Azure Blog radar sources
+# ---------------------------------------------------------------------------
+
+_T082_SOURCES = {"lemmy", "producthunt", "azure_blog"}
+
+
+def test_t082_sources_registered_with_unique_keys_and_columns():
+    keys = [s["key"] for s in tab.RADAR_SOURCES]
+    assert len(keys) == len(set(keys)), "RADAR_SOURCES keys must stay unique"
+    assert set(keys) >= _T082_SOURCES
+    layout = str(tab.render_tech_radar_tab())
+    for key in _T082_SOURCES:
+        source = next(s for s in tab.RADAR_SOURCES if s["key"] == key)
+        assert source.get("file") and not source.get("files")
+        assert not source.get("own_tab"), "new sources render as normal Por-fuente columns"
+        assert layout.count(f"tech-radar-col-{key}") == 1  # one column id, in the grid
+    assert "🍋 Lemmy" in layout and "🚀 Product Hunt" in layout and "☁️ Azure Blog" in layout
+
+
+def test_t082_expected_files_and_categories():
+    by_key = {s["key"]: s for s in tab.RADAR_SOURCES}
+    assert by_key["lemmy"]["file"] == "news/lemmy_latest.json"
+    assert by_key["lemmy"]["category"] == "Self-Hosting"
+    assert by_key["producthunt"]["file"] == "news/producthunt_radar_latest.json"
+    assert by_key["producthunt"]["category"] == "Products"  # launches, not necessarily open source
+    assert by_key["azure_blog"]["file"] == "news/azure_blog_latest.json"
+    assert by_key["azure_blog"]["category"] == "Cloud"
+
+
+def _write_t082_fixture(tmp_path):
+    _write(tmp_path, "news/lemmy_latest.json", [{"title": "lemmy post", "link": "https://lemmy.world/post/1", "published": "2026-09-02T10:00:00+00:00", "source": "lemmy", "community": "selfhosted"}])
+    _write(tmp_path, "news/producthunt_radar_latest.json", [{"title": "ph launch", "link": "https://www.producthunt.com/products/x", "published": "2026-09-01T09:00:00-07:00", "source": "producthunt"}])
+    _write(tmp_path, "news/azure_blog_latest.json", [{"title": "azure story", "link": "https://azure.microsoft.com/en-us/blog/x/", "published": "2026-08-27T17:00:00+00:00", "source": "azure_blog"}])
+
+
+def test_t082_sources_render_in_por_fuente_grid(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_t082_fixture(tmp_path)
+    for key in _T082_SOURCES:
+        source = next(s for s in tab.RADAR_SOURCES if s["key"] == key)
+        section = str(tab._render_source_section(source))
+        assert source["label"] in section
+    lemmy_section = str(tab._render_source_section(next(s for s in tab.RADAR_SOURCES if s["key"] == "lemmy")))
+    assert "lemmy post" in lemmy_section
+
+
+def test_t082_sources_in_unified_feed_and_dropdowns(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write_t082_fixture(tmp_path)
+    _write(tmp_path, "news/hn_frontpage_latest.json", [{"title": "hn item", "url": "https://x/hn", "published": "2026-08-20T10:00:00+00:00"}])
+
+    merged = str(tab._render_unified_feed())
+    assert "lemmy post" in merged and "ph launch" in merged and "azure story" in merged
+    assert merged.index("lemmy post") < merged.index("hn item")  # newer first
+
+    only_lemmy = str(tab._render_unified_feed(source_filter="lemmy"))
+    assert "lemmy post" in only_lemmy and "hn item" not in only_lemmy
+    # Lemmy shares the Self-Hosting category with the reddit pulse column.
+    self_hosting = str(tab._render_unified_feed(category_filter="Self-Hosting"))
+    assert "lemmy post" in self_hosting and "ph launch" not in self_hosting and "hn item" not in self_hosting
+    products = str(tab._render_unified_feed(category_filter="Products"))
+    assert "ph launch" in products and "azure story" not in products
+    cloud = str(tab._render_unified_feed(category_filter="Cloud"))
+    assert "azure story" in cloud and "ph launch" not in cloud
+
+    options = [o["value"] for o in tab._unified_source_options()]
+    assert set(options) >= _T082_SOURCES
+    categories = [o["value"] for o in tab._unified_category_options()]
+    assert "Products" in categories and len(categories) == len(set(categories))
+
+
+def test_t082_unified_cap_bumped_to_160():
+    # 140 starved the tail: the three T-082 sources add up to ~65 fresh items
+    # (Lemmy ≤30, Product Hunt 25, Azure ~10) competing for the window.
+    assert tab.MAX_UNIFIED_ITEMS == 160

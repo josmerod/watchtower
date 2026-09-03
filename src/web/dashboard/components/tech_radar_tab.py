@@ -9,7 +9,10 @@ front page via Algolia (discussion), the r/SelfHosted + r/homelab community
 pulse from the reddit_unified ETL, the T-070 additions: Lobsters (dev
 link-aggregator), Phoronix (Linux/hardware), and the Unraid community forums
 (spec 13 source table), plus the T-078 additions: GitHub Trending (open
-source), ServeTheHome (server hardware) and Xataka (Spanish tech media).
+source), ServeTheHome (server hardware) and Xataka (Spanish tech media),
+and the T-082 additions: Lemmy communities (federated self-hosting pulse),
+Product Hunt (product launches) and the Azure blog (cloud). The GCP blog
+was probed too but all of its feed URLs now serve HTML, not RSS.
 """
 
 import json
@@ -43,6 +46,10 @@ RADAR_SOURCES: list[dict[str, Any]] = [
     {"key": "ollama", "label": "🦙 Ollama", "file": "ai_platforms/ollama_library_latest.json", "category": "Local LLM"},
     {"key": "kdnuggets", "label": "📊 KDNuggets", "file": "kdnuggets/kdnuggets.json", "category": "Data Science"},
     {"key": "cloud_updates", "label": "☁️ Cloud Updates", "file": "cloud_updates/cloud_updates_latest.json", "category": "Cloud"},
+    # T-082: Azure blog — widens cloud coverage beyond the AWS-centric
+    # cloud_updates aggregate (which has no Azure feed). ETL:
+    # src/etl/news/news_get_azure_blog.py.
+    {"key": "azure_blog", "label": "☁️ Azure Blog", "file": "news/azure_blog_latest.json", "category": "Cloud"},
     {"key": "selfhosted", "label": "🏠 Self-Hosted", "file": "selfhosted/selfhosted_latest.json", "category": "Self-Hosting"},
     {
         "key": "reddit_pulse",
@@ -56,6 +63,10 @@ RADAR_SOURCES: list[dict[str, Any]] = [
     # signal over noise) with the all-topics aggregate as fallback. ETL:
     # src/etl/news/news_get_unraid_forums.py.
     {"key": "unraid_forums", "label": "🟠 Unraid Announcements", "file": "news/unraid_forums_latest.json", "category": "Self-Hosting"},
+    # T-082: Lemmy !selfhosted + !homelab (lemmy.world native RSS, merged in
+    # one file) — federated sibling of the reddit community pulse with a
+    # different, non-overlapping community. ETL: src/etl/news/news_get_lemmy.py.
+    {"key": "lemmy", "label": "🍋 Lemmy", "file": "news/lemmy_latest.json", "category": "Self-Hosting"},
     {"key": "infoq", "label": "🏗️ InfoQ", "file": "infoq/infoq_news.json", "category": "Engineering"},
     {"key": "thenewstack", "label": "🧱 The New Stack", "file": "thenewstack/thenewstack_news.json", "category": "Cloud-Native"},
     # T-070: Phoronix — Linux/hardware news for the homelab angle. ETL:
@@ -69,6 +80,10 @@ RADAR_SOURCES: list[dict[str, Any]] = [
     # (verified stable; selectors are structure-based because GitHub A/B-tests
     # utility class names). ETL: src/etl/github/github_trending_etl.py.
     {"key": "github_trending", "label": "🐙 GH Trending", "file": "github/github_trending_latest.json", "category": "Open Source"},
+    # T-082: Product Hunt front-page launches (keyless Atom feed, capped 25) —
+    # separate from the legacy News-tab producthunt ETL (product-shaped schema).
+    # ETL: src/etl/news/news_get_producthunt_radar.py.
+    {"key": "producthunt", "label": "🚀 Product Hunt", "file": "news/producthunt_radar_latest.json", "category": "Products"},
     {"key": "hn_frontpage", "label": "🗞️ Hacker News", "file": "news/hn_frontpage_latest.json", "category": "Discussion"},
     # T-070: Lobsters — dev link-aggregator (existing ETL hardened to the Wired
     # pattern): src/etl/news/news_get_lobsters.py. Also feeds the News tab.
@@ -102,7 +117,10 @@ MAX_ITEMS_PER_SOURCE = 25
 # T-078: bumped 120 → 140 — three more sources add up to ~55 fresh items
 # (trending ≤25, ServeTheHome ~6, Xataka 25) that are mostly "today" news and
 # would otherwise crowd the tail of the window.
-MAX_UNIFIED_ITEMS = 140  # cap for the TR-F3 "Todos" merged feed
+# T-082: bumped 140 → 160 — three more sources add up to ~65 fresh items
+# (Lemmy ≤30, Product Hunt 25, Azure ~10) that are mostly recent-launch news
+# and would otherwise crowd the tail of the window.
+MAX_UNIFIED_ITEMS = 160  # cap for the TR-F3 "Todos" merged feed
 
 # ⭐ Saved-items toggle (T-053): only the unified "🔄 Todos" feed rows get a
 # star (NOT the per-source card columns). Pattern id type per tab, shared
