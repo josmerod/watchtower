@@ -5,15 +5,18 @@ Covers the live ``NotificationsManager`` / ``AlertRulesRepository`` API and the
 alert state is touched.
 """
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import Mock
 
 import pytest
 
+from src.services.watcher_events import EventGroup, WatcherEventsSummary
 from src.web.dashboard.components.notifications_tab import (
     NotificationsManager,
     _get_rule_id,
+    render_daily_summary_section,
     render_notifications_tab,
     render_rules_list,
 )
@@ -199,3 +202,103 @@ class TestRenderSeverityBadge:
         assert "HIGH" not in texts
         assert "MEDIUM" not in texts
         assert "Active" in texts
+
+
+def _daily_summary(groups: list[EventGroup] | None = None) -> WatcherEventsSummary:
+    """Build a summary fixture (default: courses x2 + data_freshness x1)."""
+    if groups is None:
+        groups = [
+            EventGroup(
+                watcher="courses",
+                event_type="new_matching_course",
+                count=2,
+                latest=datetime(2026, 9, 3, 10, 0, 0),
+                latest_relative="hace 2 h",
+                message="Nuevo curso que matchea tus keywords: Python avanzado",
+            ),
+            EventGroup(
+                watcher="data_freshness",
+                event_type="freshness_stale_to_critical",
+                count=1,
+                latest=datetime(2026, 9, 3, 9, 0, 0),
+                latest_relative="hace 3 h",
+                message="Itch.io trending: stale → critical (27 h sin datos)",
+            ),
+        ]
+    per_watcher: dict[str, int] = {}
+    for group in groups:
+        per_watcher[group.watcher] = per_watcher.get(group.watcher, 0) + group.count
+    return WatcherEventsSummary(
+        total=sum(group.count for group in groups),
+        window_hours=24,
+        groups=groups,
+        per_watcher=per_watcher,
+        generated_at=datetime(2026, 9, 3, 12, 0, 0),
+    )
+
+
+def _iter_ids(component: Any) -> Any:
+    """Yield every component id in a Dash component tree."""
+    comp_id = getattr(component, "id", None)
+    if isinstance(comp_id, str):
+        yield comp_id
+    children = getattr(component, "children", None)
+    if children is None:
+        return
+    if isinstance(children, (list, tuple)):
+        for child in children:
+            yield from _iter_ids(child)
+    else:
+        yield from _iter_ids(children)
+
+
+class TestDailySummarySection:
+    """The 'Últimas 24h' resumen of watcher events (T-083)."""
+
+    def test_zero_events_renders_calm_copy(self) -> None:
+        """No events render a calm muted note, not an alarm."""
+        texts = list(_iter_text(render_daily_summary_section(_daily_summary(groups=[]))))
+        assert any("Sin eventos en las últimas 24h" in t for t in texts)
+
+    def test_headline_counts_events(self) -> None:
+        """The headline states the total for the window."""
+        joined = "".join(_iter_text(render_daily_summary_section(_daily_summary())))
+        assert "3 eventos en las últimas 24h" in joined
+
+    def test_singular_headline(self) -> None:
+        """One event reads in singular."""
+        group = EventGroup(
+            watcher="courses",
+            event_type="new_matching_course",
+            count=1,
+            latest=datetime(2026, 9, 3, 10, 0, 0),
+            latest_relative="hace 2 h",
+            message="Nuevo curso",
+        )
+        joined = "".join(_iter_text(render_daily_summary_section(_daily_summary(groups=[group]))))
+        assert "1 evento en las últimas 24h" in joined
+
+    def test_group_rows_show_badges_message_and_relative_time(self) -> None:
+        """Each group row shows watcher, type, sample message, count and 'hace Xh'."""
+        texts = list(_iter_text(render_daily_summary_section(_daily_summary())))
+        assert "courses" in texts
+        assert "new_matching_course" in texts
+        assert any("Nuevo curso que matchea tus keywords" in t for t in texts)
+        assert "×2" in texts
+        assert "hace 2 h" in texts
+        assert "hace 3 h" in texts
+
+    def test_per_watcher_footer(self) -> None:
+        """The per-watcher breakdown is surfaced as a footer."""
+        texts = list(_iter_text(render_daily_summary_section(_daily_summary())))
+        assert any(t.startswith("Por watcher:") for t in texts)
+        assert any("courses: 2" in t for t in texts)
+        assert any("data_freshness: 1" in t for t in texts)
+
+    def test_tab_layout_keeps_rules_ids_and_adds_summary_ids(self) -> None:
+        """The rules section ids stay intact and the summary ids are added."""
+        ids = set(_iter_ids(render_notifications_tab()))
+        for existing in ("rules-list-container", "rule-save-status", "create-rule-btn", "reload-rules-btn", "rule-modal"):
+            assert existing in ids
+        for new in ("daily-summary-container", "daily-summary-refresh-btn"):
+            assert new in ids

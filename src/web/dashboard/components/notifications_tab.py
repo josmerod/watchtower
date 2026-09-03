@@ -14,6 +14,7 @@ from src.alerts.engine import AlertEngine
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
 from src.repositories.base_repository import RepositoryError
+from src.services.watcher_events import WatcherEventsSummary, build_daily_summary
 
 
 def _get_rule_id(rule: Any) -> str:
@@ -176,6 +177,46 @@ def render_notifications_tab() -> dbc.Container:
                             html.P(
                                 "Create and manage notification rules to get alerts for content you care about.",
                                 className="text-muted mb-4",
+                            ),
+                        ],
+                        width=12,
+                    ),
+                ]
+            ),
+            # Daily resumen (T-083): last-24h watcher events, above the rules.
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        dbc.Row(
+                                            [
+                                                dbc.Col(
+                                                    html.H5("📅 Últimas 24h", className="mb-0"),
+                                                    width="auto",
+                                                ),
+                                                dbc.Col(
+                                                    dbc.Button(
+                                                        "Actualizar",
+                                                        id="daily-summary-refresh-btn",
+                                                        color="secondary",
+                                                        outline=True,
+                                                        size="sm",
+                                                        n_clicks=0,
+                                                    ),
+                                                    width="auto",
+                                                    className="ms-auto",
+                                                ),
+                                            ],
+                                            align="center",
+                                            justify="between",
+                                        )
+                                    ),
+                                    dbc.CardBody(html.Div(id="daily-summary-container")),
+                                ],
+                                className="mb-4",
                             ),
                         ],
                         width=12,
@@ -427,6 +468,73 @@ def render_rule_form() -> dbc.Container:
     )
 
 
+def render_daily_summary_section(summary: WatcherEventsSummary) -> html.Div:
+    """Render the last-24h watcher-events resumen.
+
+    Shows a headline with the total, one row per ``(watcher, event_type)``
+    group (watcher badge, type badge, sample message from the latest event,
+    count and relative timestamp) and a per-watcher breakdown footer. A calm
+    muted note replaces everything when the window is empty.
+
+    Args:
+        summary: Precompiled summary from ``build_daily_summary``.
+
+    Returns:
+        Dash layout for the ``daily-summary-container`` body.
+    """
+    if summary.total == 0:
+        return html.Div(
+            html.P(
+                f"Sin eventos en las últimas {summary.window_hours}h. Los watchers publicarán aquí sus cambios.",
+                className="text-muted mb-0",
+            )
+        )
+
+    plural = "s" if summary.total != 1 else ""
+    headline = html.P(
+        [
+            html.Strong(str(summary.total)),
+            f" evento{plural} en las últimas {summary.window_hours}h",
+        ],
+        className="mb-3",
+    )
+
+    rows: list[dbc.ListGroupItem] = []
+    for group in summary.groups:
+        rows.append(
+            dbc.ListGroupItem(
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                dbc.Badge(group.watcher, color="info", pill=True, className="me-2"),
+                                dbc.Badge(group.event_type, color="secondary", pill=True),
+                                html.Span(group.message, className="d-block mt-1"),
+                            ],
+                            width=12,
+                            lg=8,
+                        ),
+                        dbc.Col(
+                            [
+                                dbc.Badge(f"×{group.count}", color="primary", pill=True),
+                                html.Small(group.latest_relative, className="text-muted ms-2"),
+                            ],
+                            width=12,
+                            lg=4,
+                            className="text-lg-end mt-2 mt-lg-0",
+                        ),
+                    ],
+                    align="start",
+                )
+            )
+        )
+
+    breakdown = " · ".join(f"{watcher}: {count}" for watcher, count in summary.per_watcher.items())
+    footer = html.Small(f"Por watcher: {breakdown}", className="text-muted")
+
+    return html.Div([headline, dbc.ListGroup(rows, className="mb-2"), footer])
+
+
 def register_notifications_callbacks(app):
     """Register all callbacks for the notifications tab."""
 
@@ -529,6 +637,29 @@ def register_notifications_callbacks(app):
                 dismissable=True,
                 duration=5000,
                 className="mt-3",
+            )
+
+    @app.callback(
+        Output("daily-summary-container", "children"),
+        [Input("daily-summary-refresh-btn", "n_clicks")],
+        prevent_initial_call=False,
+    )
+    def update_daily_summary(refresh_clicks):
+        """Render the last-24h watcher-events resumen.
+
+        Follows the tab's existing reload pattern (cf. ``reload-rules-btn``):
+        ``prevent_initial_call=False`` populates the section on page load and
+        every click of ``Actualizar`` re-scans the event files. For a
+        daily-review view that refresh-on-load is the intended behaviour.
+        """
+        try:
+            return render_daily_summary_section(build_daily_summary())
+        except Exception as e:
+            return dbc.Alert(
+                f"Error loading the daily summary: {e!s}",
+                color="danger",
+                dismissable=True,
+                className="mb-0",
             )
 
     app.logger.info("Notifications callbacks registered successfully")
