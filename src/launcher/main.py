@@ -133,16 +133,12 @@ class ETLScheduler:
                 "src/etl/arxiv/arxiv_etl.py",
             ],
             "entertainment": [
-                "src/etl/entertainment/trakt_trending_etl.py",
-                "src/etl/entertainment/spotify_browse_etl.py",
             ],
             "ai_platforms": [
                 "src/etl/ai_platforms/replicate_models_etl.py",
                 "src/etl/ai_platforms/replicate_explore_playwright_etl.py",
             ],
             "intelligence": [
-                "src/etl/intelligence/sec_edgar_rss.py",
-                "src/etl/intelligence/who_outbreaks_rss.py",
             ],
             "games": [
                 "src/etl/games/games_get_deals.py",

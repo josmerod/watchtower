@@ -92,8 +92,6 @@ ETL_SCRIPTS = [
     "src/etl/courses/deeplearning_ai_etl.py",  # DeepLearning.AI catalog — feeds Learning tab (T-069)
     "src/watchers/courses_watcher.py",  # Diffs course catalogs, emits new_matching_course events (T-066); best after courses ETLs
     # Intelligence
-    "src/etl/intelligence/sec_edgar_rss.py",
-    "src/etl/intelligence/who_outbreaks_rss.py",
     "src/etl/intelligence/nvd_cve_etl.py",
     "src/etl/intelligence/lesswrong_etl.py",
     # (intelligence/security_feeds_etl removed: exact duplicate of the newer
@@ -109,11 +107,7 @@ ETL_SCRIPTS = [
     "src/etl/games/games_get_isthereanydeal_api.py",
     "src/etl/games/games_get_metacritic_rss.py",
     # Entertainment
-    "src/etl/entertainment/trakt_trending_etl.py",
-    "src/etl/entertainment/spotify_browse_etl.py",
     # cinema_ecartelera_etl.py removed — file missing, only _improved version exists
-    "src/etl/entertainment/cinema_ecartelera_improved_etl.py",
-    "src/etl/entertainment/meme_economics_etl.py",
     # Ecommerce
     "src/etl/ecommerce/shoppy_etl.py",
     # Spanish Public Aid
@@ -147,7 +141,6 @@ ETL_SCRIPTS = [
     "src/etl/benchmarks/openrouter_models_etl.py",  # OpenRouter new-models feed, keyless (T-071)
     "src/etl/trendshift/trendshift_etl.py",
     "src/etl/rss_feeds/rss_feed_etl.py",
-    "src/etl/museums/museum_etl.py",
 ]
 
 
