@@ -27,20 +27,22 @@ def test_home_loads_with_nav_tabs(dashboard_page):
 
 def test_expected_tabs_present(dashboard_page):
     """The core tabs are in the nav."""
-    nav_text = dashboard_page.locator("ul.nav-tabs").inner_text()
+    # .first: lazily-mounted tab content can add its own subtab nav (a second
+    # ul.nav-tabs) before this runs; the main nav is always first in the DOM.
+    nav_text = dashboard_page.locator("ul.nav-tabs").first.inner_text()
     for label in EXPECTED_TAB_LABELS:
         assert label in nav_text, f"tab {label!r} missing from nav"
 
 
 def test_shortcuts_tab_stays_hidden(dashboard_page):
     """Shortcuts was hidden from the nav (T-060) — keep it that way."""
-    nav_text = dashboard_page.locator("ul.nav-tabs").inner_text()
+    nav_text = dashboard_page.locator("ul.nav-tabs").first.inner_text()
     assert HIDDEN_TAB_LABEL not in nav_text
 
 
 def test_switching_to_news_renders_global_search(dashboard_page):
     """News tab → 🔎 Global subtab (last, T-061) exposes the global search."""
-    dashboard_page.get_by_role("tab", name="News").click()
+    dashboard_page.get_by_role("tab", name="News").first.click()
     # News content (and its subtabs) render lazily; the input only becomes
     # visible once the 🔎 Global subtab — the LAST one (T-061) — is active.
     global_tab = dashboard_page.get_by_role("tab", name="🔎 Global")
