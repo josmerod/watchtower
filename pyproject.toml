@@ -34,7 +34,7 @@ dependencies = [
     "pydantic>=2.11.5",
     "pydantic-settings>=2.9.1",
     # Web scraping and API interaction
-    "requests>=2.33.0",
+    "requests>=2.34.2",
     "beautifulsoup4>=4.13.3",
     "playwright>=1.51.0",
     "feedparser>=6.0.11",
