@@ -23,7 +23,8 @@ logger = get_logger("CloudUpdatesETL")
 
 FEEDS: dict[str, str] = {
     "aws_whats_new": "https://aws.amazon.com/about-aws/whats-new/recent/feed/",
-    "google_cloud_blog": "https://cloud.google.com/blog/products/rss/",
+    # google_cloud_blog removed: blog is JS-rendered and the RSS path serves
+    # HTML (probe negative, T-082) — the slot stayed dead for weeks.
     "cncc_blog": "https://www.cncf.io/feed/",
     "github_blog": "https://github.blog/feed/",
 }

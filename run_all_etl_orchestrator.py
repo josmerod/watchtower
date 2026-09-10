@@ -96,7 +96,8 @@ ETL_SCRIPTS = [
     "src/etl/intelligence/who_outbreaks_rss.py",
     "src/etl/intelligence/nvd_cve_etl.py",
     "src/etl/intelligence/lesswrong_etl.py",
-    "src/etl/intelligence/security_feeds_etl.py",  # CISA, THN, BleepingComputer, Krebs
+    # (intelligence/security_feeds_etl removed: exact duplicate of the newer
+    #  src/etl/security/security_feeds_etl.py, whose output feeds the Security tab)
     # ADHD & Neurodivergent
     "src/etl/adhd/adhd_publications_etl.py",
     "src/etl/neurodivergent/adhd_friendly_locations_etl.py",

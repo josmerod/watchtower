@@ -9,11 +9,7 @@ from typing import Any
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback_context, html
 
-from src.alerts.engine import AlertEngine
-
-# Import repository pattern (NEW)
-from src.repositories import BaseRepository
-from src.repositories.base_repository import RepositoryError
+from src.alerts import rules_store
 from src.services.watcher_events import WatcherEventsSummary, build_daily_summary
 
 
@@ -35,132 +31,49 @@ def _get_rule_id(rule: Any) -> str:
 
 
 class NotificationsManager:
-    """Manager for alert rules with file-based persistence."""
+    """Manager for alert rules, delegating to the shared :mod:`src.alerts.rules_store`.
+
+    The store path is passed explicitly as a cwd-relative path (production runs
+    from the project root) so tests can isolate writes with ``monkeypatch.chdir``.
+    """
 
     def __init__(self):
-        self.alert_engine = AlertEngine()
-        self.user_id = "default_user"
-        self._ensure_directories()
-        # NEW: Initialize repository
-        self.rules_repo = AlertRulesRepository()
-
-    def _ensure_directories(self):
-        """Ensure necessary directories exist."""
-        from pathlib import Path
-
-        data_dir = Path("data")
-        alerts_dir = data_dir / "alerts"
-        alerts_dir.mkdir(parents=True, exist_ok=True)
+        self.rules_file = Path("data/alerts/rules.json")
+        self.rules_file.parent.mkdir(parents=True, exist_ok=True)
 
     def load_rules(self) -> list[dict[str, Any]]:
-        """Load alert rules using repository pattern (NEW)."""
-        try:
-            data = self.rules_repo.get()
-            return data if data else []
-        except Exception:
-            return []
-
-
-# NEW: Repository-based loading (SOLID Pattern)
-class AlertRulesRepository(BaseRepository[list[dict[str, Any]]]):
-    """Repository for alert rules data."""
-
-    def __init__(self):
-        """Initialize alert rules repository."""
-        super().__init__(
-            data_path=Path("data/alerts/rules.json"),
-            cache_ttl_seconds=300,  # 5 minute cache for alerts
-            enable_cache=True,
-        )
-
-    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
-        """Transform JSON data into list of alert rules.
-
-        Args:
-            raw_data: Raw JSON data
-
-        Returns:
-            List of alert rule dictionaries
-        """
-        if isinstance(raw_data, list):
-            return raw_data
-        elif isinstance(raw_data, dict):
-            return [raw_data]
-        else:
-            return []
-
-    def _read_rules(self) -> list[dict[str, Any]]:
-        """Load current rules, defaulting to an empty list when the store is new.
-
-        ``BaseRepository.get`` raises ``RepositoryError`` (wrapping
-        ``FileNotFoundError``) when the data file is absent — a brand-new rules
-        store; we treat that as "no rules yet".
-        """
-        try:
-            data = self.get()
-        except RepositoryError:
-            return []
-        return data or []
+        """Load all alert rules from the shared store (empty when absent)."""
+        return rules_store.load_rules(self.rules_file)
 
     def save_rule(self, rule: dict[str, Any]) -> bool:
-        """Save a rule to file (inserts or updates by id).
+        """Insert or update a rule by id via the shared store.
 
         Args:
-            rule: Rule dictionary; if it has an ``id`` matching an existing rule,
-                the existing rule is replaced, otherwise the rule is appended.
+            rule: Rule dictionary; an existing rule with the same ``id`` is
+                replaced, otherwise the rule is appended.
 
         Returns:
-            ``True`` on success, ``False`` if the write failed.
+            ``True`` on success (including a no-op unchanged payload),
+            ``False`` if the write failed.
         """
-        import json
-        from pathlib import Path
-
         try:
-            rules = self._read_rules()
-
-            # Update existing rule or add new one
-            for i, existing_rule in enumerate(rules):
-                if existing_rule.get("id") == rule.get("id"):
-                    rules[i] = rule
-                    break
-            else:
-                rules.append(rule)
-
-            rules_file = Path("data/alerts/rules.json")
-            rules_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(rules_file, "w") as f:
-                json.dump(rules, f, indent=2, default=str)
-
-            self.clear_cache()
+            rules_store.upsert_rule(rule, rules_file=self.rules_file)
             return True
-        except Exception:
+        except OSError:
             return False
 
     def delete_rule(self, rule_id: str) -> bool:
-        """Delete a rule by ID.
+        """Remove a rule by id from the shared store.
 
         Args:
             rule_id: ID of the rule to remove.
 
         Returns:
-            ``True`` on success (including when the id was already absent),
-            ``False`` if the write failed.
+            ``True`` if the rule was present and removed, ``False`` otherwise.
         """
-        import json
-        from pathlib import Path
-
         try:
-            rules = self._read_rules()
-            rules = [rule for rule in rules if rule.get("id") != rule_id]
-
-            rules_file = Path("data/alerts/rules.json")
-            rules_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(rules_file, "w") as f:
-                json.dump(rules, f, indent=2, default=str)
-
-            self.clear_cache()
-            return True
-        except Exception:
+            return rules_store.resolve_rule(rule_id, rules_file=self.rules_file)
+        except OSError:
             return False
 
 

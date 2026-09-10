@@ -97,7 +97,6 @@ class ETLScheduler:
                 "src/etl/news/news_get_genai_medium.py",
                 "src/etl/news/news_get_kdnuggets.py",
                 "src/etl/news/news_get_bensbites.py",
-                "src/etl/news/news_get_planesvalencia.py",
                 "src/etl/news/valencia_events_etl.py",
                 "src/etl/news/news_get_gooddevs.py",
                 "src/etl/news/news_get_podcasts.py",
@@ -105,10 +104,8 @@ class ETLScheduler:
                 "src/etl/news/news_get_producthunt.py",
                 "src/etl/news/news_get_indiehackers.py",
                 "src/etl/news/news_get_gittrends.py",
-                "src/etl/github/github_trending_rss_etl.py",
                 "src/etl/news/news_get_hackernews_ask.py",
                 "src/etl/news/news_get_stackoverflow_trends.py",
-                "src/etl/news/news_get_media_rss.py",
                 "src/etl/news/news_get_meneame.py",
                 "src/etl/news/news_get_kagi.py",
                 "src/etl/news/news_get_devto.py",
@@ -121,14 +118,8 @@ class ETLScheduler:
             ],
             "reddit": [
                 "src/etl/news/reddit_unified_etl.py",
-                "src/etl/giveaways/reddit_giveaways_etl.py",
             ],
-            "deals": [
-                "src/etl/deals/run_all_deals.py",
-                "src/etl/deals/slickdeals_etl.py",
-                "src/etl/deals/woot_etl.py",
-                "src/etl/deals/isthereanydeal_rss_etl.py",
-            ],
+            "deals": [],
             "courses": [
                 "src/etl/goldigging/goldigging_coursera_courses.py",
                 "src/etl/goldigging/goldigging_pluralsight_courses.py",
@@ -137,7 +128,6 @@ class ETLScheduler:
                 "src/etl/goldigging/goldigging_deeplearningai_courses.py",
                 "src/etl/goldigging/gumroad_scraper_etl.py",
                 "src/etl/courses/ms_applied_skills_etl.py",
-                "src/etl/courses/khan_academy_etl.py",
             ],
             "research": [
                 "src/etl/arxiv/arxiv_etl.py",
@@ -147,7 +137,6 @@ class ETLScheduler:
                 "src/etl/entertainment/spotify_browse_etl.py",
             ],
             "ai_platforms": [
-                "src/etl/ai_platforms/papers_with_code_etl.py",
                 "src/etl/ai_platforms/replicate_models_etl.py",
                 "src/etl/ai_platforms/replicate_explore_playwright_etl.py",
             ],
@@ -158,14 +147,10 @@ class ETLScheduler:
             "games": [
                 "src/etl/games/games_get_deals.py",
                 "src/etl/games/games_get_humblebundles.py",
-                "src/etl/games/games_get_new_releases.py",
                 "src/etl/games/games_get_itchio_trending.py",
-                "src/etl/games/games_get_epic_free.py",
-                "src/etl/games/enhanced_free_games_etl.py",
                 "src/etl/games/games_get_gog_rss.py",
                 "src/etl/games/games_get_isthereanydeal_api.py",
                 "src/etl/games/games_get_metacritic_rss.py",
-                "src/etl/games/games_get_giantbomb.py",
             ],
             "watchers": [
                 "src/watchers/ms_skills_watcher.py",

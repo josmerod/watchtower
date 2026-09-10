@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field
 
 
 class LogLevel(str, Enum):
@@ -32,22 +32,6 @@ class LLMProvider(str, Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     MOCK = "mock"
-
-
-class DatabaseConfig(BaseModel):
-    """Database configuration model."""
-
-    url: str = Field(default="sqlite:///watchtower.db", description="Database URL")
-    echo: bool = Field(default=False, description="Enable SQL query logging")
-    pool_size: int = Field(default=5, ge=1, le=50, description="Connection pool size")
-    max_overflow: int = Field(default=10, ge=0, le=100, description="Max pool overflow")
-
-    @validator("url")
-    def validate_url(cls, v: str) -> str:
-        """Validate database URL format."""
-        if not v.startswith(("sqlite://", "postgresql://", "mysql://", "oracle://")):
-            raise ValueError("Invalid database URL scheme")
-        return v
 
 
 class LoggingConfig(BaseModel):
@@ -112,68 +96,8 @@ class APIConfig(BaseModel):
     )
     cors_methods: list[str] = Field(default=["GET"], description="CORS allowed methods")
     news_api_key: str | None = Field(default=None, description="API key for NewsAPI")
-    mal_client_id: str | None = Field(default=None, description="MyAnimeList API Client ID")
-
-
-class StreamlitConfig(BaseModel):
-    """Streamlit configuration model."""
-
-    host: str = Field(default="localhost", description="Streamlit host")
-    port: int = Field(default=8501, ge=1000, le=65535, description="Streamlit port")
-    theme_base: str = Field(default="light", description="Streamlit theme")
-    max_upload_size: int = Field(default=200, ge=1, le=1000, description="Max upload size in MB")
-
-
-class SecurityConfig(BaseModel):
-    """Security configuration model."""
-
-    secret_key: str = Field(
-        default="your-secret-key-change-in-production",
-        min_length=32,
-        description="Secret key for encryption",
-    )
-    algorithm: str = Field(default="HS256", description="JWT algorithm")
-    access_token_expire_minutes: int = Field(default=30, ge=5, le=1440, description="Access token expiry in minutes")
-
-    @validator("secret_key")
-    def validate_secret_key(cls, v: str) -> str:
-        """Validate secret key strength."""
-        if len(v) < 32:
-            raise ValueError("Secret key must be at least 32 characters long")
-        return v
-
-
-class MonitoringConfig(BaseModel):
-    """Monitoring and observability configuration."""
-
-    metrics_enabled: bool = Field(default=True, description="Enable metrics collection")
-    health_check_interval: int = Field(default=60, ge=10, le=3600, description="Health check interval in seconds")
-    performance_monitoring: bool = Field(default=True, description="Enable performance monitoring")
-    error_tracking: bool = Field(default=True, description="Enable error tracking")
-
-
-class NotificationConfig(BaseModel):
-    """Notification configuration model."""
-
-    enabled: bool = Field(default=False, description="Enable notifications")
-    channels: list[str] = Field(default=["email"], description="Notification channels")
-    email_smtp_host: str | None = Field(default=None, description="SMTP host")
-    email_smtp_port: int | None = Field(default=587, description="SMTP port")
-    email_username: str | None = Field(default=None, description="SMTP username")
-    email_password: str | None = Field(default=None, description="SMTP password")
-    email_from: str | None = Field(default=None, description="From email address")
-    email_to: list[str] = Field(default=[], description="Recipient email addresses")
-
-    slack_webhook_url: HttpUrl | None = Field(default=None, description="Slack webhook URL")
-    discord_webhook_url: HttpUrl | None = Field(default=None, description="Discord webhook URL")
-
-
-class WatcherConfig(BaseModel):
-    """Watcher-specific configuration."""
-
-    default_check_interval: int = Field(default=3600, ge=60, le=86400, description="Default check interval in seconds")
-    max_events_per_watcher: int = Field(default=1000, ge=10, le=10000, description="Maximum events to store per watcher")
-    cleanup_old_events_days: int = Field(default=30, ge=1, le=365, description="Days to keep old events")
+    rapidapi_key: str | None = Field(default=None, description="API key for RapidAPI (rapidapi_etl)")
+    stackexchange_key: str | None = Field(default=None, description="API key for the Stack Exchange API (stackexchange_etl)")
 
 
 class ETLConfig(BaseModel):

@@ -1,10 +1,10 @@
 """Alert system for Megalith Watchtower.
 
-This package provides the backend alert rule engine and notification system
-for real-time content monitoring and alerting.
+This package provides the shared alert-rule store (``rules_store``) that both
+the Notifications tab and the watchers/security ETLs read and write, plus the
+Pydantic models for rules and events.
 """
 
-from .engine import AlertEngine
-from .models import AlertEvent, AlertRule
+from . import rules_store
 
-__all__ = ["AlertEngine", "AlertEvent", "AlertRule"]
+__all__ = ["rules_store"]

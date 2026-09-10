@@ -1,9 +1,8 @@
 """Shared alert-rule store over ``data/alerts/rules.json``.
 
 The Notifications tab reads its rules from the flat ``data/alerts/rules.json``
-list (via ``AlertRulesRepository``), while :class:`src.alerts.engine.AlertEngine`
-keeps its own per-user copies. This module gives watchers and other producers a
-small, dependency-free API against that shared file:
+list. This module gives the tab, the watchers and other producers a small,
+dependency-free API against that shared file:
 
 * :func:`upsert_rule` — insert or update a rule by ``id`` (idempotent).
 * :func:`resolve_rule` — remove a rule by ``id`` (the tab's ``delete_rule``
@@ -62,8 +61,7 @@ def load_rules(rules_file: Path | None = None) -> list[dict[str, Any]]:
 
     Returns:
         The list of rule dicts (empty when the store is missing, unreadable, or
-        holds a non-list payload — a lone dict is wrapped, mirroring the tab's
-        ``AlertRulesRepository.transform_data``).
+        holds a non-list payload — a lone dict is wrapped).
     """
     path = rules_file or default_rules_file()
     if not path.exists():

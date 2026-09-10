@@ -66,9 +66,9 @@ class TestNotificationsManager:
     """Tests for the live ``NotificationsManager``."""
 
     def test_initialization(self, isolated_data_root: Path) -> None:
-        """Manager initializes with the default user and ensures the data dir."""
+        """Manager initializes with the shared rules path and ensures the data dir."""
         manager = NotificationsManager()
-        assert manager.user_id == "default_user"
+        assert manager.rules_file == Path("data/alerts/rules.json")
         assert (isolated_data_root / "data" / "alerts").exists()
 
     def test_load_rules_empty_when_no_file(self, isolated_data_root: Path) -> None:
@@ -103,35 +103,30 @@ class TestNotificationsManager:
         assert loaded[0]["conditions"][0]["value"] == "python"
 
     def test_repo_save_rule_roundtrip(self, isolated_data_root: Path) -> None:
-        """``AlertRulesRepository.save_rule`` persists and is readable by the manager.
+        """``NotificationsManager.save_rule`` persists and is readable back.
 
-        Regression test for the bug where ``save_rule`` called ``self.load_rules()``
-        (undefined on the repository), so it always raised and returned ``False``.
         Also covers the fresh-store case where the rules file does not exist yet.
         """
         manager = NotificationsManager()
         rule: dict[str, Any] = {"id": "rule-1", "name": "A", "active": True}
-        assert manager.rules_repo.save_rule(rule) is True
+        assert manager.save_rule(rule) is True
         assert len(manager.load_rules()) == 1
 
     def test_repo_save_rule_updates_existing(self, isolated_data_root: Path) -> None:
         """Saving a rule with an existing id replaces it (no duplicates)."""
         manager = NotificationsManager()
-        repo = manager.rules_repo
-        repo.save_rule({"id": "r1", "name": "original", "active": True})
-        repo.save_rule({"id": "r1", "name": "updated", "active": False})
+        manager.save_rule({"id": "r1", "name": "original", "active": True})
+        manager.save_rule({"id": "r1", "name": "updated", "active": False})
 
-        # Fresh manager so the cache doesn't mask the write.
         rules = NotificationsManager().load_rules()
         assert len(rules) == 1
         assert rules[0]["name"] == "updated"
 
     def test_repo_delete_rule(self, isolated_data_root: Path) -> None:
-        """``AlertRulesRepository.delete_rule`` removes a rule by id."""
+        """``NotificationsManager.delete_rule`` removes a rule by id."""
         manager = NotificationsManager()
-        repo = manager.rules_repo
-        repo.save_rule({"id": "rule-1", "name": "A"})
-        assert repo.delete_rule("rule-1") is True
+        manager.save_rule({"id": "rule-1", "name": "A"})
+        assert manager.delete_rule("rule-1") is True
         assert NotificationsManager().load_rules() == []
 
 

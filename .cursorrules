@@ -13,13 +13,13 @@
 - **Core**: Python 3.10+
 - **Package Management**: UV (primary), pyproject.toml with setuptools/hatchling
 - **Code Quality**: Ruff (linting & formatting), mypy (type checking), pytest (testing)
-- **Web Framework**: Dash (primary dashboard), Streamlit (legacy compatibility), FastAPI (optional APIs)
+- **Web Framework**: Dash (primary dashboard), FastAPI (public API on port 45714)
 - **Data Processing**: pandas (primary), polars (declared but pandas dominant), NumPy
 - **ML/NLP**: scikit-learn, NLTK, transformers (text classification)
 - **Web Scraping**: requests, BeautifulSoup4, Playwright, feedparser
 - **Configuration**: Pydantic Settings with nested configuration models
 - **Storage**: JSON files (primary), CSV exports, SQLite/PostgreSQL (optional)
-- **Caching**: Streamlit @st.cache_data decorators
+- **Caching**: lru_cache + TTL caches in services (data_loader, content_search)
 - **Logging**: Python logging with structured formats
 - **APIs**: GitHub API, ArXiv API, various content APIs
 
@@ -49,7 +49,6 @@
    - Single callback pattern to prevent conflicts
    - Performance optimization with caching strategies
 
-5. **Streamlit Legacy Pattern** (`src/web/fullstreamlit/`)
    - Ultra-optimized data service with caching
    - Component-based rendering with error handling
    - Performance optimization with TTL caching
@@ -84,7 +83,6 @@ External Sources → Watchers → ETL Pipelines → JSON/CSV Storage → Dash Da
    - Template Method: BaseETL.run() orchestrates extract/transform/load
    - Factory Pattern: get_settings() with @lru_cache singleton
    - State Pattern: Watcher state management with JSON persistence
-   - Component Pattern: Streamlit tab-based modular components
    - Observer Pattern: Event logging in watchers and ETL processes
 
 3. **Error Handling Pattern**
@@ -95,7 +93,6 @@ External Sources → Watchers → ETL Pipelines → JSON/CSV Storage → Dash Da
    - Safe tab rendering with error boundaries
 
 4. **Performance Optimization (Actual Implementation)**
-   - Streamlit caching with @st.cache_data(ttl=3600)
    - Batch processing in ETL with configurable batch_size
    - JSON file-based storage for fast read operations
    - Ultra-optimized data services with lazy loading
@@ -122,8 +119,6 @@ External Sources → Watchers → ETL Pipelines → JSON/CSV Storage → Dash Da
    - Use Bootstrap components with dbc styling
    - Error handling with graceful degradation
 
-3. **Streamlit Components (Legacy)**
-   - Create tab functions in `src/web/fullstreamlit/components/`
    - Use ultra-optimized data service for data access
    - Implement error boundaries with render_tab_safely pattern
    - Cache data loading with appropriate TTL values
@@ -182,7 +177,6 @@ src/
 │   ├── components/      # Tab-specific components with data managers
 │   ├── utils.py         # Shared utilities and data paths
 │   └── assets/          # CSS, JS, and static files
-├── web/fullstreamlit/    # Legacy Streamlit dashboard
 │   ├── app.py           # Main application with tab routing
 │   ├── components/      # Tab-specific components
 │   └── utils/           # Data services and utilities
@@ -200,7 +194,6 @@ src/
 - Use Ruff for formatting and linting: `uv run ruff check .` and `uv run ruff format .`
 - Dashboard development:
   - Primary: Dash dashboard at http://localhost:7780 (`uv run python run_watchtower_dashboard.py`)
-  - Legacy: Streamlit at http://localhost:8501 (`uv run streamlit run src/web/fullstreamlit/app.py`)
 
 ## Domain-Specific Best Practices
 - **ArXiv ETL**: Use RSS feeds, implement NLP classification, track research trends
@@ -225,7 +218,6 @@ src/
   - Handle errors gracefully with fallback UI
   - Cache data appropriately for performance
   - Implement health checks for dynamic tab loading
-- **Streamlit Apps (Legacy)**: Use component pattern, implement caching, handle errors gracefully
 
 ## Technology Adoption Guidelines
 - **Package Management**: UV as primary tool for all operations
@@ -233,7 +225,7 @@ src/
 - **Web Scraping**: requests + BeautifulSoup for simple scraping, Playwright for complex sites
 - **Configuration**: Pydantic Settings with environment variable support
 - **Storage**: JSON files for structured data, CSV for exports and analysis
-- **Dashboard Framework**: Dash with Bootstrap components (primary, port 7780), Streamlit (legacy, port 8501)
+- **Dashboard Framework**: Dash with Bootstrap components (port 7780); public FastAPI on port 45714
 - **Caching**: Dash callback caching and data manager caching for web apps
 - **Resilience**: Circuit breakers for failure isolation, proxy rotation for rate limit avoidance
 - **Async Operations**: Use when dealing with multiple API calls or I/O operations

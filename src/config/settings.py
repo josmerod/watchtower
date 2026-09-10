@@ -11,19 +11,13 @@ from pydantic_settings import BaseSettings
 
 from src.config.models import (
     APIConfig,
-    DatabaseConfig,
     Environment,
     ETLConfig,
     GoogleDriveConfig,
     LLMConfig,
     LoggingConfig,
-    MonitoringConfig,
-    NotificationConfig,
     ScrapingConfig,
-    SecurityConfig,
     SpanishPublicAidConfig,
-    StreamlitConfig,
-    WatcherConfig,
 )
 
 
@@ -40,23 +34,11 @@ class Settings(BaseSettings):
     project_root: str | None = Field(default=None, description="Project root directory")
     data_dir: str = Field(default="data", description="Data directory")
     logs_dir: str = Field(default="logs", description="Logs directory")
-    config_dir: str = Field(default="config", description="Config directory")
 
     # Component configurations
-    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     scraping: ScrapingConfig = Field(default_factory=ScrapingConfig)
     api: APIConfig = Field(default_factory=APIConfig)
-
-    # API Settings
-    API_ENABLED: bool = Field(default=True, description="Enable REST API")
-    API_MASTER_KEY: str = Field(default="watchtower-dev-key", description="Master API Key for access")
-
-    streamlit: StreamlitConfig = Field(default_factory=StreamlitConfig)
-    security: SecurityConfig = Field(default_factory=SecurityConfig)
-    monitoring: MonitoringConfig = Field(default_factory=MonitoringConfig)
-    notifications: NotificationConfig = Field(default_factory=NotificationConfig)
-    watchers: WatcherConfig = Field(default_factory=WatcherConfig)
     etl: ETLConfig = Field(default_factory=ETLConfig)
     google_drive: GoogleDriveConfig = Field(default_factory=GoogleDriveConfig)
     spanish_public_aid: SpanishPublicAidConfig = Field(default_factory=SpanishPublicAidConfig)
@@ -71,21 +53,6 @@ class Settings(BaseSettings):
         env_nested_delimiter = "__"
         case_sensitive = False
         extra = "ignore"  # Allow extra fields to be ignored instead of causing validation errors
-
-        # Allow environment variables to override nested config
-        @classmethod
-        def prepare_field_env_vars(cls, field_name: str, field_info) -> dict:
-            """Prepare environment variables for nested configs."""
-            env_vars = {}
-
-            # Support nested config through environment variables
-            # e.g., DATABASE__URL, LOGGING__LEVEL, etc.
-            if hasattr(field_info.default_factory, "_fields"):
-                for nested_field in field_info.default_factory._fields:
-                    env_key = f"{field_name.upper()}__{nested_field.upper()}"
-                    env_vars[env_key] = env_key
-
-            return env_vars
 
     def __init__(self, **kwargs):
         """Initialize settings with automatic project root detection."""
@@ -122,8 +89,6 @@ class Settings(BaseSettings):
                 self.data_dir = str(base_path / self.data_dir)
             if not os.path.isabs(self.logs_dir):
                 self.logs_dir = str(base_path / self.logs_dir)
-            if not os.path.isabs(self.config_dir):
-                self.config_dir = str(base_path / self.config_dir)
 
             # Update logging file path
             if not os.path.isabs(self.logging.file_path):
@@ -134,52 +99,11 @@ class Settings(BaseSettings):
         directories = [
             self.data_dir,
             self.logs_dir,
-            self.config_dir,
             self.logging.file_path,
         ]
 
         for directory in directories:
             Path(directory).mkdir(parents=True, exist_ok=True)
-
-    def is_development(self) -> bool:
-        """Check if running in development environment."""
-        return self.environment == Environment.DEVELOPMENT
-
-    def is_production(self) -> bool:
-        """Check if running in production environment."""
-        return self.environment == Environment.PRODUCTION
-
-    def is_testing(self) -> bool:
-        """Check if running in testing environment."""
-        return self.environment == Environment.TESTING
-
-    def get_data_path(self, *paths: str) -> Path:
-        """Get a path relative to the data directory."""
-        return Path(self.data_dir) / Path(*paths)
-
-    def get_logs_path(self, *paths: str) -> Path:
-        """Get a path relative to the logs directory."""
-        return Path(self.logs_dir) / Path(*paths)
-
-    def get_config_path(self, *paths: str) -> Path:
-        """Get a path relative to the config directory."""
-        return Path(self.config_dir) / Path(*paths)
-
-    def model_dump_env(self) -> dict:
-        """Export settings as environment variables format."""
-
-        def _flatten_dict(d: dict, parent_key: str = "", sep: str = "__") -> dict:
-            """Flatten nested dictionary with separator."""
-            items: list[tuple[str, str]] = []
-            for k, v in d.items():
-                new_key = f"{parent_key}{sep}{k}" if parent_key else k
-                if isinstance(v, dict):
-                    items.extend(_flatten_dict(v, new_key, sep=sep).items())
-                else:
-                    items.append((new_key.upper(), str(v)))
-            return dict(items)
-
-        return _flatten_dict(self.dict())
 
 
 @lru_cache
@@ -190,27 +114,3 @@ def get_settings() -> Settings:
         Settings: The cached settings instance.
     """
     return Settings()
-
-
-def get_settings_for_testing() -> Settings:
-    """Get settings configured for testing.
-
-    Returns:
-        Settings: Settings instance with testing overrides.
-    """
-    return Settings(
-        environment=Environment.TESTING,
-        debug=True,
-        database__url="sqlite:///:memory:",
-        logging__level="DEBUG",
-    )
-
-
-def reload_settings() -> Settings:
-    """Force reload settings (clears cache).
-
-    Returns:
-        Settings: New settings instance.
-    """
-    get_settings.cache_clear()
-    return get_settings()

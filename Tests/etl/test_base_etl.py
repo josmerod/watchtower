@@ -380,14 +380,6 @@ def test_dataframeetl_save_as_csv_io_error(mock_get_logger, mock_to_csv):
         pytest.skip("pandas not installed")
 
 
-@patch("importlib.import_module")
-def test_dataframe_etl_init_pandas_import_error(mock_import_module):
-    # NOTE: mocking importlib.import_module corrupts the already-imported pandas
-    # module (circular-import errors) in this environment, so this edge-case test
-    # (pandas missing) cannot be exercised reliably when pandas IS installed.
-    pytest.skip("Cannot cleanly mock pandas absence when pandas is installed")
-
-
 class WatchtowerErrorETL(SimpleTestETL):
     def extract(self) -> list[dict]:
         from src.exceptions.base import WatchtowerError
@@ -529,12 +521,6 @@ def test_ensure_data_path_permission_error(mock_mkdir):
             SimpleTestETL(name="ensure_dir_perm_error_etl")
         mock_failing_mkdir.assert_called()
         assert isinstance(exc_info.value, PermissionError)
-
-
-@patch("importlib.import_module", side_effect=ImportError("No module named pandas"))
-def test_dataframe_etl_init_no_pandas(mock_import_module):  # Renamed
-    # Same mock-corruption issue as test_dataframe_etl_init_pandas_import_error.
-    pytest.skip("Cannot cleanly mock pandas absence when pandas is installed")
 
 
 def test_etl_run_when_not_pending_base_behavior(simple_etl):

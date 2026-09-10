@@ -23,7 +23,7 @@ from src.etl.github.stack_releases_etl import STACK_REPOS
 # "farm", "media") would false-positive against unrelated vendors.
 VENDOR_ALIASES: dict[str, tuple[str, ...]] = {
     "n8n-io/n8n": ("n8n",),
-    "home-assistant/core": ("home assistant", "homeassistant", "hassio", "hass"),
+    "home-assistant/core": ("home assistant", "homeassistant", "hassio", "hass"),  # codespell:ignore
     "immich-app/immich": ("immich",),
     "jellyfin/jellyfin": ("jellyfin",),
     "justarchinet/archisteamfarm": ("archisteamfarm", "archi steam farm"),

@@ -14,15 +14,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from src.etl.proxy_manager import ProxyManager
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
-
-try:
-    from src.alerts.engine import AlertEngine
-except ImportError:  # optional dependency sentinel
-    AlertEngine = None  # type: ignore[assignment,misc]
-
-from src.etl.proxy_manager import ProxyManager
 
 
 class WatcherState:
@@ -102,15 +96,6 @@ class BaseWatcher(ABC):
         # Path to store events
         self.events_dir = self.data_dir / "events"
         ensure_directories([f"data/watchers/{self.name}/events"])
-
-        # Initialize alert engine if available
-        self.alert_engine: AlertEngine | None = None
-        if AlertEngine is not None:
-            try:
-                self.alert_engine = AlertEngine()
-                self.logger.debug(f"AlertEngine initialized for watcher {name}")
-            except Exception as e:
-                self.logger.warning(f"Failed to initialize AlertEngine for watcher {name}: {e}")
 
         self.proxy_manager = ProxyManager()
 
@@ -266,78 +251,6 @@ class BaseWatcher(ABC):
 
         # Record the event
         self._record_event(event_type="change_detected", old_value=old_value, new_value=new_value)
-
-        # Trigger alert engine evaluation if available
-        if self.alert_engine:
-            self._trigger_alert_evaluation(old_value, new_value)
-        else:
-            self.logger.debug("AlertEngine not available, skipping alert evaluation")
-
-    def _trigger_alert_evaluation(self, old_value: Any, new_value: Any) -> None:
-        """Trigger alert engine evaluation for new content.
-
-        Args:
-            old_value: Previous value
-            new_value: Current value
-        """
-        try:
-            # Prepare content dictionary for alert evaluation
-            content = self._prepare_content_for_alerts(old_value, new_value)
-
-            if content:
-                # For now, use a default user ID. In multi-user setup (Epic 5),
-                # this would be replaced with actual user IDs
-                default_user_id = "default_user"
-
-                # Evaluate content against alert rules (async to avoid blocking)
-                # alert_engine may be None when alerts are unavailable; the AttributeError is caught below
-                alert_events = self.alert_engine.evaluate_content(content, default_user_id)  # type: ignore[union-attr]
-
-                if alert_events:
-                    self.logger.info(f"Generated {len(alert_events)} alert events for watcher {self.name}")
-                else:
-                    self.logger.debug(f"No alert rules matched for watcher {self.name}")
-
-        except Exception as e:
-            self.logger.error(f"Error in alert evaluation for watcher {self.name}: {e}")
-
-    def _prepare_content_for_alerts(self, old_value: Any, new_value: Any) -> dict[str, Any] | None:
-        """Prepare content dictionary for alert engine evaluation.
-
-        Args:
-            old_value: Previous value
-            new_value: Current value
-
-        Returns:
-            Content dictionary with alert-relevant fields, or None if not applicable
-        """
-        try:
-            # Create content dictionary with metadata
-            content = {
-                "id": f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                "title": f"Change detected in {self.name}",
-                "description": f"Value changed from {old_value} to {new_value}",
-                "url": self.url,
-                "source": self.name,
-                "watcher_name": self.name,
-                "timestamp": datetime.now().isoformat(),
-                "old_value": old_value,
-                "new_value": new_value,
-                "event_type": "watcher_change",
-                "categories": ["watcher", "change"],
-                "tags": [self.name, "alert"],
-            }
-
-            # Add any additional metadata that might be useful for alert rules
-            if hasattr(new_value, "__dict__"):
-                # If new_value is an object, add its attributes
-                content.update({k: v for k, v in new_value.__dict__.items() if not k.startswith("_") and isinstance(v, (str, int, float, bool, list))})
-
-            return content
-
-        except Exception as e:
-            self.logger.error(f"Error preparing content for alerts: {e}")
-            return None
 
     def check(self) -> None:
         """Check if the watched value has changed."""

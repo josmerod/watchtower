@@ -318,16 +318,3 @@ def log_function_call(func):
             raise
 
     return wrapper
-
-
-# Backward compatibility
-def get_logger_legacy(name=None) -> logging.Logger:
-    """Legacy function for backward compatibility.
-
-    Args:
-        name: Logger name.
-
-    Returns:
-        Logger instance.
-    """
-    return get_logger(name)

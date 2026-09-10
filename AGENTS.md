@@ -46,12 +46,11 @@ ALWAYS run Python through **UV** so the locked environment is used.
   Pydantic is strictly enforced for extraction/transformation output.
 - **Watchers** (`src/watchers/`): subclass `BaseWatcher`; persist JSON state under
   `data/watchers/<name>/` and events under `data/watchers/<name>/events/`.
-- **Dashboard** (`src/web/dashboard/`): Dash + Bootstrap, ~25 tabs in
+- **Dashboard** (`src/web/dashboard/`): Dash + Bootstrap, ~19 tabs in
   `components/`. Each tab renders a layout and registers its own callbacks.
   **Use the Single Callback Pattern** — one callback per output component,
   `prevent_initial_call=True`, to avoid callback conflicts. Components must look
-  premium and stay minimalist/responsive. Streamlit (`src/web/fullstreamlit/`) is
-  legacy; do not extend it.
+  premium and stay minimalist/responsive.
 - **Config**: `src/config/settings.py`, Pydantic Settings, env-driven
   (`COMPONENT__SETTING` nested form). Get it via the `@lru_cache`d `get_settings()`.
 
