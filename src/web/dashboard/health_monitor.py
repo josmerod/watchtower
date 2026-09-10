@@ -96,9 +96,8 @@ class HealthMonitor:
             return ETLHealthMetrics(
                 etl_name=etl_name,
                 status="unknown",
-                # BUG: ETLHealthMetrics has no error_rate field; pydantic silently drops this
-                # (intent was presumably success_rate=0.0)
-                error_rate=100.0,  # type: ignore[call-arg]
+                last_run_time=None,
+                success_rate=0.0,
                 error_count=0,
                 total_runs=0,
             )

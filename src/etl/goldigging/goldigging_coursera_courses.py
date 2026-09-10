@@ -130,13 +130,10 @@ class CourseraScraper:
                                 import cloudscraper
 
                                 scraper = cloudscraper.create_scraper()
-                                # BUG: BrowserContext has no _options attribute in playwright's public
-                                # API — this raises AttributeError at runtime, which the broad except
-                                # below swallows, so the cloudscraper Cloudflare fallback never runs.
                                 resp = scraper.get(
                                     url,
-                                    headers={"User-Agent": context._options.get("user_agent", "")},  # type: ignore[attr-defined]
-                                )  # reuse UA
+                                    headers={"User-Agent": SCRAPER_DEFAULT_USER_AGENT},
+                                )
                                 content = resp.text
                             except ImportError:
                                 logger.error("cloudscraper not installed; install via 'pip install cloudscraper'")

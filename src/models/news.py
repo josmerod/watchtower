@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, ValidationInfo, field_validator
 
 from src.models.base import TimestampedModel
 
@@ -128,8 +128,8 @@ class NewsArticleModel(TimestampedModel):
 
     # Metadata
     status: ArticleStatus = Field(default=ArticleStatus.PUBLISHED, description="Article status")
-    word_count: int | None = Field(default=None, ge=0, description="Word count")
-    reading_time_minutes: int | None = Field(default=None, ge=0, description="Estimated reading time in minutes")
+    word_count: int | None = Field(default=None, ge=0, description="Word count", validate_default=True)
+    reading_time_minutes: int | None = Field(default=None, ge=0, description="Estimated reading time in minutes", validate_default=True)
 
     # Social/engagement metrics
     comments_count: int | None = Field(default=None, ge=0, description="Number of comments")
@@ -178,17 +178,14 @@ class NewsArticleModel(TimestampedModel):
             return v.strip()
         return v
 
-    # BUG: pydantic v2 passes ValidationInfo as `values` -> AttributeError when
-    # word_count is explicitly None; when omitted (validate_default=False) the
-    # validator never runs, so the auto word-count never computes
-    @field_validator("word_count", mode="before")  # type: ignore[type-var]
+    @field_validator("word_count", mode="before")
     @classmethod
-    def calculate_word_count(cls, v: int | None, values: dict) -> int | None:
+    def calculate_word_count(cls, v: int | None, info: ValidationInfo) -> int | None:
         """Calculate word count from content if not provided.
 
         Args:
             v: Current word count value.
-            values: Other field values.
+            info: Validation context holding the sibling field values.
 
         Returns:
             Word count.
@@ -196,20 +193,19 @@ class NewsArticleModel(TimestampedModel):
         if v is not None:
             return v
 
-        content = values.get("content")
+        content = info.data.get("content")
         if content:
             return len(content.split())
         return None
 
-    # BUG: same as calculate_word_count — crashes on explicit None, never runs when omitted
-    @field_validator("reading_time_minutes", mode="before")  # type: ignore[type-var]
+    @field_validator("reading_time_minutes", mode="before")
     @classmethod
-    def calculate_reading_time(cls, v: int | None, values: dict) -> int | None:
+    def calculate_reading_time(cls, v: int | None, info: ValidationInfo) -> int | None:
         """Calculate reading time based on word count.
 
         Args:
             v: Current reading time value.
-            values: Other field values.
+            info: Validation context holding the sibling field values.
 
         Returns:
             Estimated reading time in minutes.
@@ -217,7 +213,7 @@ class NewsArticleModel(TimestampedModel):
         if v is not None:
             return v
 
-        word_count = values.get("word_count")
+        word_count = info.data.get("word_count")
         if word_count:
             # Average reading speed: 200 words per minute
             return max(1, word_count // 200)

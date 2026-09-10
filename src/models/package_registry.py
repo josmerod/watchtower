@@ -120,8 +120,7 @@ class PackageModel(TimestampedModel):
         Returns:
             True if package has >1000 weekly downloads.
         """
-        # BUG: the `and` chain yields None (or 0) instead of False when downloads_weekly is unset
-        return self.downloads_weekly and self.downloads_weekly > 1000  # type: ignore[return-value]
+        return (self.downloads_weekly or 0) > 1000
 
     @property
     def is_trending(self) -> bool:
