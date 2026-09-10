@@ -43,6 +43,45 @@ def _canonical_channel(name: str) -> str:
     return canonical.replace("_", "-").strip("-")
 
 
+# Theme buckets are channel directories parked under the reserved aa-*/zz-*
+# prefixes (T-074 counts them in the 📡 Canales admin view; T-088 filters by
+# them in the 📺 Videos tab).
+_THEME_ALL_VALUE = "all"
+_THEME_DEFAULT_LABEL = "Todos los temas"
+
+
+def _is_theme_channel(channel: str) -> bool:
+    """Whether a channel directory is a theme bucket (``aa-*`` / ``zz-*``)."""
+    return channel.startswith(("aa-", "zz-"))
+
+
+def _extract_theme_options(channels: list[str]) -> list[dict]:
+    """Build the Tema dropdown options from channel directory names.
+
+    Args:
+        channels: Raw channel names (e.g. from ``VideoManager.get_channels``).
+
+    Returns:
+        Dropdown options: the ``Todos los temas`` default first, then one
+        option per theme bucket, sorted. When no theme buckets exist only the
+        default option is returned.
+    """
+    themes = sorted({ch for ch in channels if _is_theme_channel(ch)})
+    options = [{"label": _THEME_DEFAULT_LABEL, "value": _THEME_ALL_VALUE}]
+    options.extend({"label": ch, "value": ch} for ch in themes)
+    return options
+
+
+def _channel_matches_theme(channel: str, theme: str) -> bool:
+    """Whether a channel directory belongs to the selected theme bucket.
+
+    Exact match, plus the ``<theme>-*`` suffix so variant directory names of
+    the same theme (the ``-videos``/``-channel`` shapes ``get_channels``
+    folds) are also captured by the filter.
+    """
+    return channel == theme or channel.startswith(f"{theme}-")
+
+
 def _date_sort_key(video: dict):
     """Sort key: dated videos first (newest), undated last."""
     date_value = video.get("published_date")
@@ -294,36 +333,49 @@ class VideoManager:
                     "channel": entry["channel"],
                     "count": entry["count"],
                     "last_seen": last_seen.strftime("%Y-%m-%d") if last_seen is not None else None,
-                    "is_theme": entry["channel"].startswith(("aa-", "zz-")),
+                    "is_theme": _is_theme_channel(entry["channel"]),
                 }
             )
         stats.sort(key=lambda s: (-s["count"], s["channel"].lower()))
         return stats
 
-    def get_videos(self, channel=None, search_term=None, days_filter=None, limit=None):
-        """Get filtered videos (``limit=None`` returns everything, for pagination)."""
+    def get_videos(self, channel=None, search_term=None, days_filter=None, limit=None, theme_filter=None):
+        """Get filtered videos (``limit=None`` returns everything, for pagination).
+
+        Args:
+            channel: Channel directory name or ``"all"``.
+            search_term: Case-insensitive substring filter on title,
+                description and channel.
+            days_filter: ``"all"`` or a day-count string for the date cutoff.
+            limit: Max videos to return; ``None`` returns everything.
+            theme_filter: Theme bucket (``aa-*``/``zz-*`` channel) or
+                ``"all"``. Composes with ``channel`` as an intersection: only
+                channels matching both selectors contribute videos.
+        """
         self.ensure_loaded()
 
         all_videos = []
 
-        # Get videos from specified channel(s)
+        # Resolve the channel selection down to a list of source directories
         if channel is None or channel == "all":
-            # All channels
-            for ch_name, df in self.video_data.items():
-                for video in df.to_dict("records"):
-                    video_dict = video.copy()
-                    video_dict["channel"] = ch_name
-                    all_videos.append(video_dict)
+            source_channels = list(self.video_data.keys())
         else:
-            # Single channel
-            if channel in self.video_data:
-                df = self.video_data[channel]
-                for video in df.to_dict("records"):
-                    video_dict = video.copy()
-                    video_dict["channel"] = channel
-                    all_videos.append(video_dict)
+            source_channels = [channel] if channel in self.video_data else []
 
-        logger.debug(f"Retrieved {len(all_videos)} videos for channel '{channel}'")
+        # Theme filter (T-088): keep only channels under the selected theme
+        # bucket; applied where channel selection happens so it composes with
+        # the search/date filters downstream.
+        if theme_filter and theme_filter != _THEME_ALL_VALUE:
+            source_channels = [ch for ch in source_channels if _channel_matches_theme(ch, theme_filter)]
+
+        for ch_name in source_channels:
+            df = self.video_data[ch_name]
+            for video in df.to_dict("records"):
+                video_dict = video.copy()
+                video_dict["channel"] = ch_name
+                all_videos.append(video_dict)
+
+        logger.debug(f"Retrieved {len(all_videos)} videos for channel '{channel}' (theme '{theme_filter}')")
 
         # De-duplicate by URL: the same video can appear under two channel
         # directories when a channel was fetched under variant names.
@@ -774,12 +826,15 @@ def render_videos_tab():
     # Create channel options
     channel_options = [{"label": "All Channels", "value": "all"}]
 
-    # Organize channels (categories first)
-    categories = [ch for ch in sorted(channels) if ch.startswith(("aa-", "zz-"))]
+    # Organize channels (theme buckets first)
+    categories = [ch for ch in sorted(channels) if _is_theme_channel(ch)]
     others = [ch for ch in sorted(channels) if ch not in categories]
     ordered_channels = categories + others
 
     channel_options.extend([{"label": ch, "value": ch} for ch in ordered_channels])
+
+    # Tema dropdown options (T-088): one per theme bucket, default first
+    theme_options = _extract_theme_options(channels)
 
     return html.Div(
         [
@@ -795,6 +850,21 @@ def render_videos_tab():
                                 options=channel_options,
                                 value="all",
                                 placeholder="Select a channel",
+                                clearable=False,
+                                className="mb-3",
+                            ),
+                        ],
+                        width=12,
+                        md=3,
+                    ),
+                    dbc.Col(
+                        [
+                            html.Label("Tema:", className="form-label small"),
+                            dcc.Dropdown(
+                                id="videos-theme-dropdown",
+                                options=theme_options,
+                                value=_THEME_ALL_VALUE,
+                                placeholder=_THEME_DEFAULT_LABEL,
                                 clearable=False,
                                 className="mb-3",
                             ),
@@ -957,6 +1027,7 @@ def register_video_callbacks(app):
         Output("videos-pagination", "children"),
         Output("videos-page", "data"),
         Input("video-channel-dropdown-new", "value"),
+        Input("videos-theme-dropdown", "value"),
         Input("video-search-input-new", "value"),
         Input("video-date-filter-new", "value"),
         Input("videos-sort-by", "value"),
@@ -968,6 +1039,7 @@ def register_video_callbacks(app):
     )
     def update_videos_combined(
         selected_channel,
+        selected_theme,
         search_term,
         date_filter,
         sort_by,
@@ -999,6 +1071,8 @@ def register_video_callbacks(app):
 
             if selected_channel is None:
                 selected_channel = "all"
+            if selected_theme is None:
+                selected_theme = _THEME_ALL_VALUE
             if items_per_page is None:
                 items_per_page = 48
             current_page = current_page or 1
@@ -1012,7 +1086,7 @@ def register_video_callbacks(app):
                 page = 1
 
             # Full filtered dataset (no cap) so pagination reaches history
-            videos = video_manager.get_videos(channel=selected_channel, search_term=search_term, days_filter=date_filter, limit=None)
+            videos = video_manager.get_videos(channel=selected_channel, search_term=search_term, days_filter=date_filter, limit=None, theme_filter=selected_theme)
 
             if not videos:
                 return [dbc.Alert("No videos found matching your criteria.", color="info")], None, 1
@@ -1040,6 +1114,8 @@ def register_video_callbacks(app):
 
             channel_display = "all channels" if selected_channel == "all" else f"'{selected_channel}'"
             filters_text = []
+            if selected_theme and selected_theme != _THEME_ALL_VALUE:
+                filters_text.append(f"tema '{selected_theme}'")
             if search_term:
                 filters_text.append(f"matching '{search_term}'")
             if date_filter and date_filter != "all":
