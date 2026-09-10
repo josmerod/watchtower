@@ -65,3 +65,4 @@ nul
 stale_sources_report.txt
 verify_published_at.py
 .zcode/
+backups/

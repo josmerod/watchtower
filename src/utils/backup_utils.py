@@ -37,6 +37,37 @@ module_logger = logging.getLogger(f"watchtower.{__name__}")
 # However, for standalone testing (if __name__ == '__main__'), basicConfig is useful.
 
 
+def add_folder_to_zip(zipf: zipfile.ZipFile, folder_path: Path, project_root: Path) -> int:
+    """Add every file under ``folder_path`` to an open zip archive.
+
+    Arcnames are stored relative to ``project_root`` so restores land back in
+    the right place (``data/...``, ``logs/...``). Missing folders are skipped
+    with a warning and count as zero files.
+
+    Args:
+        zipf: An open ``zipfile.ZipFile`` in write mode.
+        folder_path: Folder to add (absolute or relative to project_root).
+        project_root: Root the arcnames are made relative to.
+
+    Returns:
+        Number of files added.
+    """
+    if not folder_path.is_absolute():
+        folder_path = project_root / folder_path
+    if not folder_path.exists() or not folder_path.is_dir():
+        module_logger.warning(f"Folder {folder_path} does not exist or is not a directory. Skipping.")
+        return 0
+
+    added = 0
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            file_abs_path = Path(root) / file
+            arcname = file_abs_path.relative_to(project_root)
+            zipf.write(file_abs_path, arcname)
+            added += 1
+    return added
+
+
 class BackupManager:
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -155,19 +186,8 @@ class BackupManager:
                     folder_path = Path(folder_path_str)
                     if not folder_path.is_absolute():
                         folder_path = project_root / folder_path_str
-
-                    if not folder_path.exists() or not folder_path.is_dir():
-                        module_logger.warning(f"Folder {folder_path} does not exist or is not a directory. Skipping.")
-                        continue
-
                     module_logger.info(f"Adding folder {folder_path} to archive.")
-                    for root, _, files in os.walk(folder_path):
-                        for file in files:
-                            file_abs_path = Path(root) / file
-                            # Arcname determines the path inside the zip file.
-                            # Relative to project_root to get 'data/file.txt' or 'logs/log.txt'
-                            arcname = file_abs_path.relative_to(project_root)
-                            zipf.write(file_abs_path, arcname)
+                    add_folder_to_zip(zipf, folder_path, project_root)
             module_logger.info(f"Successfully created archive: {zip_file_path} (Size: {zip_file_path.stat().st_size} bytes)")
             return zip_file_path
         except Exception as e:
