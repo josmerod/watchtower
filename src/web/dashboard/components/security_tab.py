@@ -6,9 +6,12 @@ SecurityWeek + Krebs on Security) produced by
 CVEs) surface first with ransomware-use flags; news follows. Since T-081 the
 feed's ``stack_matches`` section (KEV crossed with the self-hosted stack) renders as
 the "🧰 Tu stack" card plus a danger-toned match list — the CVEs actively
-exploited that hit the homelab's own services. Renders via the shared table
-builder, no callbacks — the file is re-read each render so the 2h orchestrator
-cycle refreshes it.
+exploited that hit the homelab's own services. Since T-091 the same card area
+also renders the OSV companion section: advisories of severity >= high from
+OSV.dev/GHSA for the stack's own services (``osv_stack_latest.json`` written by
+``src/etl/security/osv_stack_advisories_etl.py``), as an osv.dev-linked compact
+list. Renders via the shared table builder, no callbacks — the files are
+re-read each render so the 2h orchestrator cycle refreshes them.
 """
 
 import json
@@ -27,6 +30,7 @@ from src.web.dashboard.components.shared.table import render_items_table
 logger = logging.getLogger(__name__)
 
 DATA_FILE = "security/security_latest.json"
+OSV_DATA_FILE = "security/osv_stack_latest.json"
 MAX_ROWS = 120
 
 
@@ -52,6 +56,24 @@ def _load_feed() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
             matches if isinstance(matches, list) else [],
         )
     return (data if isinstance(data, list) else []), []
+
+
+def _load_osv_services() -> list[dict[str, Any]]:
+    """Load the OSV stack advisory groups from ``data/security/`` (T-091).
+
+    Reads ``osv_stack_latest.json`` — ``[{"repo", "service_label",
+    "advisories": [...]}, ...]``. A missing or broken file yields ``[]`` so the
+    OSV section simply stays quiet until the ETL's first successful run.
+    """
+    path = Path(get_project_root()) / "data" / OSV_DATA_FILE
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    services = data.get("services") if isinstance(data, dict) else None
+    return services if isinstance(services, list) else []
 
 
 def _parse_date(raw: str) -> datetime | None:
@@ -175,9 +197,92 @@ def _render_stack_section(stack_matches: list[dict[str, Any]]) -> list[Any]:
     ]
 
 
+def _render_osv_section(services: list[dict[str, Any]]) -> list[Any]:
+    """Render the OSV advisories companion card in the "🧰 Tu stack" area (T-091).
+
+    A missing file (ETL not run yet) renders nothing; a calm file (0 advisories
+    >= high) renders a quiet success card. Any hit flips to warning tones and
+    appends the compact list — one row per advisory with service badge,
+    osv.dev permalink, severity badge, CVSS score when exact, fixed-in version
+    when known and the published date. The existing KEV card stays untouched.
+    """
+    if not services:
+        return []
+    total = sum(len(group.get("advisories") or []) for group in services if isinstance(group, dict))
+    if total == 0:
+        return [
+            dbc.Card(
+                dbc.CardBody(
+                    [
+                        html.H5([html.I(className="fas fa-shield-virus me-2"), "🛡️ OSV · Tu stack"], className="small text-muted mb-1"),
+                        html.P(
+                            [html.I(className="fas fa-check-circle me-2"), "OSV advisories (≥high): 0 — tu stack está en calma"],
+                            className="mb-0 text-success fw-bold",
+                        ),
+                    ]
+                ),
+                outline=True,
+                color="success",
+                className="mb-4",
+            )
+        ]
+
+    rows: list[Any] = []
+    for group in services:
+        label = str(group.get("service_label") or group.get("repo") or "?")
+        advisories = group.get("advisories")
+        for advisory in advisories if isinstance(advisories, list) else []:
+            if not isinstance(advisory, dict):
+                continue
+            advisory_id = str(advisory.get("id") or "?")
+            severity = str(advisory.get("severity") or "?")
+            children: list[Any] = [
+                dbc.Badge(label, color="secondary", pill=True, className="me-2"),
+                html.A(
+                    advisory_id,
+                    href=f"https://osv.dev/vulnerability/{advisory_id}",
+                    target="_blank",
+                    className="fw-bold text-decoration-none text-danger me-2",
+                ),
+                dbc.Badge(severity, color="danger" if severity == "CRITICAL" else "warning", pill=True, className="me-2"),
+            ]
+            if advisory.get("cvss_score") is not None:
+                children.append(html.Small(f"CVSS {advisory['cvss_score']}", className="text-muted me-2"))
+            if advisory.get("fixed_in"):
+                children.append(dbc.Badge(f"fixed in {advisory['fixed_in']}", color="success", pill=True, className="me-2"))
+            children.append(html.Small(str(advisory.get("published") or "")[:10], className="text-muted"))
+            rows.append(html.Div(children, className="d-flex flex-wrap align-items-center py-1 border-bottom border-secondary-subtle"))
+
+    return [
+        dbc.Card(
+            dbc.CardBody(
+                [
+                    html.H5([html.I(className="fas fa-shield-virus me-2"), "🛡️ OSV · Tu stack"], className="small mb-1"),
+                    html.H4(f"OSV advisories (≥high): {total}", className="text-warning mb-0"),
+                    html.P("Avisos OSV/GHSA para los servicios de tu stack", className="text-warning small mb-0"),
+                ]
+            ),
+            color="warning",
+            className="mb-3",
+        ),
+        dbc.Card(
+            dbc.CardBody(
+                [
+                    html.H6([html.I(className="fas fa-bug me-2"), "Avisos OSV (≥high) en TU stack"], className="text-warning mb-2"),
+                    html.Div(rows),
+                ]
+            ),
+            color="warning",
+            outline=True,
+            className="mb-4",
+        ),
+    ]
+
+
 def render_security_tab() -> html.Div:
     """Render the Security tab: summary cards + severity-ordered feed table."""
     entries, stack_matches = _load_feed()
+    osv_services = _load_osv_services()
     kev = [e for e in entries if e.get("source") == "cisa_kev"]
     news = [e for e in entries if e.get("source") != "cisa_kev"]
 
@@ -217,6 +322,7 @@ def render_security_tab() -> html.Div:
             ),
             _render_summary_cards(entries),
             *_render_stack_section(stack_matches),
+            *_render_osv_section(osv_services),
             html.H6("🔴 Vulnerabilidades explotadas (KEV — más recientes primero)", className="mb-2"),
             render_items_table(kev, columns, empty_message="No KEV data yet. Run the security ETL.", wrap_scroll=True),
             html.H6("📰 Noticias de seguridad", className="mt-4 mb-2"),

@@ -229,6 +229,44 @@ class TestTabStackSection:
         assert "CVE-2026-0401" in layout
         assert "Ransomware" not in layout
 
+    def test_osv_section_renders_alongside_kev_matches(self, tmp_path, monkeypatch):
+        """T-091: the OSV companion card joins the KEV card without disturbing it."""
+        self._write_feed(tmp_path, monkeypatch, {"items": [], "stack_matches": []})
+        (tmp_path / "data" / "security" / "osv_stack_latest.json").write_text(
+            json.dumps(
+                {
+                    "generated_at": "2026-09-10T00:00:00+00:00",
+                    "services": [
+                        {
+                            "repo": "n8n-io/n8n",
+                            "service_label": "n8n",
+                            "advisories": [
+                                {
+                                    "id": "GHSA-xwx6-jjhv-84p8",
+                                    "summary": "RCE",
+                                    "severity": "HIGH",
+                                    "cvss_score": None,
+                                    "severity_source": "database_specific",
+                                    "fixed_in": "2.32.1",
+                                    "published": "2026-07-22",
+                                    "url": "https://osv.dev/vulnerability/GHSA-xwx6-jjhv-84p8",
+                                }
+                            ],
+                        }
+                    ],
+                    "total_advisories": 1,
+                }
+            ),
+            encoding="utf-8",
+        )
+        layout = str(security_tab.render_security_tab())
+        # OSV companion card + compact list row render in the 🧰 Tu stack area.
+        assert "OSV advisories (≥high): 1" in layout
+        assert "https://osv.dev/vulnerability/GHSA-xwx6-jjhv-84p8" in layout
+        assert "fixed in 2.32.1" in layout
+        # The KEV card is intact: calm KEV state still renders its own message.
+        assert "0 CVEs explotados afectan a tu stack" in layout
+
     def test_legacy_flat_list_renders_calm_stack_card(self, tmp_path, monkeypatch):
         self._write_feed(tmp_path, monkeypatch, [{"source": "cisa_kev", "title": "🔴 CVE-1 — X", "link": "https://nvd/1", "published": "2026-08-26"}])
         layout = str(security_tab.render_security_tab())
