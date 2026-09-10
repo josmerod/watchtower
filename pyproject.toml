@@ -59,7 +59,7 @@ dependencies = [
     "dash>=2.0.0",
     "dash-bootstrap-components>=1.0.0",
     "pytesseract>=0.3.10",
-    "opencv-python>=4.8.0",
+    "opencv-python>=5.0.0.93",
     "openai>=2.11.0",
     # API dependencies
     "fastapi>=0.136.3",
