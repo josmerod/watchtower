@@ -1,0 +1,36 @@
+{
+  "version": "2026-09-10.2",
+  "generated_at": "2026-09-10T13:14:16+02:00",
+  "entries": [
+    {
+      "date": "2026-09-10",
+      "title": "Novedades personales y resiliencia",
+      "items": [
+        "Knowledge Garden: badge NUEVO en los registros vistos desde tu última revisión (T-085).",
+        "Markets: cartera local en el navegador — holdings × precio CoinGecko con P/L, sin servidor ni claves (T-086).",
+        "Nuevo modal 🆕 Novedades: el panel ahora te cuenta qué cambió en cada despliegue (T-089).",
+        "Backups: run_backup.py recreado con verificación de restore — un backup no verificado no es un backup (T-090).",
+        "Tests E2E reales de navegador (pytest-playwright) para las tabs vivas."
+      ]
+    },
+    {
+      "date": "2026-09-10",
+      "title": "Limpieza profunda del repositorio",
+      "items": [
+        "Purge de ~18k líneas de código muerto: 15 tabs del dashboard, cadena factory/DI aspiracional, 18 modelos huérfanos, ETL duplicado.",
+        "6 bugs reales arreglados (validators pydantic v2, health_monitor, fallback coursera, pandas-3, entre otros).",
+        "Board compactado y brainstorm de 4ª generación: nuevas tareas T-091..T-096."
+      ]
+    },
+    {
+      "date": "2026-09-03",
+      "title": "Seguridad del stack y radar ampliado",
+      "items": [
+        "Security: CVEs del KEV cruzados con tu stack — card 🧰 Tu stack con severidad y versión afectada (T-081).",
+        "Tech Radar: nuevas fuentes Lemmy, Product Hunt y blog de Azure (T-082).",
+        "Notifications: resumen diario de eventos de las últimas 24h (T-083).",
+        "ETLs de la wave-7 registrados en el orquestador."
+      ]
+    }
+  ]
+}

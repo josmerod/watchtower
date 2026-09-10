@@ -13,6 +13,10 @@ from src.web.dashboard.components.benchmarks_tab import (
     register_benchmarks_callbacks,
     render_benchmarks_tab,
 )
+from src.web.dashboard.components.changelog_modal import (
+    register_changelog_callbacks,
+    render_changelog_elements,
+)
 from src.web.dashboard.components.courses_tab import (
     register_courses_callbacks,
     render_courses_tab,
@@ -162,6 +166,7 @@ app.layout = dbc.Container(
                                 html.A("Open API", href="https://watchtower-api.josmerod.es/docs", className="btn btn-primary", target="_blank"),
                                 html.A("Docs", href="/docs", className="btn btn-outline-light", target="_self"),
                                 html.A("Health JSON", href="/health", className="btn btn-outline-light", target="_self"),
+                                *render_changelog_elements(),
                             ],
                             className="dashboard-hero-actions",
                         ),
@@ -710,6 +715,7 @@ register_markets_callbacks(app)
 register_notifications_callbacks(app)
 register_metrics_callbacks(app)
 register_digest_callbacks(app)
+register_changelog_callbacks(app)
 
 
 if __name__ == "__main__":
