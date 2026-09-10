@@ -310,7 +310,9 @@ async def get_security_kev(response: Response, limit: int = Query(100, ge=1, le=
 
 
 @public_router.get("/valencia/events")
-async def get_valencia_events(response: Response, days: int = Query(0, ge=0, le=365, description="Only events starting within N days from now (0 = all)"), limit: int = Query(200, ge=1, le=500, description="Max events to return")):
+async def get_valencia_events(
+    response: Response, days: int = Query(0, ge=0, le=365, description="Only events starting within N days from now (0 = all)"), limit: int = Query(200, ge=1, le=500, description="Max events to return")
+):
     """Get Valencia events (for calendar automations).
 
     Reads ``data/valencia_events/valencia_events.json`` and returns the events

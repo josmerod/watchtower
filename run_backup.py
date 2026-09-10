@@ -198,9 +198,11 @@ def main(argv: list[str] | None = None) -> int:
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     pruned = prune_local_backups(project_root / BACKUP_DIR_NAME, keep=args.keep)
-    logger.info(f"Verification {'PASSED' if report['ok'] else 'FAILED'} ({report.get('file_count', 0)} files, "
-                f"{report.get('critical_latest_count', 0)} _latest outputs, "
-                f"{report.get('json_samples_validated', 0)} JSON samples OK); pruned {pruned} old archives")
+    logger.info(
+        f"Verification {'PASSED' if report['ok'] else 'FAILED'} ({report.get('file_count', 0)} files, "
+        f"{report.get('critical_latest_count', 0)} _latest outputs, "
+        f"{report.get('json_samples_validated', 0)} JSON samples OK); pruned {pruned} old archives"
+    )
 
     if not args.no_gdrive:
         upload_to_gdrive_best_effort(project_root)

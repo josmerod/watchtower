@@ -13,6 +13,7 @@ so they pass with or without local ``data/``.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -31,6 +32,20 @@ BASE_URL = f"http://127.0.0.1:{PORT}"
 SERVER_START_TIMEOUT_SECONDS = 120
 
 
+def _current_changelog_version() -> str:
+    """The deployed changelog version, so e2e pages look like returning visitors.
+
+    The 🆕 Novedades modal auto-opens once per unseen version (T-089); without
+    this seed its backdrop would nondeterministically cover the nav mid-test.
+    """
+    try:
+        import json
+
+        return str(json.loads((PROJECT_ROOT / "changelog.json").read_text(encoding="utf-8"))["version"])
+    except Exception:
+        return "e2e-no-changelog"
+
+
 def _browser_available() -> bool:
     """Probe whether chromium can actually launch (binaries installed)."""
     try:
@@ -40,7 +55,7 @@ def _browser_available() -> bool:
             browser = p.chromium.launch(headless=True)
             browser.close()
         return True
-    except Exception:  # noqa: BLE001 - any launch failure means "skip e2e"
+    except Exception:
         return False
 
 
@@ -71,7 +86,7 @@ def dashboard_url():
                 with urllib.request.urlopen(f"{BASE_URL}/", timeout=2) as response:
                     if response.status == 200:
                         break
-            except Exception:  # noqa: BLE001 - server not answering yet
+            except Exception:
                 time.sleep(1)
         else:
             pytest.fail(f"dashboard did not answer within {SERVER_START_TIMEOUT_SECONDS}s")
@@ -87,6 +102,11 @@ def dashboard_url():
 @pytest.fixture()
 def dashboard_page(page, dashboard_url):
     """A playwright page already loaded on the dashboard home."""
+    # Returning-visitor baseline: pre-seen changelog version so the modal
+    # never auto-opens over the tests (see _current_changelog_version).
+    page.add_init_script(
+        "try { localStorage.setItem('wt_changelog_version', %s); } catch (e) {}" % json.dumps(_current_changelog_version())
+    )
     page.goto(dashboard_url, wait_until="domcontentloaded")
     # Give Dash's renderer a moment to mount the layout on first load.
     page.wait_for_selector(".nav-link", timeout=30_000)

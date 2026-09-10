@@ -89,6 +89,11 @@ def test_prune_keeps_newest_n(project: Path) -> None:
     for i in range(7):
         archive = backup_dir / f"backup_data_logs_20260910_00000{i}.zip"
         archive.write_bytes(b"x")
+        # Explicit mtimes: files written in the same run share a timestamp to
+        # the stored second, which would make the mtime sort unstable.
+        import os
+
+        os.utime(archive, (1_800_000_000 + i, 1_800_000_000 + i))
     removed = prune_local_backups(backup_dir, keep=5)
     assert removed == 2
     remaining = sorted(p.name for p in backup_dir.glob("backup_data_logs_*.zip"))

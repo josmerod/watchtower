@@ -132,14 +132,12 @@ class ETLScheduler:
             "research": [
                 "src/etl/arxiv/arxiv_etl.py",
             ],
-            "entertainment": [
-            ],
+            "entertainment": [],
             "ai_platforms": [
                 "src/etl/ai_platforms/replicate_models_etl.py",
                 "src/etl/ai_platforms/replicate_explore_playwright_etl.py",
             ],
-            "intelligence": [
-            ],
+            "intelligence": [],
             "games": [
                 "src/etl/games/games_get_deals.py",
                 "src/etl/games/games_get_humblebundles.py",

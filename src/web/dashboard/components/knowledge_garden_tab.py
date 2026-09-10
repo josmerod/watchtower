@@ -357,14 +357,15 @@ def _knowledge_card(article: dict, search_term: str = "") -> dbc.Col:
         )
     body.append(html.P(format_article_date(article), className="card-text text-muted mb-0", style={"fontSize": "0.75rem"}))
 
+    # html.Div wrapper carries the data-* attribute (dbc components don't
+    # accept wildcards); kg_state.js keys on it for the NUEVO badge (T-085).
+    card_wrapper = html.Div(
+        dbc.Card(dbc.CardBody(body), className="h-100"),
+        className="h-100",
+    )
+    setattr(card_wrapper, "data-kg-date", _kg_date_iso(article))
     return dbc.Col(
-        # html.Div wrapper carries the data-* attribute (dbc components don't
-        # accept wildcards); kg_state.js keys on it for the NUEVO badge (T-085).
-        html.Div(
-            dbc.Card(dbc.CardBody(body), className="h-100"),
-            className="h-100",
-            **{"data-kg-date": _kg_date_iso(article)},
-        ),
+        card_wrapper,
         xs=12,
         sm=6,
         md=4,
