@@ -131,6 +131,7 @@ ETL_SCRIPTS = [
     # Open Source Projects
     "src/etl/opensource/opensource_projects_etl.py",
     "src/etl/github/stack_releases_etl.py",  # TR-F4: GitHub releases of the self-hosted stack — Radar "Mi stack" (T-051)
+    "src/etl/github/stack_eol_etl.py",  # T-092: endoflife.date support cycles — Radar "Mi stack" EOL badges
     "src/etl/github/github_trending_etl.py",  # T-078: github.com/trending repos — Radar "🐙 GH Trending"
     # Knowledge Garden
     "src/etl/substack/substack_etl.py",

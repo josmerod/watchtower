@@ -8,7 +8,7 @@
       "items": [
         "Knowledge Garden: badge NUEVO en los registros vistos desde tu última revisión (T-085).",
         "Markets: cartera local en el navegador — holdings × precio CoinGecko con P/L, sin servidor ni claves (T-086).",
-        "Nuevo modal 🆕 Novedades: el panel ahora te cuenta qué cambió en cada despliegue (T-089).",
+        "Nuevo modal 🆕 Novedades: el panel ahora cuenta qué cambió en cada despliegue (T-089).",
         "Backups: run_backup.py recreado con verificación de restore — un backup no verificado no es un backup (T-090).",
         "Tests E2E reales de navegador (pytest-playwright) para las tabs vivas."
       ]

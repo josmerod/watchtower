@@ -27,6 +27,7 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash import ALL, Input, Output, dcc, html
 
+from src.etl.github.stack_eol_etl import eol_badge
 from src.utils.file_system import get_project_root
 from src.web.dashboard.components import saved_items
 from src.web.dashboard.components.shared.cache import TTLDataCache
@@ -287,6 +288,7 @@ def _render_stack_section(source: dict[str, Any], search_term: str | None = None
         return [
             html.H6(source["label"], className="mb-2"),
             dbc.Alert(f"No data yet. Run the ETL for {source['label'].split(' ', 1)[-1]} (src/etl/github/stack_releases_etl.py).", color="light", className="small"),
+            *_render_stack_eol_section(),
         ]
     if search_term:
         releases = filter_content(search_term, releases, _SEARCHABLE_FIELDS)
@@ -303,6 +305,76 @@ def _render_stack_section(source: dict[str, Any], search_term: str | None = None
         html.H6(source["label"], className="mb-2"),
         html.Small(f"{len(releases)} releases · {', '.join(repos)}", className="text-muted mb-2 d-block"),
         html.Ul(rows, className="mb-0"),
+        *_render_stack_eol_section(),
+    ]
+
+
+# T-092: support-cycle awareness from src/etl/github/stack_eol_etl.py — the
+# third stack-health pillar (releases + CVEs + EOL). Keyed by product label
+# so the badge can also reach the per-service rows if coverage ever lands.
+STACK_EOL_FILE = "stack/eol_latest.json"
+
+
+def _load_stack_eol() -> dict[str, Any] | None:
+    """Load the EOL envelope; missing or corrupt file → None (no section)."""
+    data_path = os.path.join(get_project_root(), "data", STACK_EOL_FILE)
+    if not os.path.exists(data_path):
+        return None
+    try:
+        with open(data_path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _render_stack_eol_section() -> list:
+    """Render the "⏳ EOL" badge card for every mapped stack product (T-092).
+
+    One row per product from ``data/stack/eol_latest.json`` with the tier
+    badge from :func:`src.etl.github.stack_eol_etl.eol_badge`: red EOL within
+    90 days or past, orange within 180 days, white fine or no date, dash not
+    covered by endoflife.date. Returns ``[]`` (no section at all) until the
+    ETL has run.
+    """
+    data = _load_stack_eol()
+    if not data:
+        return []
+    products = [p for p in data.get("products", []) if isinstance(p, dict)]
+    if not products:
+        return []
+    rows = []
+    for product in products:
+        symbol, _tier = eol_badge(product)
+        if product.get("tracked") and product.get("nearest_eol"):
+            days = product.get("days_to_eol")
+            horizon = f"{days}d" if days is not None and days >= 0 else (f"{-days}d ago" if days is not None else "")
+            detail = f"EOL {product['nearest_eol']}" + (f" ({horizon})" if horizon else "")
+        elif product.get("tracked"):
+            detail = "no EOL date published"
+        else:
+            detail = "not tracked by endoflife.date"
+        cycles = product.get("cycles") or []
+        newest = str(cycles[0].get("latest_release") or cycles[0].get("cycle") or "") if cycles else ""
+        rows.append(
+            html.Li(
+                [
+                    html.Span(f"{symbol} ", className="me-1"),
+                    html.Strong(str(product.get("label") or product.get("product") or "?")),
+                    (f" · {newest}" if newest else ""),
+                    f" · {detail}",
+                ],
+                className="mb-1 small",
+            )
+        )
+    return [
+        dbc.Card(
+            [
+                dbc.CardHeader(html.H6("⏳ EOL & support cycles — endoflife.date", className="mb-0")),
+                dbc.CardBody(html.Ul(rows, className="mb-0 list-unstyled")),
+            ],
+            className="mt-3 shadow-sm",
+        ),
     ]
 
 

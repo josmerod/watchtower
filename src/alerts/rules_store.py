@@ -13,6 +13,9 @@ dependency-free API against that shared file:
 * :func:`sync_stack_cve_rules` — map the security ETL's stack matches onto
   rules: every CISA KEV CVE hitting a self-hosted stack service gets a HIGH
   rule; matches that aged out of the KEV window get resolved (T-081).
+* :func:`sync_stack_eol_rules` — map the EOL ETL's product cycles onto rules:
+  every stack product whose support ends within 90 days (or already past)
+  gets a HIGH rule; products back in the clear get resolved (T-092).
 
 Rules managed by the freshness sync are namespaced with
 ``FRESHNESS_RULE_PREFIX`` and stack-CVE rules with ``STACK_CVE_RULE_PREFIX``,
@@ -24,7 +27,7 @@ from __future__ import annotations
 import json
 import re
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +42,14 @@ FRESHNESS_RULE_PREFIX = "data_freshness_"
 # Stable id prefix for security-ETL-managed stack CVE rules (T-081) — KEV
 # entries actively exploited that hit one of the self-hosted stack services.
 STACK_CVE_RULE_PREFIX = "stack_cve_"
+
+# Stable id prefix for EOL rules (T-092) — stack products whose support cycle
+# ends within the alert horizon.
+STACK_EOL_RULE_PREFIX = "stack_eol_"
+
+# Days-to-EOL at which a product gets its Notifications rule (aligned with the
+# dashboard's 🔴 badge tier).
+EOL_ALERT_DAYS = 90
 
 # Freshness status -> alert severity (warn-level "stale" -> medium, "critical" -> high).
 SEVERITY_BY_FRESHNESS: dict[str, str] = {"stale": "medium", "critical": "high"}
@@ -309,6 +320,71 @@ def sync_stack_cve_rules(stack_matches: list[dict[str, Any]], rules_file: Path |
     # CVEs aged out of the KEV window (no longer matched) get their rule resolved.
     for rule in load_rules(rules_file):
         if isinstance(rule, dict) and str(rule.get("id", "")).startswith(STACK_CVE_RULE_PREFIX) and rule.get("id") not in managed_ids:
+            if resolve_rule(str(rule["id"]), rules_file=rules_file):
+                counts["resolved"] += 1
+
+    return counts
+
+
+def stack_eol_rule_id(product: str) -> str:
+    """Return the stable rule id for one stack product's EOL alert."""
+    slug = re.sub(r"[^a-z0-9_-]+", "_", product.lower().strip())
+    return f"{STACK_EOL_RULE_PREFIX}{slug}"
+
+
+def sync_stack_eol_rules(products: list[dict[str, Any]], rules_file: Path | None = None, today: date | None = None) -> dict[str, int]:
+    """Sync stack-product support cycles onto the shared alert-rule store.
+
+    Every tracked product whose ``nearest_eol`` falls within
+    :data:`EOL_ALERT_DAYS` days (or is already past) gets a HIGH rule upserted
+    (idempotent, keyed by ``stack_eol_{product}``); products back in the clear
+    get their rule resolved. Untracked products are never touched.
+
+    Args:
+        products: Product records from
+            :func:`src.etl.github.stack_eol_etl.fetch_stack_eol` (each carries
+            ``product``, ``label``, ``tracked`` and, when tracked,
+            ``days_to_eol``/``nearest_eol``).
+        rules_file: Alert-rule store to write (defaults to ``data/alerts/rules.json``).
+        today: Reference date for the days computation (defaults to today).
+
+    Returns:
+        Counts dict: ``created`` / ``updated`` / ``unchanged`` / ``resolved``.
+    """
+    counts = {"created": 0, "updated": 0, "unchanged": 0, "resolved": 0}
+    today = today or date.today()
+    managed_ids: set[str] = set()
+
+    for record in products:
+        if not isinstance(record, dict) or not record.get("tracked"):
+            continue
+        product = str(record.get("product") or "")
+        label = str(record.get("label") or product)
+        if not product:
+            continue
+        rule_id = stack_eol_rule_id(product)
+        days = record.get("days_to_eol")
+        if isinstance(days, (int, float)) and days <= EOL_ALERT_DAYS:
+            state = "ya sin soporte" if days <= 0 else f"en {days:g} días"
+            rule = {
+                "id": rule_id,
+                "name": f"EOL: {label}",
+                "description": f"{label} queda sin soporte {state} ({record.get('nearest_eol') or 'fecha desconocida'})",
+                "severity": "high",
+                "status": "eol-approaching",
+                "source": "stack_eol",
+                "source_key": product,
+                "nearest_eol": record.get("nearest_eol"),
+                "days_to_eol": days,
+                "active": True,
+                "auto_managed": True,
+            }
+            managed_ids.add(rule_id)
+            counts[upsert_rule(rule, rules_file=rules_file)] += 1
+
+    # Products back inside the support window (or no longer emitting days) resolve.
+    for rule in load_rules(rules_file):
+        if isinstance(rule, dict) and str(rule.get("id", "")).startswith(STACK_EOL_RULE_PREFIX) and rule.get("id") not in managed_ids:
             if resolve_rule(str(rule["id"]), rules_file=rules_file):
                 counts["resolved"] += 1
 

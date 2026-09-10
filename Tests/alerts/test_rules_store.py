@@ -221,3 +221,47 @@ class TestSyncStackCveRules:
         sync_stack_cve_rules([first], rules_file=f)
         sync_stack_cve_rules(both, rules_file=f)  # new CVE joins, old one still matched
         assert sorted(r["id"] for r in load_rules(f)) == ["stack_cve_n8n-io_n8n_cve-2026-0001", "stack_cve_n8n-io_n8n_cve-2026-0002"]
+
+
+class TestStackEolRules:
+    """Stack-product EOL rules (T-092): HIGH inside the 90-day horizon."""
+
+    def test_eol_soon_gets_high_rule(self, tmp_path: Path):
+        from src.alerts.rules_store import sync_stack_eol_rules
+
+        f = tmp_path / "rules.json"
+        products = [{"product": "debian", "label": "Debian", "tracked": True, "days_to_eol": 30, "nearest_eol": "2026-10-10"}]
+        counts = sync_stack_eol_rules(products, rules_file=f, today=__import__("datetime").date(2026, 9, 10))
+        assert counts["created"] == 1
+        rule = load_rules(f)[0]
+        assert rule["id"] == "stack_eol_debian"
+        assert rule["severity"] == "high"
+        assert "30 días" in rule["description"]
+
+    def test_eol_far_no_rule_and_back_in_clear_resolves(self, tmp_path: Path):
+        from datetime import date as _date
+
+        from src.alerts.rules_store import sync_stack_eol_rules
+
+        f = tmp_path / "rules.json"
+        today = _date(2026, 9, 10)
+        near = [{"product": "debian", "label": "Debian", "tracked": True, "days_to_eol": 30, "nearest_eol": "2026-10-10"}]
+        far = [{"product": "debian", "label": "Debian", "tracked": True, "days_to_eol": 600, "nearest_eol": "2028-05-01"}]
+        sync_stack_eol_rules(near, rules_file=f, today=today)
+        assert sync_stack_eol_rules(far, rules_file=f, today=today)["resolved"] == 1
+        assert load_rules(f) == []
+
+    def test_past_eol_and_untracked_ignored(self, tmp_path: Path):
+        from datetime import date as _date
+
+        from src.alerts.rules_store import sync_stack_eol_rules
+
+        f = tmp_path / "rules.json"
+        products = [
+            {"product": "n8n", "label": "n8n", "tracked": False},  # endoflife.date doesn't track it
+            {"product": "old", "label": "Old", "tracked": True, "days_to_eol": -5, "nearest_eol": "2026-09-05"},
+        ]
+        sync_stack_eol_rules(products, rules_file=f, today=_date(2026, 9, 10))
+        rules = load_rules(f)
+        assert len(rules) == 1  # only the past-EOL product rules; untracked never
+        assert "ya sin soporte" in rules[0]["description"]
