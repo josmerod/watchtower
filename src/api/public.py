@@ -29,6 +29,9 @@ public_router = APIRouter(tags=["public"])
 # Relative to the project data/ directory.
 MARKETS_FILE = "markets/coingecko_latest.json"
 FRESHNESS_FILE = "watchers/data_freshness/freshness_latest.json"
+DIGEST_FILE = "insights/digest_latest.json"
+SECURITY_FILE = "security/security_latest.json"
+VALENCIA_EVENTS_FILE = "valencia_events/valencia_events.json"
 
 # Radar source files, mirroring RADAR_SOURCES in
 # src/web/dashboard/components/tech_radar_tab.py (paths + categories only;
@@ -252,4 +255,88 @@ async def get_freshness(response: Response):
         return {**summary, "stale_sources": stale_sources}
     except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
         logger.error(f"Error fetching freshness: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@public_router.get("/digest")
+async def get_digest(response: Response):
+    """Get the compiled weekly digest (terms, radar picks, movers).
+
+    Reads ``data/insights/digest_latest.json`` (produced by the weekly-digest
+    ETL from local files) and returns the stored summary as-is.
+    """
+    path = _get_data_dir() / DIGEST_FILE
+    if not path.is_file():
+        return _not_found(f"Digest data file not found: {DIGEST_FILE}")
+    try:
+        digest = _read_json_file(path)
+        if not isinstance(digest, dict):
+            raise ValueError(f"Unexpected digest payload type: {type(digest).__name__}")
+        response.headers["Cache-Control"] = "no-store"
+        return digest
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
+        logger.error(f"Error fetching digest: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@public_router.get("/security/kev")
+async def get_security_kev(response: Response, limit: int = Query(100, ge=1, le=500, description="Max KEV entries to return")):
+    """Get actively-exploited CVEs (CISA KEV) plus matches against my stack.
+
+    Reads ``data/security/security_latest.json`` (the Security tab's envelope)
+    and returns the KEV items plus the ``stack_matches`` cross-reference
+    (T-081): every KEV entry whose vendor/product hits one of the self-hosted
+    stack services.
+    """
+    path = _get_data_dir() / SECURITY_FILE
+    if not path.is_file():
+        return _not_found(f"Security data file not found: {SECURITY_FILE}")
+    try:
+        envelope = _read_json_file(path)
+        if not isinstance(envelope, dict):
+            raise ValueError(f"Unexpected security payload type: {type(envelope).__name__}")
+        items = envelope.get("items") or []
+        stack_matches = envelope.get("stack_matches") or []
+        response.headers["Cache-Control"] = "no-store"
+        return {
+            "generated_at": envelope.get("generated_at") or _file_mtime_iso(path),
+            "kev_count": len(items),
+            "items": items[:limit],
+            "stack_matches": stack_matches,
+        }
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
+        logger.error(f"Error fetching security KEV: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@public_router.get("/valencia/events")
+async def get_valencia_events(response: Response, days: int = Query(0, ge=0, le=365, description="Only events starting within N days from now (0 = all)"), limit: int = Query(200, ge=1, le=500, description="Max events to return")):
+    """Get Valencia events (for calendar automations).
+
+    Reads ``data/valencia_events/valencia_events.json`` and returns the events
+    as-is. With ``days > 0`` only events whose ``start_date`` falls within the
+    next N days are returned (events without a date are excluded from that
+    filtered view only).
+    """
+    path = _get_data_dir() / VALENCIA_EVENTS_FILE
+    if not path.is_file():
+        return _not_found(f"Valencia events file not found: {VALENCIA_EVENTS_FILE}")
+    try:
+        events = _read_json_file(path)
+        if isinstance(events, dict):
+            events = events.get("events") or events.get("items") or []
+        if not isinstance(events, list):
+            raise ValueError(f"Unexpected Valencia events payload type: {type(events).__name__}")
+        if days > 0:
+            now = datetime.now(timezone.utc).timestamp()
+            horizon = now + days * 86400
+            events = [e for e in events if isinstance(e, dict) and now <= _sortable_date(e.get("start_date")) <= horizon]
+        response.headers["Cache-Control"] = "no-store"
+        return {
+            "generated_at": _file_mtime_iso(path),
+            "count": len(events),
+            "items": events[:limit],
+        }
+    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
+        logger.error(f"Error fetching Valencia events: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e

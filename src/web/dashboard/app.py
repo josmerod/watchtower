@@ -433,13 +433,13 @@ curl -s "https://watchtower-api.josmerod.es/api/v1/ecommerce?source=gumroad_scra
         <tbody>
           <tr><td><code>/api/v1/news</code></td><td>Tech/news feeds such as Hacker News, TechCrunch, Ben's Bites, Product Hunt, and similar sources.</td><td><code>limit</code>, <code>source</code></td></tr>
           <tr><td><code>/api/v1/knowledge-garden</code></td><td>Longer-lived knowledge items, open-source discoveries, references, and learning material.</td><td><code>limit</code>, <code>source</code></td></tr>
-          <tr><td><code>/api/v1/ecommerce</code></td><td>Digital products, marketplace items, and deal feeds.</td><td><code>limit</code>, <code>source</code></td></tr>
           <tr><td><code>/api/v1/games</code></td><td>Game deals and free/discounted game opportunities.</td><td><code>limit</code>, <code>source</code></td></tr>
-          <tr><td><code>/api/v1/travel</code></td><td>Travel deals and destination opportunities.</td><td><code>limit</code>, <code>source</code></td></tr>
-          <tr><td><code>/api/v1/research</code></td><td>Academic/research feeds such as arXiv and ADHD/publication data.</td><td><code>limit</code>, <code>source</code></td></tr>
-          <tr><td><code>/api/v1/intelligence</code></td><td>Security and intelligence feeds such as CVEs and SEC-style signals.</td><td><code>limit</code>, <code>source</code></td></tr>
-          <tr><td><code>/api/v1/museums</code></td><td>Museum/culture data.</td><td><code>limit</code>, <code>source</code></td></tr>
-          <tr><td><code>/api/v1/entertainment</code></td><td>Movies, anime, and entertainment feeds.</td><td><code>limit</code>, <code>source</code></td></tr>
+          <tr><td><code>/api/v1/markets</code></td><td>Crypto market quotes (CoinGecko snapshot) for portfolio automations.</td><td><code>limit</code></td></tr>
+          <tr><td><code>/api/v1/radar</code></td><td>Merged technology-radar feed across all 23 sources, newest first.</td><td><code>limit</code></td></tr>
+          <tr><td><code>/api/v1/freshness</code></td><td>Data-freshness summary plus a <code>stale_sources</code> convenience list.</td><td>None</td></tr>
+          <tr><td><code>/api/v1/digest</code></td><td>Compiled weekly digest: hot terms, radar picks, movers.</td><td>None</td></tr>
+          <tr><td><code>/api/v1/security/kev</code></td><td>Actively-exploited CVEs (CISA KEV) plus matches against my self-hosted stack.</td><td><code>limit</code></td></tr>
+          <tr><td><code>/api/v1/valencia/events</code></td><td>Valencia events for calendar automations, optional upcoming-days filter.</td><td><code>days</code>, <code>limit</code></td></tr>
           <tr><td><code>/api/v1/benchmarks</code></td><td>AI coding benchmark data.</td><td><code>source</code></td></tr>
           <tr><td><code>/api/v1/sources</code></td><td>Machine-readable list of available source keys for filtering.</td><td>None</td></tr>
         </tbody>

@@ -13,17 +13,11 @@ from src.services.data_loader import (
     ARXIV_SOURCES_CONFIG,
     BENCHMARKS_SOURCES_CONFIG,
     CLOUD_UPDATES_SOURCES_CONFIG,
-    ECOMMERCE_SOURCES_CONFIG,
-    ENTERTAINMENT_SOURCES_CONFIG,
     EXPANDED_SOURCES_CONFIG,
     GAMES_SOURCES_CONFIG,
-    INTEL_SOURCES_CONFIG,
     KNOWLEDGE_SOURCES_CONFIG,
-    MUSEUMS_CONFIG,
     NEWS_SOURCES_CONFIG,
-    RESEARCH_SOURCES_CONFIG,
     SPANISH_AID_SOURCES_CONFIG,
-    TRAVEL_SOURCES_CONFIG,
     VALENCIA_LOCAL_SOURCES_CONFIG,
     format_article_date,
     get_item_dedupe_key,
@@ -135,66 +129,6 @@ async def get_knowledge(source: str | None = Query(None, description="Filter by 
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/ecommerce", response_model=list[UnifiedItem])
-async def get_ecommerce(source: str | None = Query(None, description="Filter by source key"), limit: int = Query(10000, ge=1, le=10000, description="Max items to return")):
-    """Get e-commerce items."""
-    try:
-        return _load_and_process_items(ECOMMERCE_SOURCES_CONFIG, source, limit)
-    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
-        logger.error(f"Error fetching ecommerce: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/entertainment", response_model=list[UnifiedItem])
-async def get_entertainment(source: str | None = Query(None, description="Filter by source key"), limit: int = Query(10000, ge=1, le=10000, description="Max items to return")):
-    """Get entertainment items."""
-    try:
-        return _load_and_process_items(ENTERTAINMENT_SOURCES_CONFIG, source, limit)
-    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
-        logger.error(f"Error fetching entertainment: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/intelligence", response_model=list[UnifiedItem])
-async def get_intelligence(source: str | None = Query(None, description="Filter by source key"), limit: int = Query(10000, ge=1, le=10000, description="Max items to return")):
-    """Get intelligence items."""
-    try:
-        return _load_and_process_items(INTEL_SOURCES_CONFIG, source, limit)
-    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
-        logger.error(f"Error fetching intelligence: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/travel", response_model=list[UnifiedItem])
-async def get_travel(source: str | None = Query(None, description="Filter by source key"), limit: int = Query(10000, ge=1, le=10000, description="Max items to return")):
-    """Get travel items."""
-    try:
-        return _load_and_process_items(TRAVEL_SOURCES_CONFIG, source, limit)
-    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
-        logger.error(f"Error fetching travel: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/research", response_model=list[UnifiedItem])
-async def get_research(source: str | None = Query(None, description="Filter by source key"), limit: int = Query(10000, ge=1, le=10000, description="Max items to return")):
-    """Get research items."""
-    try:
-        return _load_and_process_items(RESEARCH_SOURCES_CONFIG, source, limit)
-    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
-        logger.error(f"Error fetching research: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/museums", response_model=list[UnifiedItem])
-async def get_museums(source: str | None = Query(None, description="Filter by source key"), limit: int = Query(10000, ge=1, le=10000, description="Max items to return")):
-    """Get museums items."""
-    try:
-        return _load_and_process_items(MUSEUMS_CONFIG, source, limit)
-    except (OSError, json.JSONDecodeError, ValueError, TypeError, ValidationError) as e:
-        logger.error(f"Error fetching museums: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
 @router.get("/games", response_model=list[UnifiedItem])
 async def get_games(source: str | None = Query(None, description="Filter by source key"), limit: int = Query(10000, ge=1, le=10000, description="Max items to return")):
     """Get games items."""
@@ -285,12 +219,6 @@ async def get_sources():
     return {
         "news": {k: v["name"] for k, v in NEWS_SOURCES_CONFIG.items()},
         "knowledge_garden": {k: v["name"] for k, v in KNOWLEDGE_SOURCES_CONFIG.items()},
-        "ecommerce": {k: v["name"] for k, v in ECOMMERCE_SOURCES_CONFIG.items()},
-        "entertainment": {k: v["name"] for k, v in ENTERTAINMENT_SOURCES_CONFIG.items()},
-        "intelligence": {k: v["name"] for k, v in INTEL_SOURCES_CONFIG.items()},
-        "travel": {k: v["name"] for k, v in TRAVEL_SOURCES_CONFIG.items()},
-        "research": {k: v["name"] for k, v in RESEARCH_SOURCES_CONFIG.items()},
-        "museums": {k: v["name"] for k, v in MUSEUMS_CONFIG.items()},
         "games": {k: v["name"] for k, v in GAMES_SOURCES_CONFIG.items()},
         "benchmarks": {k: v["name"] for k, v in BENCHMARKS_SOURCES_CONFIG.items()},
         "arxiv": {k: v["name"] for k, v in ARXIV_SOURCES_CONFIG.items()},

@@ -201,6 +201,120 @@ def test_freshness_missing(data_dir: Path):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/v1/digest (T-084)
+# ---------------------------------------------------------------------------
+
+DIGEST = {
+    "generated_at": "2026-09-10T08:00:00+00:00",
+    "hot_terms": [{"term": "agent", "mentions": 68, "sources": 12}],
+    "missing_inputs": [],
+}
+
+
+def test_digest_ok(data_dir: Path):
+    """200, digest payload returned as stored."""
+    _write(data_dir, "insights/digest_latest.json", DIGEST)
+    response = client.get("/api/v1/digest")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    body = response.json()
+    assert body["generated_at"] == DIGEST["generated_at"]
+    assert body["hot_terms"][0]["term"] == "agent"
+
+
+def test_digest_missing(data_dir: Path):
+    """404 when the digest file does not exist."""
+    response = client.get("/api/v1/digest")
+    assert response.status_code == 404
+    assert "error" in response.json()
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/security/kev (T-084)
+# ---------------------------------------------------------------------------
+
+SECURITY = {
+    "generated_at": "2026-09-10T06:00:00+00:00",
+    "items": [
+        {"cve": "CVE-2026-0001", "vendor": "acme", "product": "widget"},
+        {"cve": "CVE-2026-0002", "vendor": "n8n", "product": "n8n"},
+        {"cve": "CVE-2026-0003", "vendor": "other", "product": "thing"},
+    ],
+    "stack_matches": [{"repo": "n8n-io/n8n", "service_label": "n8n", "cves": [{"cve": "CVE-2026-0002"}]}],
+}
+
+
+def test_security_kev_ok(data_dir: Path):
+    """200, KEV items + stack_matches cross-reference served."""
+    _write(data_dir, "security/security_latest.json", SECURITY)
+    response = client.get("/api/v1/security/kev")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["kev_count"] == 3
+    assert len(body["items"]) == 3
+    assert body["stack_matches"][0]["repo"] == "n8n-io/n8n"
+
+
+def test_security_kev_limit(data_dir: Path):
+    """?limit caps the returned KEV items without touching the count."""
+    _write(data_dir, "security/security_latest.json", SECURITY)
+    response = client.get("/api/v1/security/kev?limit=2")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["kev_count"] == 3
+    assert len(body["items"]) == 2
+
+
+def test_security_kev_missing(data_dir: Path):
+    """404 when the security file does not exist."""
+    response = client.get("/api/v1/security/kev")
+    assert response.status_code == 404
+    assert "error" in response.json()
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/valencia/events (T-084)
+# ---------------------------------------------------------------------------
+
+VALENCIA = {
+    "events": [
+        {"title": "Past conference", "start_date": "2026-08-01T10:00:00+00:00"},
+        {"title": "Soon meetup", "start_date": "2026-09-12T20:00:00+00:00"},
+        {"title": "Next month gig", "start_date": "2026-10-15T21:00:00+00:00"},
+        {"title": "Undated thing"},
+    ]
+}
+
+
+def test_valencia_events_all(data_dir: Path):
+    """200, full list as stored (undated events included when unfiltered)."""
+    _write(data_dir, "valencia_events/valencia_events.json", VALENCIA)
+    response = client.get("/api/v1/valencia/events")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["count"] == 4
+    assert body["items"][0]["title"] == "Past conference"
+
+
+def test_valencia_events_days_filter(data_dir: Path):
+    """?days=N keeps only events starting inside [now, now+N] — past and undated excluded."""
+    _write(data_dir, "valencia_events/valencia_events.json", VALENCIA)
+    response = client.get("/api/v1/valencia/events?days=30")
+    assert response.status_code == 200
+    assert [e["title"] for e in response.json()["items"]] == ["Soon meetup"]
+
+    response = client.get("/api/v1/valencia/events?days=40")
+    assert [e["title"] for e in response.json()["items"]] == ["Soon meetup", "Next month gig"]
+
+
+def test_valencia_events_missing(data_dir: Path):
+    """404 when the Valencia events file does not exist."""
+    response = client.get("/api/v1/valencia/events")
+    assert response.status_code == 404
+    assert "error" in response.json()
+
+
+# ---------------------------------------------------------------------------
 # OpenAPI wiring
 # ---------------------------------------------------------------------------
 
@@ -208,6 +322,6 @@ def test_freshness_missing(data_dir: Path):
 def test_openapi_includes_public_endpoints():
     """The new endpoints show up in the generated OpenAPI schema."""
     schema = client.get("/openapi.json").json()
-    for path in ("/api/v1/markets", "/api/v1/radar", "/api/v1/freshness"):
+    for path in ("/api/v1/markets", "/api/v1/radar", "/api/v1/freshness", "/api/v1/digest", "/api/v1/security/kev", "/api/v1/valencia/events"):
         assert path in schema["paths"]
         assert "get" in schema["paths"][path]
