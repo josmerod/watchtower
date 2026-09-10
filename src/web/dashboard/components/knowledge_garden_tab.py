@@ -12,6 +12,7 @@ from src.repositories import BaseRepository
 from src.services.data_loader import (
     KNOWLEDGE_SOURCES_CONFIG,
     get_sortable_date,
+    parse_date,
 )
 from src.services.data_loader import (
     format_article_date as format_article_date_shared,
@@ -199,6 +200,60 @@ def format_article_date(article):
     return format_article_date_shared(article)
 
 
+# --- NUEVO badge plumbing (T-085) ---
+# Rows/cards carry a machine-readable ISO date in data-kg-date so
+# assets/js/kg_state.js can badge items newer than the previous visit
+# (same UX as the Videos tab, spec 04 F5). Field order mirrors
+# get_sortable_date so sort order and badges always agree.
+_KG_DATE_FIELDS = (
+    "published_at",
+    "published",
+    "published_date",
+    "publication_date",
+    "created_at",
+    "created_utc",
+    "updated_at",
+    "updated",
+    "time",
+    "pubDate",
+    "release_date",
+    "fetched_at",
+    "extracted_at",
+    "first_seen",
+    "date",
+)
+
+
+def _kg_date_iso(article: dict) -> str:
+    """Best-effort ISO 8601 timestamp for the client-side NUEVO badge (T-085).
+
+    Parses the first date-ish field (same order as ``get_sortable_date``) and
+    falls back to the raw string; ``assets/js/kg_state.js`` skips values that
+    ``Date.parse`` rejects. Empty string for undated items — never badged.
+    """
+    raw = next((article.get(f) for f in _KG_DATE_FIELDS if article.get(f)), None)
+    if not raw:
+        return ""
+    parsed = parse_date(raw)
+    return parsed.isoformat() if parsed else str(raw)
+
+
+def _tag_rows_with_kg_dates(table: Any, items: list[dict]) -> None:
+    """Attach ``data-kg-date`` to each table body row, in item order (T-085).
+
+    ``render_items_table`` builds plain ``html.Tr`` rows with no per-row
+    attributes, and dbc components reject ``data-*`` wildcards — so the
+    cleanest injection point is post-construction (Dash serializes data-*
+    wildcards set this way; verified in Tests/unit/test_kg_new_badge.py).
+    """
+    for child in getattr(table, "children", None) or []:
+        if isinstance(child, html.Tbody):
+            # strict=False on purpose: badge tagging must never break rendering
+            # if the shared table builder's structure ever changes.
+            for row, article in zip(child.children or [], items, strict=False):
+                setattr(row, "data-kg-date", _kg_date_iso(article))
+
+
 # hash -> full item dict at render time. The registry itself now lives in the
 # shared saved-items module (also used by News, Tech Radar and Markets, T-053);
 # this alias keeps the historical name working for this tab's toggle callback.
@@ -303,7 +358,13 @@ def _knowledge_card(article: dict, search_term: str = "") -> dbc.Col:
     body.append(html.P(format_article_date(article), className="card-text text-muted mb-0", style={"fontSize": "0.75rem"}))
 
     return dbc.Col(
-        dbc.Card(dbc.CardBody(body), className="h-100"),
+        # html.Div wrapper carries the data-* attribute (dbc components don't
+        # accept wildcards); kg_state.js keys on it for the NUEVO badge (T-085).
+        html.Div(
+            dbc.Card(dbc.CardBody(body), className="h-100"),
+            className="h-100",
+            **{"data-kg-date": _kg_date_iso(article)},
+        ),
         xs=12,
         sm=6,
         md=4,
@@ -386,6 +447,7 @@ def build_knowledge_table(source_keys, search_term: str = "", display_name: str 
         {"header": "Date", "cell": lambda article: format_article_date(article)},
     ]
     table = render_items_table(page_items, columns, empty_message=f"No knowledge items matching '{search_term}'.", wrap_scroll=False)
+    _tag_rows_with_kg_dates(table, page_items)  # data-kg-date for NUEVO badges (T-085)
 
     content = html.Div([table], style={"maxHeight": "800px", "overflowY": "auto", "paddingRight": "15px"})
     if search_term:
@@ -642,7 +704,20 @@ def render_knowledge_garden_tab():
 
     return html.Div(
         [
-            html.H3("Knowledge Garden", className="mb-3"),
+            html.H3(
+                [
+                    "Knowledge Garden ",
+                    # Filled client-side by assets/js/kg_state.js (T-085):
+                    # "N NUEVO" chip counting items newer than the last visit.
+                    html.Span(
+                        "",
+                        id="kg-new-counter",
+                        className="ms-2 align-middle",
+                        style={"fontSize": "0.8rem", "verticalAlign": "middle"},
+                    ),
+                ],
+                className="mb-3",
+            ),
             source_health_dots(health_sources, title="Salud de fuentes:"),
             # Garden global search — one query across every source (spec 03 F1)
             dcc.Input(
