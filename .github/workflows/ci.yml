@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Install Playwright chromium
+        run: uv run playwright install chromium --with-deps
+
       - name: Lint (ruff check)
         run: uv run ruff check --output-format=github .
 
@@ -33,8 +36,9 @@ jobs:
 
       - name: Run tests
         run: uv run pytest Tests/ -v
-        # T-049: blocking since the suite went green (260+ unit + integration;
-        # e2e/visual tests skip without pytest-playwright via the conftest guard)
+        # T-049: blocking since the suite went green. Browser e2e (Tests/e2e)
+        # run for real: chromium is installed above; the conftest still guards
+        # environments where the binary is missing (skip, not fail).
 
       - name: Validate Dockerfile
         run: docker build -f deployment/Dockerfile --check . 2>/dev/null || docker build -f deployment/Dockerfile --quiet . 2>&1 | head -5
