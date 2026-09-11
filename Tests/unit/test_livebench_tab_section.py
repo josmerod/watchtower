@@ -107,7 +107,8 @@ class TestRenderBenchmarksTab:
     def test_livebench_source_tab_is_registered(self):
         """The full tab must keep all sources and expose the LiveBench tab."""
         aa_models = [{"name": "Model A", "creator": "X", "open_weights": True, "intelligence_index": 50.0}]
-        with patch.object(tab, "_load_aa_data", return_value=(aa_models, {"fetched_at": "2026-08-28T00:00:00+00:00", "count": 1})):
+        bridgebench = [{"model": "Model A", "quality": 1.0, "vibe": 2.0}]
+        with patch.object(tab, "_load_aa_data", return_value=(aa_models, {"fetched_at": "2026-08-28T00:00:00+00:00", "count": 1})), patch.object(tab, "_load_benchmark_category", return_value=bridgebench):
             rendered = tab.render_benchmarks_tab()
         text = _component_text(rendered)
         for label in ("Community LLM Leaderboard", "LiveBench", "BridgeBench.ai", "Artificial Analysis"):
