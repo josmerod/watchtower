@@ -20,6 +20,11 @@ DOCKER_IMAGE = "watchtower"
 # Host port (Unraid) -> Container port (Dash app)
 HOST_PORT = "7777"
 CONTAINER_PORT = "7780"
+# Remote browserless / Chromium endpoint for Playwright ETLs (LiveBench,
+# BridgeBench...). Read from .env so the LAN address isn't baked into the
+# repo; defaults to the Unraid host on browserless' standard port. An explicit
+# empty value opts out (Playwright ETLs degrade to a local launch or skip).
+BROWSERLESS_ENDPOINT = os.getenv("BROWSERLESS_ENDPOINT") or f"ws://{SERVER_IP}:3000"
 
 if not SERVER_IP:
     print("Error: UNRAID_HOST must be set in .env file")
@@ -78,7 +83,7 @@ def deploy():
             f"cd {REMOTE_DIR} && docker build -t {DOCKER_IMAGE} -f deployment/Dockerfile .",
             # Force remove to ensure clean slate even if running/stuck
             f"docker rm -f {DOCKER_IMAGE} || true",
-            f"docker run -d --name {DOCKER_IMAGE} --restart unless-stopped -p {HOST_PORT}:{CONTAINER_PORT} -p 45714:45714 -v /mnt/user/appdata/watchtower/data:/app/data -v /mnt/user/appdata/watchtower/logs:/app/logs -e TZ=Europe/Madrid -e BROWSERLESS_ENDPOINT=ws://REDACTED_LAN_IP:3000 {DOCKER_IMAGE}",
+            f"docker run -d --name {DOCKER_IMAGE} --restart unless-stopped -p {HOST_PORT}:{CONTAINER_PORT} -p 45714:45714 -v /mnt/user/appdata/watchtower/data:/app/data -v /mnt/user/appdata/watchtower/logs:/app/logs -e TZ=Europe/Madrid -e BROWSERLESS_ENDPOINT={BROWSERLESS_ENDPOINT} {DOCKER_IMAGE}",
             f"rm -rf {REMOTE_DIR} /tmp/{TAR_FILENAME}",
         ]
 
