@@ -146,7 +146,12 @@ class TestRenderBenchmarksTab:
     def test_new_models_source_tab_is_registered(self):
         """The full tab must keep all sources and expose the New Models tab."""
         aa_models = [{"name": "Model A", "creator": "X", "open_weights": True, "intelligence_index": 50.0}]
-        with patch.object(tab, "_load_aa_data", return_value=(aa_models, {"fetched_at": "2026-08-28T00:00:00+00:00", "count": 1})), patch.object(tab, "_load_openrouter_models", return_value=FIXTURE_NEW_MODELS):
+        bridgebench = [{"model": "Model A", "quality": 1.0, "vibe": 2.0}]
+        with (
+            patch.object(tab, "_load_aa_data", return_value=(aa_models, {"fetched_at": "2026-08-28T00:00:00+00:00", "count": 1})),
+            patch.object(tab, "_load_openrouter_models", return_value=FIXTURE_NEW_MODELS),
+            patch.object(tab, "_load_benchmark_category", return_value=bridgebench),
+        ):
             rendered = tab.render_benchmarks_tab()
         text = _component_text(rendered)
         for label in ("Community LLM Leaderboard", "LiveBench", "New Models", "BridgeBench.ai", "Artificial Analysis"):
