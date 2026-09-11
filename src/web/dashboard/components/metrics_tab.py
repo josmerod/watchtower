@@ -246,7 +246,13 @@ class MetricsManager:
         return events
 
     def _parse_datetime(self, date_str):
-        """Parse an ISO datetime string into a timezone-aware UTC datetime."""
+        """Parse an ISO datetime string into a timezone-aware UTC datetime.
+
+        Deliberately NOT ``utils.parse_date_universal``: run summaries are
+        written by ``BaseETL`` via naive ``utcnow().isoformat()``, so naive
+        strings mean UTC here — the shared parser would reinterpret them as
+        server-local and shift every run time by the host offset.
+        """
         if not date_str or not isinstance(date_str, str):
             return None
         try:

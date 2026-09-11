@@ -1,6 +1,5 @@
 import os
 import re  # For parsing prices
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +12,7 @@ from dash import html
 from src.repositories import BaseRepository
 
 # Import shared utilities
-from src.web.dashboard.utils import file_exists, get_data_path
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # --- Constants ---
 DATA_BASE_PATH = get_data_path("games", "")  # Relative to this file
@@ -63,56 +62,6 @@ ALL_GAMES_DATA = {
     "metacritic": pd.DataFrame(),
 }
 DATA_LOADED_SUCCESSFULLY = dict.fromkeys(ALL_GAMES_DATA, False)
-
-
-# --- Date Parsing Utility ---
-def parse_game_date(date_str, source_format=None):
-    if pd.isna(date_str) or not date_str:
-        return None
-
-    # Try ISO format first (common)
-    try:
-        # Handle 'Z' for UTC and potential timezone offsets
-        dt = datetime.fromisoformat(str(date_str).replace("Z", "+00:00"))
-        return dt.astimezone(timezone.utc)
-    except ValueError:
-        pass  # Continue to other formats
-
-    # Try specific format if provided
-    if source_format:
-        try:
-            dt = datetime.strptime(str(date_str), source_format)
-            return dt.replace(tzinfo=timezone.utc)  # Assume UTC if naive
-        except ValueError:
-            pass
-
-    # Fallback formats (add more as identified from data)
-    common_formats = [
-        "%Y-%m-%d",  # YYYY-MM-DD
-        "%d/%m/%Y",  # DD/MM/YYYY
-        "%m/%d/%Y",  # MM/DD/YYYY
-        "%b %d, %Y",  # Jan 01, 2023
-        "%B %d, %Y",  # January 01, 2023
-        "%Y-%m-%dT%H:%M:%S",  # ISO without timezone part
-    ]
-    for fmt in common_formats:
-        try:
-            dt = datetime.strptime(str(date_str), fmt)
-            return dt.replace(tzinfo=timezone.utc)  # Assume UTC
-        except ValueError:
-            continue
-
-    # Try epoch timestamp (seconds)
-    try:
-        timestamp = float(date_str)
-        if timestamp > 10000000000:  # Likely milliseconds, convert to seconds
-            timestamp /= 1000
-        return datetime.fromtimestamp(timestamp, tz=timezone.utc)
-    except ValueError:
-        pass
-
-    print(f"Warning: Could not parse game date: {date_str} with known formats.")
-    return None
 
 
 # --- Price Parsing Utility ---
@@ -206,7 +155,7 @@ def parse_price(price_str):
 #         if col not in df.columns:
 #             df[col] = None
 #
-#     df["published_date"] = df["published_date_str"].apply(lambda x: parse_game_date(x))  # Assuming a date field exists
+#     df["published_date"] = df["published_date_str"].apply(lambda x: parse_date_universal(x, "Games"))  # Assuming a date field exists
 #     df["price_new_numeric"] = df["price_new"].apply(parse_price)
 #     df["price_old_numeric"] = df["price_old"].apply(parse_price)
 #
@@ -274,7 +223,7 @@ def load_deals_data():
             if col not in df.columns:
                 df[col] = None
 
-        df["published_date"] = df["published_date_str"].apply(lambda x: parse_game_date(x))
+        df["published_date"] = df["published_date_str"].apply(lambda x: parse_date_universal(x, "Games"))
         df["price_new_numeric"] = df["price_new"].apply(parse_price)
         df["price_old_numeric"] = df["price_old"].apply(parse_price)
 
@@ -353,7 +302,7 @@ def load_bundles_data():
                 if col not in df.columns:
                     df[col] = None  # Add missing columns with None
 
-            df["expiry_date"] = df["expiry_date_str"].apply(lambda x: parse_game_date(x))
+            df["expiry_date"] = df["expiry_date_str"].apply(lambda x: parse_date_universal(x, "Games"))
             df["price_numeric"] = df["price"].apply(parse_price)
 
             # 'game_count' might need extraction if it's like "10 games"
@@ -503,7 +452,7 @@ def load_all_games_data():
             )
             if "published_date_str" not in df.columns:
                 df["published_date_str"] = None
-            df["published_date"] = df["published_date_str"].apply(lambda x: parse_game_date(x))
+            df["published_date"] = df["published_date_str"].apply(lambda x: parse_date_universal(x, "Games"))
             ALL_GAMES_DATA["metacritic"] = df
             DATA_LOADED_SUCCESSFULLY["metacritic"] = True
         else:

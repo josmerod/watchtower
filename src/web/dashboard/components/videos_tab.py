@@ -15,6 +15,7 @@ from src.web.dashboard.components.items_per_page_selector import (
     load_initial_preference,
     register_items_per_page_callback,
 )
+from src.web.dashboard.components.shared.table import paginate
 from src.web.dashboard.utils import get_data_path
 
 # Configure logging
@@ -1106,9 +1107,8 @@ def register_video_callbacks(app):
             else:
                 videos.sort(key=_date_sort_key, reverse=True)
 
-            total_pages = max(1, -(-len(videos) // items_per_page))
-            page = min(page, total_pages)
-            page_videos = videos[(page - 1) * items_per_page : page * items_per_page]
+            # Shared pagination helper: slice one page and clamp it into range
+            page_videos, total_pages, page = paginate(videos, page, items_per_page)
 
             video_cards = [create_video_card(video) for video in page_videos]
 

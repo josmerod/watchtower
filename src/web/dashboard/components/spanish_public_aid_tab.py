@@ -171,19 +171,15 @@ def get_data_last_updated() -> str:
 
 
 def parse_aid_date(date_str: str) -> datetime | None:
-    """Parse date strings from aid data."""
-    if not date_str:
-        return None
+    """Parse aid dates as naive wall-clock datetimes.
 
-    try:
-        # Handle ISO format dates
-        if "T" in date_str:
-            return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        else:
-            return datetime.fromisoformat(date_str)
-    except (ValueError, TypeError):
-        # Fallback to universal parser
-        return parse_date_universal(date_str, "SpanishAid")
+    Thin adapter over the shared parser: every call site here compares the
+    result against naive ``datetime.now()``, so the UTC-aware value returned by
+    ``parse_date_universal`` is converted back to local wall time (an identity
+    round-trip for the naive ISO strings the ETLs write).
+    """
+    parsed = parse_date_universal(date_str, "SpanishAid")
+    return parsed.astimezone().replace(tzinfo=None) if parsed else None
 
 
 # --- Component Creation Functions ---

@@ -1,6 +1,5 @@
 import os
 import time
-from datetime import datetime, timezone
 
 import dash
 import dash_bootstrap_components as dbc
@@ -9,8 +8,8 @@ from dash import Input, Output, State, dcc, html
 
 # Import shared utilities
 from src.services.data_loader import load_data_from_file
-from src.web.dashboard.components.shared.table import render_items_table
-from src.web.dashboard.utils import file_exists, get_data_path
+from src.web.dashboard.components.shared.table import paginate, render_items_table
+from src.web.dashboard.utils import file_exists, get_data_path, parse_date_universal
 
 # --- Constants ---
 # Two registered ETLs scrape Class Central's Coursera provider page and write
@@ -45,41 +44,6 @@ COURSES_DATA_LOADED = {
 }
 # Page size for tables
 PAGE_SIZE = 15
-
-
-# --- Date Parsing Utility (can be adapted if formats differ) ---
-def parse_course_date(date_str, source_format=None):
-    if pd.isna(date_str) or not date_str:
-        return None
-    try:  # ISO format is common
-        dt = datetime.fromisoformat(str(date_str).replace("Z", "+00:00"))
-        return dt.astimezone(timezone.utc)
-    except ValueError:
-        pass
-    if source_format:
-        try:
-            dt = datetime.strptime(str(date_str), source_format)
-            return dt.replace(tzinfo=timezone.utc)
-        except ValueError:
-            pass
-    # Add other common formats if needed
-    common_formats = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%b %d, %Y", "%B %d, %Y"]
-    for fmt in common_formats:
-        try:
-            dt = datetime.strptime(str(date_str), fmt)
-            return dt.replace(tzinfo=timezone.utc)
-        except ValueError:
-            continue
-    # Try epoch
-    try:
-        ts = float(date_str)
-        if ts > 10000000000:
-            ts /= 1000  # ms to s
-        return datetime.fromtimestamp(ts, tz=timezone.utc)
-    except ValueError:
-        pass
-    print(f"Warning (Courses): Could not parse date: {date_str}")
-    return None
 
 
 # --- Data Loading Functions ---
@@ -141,8 +105,8 @@ def load_coursera_data():
         if col not in df.columns:
             df[col] = None
 
-    df["start_date"] = df["start_date_str"].apply(lambda x: parse_course_date(x))
-    df["scraped_at"] = df["scraped_at_str"].apply(lambda x: parse_course_date(x))  # This is likely the "added" date
+    df["start_date"] = df["start_date_str"].apply(lambda x: parse_date_universal(x, "Courses"))
+    df["scraped_at"] = df["scraped_at_str"].apply(lambda x: parse_date_universal(x, "Courses"))  # This is likely the "added" date
 
     # Sort by scraped_at (added date) or start_date if available
     sort_col = "scraped_at" if "scraped_at" in df.columns else "start_date"
@@ -205,8 +169,8 @@ def load_udemy_data():
             df[col] = None
 
     # Ensure scraped_at is datetime compatible (it should be ISO string from ETL)
-    # If scraped_at is already correct, parse_course_date handles it.
-    df["scraped_at"] = df["scraped_at"].apply(lambda x: parse_course_date(x))
+    # If scraped_at is already correct, parse_date_universal handles it.
+    df["scraped_at"] = df["scraped_at"].apply(lambda x: parse_date_universal(x, "Courses"))
 
     if "scraped_at" in df.columns:
         df = df.sort_values(by="scraped_at", ascending=False, na_position="last")
@@ -1062,22 +1026,21 @@ def register_courses_callbacks(app):
                 )
 
             total_items = len(df_filtered)
-            max_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
 
             # Handle pagination button clicks
             ctx = dash.callback_context
             if ctx.triggered:
                 prop_id = ctx.triggered[0]["prop_id"]
                 if "prev-btn" in prop_id:
-                    current_page = max(1, (current_page or 1) - 1)
+                    current_page = (current_page or 1) - 1
                 elif "next-btn" in prop_id:
-                    current_page = min(max_pages, (current_page or 1) + 1)
+                    current_page = (current_page or 1) + 1
 
-            current_page = max(1, min(current_page or 1, max_pages))
-
+            # Shared paginate() slices one page and clamps it into range
+            # (DataFrames support the same len()/[a:b] protocol as lists).
+            df_paginated, max_pages, current_page = paginate(df_filtered, current_page or 1, PAGE_SIZE)
             start_idx = (current_page - 1) * PAGE_SIZE
             end_idx = start_idx + PAGE_SIZE
-            df_paginated = df_filtered.iloc[start_idx:end_idx]
 
             table = create_coursera_table(df_paginated)
 
@@ -1187,22 +1150,21 @@ def register_courses_callbacks(app):
                 )
 
             total_items = len(df_filtered)
-            max_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
 
             # Handle pagination button clicks
             ctx = dash.callback_context
             if ctx.triggered:
                 prop_id = ctx.triggered[0]["prop_id"]
                 if "prev-btn" in prop_id:
-                    current_page = max(1, (current_page or 1) - 1)
+                    current_page = (current_page or 1) - 1
                 elif "next-btn" in prop_id:
-                    current_page = min(max_pages, (current_page or 1) + 1)
+                    current_page = (current_page or 1) + 1
 
-            current_page = max(1, min(current_page or 1, max_pages))
-
+            # Shared paginate() slices one page and clamps it into range
+            # (DataFrames support the same len()/[a:b] protocol as lists).
+            df_paginated, max_pages, current_page = paginate(df_filtered, current_page or 1, PAGE_SIZE)
             start_idx = (current_page - 1) * PAGE_SIZE
             end_idx = start_idx + PAGE_SIZE
-            df_paginated = df_filtered.iloc[start_idx:end_idx]
 
             # Need a create_udemy_table helper
             table_header = [

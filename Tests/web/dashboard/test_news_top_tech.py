@@ -13,6 +13,7 @@ import pytest
 
 from src.web.dashboard.components import news_tab
 from src.web.dashboard.components.duplicate_filter import create_duplicate_toggle
+from src.web.dashboard.components.shared.table import paginate
 from src.web.dashboard.deduplication_utils import (
     annotate_duplicate_groups,
     filter_duplicates,
@@ -163,28 +164,40 @@ class TestDuplicateGrouping:
 
 
 class TestPaginationMath:
-    """compute_total_pages / slice_page_items slicing."""
+    """Shared ``paginate`` slicing as used by the Top Tech view (T-094 dedup)."""
 
     def test_73_items_at_25(self):
         """73 items, size 25 -> 3 pages, last page has 23 items."""
         items = list(range(73))
-        assert news_tab.compute_total_pages(len(items), 25) == 3
-        assert len(news_tab.slice_page_items(items, 1, 25)) == 25
-        assert len(news_tab.slice_page_items(items, 2, 25)) == 25
-        assert len(news_tab.slice_page_items(items, 3, 25)) == 23
+        page1, total_pages, page = paginate(items, 1, 25)
+        assert total_pages == 3
+        assert page == 1
+        assert len(page1) == 25
+        assert len(paginate(items, 2, 25)[0]) == 25
+        assert len(paginate(items, 3, 25)[0]) == 23
 
     def test_exact_multiple_no_extra_page(self):
         """50 items at 25/page -> exactly 2 pages (no empty third page)."""
-        assert news_tab.compute_total_pages(50, 25) == 2
+        assert paginate(list(range(50)), 1, 25)[1] == 2
 
     def test_empty_dataset_is_one_page(self):
         """0 items -> still 1 page so the pager never renders page 0."""
-        assert news_tab.compute_total_pages(0, 50) == 1
+        page_items, total_pages, page = paginate([], 1, 50)
+        assert page_items == []
+        assert total_pages == 1
+        assert page == 1
 
-    def test_non_positive_per_page_raises(self):
-        """A bogus page size must raise, never loop or divide by zero."""
-        with pytest.raises(ValueError):
-            news_tab.compute_total_pages(10, 0)
+    def test_page_clamped_into_range(self):
+        """Asking for page 99 of 3 lands on the last page, never past it."""
+        _items, total_pages, page = paginate(list(range(73)), 99, 25)
+        assert (total_pages, page) == (3, 3)
+
+    def test_non_positive_per_page_never_divides_by_zero(self):
+        """A bogus page size is clamped to 1 — no ZeroDivisionError, no loop."""
+        page_items, total_pages, page = paginate(list(range(5)), 1, 0)
+        assert len(page_items) == 1
+        assert total_pages == 5
+        assert page == 1
 
 
 # --- Shared Top Tech view renderer ---------------------------------------------

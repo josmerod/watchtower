@@ -49,7 +49,13 @@ def _fmt_pct(value: Any) -> str:
 
 
 def _fmt_dt(raw: Any) -> str:
-    """Human-friendly '28 Aug 2026 10:06' from an ISO string (fallback: raw)."""
+    """Human-friendly '28 Aug 2026 10:06' from an ISO string (fallback: raw).
+
+    Deliberately NOT built on ``utils.parse_date_universal``: this renders the
+    datetime's own wall clock with no tz conversion, and digest inputs mix
+    naive-local ETL stamps with aware-UTC watcher stamps — the shared parser
+    normalizes both to UTC, which would shift the displayed strings.
+    """
     text = str(raw or "")
     if not text:
         return ""

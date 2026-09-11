@@ -17,7 +17,7 @@ from src.services.data_loader import (
 )
 from src.web.dashboard.components import saved_items
 from src.web.dashboard.components.duplicate_filter import create_duplicate_toggle
-from src.web.dashboard.components.shared.table import render_items_table, title_cell
+from src.web.dashboard.components.shared.table import paginate, render_items_table, title_cell
 from src.web.dashboard.deduplication_utils import (
     annotate_duplicate_groups,
     filter_duplicates,
@@ -179,18 +179,6 @@ def _aggregate_source_articles(source_keys: list[str], all_news_data: dict[str, 
     return articles
 
 
-def compute_total_pages(total_items: int, per_page: int) -> int:
-    """Return the number of pages needed for total_items at per_page (min 1)."""
-    if per_page <= 0:
-        raise ValueError("per_page must be positive")
-    return max(1, -(-total_items // per_page))
-
-
-def slice_page_items(items: list[dict[str, Any]], page: int, per_page: int) -> list[dict[str, Any]]:
-    """Slice one 1-based page out of a full item list."""
-    return items[(page - 1) * per_page : page * per_page]
-
-
 def _build_news_table(articles: list[dict[str, Any]], search_term: str | None = None) -> dbc.Table:
     """Build the shared news table (Title/Source/Date, trend badge, read-state hash)."""
     trending_map = get_trending_items_map()
@@ -260,9 +248,8 @@ def _render_top_tech_view(
     summary = get_duplicate_summary(annotated)
     visible = filter_duplicates(annotated, show_duplicates=show_duplicates)
 
-    total_pages = compute_total_pages(len(visible), per_page)
-    page = min(max(1, page), total_pages)
-    page_items = slice_page_items(visible, page, per_page)
+    # Shared pagination helper: slice one page and clamp it into range
+    page_items, total_pages, page = paginate(visible, page, per_page)
 
     children: list[Any] = []
     if not show_duplicates and summary["duplicate_items"] > 0:

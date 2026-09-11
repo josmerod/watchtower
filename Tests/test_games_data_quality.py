@@ -121,14 +121,13 @@ class TestGamesDataQuality(unittest.TestCase):
     def test_games_tab_component_exists(self):
         """Test that games tab component exists and can be imported"""
         try:
-            from src.web.dashboard.components.games_tab import (
-                parse_game_date,
-                parse_price,
-            )
+            from src.web.dashboard.components import games_tab
 
             # Basic functionality test
-            self.assertEqual(parse_price("$10"), 10.0)
-            self.assertEqual(parse_price("Free"), 0.0)
+            self.assertEqual(games_tab.parse_price("$10"), 10.0)
+            self.assertEqual(games_tab.parse_price("Free"), 0.0)
+            # T-094: date parsing now delegates to the shared universal parser
+            self.assertIsNotNone(games_tab.parse_date_universal("2024-05-01T10:00:00Z", "Games"))
         except ImportError as e:
             self.fail(f"Could not import games tab component: {e}")
 

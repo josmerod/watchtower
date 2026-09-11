@@ -77,6 +77,13 @@ def _load_osv_services() -> list[dict[str, Any]]:
 
 
 def _parse_date(raw: str) -> datetime | None:
+    """Strict ISO parser: naive → assumed UTC, aware kept as-is, non-ISO → None.
+
+    Deliberately NOT ``utils.parse_date_universal``: that one treats naive
+    strings as server-local (shifting KEV's date-only ``dateAdded`` stamps by
+    the host offset) and falls back to many extra formats/epochs that this
+    feed's contract does not allow into the "recent" counts.
+    """
     if not raw:
         return None
     try:
