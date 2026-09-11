@@ -2,7 +2,6 @@
 """New Watchtower ETLs Runner.
 
 This script runs the newly implemented ETLs from the brainstorm ideas:
-1. Meme Economics Tracker - Because memes are serious business
 2. Enhanced Free Games Intelligence - Never miss a free game
 3. ADHD-Friendly Location Intelligence - Making the world neurodivergent-friendly
 4. Artificial Analysis Benchmarks - Comprehensive AI model benchmarks
@@ -19,27 +18,6 @@ from typing import Any
 from src.utils.logging import get_logger
 
 logger = get_logger("NewWatchtowerETLs")
-
-
-def run_meme_economics():
-    """Run the Meme Economics ETL."""
-    logger.info("🐸 Starting Meme Economics Tracker...")
-
-    try:
-        from src.etl.entertainment.meme_economics_etl import run_meme_economics_etl
-
-        metrics = run_meme_economics_etl()
-
-        logger.info(f"✅ Meme Economics completed: {metrics.records_loaded} records, {metrics.success_rate:.1f}% success")
-        return {
-            "name": "meme_economics",
-            "status": "success",
-            "records": metrics.records_loaded,
-        }
-
-    except Exception as e:
-        logger.error(f"❌ Meme Economics failed: {e}")
-        return {"name": "meme_economics", "status": "failed", "error": str(e)}
 
 
 def run_enhanced_free_games():
@@ -118,7 +96,7 @@ def run_all_new_etls() -> list[dict[str, Any]]:
     results = []
 
     # Run all ETLs
-    etl_functions = [run_meme_economics, run_enhanced_free_games, run_adhd_locations, run_artificial_analysis]
+    etl_functions = [run_enhanced_free_games, run_adhd_locations, run_artificial_analysis]
 
     for etl_func in etl_functions:
         try:
@@ -168,7 +146,6 @@ def print_summary(results: list[dict[str, Any]]):
 
     if successful > 0:
         print("\n🎯 Check these directories for new data:")
-        print("- data/meme_economics/output/ - Meme market intelligence")
         print("- data/enhanced_free_games/output/ - Free games recommendations")
         print("- data/adhd_friendly_locations/output/ - Neurodivergent-friendly spaces")
         print("- data/benchmarks/ - AI model benchmarks (Artificial Analysis)")
@@ -197,7 +174,6 @@ Examples:
 
     parser.add_argument(
         "--etl",
-        choices=["memes", "games", "adhd", "benchmarks", "all"],
         default="all",
         help="Which ETL to run (default: all)",
     )
@@ -217,8 +193,6 @@ Examples:
 
     if args.etl == "all":
         results = run_all_new_etls()
-    elif args.etl == "memes":
-        results = [run_meme_economics()]
     elif args.etl == "games":
         results = [run_enhanced_free_games()]
     elif args.etl == "adhd":
