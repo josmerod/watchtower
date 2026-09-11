@@ -27,7 +27,7 @@ classifiers = [
 dependencies = [
     # Core data processing and analysis
     "pandas>=2.2.3",
-    "numpy>=2.2.5",
+    "numpy>=2.2.6",
     "scikit-learn>=1.6.1",
     "python-dateutil>=2.9.0.post0",
     # Data validation and configuration
