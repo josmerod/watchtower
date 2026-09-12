@@ -164,7 +164,14 @@ def run_script(script_path):
     try:
         with open(log_file, "w", encoding="utf-8") as f:
             process = subprocess.Popen(cmd, stdout=f, stderr=subprocess.STDOUT, text=True)
-            process.wait(timeout=1800)
+            # Slower-than-average ETLs (Reddit RSS 429 backoffs, goldigging's
+            # many channels) can legitimately exceed 30m solo — give them room.
+            slow_etls = {
+                "reddit_unified_etl.py",
+                "goldigging_youtube_posts.py",
+            }
+            limit = 4500 if os.path.basename(script_path) in slow_etls else 1800
+            process.wait(timeout=limit)
 
         duration = time.time() - start_time
         if process.returncode == 0:
@@ -177,7 +184,7 @@ def run_script(script_path):
     except subprocess.TimeoutExpired:
         process.kill()
         duration = time.time() - start_time
-        print(f"[{datetime.now()}] TIMEOUT: {script_path} took longer than 30m.")
+        print(f"[{datetime.now()}] TIMEOUT: {script_path} took longer than the per-script limit.")
         return False, script_path, duration
     except Exception as e:
         print(f"[{datetime.now()}] EXCEPTION running {script_path}: {e}")
@@ -187,6 +194,7 @@ def run_script(script_path):
 def main():
     parser = argparse.ArgumentParser(description="Run ETL scripts using a thread pool.")
     parser.add_argument("--workers", type=int, default=4, help="Maximum number of concurrent ETL processes to run.")
+    parser.add_argument("--exclude", action="append", default=[], help="ETL script name to skip (repeatable). Matches basename or full path substring.")
     args = parser.parse_args()
 
     os.makedirs("logs", exist_ok=True)
@@ -198,8 +206,20 @@ def main():
     success_count = 0
     fail_count = 0
 
+    excluded = []
+    scripts = []
+    for script in ETL_SCRIPTS:
+        if any(exc and (exc in script or exc == os.path.basename(script)) for exc in args.exclude):
+            excluded.append(script)
+            continue
+        scripts.append(script)
+    if excluded:
+        print(f"Excluded {len(excluded)} script(s) via --exclude:")
+        for s in excluded:
+            print(f"  SKIP: {s}")
+
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
-        futures = {executor.submit(run_script, script): script for script in ETL_SCRIPTS}
+        futures = {executor.submit(run_script, script): script for script in scripts}
 
         for future in as_completed(futures):
             success, _script_path, _duration = future.result()
