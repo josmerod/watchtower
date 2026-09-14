@@ -46,7 +46,7 @@ dependencies = [
     # Natural Language Processing
     "nltk>=3.10.3",
     # Configuration and utilities
-    "python-dotenv>=1.2.2",
+    "python-dotenv>=1.2.3",
     # System monitoring
     "psutil>=6.0.0",
     "watchdog>=6.0.0",
