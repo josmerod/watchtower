@@ -48,7 +48,7 @@ dependencies = [
     # Configuration and utilities
     "python-dotenv>=1.2.2",
     # System monitoring
-    "psutil>=6.0.0",
+    "psutil>=7.2.2",
     "watchdog>=6.0.0",
     # Additional dependencies for enhanced functionality
     "tenacity>=9.1.2",
