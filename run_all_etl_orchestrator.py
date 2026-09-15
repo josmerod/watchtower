@@ -182,6 +182,16 @@ def run_script(script_path):
             return False, script_path, duration
 
     except subprocess.TimeoutExpired:
+        # process.kill() only kills the parent `uv` wrapper; the python child
+        # survives as an orphan (verified 2026-09-15 with openalex_etl: pid
+        # stuck at 0% CPU for 37min after TIMEOUT). Kill the whole tree.
+        try:
+            subprocess.run(
+                ["pkill", "-9", "-P", str(process.pid)],
+                capture_output=True, timeout=15,
+            )
+        except Exception:
+            pass
         process.kill()
         duration = time.time() - start_time
         print(f"[{datetime.now()}] TIMEOUT: {script_path} took longer than the per-script limit.")
