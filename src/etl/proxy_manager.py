@@ -53,9 +53,16 @@ class ProxyManager:
             logger.debug(f"Session configured with proxy: {proxies['http'].split('@')[-1] if '@' in proxies['http'] else '***'}")
 
         # Configure Retries
+        # NOTE: respect_retry_after_header=False (2026-09-16). OpenAlex sends
+        # Retry-After values of up to ~9h once the daily credit quota is
+        # exhausted; urllib3 sleeps the FULL Retry-After, hanging the ETL at
+        # 0% CPU until the orchestrator kills it (incidents 2026-09-15/16,
+        # openalex_etl TIMEOUT). With this off, 429s get short exponential
+        # backoff (2/4/8s) and then raise, so callers can skip-and-continue.
         retry_strategy = Retry(
             total=retries,
             backoff_factor=backoff_factor,
+            respect_retry_after_header=False,
             status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["HEAD", "GET", "OPTIONS"],
         )

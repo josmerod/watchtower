@@ -306,6 +306,16 @@ class OpenAlexETL(BaseETL[dict[str, Any], OpenAlexWorkModel]):
         # Convert to dicts
         works_data = [w.model_dump(mode="json") for w in data]
 
+        # Guard (2026-09-16): if every concept request failed (e.g. OpenAlex
+        # daily quota exhausted -> all 429), do NOT overwrite the last good
+        # openalex_latest.json with an empty file. Keep the previous data.
+        if not works_data:
+            self.logger.warning(
+                "No works to load — skipping write to avoid clobbering "
+                "previous data (likely rate-limit/quota failure)."
+            )
+            return
+
         # Generate timestamp
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
 
