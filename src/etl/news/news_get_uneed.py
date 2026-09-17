@@ -86,7 +86,14 @@ class UneedScraper:
                         continue
 
                     # Extract text info from the link or parent
+                    # Uneed redesigned (~Sep 2026): card links are absolute-overlay <a> with
+                    # aria-label and NO inner text, so inner_text() is empty. Fall back to
+                    # aria-label, then to the link's title attribute.
                     name = link.inner_text().split("\n")[0].strip()  # Often name is first line
+                    if not name:
+                        name = (link.get_attribute("aria-label") or "").strip()
+                    if not name:
+                        name = (link.get_attribute("title") or "").strip()
 
                     # Try to find description in parent card
                     # Walk up
@@ -159,17 +166,20 @@ def main():
 
         if not raw_products:
             logger.warning("No products scraped. Dumping HTML for debugging...")
-            debug_path = os.path.join(get_project_root(), "logs", "uneed_debug.html")
-            with sync_playwright() as p:
-                browser = p.chromium.launch()
-                page = browser.new_page()
-                page.goto(scraper.base_url)
-                time.sleep(5)
-                html = page.content()
-                with open(debug_path, "w", encoding="utf-8") as f:
-                    f.write(html)
-                browser.close()
-            logger.info(f"Dumped HTML to {debug_path}")
+            try:
+                debug_path = os.path.join(get_project_root(), "logs", "uneed_debug.html")
+                with sync_playwright() as p:
+                    browser = p.chromium.launch()
+                    page = browser.new_page()
+                    page.goto(scraper.base_url, wait_until="domcontentloaded", timeout=60000)
+                    time.sleep(5)
+                    html = page.content()
+                    with open(debug_path, "w", encoding="utf-8") as f:
+                        f.write(html)
+                    browser.close()
+                logger.info(f"Dumped HTML to {debug_path}")
+            except Exception as dump_err:  # debug dump is best-effort; don't fail the ETL for it
+                logger.warning(f"Debug HTML dump failed: {dump_err}")
             return  # Don't save empty file
 
         processed_data = process_data(raw_products)
