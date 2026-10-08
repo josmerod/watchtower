@@ -18,15 +18,59 @@ logger = logging.getLogger("goldigging_youtube_posts")
 logging.basicConfig(level=logging.INFO)
 
 BASE_OUTPUT_DIR = "data/youtube"
-MAX_VIDEOS_PER_CHANNEL = 50
-DEFAULT_DAYS_LOOKBACK = 42  # 6 weeks
 
 # Performance optimization constants
+MAX_VIDEOS_PER_CHANNEL = 50
+DEFAULT_DAYS_LOOKBACK = 42  # 6 weeks
+# Hard wall-clock budget for the whole ETL run (seconds). The cron fires every
+# 4h regardless of whether the previous run exited; a hung run must self-abort
+# or processes pile up and eat the host (incident 2026-10-08: two stacked
+# goldigging processes held >20GB RSS and pushed the host to load 573).
+RUN_DEADLINE_SECONDS = 45 * 60
+_RUN_START = time.monotonic()
+
 MAX_WORKERS_PER_CHANNEL = 2  # Max concurrent video fetches per channel (reduced from 8 to save memory)
 RATE_LIMIT_DELAY = 0.1  # Delay between API calls in seconds
 CACHE_TTL = 300  # Cache TTL in seconds (5 minutes)
+MAX_CACHE_ENTRIES = 200  # Hard cap per cache: evict oldest beyond this (was unbounded -> leak)
 CHANNEL_CACHE: dict[str, tuple[dict, float]] = {}  # Cache for channel info
 VIDEO_CACHE: dict[str, tuple[dict, float]] = {}  # Cache for video details
+
+# yt-dlp network limits: without these a stalled connection hangs a thread
+# forever (observed: process alive for >24h doing nothing, unkillable load).
+YDL_NETWORK_OPTS = {
+    "socket_timeout": 30,
+    "retries": 3,
+    "extractor_retries": 1,
+    "fragment_retries": 3,
+}
+
+
+def _cache_put(cache: dict, key: str, value) -> None:
+    """Insert into a TTL cache with a hard size cap (FIFO eviction of oldest)."""
+    if len(cache) >= MAX_CACHE_ENTRIES:
+        # Drop expired entries first, then the oldest inserted key.
+        now = time.time()
+        expired = [k for k, (_, t) in cache.items() if now - t >= CACHE_TTL]
+        for k in expired:
+            del cache[k]
+        while len(cache) >= MAX_CACHE_ENTRIES:
+            cache.pop(next(iter(cache)))
+    cache[key] = (value, time.time())
+
+
+def caches_memory_mb() -> float:
+    """Rough estimate of cache footprint (for logging/monitoring)."""
+    import sys
+
+    total = sum(sys.getsizeof(c) for c in (CHANNEL_CACHE, VIDEO_CACHE))
+    return total / (1024 * 1024)
+
+
+def clear_caches() -> None:
+    """Free all cached yt-dlp payloads. Called between topics and on deadline."""
+    CHANNEL_CACHE.clear()
+    VIDEO_CACHE.clear()
 
 
 # Load channel topics from JSON file
@@ -66,8 +110,8 @@ def get_cached_channel_info(channel_handle: str, ydl: yt_dlp.YoutubeDL) -> dict 
         try:
             channel_info = ydl.extract_info(url, download=False)
             if channel_info:
-                # Cache the result
-                CHANNEL_CACHE[channel_handle] = (channel_info, current_time)
+                # Cache the result (capped, self-evicting)
+                _cache_put(CHANNEL_CACHE, channel_handle, channel_info)
                 logger.debug(f"Fetched and cached channel info for {channel_handle}")
                 return channel_info
         except Exception as e:  # broad by design: yt-dlp extract_info on external site (failure set spans yt-dlp errors)
@@ -93,8 +137,8 @@ def get_cached_video_info(video_id: str, ydl: yt_dlp.YoutubeDL) -> dict | None:
     try:
         video_info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
         if video_info:
-            # Cache the result
-            VIDEO_CACHE[video_id] = (video_info, current_time)
+            # Cache the result (capped, self-evicting)
+            _cache_put(VIDEO_CACHE, video_id, video_info)
             logger.debug(f"Fetched and cached video info for {video_id}")
             return video_info
     except Exception as e:  # broad by design: yt-dlp extract_info on external site
@@ -171,6 +215,12 @@ def process_video_batch(video_ids: list[str], ydl: yt_dlp.YoutubeDL) -> list[dic
 
         # Collect results as they complete
         for future in concurrent.futures.as_completed(future_to_video_id):
+            # Abort the whole run past its wall-clock budget
+            if time.monotonic() - _RUN_START > RUN_DEADLINE_SECONDS:
+                logger.warning("Run deadline exceeded, cancelling pending video fetches")
+                for f in future_to_video_id:
+                    f.cancel()
+                break
             video_id = future_to_video_id[future]
             try:
                 video_data = future.result()
@@ -197,6 +247,7 @@ def get_channel_videos_by_id(
             "no_warnings": True,
             "ignoreerrors": True,
             "playlist_items": f"1-{MAX_VIDEOS_PER_CHANNEL}",  # Limit number of videos to fetch
+            **YDL_NETWORK_OPTS,  # socket_timeout/retries: prevent infinite hangs
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -267,6 +318,12 @@ def process_youtube_channels(channel_handles: list[str], published_after: str = 
         future_to_channel = {executor.submit(get_channel_videos_by_id, handle, cast("str", published_after)): handle for handle in channel_handles}
 
         for future in concurrent.futures.as_completed(future_to_channel):
+            # Stop launching new channel work past the deadline
+            if time.monotonic() - _RUN_START > RUN_DEADLINE_SECONDS:
+                logger.warning("Run deadline exceeded, cancelling pending channel fetches")
+                for f in future_to_channel:
+                    f.cancel()
+                break
             handle = future_to_channel[future]
             try:
                 channel_videos = future.result()
@@ -333,8 +390,14 @@ def main(topics: list[str] = None):
 
         # Process each specified topic
         for topic in topics:
+            if time.monotonic() - _RUN_START > RUN_DEADLINE_SECONDS:
+                logger.warning("Run deadline exceeded before topic %s, aborting", topic)
+                break
             if topic in CHANNEL_TOPICS:
                 process_topic(topic, CHANNEL_TOPICS[topic]["channels"], published_after)
+                # Caches are per-run only; free memory between topics (channels
+                # never repeat across topics so nothing is lost).
+                clear_caches()
             else:
                 logger.warning(f"Tema no reconocido: {topic}")
 
