@@ -186,11 +186,18 @@ uv run ruff format .
 
 ### Docker
 
-```bash
-# Build
-docker build -t watchtower-app .
+No credentials required for a base deploy — all API keys are optional (affected ETLs fail soft / fall back).
 
-# Run
+```bash
+git clone https://github.com/josmerod/watchtower.git && cd watchtower
+cp .env.example .env   # defaults work; add API keys later for more sources
+# or: touch .env
+
+# Compose (dashboard :7777 + API :45714)
+docker compose up -d --build
+
+# Plain docker
+docker build -t watchtower-app .
 docker run -p 7780:7780 --env-file .env watchtower-app
 ```
 
