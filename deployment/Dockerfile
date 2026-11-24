@@ -42,6 +42,10 @@ COPY deployment/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/.venv/bin:$PATH"
 
+# deploy.py waits on this status after `docker run`: the API is the deploy gate.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:45714/health || exit 1
+
 # Expose Dashboard port
 EXPOSE 7780
 # Expose API port
