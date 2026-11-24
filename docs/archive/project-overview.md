@@ -1,3 +1,4 @@
+> Archived 2026-11-24 — describes code that was removed, or a snapshot that is no longer current. Kept for reference; see AGENTS.md and CODEBASE_SUMMARY.md for the present state.
 # Watchtower Project Overview
 
 **Project Name:** Watchtower (also known as MEGALITH)
@@ -539,24 +540,24 @@ All sensitive data stored in `.env` (gitignored):
 ## Related Documentation
 
 ### Core Documentation
-- [Data Models Reference](./data-models-main.md) - Complete model documentation
+- [Data Models Reference](../data-models-main.md) - Complete model documentation
 - [Source Tree Analysis](./source-tree-analysis.md) - Directory structure guide
-- [Architecture Overview](./technical/ARCHITECTURE_OVERVIEW.md) - Detailed architecture
+- [Architecture Overview](../technical/ARCHITECTURE_OVERVIEW.md) - Detailed architecture
 
 ### Technical Guides
-- [ETL Development Guide](./technical/ETL_DEVELOPMENT_GUIDE.md) - ETL patterns
-- [Watchers Guide](./technical/WATCHERS_GUIDE.md) - Monitoring system
-- [Dashboard Development Guide](./technical/DASHBOARD_DEVELOPMENT_GUIDE.md) - UI development
-- [Configuration Guide](./technical/CONFIGURATION_GUIDE.md) - Settings management
+- [ETL Development Guide](../technical/ETL_DEVELOPMENT_GUIDE.md) - ETL patterns
+- [Watchers Guide](../technical/WATCHERS_GUIDE.md) - Monitoring system
+- [Dashboard Development Guide](../technical/DASHBOARD_DEVELOPMENT_GUIDE.md) - UI development
+- [Configuration Guide](../technical/CONFIGURATION_GUIDE.md) - Settings management
 
 ### Operational Guides
-- [Quickstart Guide](./QUICKSTART.md) - Get started in 10 minutes
-- [Deployment Guide](./technical/DEPLOYMENT_GUIDE.md) - Deployment options
-- [Advanced Deployment Guide](./technical/ADVANCED_DEPLOYMENT_GUIDE.md) - Production deployment
+- [Quickstart Guide](../QUICKSTART.md) - Get started in 10 minutes
+- [Deployment Guide](../technical/DEPLOYMENT_GUIDE.md) - Deployment options
+- [Advanced Deployment Guide](../technical/ADVANCED_DEPLOYMENT_GUIDE.md) - Production deployment
 
 ### Community
-- [Contributing Guide](./CONTRIBUTING.md) - How to contribute
-- [FAQ](./FAQ.md) - Frequently asked questions
+- [Contributing Guide](../CONTRIBUTING.md) - How to contribute
+- [FAQ](../FAQ.md) - Frequently asked questions
 
 ---
 
