@@ -188,7 +188,8 @@ def run_script(script_path):
         try:
             subprocess.run(
                 ["pkill", "-9", "-P", str(process.pid)],
-                capture_output=True, timeout=15,
+                capture_output=True,
+                timeout=15,
             )
         except Exception:
             pass

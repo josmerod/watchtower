@@ -310,10 +310,7 @@ class OpenAlexETL(BaseETL[dict[str, Any], OpenAlexWorkModel]):
         # daily quota exhausted -> all 429), do NOT overwrite the last good
         # openalex_latest.json with an empty file. Keep the previous data.
         if not works_data:
-            self.logger.warning(
-                "No works to load — skipping write to avoid clobbering "
-                "previous data (likely rate-limit/quota failure)."
-            )
+            self.logger.warning("No works to load — skipping write to avoid clobbering previous data (likely rate-limit/quota failure).")
             return
 
         # Generate timestamp
