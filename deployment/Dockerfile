@@ -3,12 +3,15 @@ FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 # Install system dependencies
 # supervisor: to manage multiple processes
 # curl, git: standard utilities often needed
+# libatomic1: the node binary bundled with Playwright (>= 1.65) needs it, and
+# the slim base image does not ship it — `playwright install` cannot even start
 RUN apt-get update && apt-get install -y \
     supervisor \
     curl \
     git \
     dos2unix \
     procps \
+    libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
