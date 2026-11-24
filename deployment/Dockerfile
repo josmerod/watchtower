@@ -1,4 +1,11 @@
-FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+# The official Python image, as in the root Dockerfile. The uv image that
+# ships Python (ghcr.io/astral-sh/uv:python3.11-bookworm-slim) is not rebuilt
+# for every Python release: on 2026-11-24 it still held 3.11.14 on Debian 12,
+# three patch releases behind the image then running in production.
+FROM python:3.11-slim
+
+# uv, pinned: it changes only when this line does.
+COPY --from=ghcr.io/astral-sh/uv:0.12.3 /uv /uvx /bin/
 
 # Install system dependencies
 # supervisor: to manage multiple processes
