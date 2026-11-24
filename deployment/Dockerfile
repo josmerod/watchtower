@@ -28,13 +28,15 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies
-RUN uv sync --frozen --no-install-project
+# --no-cache: uv would leave its cache (about 700 MB) in the image next to
+# the virtual environment it installs from it
+RUN uv sync --frozen --no-install-project --no-cache
 
 # Copy the rest of the application
 COPY . .
 
 # Install the project itself
-RUN uv sync --frozen
+RUN uv sync --frozen --no-cache
 
 # Convert line endings for shell script
 RUN dos2unix run_all_etl.sh && chmod +x run_all_etl.sh
