@@ -225,7 +225,11 @@ Read data with `get_data_path(...)` from `src/web/dashboard/utils.py`. The
   branches `feat/`, `fix/`, `chore/`, `docs/` + kebab-case.
 - pre-commit (`.pre-commit-config.yaml`) runs on every commit: Ruff, codespell,
   detect-secrets, shellcheck and file hygiene hooks. The pre-push hook runs the
-  full pytest suite.
+  full pytest suite (about 8 minutes). Over SSH, GitHub can close the idle
+  session before the hook ends, and the push then fails after a green run: set
+  it once per clone with
+  `git config --local core.sshCommand "ssh -o ServerAliveInterval=30"`, or
+  push over HTTPS. Never bypass the hook.
 - mypy is a manual stage (`uv run pre-commit run --hook-stage manual mypy`)
   and does not block commits, but `uv run mypy src` is clean today. Keep it
   clean.
@@ -270,15 +274,27 @@ Phrases the user uses to raise or lower the bar:
 - `uv run --with paramiko python deployment/deploy.py` ships to the Unraid
   server. The `unraid-deploy` skill has the procedure and the recovery steps.
 - The deploy packs the **working tree**, uncommitted changes included. Deploy
-  from a clean tree on the branch you mean.
+  from a clean tree on the branch you mean. The bytes ship as they are: on a
+  checkout with `core.autocrlf=true` the files go out with CRLF.
 - `deploy.py` uploads an archive of `INCLUDE_PATHS`, builds
   `deployment/Dockerfile` on the server, swaps the container and waits for its
   health check. On failure it rolls back to the image tagged
-  `watchtower:previous` and exits non-zero. A script the container must run
-  belongs in `INCLUDE_PATHS`; `Tests/unit/test_deploy.py` enforces it.
+  `watchtower:previous` and exits non-zero. A script the container must run,
+  or a repo-root file the code reads by name (`changelog.json`), belongs in
+  `INCLUDE_PATHS`; `Tests/unit/test_deploy.py` enforces it.
+- When `deployment/Dockerfile`, `pyproject.toml` or `uv.lock` change, rehearse
+  first: build the archive on the server under a throwaway tag and boot a
+  disposable container. CI builds the same image on its own runner and boots
+  only the API; three image defects showed up only on the server.
 - Every deploy or container restart starts a **full ETL cycle** (109 scripts,
   4 workers) before the scheduler settles into its 2-hour rhythm. Do not
-  restart casually.
+  restart casually, and deploy between cycles: one takes about 47 minutes and
+  the next starts 2 hours after it ends.
+- Exit 0 means the API answered `/health`. The health gate never opens the
+  dashboard, and the public dashboard hostname answers every path —
+  `/api/v1/*` included — with dashboard HTML and status 200. Read the API
+  against the container or its own hostname, and check a deployed feature in
+  the browser before calling it done.
 - Production `data/` lives in a Docker volume; a deploy never touches it.
   `run_backup.py` is not shipped, so production backups are not running (open
   task on the board).

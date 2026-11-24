@@ -31,9 +31,12 @@ not use or update it.
 1. **Archive.** Only `INCLUDE_PATHS`: `src`, `deployment`, `config`, `Tests`,
    `pyproject.toml`, `uv.lock`, `run_all_etl.sh`,
    `run_watchtower_dashboard.py`, `run_all_etl_orchestrator.py`, `README.md`,
-   `GEMINI.md` — minus `__pycache__`, `.pytest_cache`, `.ruff_cache`,
-   `.mypy_cache`, `.venv`, `*.pyc` and `*.pyo`. Nothing else ships: not `data/`,
-   `.env`, `secrets/` or `scripts/`.
+   `GEMINI.md`, `changelog.json` — minus `__pycache__`, `.pytest_cache`,
+   `.ruff_cache`, `.mypy_cache`, `.venv`, `*.pyc` and `*.pyo`. Nothing else
+   ships: not `data/`, `.env`, `secrets/` or `scripts/`. The archive holds
+   working-tree bytes: on a checkout with `core.autocrlf=true` the files go
+   out with CRLF (harmless, but a deployed file's md5 then differs from
+   `git show HEAD:<file>`).
 2. **Build**, on the server in `/tmp/watchtower_deploy`: tags
    `watchtower:latest` as `watchtower:previous`, then
    `docker build -t watchtower -f deployment/Dockerfile .`.
@@ -50,10 +53,12 @@ not use or update it.
 
 **A script the container runs has to be in `INCLUDE_PATHS`** (or under one of
 its directories). The scheduler and the orchestrator skip a missing script
-with a warning and exit 0 — the symptom is silence, not an error.
-`test_include_list_covers_every_boot_file` in `Tests/unit/test_deploy.py`
-fails on a missing entry point; run the file after touching `INCLUDE_PATHS`,
-`deployment/supervisord.conf` or the orchestrator's script list.
+with a warning and exit 0 — the symptom is silence, not an error. So has a
+repo-root file the code reads by name: without `changelog.json` the dashboard's
+🆕 modal renders nothing and nothing fails. `Tests/unit/test_deploy.py` fails
+on a missing entry point and on a named root file that does not ship; run the
+file after touching `INCLUDE_PATHS`, `deployment/supervisord.conf`, the
+orchestrator's script list, or a root file name quoted in the code.
 
 ### Non-zero exit — what the operator must do
 
@@ -96,6 +101,15 @@ dashboard and API down meanwhile. Avoid it while a cycle is running or a
 source is rate-limiting; when only one program is hung, restart just that
 program. A restart never loads new code — it is baked into the image.
 
+A cycle took 47 minutes in production (2026-11-24), and the 2 hours start
+counting when it ends. The window for a deploy opens when
+`/app/logs/scheduler.out.log` shows `ETL Workflow finished` and closes two
+hours later:
+
+```bash
+ssh <user>@<host> docker exec watchtower tail -n 5 /app/logs/scheduler.out.log
+```
+
 ## After a green deploy
 
 Exit 0 means the API answered `/health` — nothing more. Supervisor runs
@@ -108,28 +122,65 @@ ssh <user>@<host> docker exec watchtower supervisorctl status   # all three RUNN
 curl -fsS -o /dev/null http://<host>:7777/                      # dashboard answers
 ```
 
-## Rehearsing a risky change
+Then, before closing anything on the board:
 
-`.github/workflows/docker-build.yml` does this on every pull request: it
-builds the image from the same archive and boots only the API until `/health`
-answers. To do it by hand, on a machine with Docker, from the repo root:
+- `docker image ls watchtower`: `latest` is the new image, `previous` the one
+  before it.
+- The first ETL cycle, at the end of `scheduler.out.log`: `ETL Workflow
+  finished in …` followed by `Successful: N | Failed: N` (109 and 0 on
+  2026-11-24).
+- In the browser, the feature the deploy was for. The health gate opens the
+  API only; it never loads the dashboard.
+
+Read the JSON, not the status code. The public dashboard hostname answers
+every path — `/api/v1/*` included — with the dashboard page and status 200.
+Check the API against the container or its own hostname:
 
 ```bash
-uv run --no-project --python 3.11 --with python-dotenv python -c "from deployment import deploy; deploy.create_archive('watchtower_src.tar.gz')"
-mkdir -p context && tar -xzf watchtower_src.tar.gz -C context
-docker build -f context/deployment/Dockerfile -t watchtower:candidate context
-docker run -d --name watchtower-smoke -p 45715:45714 --entrypoint uv watchtower:candidate run uvicorn src.api.main:app --host 0.0.0.0 --port 45714
-for _ in $(seq 1 30); do curl -fsS http://localhost:45715/health && break; sleep 2; done
-docker logs --tail 40 watchtower-smoke
-docker rm -f watchtower-smoke; rm -rf context watchtower_src.tar.gz
+ssh <user>@<host> curl -fsS http://localhost:45714/api/v1/freshness | head -c 300
 ```
 
-The loop gives the API 60 s. Whatever happens, the `docker logs` line prints
-the container's output before it is removed. `--entrypoint uv` replaces the
-image's default start — supervisor, whose scheduler launches a full ETL cycle
-on every start. Tag the image `watchtower:candidate`, never plain
-`watchtower`: on the server that moves `latest`, and the next deploy would
-tag that untested image as `previous`. Then run the real deploy.
+## Rehearsing a risky change
+
+`.github/workflows/docker-build.yml` builds the image from the same archive on
+every pull request and boots only the API until `/health` answers. That runs
+on GitHub's runner: it never opens the dashboard (Chromium at runtime), runs
+no ETL, ignores the image size and does not see the base tags the server has
+cached. On 2026-11-24 three image defects only appeared building on the
+server (T-099).
+
+When `deployment/Dockerfile`, `pyproject.toml` or `uv.lock` change, rehearse
+on the server before `deploy.py`, without touching the running container or
+the `latest` / `previous` tags:
+
+1. Upload the archive `deploy.create_archive()` produces, and a shell script,
+   over `deploy.connect()`. Send the script with LF line endings: bash on the
+   server chokes on CRLF.
+2. In a staging directory under `/tmp`, run
+   `docker build -t watchtower:candidate -f deployment/Dockerfile .`
+3. Boot a throwaway container — its own name, its own host port,
+   `--entrypoint uv … run uvicorn src.api.main:app` — with the `data` volume
+   mounted read-only. Wait for `/health`, then request a few `/api/v1` routes.
+4. Inside the container, check what the image really holds: `python
+   --version`, `uv --version`, `uv run playwright --version`, an import of
+   `deployment.etl_scheduler`, `run_watchtower_dashboard`, `src.api.main` and
+   `src.web.dashboard.app`, and `bash -n run_all_etl.sh`. `docker images
+   watchtower:candidate` gives the size.
+5. Run two or three real ETLs — a plain script, a `BaseETL`, one that uses
+   Playwright — in a second throwaway container with an **empty temporary
+   directory** at `/app/data`. Never give a rehearsal write access to
+   production data.
+6. Remove the throwaway containers and staging files. Keep the
+   `watchtower:candidate` tag until the real deploy (it warms the build
+   cache), then remove it.
+
+`--entrypoint uv` replaces the image's default start — supervisor, whose
+scheduler launches a full ETL cycle on every start. Tag the image
+`watchtower:candidate`, never plain `watchtower`: on the server that moves
+`latest`, and the next deploy would tag that untested image as `previous`.
+Then run the real deploy. The scripts of the 2026-11-24 rehearsal are not in
+the repository yet (task T-117); until they are, write the steps as a one-off
+script.
 
 ## The compose recipe is different
 

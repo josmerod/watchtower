@@ -63,7 +63,7 @@ uv run playwright install
 uv run pre-commit install --hook-type pre-commit --hook-type pre-push
 ```
 
-Both hook types are required. The commit stage runs the basic `pre-commit-hooks` (whitespace, file endings, syntax checks), ruff (lint and format), codespell, shellcheck and detect-secrets; the push stage runs the full test suite.
+Both hook types are required. The commit stage runs the basic `pre-commit-hooks` (whitespace, file endings, syntax checks), ruff (lint and format), codespell, shellcheck and detect-secrets; the push stage runs the full test suite, which takes about 8 minutes. Over SSH, GitHub can drop the idle connection before the hook ends and the push then fails after a green run; keep the session alive with `git config --local core.sshCommand "ssh -o ServerAliveInterval=30"`, or push over HTTPS.
 
 4. **Create a Branch**
 
