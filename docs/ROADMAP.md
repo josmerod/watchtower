@@ -41,9 +41,10 @@ El despliegue funciona, pero a su alrededor quedan tres huecos verificados el
 desde el 2026-09-10. → **T-106 (P1)**. Ninguna clave API llega al contenedor:
 los ETLs que la necesitan corren sin ella. Es una decisión, no un fallo.
 → **T-107 (P1)**. Hay dos recetas de imagen que compilan distinto y `deploy.py`
-nunca refresca la etiqueta base del servidor. → **T-109 (P2)**. Aparte, el
-ensayo que destapó tres fallos de imagen invisibles para CI vive fuera del repo.
-→ **T-117 (P3)**.
+nunca refresca la etiqueta base del servidor. → **T-109 (P2)**. Dos cosas
+menores: la capa de Playwright se reconstruye en cada despliegue porque está
+después de `COPY . .`. → **T-123 (P3)**. Y el ensayo que destapó tres fallos
+de imagen invisibles para CI vive fuera del repo. → **T-117 (P3)**.
 
 ### B. "Éxito" no significa "datos escritos"
 
@@ -75,8 +76,7 @@ de PR; scripts y ramas que ya no sirven. → **T-119 (P3)**.
 Momentum por tecnología (TR-F2): la historia de 4 semanas ya existe.
 → **T-048 (P2)**. BridgeBench vía browserless: el servicio vuelve a responder.
 → **T-047 (P3)**. La paleta Ctrl+K no busca en la URL pública porque la API
-vive en otro hostname. → **T-121 (P3)**. El modal 🆕 Novedades nunca se mostró
-en producción: `changelog.json` no viajaba. → **T-122 (P3)**.
+vive en otro hostname. → **T-121 (P3)**.
 
 ## 3. Anti-backlog (evaluado y descartado, con motivo)
 
@@ -120,7 +120,7 @@ en producción: `changelog.json` no viajaba. → **T-122 (P3)**.
 | Horizonte | Tareas |
 | :--- | :-- |
 | **Ahora (P1–P2)** | T-106 backups en prod · T-107 claves en el contenedor (decisión) · T-048 momentum · T-108 tests fuera de `data/` · T-109 receta de imagen única · T-110 ETLs que no escriben · T-111 watcher el último · T-115 CORS sin direcciones de LAN · T-120 alerts de Dependabot |
-| **Después (P3)** | T-047 BridgeBench vía browserless · T-096 convención de logging · T-112 timeout en Windows · T-113 minero de Udemy · T-114 dos planificadores · T-116 coste del hook de push · T-117 ensayo en el repo · T-118 CRLF en el archivo · T-119 higiene · T-121 paleta pública · T-122 modal 🆕 |
+| **Después (P3)** | T-047 BridgeBench vía browserless · T-096 convención de logging · T-112 timeout en Windows · T-113 minero de Udemy · T-114 dos planificadores · T-116 coste del hook de push · T-117 ensayo en el repo · T-118 CRLF en el archivo · T-119 higiene · T-121 paleta pública · T-123 capa de Playwright |
 | **Bloqueado** | T-038 Artificial Analysis (clave del usuario, y T-107) |
 
 Fuera del board y pendiente del usuario: mergear el PR #31. Hasta entonces
