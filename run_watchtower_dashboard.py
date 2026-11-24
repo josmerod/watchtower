@@ -30,14 +30,14 @@ def main():
     except ModuleNotFoundError as e:
         print(f"Module not found: {e}")
         print("\nTroubleshooting:")
-        print("1. Install dependencies: uv sync --all-extras")
+        print("1. Install dependencies: uv sync")
         print("2. Check Watchtower installation")
         print("3. Try: uv run python run_watchtower_dashboard.py")
         sys.exit(1)
     except ImportError as e:
         print(f"Import error: {e}")
         print("\nMissing dependencies detected.")
-        print("Run: uv sync --all-extras")
+        print("Run: uv sync")
         sys.exit(1)
     except Exception as e:
         print(f"Failed to start Watchtower Dashboard: {e}")
