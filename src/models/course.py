@@ -76,3 +76,10 @@ class GcpSkillsBoostModel(CourseModel):
     provider: str = Field(default="GCP Skills Boost", description="Always GCP Skills Boost")
     course_type: str | None = Field(default=None, description="Type of content (e.g., lab, course, quest)")
     first_detected_at: datetime | None = Field(default=None, description="When the course was first detected by Watchtower")
+
+
+class LinkedInLearningCourseModel(CourseModel):
+    """Specific model for LinkedIn Learning courses listed on Class Central."""
+
+    provider: str = Field(default="LinkedIn Learning", description="Always LinkedIn Learning")
+    institution: str | None = Field(default=None, description="Institution publishing the course on Class Central")
