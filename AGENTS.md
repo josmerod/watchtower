@@ -68,17 +68,18 @@ ALWAYS run Python through **uv** so the locked environment is used.
 Counts were measured on 2026-11-24; re-check before quoting them.
 
 - **ETL** (`src/etl/`, 23 subpackages, 112 modules). Two styles coexist:
-  - **`BaseETL[I, O]`** (`src/etl/base.py`, 31 orchestrated scripts). The
+  - **`BaseETL[I, O]`** (`src/etl/base.py`, 31 of the 105 ETL scripts). The
     constructor requires `name`; implement `extract()`, `transform()` and
     `load()`. `run()` adds retries, checkpointing, deduplication, a circuit
     breaker and run summaries under `data/<name>/output/`. An open circuit
     breaker skips the run silently (exit code 0); any other failure raises
     `ETLError`.
-  - **Plain module with `main()`** (74 orchestrated scripts, the majority).
+  - **Plain module with `main()`** (the other 74 ETL scripts, the majority).
     Fetch, transform, write JSON, with the path helpers in
     `src/utils/file_system.py`. Example: `src/etl/news/news_get_changelog.py`.
   - Both styles run in production only when listed in `ETL_SCRIPTS` in
-    `run_all_etl_orchestrator.py` (109 entries, 4 workers).
+    `run_all_etl_orchestrator.py` (109 entries: 105 ETLs, 3 watchers and
+    1 miner; 4 workers).
 - **Data models** (`src/models/`, 19 modules): Pydantic, built on the bases
   `TimestampedModel`, `StatusModel`, `ErrorModel`, `PaginatedResponse`.
   `BaseETL.validate_data()` validates against them, but nothing forces it:
@@ -86,13 +87,15 @@ Counts were measured on 2026-11-24; re-check before quoting them.
 - **Watchers** (`src/watchers/`, 4 subclasses of `BaseWatcher`): implement
   `extract_value()` and `has_changed()`; state lives in
   `data/watchers/<name>/`.
-- **Dashboard** (`src/web/dashboard/`): Dash + Bootstrap, 18 tabs in
-  `components/`. **Use the Single Callback Pattern** — one callback per output
-  component, `prevent_initial_call=True` — to avoid callback conflicts.
+- **Dashboard** (`src/web/dashboard/`): Dash + Bootstrap, 18 registered tabs
+  (19 tab modules) in `components/`. **Use the Single Callback Pattern** — one
+  callback per output component, `prevent_initial_call=True` — to avoid
+  callback conflicts.
   Components must look premium and stay minimalist and responsive. Six tabs
   load their data through `BaseRepository` subclasses (`src/repositories/`,
   documented in `docs/REPOSITORY_PATTERN.md`).
-- **API** (`src/api/`): FastAPI, 20 endpoints under `/api/v1` plus `/health`.
+- **API** (`src/api/`): FastAPI, 20 GET endpoints: 19 under `/api/v1` and
+  `/health`.
 - **Config**: `src/config/settings.py`, Pydantic Settings, env-driven as
   `WATCHTOWER_<COMPONENT>__<SETTING>`. Get it via the `@lru_cache`d
   `get_settings()`.
@@ -166,26 +169,21 @@ layout function and a `register_<x>_callbacks(app)` function:
 
 ```python
 import dash_bootstrap_components as dbc
-from dash import Input, Output, html
+from dash import Dash, Input, Output, dcc, html
 
 
 def render_my_tab():
     """Return the Dash layout for this tab."""
     return dbc.Container(
         [
-            dbc.Row(
-                dbc.Col(
-                    [
-                        html.H3("My Tab"),
-                        html.Div(id="my-content"),
-                    ]
-                )
-            )
+            html.H3("My Tab"),
+            dcc.Input(id="my-input", placeholder="Filter...", debounce=True),
+            html.Div(id="my-content"),
         ]
     )
 
 
-def register_my_callbacks(app):
+def register_my_callbacks(app: Dash):
     """Register this tab's callbacks on the Dash app."""
 
     @app.callback(
@@ -193,11 +191,9 @@ def register_my_callbacks(app):
         Input("my-input", "value"),
         prevent_initial_call=True,
     )
-    def update_content(value):
-        try:
-            return f"Updated: {value}"
-        except Exception as e:  # noqa: BLE001 - surface errors in the UI
-            return f"Error: {e}"
+    def update_content(value: str | None) -> str:
+        """Show what the user typed."""
+        return f"Updated: {value or ''}"
 ```
 
 Wiring it takes four more edits, all in `src/web/dashboard/app.py` except the
