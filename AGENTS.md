@@ -1,103 +1,168 @@
 # AGENTS.md — Watchtower (MEGALITH)
 
-Workspace instructions for ZCode agents working in this repository. These rules
-apply in addition to the user-scope instructions in `~/.zcode/AGENTS.md`; where
-they conflict, this file wins for this project.
+Workspace instructions for ZCode agents working in this repository. They apply
+in addition to the user-scope instructions in `~/.zcode/AGENTS.md`; where they
+conflict, this file wins for this project. It is the single source of truth for
+conventions here: `CLAUDE.md`, `GEMINI.md` and `.cursorrules` only point back.
 
-Watchtower is a 3-layer data intelligence platform: **ETL → Watchers → Dashboard**.
-Python 3.10+, managed with **UV**. Data is persisted as timestamped JSON under
-`data/` (which is gitignored).
+Watchtower is a data-intelligence platform in three layers — **ETL → Watchers
+→ Dashboard** — plus a FastAPI. Python 3.10+ (3.11 in CI and production),
+managed with **uv**. Data is JSON under `data/`, which is gitignored.
+
+**The repository is public.** Never write a LAN address, a private hostname or
+a credential into a tracked file, a commit message, a PR or an issue; use a
+placeholder such as `<host>`.
+
+## Start of session
+
+A SessionStart hook (`.zcode/hooks/session_context.py`, wired in
+`.zcode/config.json`) injects a `<repo-state>` digest: branch and distance to
+`origin/main`, whether the git hooks are installed, the task marked
+`in-progress` on the board, and entries of `docs/FEEDBACK.md` not triaged yet.
+Act on it:
+
+1. Hooks missing: run
+   `uv run pre-commit install --hook-type pre-commit --hook-type pre-push`.
+   A fresh clone has none, and then nothing gates a commit or a push.
+2. Read `docs/TASK_BOARD.md` before planning work. One task is `in-progress`
+   at a time. Triage untriaged feedback into the board.
+
+To see the digest mid-session:
+`uv run --no-project python .zcode/hooks/session_context.py .`
 
 ## Tooling & commands
 
-ALWAYS run Python through **UV** so the locked environment is used.
+ALWAYS run Python through **uv** so the locked environment is used.
 
 | Task | Command |
 | :--- | :--- |
+| Install | `uv sync` (includes the `dev` group) |
 | Run a script | `uv run python <script>` |
-| Dashboard (primary, Dash, port **7780**) | `uv run python run_watchtower_dashboard.py` |
-| All ETLs | `./run_all_etl.sh` (Unix) — orchestrates `run_all_etl_orchestrator.py` |
+| Dashboard (Dash, port **7780**) | `uv run python run_watchtower_dashboard.py` |
+| API (FastAPI, port **45714**) | `uv run uvicorn src.api.main:app --port 45714` |
+| All ETLs | `./run_all_etl.sh` → `run_all_etl_orchestrator.py --workers 4` |
 | Tests | `uv run pytest` |
 | Coverage | `uv run pytest --cov=src --cov-report=html` |
 | Lint | `uv run ruff check .` |
 | Format | `uv run ruff format .` |
-| Type check | `uv run mypy src` |
-| Deploy (Unraid) | `uv run --with paramiko deployment/deploy.py` |
+| Type check (advisory) | `uv run mypy src` |
+| All hooks | `uv run pre-commit run --all-files` |
+| Deploy (Unraid) | `uv run --with paramiko python deployment/deploy.py` |
 
 ## Code style
 
-- **Ruff** is the source of truth for lint + format. Line length **210**, double
-  quotes, 4-space indent, **Google-style docstrings** (`[tool.ruff.lint.pydocstyle]`).
-- Strict **Python 3.10+** type hints. Prefer modern syntax (`list[...]`, `X | None`).
+- **Ruff** is the only linter and formatter (`[tool.ruff]` in `pyproject.toml`):
+  line length **210**, double quotes, 4-space indent. `Tests/` is excluded from
+  ruff. Do not reintroduce black or flake8.
+- Docstrings are Google-style by convention; the `D` rules are not enabled yet.
+- Type hints for **Python 3.10+**, modern syntax (`list[...]`, `X | None`).
 - Resolve paths with `src.utils.file_system.get_project_root()` — never hardcode
   absolute paths.
-- New dependencies go in `pyproject.toml` under the right section, then
-  `uv lock` + `uv sync`.
+- Dependencies: runtime in `[project.dependencies]`, dev tools in
+  `[dependency-groups].dev`; then `uv lock` and `uv sync`.
+- A new data source needs **no API key** unless the user opts in. RSS feeds and
+  public endpoints first.
 
-## Architecture patterns
+## Architecture
 
-- **ETL** (`src/etl/`): Template Method via `BaseETL` in `src/etl/base.py`. Every
-  pipeline subclasses `BaseETL[I, O]` and implements `extract()`, `transform()`,
-  `load()`. Reuse the built-in resilience: circuit breaker
-  (`circuit_breaker.py`), proxy rotation (`proxy_manager.py`), checkpointing,
-  retry. 22+ domain subpackages (arxiv, news, games, intelligence, etc.).
-- **Data models** (`src/models/`, 38 files): Pydantic. Build on the bases
+Counts were measured on 2026-11-24; re-check before quoting them.
+
+- **ETL** (`src/etl/`, 23 subpackages, 112 modules). Two styles coexist:
+  - **`BaseETL[I, O]`** (`src/etl/base.py`, 31 orchestrated scripts). The
+    constructor requires `name`; implement `extract()`, `transform()` and
+    `load()`. `run()` adds retries, checkpointing, deduplication, a circuit
+    breaker and run summaries under `data/<name>/output/`. An open circuit
+    breaker skips the run silently (exit code 0); any other failure raises
+    `ETLError`.
+  - **Plain module with `main()`** (74 orchestrated scripts, the majority).
+    Fetch, transform, write JSON, with the path helpers in
+    `src/utils/file_system.py`. Example: `src/etl/news/news_get_changelog.py`.
+  - Both styles run in production only when listed in `ETL_SCRIPTS` in
+    `run_all_etl_orchestrator.py` (109 entries, 4 workers).
+- **Data models** (`src/models/`, 19 modules): Pydantic, built on the bases
   `TimestampedModel`, `StatusModel`, `ErrorModel`, `PaginatedResponse`.
-  Pydantic is strictly enforced for extraction/transformation output.
-- **Watchers** (`src/watchers/`): subclass `BaseWatcher`; persist JSON state under
-  `data/watchers/<name>/` and events under `data/watchers/<name>/events/`.
-- **Dashboard** (`src/web/dashboard/`): Dash + Bootstrap, ~19 tabs in
-  `components/`. Each tab renders a layout and registers its own callbacks.
-  **Use the Single Callback Pattern** — one callback per output component,
-  `prevent_initial_call=True`, to avoid callback conflicts. Components must look
-  premium and stay minimalist/responsive.
-- **Config**: `src/config/settings.py`, Pydantic Settings, env-driven
-  (`COMPONENT__SETTING` nested form). Get it via the `@lru_cache`d `get_settings()`.
+  `BaseETL.validate_data()` validates against them, but nothing forces it:
+  using the models is a convention, so keep to it.
+- **Watchers** (`src/watchers/`, 4 subclasses of `BaseWatcher`): implement
+  `extract_value()` and `has_changed()`; state lives in
+  `data/watchers/<name>/`.
+- **Dashboard** (`src/web/dashboard/`): Dash + Bootstrap, 18 tabs in
+  `components/`. **Use the Single Callback Pattern** — one callback per output
+  component, `prevent_initial_call=True` — to avoid callback conflicts.
+  Components must look premium and stay minimalist and responsive. Six tabs
+  load their data through `BaseRepository` subclasses (`src/repositories/`,
+  documented in `docs/REPOSITORY_PATTERN.md`).
+- **API** (`src/api/`): FastAPI, 20 endpoints under `/api/v1` plus `/health`.
+- **Config**: `src/config/settings.py`, Pydantic Settings, env-driven as
+  `WATCHTOWER_<COMPONENT>__<SETTING>`. Get it via the `@lru_cache`d
+  `get_settings()`.
 
 ## Data storage layout
 
+`data/` is gitignored, historical and **never clobbered or committed**. There
+is no single layout: most scripts write one file per source, `BaseETL` runs
+add per-run output.
+
 ```
 data/
-├── {component}/output/
-│   ├── {component}_{timestamp}.json
-│   ├── {component}_latest.json
-│   └── run_summary_latest.json
-├── watchers/{watcher_name}/
+├── <domain>/<name>.json     # e.g. data/changelog/changelog_news.json
+├── <domain>/<name>_latest.json
+├── <etl_name>/output/       # BaseETL runs: run_summary_{timestamp}.json, run_summary_latest.json
+├── watchers/<watcher_name>/
 │   ├── state.json
 │   └── events/{timestamp}_{event_type}.json
 └── metrics/etl_runs_latest.json
 ```
 
-`data/` is gitignored — do not commit scraped data, logs, or caches.
+Follow the sibling scripts of the subpackage you are editing. The dashboard
+and the API load data **by exact path**, so a new output is invisible until a
+consumer reads it: `NEWS_SOURCES_CONFIG` in `src/services/data_loader.py`,
+the tab's source list, and `SOURCE_FILES` in
+`src/watchers/data_freshness_watcher.py`.
 
-## New ETL recipe
+## New ETL
 
-```python
-from typing import Any
+1. Read a sibling in the target subpackage and copy its style, output path and
+   file name.
+2. `BaseETL` style needs `name` in the constructor and an entry point:
 
-from src.etl.base import BaseETL
+   ```python
+   from typing import Any
+
+   from src.etl.base import BaseETL
 
 
-class MyCustomETL(BaseETL[dict[str, Any], dict[str, Any]]):
-    """One-line summary.
+   class MyCustomETL(BaseETL[dict[str, Any], dict[str, Any]]):
+       """One-line summary of what the pipeline extracts and where it loads."""
 
-    Longer description of what the pipeline extracts and where it loads.
-    """
+       def extract(self) -> list[dict[str, Any]]:
+           """Fetch raw records from the source."""
+           ...
 
-    def extract(self) -> list[dict[str, Any]]:
-        """Fetch raw records from the source."""
-        ...
+       def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
+           """Normalize raw records into dictionaries shaped like the model."""
+           ...
 
-    def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Normalize/classify raw records into Pydantic-validated output."""
-        ...
+       def load(self, data: list[dict[str, Any]]) -> None:
+           """Persist to the path the consumer reads."""
+           ...
 
-    def load(self, data: list[dict[str, Any]]) -> None:
-        """Persist to timestamped + latest JSON under data/{component}/output/."""
-        ...
-```
 
-## New dashboard tab recipe
+   if __name__ == "__main__":
+       MyCustomETL(name="my_custom_etl").run()
+   ```
+
+3. Add the script to `ETL_SCRIPTS` in `run_all_etl_orchestrator.py`. An
+   unlisted script never runs in production and its data goes stale.
+4. Wire a consumer (see "Data storage layout") and the freshness watcher.
+5. Add a test under `Tests/etl/`.
+
+The `etl-pipeline` skill has the full procedure.
+
+## New dashboard tab
+
+A tab is a module in `src/web/dashboard/components/` with a `render_<x>_tab()`
+layout function and a `register_<x>_callbacks(app)` function:
 
 ```python
 import dash_bootstrap_components as dbc
@@ -135,50 +200,98 @@ def register_my_callbacks(app):
             return f"Error: {e}"
 ```
 
+Wiring it takes four more edits, all in `src/web/dashboard/app.py` except the
+last:
+
+1. A `dbc.Tab(label=..., tab_id="tab-my-tab")` in the nav `dbc.Tabs`.
+2. The same id in `_TAB_RENDERERS` (tabs are rendered lazily from it).
+3. A `register_my_callbacks(app)` call next to the other registrations.
+4. A row in `RENDERERS` in `Tests/unit/test_tab_render.py`.
+
+Read data with `get_data_path(...)` from `src/web/dashboard/utils.py`. The
+`dashboard-tab` skill has the full procedure.
+
 ## Testing
 
-- Tests live in `Tests/` (`test_*.py` / `*_test.py`), configured via
-  `[tool.pytest.ini_options]`. Mark slow/E2E tests with `@pytest.mark.slow` /
-  `@pytest.mark.e2e`.
-- Don't hit real external services in unit tests — fixtures/stubs only. Live
-  network belongs behind an explicit integration marker.
+- Tests live in `Tests/` (`test_*.py` / `*_test.py`), grouped by area
+  (`unit/`, `etl/`, `api/`, `dashboard/`, `e2e/`, ...). `--strict-markers` is
+  on and only `e2e` and `slow` are registered.
+- Unit tests never hit real external services: fixtures and stubs only.
+- Two guards fail when a shared list gets out of date:
+  `Tests/unit/test_tab_render.py` (tab renderers) and
+  `Tests/unit/test_deploy.py` (what the container ships).
 
 ## Commit & workflow
 
-- Branch off `main` before committing; only commit/push when asked.
-- Keep commits focused. The repo uses pre-commit (`.pre-commit-config.yaml`) with
-  Ruff (lint + format), codespell, detect-secrets, and shellcheck — run
-  `uv run pre-commit run --all-files` before finalizing a change. mypy is
-  advisory: run it explicitly with
-  `uv run pre-commit run --hook-stage manual mypy` (or `uv run mypy src`); it does
-  not block commits while legacy type errors are being worked down.
-- Never commit secrets. `.secrets.baseline` is the detect-secrets allowlist; real
-  credentials must come from env vars / `.env` (gitignored).
+- Branch off `main` before committing; commit and push only when asked.
+- Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`,
+  `refactor:`, `ci:`), subject ≤50 chars, imperative; small, focused commits;
+  branches `feat/`, `fix/`, `chore/`, `docs/` + kebab-case.
+- pre-commit (`.pre-commit-config.yaml`) runs on every commit: Ruff, codespell,
+  detect-secrets, shellcheck and file hygiene hooks. The pre-push hook runs the
+  full pytest suite.
+- mypy is a manual stage (`uv run pre-commit run --hook-stage manual mypy`)
+  and does not block commits, but `uv run mypy src` is clean today. Keep it
+  clean.
+- Never commit secrets. `.secrets.baseline` is the detect-secrets allowlist;
+  real credentials come from env vars or `.env` (gitignored).
 
 ## Working with this repo (agent good practices)
 
 Non-obvious rules that keep work correct and reviewable:
 
-- **Verify before claiming done.** Run the actual command (`uv run pytest`,
-  `uv run ruff check .`, `uv run pre-commit run --all-files`) and paste the
-  result — never assert success without evidence. See
+- **Verify before claiming done.** Run the actual commands and paste the
+  output — never assert success without evidence. Before handing over:
+  `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest` and
+  `uv run pre-commit run --all-files`. If a step was skipped, say so. See
   `superpowers:verification-before-completion`.
-- **Pre-commit is mandatory before finalizing.** `uv run pre-commit run --all-files`
-  must be green (mypy aside, which is advisory).
-- **Never `cat .env`.** Grep for the specific key you need
-  (`grep -E '^UNRAID_HOST=' .env`). The file holds live credentials.
-- **Ruff is the single formatter/linter.** Do not reintroduce black or flake8 —
-  they conflict with ruff and have been removed from dev deps.
-- **`data/` is historical and gitignored.** Never clobber or commit it; ETL
-  outputs persist across deploys via `cp -rn`.
-- **Deploys:** `uv run --with paramiko deployment/deploy.py` to ship,
-  `deployment/force_restart.py` to bounce without rebuild. See the `unraid-deploy`
-  skill.
-- **Task tracking:** use `docs/TASK_BOARD.md` (one task in-progress at a time) and
-  the `task-board` skill to iterate.
+- **Never `cat .env`.** It holds live credentials. List key names with
+  `grep -oE '^[A-Z_][A-Z0-9_]*=' .env`.
+- **Agents working in parallel** get disjoint file scopes. Never `git stash`,
+  `git restore`, `git checkout` or `git reset` outside your own files: another
+  agent's uncommitted work lives in the same tree.
+- **Worktrees** have no `.venv` (the first `uv run` syncs one) and no `.env`.
+  If `git status` shows many modified files right after a checkout, check
+  `git diff --ignore-cr-at-eol --stat` before believing it.
+- **Task tracking:** `docs/TASK_BOARD.md` holds open work, one task
+  `in-progress` at a time; `docs/TASK_BOARD_ARCHIVE.md` the closed tasks;
+  `docs/ROADMAP.md` the horizons; `docs/FEEDBACK.md` the feedback notebook.
+  Use the `task-board` skill and record work there as you go.
 
-## Reference docs in-repo
+## Signals in the user's prompts
 
-- `README.md` — overview, install, deployment.
-- `CODEBASE_SUMMARY.md` — architectural deep-dive.
-- `CLAUDE.md` / `GEMINI.md` — AI-assistant guidance (same conventions as here).
+Phrases the user uses to raise or lower the bar:
+
+- "I'll tip you…", "bet you can't…": maximum depth, and prove that it works.
+- "Take a deep breath…": work through the problem step by step before coding.
+- "Important to my career…": safety first. Check for destructive side effects
+  and warn about risks before acting.
+- "Rate your confidence…": answer with a probability. Below 0.9, list the
+  risks and the alternatives.
+
+## Deploys
+
+- `uv run --with paramiko python deployment/deploy.py` ships to the Unraid
+  server. The `unraid-deploy` skill has the procedure and the recovery steps.
+- The deploy packs the **working tree**, uncommitted changes included. Deploy
+  from a clean tree on the branch you mean.
+- `deploy.py` uploads an archive of `INCLUDE_PATHS`, builds
+  `deployment/Dockerfile` on the server, swaps the container and waits for its
+  health check. On failure it rolls back to the image tagged
+  `watchtower:previous` and exits non-zero. A script the container must run
+  belongs in `INCLUDE_PATHS`; `Tests/unit/test_deploy.py` enforces it.
+- Every deploy or container restart starts a **full ETL cycle** (109 scripts,
+  4 workers) before the scheduler settles into its 2-hour rhythm. Do not
+  restart casually.
+- Production `data/` lives in a Docker volume; a deploy never touches it.
+  `run_backup.py` is not shipped, so production backups are not running (open
+  task on the board).
+
+## Skills and reference docs
+
+- Skills in `.agents/skills/`: `etl-pipeline`, `dashboard-tab`,
+  `unraid-deploy`, `task-board`. Invoke the one that matches the task.
+- `CODEBASE_SUMMARY.md` — map of the codebase as it is today.
+- `README.md`, `docs/QUICKSTART.md`, `docs/CONTRIBUTING.md`, `docs/INDEX.md`.
+- `docs/archive/` — historical material kept for reference, not maintained.
+  Do not follow it over this file.
