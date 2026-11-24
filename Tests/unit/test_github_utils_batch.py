@@ -153,22 +153,25 @@ class TestGetGitHubRepoInfoBatch:
             "https://github.com/b/repo2",
             "https://github.com/c/repo3",
         ]
-        # Each repo needs 2 requests (repo info + languages)
-        responses = []
-        for i, _ in enumerate(urls):
-            responses.append(_make_mock_response(stars=i * 10))
-            responses.append(_make_lang_response())
+        stars_by_repo = {"repo1": 0, "repo2": 10, "repo3": 20}
 
-        with patch("src.utils.github_utils.requests.get", side_effect=responses):
+        # The workers call requests.get in whatever order the pool schedules them, so
+        # each answer is chosen by URL. An ordered list handed out a repo's answer to
+        # whichever worker called first and failed about one run in six.
+        def side_effect(url: str, **kwargs: object) -> MagicMock:
+            if url.endswith("/languages"):
+                return _make_lang_response()
+            return _make_mock_response(stars=stars_by_repo[url.rsplit("/", 1)[-1]])
+
+        with patch("src.utils.github_utils.requests.get", side_effect=side_effect) as mock_get:
             result = get_github_repo_info_batch(urls)
 
+        # Each repo needs 2 requests (repo info + languages)
+        assert mock_get.call_count == 6
         assert len(result) == 3
-        assert result[urls[0]] is not None
-        assert result[urls[0]]["github_stars"] == 0  # type: ignore[index]
-        assert result[urls[1]] is not None
-        assert result[urls[1]]["github_stars"] == 10  # type: ignore[index]
-        assert result[urls[2]] is not None
-        assert result[urls[2]]["github_stars"] == 20  # type: ignore[index]
+        for url in urls:
+            assert result[url] is not None
+            assert result[url]["github_stars"] == stars_by_repo[url.rsplit("/", 1)[-1]]
 
     def test_duplicate_urls_deduplicated(self) -> None:
         """Duplicate URLs should be fetched only once and share results."""
