@@ -22,29 +22,35 @@ Watchtower automates data collection from news sites, research platforms, game s
 
 Watchtower is an integrated solution for automated data acquisition, processing, and monitoring:
 
--   **Automated Data Collection**: 22+ ETL pipelines scraping data from ArXiv, GitHub, Reddit, YouTube, game stores, course platforms, AI platforms, museums, and more.
+-   **Automated Data Collection**: 23 ETL domains (105 scripts in the ETL orchestrator's list) scraping data from ArXiv, GitHub, Reddit, game stores, course platforms, AI platforms, security feeds, and more.
 -   **Change Detection**: Event-driven watchers monitor web pages for content changes with state persistence.
--   **Interactive Dashboard**: Modern Dash-based interface with ~25 tabs, Bootstrap styling, and real-time data loading.
--   **Resilience**: Circuit breakers, proxy rotation, retry logic, and checkpointing for reliable operation.
+-   **Interactive Dashboard**: Modern Dash-based interface with 18 tabs, Bootstrap styling, and real-time data loading.
+-   **JSON API**: A read-only FastAPI service serving the collected feeds under `/api/v1`.
+-   **Resilience**: `BaseETL` bundles circuit breakers, proxy rotation, retry logic, and checkpointing.
 
 ## Features
 
-### ETL Pipelines (22+ Domains)
--   **Research & Intelligence**: ArXiv papers, AI platforms (OpenAI, Anthropic, HuggingFace, Replicate), ADHD research, SEC filings, WHO outbreaks, LessWrong
--   **News & Social**: HackerNews, Reddit (30+ subreddits), TechCrunch, Lobste.rs, Medium, 4chan
--   **Gaming & Entertainment**: Game deals, free games, Metacritic, cinema, anime, Spotify, Trakt, YouTube Shorts
--   **Education**: Udemy, Coursera, DeepLearning.AI, Pluralsight
--   **E-commerce & Deals**: Multi-platform deal aggregation, museum exhibitions, scavenging
--   **Regional**: Spanish public aid, Valencia events
+### ETL Pipelines (23 Domains)
+-   **Research & Intelligence**: ArXiv papers, Hugging Face daily papers, AI platforms (Replicate, Ollama), LessWrong, NVD CVEs, OpenAlex, Kaggle, ADHD research
+-   **News & Social**: HackerNews, Reddit, TechCrunch, Lobste.rs, Medium, 4chan, and about 40 more feeds
+-   **Gaming**: Game deals, GOG, Humble Bundles, itch.io, IsThereAnyDeal, Metacritic
+-   **Education**: AWS Skill Builder, Coursera, DeepLearning.AI, GCP Skills Boost, Microsoft Applied Skills, Pluralsight, Udemy
+-   **Deals & E-commerce**: Lifetimo, Shoppy, Gumroad, Audible releases, Humble Books, Viajeros Piratas
+-   **Security & Markets**: CISA KEV, security news, OSV advisories, CoinGecko crypto quotes
+-   **Benchmarks & Open Source**: LLM leaderboards and model feeds, GitHub trending, releases and end-of-life dates for a self-hosted stack, open-source projects, package registries, Stack Exchange, Hashnode, Substack, Trendshift
+-   **Regional**: Spanish public aid (BDNS), Valencia events and local news
 
 ### Watchers
 -   Extensible `BaseWatcher` system for continuous monitoring
+-   Four watchers today: `ArxivWatcher`, `MSAppliedSkillsWatcher`, `CoursesWatcher`, `DataFreshnessWatcher`
 -   JSON state persistence and event logging
 
-### Dashboard (~25 Tabs)
--   Primary: **Dash** (port **7780**) with Bootstrap styling
--   Legacy: Streamlit (port 8501)
--   Tabs: ArXiv, News, Games, Entertainment, Courses, Crypto, Knowledge Garden, Intelligence, GitHub Trending, Anime, Videos, Museums, E-commerce, 4chan, Open Source, Spanish Public Aid, Valencia Events, Travel, Scavenging, Metrics, Notifications, Recommendations, Shortcuts, Watchers
+### Dashboard (18 Tabs)
+-   **Dash** (port **7780**) with Bootstrap styling
+-   Tabs: News, Knowledge Garden, Videos, Learning, 4chan Generals, Scavenging, Valencia Events, Ayudas Públicas, ArXiv Research, Deals, Benchmarks, Markets, Security, Tech Radar, Games, Notifications, Metrics, Digest
+
+### API
+-   FastAPI service (port **45714**) with 20 GET routes: 19 under `/api/v1` plus `/health`
 
 ## Tech Stack
 
@@ -52,13 +58,14 @@ Watchtower is an integrated solution for automated data acquisition, processing,
 |----------|-------------|
 | **Language** | Python 3.10+ |
 | **Package Manager** | UV (10-100x faster than pip) |
-| **Data Processing** | pandas, polars, NumPy, scikit-learn |
-| **Web Dashboard** | Dash + Bootstrap (primary), Streamlit (legacy) |
+| **Data Processing** | pandas, NumPy, scikit-learn |
+| **Web Dashboard** | Dash + Bootstrap |
+| **API** | FastAPI + Uvicorn |
 | **Web Scraping** | Playwright, BeautifulSoup4, feedparser, cloudscraper |
 | **Configuration** | Pydantic Settings with nested validation |
-| **Data Models** | 38 Pydantic model files |
+| **Data Models** | 19 Pydantic model modules |
 | **Storage** | JSON files (timestamped, file-based) |
-| **Quality** | Ruff (lint/format), mypy (types), pytest (testing) |
+| **Quality** | Ruff (lint/format), mypy (types, advisory), pytest (testing), pre-commit (hooks) |
 | **Containerization** | Docker + docker-compose |
 
 ## Project Structure
@@ -67,38 +74,36 @@ Watchtower is an integrated solution for automated data acquisition, processing,
 watchtower/
 ├── src/
 │   ├── config/              # Pydantic settings management
-│   ├── etl/                 # 22+ ETL pipeline domains
+│   ├── etl/                 # 23 ETL pipeline domains
 │   │   ├── base.py          # BaseETL framework (Template Method)
 │   │   ├── circuit_breaker.py  # Failure isolation
 │   │   ├── proxy_manager.py    # IP rotation
 │   │   ├── arxiv/           # Research papers
-│   │   ├── ai_platforms/    # OpenAI, Anthropic, Replicate, etc.
+│   │   ├── ai_platforms/    # Replicate, Ollama
 │   │   ├── news/            # HackerNews, Reddit, TechCrunch, etc.
-│   │   ├── games/           # Game deals and releases
-│   │   ├── intelligence/    # SEC, LessWrong, WHO, startups, etc.
-│   │   ├── entertainment/   # Cinema, Spotify, Trakt
-│   │   ├── goldigging/      # Courses (Udemy, Coursera, etc.)
-│   │   ├── ecommerce/       # E-commerce deals
-│   │   ├── museums/         # Museum exhibitions
-│   │   ├── youtube_shorts/  # YouTube video processing
-│   │   └── ...              # adhd, anime, fourchan, opensource, etc.
-│   ├── models/              # 38 Pydantic data models
+│   │   ├── games/           # Game deals and bundles
+│   │   ├── intelligence/    # LessWrong, NVD CVEs
+│   │   ├── benchmarks/      # LLM leaderboards and model feeds
+│   │   ├── security/        # CISA KEV, security news, OSV advisories
+│   │   ├── goldigging/      # Courses (Coursera, Pluralsight, etc.) and scavenging
+│   │   └── ...              # courses, deals, ecommerce, markets, spanish_public_aid, etc.
+│   ├── models/              # 19 Pydantic model modules
 │   ├── watchers/            # Event-driven monitoring
+│   ├── api/                 # FastAPI REST API (/api/v1, /health)
+│   ├── repositories/        # Cached data access for dashboard tabs
 │   ├── web/
-│   │   ├── dashboard/       # Dash dashboard (primary, port 7780)
-│   │   │   ├── app.py       # Main app with tab container
-│   │   │   └── components/  # ~25 tab components
-│   │   └── fullstreamlit/   # Legacy Streamlit dashboard
-│   ├── miners/              # Specialized scrapers (Udemy, Steam ASF)
+│   │   └── dashboard/       # Dash dashboard (port 7780)
+│   │       ├── app.py       # Main app with tab container
+│   │       └── components/  # Tab components
+│   ├── miners/              # Specialized scrapers (Udemy course miner, crypto sentiment)
 │   ├── intelligence/        # AI enrichment engine
-│   ├── recommendations/     # Content recommendation system
 │   └── utils/               # Shared utilities (NLP, file system, logging)
 ├── data/                    # JSON data storage (timestamped outputs)
 ├── docs/                    # Project documentation
 ├── Tests/                   # pytest test suite
-├── deployment/              # Unraid deployment scripts
+├── deployment/              # Unraid deployment (Dockerfile, deploy.py, supervisord.conf)
 ├── run_watchtower_dashboard.py  # Dashboard entry point
-├── run_all_etl.bat/.sh      # Batch ETL execution
+├── run_all_etl.sh           # Batch ETL execution (runs run_all_etl_orchestrator.py)
 └── pyproject.toml           # Project config and dependencies
 ```
 
@@ -113,7 +118,7 @@ watchtower/
 
 ```bash
 # Clone
-git clone https://github.com/yourusername/watchtower.git
+git clone https://github.com/josmerod/watchtower.git
 cd watchtower
 
 # Install UV (if needed)
@@ -122,10 +127,13 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 # macOS/Linux:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install all dependencies
-uv sync --all-extras
+# Install all dependencies (includes the dev tools: ruff, pytest, mypy, pre-commit)
+uv sync
 
-# Install Playwright browsers (for web scraping)
+# Install the git hooks (commit and push stages). Mandatory before you commit.
+uv run pre-commit install --hook-type pre-commit --hook-type pre-push
+
+# Install Playwright browsers (only needed by the browser-backed ETLs)
 uv run playwright install
 ```
 
@@ -134,21 +142,24 @@ uv run playwright install
 ### Dashboard
 
 ```bash
-# Main Dash dashboard (recommended)
+# Dash dashboard
 uv run python run_watchtower_dashboard.py
 # → http://localhost:7780
+```
 
-# Legacy Streamlit dashboard
-uv run streamlit run src/web/fullstreamlit/app.py
-# → http://localhost:8501
+### API
+
+```bash
+# FastAPI service
+uv run uvicorn src.api.main:app --port 45714
+# → http://localhost:45714/docs (interactive docs), /health, /api/v1/*
 ```
 
 ### ETL Pipelines
 
 ```bash
-# Run all ETL pipelines
-.\run_all_etl.bat         # Windows
-./run_all_etl.sh          # Linux/Mac
+# Run all ETL pipelines (4 workers; needs Bash)
+./run_all_etl.sh
 
 # Run a specific ETL
 uv run python src/etl/arxiv/arxiv_etl.py
@@ -158,15 +169,17 @@ uv run python src/etl/news/news_get_ycombinator.py
 ### Watchers
 
 ```bash
-# Run all watchers continuously
-uv run python src/watchers/run_watcher.py
+# List the watchers the runner can launch (today: ms_applied_skills)
+uv run python src/watchers/run_watcher.py --list
 
 # Run a specific watcher once
-uv run python src/watchers/run_watcher.py arxiv_watcher --once
+uv run python src/watchers/run_watcher.py ms_applied_skills --once
 
-# List available watchers
-uv run python src/watchers/run_watcher.py --list
+# Run every registered watcher continuously
+uv run python src/watchers/run_watcher.py
 ```
+
+`MSAppliedSkillsWatcher`, `CoursesWatcher` and `DataFreshnessWatcher` each run once per invocation and are steps of the ETL cycle; `ArxivWatcher` is a component of the ArXiv ETL.
 
 ### Testing & Quality
 
@@ -198,22 +211,27 @@ docker compose up -d --build
 
 # Plain docker
 docker build -t watchtower-app .
-docker run -p 7780:7780 --env-file .env watchtower-app
+docker run -p 7780:7780 -p 45714:45714 --env-file .env watchtower-app
 ```
+
+The container starts the dashboard, the API and the ETL scheduler together; the scheduler runs every ETL as soon as it starts and then every 2 hours.
+
+Secrets differ between the two Docker paths. The root `Dockerfile` (used by both `docker compose` and the plain `docker build` above) copies `./secrets/` into the image, and `docker-compose.yml` also mounts `./secrets` read-only. The Unraid path below (`deployment/Dockerfile` + `deploy.py`) ships and mounts no secrets: `.env` and `secrets/` are not part of the deploy archive, and only the `data` and `logs` volumes are mounted.
 
 ### Unraid
 
 ```bash
-# Deploy to Unraid server
-uv run --with paramiko deployment/deploy.py
+# Deploy to the Unraid server (connection settings come from .env: UNRAID_HOST, UNRAID_USER, UNRAID_PASSWORD or an SSH key)
+uv run --with paramiko python deployment/deploy.py
 ```
 
-Pre-configured volume mappings:
+`deploy.py` archives the working tree, uploads it, builds the image on the server, starts the container and waits for its health check; if the new container does not become healthy it rolls back to the previous image.
+
+Volume mappings used by `deploy.py`:
 ```yaml
 volumes:
   - /mnt/user/appdata/watchtower/data:/app/data
   - /mnt/user/appdata/watchtower/logs:/app/logs
-  - /mnt/user/appdata/watchtower/secrets:/app/secrets:ro
 ```
 
 ## Development Standards
@@ -224,31 +242,34 @@ volumes:
 -   **Pydantic**: All data structures and configuration use Pydantic models
 -   **Dash UI**: Single Callback Pattern, Bootstrap components, error boundaries
 -   **Testing**: pytest with focus on ETL logic and data processing
+-   **AI agents**: `AGENTS.md` holds the commands and conventions for AI coding agents working in this repository
 
 ### Architecture Patterns
 
 -   **Template Method**: `BaseETL.run()` orchestrates extract → transform → load
--   **Factory Pattern**: `get_settings()` with `@lru_cache` singleton
+-   **Singleton**: `get_settings()` with `@lru_cache`
 -   **State Pattern**: Watcher state management with JSON persistence
 -   **Component Pattern**: Modular Dash tab architecture
--   **Repository Pattern**: Knowledge Garden data loading
+-   **Repository Pattern**: Cached data loading in six dashboard components (see `docs/REPOSITORY_PATTERN.md`)
 
 ## Contributing
 
 1.  Fork the repository
-2.  Create a feature branch: `git checkout -b feature/your-feature`
+2.  Create a branch: `git checkout -b feat/your-feature` (prefixes: `feat/`, `fix/`, `chore/`, `docs/`)
 3.  Follow [Development Standards](#development-standards)
 4.  Write tests for new code
-5.  Run quality checks: `uv run ruff check . && uv run pytest`
+5.  Run `uv run pre-commit run --all-files` and `uv run pytest`
 6.  Submit a Pull Request
+
+Read [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for the full workflow. Open work is tracked in [docs/TASK_BOARD.md](docs/TASK_BOARD.md).
 
 ## Troubleshooting
 
 -   **Dashboard not loading**: Check that port 7780 is free. Run `uv run python run_watchtower_dashboard.py` and check console output.
 -   **Playwright issues**: Run `uv run playwright install` to install browser binaries.
--   **Dependency conflicts**: Delete `.venv/` and run `uv sync --all-extras` for a clean install.
+-   **Dependency conflicts**: Delete `.venv/` and run `uv sync` for a clean install.
 -   **ETL failures**: Check `data/{etl_name}/output/` for error logs and `logs/` for detailed output.
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+`pyproject.toml` declares an MIT license, but the repository does not include a `LICENSE` file.

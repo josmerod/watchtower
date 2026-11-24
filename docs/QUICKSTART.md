@@ -14,7 +14,7 @@ Get up and running with Watchtower in 10 minutes.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/watchtower.git
+git clone https://github.com/josmerod/watchtower.git
 cd watchtower
 
 # Install UV package manager (10-100x faster than pip)
@@ -25,7 +25,11 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install all dependencies (creates virtual environment automatically)
-uv sync --all-extras
+# The dev tools (ruff, pytest, mypy, pre-commit) are included
+uv sync
+
+# Install the git hooks (commit and push stages). Mandatory before you commit.
+uv run pre-commit install --hook-type pre-commit --hook-type pre-push
 
 # Install browser dependencies
 uv run playwright install
@@ -44,14 +48,14 @@ cp .env.example .env
 ### 3. Run Your First ETL
 
 ```bash
-# Collect news from multiple sources
+# Collect Hacker News stories
 uv run python src/etl/news/news_get_ycombinator.py
 
 # Collect ArXiv research papers
 uv run python src/etl/arxiv/arxiv_etl.py
 
 # Collect game deals
-uv run python src/etl/games/enhanced_free_games_etl.py
+uv run python src/etl/games/games_get_deals.py
 ```
 
 ### 4. Launch the Dashboard
@@ -68,11 +72,8 @@ uv run python run_watchtower_dashboard.py
 ### Run All ETL Pipelines
 
 ```bash
-# Windows
-.\run_all_etl.bat
-
-# Linux/macOS
-bash run_all_etl.sh
+# Needs Bash
+./run_all_etl.sh
 ```
 
 ### Start Watchers
@@ -82,7 +83,7 @@ bash run_all_etl.sh
 uv run python src/watchers/run_watcher.py --list
 
 # Run specific watcher once
-uv run python src/watchers/run_watcher.py arxiv_watcher --once
+uv run python src/watchers/run_watcher.py ms_applied_skills --once
 
 # Run all watchers continuously
 uv run python src/watchers/run_watcher.py
@@ -93,8 +94,8 @@ uv run python src/watchers/run_watcher.py
 All collected data is stored in `data/` directory:
 
 ```bash
-# View collected news
-ls data/news/
+# View the Hacker News output (written by the first ETL above)
+ls data/hackernews/
 
 # View ArXiv papers
 ls data/arxiv/
@@ -111,7 +112,7 @@ Edit `src/etl/news/` to add or remove news sources.
 
 ### 2. Set Up Scheduling
 
-Schedule ETL pipelines to run automatically (see [User Guide](USER_GUIDE.md#scheduling)).
+In production the container's scheduler (`deployment/etl_scheduler.py`) runs all ETLs on start and then every 2 hours. Locally, schedule `./run_all_etl.sh` with cron or Task Scheduler.
 
 ### 3. Configure Watchers
 
@@ -123,10 +124,11 @@ The dashboard provides interactive views of all collected data with filtering an
 
 ## Need Help?
 
-- **User Guide**: [USER_GUIDE.md](USER_GUIDE.md)
+- **Documentation Index**: [INDEX.md](INDEX.md)
+- **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Technical Docs**: [docs/technical/](technical/)
 - **FAQ**: [FAQ.md](FAQ.md)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/watchtower/issues)
+- **Issues**: [GitHub Issues](https://github.com/josmerod/watchtower/issues)
 
 ## Troubleshooting Quick Fixes
 
@@ -154,8 +156,8 @@ netstat -ano | findstr :7780
 # Linux/macOS
 lsof -i :7780
 
-# Use different port
-uv run python run_watchtower_dashboard.py --port 8888
+# Use a different port (the port is read from the WATCHTOWER_DASHBOARD_PORT environment variable)
+WATCHTOWER_DASHBOARD_PORT=8888 uv run python run_watchtower_dashboard.py
 ```
 
 ### No Data Appears
@@ -163,17 +165,16 @@ uv run python run_watchtower_dashboard.py --port 8888
 Run ETL pipelines first to collect data:
 
 ```bash
-.\run_all_etl.bat  # Windows
-bash run_all_etl.sh  # Linux/macOS
+./run_all_etl.sh
 ```
 
 ## Next Steps
 
 Once you have the basics running:
 
-1. Read the [User Guide](USER_GUIDE.md) for comprehensive usage
+1. Read the [Contributing Guide](CONTRIBUTING.md) for the development workflow
 2. Explore [ETL Development Guide](technical/ETL_DEVELOPMENT_GUIDE.md) to create custom pipelines
-3. Set up [automated scheduling](USER_GUIDE.md#automation) for hands-free operation
+3. Deploy it: see [Docker & Unraid Deployment](../README.md#docker--unraid-deployment) in the README
 4. Configure [watchers](technical/WATCHERS_GUIDE.md) for change detection
 
 Happy monitoring! 🎯

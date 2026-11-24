@@ -526,7 +526,7 @@ Receive Alert → Open Dashboard → Locate New Deal/News → Take Action
 
 **FR-2.6: ETL Orchestration**
 - **Requirement**: Run all ETL pipelines on demand or scheduled
-- **Scripts**: `run_all_etl.sh` (Linux/Mac), `run_all_etl.bat` (Windows)
+- **Scripts**: `./run_all_etl.sh` (Linux/macOS); on Windows, `uv run python run_all_etl_orchestrator.py --workers 4`, which is what the script runs
 - **Acceptance Criteria**:
   - Sequential execution with error isolation
   - Overall success/failure summary
