@@ -20,7 +20,7 @@ git clone <repository-url>
 cd watchtower
 
 # Install dependencies with UV (recommended)
-uv sync --all-extras
+uv sync
 
 # Alternative: Traditional pip installation
 python -m venv venv
@@ -70,8 +70,7 @@ ETL__CLEANUP_OLD_DATA_DAYS=30
 # API__REDDIT_CLIENT_ID=your_reddit_client_id
 
 # Dashboard configuration
-STREAMLIT__PORT=8501
-STREAMLIT__HOST=0.0.0.0
+WATCHTOWER_DASHBOARD_PORT=7780
 
 # Scraping configuration
 SCRAPING__USER_AGENT=Watchtower/1.0 (+https://github.com/josmerod/watchtower)
@@ -136,7 +135,6 @@ services:
     build: .
     ports:
       - "7780:7780"  # Dash dashboard
-      - "8501:8501"  # Streamlit dashboard (if needed)
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -183,6 +181,33 @@ services:
       - watchtower
     restart: unless-stopped
 ```
+
+The repository ships its own image definition and deploy script under `deployment/`; the files above are a generic example, not what the server runs. To deploy:
+
+```bash
+# Connection settings come from .env: UNRAID_HOST, UNRAID_USER and UNRAID_PASSWORD, or the SSH key ~/.ssh/id_ed25519
+uv run --with paramiko python deployment/deploy.py
+```
+
+`deployment/deploy.py` does the following, in this order:
+
+1. **Archive**: packs the working tree, limited to the paths in its `INCLUDE_PATHS` list (`src`, `deployment`, `config`, `Tests`, `pyproject.toml`, `uv.lock`, `run_all_etl.sh`, `run_watchtower_dashboard.py`, `run_all_etl_orchestrator.py`, `README.md` and `GEMINI.md`) and without bytecode or tool caches. The archive comes from the working tree, so uncommitted changes are deployed too; `.env` is not part of it.
+2. **Build**: uploads the archive over SSH, extracts it on the server, tags the running image as `watchtower:previous` and builds `deployment/Dockerfile` there as the new `watchtower` image. If the build fails, the running container is not touched.
+3. **Swap**: removes the running container and starts the new image with `docker run`, publishing the dashboard as 7777 → 7780 and the API as 45714 → 45714 and mounting only the `data` and `logs` volumes.
+4. **Health check**: polls the container's health status every 5 seconds for up to 240 seconds. The `HEALTHCHECK` in `deployment/Dockerfile` calls `http://localhost:45714/health`, so the API is the gate.
+5. **Rollback**: if the new container does not become healthy and a previous image exists, that image is put back behind the container. When the new container is not healthy the script exits with code 1, whether or not a rollback happened; it exits with 0 only when the container is healthy.
+
+`deployment/deploy.ps1` is deprecated; its header says not to deploy with it and points to the command above.
+
+Inside the container, `deployment/supervisord.conf` is the main process (the `CMD` of `deployment/Dockerfile`, which starts from a Python 3.11 image with `uv`) and starts three programs, all from `/app` and with `autorestart`:
+
+| Program | Command | Serves |
+| :-- | :-- | :-- |
+| `dashboard` | `uv run python run_watchtower_dashboard.py` | Dash dashboard on port 7780 |
+| `api` | `uv run uvicorn src.api.main:app --port 45714`, listening on all interfaces | API on port 45714 |
+| `etl_scheduler` | `uv run python deployment/etl_scheduler.py` | ETL cycle |
+
+`deployment/etl_scheduler.py` runs `./run_all_etl.sh` when it starts and then every 2 hours, and after each cycle it restarts the API (`supervisorctl restart api`) so that it serves the fresh data; the dashboard is not restarted. Program output goes to `/app/logs/` (`dashboard`, `api` and `scheduler` `.out.log` and `.err.log` files).
 
 ### Systemd Service (Linux)
 
@@ -313,7 +338,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 source ~/.cargo/env
 
 # Install dependencies
-uv sync --all-extras
+uv sync
 uv run playwright install
 
 # Create directories
@@ -346,7 +371,7 @@ Create `/etc/nginx/sites-available/watchtower`:
 
 ```nginx
 upstream watchtower {
-    server 127.0.0.1:7780;
+    server <host>:7780;
 }
 
 server {

@@ -177,10 +177,9 @@ watchtower/
 │   │   │   │   └── ... (15+ tabs)
 │   │   │   ├── assets/             # CSS, JavaScript
 │   │   │   └── utils.py            # Shared utilities
-│   │   └── fullstreamlit/          # Legacy Streamlit (EXISTING - compatibility)
 │   ├── exceptions/                 # Custom exceptions (EXISTING)
 │   └── miners/                     # Advanced data mining tools (EXISTING)
-├── tests/                          # Test suite (EXISTING)
+├── Tests/                          # Test suite (EXISTING)
 │   ├── unit/
 │   ├── integration/
 │   ├── etl/
@@ -225,7 +224,7 @@ watchtower/
 | **Epic 5: Multi-User Auth** | `src/auth/`, `data/megalith.db` | SQLite tables: `users`, `sessions` | Flask-Login, bcrypt, SQLite |
 | **Epic 5.5: Per-User Prefs** | `src/auth/preferences.py`, `data/users/{user_id}/` | `data/users/{user_id}/preferences.json`, `data/users/{user_id}/sources/` | User-scoped data, migration from localStorage |
 | **Epic 6: Integration Tools** | `src/registry/`, `src/templates/` | `data/registry/sources.json` | CLI scaffolding, source metadata |
-| **Epic 7: Tech Debt** | All `src/etl/` (refactored), `tests/` (expanded) | `data/metrics/profiling/` | pytest, coverage, cProfile, @lru_cache |
+| **Epic 7: Tech Debt** | All `src/etl/` (refactored), `Tests/` (expanded) | `data/metrics/profiling/` | pytest, coverage, cProfile, @lru_cache |
 | **Epic 8: Intelligence** | `src/analytics/`, `web/dashboard/components/insights_tab.py` | `data/users/{user_id}/activity_log.json`, `data/analytics/trends/` | Heuristic algorithms, Plotly visualizations |
 | **Epic 9: Ecosystem** | `src/api/`, webhooks, browser extension | API uses existing `data/` sources | FastAPI, Uvicorn, OpenAPI docs, Telegram webhooks |
 
@@ -299,7 +298,7 @@ watchtower/
 # VideoManager pattern (existing)
 class VideoManager:
     @lru_cache(maxsize=128)  # NEW - Epic 7 caching
-    def load_videos(self, channel: str) -> List[Video]:
+    def load_videos(self, channel: str) -> list[Video]:
         # Read from data/youtube/{channel}/youtube_videos.json
         pass
 ```
@@ -372,7 +371,7 @@ These patterns ensure consistency across all AI agents implementing features.
 - Models: `{name}_model.py` (e.g., `arxiv_model.py`, `user_model.py`)
 
 **Python Code:**
-- Classes: `PascalCase` (e.g., `BaseETL`, `VideoManager`, `AlertEngine`)
+- Classes: `PascalCase` (e.g., `BaseETL`, `VideoManager`, `BaseWatcher`)
 - Functions/methods: `snake_case` (e.g., `load_videos()`, `check_notifications()`)
 - Constants: `UPPER_SNAKE_CASE` (e.g., `DEFAULT_TIMEOUT`, `MAX_RETRIES`)
 - Private methods: `_leading_underscore` (e.g., `_validate_config()`)
@@ -392,15 +391,15 @@ These patterns ensure consistency across all AI agents implementing features.
 ```python
 # All ETL classes inherit from BaseETL
 class ArxivETL(BaseETL):
-    def extract(self) -> List[Dict]:
+    def extract(self) -> list[dict]:
         """Fetch data from external source."""
         pass
 
-    def transform(self, raw_data: List[Dict]) -> List[ArxivPaperModel]:
+    def transform(self, raw_data: list[dict]) -> list[ArxivPaperModel]:
         """Validate and transform data."""
         pass
 
-    def load(self, data: List[ArxivPaperModel]) -> None:
+    def load(self, data: list[ArxivPaperModel]) -> None:
         """Save to data/arxiv/output/*.json."""
         pass
 ```
@@ -416,7 +415,7 @@ class VideoManager:
     """Handle video data loading and filtering."""
 
     @lru_cache(maxsize=128)
-    def load_videos(self, channel: str) -> List[Video]:
+    def load_videos(self, channel: str) -> list[Video]:
         """Load and cache video data."""
         pass
 
@@ -535,7 +534,7 @@ except Exception as e:
 import json
 from pathlib import Path
 
-def save_data(data: List[Dict], output_path: Path):
+def save_data(data: list[dict], output_path: Path):
     """Atomic file write using temp file + rename."""
     temp_path = output_path.with_suffix('.tmp')
 
@@ -1070,7 +1069,7 @@ def render_tab(active_tab):
 from functools import lru_cache
 
 @lru_cache(maxsize=128)
-def load_videos(channel: str) -> List[Video]:
+def load_videos(channel: str) -> list[Video]:
     """Cache video data for 128 unique channel queries."""
     with open(f'data/youtube/{channel}/youtube_videos.json') as f:
         return json.load(f)
@@ -1102,7 +1101,7 @@ page_data = all_items[offset:offset+items_per_page]
 
 1. **Batch Processing:**
 ```python
-def process_batch(items: List[Dict], batch_size: int = 100):
+def process_batch(items: list[dict], batch_size: int = 100):
     """Process items in batches to manage memory."""
     for i in range(0, len(items), batch_size):
         batch = items[i:i+batch_size]
@@ -1176,7 +1175,7 @@ WORKDIR /app
 COPY . /app
 
 # Install Python dependencies
-RUN uv sync --all-extras
+RUN uv sync
 
 # Install Playwright browsers
 RUN uv run playwright install --with-deps chromium
@@ -1197,10 +1196,10 @@ CMD ["./start.sh"]
 set -e
 
 # Start FastAPI (Epic 9)
-uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
+uv run uvicorn src.api.main:app --host <host> --port 8000 &
 
 # Start Dash dashboard
-uv run waitress-serve --host=0.0.0.0 --port=7780 run_watchtower_dashboard:server &
+uv run waitress-serve --host=<host> --port=7780 run_watchtower_dashboard:server &
 
 # Wait for both processes
 wait
@@ -1288,7 +1287,7 @@ git clone https://github.com/josmerod/watchtower.git
 cd watchtower
 
 # Install dependencies
-uv sync --all-extras
+uv sync
 
 # Install Playwright browsers
 uv run playwright install
@@ -1297,15 +1296,12 @@ uv run playwright install
 cp .env.example .env
 # Edit .env with your configuration
 
-# Initialize database
-uv run python src/scripts/init_database.py
-
 # Run dashboard
 uv run python run_watchtower_dashboard.py
 
 # Run all ETL pipelines
 ./run_all_etl.sh  # Linux/Mac
-.\run_all_etl.bat  # Windows
+uv run python run_all_etl_orchestrator.py --workers 4  # Windows (what run_all_etl.sh runs)
 ```
 
 **Using pip/venv:**
@@ -1319,7 +1315,7 @@ venv\Scripts\activate     # Windows
 pip install -r requirements.txt
 playwright install
 
-# Same steps as above for .env, database, running
+# Same steps as above for .env and running
 ```
 
 ### Development Workflow
@@ -1342,8 +1338,8 @@ docker-compose up
 uv run pytest
 
 # Specific test category
-uv run pytest tests/etl/
-uv run pytest tests/models/
+uv run pytest Tests/etl/
+uv run pytest Tests/models/
 
 # With coverage
 uv run pytest --cov=src --cov-report=html --cov-report=term
@@ -1369,8 +1365,7 @@ uv run python src/etl/arxiv/arxiv_etl.py
 # Run with profiling (Epic 7)
 uv run python -m cProfile -o profile.stats src/etl/arxiv/arxiv_etl.py
 
-# Generate new ETL scaffold (Epic 6)
-uv run python src/scripts/new_source.py --name crypto_news --type rss
+# New ETL pipelines are written by hand; see docs/technical/ETL_DEVELOPMENT_GUIDE.md
 ```
 
 ---

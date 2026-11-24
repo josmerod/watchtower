@@ -46,6 +46,17 @@ python watchtower.py service start
 python watchtower.py service status
 ```
 
+The deployment the repository maintains for its server is `deployment/deploy.py`, run from the project root:
+
+```bash
+# Connection settings come from .env: UNRAID_HOST, UNRAID_USER and UNRAID_PASSWORD, or the SSH key ~/.ssh/id_ed25519
+uv run --with paramiko python deployment/deploy.py
+```
+
+`deployment/deploy.py` archives the working tree (only the paths in its `INCLUDE_PATHS` list; uncommitted changes are deployed too), uploads the archive over SSH and builds `deployment/Dockerfile` on the server, after tagging the running image as `watchtower:previous`. It then swaps the container for the new image, polls the container health every 5 seconds for up to 240 seconds (the `HEALTHCHECK` in `deployment/Dockerfile` calls the API's `/health` on port 45714) and, if the new container does not become healthy, puts `watchtower:previous` back when there is one. It exits with 0 only when the container is healthy. `deployment/deploy.ps1` is deprecated; its header says not to deploy with it.
+
+In the container, `deployment/supervisord.conf` starts three programs with `autorestart`: `dashboard` (`uv run python run_watchtower_dashboard.py`, port 7780), `api` (`uv run uvicorn src.api.main:app --port 45714`, listening on all interfaces) and `etl_scheduler` (`uv run python deployment/etl_scheduler.py`). The scheduler runs `./run_all_etl.sh` when it starts and then every 2 hours, and restarts the API after each cycle.
+
 ## 📋 Deployment Options Overview
 
 | Method | Best For | Auto-start | Hot Reload | Resource Usage | Setup Complexity |
@@ -59,7 +70,7 @@ python watchtower.py service status
 ### Prerequisites
 
 1. **Python 3.10+** with UV package manager
-2. **Dependencies installed**: `uv sync --all-extras`
+2. **Dependencies installed**: `uv sync`
 3. **Optional**: Podman and podman-compose for containerized deployment
 
 ### CLI Deployment (Development)

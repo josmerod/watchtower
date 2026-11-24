@@ -35,7 +35,6 @@ graph TB
     subgraph "Presentation Layer"
         T[Dash Dashboard]
         U[Health APIs]
-        V[Streamlit Legacy]
     end
 
     K --> P
@@ -44,7 +43,6 @@ graph TB
     H --> S
     P --> T
     S --> U
-    P --> V
 ```
 
 ## Core Design Principles

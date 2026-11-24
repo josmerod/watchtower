@@ -24,7 +24,7 @@ Create a new ETL by inheriting from `BaseETL`:
 
 ```python
 # src/etl/my_domain/my_custom_etl.py
-from typing import List, Dict, Any
+from typing import Any
 from datetime import datetime
 import requests
 import json
@@ -33,7 +33,7 @@ from src.etl.base import BaseETL
 from src.models.my_domain import MyDomainModel
 from src.utils.logging import get_logger
 
-class MyCustomETL(BaseETL[Dict[str, Any], MyDomainModel]):
+class MyCustomETL(BaseETL[dict[str, Any], MyDomainModel]):
     """ETL for processing data from My Custom Source.
 
     This ETL fetches data from an external API, processes it according
@@ -49,9 +49,9 @@ class MyCustomETL(BaseETL[Dict[str, Any], MyDomainModel]):
             max_retries=3,
             retry_delay=5
         )
-        self.api_key = self.settings.api.my_custom_api_key
+        self.api_key = self.settings.my_custom_api.api_key
 
-    def extract(self) -> List[Dict[str, Any]]:
+    def extract(self) -> list[dict[str, Any]]:
         """Extract data from the external API."""
         self.logger.info("Starting data extraction from My Custom API")
 
@@ -68,7 +68,7 @@ class MyCustomETL(BaseETL[Dict[str, Any], MyDomainModel]):
 
         return data.get('items', [])
 
-    def transform(self, data: List[Dict[str, Any]]) -> List[MyDomainModel]:
+    def transform(self, data: list[dict[str, Any]]) -> list[MyDomainModel]:
         """Transform raw data into structured models."""
         self.logger.info(f"Transforming {len(data)} items")
         transformed_items = []
@@ -98,7 +98,7 @@ class MyCustomETL(BaseETL[Dict[str, Any], MyDomainModel]):
         self.logger.info(f"Successfully transformed {len(transformed_items)} items")
         return transformed_items
 
-    def load(self, data: List[MyDomainModel]) -> None:
+    def load(self, data: list[MyDomainModel]) -> None:
         """Load transformed data to JSON files."""
         if not data:
             self.logger.info("No data to load")
@@ -132,7 +132,7 @@ class MyCustomETL(BaseETL[Dict[str, Any], MyDomainModel]):
         except (ValueError, AttributeError):
             return datetime.utcnow()
 
-    def _classify_category(self, item: Dict[str, Any]) -> str:
+    def _classify_category(self, item: dict[str, Any]) -> str:
         """Classify item into appropriate category."""
         title = item.get('title', '').lower()
         if 'tech' in title or 'ai' in title:
@@ -157,6 +157,16 @@ if __name__ == "__main__":
     main()
 ```
 
+A new ETL is not run automatically: `./run_all_etl.sh` drives `run_all_etl_orchestrator.py`, which runs the scripts listed in `ETL_SCRIPTS`. Add the new script to that list for it to be part of the ETL cycle. The same goes for every `BaseETL` subclass shown below:
+
+```python
+# run_all_etl_orchestrator.py
+ETL_SCRIPTS = [
+    # ...existing entries...
+    "src/etl/my_domain/my_custom_etl.py",
+]
+```
+
 ### Step 2: Create Data Models
 
 Define Pydantic models for your data:
@@ -164,7 +174,7 @@ Define Pydantic models for your data:
 ```python
 # src/models/my_domain.py
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any
 from pydantic import Field, HttpUrl
 
 from src.models.base import TimestampedModel
@@ -177,8 +187,8 @@ class MyDomainModel(TimestampedModel):
     source_id: str = Field(..., description="Unique identifier from source")
     published_at: datetime = Field(..., description="Publication timestamp")
     category: str = Field(..., description="Item category")
-    url: Optional[HttpUrl] = Field(None, description="Item URL if available")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    url: HttpUrl | None = Field(None, description="Item URL if available")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
     class Config:
         json_encoders = {
@@ -195,7 +205,7 @@ Add configuration settings if needed:
 class MyCustomAPIConfig(BaseModel):
     """Configuration for My Custom API."""
 
-    api_key: str = Field(..., description="API key for My Custom service")
+    api_key: str | None = Field(default=None, description="API key for My Custom service")
     base_url: str = Field(
         default="https://api.example.com",
         description="Base URL for the API"
@@ -224,8 +234,11 @@ For data that benefits from pandas operations:
 from src.etl.base import DataFrameETL
 import pandas as pd
 
-class MyDataFrameETL(DataFrameETL[Dict[str, Any], MyDomainModel]):
+class MyDataFrameETL(DataFrameETL[dict[str, Any], MyDomainModel]):
     """ETL using pandas for complex data transformations."""
+
+    def __init__(self):
+        super().__init__(name="my_dataframe_etl")
 
     def extract_to_dataframe(self) -> pd.DataFrame:
         """Extract data directly into a DataFrame."""
@@ -239,7 +252,7 @@ class MyDataFrameETL(DataFrameETL[Dict[str, Any], MyDomainModel]):
 
         return df
 
-    def transform_dataframe(self, df: pd.DataFrame) -> List[MyDomainModel]:
+    def transform_dataframe(self, df: pd.DataFrame) -> list[MyDomainModel]:
         """Transform DataFrame into model objects."""
         # Complex pandas operations
         df['category'] = df['title'].apply(self._classify_category)
@@ -259,10 +272,13 @@ class MyDataFrameETL(DataFrameETL[Dict[str, Any], MyDomainModel]):
 For long-running ETLs that need to resume from failures:
 
 ```python
-class CheckpointedETL(BaseETL[Dict[str, Any], MyDomainModel]):
+class CheckpointedETL(BaseETL[dict[str, Any], MyDomainModel]):
     """ETL with custom checkpointing logic."""
 
-    def extract(self) -> List[Dict[str, Any]]:
+    def __init__(self):
+        super().__init__(name="checkpointed_etl")
+
+    def extract(self) -> list[dict[str, Any]]:
         """Extract with checkpoint support."""
         # Load checkpoint to determine starting point
         checkpoint = self._load_checkpoint()
@@ -273,7 +289,7 @@ class CheckpointedETL(BaseETL[Dict[str, Any], MyDomainModel]):
 
         return data
 
-    def transform(self, data: List[Dict[str, Any]]) -> List[MyDomainModel]:
+    def transform(self, data: list[dict[str, Any]]) -> list[MyDomainModel]:
         """Transform with checkpoint updates."""
         transformed = []
 
@@ -304,10 +320,13 @@ Implement robust error handling:
 from src.exceptions.etl import ETLError
 from src.exceptions.base import WatchtowerError
 
-class RobustETL(BaseETL[Dict[str, Any], MyDomainModel]):
+class RobustETL(BaseETL[dict[str, Any], MyDomainModel]):
     """ETL with comprehensive error handling."""
 
-    def extract(self) -> List[Dict[str, Any]]:
+    def __init__(self):
+        super().__init__(name="robust_etl")
+
+    def extract(self) -> list[dict[str, Any]]:
         """Extract with retry logic for different error types."""
         try:
             return self._fetch_data()
@@ -410,6 +429,7 @@ import pytest
 import tempfile
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 from src.etl.my_domain.my_custom_etl import MyCustomETL
 
@@ -457,14 +477,17 @@ class TestMyCustomETLIntegration:
 ### Batch Processing
 
 ```python
-class OptimizedETL(BaseETL[Dict[str, Any], MyDomainModel]):
+class OptimizedETL(BaseETL[dict[str, Any], MyDomainModel]):
     """ETL optimized for large datasets."""
 
-    def transform(self, data: List[Dict[str, Any]]) -> List[MyDomainModel]:
+    def __init__(self):
+        super().__init__(name="optimized_etl")
+
+    def transform(self, data: list[dict[str, Any]]) -> list[MyDomainModel]:
         """Transform data in configurable batches."""
         return self.process_in_batches(data, self._transform_batch)
 
-    def _transform_batch(self, batch: List[Dict[str, Any]]) -> List[MyDomainModel]:
+    def _transform_batch(self, batch: list[dict[str, Any]]) -> list[MyDomainModel]:
         """Transform a single batch of data."""
         transformed = []
         for item in batch:
@@ -477,7 +500,7 @@ class OptimizedETL(BaseETL[Dict[str, Any], MyDomainModel]):
 ### Memory Management
 
 ```python
-def extract(self) -> List[Dict[str, Any]]:
+def extract(self) -> list[dict[str, Any]]:
     """Memory-efficient extraction using generators."""
     # For very large datasets, use generators
     return list(self._extract_generator())

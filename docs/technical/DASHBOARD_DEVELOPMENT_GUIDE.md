@@ -23,9 +23,9 @@ Create a new component file:
 # src/web/dashboard/components/my_new_tab.py
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -43,13 +43,13 @@ class MyDataManager:
         self.loaded = False
         self.last_loaded = None
 
-    def load_data(self) -> List[Dict[str, Any]]:
+    def load_data(self) -> list[dict[str, Any]]:
         """Load data from JSON files with caching."""
         current_time = datetime.now()
 
         # Cache data for 5 minutes to improve performance
         if (self.loaded and self.last_loaded and
-            (current_time - self.last_loaded).seconds < 300):
+            (current_time - self.last_loaded).total_seconds() < 300):
             return self.data
 
         logger.info("Loading data for My New Tab...")
@@ -94,12 +94,12 @@ class MyDataManager:
         self.last_loaded = current_time
         return self.data
 
-    def _validate_item(self, item: Dict[str, Any]) -> bool:
+    def _validate_item(self, item: dict[str, Any]) -> bool:
         """Validate individual data item."""
         required_fields = ['title', 'id']
         return all(field in item and item[field] for field in required_fields)
 
-    def _process_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_item(self, item: dict[str, Any]) -> dict[str, Any]:
         """Process and normalize individual item."""
         return {
             'id': item.get('id', ''),
@@ -113,10 +113,10 @@ class MyDataManager:
 
     def filter_data(
         self,
-        search_term: Optional[str] = None,
-        category_filter: Optional[str] = None,
-        date_range: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        search_term: str | None = None,
+        category_filter: str | None = None,
+        date_range: int | None = None
+    ) -> list[dict[str, Any]]:
         """Filter data based on criteria."""
         data = self.load_data()
 
@@ -153,7 +153,7 @@ class MyDataManager:
         except (ValueError, TypeError):
             return datetime.min.replace(tzinfo=timezone.utc)
 
-    def get_categories(self) -> List[str]:
+    def get_categories(self) -> list[str]:
         """Get unique categories from data."""
         data = self.load_data()
         categories = list(set(item.get('category', 'general') for item in data))
@@ -273,7 +273,7 @@ def render_my_new_tab() -> dbc.Container:
         ])
     ], fluid=True)
 
-def render_items_grid(items: List[Dict[str, Any]]) -> List[dbc.Card]:
+def render_items_grid(items: list[dict[str, Any]]) -> list[dbc.Card]:
     """Render items as a grid of cards."""
     if not items:
         return [
@@ -430,24 +430,35 @@ if __name__ == "__main__":
 
 ### Step 2: Add Tab to Main App
 
-Update the main dashboard app:
+Update the main dashboard app. A tab is wired in three places in `src/web/dashboard/app.py`: the navigation `dbc.Tab`, the `_TAB_RENDERERS` entry that maps its `tab_id` to the render function (only the active tab is rendered, so the navigation tab carries no children), and the `register_*_callbacks(app)` call:
 
 ```python
-# src/web/dashboard/app.py (add these imports and tab)
+# src/web/dashboard/app.py (add these imports and entries)
 from src.web.dashboard.components.my_new_tab import (
     render_my_new_tab,
     register_my_tab_callbacks
 )
 
-# Add to the tabs list in app.layout
+# 1. Navigation: add a dbc.Tab (without children) to the dbc.Tabs with id="dashboard-tabs"
 dbc.Tab(
     label="My New Tab",
     tab_id="tab-my-new",
-    children=[render_my_new_tab()],
 ),
 
-# Register callbacks at the bottom
+# 2. Renderer: add the tab to _TAB_RENDERERS
+_TAB_RENDERERS = {
+    # ...existing entries...
+    "tab-my-new": render_my_new_tab,
+}
+
+# 3. Callbacks: register them at the bottom, next to the other register_*_callbacks(app) calls
 register_my_tab_callbacks(app)
+```
+
+Finally add a row to `RENDERERS` in `Tests/unit/test_tab_render.py` so that the render smoke test covers the new tab (module name, render function, ids the layout must contain):
+
+```python
+("my_new_tab", "render_my_new_tab", ["my-tab-content"]),
 ```
 
 ## Advanced Dashboard Patterns
@@ -486,7 +497,7 @@ class AdvancedDataManager:
 
         return data
 
-    def aggregate_metrics(self, data: List[Dict]) -> Dict[str, Any]:
+    def aggregate_metrics(self, data: list[dict]) -> dict[str, Any]:
         """Calculate aggregated metrics from data."""
         if not data:
             return {'total': 0, 'categories': [], 'recent': 0}
@@ -604,7 +615,7 @@ def safe_callback(n_clicks):
 Optimize for large datasets:
 
 ```python
-def paginated_display(items: List[Dict], page_size: int = 50, current_page: int = 1):
+def paginated_display(items: list[dict], page_size: int = 50, current_page: int = 1):
     """Display items with pagination."""
     total_items = len(items)
     total_pages = (total_items + page_size - 1) // page_size
@@ -660,6 +671,7 @@ def lazy_load_content(container_id: str, data_loader_func):
 ```python
 # Tests/web/test_my_new_tab.py
 import pytest
+from datetime import datetime
 from unittest.mock import patch, mock_open
 import json
 
@@ -687,9 +699,10 @@ class TestMyDataManager:
             }
         ]
 
+    @patch('pathlib.Path.exists', return_value=True)
     @patch('src.web.dashboard.components.my_new_tab.get_data_path')
     @patch('builtins.open', new_callable=mock_open)
-    def test_load_data_success(self, mock_file, mock_path, sample_data):
+    def test_load_data_success(self, sample_data, mock_file, mock_path, mock_exists):
         """Test successful data loading."""
         mock_path.return_value = "/fake/path"
         mock_file.return_value.read.return_value = json.dumps(sample_data)
@@ -705,6 +718,7 @@ class TestMyDataManager:
         manager = MyDataManager()
         manager.data = sample_data
         manager.loaded = True
+        manager.last_loaded = datetime.now()
 
         # Test search filter
         filtered = manager.filter_data(search_term="Another")

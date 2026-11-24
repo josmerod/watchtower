@@ -47,6 +47,8 @@ Watchtower uses a sophisticated configuration system built on Pydantic Settings 
 
 ## Environment Variables
 
+Variable names carry the `WATCHTOWER_` prefix. A setting inside a component config is addressed as `WATCHTOWER_<COMPONENT>__<SETTING>`, with a double underscore as the delimiter; a top-level setting is `WATCHTOWER_<SETTING>`. `Settings` reads the process environment and two files, `.env` and `.env.local` (the process environment wins, and `.env.local` overrides `.env`); no other `.env.*` file is read. Names are case-insensitive, and unknown keys are silently ignored (`extra = "ignore"`).
+
 ### Creating .env File
 
 Create a `.env` file in the project root:
@@ -64,19 +66,19 @@ nano .env
 ```bash
 # .env
 # Python environment
-PYTHON_ENV=development  # or production, staging
+WATCHTOWER_ENVIRONMENT=development  # or production, staging
 
 # Logging
-LOG_LEVEL=INFO
-LOG_FORMAT=json  # or text
+WATCHTOWER_LOGGING__LEVEL=INFO
+WATCHTOWER_LOGGING__FORMAT=json  # or text
 
 # Data directories
-DATA_DIR=./data
-LOGS_DIR=./logs
+WATCHTOWER_DATA_DIR=./data
+WATCHTOWER_LOGS_DIR=./logs
 
 # Dashboard
-DASHBOARD_PORT=7780
-DASHBOARD_DEBUG=True
+WATCHTOWER_DASHBOARD_PORT=7780
+WATCHTOWER_DASHBOARD__DEBUG=True
 ```
 
 ### API Keys (Optional)
@@ -147,9 +149,12 @@ class Settings(BaseSettings):
     dashboard: DashboardConfig = Field(default_factory=DashboardConfig)
 
     class Config:
-        env_file = ".env"
+        env_file = [".env", ".env.local"]
+        env_prefix = "WATCHTOWER_"
         env_file_encoding = "utf-8"
         env_nested_delimiter = "__"  # Use double underscore for nested configs
+        case_sensitive = False
+        extra = "ignore"  # Unknown keys are ignored instead of raising a validation error
 ```
 
 ## Component Configuration
@@ -173,10 +178,10 @@ class ETLConfig(BaseModel):
 
 ```bash
 # .env
-ETL__BATCH_SIZE=200
-ETL__RETRY_ATTEMPTS=5
-ETL__TIMEOUT=60
-ETL__ENABLE_CHECKPOINTS=true
+WATCHTOWER_ETL__BATCH_SIZE=200
+WATCHTOWER_ETL__RETRY_ATTEMPTS=5
+WATCHTOWER_ETL__TIMEOUT=60
+WATCHTOWER_ETL__ENABLE_CHECKPOINTS=true
 ```
 
 **Usage**:
@@ -198,15 +203,15 @@ class WatcherConfig(BaseModel):
     check_interval: int = Field(default=3600, ge=60)  # 1 hour
     state_dir: Path = Field(default="data/watchers")
     enable_notifications: bool = Field(default=False)
-    notification_email: Optional[str] = None
+    notification_email: str | None = None
 ```
 
 **Environment Variables**:
 
 ```bash
-WATCHER__CHECK_INTERVAL=7200  # 2 hours
-WATCHER__ENABLE_NOTIFICATIONS=true
-WATCHER__NOTIFICATION_EMAIL=alerts@example.com
+WATCHTOWER_WATCHER__CHECK_INTERVAL=7200  # 2 hours
+WATCHTOWER_WATCHER__ENABLE_NOTIFICATIONS=true
+WATCHTOWER_WATCHER__NOTIFICATION_EMAIL=alerts@example.com
 ```
 
 ### Dashboard Configuration
@@ -216,7 +221,7 @@ class DashboardConfig(BaseModel):
     """Dashboard configuration."""
 
     port: int = Field(default=7780, ge=1024, le=65535)
-    host: str = Field(default="127.0.0.1")
+    host: str = Field(default="<host>")
     debug: bool = Field(default=False)
     auto_reload: bool = Field(default=False)
     cache_timeout: int = Field(default=300)  # 5 minutes
@@ -225,10 +230,10 @@ class DashboardConfig(BaseModel):
 **Environment Variables**:
 
 ```bash
-DASHBOARD__PORT=8888
-DASHBOARD__HOST=0.0.0.0
-DASHBOARD__DEBUG=false
-DASHBOARD__CACHE_TIMEOUT=600
+WATCHTOWER_DASHBOARD_PORT=8888
+WATCHTOWER_DASHBOARD__HOST=<host>
+WATCHTOWER_DASHBOARD__DEBUG=false
+WATCHTOWER_DASHBOARD__CACHE_TIMEOUT=600
 ```
 
 ### Database Configuration
@@ -246,9 +251,9 @@ class DatabaseConfig(BaseModel):
 **Environment Variables**:
 
 ```bash
-DATABASE__URL=postgresql://user:pass@localhost/watchtower
-DATABASE__ECHO=true
-DATABASE__POOL_SIZE=10
+WATCHTOWER_DATABASE__URL=postgresql://user:pass@localhost/watchtower
+WATCHTOWER_DATABASE__ECHO=true
+WATCHTOWER_DATABASE__POOL_SIZE=10
 ```
 
 ## Deployment Configurations
@@ -257,37 +262,37 @@ DATABASE__POOL_SIZE=10
 
 ```bash
 # .env.development
-PYTHON_ENV=development
-LOG_LEVEL=DEBUG
-DASHBOARD__DEBUG=True
-DASHBOARD__AUTO_RELOAD=True
-ETL__BATCH_SIZE=10
-DATABASE__ECHO=True
+WATCHTOWER_ENVIRONMENT=development
+WATCHTOWER_LOGGING__LEVEL=DEBUG
+WATCHTOWER_DASHBOARD__DEBUG=True
+WATCHTOWER_DASHBOARD__AUTO_RELOAD=True
+WATCHTOWER_ETL__BATCH_SIZE=10
+WATCHTOWER_DATABASE__ECHO=True
 ```
 
 ### Production Configuration
 
 ```bash
 # .env.production
-PYTHON_ENV=production
-LOG_LEVEL=INFO
-DASHBOARD__DEBUG=False
-DASHBOARD__HOST=0.0.0.0
-DASHBOARD__AUTO_RELOAD=False
-ETL__BATCH_SIZE=1000
-ETL__RETRY_ATTEMPTS=5
-DATABASE__URL=postgresql://user:pass@db-server/watchtower
-DATABASE__POOL_SIZE=20
+WATCHTOWER_ENVIRONMENT=production
+WATCHTOWER_LOGGING__LEVEL=INFO
+WATCHTOWER_DASHBOARD__DEBUG=False
+WATCHTOWER_DASHBOARD__HOST=<host>
+WATCHTOWER_DASHBOARD__AUTO_RELOAD=False
+WATCHTOWER_ETL__BATCH_SIZE=1000
+WATCHTOWER_ETL__RETRY_ATTEMPTS=5
+WATCHTOWER_DATABASE__URL=postgresql://user:pass@db-server/watchtower
+WATCHTOWER_DATABASE__POOL_SIZE=20
 ```
 
 ### Docker Configuration
 
 ```bash
 # .env.docker
-DATA_DIR=/app/data
-LOGS_DIR=/app/logs
-DASHBOARD__HOST=0.0.0.0
-DATABASE__URL=postgresql://watchtower:password@postgres:5432/watchtower
+WATCHTOWER_DATA_DIR=/app/data
+WATCHTOWER_LOGS_DIR=/app/logs
+WATCHTOWER_DASHBOARD__HOST=<host>
+WATCHTOWER_DATABASE__URL=postgresql://watchtower:password@postgres:5432/watchtower
 ```
 
 ## Advanced Configuration
@@ -359,7 +364,7 @@ from pydantic import BaseModel
 class ArxivETLConfig(BaseModel):
     """ArXiv ETL specific configuration."""
 
-    categories: List[str] = ["cs.AI", "cs.LG", "cs.CL"]
+    categories: list[str] = ["cs.AI", "cs.LG", "cs.CL"]
     max_results: int = 100
     sort_by: str = "submittedDate"
     sort_order: str = "descending"
@@ -386,7 +391,7 @@ class ArxivWatcherConfig(BaseModel):
     """ArXiv watcher configuration."""
 
     check_interval: int = 3600
-    categories: List[str] = ["cs.AI"]
+    categories: list[str] = ["cs.AI"]
     notify_on_new_papers: bool = True
 ```
 
@@ -398,7 +403,7 @@ class ArxivWatcherConfig(BaseModel):
 class Config(BaseModel):
     # Good: Type hints with validation
     timeout: int = Field(default=30, ge=1, le=300)
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
     # Avoid: No type hints
     # timeout = 30
@@ -478,7 +483,7 @@ arxiv_config = ArxivETLConfig()
 ### Test Configuration
 
 ```python
-# tests/conftest.py
+# Tests/conftest.py
 import pytest
 from src.config.settings import Settings
 
@@ -487,8 +492,8 @@ def test_settings():
     """Override settings for testing."""
     return Settings(
         python_env="testing",
-        data_dir="tests/data",
-        logs_dir="tests/logs",
+        data_dir="Tests/data",
+        logs_dir="Tests/logs",
         etl=ETLConfig(batch_size=10),
         database=DatabaseConfig(url="sqlite:///:memory:")
     )
@@ -497,7 +502,7 @@ def test_settings():
 ### Mock Configuration
 
 ```python
-# tests/test_etl.py
+# Tests/test_etl.py
 from unittest.mock import patch
 
 def test_etl_with_custom_config():
@@ -529,7 +534,7 @@ Check delimiter for nested configs:
 
 ```bash
 # Correct
-ETL__BATCH_SIZE=200
+WATCHTOWER_ETL__BATCH_SIZE=200
 
 # Incorrect
 ETL.BATCH_SIZE=200

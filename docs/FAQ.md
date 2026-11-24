@@ -43,7 +43,7 @@ See the [Quickstart Guide](QUICKSTART.md) for step-by-step installation instruct
 ```bash
 git clone https://github.com/yourusername/watchtower.git
 cd watchtower
-uv sync --all-extras
+uv sync
 uv run playwright install
 ```
 
@@ -65,7 +65,7 @@ UV is 10-100x faster than pip for dependency management and provides better reli
 ```bash
 cd watchtower
 git pull origin main
-uv sync --all-extras  # Update dependencies
+uv sync  # Update dependencies
 ```
 
 ## Usage Questions
@@ -77,7 +77,7 @@ uv sync --all-extras  # Update dependencies
 uv run python src/etl/news/news_get_ycombinator.py
 
 # Run all ETLs
-.\run_all_etl.bat  # Windows
+uv run python run_all_etl_orchestrator.py --workers 4  # Windows (what run_all_etl.sh runs)
 bash run_all_etl.sh  # Linux/macOS
 ```
 
@@ -109,7 +109,7 @@ All data is stored in the `data/` directory as JSON files:
 ### Can I customize which data sources to use?
 
 Yes! You can:
-- Comment out sources in `run_all_etl.bat` or `run_all_etl.sh`
+- Comment out sources in `ETL_SCRIPTS` (`run_all_etl_orchestrator.py`, which `./run_all_etl.sh` runs)
 - Edit individual ETL scripts in `src/etl/`
 - Create custom ETL pipelines (see [ETL Development Guide](technical/ETL_DEVELOPMENT_GUIDE.md))
 
@@ -123,7 +123,7 @@ Watchers are monitoring components that continuously check data sources for chan
 
 ```bash
 # Run specific watcher once
-uv run python src/watchers/run_watcher.py arxiv_watcher --once
+uv run python src/watchers/run_watcher.py ms_applied_skills --once
 
 # Run all watchers continuously
 uv run python src/watchers/run_watcher.py
@@ -143,7 +143,7 @@ Yes! See the [Watchers Guide](technical/WATCHERS_GUIDE.md) for comprehensive doc
 You need to run ETL pipelines first to collect data:
 
 ```bash
-.\run_all_etl.bat  # Windows
+uv run python run_all_etl_orchestrator.py --workers 4  # Windows (what run_all_etl.sh runs)
 bash run_all_etl.sh  # Linux/macOS
 ```
 
@@ -159,19 +159,15 @@ Yes! The dashboard is built with Dash and Bootstrap. See the [Dashboard Developm
 
 ### What port does the dashboard use?
 
-Default port is **7780**. You can change it:
+Default port is **7780**. The script takes no command-line flags; set the `WATCHTOWER_DASHBOARD_PORT` environment variable to change it:
 
 ```bash
-uv run python run_watchtower_dashboard.py --port 8888
+WATCHTOWER_DASHBOARD_PORT=8888 uv run python run_watchtower_dashboard.py
 ```
 
 ### Can I access the dashboard remotely?
 
-Yes, but be careful with security. To allow remote access:
-
-```bash
-uv run python run_watchtower_dashboard.py --host 0.0.0.0
-```
+Yes. The dashboard already listens on all network interfaces (the host is fixed in `run_watchtower_dashboard.py`), so other machines can reach it on port 7780; there is no `--host` flag.
 
 **Security Warning**: Only do this on trusted networks or behind a firewall.
 
@@ -192,9 +188,9 @@ crontab -e
 1. Open Task Scheduler
 2. Create Basic Task
 3. Set trigger (e.g., Daily at 8:00 AM)
-4. Set action to run `run_all_etl.bat`
+4. Set action to run `uv run python run_all_etl_orchestrator.py --workers 4` (the command `./run_all_etl.sh` executes)
 
-See [User Guide](USER_GUIDE.md) for detailed scheduling instructions.
+See the [Quickstart Guide](QUICKSTART.md) for scheduling instructions.
 
 ### Can watchers run continuously?
 
@@ -287,7 +283,7 @@ python src/etl/script.py
 
 Another process is using port 7780. Either:
 - Stop the other process
-- Use a different port: `--port 8888`
+- Use a different port: set `WATCHTOWER_DASHBOARD_PORT=8888`
 
 ```bash
 # Find process using port (Linux/macOS)
