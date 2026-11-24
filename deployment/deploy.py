@@ -113,7 +113,7 @@ def create_archive(output_filename: str, root: str = ".", include_paths: list[st
 
 
 def docker_run_command(image: str, browserless_endpoint: str) -> str:
-    """``docker run`` for the given image tag. Ports and mounts mirror docker-compose.yml."""
+    """``docker run`` for the given image tag: both published ports, the ``data`` and ``logs`` volumes and ``TZ``."""
     return (
         f"docker run -d --name {DOCKER_IMAGE} --restart unless-stopped "
         f"-p {HOST_PORT}:{CONTAINER_PORT} -p {API_PORT}:{API_PORT} "

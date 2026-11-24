@@ -33,7 +33,7 @@ def run_etls():
             print(f"Warning: ETL script returned non-zero exit code: {result.returncode}")
 
         # Restart only the API server to pick up fresh ETL data from disk.
-        # The dashboard reads from the API, so it auto-refreshes.
+        # The dashboard reads the same data files directly, so it needs no restart.
         # Do NOT restart the dashboard itself — that disrupts active users.
         try:
             subprocess.run(["supervisorctl", "restart", "api"], capture_output=True, text=True, timeout=30)

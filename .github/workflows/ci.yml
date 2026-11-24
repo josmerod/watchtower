@@ -14,8 +14,9 @@ concurrency:
 
 jobs:
   ci:
-    # Pinned on purpose: ubuntu-latest is 26.04 and the locked Playwright
-    # (1.60) ships no chromium for it, so `playwright install` fails there.
+    # Pinned on purpose: ubuntu-latest is 26.04 and the Playwright locked at
+    # the time (1.60, 2026-10) ships no chromium for it, so `playwright
+    # install` fails there. Move the pin with the lock, not before it.
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
