@@ -66,14 +66,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Development dependencies
+# Development extras for `pip install -e .[dev]` / `uv sync --all-extras`.
+# The full dev toolchain (pre-commit hooks, type stubs) lives in
+# [dependency-groups].dev below — ruff is the only formatter and linter.
 dev = [
     "ruff>=0.2.0",
     "pytest>=7.0",
     "pytest-cov>=4.1.0",
     "pre-commit>=3.5.0",
     "mypy>=1.7.0",
-    "black>=24.1.0",
 ]
 
 # All optional dependencies combined
@@ -83,18 +84,14 @@ all = [
     "pytest-cov>=4.1.0",
     "pre-commit>=3.5.0",
     "mypy>=1.7.0",
-    "black>=24.1.0",
 ]
-
-[tool.black]
-line-length = 210
 
 
 [project.urls]
-Homepage = "https://github.com/yourusername/watchtower"
-Repository = "https://github.com/yourusername/watchtower"
-Documentation = "https://github.com/yourusername/watchtower/blob/main/README.md"
-"Bug Reports" = "https://github.com/yourusername/watchtower/issues"
+Homepage = "https://github.com/josmerod/watchtower"
+Repository = "https://github.com/josmerod/watchtower"
+Documentation = "https://github.com/josmerod/watchtower/blob/main/README.md"
+"Bug Reports" = "https://github.com/josmerod/watchtower/issues"
 
 [project.scripts]
 watchtower-dashboard = "run_watchtower_dashboard:main"
@@ -106,9 +103,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
-# UV-specific configurations
-[tool.uv]
-dev-dependencies = [
+# Development toolchain (uv installs this group by default with `uv sync`).
+# PEP 735 dependency groups replace the deprecated `[tool.uv].dev-dependencies`.
+[dependency-groups]
+dev = [
     "ruff>=0.2.0",
     "pytest>=7.0",
     "pytest-cov>=4.1.0",
@@ -162,7 +160,6 @@ exclude = [
     "Tests",   # tests have their own conventions (F841 in assertions, SIM117, etc.)
     # Vendored / generated code we don't lint
     "src/miners/udemy-universal",
-    "src/miners/asf-winonly",
 ]
 
 [tool.ruff.lint]

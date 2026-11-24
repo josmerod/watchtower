@@ -10,6 +10,10 @@
 #     it explicitly with:  uv run pre-commit run --hook-stage manual mypy
 #   - pytest runs at the `pre-push` stage (not commit) so day-to-day commits stay
 #     fast; a full test run gates pushes.
+#
+# Install BOTH hook types once per clone (the default `pre-commit install` only
+# installs the commit-stage hook, which silently skips the pytest gate):
+#   uv run pre-commit install --hook-type pre-commit --hook-type pre-push
 minimum_pre_commit_version: "3.0.0"
 
 repos:
@@ -25,7 +29,6 @@ repos:
     -   id: check-merge-conflict
     -   id: check-json
     -   id: check-xml
-        exclude: ^\.bmad-ephemeral/
     -   id: check-case-conflict
     -   id: check-docstring-first
     -   id: check-executables-have-shebangs
@@ -34,7 +37,6 @@ repos:
     -   id: name-tests-test
         args: ['--pytest-test-first']
     -   id: requirements-txt-fixer
-        exclude: ^\.bmad-ephemeral/
 
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.15
@@ -82,8 +84,6 @@ repos:
           - types-paramiko
           - pydantic
           - fastapi
-          - streamlit
-          - polars
           - pandas-stubs
         stages: [manual]
 
