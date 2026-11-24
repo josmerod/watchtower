@@ -33,6 +33,12 @@ from deployment import deploy
 # together with a persistent backups volume (see docs/TASK_BOARD.md).
 DELIBERATELY_NOT_SHIPPED = {"run_backup.py"}
 
+# Repo-root files the code names but the container must or need not have.
+# .env: deploy.py loads it here for the Unraid credentials — the container gets
+# no secrets. docker-compose*.yml: src/launcher starts compose on a developer's
+# machine; the production path is deploy.py.
+NOT_SHIPPED_ROOT_FILES = {".env", "docker-compose.yml", "docker-compose.dev.yml"}
+
 SETTINGS = deploy.DeploySettings(server_ip="unraid.invalid", username="root", password=None, browserless_endpoint="ws://unraid.invalid:3000")
 
 FAKE_DOCKER = """#!/usr/bin/env bash
@@ -88,6 +94,19 @@ def _boot_files() -> list[str]:
     return sorted({path.removeprefix("./") for path in needed})
 
 
+def _root_files_the_code_names() -> list[str]:
+    """Repo-root files whose name the shipped code quotes: the ones it reads by name at runtime."""
+    root_files = [path.name for path in REPO_ROOT.iterdir() if path.is_file()]
+    named: set[str] = set()
+    for folder in ("src", "deployment"):
+        for source in (REPO_ROOT / folder).rglob("*.py"):
+            if "__pycache__" in source.parts:
+                continue
+            text = source.read_text(encoding="utf-8", errors="replace")
+            named.update(name for name in root_files if f'"{name}"' in text or f"'{name}'" in text)
+    return sorted(named)
+
+
 def test_archive_skips_bytecode_and_caches(tmp_path: Path):
     """Only real sources travel: no __pycache__, .pyc or tool caches."""
     root = tmp_path / "tree"
@@ -130,8 +149,21 @@ def test_include_list_covers_every_boot_file():
     assert not missing, f"add these to deploy.INCLUDE_PATHS (or waive them explicitly): {missing}"
 
 
+def test_root_files_the_code_names_ship_or_are_waived():
+    """A file the app reads by name from the repo root ships — or is waived with a reason.
+
+    Not a script, so the boot wiring does not see it: the dashboard's Novedades
+    modal renders nothing when changelog.json is absent, and nobody noticed in
+    production between 2026-09-10 and 2026-11-24.
+    """
+    named = _root_files_the_code_names()
+    assert "changelog.json" in named  # the scan really reads the dashboard code
+    missing = [name for name in named if not _is_shipped(name) and name not in NOT_SHIPPED_ROOT_FILES]
+    assert not missing, f"add these to deploy.INCLUDE_PATHS (or waive them explicitly): {missing}"
+
+
 def test_real_archive_holds_the_boot_files_and_no_bytecode(tmp_path: Path):
-    """The archive deploy.py actually builds: every boot file in, no bytecode."""
+    """The archive deploy.py actually builds: every boot file and named root file in, no bytecode."""
     archive = tmp_path / deploy.TAR_FILENAME
 
     deploy.create_archive(str(archive), root=str(REPO_ROOT))
@@ -139,6 +171,7 @@ def test_real_archive_holds_the_boot_files_and_no_bytecode(tmp_path: Path):
     with tarfile.open(archive) as tar:
         files = {member.name for member in tar.getmembers() if member.isfile()}
     expected = {path for path in _boot_files() if path not in DELIBERATELY_NOT_SHIPPED}
+    expected |= {name for name in _root_files_the_code_names() if _is_shipped(name)}
     assert expected <= files, sorted(expected - files)
     assert not [name for name in files if "__pycache__" in name or name.endswith((".pyc", ".pyo"))]
 

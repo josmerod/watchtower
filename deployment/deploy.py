@@ -27,7 +27,8 @@ from dotenv import load_dotenv
 
 # What travels to the server. The container only finds a helper if its file is
 # on this list — the orchestrator skips a missing post-cycle script without an
-# error — so Tests/unit/test_deploy.py checks it against the runtime wiring.
+# error, and the dashboard drops a feature whose data file is absent — so
+# Tests/unit/test_deploy.py checks it against the runtime wiring.
 INCLUDE_PATHS = [
     "src",
     "deployment",
@@ -40,6 +41,7 @@ INCLUDE_PATHS = [
     "run_all_etl_orchestrator.py",
     "README.md",  # readme = "README.md" is required to build the project
     "GEMINI.md",
+    "changelog.json",  # the dashboard's 🆕 Novedades modal reads it at layout time
 ]
 # Bytecode and tool caches are never shipped.
 EXCLUDED_DIR_NAMES = frozenset({"__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache", ".venv"})
