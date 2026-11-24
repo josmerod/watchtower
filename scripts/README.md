@@ -5,8 +5,9 @@ points stay at the repository root:
 
 - `run_watchtower_dashboard.py` — launch the Dash dashboard (primary).
 - `run_all_etl_orchestrator.py` — run all ETL pipelines.
-- `setup.py` — package install.
-- `watchtower.py` — top-level launcher.
+
+The launcher with subcommands (`dev`, `prod`, `etl`, `dashboard`, `service`…)
+is `src/launcher/cli.py`. Dependencies come from `uv sync`.
 
 Scripts here are organized loosely by purpose:
 

@@ -7,7 +7,7 @@ This guide covers deployment strategies, configuration, and operational procedur
 ### Prerequisites
 
 - **Python 3.10+** (required for modern type hints and performance)
-- **UV Package Manager** (recommended) or pip + venv
+- **uv**, the package manager the project is locked with
 - **Git** for version control
 - **4GB+ RAM** recommended for processing large datasets
 - **20GB+ storage** for data files and logs
@@ -19,20 +19,11 @@ This guide covers deployment strategies, configuration, and operational procedur
 git clone <repository-url>
 cd watchtower
 
-# Install dependencies with UV (recommended)
+# Install the locked dependencies (creates .venv itself)
 uv sync
 
-# Alternative: Traditional pip installation
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate     # Windows
-pip install -r requirements.txt
-
-# Install Playwright browsers for web scraping
-uv run playwright install
-# or
-playwright install
+# Install the browser for the Playwright-backed ETLs
+uv run playwright install chromium
 
 # Create necessary directories
 mkdir -p data logs
@@ -43,39 +34,30 @@ uv run python -c "import src.config.settings; print('Setup successful')"
 
 ### Environment Configuration
 
-Create `.env` file in the project root:
+A base deployment needs no credentials: copy `.env.example` to `.env` in the
+project root and add keys only for the sources you opt into. Settings are read
+from the environment as `WATCHTOWER_<COMPONENT>__<SETTING>` (`src/config/settings.py`); the defaults shown here are the ones the code already uses:
 
 ```bash
-# Environment configuration
-ENVIRONMENT=production
-DEBUG=false
+# Core
+WATCHTOWER_ENVIRONMENT=production
+WATCHTOWER_DEBUG=false
 
-# Database configuration (if using database storage)
-DATABASE__URL=sqlite:///data/watchtower.db
-DATABASE__ECHO=false
+# Logging
+WATCHTOWER_LOGGING__LEVEL=INFO
+WATCHTOWER_LOGGING__FILE_ENABLED=true
+WATCHTOWER_LOGGING__CONSOLE_ENABLED=true
 
-# Logging configuration
-LOGGING__LEVEL=INFO
-LOGGING__FILE_ENABLED=true
-LOGGING__CONSOLE_ENABLED=true
+# ETL
+WATCHTOWER_ETL__MAX_WORKERS=4
+WATCHTOWER_ETL__CLEANUP_OLD_DATA_DAYS=90
 
-# ETL configuration
-ETL__BATCH_SIZE=100
-ETL__MAX_RETRIES=3
-ETL__CLEANUP_OLD_DATA_DAYS=30
-
-# API Keys (add as needed)
-# API__OPENAI_KEY=your_openai_key_here
-# API__GITHUB_TOKEN=your_github_token_here
-# API__REDDIT_CLIENT_ID=your_reddit_client_id
-
-# Dashboard configuration
+# Dashboard port
 WATCHTOWER_DASHBOARD_PORT=7780
 
-# Scraping configuration
-SCRAPING__USER_AGENT=Watchtower/1.0 (+https://github.com/josmerod/watchtower)
-SCRAPING__TIMEOUT=30
-SCRAPING__MAX_RETRIES=3
+# Scraping
+WATCHTOWER_SCRAPING__TIMEOUT=30
+WATCHTOWER_SCRAPING__MAX_RETRIES=3
 ```
 
 ## Production Deployment
@@ -99,8 +81,8 @@ RUN apt-get update && apt-get install -y \
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.cargo/bin:$PATH"
 
-# Copy requirements and install dependencies
-COPY requirements.txt uv.lock* pyproject.toml ./
+# Copy the dependency files and install them
+COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
 # Install Playwright browsers
@@ -140,8 +122,8 @@ services:
       - ./logs:/app/logs
       - ./config:/app/config
     environment:
-      - ENVIRONMENT=production
-      - DEBUG=false
+      - WATCHTOWER_ENVIRONMENT=production
+      - WATCHTOWER_DEBUG=false
     env_file:
       - .env
     restart: unless-stopped
@@ -159,11 +141,11 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
     environment:
-      - ENVIRONMENT=production
-      - DEBUG=false
+      - WATCHTOWER_ENVIRONMENT=production
+      - WATCHTOWER_DEBUG=false
     env_file:
       - .env
-    command: ["uv", "run", "python", "src/schedulers/etl_scheduler.py"]
+    command: ["uv", "run", "python", "deployment/etl_scheduler.py"]
     restart: unless-stopped
     depends_on:
       - watchtower
@@ -191,7 +173,7 @@ uv run --with paramiko python deployment/deploy.py
 
 `deployment/deploy.py` does the following, in this order:
 
-1. **Archive**: packs the working tree, limited to the paths in its `INCLUDE_PATHS` list (`src`, `deployment`, `config`, `Tests`, `pyproject.toml`, `uv.lock`, `run_all_etl.sh`, `run_watchtower_dashboard.py`, `run_all_etl_orchestrator.py`, `README.md` and `GEMINI.md`) and without bytecode or tool caches. The archive comes from the working tree, so uncommitted changes are deployed too; `.env` is not part of it.
+1. **Archive**: packs the working tree, limited to the paths in its `INCLUDE_PATHS` list (`src`, `deployment`, `config`, `Tests`, `pyproject.toml`, `uv.lock`, `run_all_etl.sh`, `run_watchtower_dashboard.py`, `run_all_etl_orchestrator.py`, `README.md`, `GEMINI.md` and `changelog.json`) and without bytecode or tool caches. The archive comes from the working tree, so uncommitted changes are deployed too; `.env` is not part of it.
 2. **Build**: uploads the archive over SSH, extracts it on the server, tags the running image as `watchtower:previous` and builds `deployment/Dockerfile` there as the new `watchtower` image. If the build fails, the running container is not touched.
 3. **Swap**: removes the running container and starts the new image with `docker run`, publishing the dashboard as 7777 → 7780 and the API as 45714 → 45714 and mounting only the `data` and `logs` volumes.
 4. **Health check**: polls the container's health status every 5 seconds for up to 240 seconds. The `HEALTHCHECK` in `deployment/Dockerfile` calls `http://localhost:45714/health`, so the API is the gate.
@@ -255,49 +237,9 @@ sudo systemctl start watchtower
 sudo systemctl status watchtower
 ```
 
-### ETL Scheduling Service
+### ETL Scheduling
 
-Create `/etc/systemd/system/watchtower-etl.service`:
-
-```ini
-[Unit]
-Description=Watchtower ETL Scheduler
-After=network.target
-
-[Service]
-Type=simple
-User=watchtower
-Group=watchtower
-WorkingDirectory=/opt/watchtower
-Environment=PATH=/opt/watchtower/.venv/bin
-ExecStart=/opt/watchtower/.venv/bin/python -c "
-import schedule
-import time
-import subprocess
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-def run_etl():
-    logger.info('Starting ETL run')
-    subprocess.run(['/opt/watchtower/.venv/bin/python', '-m', 'src.etl.run_all_etl'])
-    logger.info('ETL run completed')
-
-# Schedule ETL runs
-schedule.every(6).hours.do(run_etl)
-schedule.every().day.at('02:00').do(run_etl)
-
-while True:
-    schedule.run_pending()
-    time.sleep(60)
-"
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
+The ETLs are scheduled by `deployment/etl_scheduler.py`: it runs `./run_all_etl.sh` when it starts and then every 2 hours, and after each cycle it restarts the `api` program through `supervisorctl`. That makes it a fit for the container, where supervisord runs both. On a plain host, start `uv run python run_all_etl_orchestrator.py` from a timer (`systemd` timer or `cron`) and restart the API service after each run; the unit that used to be listed here called a module that no longer exists.
 
 ## Cloud Deployment
 

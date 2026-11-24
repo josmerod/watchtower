@@ -41,7 +41,7 @@ Yes, Watchtower is open-source software licensed under the MIT License. It's com
 See the [Quickstart Guide](QUICKSTART.md) for step-by-step installation instructions. The fastest method uses UV package manager:
 
 ```bash
-git clone https://github.com/yourusername/watchtower.git
+git clone https://github.com/josmerod/watchtower.git
 cd watchtower
 uv sync
 uv run playwright install
@@ -318,7 +318,7 @@ uv run pytest tests/etl/test_my_feature.py
 
 ### How do I report bugs?
 
-Open an issue on [GitHub Issues](https://github.com/yourusername/watchtower/issues) with:
+Open an issue on [GitHub Issues](https://github.com/josmerod/watchtower/issues) with:
 - Clear description of the problem
 - Steps to reproduce
 - Expected vs actual behavior
@@ -381,8 +381,8 @@ Yes, but ensure they don't conflict:
 ## Still Have Questions?
 
 - **Documentation**: Check [full documentation](INDEX.md)
-- **GitHub Issues**: [Report bugs or request features](https://github.com/yourusername/watchtower/issues)
-- **Discussions**: [Community discussions](https://github.com/yourusername/watchtower/discussions)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/josmerod/watchtower/issues)
+- **Discussions**: [Community discussions](https://github.com/josmerod/watchtower/discussions)
 - **Contributing**: [Help improve Watchtower](CONTRIBUTING.md)
 
 ---

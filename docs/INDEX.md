@@ -10,7 +10,7 @@ Python 3.10+ with UV. Data persists as timestamped JSON under `data/` (gitignore
 | [Quickstart](QUICKSTART.md) | Install and run in 10 minutes |
 | [FAQ](FAQ.md) | Frequently asked questions |
 | [Contributing](CONTRIBUTING.md) | How to contribute |
-| [architecture.md](architecture.md) | System architecture (3 layers) |
+| [Architecture Overview](technical/ARCHITECTURE_OVERVIEW.md) | System architecture (3 layers) |
 | [CODEBASE_SUMMARY.md](../CODEBASE_SUMMARY.md) | What the platform is made of: layers, entry points, deployment |
 | [PRD.md](PRD.md) | Product requirements |
 | [ROADMAP.md](ROADMAP.md) | **Horizonte priorizado**: valor entregado, gaps, backlog y anti-backlog |
