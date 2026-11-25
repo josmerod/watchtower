@@ -57,16 +57,25 @@ class SimpleTestETL(BaseETL[dict, SimpleTestModel]):
 
 
 @pytest.fixture(autouse=True)
-def _reset_circuit_breakers():
-    """Clear persisted circuit-breaker state before each test.
+def _isolated_data_root(tmp_path, monkeypatch):
+    """Isolate every BaseETL filesystem write into pytest's tmp_path.
 
-    BaseETL's circuit breaker persists failures to data/<name>/circuit_breaker.json.
-    Without this, a prior run's failures trip the breaker and later success tests
-    get skipped ('circuit breaker is OPEN').
+    BaseETL resolves ALL of its paths from the cached settings singleton
+    (``get_settings().project_root``): ``data_dir`` / ``checkpoint_dir`` /
+    ``output_dir``, the circuit-breaker state file
+    (``data/<name>/circuit_breaker.json``), checkpoint files, the run-summary
+    writer (``data/<name>/output/run_summary_*.json``) and the aggregated
+    metrics writer (``data/metrics/...``). Patching ``project_root`` on that
+    singleton reroutes every one of those writes — and this module's own path
+    assertions — into tmp_path instead of the real ``data/`` directory.
+
+    Also clears persisted circuit-breaker state inside the isolated root before
+    each test: without this, a prior run's failures trip the breaker and later
+    success tests get skipped ('circuit breaker is OPEN').
     """
-    from src.config.settings import get_settings
+    monkeypatch.setattr(get_settings(), "project_root", str(tmp_path))
 
-    data_root = Path(get_settings().project_root) / "data"
+    data_root = Path(tmp_path) / "data"
     for cb_file in data_root.glob("*/circuit_breaker.json"):
         cb_file.unlink(missing_ok=True)
     yield
