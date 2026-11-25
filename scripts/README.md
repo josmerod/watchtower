@@ -15,8 +15,9 @@ Scripts here are organized loosely by purpose:
   `finish_deployment*.py`, `restart_container.py`,
   `restart_unraid_docker.py`, `start_unraid_docker.py`, `get_logs.py`,
   `debug_remote_logs.py`.
-- **Install / validation**: `install_dev.py`, `install_watchtower.py`,
-  `validate_project.py`.
+- **Install / validation**: `install_dev.py`, `install_watchtower.py`
+  (`validate_project.py` removed 2026-11-25: it validated a requirements.txt
+  that no longer exists — deps come from `uv sync`).
 - **ETL runners (subset / specialty)**: `run_new_watchtower_etls.py`,
   `run_valencia_etls.py`, `run_remote_audible.py`.
 - **Coda integration**: `fetch_coda_tasks.py`, `sync_to_coda.py`,
@@ -27,5 +28,5 @@ Scripts here are organized loosely by purpose:
 Run any of them from the repo root, e.g.:
 
 ```bash
-uv run python scripts/validate_project.py
+uv run python scripts/install_dev.py
 ```
