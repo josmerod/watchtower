@@ -9,7 +9,9 @@
 #     every commit (the codebase has legacy type errors being worked down). Run
 #     it explicitly with:  uv run pre-commit run --hook-stage manual mypy
 #   - pytest runs at the `pre-push` stage (not commit) so day-to-day commits stay
-#     fast; a full test run gates pushes.
+#     fast; pushes touching code-relevant paths gate on the full suite, while
+#     docs/board-only pushes skip it (the suite takes ~470 s but GitHub kills
+#     idle SSH at ~362 s, so an unskippable hook fails every push after passing).
 #
 # Install BOTH hook types once per clone (the default `pre-commit install` only
 # installs the commit-stage hook, which silently skips the pytest gate):
@@ -97,11 +99,15 @@ repos:
 -   repo: local
     hooks:
     # Full test suite, only on push. Uses uv so the locked environment is used.
+    # `files` makes it selective: skipped ("skipped due to files filter") when no
+    # pushed file matches, so docs/board-only pushes are instant. always_run MUST
+    # stay false — true would ignore the files filter and run on every push.
     -   id: pytest-check
         name: pytest-check
         entry: uv run pytest
         language: system
         pass_filenames: false
-        always_run: true
+        always_run: false
+        files: ^(src/|Tests/|run_all_etl_orchestrator\.py|run_watchtower_dashboard\.py|run_backup\.py|pyproject\.toml|uv\.lock|Dockerfile|deployment/)
         args: [--tb=short, -q]
         stages: [pre-push]
