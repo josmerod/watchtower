@@ -11,9 +11,12 @@ Settings come from ``.env`` (gitignored): ``UNRAID_HOST``, ``UNRAID_USER``
 ``uv run --with paramiko python deployment/deploy.py``.
 
 The archive is built from the working tree, not from a commit: uncommitted
-changes under ``INCLUDE_PATHS`` ship too.
+changes under ``INCLUDE_PATHS`` ship too. Text files are normalized to LF on
+the way in, so the server gets the committed bytes even when the working tree
+holds CRLF copies (``core.autocrlf=true``); binary files pass through as-is.
 """
 
+import io
 import os
 import sys
 import tarfile
@@ -94,6 +97,19 @@ def load_settings() -> DeploySettings:
     )
 
 
+def normalize_for_archive(data: bytes) -> bytes:
+    """Normalize text to LF line endings, leaving binary data untouched.
+
+    A NUL byte marks the content as binary (git's heuristic), and then nothing
+    is rewritten. Text files are collapsed from CRLF to LF so the archive is
+    byte-identical to the commit even when the working tree was checked out
+    with ``core.autocrlf=true``.
+    """
+    if b"\x00" in data:
+        return data
+    return data.replace(b"\r\n", b"\n")
+
+
 def archive_filter(info: tarfile.TarInfo) -> tarfile.TarInfo | None:
     """Drop bytecode and tool caches from the deploy archive."""
     if set(info.name.replace("\\", "/").split("/")) & EXCLUDED_DIR_NAMES:
@@ -111,7 +127,29 @@ def create_archive(output_filename: str, root: str = ".", include_paths: list[st
                 print(f"  Warning: {path} not found.")
                 continue
             print(f"  Adding {path}...")
-            tar.add(full_path, arcname=path, recursive=True, filter=archive_filter)
+            _add_path(tar, full_path, path)
+
+
+def _add_path(tar: tarfile.TarFile, full_path: str, arcname: str) -> None:
+    """Add one entry (and, for directories, its children) exactly like ``TarFile.add``.
+
+    The only difference is the payload of regular files, which goes through
+    ``normalize_for_archive``; metadata, the exclusion filter, symlink and
+    hardlink handling and the sorted recursion order stay tarfile's own.
+    """
+    tarinfo = archive_filter(tar.gettarinfo(full_path, arcname))
+    if tarinfo is None:
+        return  # unsupported type or excluded; a dropped directory skips its subtree too
+    if tarinfo.isreg():
+        with open(full_path, "rb") as source:
+            data = normalize_for_archive(source.read())
+        tarinfo.size = len(data)
+        tar.addfile(tarinfo, io.BytesIO(data))
+    else:
+        tar.addfile(tarinfo)
+    if tarinfo.isdir():
+        for child in sorted(os.listdir(full_path)):
+            _add_path(tar, os.path.join(full_path, child), os.path.join(arcname, child))
 
 
 def docker_run_command(image: str, browserless_endpoint: str) -> str:
