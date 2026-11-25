@@ -12,10 +12,9 @@ import sys
 import time
 import traceback
 
-from base import VERSION, LoginError, Udemy, scraper_dict
-
 # Import Udemy and LoginException
-from logger import LoggerAdapter, get_logger
+from .base import VERSION, LoginError, Udemy, scraper_dict
+from .logger import LoggerAdapter, get_logger
 
 # DUCE-CLI Enroller - Discounted Udemy Course Enroller (Enrollment Part)
 

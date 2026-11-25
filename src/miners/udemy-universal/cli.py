@@ -14,9 +14,10 @@ import threading
 import time
 import traceback
 
-from base import VERSION, Scraper, scraper_dict  # Removed Udemy, LoginException
-from logger import LoggerAdapter, get_logger
 from tqdm import tqdm
+
+from .base import VERSION, Scraper, scraper_dict  # Removed Udemy, LoginException
+from .logger import LoggerAdapter, get_logger
 
 # DUCE-CLI Extractor - Discounted Udemy Course Enroller (Extraction Part)
 

@@ -20,22 +20,20 @@ from urllib.parse import parse_qs, unquote, urlparse, urlsplit, urlunparse
 
 import cloudscraper
 import requests
-
-# import rookiepy
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
-# Make rookiepy optional
+# Optional dependency: rookiepy enables direct browser-cookie extraction.
 try:
     import rookiepy
 
-    ROOKIEPY_AVAILABLE = True
+    HAS_ROOKIEPY = True
 except ImportError:
-    ROOKIEPY_AVAILABLE = False
+    HAS_ROOKIEPY = False
     print("rookiepy package not available - some functionality may be limited")
 
-from colors import fb, fc, fg, flb, flg, fm, fr, fy
-from logger import LoggerAdapter, get_logger
+from .colors import fb, fc, fg, flb, flg, fm, fr, fy
+from .logger import LoggerAdapter, get_logger
 
 # Version number
 VERSION = "jmmr.2.5.1"  # Updated with reliability improvements
@@ -170,7 +168,7 @@ class Scraper:
 
     def fetch_page_content(self, url, headers=None, timeout=scrapper_timeout_period):
         """Fetches page content using requests library with specified timeout and retries."""
-        default_headers = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " "(KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")}
+        default_headers = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")}
         if headers:
             default_headers.update(headers)
 
@@ -2456,7 +2454,7 @@ class Udemy:
         try:
             # Try enhanced cookie manager first
             try:
-                from cookie_manager import get_cookies
+                from .cookie_manager import get_cookies
 
                 cookies = get_cookies()
                 if cookies and all(key in cookies for key in ["client_id", "access_token", "csrftoken"]):
@@ -2471,7 +2469,7 @@ class Udemy:
                 self.logger.warning("Enhanced cookie manager not available")
 
             # Fallback to original rookiepy method
-            if ROOKIEPY_AVAILABLE:
+            if HAS_ROOKIEPY:
                 cookies = rookiepy.get_cookies("udemy.com")
                 if not cookies:
                     raise Exception("No cookies found for udemy.com")
@@ -2508,7 +2506,7 @@ class Udemy:
         self.logger.info("Checking for updates")
         try:
             # Use enhanced update checker
-            from update_checker import check_for_updates
+            from .update_checker import check_for_updates
 
             return check_for_updates(VERSION, force=False)
         except ImportError:

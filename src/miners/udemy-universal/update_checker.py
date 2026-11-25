@@ -9,8 +9,9 @@ import re
 from datetime import datetime, timedelta
 
 import requests
-from logger import get_logger
 from packaging import version
+
+from .logger import get_logger
 
 logger = get_logger(__name__)
 
