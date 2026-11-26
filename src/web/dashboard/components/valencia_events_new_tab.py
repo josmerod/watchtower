@@ -442,7 +442,9 @@ def _is_upcoming_event(date_str: str, now: datetime, cutoff_date: datetime) -> b
     event_date = _parse_event_date(date_str)
     if event_date is None:
         return False
-    return now <= event_date <= cutoff_date
+    # start_date is a calendar date (midnight): an event dated today is still
+    # upcoming at 23:00, so the window is compared day by day (T-160).
+    return now.date() <= event_date.date() <= cutoff_date.date()
 
 
 def _exportable_upcoming_events(events: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:

@@ -316,9 +316,9 @@ async def get_valencia_events(
     """Get Valencia events (for calendar automations).
 
     Reads ``data/valencia_events/valencia_events.json`` and returns the events
-    as-is. With ``days > 0`` only events whose ``start_date`` falls within the
-    next N days are returned (events without a date are excluded from that
-    filtered view only).
+    as-is. With ``days > 0`` only events whose ``start_date`` falls from today
+    (inclusive) up to N days from now are returned (events without a date are
+    excluded from that filtered view only).
     """
     path = _get_data_dir() / VALENCIA_EVENTS_FILE
     if not path.is_file():
@@ -330,9 +330,11 @@ async def get_valencia_events(
         if not isinstance(events, list):
             raise ValueError(f"Unexpected Valencia events payload type: {type(events).__name__}")
         if days > 0:
-            now = datetime.now(timezone.utc).timestamp()
-            horizon = now + days * 86400
-            events = [e for e in events if isinstance(e, dict) and now <= _sortable_date(e.get("start_date")) <= horizon]
+            # Date-only start dates land on midnight, so the window opens at the
+            # start of today: an event dated today is still upcoming at 23:00 (T-160).
+            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+            horizon = datetime.now().timestamp() + days * 86400
+            events = [e for e in events if isinstance(e, dict) and today_start <= _sortable_date(e.get("start_date")) <= horizon]
         response.headers["Cache-Control"] = "no-store"
         return {
             "generated_at": _file_mtime_iso(path),

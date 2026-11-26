@@ -286,6 +286,10 @@ def _valencia_payload() -> dict:
     return {
         "events": [
             {"title": "Past conference", "start_date": _iso(-30, 10)},
+            # The ETL writes calendar dates without a time: these used to drop out of the
+            # filtered view at 00:01 of their own day (T-160)
+            {"title": "Yesterday, date only", "start_date": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")},
+            {"title": "Today, date only", "start_date": datetime.now().strftime("%Y-%m-%d")},
             {"title": "Soon meetup", "start_date": _iso(3, 20)},
             {"title": "Next month gig", "start_date": _iso(35, 21)},
             {"title": "Undated thing"},
@@ -299,19 +303,19 @@ def test_valencia_events_all(data_dir: Path):
     response = client.get("/api/v1/valencia/events")
     assert response.status_code == 200
     body = response.json()
-    assert body["count"] == 4
+    assert body["count"] == 6
     assert body["items"][0]["title"] == "Past conference"
 
 
 def test_valencia_events_days_filter(data_dir: Path):
-    """?days=N keeps only events starting inside [now, now+N] — past and undated excluded."""
+    """?days=N keeps only events starting inside [today, now+N] — past and undated excluded, today kept."""
     _write(data_dir, "valencia_events/valencia_events.json", _valencia_payload())
     response = client.get("/api/v1/valencia/events?days=30")
     assert response.status_code == 200
-    assert [e["title"] for e in response.json()["items"]] == ["Soon meetup"]
+    assert [e["title"] for e in response.json()["items"]] == ["Today, date only", "Soon meetup"]
 
     response = client.get("/api/v1/valencia/events?days=40")
-    assert [e["title"] for e in response.json()["items"]] == ["Soon meetup", "Next month gig"]
+    assert [e["title"] for e in response.json()["items"]] == ["Today, date only", "Soon meetup", "Next month gig"]
 
 
 def test_valencia_events_missing(data_dir: Path):

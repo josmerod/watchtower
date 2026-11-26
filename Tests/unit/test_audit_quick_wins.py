@@ -35,6 +35,15 @@ class TestIsUpcomingEvent:
         iso = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%d")
         assert _is_upcoming_event(iso, datetime.now(), datetime.now() + timedelta(days=30)) is True
 
+    def test_event_dated_today_is_upcoming_late_in_the_day(self):
+        # T-160: start_date carries no time, so "today" used to drop out of the window at 00:01
+        now = datetime(2026, 11, 26, 23, 30)
+        cutoff = now + timedelta(days=30)
+        assert _is_upcoming_event("2026-11-26", now, cutoff) is True
+        assert _is_upcoming_event("26/11/2026", now, cutoff) is True
+        assert _is_upcoming_event("2026-11-25", now, cutoff) is False
+        assert _is_upcoming_event("2026-11-27", now, cutoff) is True
+
     def test_unparseable_date_is_rejected(self):
         assert _is_upcoming_event("not a date", datetime.now(), datetime.now() + timedelta(days=30)) is False
 
