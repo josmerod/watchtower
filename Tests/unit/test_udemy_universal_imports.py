@@ -3,13 +3,19 @@
 The miner directory name contains a hyphen, so it cannot be imported through
 the normal ``src.miners`` dotted path. These tests load it under the synthetic
 package name ``udemy_universal`` and assert that every module of the package
-imports cleanly WITHOUT the optional browser/credential libraries
-(browser_cookie3, browserforge, keyring, rookiepy).
+imports cleanly WITHOUT the optional libraries.
 
-Those four libraries are intentionally NOT project dependencies (the miner is
-optional by design and the repo policy is lean/keyless deps): each module that
-uses them must guard the import at module level with a ``HAS_<LIB>`` flag and
-degrade gracefully at runtime.
+Four of them are the optional browser/credential libraries (browser_cookie3,
+browserforge, keyring, rookiepy): intentionally NOT project dependencies (the
+miner is optional by design and the repo policy is lean/keyless deps). The
+fifth is colorama: in ``uv.lock`` it is only a Windows dependency, so it is
+present on a Windows checkout and absent on Linux — the CI runner and the
+production image. Each module that uses one of them must guard the import at
+module level with a ``HAS_<LIB>`` flag and degrade gracefully at runtime.
+
+The tests block all five for real (``sys.modules[name] = None`` makes
+``import name`` raise ImportError) instead of trusting the machine they run
+on: a Windows checkout has colorama, which is how that gap reached CI.
 """
 
 import importlib
@@ -35,7 +41,11 @@ OPTIONAL_LIBS = {
     "browserforge": ("udemy_universal.cookie_manager", "HAS_BROWSERFORGE"),
     "keyring": ("udemy_universal.cookie_manager", "HAS_KEYRING"),
     "rookiepy": ("udemy_universal.base", "HAS_ROOKIEPY"),
+    "colorama": ("udemy_universal.colors", "HAS_COLORAMA"),
 }
+
+# Every shorthand colors.py defines (foreground, background, style).
+COLOR_SHORTHANDS = ("fc", "fg", "fw", "fr", "fb", "flb", "fbl", "fy", "fm", "flg", "bc", "bg", "bw", "br", "bb", "by", "bm", "sd", "sn", "sb")
 
 pytestmark = pytest.mark.skipif(not PACKAGE_DIR.is_dir(), reason="src/miners/udemy-universal package not present")
 
@@ -65,14 +75,18 @@ def udemy_package():
             del sys.modules[name]
 
 
-def test_package_init_imports(udemy_package):
-    """The package __init__ (config, domain, infrastructure, scrapers, services) imports cleanly."""
-    assert getattr(udemy_package, "__version__", None)
+def _without_optional_libs(monkeypatch: pytest.MonkeyPatch, libs: tuple[str, ...]) -> None:
+    """Make each library in ``libs`` unimportable and forget the package's submodules, so they are imported again."""
+    for lib in libs:
+        monkeypatch.setitem(sys.modules, lib, None)  # importlib raises ImportError for a None entry
+    for name in [n for n in sys.modules if n.startswith(f"{PACKAGE_NAME}.")]:
+        monkeypatch.delitem(sys.modules, name)
 
 
 @pytest.mark.usefixtures("udemy_package")
-def test_all_modules_import_without_optional_libs():
-    """Every module in the package imports cleanly with the four optional libs absent."""
+def test_all_modules_import_without_optional_libs(monkeypatch: pytest.MonkeyPatch):
+    """Every module in the package imports cleanly with every optional lib absent."""
+    _without_optional_libs(monkeypatch, tuple(OPTIONAL_LIBS))
     package = importlib.import_module(PACKAGE_NAME)
     discovered = [name for _, name, _ in pkgutil.walk_packages(package.__path__, prefix=f"{PACKAGE_NAME}.")]
     assert len(discovered) >= EXPECTED_MIN_MODULES, f"module discovery looks broken, found only: {discovered}"
@@ -87,10 +101,21 @@ def test_all_modules_import_without_optional_libs():
 
 
 @pytest.mark.usefixtures("udemy_package")
-def test_optional_lib_flags_present_and_false_when_absent():
+def test_optional_lib_flags_present_and_false_when_absent(monkeypatch: pytest.MonkeyPatch):
     """Each module using an optional lib exposes a HAS_* flag, False when the lib is missing."""
+    _without_optional_libs(monkeypatch, tuple(OPTIONAL_LIBS))
     for lib, (module_name, flag) in OPTIONAL_LIBS.items():
         module = importlib.import_module(module_name)
         assert hasattr(module, flag), f"{module_name} must define {flag} for optional lib {lib}"
-        if importlib.util.find_spec(lib) is None:
-            assert getattr(module, flag) is False, f"{flag} must be False when {lib} is not installed"
+        assert getattr(module, flag) is False, f"{flag} must be False when {lib} is not installed"
+
+
+@pytest.mark.usefixtures("udemy_package")
+def test_colors_degrade_to_plain_text_without_colorama(monkeypatch: pytest.MonkeyPatch):
+    """Without colorama every shorthand is an empty string: the CLI prints, just uncolored."""
+    _without_optional_libs(monkeypatch, ("colorama",))
+    colors = importlib.import_module(f"{PACKAGE_NAME}.colors")
+    assert colors.HAS_COLORAMA is False
+    plain = {name: getattr(colors, name) for name in COLOR_SHORTHANDS}
+    assert all(value == "" for value in plain.values()), f"shorthands must be empty without colorama, got: {plain!r}"
+    assert importlib.import_module(f"{PACKAGE_NAME}.base").VERSION  # base imports eight of them at module level
