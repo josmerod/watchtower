@@ -70,6 +70,13 @@ class TestSharedSavedItems:
         assert saved_items.SAVE_CANDIDATES[h]["tab"] == "news"
         assert btn.children == "☆" and btn.color == "outline-secondary"
 
+    def test_register_candidate_keeps_the_full_item_for_a_later_toggle(self, clean_saved_file):
+        item = {"url": "http://example.com/c", "title": "C", "source": "src"}
+        h = saved_items.register_candidate(item, tab="knowledge_garden")
+        assert h == saved_items.item_hash("http://example.com/c", "C")
+        assert saved_items.SAVE_CANDIDATES[h] == {**item, "tab": "knowledge_garden"}
+        assert saved_items.lookup_candidate(h) == {**item, "tab": "knowledge_garden"}  # a toggle only receives the hash
+
     def test_toggle_payload_shape_includes_tab(self, clean_saved_file):
         item = {"url": "http://example.com/a", "title": "A", "source": "TechCrunch", "tab": "news"}
         saved_items.toggle_saved(item)
@@ -229,18 +236,19 @@ class TestMarketsSave:
 
 
 # --------------------------------------------------------------------------- #
-# Knowledge Garden: delegation stays intact
+# Knowledge Garden: stars through the shared registry
 # --------------------------------------------------------------------------- #
 
 
 class TestKnowledgeGardenDelegation:
-    def test_kg_save_button_delegates_to_shared_builder(self, clean_saved_file):
+    def test_kg_save_button_registers_the_item_with_the_shared_registry(self, clean_saved_file):
         article = {"url": "http://example.com/kg", "title": "KG item", "source": "LessWrong"}
         btn = kg_save_button(article)
         h = saved_items.item_hash("http://example.com/kg", "KG item")
-        assert btn.id == {"type": "kg-save-btn", "hash": h}
         assert saved_items.SAVE_CANDIDATES[h]["tab"] == "knowledge_garden"
-        assert btn.children == "☆" and btn.color == "outline-secondary"
+        assert btn.children == "☆" and "btn-outline-secondary" in btn.className
+        # A plain button the garden's script flips: not an input of any callback (T-136)
+        assert not hasattr(btn, "id") and getattr(btn, "data-kg-hash") == h and getattr(btn, "data-kg-saved") == "0"
 
     def test_saved_subtab_shows_origin_tab_badge(self, clean_saved_file):
         record = {

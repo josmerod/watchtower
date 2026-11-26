@@ -9,6 +9,7 @@ import dash_bootstrap_components as dbc
 import pytest
 
 from src.web.dashboard.components import knowledge_garden_tab as tab
+from src.web.dashboard.components import saved_items
 from src.web.dashboard.components.saved_items import SAVE_CANDIDATES
 
 _ITEMS = [
@@ -19,11 +20,13 @@ _ITEMS = [
 
 
 @pytest.fixture
-def patched_data(monkeypatch):
-    """Freeze the tab's data source so tests are hermetic."""
+def patched_data(monkeypatch, tmp_path):
+    """Freeze the tab's data source and the saved-items store so tests are hermetic."""
     SAVE_CANDIDATES.clear()
     data = {"lesswrong": [dict(item) for item in _ITEMS]}
     monkeypatch.setattr(tab, "get_all_knowledge_data", lambda force_refresh=False: data)
+    monkeypatch.setattr(saved_items, "SAVED_FILE", tmp_path / "saved_items.json")  # the stars read it; never the real one
+    monkeypatch.setattr(saved_items, "_saved_stamp", None)
     yield
     SAVE_CANDIDATES.clear()
 
@@ -48,8 +51,9 @@ def _of_type(layout, component_type):
     return [n for n in _walk(layout) if isinstance(n, component_type)]
 
 
-def _by_id_type(layout, id_type):
-    return [n for n in _walk(layout) if isinstance(getattr(n, "id", None), dict) and n.id.get("type") == id_type]
+def _stars(layout):
+    """The star buttons: plain buttons carrying the item hash (T-136)."""
+    return [n for n in _walk(layout) if getattr(n, "data-kg-hash", None)]
 
 
 def _hrefs(layout):
@@ -94,7 +98,7 @@ def test_cards_view_keeps_search_alert_and_star_buttons(patched_data):
     content, _page = tab.build_knowledge_table("lesswrong", search_term="zig", display_name="LessWrong", view="cards")
     texts = _texts(content)
     assert "🌱 Found 1 items matching 'zig'" in texts  # search summary carried over
-    stars = _by_id_type(content, "kg-save-btn")
+    stars = _stars(content)
     assert len(stars) == 1  # the save star keeps working in card view
 
 

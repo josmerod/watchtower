@@ -134,6 +134,17 @@ def lookup_candidate(h: str) -> dict[str, Any] | None:
     return record
 
 
+def register_candidate(item: dict[str, Any], tab: str = "") -> str:
+    """Register an item for a later star toggle and return its hash.
+
+    A toggle only ever receives the hash, so the full record has to be
+    kept from the render that showed the star.
+    """
+    h = item_hash(item.get("url") or item.get("link"), item.get("title") or item.get("name"))
+    SAVE_CANDIDATES[h] = {**item, "tab": tab}
+    return h
+
+
 def save_button(item: dict[str, Any], btn_type: str, tab: str = "", class_name: str = "ms-1 p-0 border-0") -> dbc.Button:
     """Build the ⭐/☆ toggle button for one item (pattern-matching id per hash).
 
@@ -150,8 +161,7 @@ def save_button(item: dict[str, Any], btn_type: str, tab: str = "", class_name: 
     Returns:
         The dbc.Button with the saved state rendered for load time.
     """
-    h = item_hash(item.get("url") or item.get("link"), item.get("title") or item.get("name"))
-    SAVE_CANDIDATES[h] = {**item, "tab": tab}
+    h = register_candidate(item, tab)
     saved = is_saved(h)
     return dbc.Button(
         "★" if saved else "☆",

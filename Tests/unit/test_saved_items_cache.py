@@ -183,3 +183,32 @@ def test_each_caller_gets_its_own_list(saved_file):
     first[0]["title"] = "Renamed by a caller"
 
     assert [s["title"] for s in saved_items.load_saved()] == ["Kept"]
+
+
+# ---------------------------------------------------------------------------
+# What it buys: one table render
+# ---------------------------------------------------------------------------
+
+
+def test_one_table_render_reads_the_file_once(saved_file, monkeypatch):
+    items = [{"title": f"Item {n:02d}", "url": f"http://example.com/{n:02d}", "source": "LessWrong", "published": f"2026-08-{1 + n // 24:02d}T{n % 24:02d}:00:00"} for n in range(60)]
+    monkeypatch.setattr(tab, "get_all_knowledge_data", lambda force_refresh=False: {"lesswrong": [dict(item) for item in items]})
+    saved_items.toggle_saved({"title": "Item 40", "url": "http://example.com/40", "tab": "knowledge_garden"})  # on the first page (newest first)
+    saved_file.reads = 0
+
+    content, _page = tab.build_knowledge_table("lesswrong", display_name="LessWrong")
+
+    buttons = [n for n in _walk(content) if getattr(n, "data-kg-hash", None)]  # the garden's stars are plain buttons (T-136)
+    assert len(buttons) == tab.MAX_ARTICLES_PER_SOURCE
+    assert [b.children for b in buttons].count("★") == 1
+    assert saved_file.reads == 1
+
+
+def _walk(node):
+    """Yield every node of a Dash component tree."""
+    yield node
+    children = getattr(node, "children", None)
+    if children is None:
+        return
+    for child in children if isinstance(children, (list, tuple)) else [children]:
+        yield from _walk(child)

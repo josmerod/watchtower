@@ -3,14 +3,24 @@
  * Mirrors video_state.js (spec 04 F5): rows and card wrappers carry
  * data-kg-date (ISO 8601, emitted by knowledge_garden_tab.py). On load the
  * script compares it with localStorage "wt_kg_last_visit": items newer than
- * the PREVIOUS visit get a small violet "NUEVO" pill and the header chip
- * #kg-new-counter counts them across every subtab. The stored stamp is then
- * bumped (debounced) so the next visit only badges what arrived since.
- * First visit ever: just record the baseline, no badges.
+ * the PREVIOUS visit get a small violet "NUEVO" pill, and the header chip
+ * #kg-new-counter counts them across every subtab — including the subtabs
+ * whose table is not rendered yet, through their data-kg-dates list. The
+ * stored stamp is then bumped (debounced) so the next visit only badges what
+ * arrived since. First visit ever: just record the baseline, no badges.
  *
  * Purely client-side; re-binds after Dash re-renders (subtab switches,
  * search, pagination, list/cards toggle) via a debounced MutationObserver —
  * see read_state.js for the same pattern.
+ *
+ * Star buttons (T-136). The stars are plain buttons: as callback inputs,
+ * Dash ran the toggle callback once per star inserted (fifty no-op requests
+ * whenever a subtab's table was built). A click is handled here instead. The
+ * star flips at once — in every subtab showing that item — and the request
+ * store #kg-save-request carries its hash to the server, which persists the
+ * change and answers in the hidden #kg-save-outcome element ("n|hash|saved").
+ * That answer is applied to the same stars, so the optimistic flip is undone
+ * if the change did not stick.
  */
 (function () {
   var LAST_VISIT_KEY = "wt_kg_last_visit";
@@ -24,6 +34,50 @@
     "pointer-events:none;";
 
   var scheduled = false;
+
+  var STAR_SEL = "[data-kg-hash]";
+  var SAVE_REQUEST_ID = "kg-save-request";
+  var SAVE_OUTCOME_ID = "kg-save-outcome";
+  var starRequests = 0;
+
+  function showStar(star, saved) {
+    star.textContent = saved ? "★" : "☆";
+    star.title = saved ? "Quitar de guardados" : "Guardar para luego";
+    star.classList.toggle("btn-warning", saved);
+    star.classList.toggle("btn-outline-secondary", !saved);
+    star.setAttribute("data-kg-saved", saved ? "1" : "0");
+  }
+
+  function starsOf(hash) {
+    return document.querySelectorAll('[data-kg-hash="' + hash + '"]');
+  }
+
+  function onStarClick(event) {
+    var star = event.target.closest ? event.target.closest(STAR_SEL) : null;
+    var setProps = window.dash_clientside && window.dash_clientside.set_props;
+    // Without set_props the request cannot be sent: leave the star as it is.
+    if (!star || !setProps) return;
+    var hash = star.getAttribute("data-kg-hash");
+    var saved = star.getAttribute("data-kg-saved") !== "1";
+    starsOf(hash).forEach(function (other) {
+      showStar(other, saved);
+    });
+    starRequests += 1;
+    setProps(SAVE_REQUEST_ID, { data: { hash: hash, n: starRequests } });
+  }
+
+  // The server's answer, applied once per answer (n makes each one unique).
+  function applySaveOutcome() {
+    var node = document.getElementById(SAVE_OUTCOME_ID);
+    if (!node || !node.textContent || node.dataset.wtApplied === node.textContent) return;
+    node.dataset.wtApplied = node.textContent;
+    var parts = node.textContent.split("|");
+    if (parts.length !== 3) return;
+    var saved = parts[2] === "1";
+    starsOf(parts[1]).forEach(function (star) {
+      showStar(star, saved);
+    });
+  }
 
   // Read once per page load: badges for this whole session (subtab switches,
   // pagination, filters) compare against the PREVIOUS visit's stamp.
@@ -55,6 +109,24 @@
     if (!attr) return false;
     var published = Date.parse(attr);
     return !isNaN(published) && published > sessionBaseline;
+  }
+
+  // A subtab whose table is not rendered yet (it is built when the subtab is
+  // first opened, T-136) carries the dates of its first page in
+  // data-kg-dates, comma-separated. Counted like rows, never badged: the
+  // element goes away with the table's arrival, so nothing is counted twice.
+  function countPending() {
+    var fresh = 0;
+    if (sessionBaseline === null) return fresh;
+    document.querySelectorAll("[data-kg-dates]").forEach(function (node) {
+      var attr = node.getAttribute("data-kg-dates");
+      if (!attr) return;
+      attr.split(",").forEach(function (iso) {
+        var published = Date.parse(iso);
+        if (!isNaN(published) && published > sessionBaseline) fresh++;
+      });
+    });
+    return fresh;
   }
 
   function makePill() {
@@ -89,7 +161,7 @@
   }
 
   function applyNewBadges() {
-    var fresh = 0;
+    var fresh = countPending();
     document.querySelectorAll(ROW_SEL).forEach(function (row) {
       // Compute once per element so the badge survives Dash re-renders of the
       // same page (last_visit has been bumped by then, like video_state.js).
@@ -116,6 +188,7 @@
 
   function refresh() {
     applyNewBadges();
+    applySaveOutcome();
   }
 
   function scheduleRefresh() {
@@ -128,6 +201,8 @@
   }
 
   function init() {
+    // Delegated at the document: the stars are re-created by every render.
+    document.addEventListener("click", onStarClick);
     refresh();
     var target = document.getElementById("tab-content") || document.body;
     if (!target.dataset.wtKgObserved) {

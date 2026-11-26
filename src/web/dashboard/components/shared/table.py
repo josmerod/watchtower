@@ -152,6 +152,8 @@ def pagination_controls(
     showing: int,
     total: int,
     id_prefix: str | None = None,
+    info_id: str | None = None,
+    label: str | None = None,
 ) -> html.Div:
     """Prev/next controls, renderer-safe by construction.
 
@@ -162,6 +164,11 @@ def pagination_controls(
             ``{"type": "{tab_slug}-page-btn", "dir": ...}`` ids are emitted,
             which a single callback can serve regardless of when the content
             mounts (videos-tab pattern).
+        info_id: Id of the "Showing …" text, for a callback that updates it
+            apart from the buttons.
+        label: Text shown instead of "Showing …" (e.g. while loading).
+
+    With ``label``, ``page=0`` and ``total_pages=0`` give two disabled buttons.
     """
     if id_prefix:
         prev_id: dict[str, Any] | str = f"{id_prefix}-prev"
@@ -169,6 +176,7 @@ def pagination_controls(
     else:
         prev_id = {"type": f"{tab_slug}-page-btn", "dir": "prev"}
         next_id = {"type": f"{tab_slug}-page-btn", "dir": "next"}
+    info_kwargs: dict[str, Any] = {"id": info_id} if info_id else {}
     return html.Div(
         [
             dbc.Button(
@@ -179,7 +187,7 @@ def pagination_controls(
                 disabled=page <= 1,
                 className="me-2",
             ),
-            html.Span(f"Showing {showing} of {total} · Page {page} of {total_pages}", className="align-middle me-2 small text-muted"),
+            html.Span(label if label is not None else f"Showing {showing} of {total} · Page {page} of {total_pages}", className="align-middle me-2 small text-muted", **info_kwargs),
             dbc.Button(
                 "Next →",
                 id=next_id,
