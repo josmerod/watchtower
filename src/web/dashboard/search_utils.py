@@ -175,7 +175,6 @@ def create_search_input(input_id: str, placeholder: str = "Search...", clear_but
         Dash Bootstrap Components input group
     """
     import dash_bootstrap_components as dbc
-    from dash import html
 
     input_component = dbc.Input(
         id=input_id,
@@ -188,11 +187,10 @@ def create_search_input(input_id: str, placeholder: str = "Search...", clear_but
         return dbc.InputGroup(
             [
                 input_component,
-                dbc.InputGroupText(
-                    html.I(className="fas fa-times"),
-                    id=f"{input_id}-clear",
-                    style={"cursor": "pointer"},
-                ),
+                # A Button, not InputGroupText: only a Button reports n_clicks,
+                # so until here the clear callbacks of every tab never ran. A
+                # text glyph because no icon font is loaded.
+                dbc.Button("×", id=f"{input_id}-clear", color="secondary", outline=True, className="border-0", style={"cursor": "pointer"}, title="Limpiar búsqueda"),
             ],
             className="mb-3",
         )
