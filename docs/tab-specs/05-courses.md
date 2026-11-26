@@ -2,7 +2,7 @@
 
 > Fecha: 2026-08-17 · Estado: borrador para revisión · Ámbito: `src/web/dashboard/components/courses_tab.py` + `src/etl/{courses,goldigging}/`
 >
-> **Actualización 2026-11-26 (T-128):** las subtabs de freeCodeCamp, HF Learn y DeepLearning.AI se retiraron de Learning por baja calidad, junto con `hf_learn_etl.py` y `deeplearning_ai_etl.py`. Quedan 🔎 Todos, Coursera, Udemy, MS Credentials, AWS Skill Builder y GCP Skills Boost; este documento describe el estado de agosto.
+> **Actualización 2026-11-26 (T-128, T-144):** las subtabs de freeCodeCamp, HF Learn y DeepLearning.AI se retiraron de Learning por baja calidad, junto con `hf_learn_etl.py` y `deeplearning_ai_etl.py`. La subtab «MS Credentials» se partió en dos, **MS Certificaciones** (86 en producción) y **MS Applied Skills** (36): `split_ms_credentials()` filtra `ms_applied_skills.json` por `category` (`cert` frente al resto), cada subtab tiene su buscador y su callback, y las certificaciones no muestran la columna Subject porque el catálogo nunca la rellena. Quedan 🔎 Todos, Coursera, Udemy, MS Certificaciones, MS Applied Skills, AWS Skill Builder y GCP Skills Boost; salvo por estas dos notas, este documento describe el estado de agosto.
 
 ## 1. Diagnóstico actual
 
