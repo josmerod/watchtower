@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from types import SimpleNamespace
@@ -34,12 +35,16 @@ from deployment import deploy
 DELIBERATELY_NOT_SHIPPED = {"run_backup.py"}
 
 # Repo-root files the code names but the container must or need not have.
-# .env: deploy.py loads it here for the Unraid credentials — the container gets
-# no secrets. docker-compose*.yml: src/launcher starts compose on a developer's
+# .env: deploy.py loads it here for the Unraid credentials. The file never
+# ships — only the names in CONTAINER_ENV_KEYS travel, through --env-file.
+# docker-compose*.yml: src/launcher starts compose on a developer's
 # machine; the production path is deploy.py.
 NOT_SHIPPED_ROOT_FILES = {".env", "docker-compose.yml", "docker-compose.dev.yml"}
 
 SETTINGS = deploy.DeploySettings(server_ip="unraid.invalid", username="root", password=None, browserless_endpoint="ws://unraid.invalid:3000")
+ENV_FILE = deploy.CONTAINER_ENV_VOLUME
+ENV_CREATE = "umask 077"  # the owner-only file that carries the forwarded variables
+ENV_CLEAR = f"rm -f {ENV_FILE}"  # nothing to forward: drop what an older deploy left there
 
 FAKE_DOCKER = """#!/usr/bin/env bash
 # Record every invocation; fail only the subcommand named in $DOCKER_FAILS.
@@ -455,8 +460,12 @@ BUILD = "docker build"
 HEALTH = "State.Health"
 SWAP = deploy.swap_command("watchtower", SETTINGS.browserless_endpoint)
 ROLLBACK = deploy.swap_command("watchtower:previous", SETTINGS.browserless_endpoint)
+SWAP_WITH_ENV = deploy.swap_command("watchtower", SETTINGS.browserless_endpoint, ENV_FILE)
+ROLLBACK_WITH_ENV = deploy.swap_command("watchtower:previous", SETTINGS.browserless_endpoint, ENV_FILE)
 CLEANUP = f"rm -rf {deploy.REMOTE_DIR} /tmp/{deploy.TAR_FILENAME}"
 QUIET = [(0, "")]  # a command whose answer does not matter
+# The answers of a deploy that forwards variables and then fails after the swap.
+UNHEALTHY_DIAGNOSTICS = {"docker ps -a": QUIET, "supervisorctl status": [(0, "api FATAL exited too quickly\n")], "docker logs": QUIET}
 
 
 class FakeServer:
@@ -466,6 +475,7 @@ class FakeServer:
         self.answers = answers  # marker -> [(exit code, output), ...]; the last answer repeats
         self.commands: list[str] = []
         self.uploads: list[str] = []
+        self.env_upload: bytes | None = None  # what went into the forwarded-variables file
         self.closed = False
 
     def _answer(self, command: str) -> tuple[int, str]:
@@ -485,14 +495,18 @@ class FakeServer:
         """One short label per remote command, in the order the server saw them."""
         labels = []
         for command in self.commands:
-            if command == SWAP:
+            if command in (SWAP, SWAP_WITH_ENV):
                 labels.append("swap")
-            elif command == ROLLBACK:
+            elif command in (ROLLBACK, ROLLBACK_WITH_ENV):
                 labels.append("rollback")
             elif command == CLEANUP:
                 labels.append("cleanup")
             elif INSPECT in command:
                 labels.append("inspect")
+            elif ENV_CREATE in command:
+                labels.append("env")
+            elif command == ENV_CLEAR:
+                labels.append("env-clear")
             elif BUILD in command:
                 labels.append("build")
             elif HEALTH in command:
@@ -506,8 +520,10 @@ class FakeServer:
     def open_sftp(self) -> "FakeServer":
         return self
 
-    def put(self, _local_path: str, remote_path: str) -> None:
+    def put(self, local_path: str, remote_path: str) -> None:
         self.uploads.append(remote_path)
+        if remote_path == ENV_FILE:
+            self.env_upload = Path(local_path).read_bytes()
 
     def close(self) -> None:
         self.closed = True
@@ -520,9 +536,12 @@ def run_deploy(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Callable[...,
     monkeypatch.setattr(deploy, "load_settings", lambda: SETTINGS)
     monkeypatch.setattr(deploy, "create_archive", lambda path: Path(path).write_bytes(b"tar"))
     monkeypatch.setattr(deploy, "HEALTH_POLL_SECONDS", 0)
+    # What the developer's shell holds must not decide what a test forwards.
+    for name in deploy.CONTAINER_ENV_KEYS:
+        monkeypatch.delenv(name, raising=False)
 
     def run(answers: dict[str, list[tuple[int, str]]], server: FakeServer | None = None) -> tuple[int, FakeServer]:
-        server = server or FakeServer({**answers, CLEANUP: QUIET})
+        server = server or FakeServer({**answers, CLEANUP: QUIET, ENV_CLEAR: QUIET})
         monkeypatch.setattr(deploy, "connect", lambda settings: server)
         monkeypatch.setattr(deploy, "remote", server.remote)
         return deploy.deploy(), server
@@ -541,10 +560,13 @@ def test_deploy_succeeds_only_once_the_container_is_healthy(run_deploy: Callable
     )
 
     assert code == 0
-    assert server.steps() == ["inspect", "build", "swap", "health", "health", "cleanup"]
+    assert server.steps() == ["inspect", "env-clear", "build", "swap", "health", "health", "cleanup"]
     assert server.uploads == [f"/tmp/{deploy.TAR_FILENAME}"]
-    assert "docker tag watchtower:latest watchtower:previous || true" in server.commands[1]
-    assert server.commands[3] == deploy.HEALTH_QUERY
+    assert server.commands[2] == deploy.build_command()
+    assert "docker tag watchtower:latest watchtower:previous || true" in server.commands[2]
+    assert server.commands[4] == deploy.HEALTH_QUERY
+    assert server.commands[1] == ENV_CLEAR  # no variable to forward: nothing an older deploy left may linger
+    assert "--env-file" not in server.commands[3]
     assert server.closed
     assert not list(tmp_path.glob("*.tar.gz"))  # local archive removed too
 
@@ -556,17 +578,15 @@ def test_deploy_rolls_back_when_the_new_container_is_not_healthy(run_deploy: Cal
             BUILD: [(0, "Successfully built abc\n")],
             SWAP: [(0, "0123456789abcdef\n")],
             HEALTH: [(0, "unhealthy\n")],
-            "docker ps -a": QUIET,
-            "supervisorctl status": [(0, "api FATAL exited too quickly\n")],
-            "docker logs": QUIET,
+            **UNHEALTHY_DIAGNOSTICS,
             ROLLBACK: [(0, "fedcba9876543210\n")],
         }
     )
 
     assert code == 1
-    assert server.steps() == ["inspect", "build", "swap", "health", "diagnostics", "diagnostics", "diagnostics", "rollback", "cleanup"]
+    assert server.steps() == ["inspect", "env-clear", "build", "swap", "health", "diagnostics", "diagnostics", "diagnostics", "rollback", "cleanup"]
     assert "api FATAL" in capsys.readouterr().out  # the reason is shown before rolling back
-    assert server.commands[7] == f"{{ docker rm -f {deploy.DOCKER_IMAGE} || true; }} && {deploy.docker_run_command(f'{deploy.DOCKER_IMAGE}:previous', SETTINGS.browserless_endpoint)}"
+    assert server.commands[8] == f"{{ docker rm -f {deploy.DOCKER_IMAGE} || true; }} && {deploy.docker_run_command(f'{deploy.DOCKER_IMAGE}:previous', SETTINGS.browserless_endpoint)}"
 
 
 def test_deploy_rolls_back_when_the_swap_itself_fails(run_deploy: Callable[..., tuple[int, FakeServer]], capsys: pytest.CaptureFixture[str]):
@@ -576,15 +596,13 @@ def test_deploy_rolls_back_when_the_swap_itself_fails(run_deploy: Callable[..., 
             INSPECT: [(0, "ok\n")],
             BUILD: [(0, "Successfully built abc\n")],
             SWAP: [(125, "docker: Error response from daemon: driver failed programming external connectivity\n")],
-            "docker ps -a": QUIET,
-            "supervisorctl status": [(1, "no such container\n")],
-            "docker logs": [(1, "no such container\n")],
+            **UNHEALTHY_DIAGNOSTICS,
             ROLLBACK: [(0, "fedcba9876543210\n")],
         }
     )
 
     assert code == 1
-    assert server.steps() == ["inspect", "build", "swap", "diagnostics", "diagnostics", "diagnostics", "rollback", "cleanup"]
+    assert server.steps() == ["inspect", "env-clear", "build", "swap", "diagnostics", "diagnostics", "diagnostics", "rollback", "cleanup"]
     assert "external connectivity" in capsys.readouterr().out
 
 
@@ -618,7 +636,7 @@ def test_deploy_leaves_the_running_container_alone_when_the_build_fails(run_depl
     )
 
     assert code == 1
-    assert server.steps() == ["inspect", "build", "diagnostics", "diagnostics", "diagnostics", "cleanup"]
+    assert server.steps() == ["inspect", "env-clear", "build", "diagnostics", "diagnostics", "diagnostics", "cleanup"]
     output = capsys.readouterr().out
     assert "failed to solve" in output
     assert "the running container was not touched" in output
@@ -636,3 +654,244 @@ def test_deploy_survives_a_dropped_connection(run_deploy: Callable[..., tuple[in
     assert code == 1
     assert "SSH session closed" in capsys.readouterr().out
     assert server.closed
+
+
+# ---------------------------------------------------------------------------
+# Forwarded variables: what may reach the container, and how
+# ---------------------------------------------------------------------------
+
+# Environment names the ETL cycle reads that deploy.py handles by other means.
+CYCLE_ENV_WAIVED = {"BROWSERLESS_ENDPOINT": "passed with -e by docker_run_command()"}
+
+
+def _cycle_code() -> list[Path]:
+    """The Python the ETL cycle runs: the script packages, their shared helpers and the two entry points."""
+    files = [path for folder in ("src/etl", "src/watchers", "src/utils", "src/alerts") for path in (REPO_ROOT / folder).rglob("*.py") if "__pycache__" not in path.parts]
+    files.append(REPO_ROOT / "src/miners/crypto_sentiment_miner.py")
+    files += [REPO_ROOT / name for name in ("deployment/etl_scheduler.py", "run_all_etl_orchestrator.py")]
+    return files
+
+
+def _env_names_read_by_the_cycle() -> set[str]:
+    """Environment names the cycle reads: literally, through a module constant, or as a ``${VAR}`` token in a config."""
+    literal = re.compile(r"""(?:getenv|environ\.get|environ\[|environ\.setdefault)\(\s*["']([A-Z_][A-Z0-9_]*)["']""")
+    indirect = re.compile(r"""(?:getenv|environ\.get|environ\[|environ\.setdefault)\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*[,)]""")
+    constant = re.compile(r"""^([A-Z_][A-Z0-9_]*)\s*(?::[^=\n]+)?=\s*["']([A-Z][A-Z0-9_]{2,})["']""", re.MULTILINE)
+    token = re.compile(r"\$\{([A-Z_][A-Z0-9_]*)\}")
+    names: set[str] = set()
+    for path in _cycle_code():
+        text = path.read_text(encoding="utf-8", errors="replace")
+        constants = dict(constant.findall(text))
+        names.update(literal.findall(text))
+        names.update(constants[name] for name in indirect.findall(text) if name in constants)
+    # Only configs carry the tokens: in Python ``${VAR}`` is prose, not a read.
+    configs = [path for pattern in ("*.json", "*.yaml", "*.yml") for path in (REPO_ROOT / "src/etl").rglob(pattern) if "__pycache__" not in path.parts]
+    for path in configs:
+        names.update(token.findall(path.read_text(encoding="utf-8", errors="replace")))
+    return names
+
+
+def _settings_secrets_read_by_the_cycle() -> set[str]:
+    """Keys the cycle reads through pydantic-settings, as their ``WATCHTOWER_<SECTION>__<FIELD>`` environment names."""
+    secret = r"(\w*(?:key|token|secret|password)\w*)"
+    attribute = re.compile(rf"settings\.(\w+)\.{secret}", re.IGNORECASE)
+    by_name = re.compile(rf"""getattr\(\s*[\w.]*settings\.(\w+)\s*,\s*["']{secret}["']""", re.IGNORECASE)
+    read = set()
+    for path in _cycle_code():
+        text = path.read_text(encoding="utf-8", errors="replace")
+        read.update(f"WATCHTOWER_{section.upper()}__{field.upper()}" for section, field in [*attribute.findall(text), *by_name.findall(text)])
+    return read
+
+
+def _is_settings_name(name: str) -> bool:
+    """Whether ``WATCHTOWER_<SECTION>__<FIELD>`` (or ``WATCHTOWER_<FIELD>``) names a real setting."""
+    from pydantic import BaseModel
+
+    from src.config.settings import Settings
+
+    section, _, field = name.removeprefix("WATCHTOWER_").lower().partition("__")
+    if section not in Settings.model_fields:
+        return False
+    if not field:
+        return True
+    nested = Settings.model_fields[section].annotation
+    return isinstance(nested, type) and issubclass(nested, BaseModel) and field in nested.model_fields
+
+
+def _is_read_by_code(name: str) -> bool:
+    """Whether a Python file of the repository quotes the name: the non-settings variables are read by name."""
+    files = [path for folder in ("src", "deployment", "scripts") for path in (REPO_ROOT / folder).rglob("*.py") if "__pycache__" not in path.parts]
+    files += [REPO_ROOT / name_ for name_ in ("run_all_etl_orchestrator.py", "run_watchtower_dashboard.py", "run_backup.py") if (REPO_ROOT / name_).exists()]
+    quoted = re.compile(rf"""["']{re.escape(name)}["']""")
+    return any(quoted.search(path.read_text(encoding="utf-8", errors="replace")) for path in files)
+
+
+def test_collect_container_env_forwards_the_allowlist_and_nothing_else(monkeypatch: pytest.MonkeyPatch):
+    """Only the listed names travel, only when set. The Unraid credentials never do."""
+    monkeypatch.setattr(deploy, "load_dotenv", lambda: None)  # never read the real .env
+    for name in ("GITHUB_TOKEN", "NVD_API_KEY", "GH_TOKEN", "UNRAID_PASSWORD", "SOME_OTHER_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_test")
+    monkeypatch.setenv("NVD_API_KEY", "   ")  # blank: an empty key is no key
+    monkeypatch.setenv("GH_TOKEN", "")
+    monkeypatch.setenv("UNRAID_PASSWORD", "the-server-password")
+    monkeypatch.setenv("SOME_OTHER_KEY", "not-on-the-list")
+
+    assert deploy.collect_container_env() == {"GITHUB_TOKEN": "ghp_test"}
+
+
+def test_allowlist_names_are_plain_identifiers_and_hold_no_server_credential():
+    """A name with a separator or a space would be read differently by docker; the SSH credentials must not travel."""
+    for name in deploy.CONTAINER_ENV_KEYS:
+        assert re.fullmatch(r"[A-Z_][A-Z0-9_]*", name), name
+    assert len(set(deploy.CONTAINER_ENV_KEYS)) == len(deploy.CONTAINER_ENV_KEYS)
+    assert not {"UNRAID_HOST", "UNRAID_USER", "UNRAID_PASSWORD"} & set(deploy.CONTAINER_ENV_KEYS)
+
+
+def test_every_variable_the_cycle_reads_is_forwarded_or_waived():
+    """A new ``os.getenv("X")`` in an ETL is invisible in production until its name is on the allowlist."""
+    read = _env_names_read_by_the_cycle()
+    assert {"GITHUB_TOKEN", "IPT_PASSKEY"} <= read  # the scan really sees direct reads and config tokens
+    unhandled = sorted(name for name in read if name not in deploy.CONTAINER_ENV_KEYS and name not in CYCLE_ENV_WAIVED)
+    assert not unhandled, f"add these to deploy.CONTAINER_ENV_KEYS (or waive them with a reason): {unhandled}"
+
+
+def test_every_settings_secret_the_cycle_reads_is_forwarded():
+    """Keys read through pydantic-settings need their ``WATCHTOWER_<SECTION>__<FIELD>`` name on the allowlist."""
+    read = _settings_secrets_read_by_the_cycle()
+    assert "WATCHTOWER_API__NEWS_API_KEY" in read  # the scan really sees the getattr form
+    unhandled = sorted(read - set(deploy.CONTAINER_ENV_KEYS))
+    assert not unhandled, f"add these to deploy.CONTAINER_ENV_KEYS: {unhandled}"
+
+
+def test_write_env_file_is_what_docker_env_file_reads():
+    """One ``NAME=value`` per line, LF, the value verbatim: quotes and ``=`` are not syntax there."""
+    path = deploy.write_env_file({"A": "1", "B": "x=y", "C": 'quo"ted', "WATCHTOWER_API__NEWS_API_KEY": "abc"})
+    try:
+        assert Path(path).read_bytes() == b'A=1\nB=x=y\nC=quo"ted\nWATCHTOWER_API__NEWS_API_KEY=abc\n'
+    finally:
+        os.remove(path)
+
+
+def test_write_env_file_refuses_a_line_break():
+    """docker cannot carry one, so the deploy must stop before it touches the server."""
+    with pytest.raises(ValueError, match="GITHUB_TOKEN contains a line break"):
+        deploy.write_env_file({"GITHUB_TOKEN": "ghp_test\nGH_TOKEN=other"})
+
+
+def test_upload_env_file_creates_an_owner_only_file_and_leaves_nothing_behind(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """The remote file is created under umask 077 before any value arrives; the local copy is deleted afterwards."""
+    target = tmp_path / "server" / "container.env"
+    monkeypatch.setattr(deploy, "CONTAINER_ENV_VOLUME", target.as_posix())
+    exit_codes: list[int] = []
+    uploaded: list[tuple[bytes, str]] = []
+
+    def remote(_ssh: object, command: str) -> tuple[int, str]:
+        code, _calls = _run_in_sandbox(monkeypatch, tmp_path, lambda: command)  # real bash runs the real command line
+        exit_codes.append(code)
+        return code, ""
+
+    def put(local_path: str, remote_path: str) -> None:
+        uploaded.append((Path(local_path).read_bytes(), remote_path))
+
+    monkeypatch.setattr(deploy, "remote", remote)
+    ssh = SimpleNamespace(open_sftp=lambda: SimpleNamespace(put=put, close=lambda: None))
+
+    deploy.upload_env_file(ssh, {"GITHUB_TOKEN": "ghp_test", "IPT_USER_ID": "42"})
+
+    assert exit_codes == [0]
+    assert uploaded == [(b"GITHUB_TOKEN=ghp_test\nIPT_USER_ID=42\n", target.as_posix())]  # pragma: allowlist secret - fake values; the env-file layout is what is under test
+    if os.name != "nt":  # Windows keeps no POSIX mode bits for chmod to set
+        assert target.stat().st_mode & 0o777 == 0o600
+    assert not list(Path(tempfile.gettempdir()).glob("watchtower_container_*.env"))
+
+
+def test_upload_env_file_stops_when_the_file_cannot_be_created(monkeypatch: pytest.MonkeyPatch):
+    """No owner-only file, no upload: the values must not land with wider permissions."""
+
+    def put(_local_path: str, _remote_path: str) -> None:
+        raise AssertionError("uploaded without the owner-only file")
+
+    monkeypatch.setattr(deploy, "remote", lambda _ssh, _command: (1, "Permission denied\n"))
+    ssh = SimpleNamespace(open_sftp=lambda: SimpleNamespace(put=put, close=lambda: None))
+
+    with pytest.raises(RuntimeError, match="could not create"):
+        deploy.upload_env_file(ssh, {"GITHUB_TOKEN": "ghp_test"})
+    assert not list(Path(tempfile.gettempdir()).glob("watchtower_container_*.env"))
+
+
+def test_docker_run_takes_the_env_file_only_when_given():
+    """Without forwarded variables the command line is exactly what it was before the allowlist existed."""
+    plain = deploy.docker_run_command("watchtower", SETTINGS.browserless_endpoint)
+    assert "--env-file" not in plain
+    assert f"--env-file /srv/watchtower/container.env -p {deploy.HOST_PORT}:{deploy.CONTAINER_PORT}" in deploy.docker_run_command("watchtower", SETTINGS.browserless_endpoint, "/srv/watchtower/container.env")
+
+
+def test_swap_with_forwarded_variables_replaces_the_container(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    env_file = "/srv/watchtower/container.env"
+    code, calls = _run_in_sandbox(monkeypatch, tmp_path, lambda: deploy.swap_command("watchtower", SETTINGS.browserless_endpoint, env_file))
+
+    assert code == 0
+    assert calls == ["docker rm -f watchtower", "docker " + deploy.docker_run_command("watchtower", SETTINGS.browserless_endpoint, env_file).removeprefix("docker ")]
+
+
+def test_deploy_forwards_the_listed_variables_through_an_env_file(run_deploy: Callable[..., tuple[int, FakeServer]], monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]):
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_test_value")
+    monkeypatch.setenv("NVD_API_KEY", "nvd_test_value")
+    monkeypatch.setenv("UNRAID_PASSWORD", "the-server-password")
+    code, server = run_deploy({INSPECT: [(0, "ok\n")], ENV_CREATE: QUIET, BUILD: [(0, "Successfully built abc\n")], SWAP_WITH_ENV: [(0, "0123456789abcdef\n")], HEALTH: [(0, "healthy\n")]})
+
+    assert code == 0
+    assert server.steps() == ["inspect", "env", "build", "swap", "health", "cleanup"]
+    assert server.uploads == [ENV_FILE, f"/tmp/{deploy.TAR_FILENAME}"]  # the variables, then the archive
+    assert server.env_upload == b"GITHUB_TOKEN=ghp_test_value\nNVD_API_KEY=nvd_test_value\n"  # allowlist order, values verbatim  # pragma: allowlist secret - fake values
+    swap = server.commands[3]
+    assert swap == SWAP_WITH_ENV
+    assert "GITHUB_TOKEN=" not in swap  # a value never sits on a command line
+    output = capsys.readouterr().out
+    assert "Forwarding 2 variable(s) to the container: GITHUB_TOKEN, NVD_API_KEY" in output  # names only
+    for value in ("ghp_test_value", "nvd_test_value", "the-server-password"):
+        assert value not in output
+
+
+def test_deploy_stops_before_the_build_when_the_env_file_cannot_be_created(run_deploy: Callable[..., tuple[int, FakeServer]], monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]):
+    """No owner-only file, no deploy: the running container is not touched with half a change."""
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_test_value")
+    code, server = run_deploy({INSPECT: [(0, "ok\n")], ENV_CREATE: [(1, "Permission denied\n")], BUILD: [(0, "Successfully built abc\n")], SWAP_WITH_ENV: [(0, "0123456789abcdef\n")]})
+
+    assert code == 1
+    assert server.steps() == ["inspect", "env", "cleanup"]
+    assert server.uploads == []
+    assert "could not create" in capsys.readouterr().out
+
+
+def test_rollback_drops_the_forwarded_variables_when_they_may_be_the_cause(run_deploy: Callable[..., tuple[int, FakeServer]], monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]):
+    """A rollback must not fail on the one optional part of the command line that docker may have refused."""
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_test_value")
+    refused = [(125, "docker: Error response from daemon: file not found\n")]
+    code, server = run_deploy({INSPECT: [(0, "ok\n")], ENV_CREATE: QUIET, BUILD: [(0, "Successfully built abc\n")], SWAP_WITH_ENV: refused, **UNHEALTHY_DIAGNOSTICS, ROLLBACK_WITH_ENV: refused, ROLLBACK: [(0, "fedcba9876543210\n")]})
+
+    assert code == 1
+    assert server.steps() == ["inspect", "env", "build", "swap", "diagnostics", "diagnostics", "diagnostics", "rollback", "rollback", "cleanup"]
+    output = capsys.readouterr().out
+    assert "Retrying the rollback without the forwarded variables" in output
+    assert "Rollback done" in output
+    assert server.commands[8] == ROLLBACK  # second attempt: previous image, no --env-file
+
+
+def _env_example_names(commented_too: bool = False) -> set[str]:
+    """Variable names ``.env.example`` assigns; a commented line documents a name without setting it."""
+    pattern = r"^#?\s*([A-Z_][A-Z0-9_]*)=" if commented_too else r"^([A-Z_][A-Z0-9_]*)="
+    return set(re.findall(pattern, (REPO_ROOT / ".env.example").read_text(encoding="utf-8"), flags=re.MULTILINE))
+
+
+def test_env_example_documents_every_forwarded_variable():
+    """``.env.example`` is where a user learns what to put in ``.env``: every forwarded name is there."""
+    missing = sorted(set(deploy.CONTAINER_ENV_KEYS) - _env_example_names(commented_too=True))
+    assert not missing, f"add these to .env.example: {missing}"
+
+
+def test_env_example_lists_only_names_something_reads():
+    """A key nothing reads is a key a user fills in for nothing: 17 of 44 were like that until 2026-11-26."""
+    unread = sorted(name for name in _env_example_names(commented_too=True) if not (_is_settings_name(name) or _is_read_by_code(name)))
+    assert not unread, f"nothing reads these: {unread}"
