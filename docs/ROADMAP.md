@@ -89,6 +89,20 @@ Momentum por tecnología (TR-F2): la historia de 4 semanas ya existe.
 → **T-047 (P3)**. La paleta Ctrl+K no busca en la URL pública porque la API
 vive en otro hostname. → **T-121 (P3)**.
 
+**Libreta del usuario (triajeada el 2026-11-26, T-126…T-161).** Lo que hay que
+sacar del camino: fuentes de baja calidad en News, Knowledge Garden y Learning
+y una sección de contenidos mal ubicada. → **T-126…T-131 (P1)**. Lo que tarda:
+Knowledge Garden pinta sus 18 subtabs a la vez (606 KiB por respuesta, 492
+lecturas de `saved_items.json` por render). → **T-136 (P1)**. Lo que está roto
+y no se veía: los eventos de hoy no salen en Valencia Events (T-160), Indie
+Hackers lee una API de Reddit que da 403 (T-153), las columnas de precio de
+Games salen en «N/A» (T-155), Humble Books pierde todos los libros de un
+bundle salvo el primero (T-149), Audible tiene una ventana de fechas caducada
+(T-150) y el ETL de ayudas no devuelve ni un registro de Burjassot (T-142).
+Todo P1 salvo T-142, T-153 y T-155. Lo que falta: cine, portales de
+transparencia, ofertas de videojuegos y gift cards, watch de precios, XTeink,
+trendshift.io, skills y agentes de Watchtower (T-132…T-152, P2/P3).
+
 ## 3. Anti-backlog (evaluado y descartado, con motivo)
 
 | Propuesta | Motivo del descarte |
@@ -130,8 +144,9 @@ vive en otro hostname. → **T-121 (P3)**.
 
 | Horizonte | Tareas |
 | :--- | :-- |
-| **Ahora (P1–P2)** | T-106 backups en prod · T-109 receta de imagen única · T-115 CORS sin direcciones de LAN · T-120 alerts de Dependabot · T-124 LinkedIn Learning con consumidor · T-125 copia heredada y `.env` viejo en el servidor |
-| **Después (P3)** | T-047 BridgeBench vía browserless · T-096 convención de logging · T-114 dos planificadores · T-117 ensayo en el repo · T-119 higiene · T-121 paleta pública · T-123 capa de Playwright |
+| **Ahora (P1)** | **Libreta:** T-126 · T-127 · T-128 limpieza de News, KG y Learning · T-129 FutureTools · T-130 Lobsters a KG · T-131 sección de contenidos · T-136 rendimiento de KG · T-138 canales de YouTube · T-144 MS Learn en dos · T-149 Humble Books · T-150 Audible · T-160 eventos de hoy. **Anteriores:** T-106 backups en prod · T-115 CORS sin direcciones de LAN |
+| **Después (P2)** | **Libreta:** T-132 · T-133 · T-134 · T-135 · T-137 · T-139 · T-140 · T-141 · T-142 · T-143 · T-145 · T-146 · T-147 · T-148 · T-151. **Hallazgos del mapeo:** T-153 · T-154 · T-155 · T-156 · T-161. **Anteriores:** T-109 receta de imagen única · T-120 alerts de Dependabot · T-124 LinkedIn Learning con consumidor · T-125 copia heredada y `.env` viejo en el servidor |
+| **Más adelante (P3)** | T-047 BridgeBench vía browserless · T-096 convención de logging · T-114 dos planificadores · T-117 ensayo en el repo · T-119 higiene · T-121 paleta pública · T-123 capa de Playwright · T-152 STL · T-157 Scavenging sin datos · T-158 docs caducadas · T-159 recortes de Learning |
 | **Bloqueado** | T-038 Artificial Analysis (clave del usuario) |
 
 Cerradas entre el 2026-11-24 y el 2026-11-26: T-048, T-107, T-108, T-110,
