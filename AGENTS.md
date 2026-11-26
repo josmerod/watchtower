@@ -68,18 +68,19 @@ ALWAYS run Python through **uv** so the locked environment is used.
 Counts were measured on 2026-11-24; re-check before quoting them.
 
 - **ETL** (`src/etl/`, 23 subpackages, 112 modules). Two styles coexist:
-  - **`BaseETL[I, O]`** (`src/etl/base.py`, 31 of the 105 ETL scripts). The
+  - **`BaseETL[I, O]`** (`src/etl/base.py`, 31 of the 104 ETL scripts). The
     constructor requires `name`; implement `extract()`, `transform()` and
     `load()`. `run()` adds retries, checkpointing, deduplication, a circuit
     breaker and run summaries under `data/<name>/output/`. An open circuit
     breaker skips the run silently (exit code 0); any other failure raises
     `ETLError`.
-  - **Plain module with `main()`** (the other 74 ETL scripts, the majority).
+  - **Plain module with `main()`** (the other 73 ETL scripts, the majority).
     Fetch, transform, write JSON, with the path helpers in
     `src/utils/file_system.py`. Example: `src/etl/news/news_get_changelog.py`.
   - Both styles run in production only when listed in `ETL_SCRIPTS` in
-    `run_all_etl_orchestrator.py` (109 entries: 105 ETLs, 3 watchers and
-    1 miner; 4 workers).
+    `run_all_etl_orchestrator.py` (107 entries: 104 ETLs, 2 watchers and
+    1 miner; 4 workers). The data-freshness watcher runs on its own after
+    the pool, so a cycle is 108 scripts.
 - **Data models** (`src/models/`, 19 modules): Pydantic, built on the bases
   `TimestampedModel`, `StatusModel`, `ErrorModel`, `PaginatedResponse`.
   `BaseETL.validate_data()` validates against them, but nothing forces it:
@@ -157,7 +158,10 @@ the tab's source list, and `SOURCE_FILES` in
 
 3. Add the script to `ETL_SCRIPTS` in `run_all_etl_orchestrator.py`. An
    unlisted script never runs in production and its data goes stale.
-4. Wire a consumer (see "Data storage layout") and the freshness watcher.
+4. Wire a consumer (see "Data storage layout") and the freshness watcher, in
+   the same change as step 3: a registered script whose output nothing reads
+   is an invisible source (`linkedin_learning_etl.py` stays unlisted for that
+   reason).
 5. Add a test under `Tests/etl/`.
 
 The `etl-pipeline` skill has the full procedure.
@@ -225,9 +229,11 @@ Read data with `get_data_path(...)` from `src/web/dashboard/utils.py`. The
   branches `feat/`, `fix/`, `chore/`, `docs/` + kebab-case.
 - pre-commit (`.pre-commit-config.yaml`) runs on every commit: Ruff, codespell,
   detect-secrets, shellcheck and file hygiene hooks. The pre-push hook runs the
-  full pytest suite (about 8 minutes). Over SSH, GitHub can close the idle
-  session before the hook ends, and the push then fails after a green run: set
-  it once per clone with
+  full pytest suite (about 8 minutes) when the push touches code — `src/`,
+  `Tests/`, `deployment/`, the root scripts, `pyproject.toml`, `uv.lock` or
+  the root `Dockerfile`; a docs-only push skips it. Over SSH, GitHub can close
+  the idle session before the hook ends, and the push then fails after a green
+  run: set it once per clone with
   `git config --local core.sshCommand "ssh -o ServerAliveInterval=30"`, or
   push over HTTPS. Never bypass the hook.
 - mypy is a manual stage (`uv run pre-commit run --hook-stage manual mypy`)
@@ -274,19 +280,27 @@ Phrases the user uses to raise or lower the bar:
 - `uv run --with paramiko python deployment/deploy.py` ships to the Unraid
   server. The `unraid-deploy` skill has the procedure and the recovery steps.
 - The deploy packs the **working tree**, uncommitted changes included. Deploy
-  from a clean tree on the branch you mean. The bytes ship as they are: on a
-  checkout with `core.autocrlf=true` the files go out with CRLF.
+  from a clean tree on the branch you mean. Text files are normalized to LF
+  as the archive is packed, so the bytes on the server match the commit even
+  on a checkout with `core.autocrlf=true`.
 - `deploy.py` uploads an archive of `INCLUDE_PATHS`, builds
   `deployment/Dockerfile` on the server, swaps the container and waits for its
   health check. On failure it rolls back to the image tagged
   `watchtower:previous` and exits non-zero. A script the container must run,
   or a repo-root file the code reads by name (`changelog.json`), belongs in
   `INCLUDE_PATHS`; `Tests/unit/test_deploy.py` enforces it.
+- API keys reach the container only through the allowlist `CONTAINER_ENV_KEYS`
+  in `deploy.py`. The names on it that are set in `.env` (or the shell) are
+  written to an owner-only file on the server and passed with
+  `docker run --env-file`; nothing else travels, and `UNRAID_*` is not on the
+  list. A new key needs its name there and in `.env.example`, and
+  `Tests/unit/test_deploy.py` fails on a variable the ETLs read that is not
+  forwarded.
 - When `deployment/Dockerfile`, `pyproject.toml` or `uv.lock` change, rehearse
   first: build the archive on the server under a throwaway tag and boot a
   disposable container. CI builds the same image on its own runner and boots
   only the API; three image defects showed up only on the server.
-- Every deploy or container restart starts a **full ETL cycle** (109 scripts,
+- Every deploy or container restart starts a **full ETL cycle** (108 scripts,
   4 workers) before the scheduler settles into its 2-hour rhythm. Do not
   restart casually, and deploy between cycles: one takes about 47 minutes and
   the next starts 2 hours after it ends.

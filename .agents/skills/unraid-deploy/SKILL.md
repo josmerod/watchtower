@@ -21,6 +21,9 @@ not use or update it.
    grep -oE '^[A-Z_][A-Z0-9_]*=' .env
    ```
    If a name is missing, tell the user which one. Do not invent values.
+   API keys for the ETLs go in the same `.env`, under the names in the
+   *Keys and variables the ETLs read* section of `.env.example`: the deploy
+   forwards exactly those (see **Keys** below).
 2. **Uncommitted work ships.** The archive is the working tree, not a commit:
    review `git status --short` and confirm surprises with the user first.
 3. **Lockfile.** `uv lock --check` must pass: the image is built with
@@ -33,23 +36,32 @@ not use or update it.
    `run_watchtower_dashboard.py`, `run_all_etl_orchestrator.py`, `README.md`,
    `GEMINI.md`, `changelog.json` — minus `__pycache__`, `.pytest_cache`,
    `.ruff_cache`, `.mypy_cache`, `.venv`, `*.pyc` and `*.pyo`. Nothing else
-   ships: not `data/`, `.env`, `secrets/` or `scripts/`. The archive holds
-   working-tree bytes: on a checkout with `core.autocrlf=true` the files go
-   out with CRLF (harmless, but a deployed file's md5 then differs from
-   `git show HEAD:<file>`).
-2. **Build**, on the server in `/tmp/watchtower_deploy`: tags
+   ships as a file: not `data/`, `.env`, `secrets/` or `scripts/`. Text files
+   are normalized to LF as they are packed, so the deployed bytes match the
+   commit even on a checkout with `core.autocrlf=true`.
+2. **Keys.** The names in `CONTAINER_ENV_KEYS` that are set locally are
+   written to `/mnt/user/appdata/watchtower/container.env` — owner-only,
+   next to the `data` and `logs` volumes, outside the build context — and
+   the container gets them with `--env-file`. With none set, that file is
+   removed, so a key dropped or rotated locally does not linger on the
+   server. The deploy prints the **names** it forwards, never the values.
+   `UNRAID_*` are not on the list: the SSH credentials stay on this machine.
+3. **Build**, on the server in `/tmp/watchtower_deploy`: tags
    `watchtower:latest` as `watchtower:previous`, then
    `docker build -t watchtower -f deployment/Dockerfile .`.
-3. **Swap** (`swap_command()`): `docker rm -f watchtower`, then `docker run`
+4. **Swap** (`swap_command()`): `docker rm -f watchtower`, then `docker run`
    with `-p 7777:7780` (dashboard) and `-p 45714:45714` (API), binding `data`
-   and `logs` under `/mnt/user/appdata/watchtower/`.
-4. **Health gate.** Waits up to 4 minutes for the container's Docker health
+   and `logs` under `/mnt/user/appdata/watchtower/` and, when variables are
+   forwarded, `--env-file`.
+5. **Health gate.** Waits up to 4 minutes for the container's Docker health
    status. The `HEALTHCHECK` in `deployment/Dockerfile` curls
    `http://localhost:45714/health`, so the **API** is what is gated — not the
    dashboard or the ETL scheduler.
-5. **Rollback.** If `docker run` fails or the container is not `healthy` when
+6. **Rollback.** If `docker run` fails or the container is not `healthy` when
    the wait ends: prints diagnostics, starts `watchtower:previous` again,
-   exits 1.
+   exits 1. Should that rollback fail while variables were forwarded, it is
+   retried once without `--env-file`: a container without API keys beats no
+   container.
 
 **A script the container runs has to be in `INCLUDE_PATHS`** (or under one of
 its directories). The scheduler and the orchestrator skip a missing script
@@ -60,6 +72,12 @@ on a missing entry point and on a named root file that does not ship; run the
 file after touching `INCLUDE_PATHS`, `deployment/supervisord.conf`, the
 orchestrator's script list, or a root file name quoted in the code.
 
+**A key an ETL reads has to be on `CONTAINER_ENV_KEYS`.** The list is an
+allowlist, so a new `os.getenv("NEW_KEY")` in an ETL changes nothing in
+production until its name is added there and to `.env.example`.
+`Tests/unit/test_deploy.py` fails on a variable the cycle reads that is not
+forwarded; run it after adding a keyed source.
+
 ### Non-zero exit — what the operator must do
 
 Read the last lines before acting:
@@ -69,6 +87,7 @@ Read the last lines before acting:
 | `Build FAILED — the running container was not touched.` | Fix the build error in the streamed build output above this line. Production still runs the old image; the diagnostic blocks printed after it describe that old container. |
 | `Deployment FAILED (health=...)` | The `--- container ---`, `--- supervisor ---` and `--- logs ---` blocks that follow hold the reason. The script then starts `watchtower:previous` — the image tagged `latest` before the build. Check for `Rollback done`: it only means the old container was started — the health gate is not repeated. `Rollback FAILED — start the container by hand` means nothing is running. |
 | `No previous image to roll back to.` | Nothing was tagged `latest` before the build (first deploy). No rollback: the new container stays as it is — fix and redeploy. |
+| `Error: could not create /mnt/user/appdata/watchtower/container.env on the server` | The owner-only file for the forwarded variables could not be created. Nothing was built or swapped: the running container was not touched. Check the appdata path and permissions. |
 | `Error: ...` | The script itself failed (SSH, archive). Check the container's state. |
 
 Every build re-points `watchtower:previous`, and a rolled-back deploy leaves
@@ -94,7 +113,7 @@ run no health check.
 
 Every container start — `deploy.py`, `force_restart.py`, a manual
 `docker restart` — launches a **full ETL cycle** immediately:
-`deployment/etl_scheduler.py` runs `./run_all_etl.sh` on start (109 scripts,
+`deployment/etl_scheduler.py` runs `./run_all_etl.sh` on start (108 scripts,
 4 workers), again 2 hours after each cycle, and restarts `api` after each. So
 a restart kills a cycle in flight, hits every live source again and takes the
 dashboard and API down meanwhile. Avoid it while a cycle is running or a
@@ -127,8 +146,16 @@ Then, before closing anything on the board:
 - `docker image ls watchtower`: `latest` is the new image, `previous` the one
   before it.
 - The first ETL cycle, at the end of `scheduler.out.log`: `ETL Workflow
-  finished in …` followed by `Successful: N | Failed: N` (109 and 0 on
-  2026-11-24).
+  finished in …` followed by `Successful: N | Failed: N` (108 scripts since
+  2026-11-26; it was 109 before the mock shoppy entry left the list). The
+  line `Running data freshness watcher (after the pool)` sits between the
+  last ETL and that summary, and the scheduler's own start line reads
+  `ETL Scheduler started. Interval: 7200 s.`
+- The variable **names** the container holds, when keys were forwarded —
+  every one of them is there, and no `UNRAID_*` is:
+  ```bash
+  ssh <user>@<host> docker exec watchtower sh -c 'env | cut -d= -f1 | sort'
+  ```
 - In the browser, the feature the deploy was for. The health gate opens the
   API only; it never loads the dashboard.
 
@@ -192,7 +219,7 @@ commands above assume the production container:
 | Container | `watchtower` | `watchtower-app` |
 | Dashboard port | host **7777** → container **7780** | `7777:7777` (`WATCHTOWER_DASHBOARD_PORT=7777`) |
 | Image contents | the deploy archive (`COPY . .`) | a hand-picked file list, **plus `secrets/`** |
-| Settings | `UNRAID_*` stay on the dev machine | `env_file: .env` passes the whole file to the container |
+| Settings | only the names in `CONTAINER_ENV_KEYS` travel, through `--env-file`; `UNRAID_*` stay on the dev machine | `env_file: .env` passes the whole file to the container |
 
 ## Backups do not run in production
 
@@ -207,6 +234,9 @@ add it to `INCLUDE_PATHS`, and do not report backups as working.
 - Never print `.env` or a value from it; list key names only (command above).
   `deploy.py` itself echoes the host while connecting — keep its output out of
   commits and issues.
+- Never print the container's environment or `container.env` either:
+  `docker inspect watchtower` shows the forwarded keys in clear text. List
+  names only (`env | cut -d= -f1`).
 - Never put a credential in a script, commit message or file. `detect-secrets`
   runs in pre-commit as a backstop.
 - The `data` volume holds **historical data**. A deploy never overwrites it:

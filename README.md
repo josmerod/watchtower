@@ -22,7 +22,7 @@ Watchtower automates data collection from news sites, research platforms, game s
 
 Watchtower is an integrated solution for automated data acquisition, processing, and monitoring:
 
--   **Automated Data Collection**: 23 ETL domains (105 scripts in the ETL orchestrator's list) scraping data from ArXiv, GitHub, Reddit, game stores, course platforms, AI platforms, security feeds, and more.
+-   **Automated Data Collection**: 23 ETL domains (104 scripts in the ETL orchestrator's list) scraping data from ArXiv, GitHub, Reddit, game stores, course platforms, AI platforms, security feeds, and more.
 -   **Change Detection**: Event-driven watchers monitor web pages for content changes with state persistence.
 -   **Interactive Dashboard**: Modern Dash-based interface with 18 tabs, Bootstrap styling, and real-time data loading.
 -   **JSON API**: A read-only FastAPI service serving the collected feeds under `/api/v1`.
@@ -35,7 +35,7 @@ Watchtower is an integrated solution for automated data acquisition, processing,
 -   **News & Social**: HackerNews, Reddit, TechCrunch, Lobste.rs, Medium, 4chan, and about 40 more feeds
 -   **Gaming**: Game deals, GOG, Humble Bundles, itch.io, IsThereAnyDeal, Metacritic
 -   **Education**: AWS Skill Builder, Coursera, DeepLearning.AI, GCP Skills Boost, Microsoft Applied Skills, Pluralsight, Udemy
--   **Deals & E-commerce**: Lifetimo, Shoppy, Gumroad, Audible releases, Humble Books, Viajeros Piratas
+-   **Deals & E-commerce**: Lifetimo, Gumroad, Audible releases, Humble Books, Viajeros Piratas
 -   **Security & Markets**: CISA KEV, security news, OSV advisories, CoinGecko crypto quotes
 -   **Benchmarks & Open Source**: LLM leaderboards and model feeds, GitHub trending, releases and end-of-life dates for a self-hosted stack, open-source projects, package registries, Stack Exchange, Hashnode, Substack, Trendshift
 -   **Regional**: Spanish public aid (BDNS), Valencia events and local news
@@ -214,9 +214,9 @@ docker build -t watchtower-app .
 docker run -p 7780:7780 -p 45714:45714 --env-file .env watchtower-app
 ```
 
-The container starts the dashboard, the API and the ETL scheduler together; the scheduler runs every ETL as soon as it starts and then every 2 hours.
+The container starts the dashboard, the API and the ETL scheduler together; the scheduler runs every ETL as soon as it starts and then every 2 hours by default (`WATCHTOWER_ETL_INTERVAL`, in seconds).
 
-Secrets differ between the two Docker paths. The root `Dockerfile` (used by both `docker compose` and the plain `docker build` above) copies `./secrets/` into the image, and `docker-compose.yml` also mounts `./secrets` read-only. The Unraid path below (`deployment/Dockerfile` + `deploy.py`) ships and mounts no secrets: `.env` and `secrets/` are not part of the deploy archive, and only the `data` and `logs` volumes are mounted.
+Secrets differ between the two Docker paths. The root `Dockerfile` (used by both `docker compose` and the plain `docker build` above) copies `./secrets/` into the image, and `docker-compose.yml` also mounts `./secrets` read-only. The Unraid path below (`deployment/Dockerfile` + `deploy.py`) ships no secrets as files: `.env` and `secrets/` are not part of the deploy archive, and only the `data` and `logs` volumes are mounted. API keys reach that container only through the allowlist `CONTAINER_ENV_KEYS` in `deployment/deploy.py` — the ones set in `.env` are passed with `docker run --env-file` (names in `.env.example`), and nothing else from `.env` travels.
 
 ### Unraid
 

@@ -5,7 +5,7 @@ name: Docker Build
 # missing from deploy.INCLUDE_PATHS fails here, before it fails in production.
 #
 # Only the API is booted for the smoke test. The normal entrypoint starts
-# supervisor, whose ETL scheduler launches a 109-script cycle against live
+# supervisor, whose ETL scheduler launches a 108-script cycle against live
 # sources on every start.
 
 on:

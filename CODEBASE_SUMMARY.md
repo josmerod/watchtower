@@ -1,6 +1,6 @@
 # Watchtower (MEGALITH) — Codebase Map
 
-Snapshot of the repository on 2026-11-24. It maps what exists today: where each layer lives, how it is started, tested and deployed, and which conventions the code follows. `AGENTS.md` is the source of truth for commands and conventions.
+Snapshot of the repository on 2026-11-26, counts re-measured that day. It maps what exists today: where each layer lives, how it is started, tested and deployed, and which conventions the code follows. `AGENTS.md` is the source of truth for commands and conventions.
 
 ## What the platform is
 
@@ -17,7 +17,7 @@ Watchtower collects data from public web sources, normalizes it into JSON files 
 
 | Path | Contents |
 | :-- | :-- |
-| `src/etl/` | 23 domain packages; 105 of their scripts are in the ETL cycle. Shared modules: `base.py` (`BaseETL`), `circuit_breaker.py`, `proxy_manager.py` |
+| `src/etl/` | 23 domain packages; 104 of their scripts are in the ETL cycle. Shared modules: `base.py` (`BaseETL`), `circuit_breaker.py`, `proxy_manager.py` |
 | `src/models/` | 19 Pydantic modules; the bases (`TimestampedModel`, `StatusModel`, `ErrorModel`, `PaginatedResponse`) are in `base.py` |
 | `src/watchers/` | `base_watcher.py` (`BaseWatcher`), four watchers, the `run_watcher.py` runner |
 | `src/web/dashboard/` | `app.py` (layout and tab registry), `components/` (19 tab modules and shared helpers), `assets/` (CSS and JS) |
@@ -45,11 +45,11 @@ Watchtower collects data from public web sources, normalizes it into JSON files 
 | `uv run python src/watchers/run_watcher.py` | Watcher runner (`--list`, `--once`); today it can only launch `ms_applied_skills` |
 | `uv run --with paramiko python deployment/deploy.py` | Deploys to the Unraid server |
 
-The orchestrator runs the 109 entries of `ETL_SCRIPTS` (105 ETLs, 3 watchers, 1 miner), each as `uv run python <script>` in a pool of 4 workers, with one log per script under `logs/`. After the pool it runs `src/utils/snapshot_retention.py` and, when the file exists, `run_backup.py`.
+The orchestrator runs the 107 entries of `ETL_SCRIPTS` (104 ETLs, 2 watchers, 1 miner), each as `uv run python <script>` in a pool of 4 workers, with one log per script under `logs/`. After the pool it runs `src/watchers/data_freshness_watcher.py` on its own, then `src/utils/snapshot_retention.py` and, when the file exists, `run_backup.py`.
 
 ## Contracts to build on
 
-- **ETL**: subclass `BaseETL[I, O]` and implement `extract()`, `transform()` and `load()`. `run()` is the template method and returns `ETLMetrics`. The base class brings the circuit breaker, proxy rotation, tenacity retries, checkpointing, deduplication and optional LLM enrichment. 31 of the 105 ETL scripts use it (29 directly, 2 through `SimpleETL`); the other 74 are plain scripts.
+- **ETL**: subclass `BaseETL[I, O]` and implement `extract()`, `transform()` and `load()`. `run()` is the template method and returns `ETLMetrics`. The base class brings the circuit breaker, proxy rotation, tenacity retries, checkpointing, deduplication and optional LLM enrichment. 31 of the 104 ETL scripts use it (29 directly, 2 through `SimpleETL`); the other 73 are plain scripts.
 - **Watcher**: subclass `BaseWatcher` and implement `extract_value(html_content)` and `has_changed(old_value, new_value)`. State is written to `data/watchers/<name>/state.json` and events to `data/watchers/<name>/events/`. `MSAppliedSkillsWatcher`, `CoursesWatcher` and `DataFreshnessWatcher` are entries of the ETL cycle, and `ArxivWatcher` is a component of the ArXiv ETL.
 - **Dashboard tab**: one module under `components/` exposing a `render_*_tab()` function, registered in `_TAB_RENDERERS` in `app.py`; only the active tab is rendered. Callbacks follow the Single Callback Pattern: one callback per output component, with `prevent_initial_call=True`. 18 tabs are registered. `shortcuts_tab.py` is the 19th module; its tab is hidden, but `app.py` still calls `register_shortcuts_callbacks`.
 - **API**: three routers (`router`, `public_router`, `search_router`) mounted under `/api/v1`. GET only, with Pydantic response models.
@@ -58,15 +58,15 @@ The orchestrator runs the 109 entries of `ETL_SCRIPTS` (105 ETLs, 3 watchers, 1 
 
 ## Testing
 
-- 82 test files under `Tests/`, 49 of them in `Tests/unit/`. The rest sit beside it, grouped by layer (`etl`, `api`, `dashboard`, `models`, `alerts`, `analytics`, `data_quality`, `web`) and by kind (`e2e`, `integration`, `performance`), plus one file at the root of `Tests/`.
+- 88 test files under `Tests/`, 53 of them in `Tests/unit/`. The rest sit beside it, grouped by layer (`etl`, `api`, `dashboard`, `models`, `alerts`, `analytics`, `data_quality`, `web`) and by kind (`e2e`, `integration`, `performance`), plus one file at the root of `Tests/`.
 - `uv run pytest` runs everything; `uv run pytest --cov=src --cov-report=html` adds coverage.
 - The only registered markers are `e2e` and `slow`, and `--strict-markers` is on, so any other marker fails.
 - Unit tests must not call real services: use fixtures and stubs.
 
 ## Deployment
 
-- **Production (Unraid)**: `deployment/deploy.py` archives the paths in its `INCLUDE_PATHS` (`src`, `deployment`, `config`, `Tests` and the project files), uploads the archive over SSH, builds `deployment/Dockerfile` on the server and replaces the container. If the new container does not pass its health check, the previous image is restored. `.env` and `secrets/` are not part of the archive.
-- **Inside the container**: `deployment/supervisord.conf` runs three programs: `dashboard`, `api` and `etl_scheduler`. The scheduler runs the whole ETL cycle when it starts and then every 2 hours, and restarts the API after each cycle. The host publishes the dashboard on 7777 and the API on 45714; only the `data` and `logs` volumes are mounted.
+- **Production (Unraid)**: `deployment/deploy.py` archives the paths in its `INCLUDE_PATHS` (`src`, `deployment`, `config`, `Tests` and the project files), uploads the archive over SSH, builds `deployment/Dockerfile` on the server and replaces the container. If the new container does not pass its health check, the previous image is restored. `.env` and `secrets/` are not part of the archive. The API keys reach the container only through the allowlist `CONTAINER_ENV_KEYS` in `deploy.py`: the ones set in `.env` are written to an owner-only file on the server and passed with `docker run --env-file`; nothing else from `.env` travels.
+- **Inside the container**: `deployment/supervisord.conf` runs three programs: `dashboard`, `api` and `etl_scheduler`. The scheduler runs the whole ETL cycle when it starts and then every `WATCHTOWER_ETL_INTERVAL` seconds (2 hours by default), and restarts the API after each cycle. The host publishes the dashboard on 7777 and the API on 45714; only the `data` and `logs` volumes are mounted.
 - **Local Docker**: the root `Dockerfile` and `docker-compose.yml` start the same supervisor configuration, but this image copies `./secrets/` and compose also mounts `./secrets` read-only.
 - **CI**: on every push to `main` and on pull requests, the `CI` workflow runs `uv sync`, `ruff check`, `ruff format --check`, a bytecode compile of the shipped code and `uv run pytest Tests/`. The `Docker Build` workflow builds the image from the deploy archive and checks `/health`.
 
