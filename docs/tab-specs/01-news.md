@@ -2,7 +2,7 @@
 
 > Fecha: 2026-08-17 · Estado: borrador para revisión · Ámbito: `src/web/dashboard/components/news_tab.py` + ETLs de `src/etl/news/`
 
-> **Actualización 2026-11-26 (T-126):** freeCodeCamp, Kagi USA y Kagi World se retiraron de News por baja calidad: el ETL de freeCodeCamp se elimina y el de Kagi deja de bajar esos dos feeds. Este documento describe el estado de agosto.
+> **Actualización 2026-11-26 (T-126):** freeCodeCamp, Kagi USA y Kagi World se retiraron de News por baja calidad: el ETL de freeCodeCamp se elimina y el de Kagi deja de bajar esos dos feeds. Lobsters se muda a Knowledge Garden (T-130). Este documento describe el estado de agosto.
 
 ## 1. Diagnóstico actual
 

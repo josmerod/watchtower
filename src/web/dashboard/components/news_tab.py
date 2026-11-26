@@ -118,7 +118,7 @@ NEWS_TAB_DEFINITIONS: list[_NewsTabDef] = [
     },
     # Google AI Blog, KDnuggets y Cloud Updates viven SOLO en Tech Radar (spec 13 M3):
     # su contenido sigue encontrable vía "🔎 Global" y el radar los muestra con más contexto.
-    {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"},
+    # Lobsters se mudó a Knowledge Garden (T-130, 2026-11-26).
     {
         "label": "FutureTools & Ben's Bites",
         "keys": ["futuretools", "bensbites"],

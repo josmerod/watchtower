@@ -27,10 +27,6 @@ NEWS_SOURCES_CONFIG = {
         "path": get_data_path("news", "google_ai_blog_latest.json"),
         "name": "Google AI Blog",
     },
-    "lobsters": {
-        "path": get_data_path("news", "lobsters_latest.json"),
-        "name": "Lobsters",
-    },
     "arstechnica": {
         "path": get_data_path("news", "arstechnica_latest.json"),
         "name": "Ars Technica",
@@ -161,6 +157,12 @@ ARXIV_SOURCES_CONFIG = {
 }
 
 KNOWLEDGE_SOURCES_CONFIG = {
+    # T-130 (2026-11-26): moved here from NEWS_SOURCES_CONFIG — the user reads
+    # Lobsters as a dev link-aggregator, next to HN Ask and Dev.to.
+    "lobsters": {
+        "path": get_data_path("news", "lobsters_latest.json"),
+        "name": "Lobsters",
+    },
     "opensource": {
         "path": get_data_path("open_source_intelligence", "output", "latest.json"),
         "name": "Open Source Projects",

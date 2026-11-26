@@ -84,6 +84,7 @@ class KnowledgeGardenRepository(BaseRepository[list[dict[str, Any]]]):
 opensource_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["opensource"]["path"])
 reddit_opensource_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_opensource"]["path"])
 gooddevs_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["gooddevs"]["path"])
+lobsters_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["lobsters"]["path"])
 podcasts_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["podcasts"]["path"])
 product_hunt_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["product_hunt"]["path"])
 hackernews_ask_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["hackernews_ask"]["path"])
@@ -105,6 +106,7 @@ def _load_all_knowledge_data():
         "opensource": opensource_repo,
         "reddit_opensource": reddit_opensource_repo,
         "gooddevs": gooddevs_repo,
+        "lobsters": lobsters_repo,
         "podcasts": podcasts_repo,
         "product_hunt": product_hunt_repo,
         "hackernews_ask": hackernews_ask_repo,
@@ -148,6 +150,7 @@ MAX_ARTICLES_PER_SOURCE = 50  # Limit number of articles displayed per source in
 KNOWLEDGE_TAB_DEFINITIONS = [
     {"label": "LessWrong", "keys": "lesswrong", "id": "lw"},
     {"label": "Good Devs", "keys": "gooddevs", "id": "gd"},
+    {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"},
     {"label": "Podcasts", "keys": "podcasts", "id": "pod"},
     {"label": "Reddit Tech", "keys": "reddit_tech", "id": "reddit_tech"},
     {"label": "HN Ask", "keys": "hackernews_ask", "id": "hn_ask"},
