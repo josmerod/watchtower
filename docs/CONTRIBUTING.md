@@ -29,7 +29,7 @@ This project adheres to a code of conduct. By participating, you are expected to
 
 - Python 3.10 or higher
 - Git
-- UV package manager (recommended) or pip
+- UV package manager
 - Basic knowledge of Python, ETL concepts, and web scraping
 
 ### Development Setup
@@ -50,23 +50,25 @@ curl -LsSf https://astral.sh/uv/install.sh | sh  # Linux/macOS
 # or
 powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 
-# Install dependencies
-uv sync --all-extras
+# Install dependencies (includes the dev tools: ruff, pytest, mypy, pre-commit)
+uv sync
 
 # Install Playwright browsers
 uv run playwright install
 ```
 
-3. **Configure Pre-commit Hooks** (Optional but recommended)
+3. **Install the Pre-commit Hooks** (mandatory)
 
 ```bash
-uv run pre-commit install
+uv run pre-commit install --hook-type pre-commit --hook-type pre-push
 ```
 
-4. **Create a Feature Branch**
+Both hook types are required. The commit stage runs the basic `pre-commit-hooks` (whitespace, file endings, syntax checks), ruff (lint and format), codespell, shellcheck and detect-secrets; the push stage runs the full test suite, which takes about 8 minutes. Over SSH, GitHub can drop the idle connection before the hook ends and the push then fails after a green run; keep the session alive with `git config --local core.sshCommand "ssh -o ServerAliveInterval=30"`, or push over HTTPS.
+
+4. **Create a Branch**
 
 ```bash
-git checkout -b feature/your-feature-name
+git checkout -b feat/your-feature-name
 # or
 git checkout -b fix/issue-number-description
 ```
@@ -75,11 +77,12 @@ git checkout -b fix/issue-number-description
 
 ### Branch Naming
 
-- `feature/feature-name` - New features
+Branch off `main` with one of these prefixes:
+
+- `feat/feature-name` - New features
 - `fix/issue-number-description` - Bug fixes
+- `chore/description` - Maintenance tasks
 - `docs/description` - Documentation updates
-- `refactor/description` - Code refactoring
-- `test/description` - Test additions or modifications
 
 ### Commit Messages
 
@@ -129,7 +132,7 @@ Fixes #456
 We follow PEP 8 with enforcement through Ruff.
 
 **Key Guidelines**:
-- Maximum line length: 100 characters
+- Maximum line length: 210 characters (Ruff is the source of truth for lint and format)
 - Use 4 spaces for indentation (no tabs)
 - Use snake_case for functions and variables
 - Use PascalCase for classes
@@ -137,15 +140,15 @@ We follow PEP 8 with enforcement through Ruff.
 
 ### Type Hints
 
-All functions must include comprehensive type hints:
+All functions must include comprehensive type hints, using the modern built-in generics (`list[...]`, `dict[...]`) and `X | None` instead of the `typing` equivalents:
 
 ```python
-from typing import List, Dict, Optional, Any
+from typing import Any
 
 def process_data(
-    items: List[Dict[str, Any]],
-    filter_key: Optional[str] = None
-) -> List[Dict[str, Any]]:
+    items: list[dict[str, Any]],
+    filter_key: str | None = None
+) -> list[dict[str, Any]]:
     """
     Process and filter data items.
 
@@ -165,7 +168,7 @@ def process_data(
 Use Google-style docstrings for all public modules, classes, and functions:
 
 ```python
-def complex_function(param1: str, param2: int) -> Dict[str, Any]:
+def complex_function(param1: str, param2: int) -> dict[str, Any]:
     """
     Brief description of function purpose.
 
@@ -198,6 +201,9 @@ def complex_function(param1: str, param2: int) -> Dict[str, Any]:
 Before committing, run:
 
 ```bash
+# Run every hook (ruff lint and format, codespell, shellcheck, detect-secrets)
+uv run pre-commit run --all-files
+
 # Format code
 uv run ruff format .
 
@@ -207,8 +213,8 @@ uv run ruff check .
 # Auto-fix issues
 uv run ruff check . --fix
 
-# Type checking
-uv run mypy src/
+# Type checking (advisory: legacy type errors do not block commits)
+uv run mypy src
 ```
 
 ## Testing Requirements
@@ -219,11 +225,13 @@ uv run mypy src/
 - Aim for 90%+ test coverage for new code
 - Test both common cases and edge cases
 - Include integration tests for ETL pipelines
+- Never call real external services from unit tests: use fixtures and stubs
+- The only registered pytest markers are `e2e` and `slow`. `--strict-markers` is on, so any other marker is an error.
 
 ### Writing Tests
 
 ```python
-# tests/etl/test_new_feature.py
+# Tests/etl/test_new_feature.py
 import pytest
 from src.etl.module import NewFeature
 
@@ -243,10 +251,10 @@ class TestNewFeature:
         with pytest.raises(ValueError):
             feature.process("")
 
-    @pytest.mark.integration
-    def test_integration(self, feature):
-        """Test integration with external services."""
-        # Integration test code
+    @pytest.mark.e2e
+    def test_end_to_end(self, feature):
+        """Test against a real external service."""
+        # End-to-end test code
         pass
 ```
 
@@ -257,13 +265,16 @@ class TestNewFeature:
 uv run pytest
 
 # Run specific test file
-uv run pytest tests/etl/test_new_feature.py
+uv run pytest Tests/etl/test_new_feature.py
 
 # Run with coverage
 uv run pytest --cov=src --cov-report=html
 
-# Run only unit tests
-uv run pytest -m "not integration"
+# Run only the unit tests
+uv run pytest Tests/unit
+
+# Skip the end-to-end tests
+uv run pytest -m "not e2e"
 
 # Run with verbose output
 uv run pytest -v
@@ -273,12 +284,13 @@ uv run pytest -v
 
 ### Pull Request Process
 
-1. **Ensure All Tests Pass**
+1. **Ensure All Checks Pass**
 
 ```bash
+uv run pre-commit run --all-files
 uv run pytest
 uv run ruff check .
-uv run mypy src/
+uv run mypy src
 ```
 
 2. **Update Documentation**
@@ -286,12 +298,12 @@ uv run mypy src/
 - Update relevant documentation files
 - Add docstrings to new code
 - Update README.md if adding new features
-- Update CHANGELOG.md
+- Record the work on the task board (`docs/TASK_BOARD.md`); closed tasks and the changelog live in `docs/TASK_BOARD_ARCHIVE.md`
 
 3. **Create Pull Request**
 
 - Use a clear, descriptive title
-- Fill out the PR template completely
+- Fill out the pull request description using the template in step 4
 - Reference related issues (e.g., "Closes #123")
 - Include screenshots for UI changes
 - Ensure CI checks pass
@@ -352,14 +364,14 @@ When adding new features or changing behavior:
 
 ### Getting Help
 
-- **Questions**: [GitHub Discussions](https://github.com/yourusername/watchtower/discussions)
-- **Bug Reports**: [GitHub Issues](https://github.com/yourusername/watchtower/issues)
+- **Questions**: [GitHub Discussions](https://github.com/josmerod/watchtower/discussions)
+- **Bug Reports**: [GitHub Issues](https://github.com/josmerod/watchtower/issues)
 - **Real-time Chat**: Discord/Slack (if available)
 
 ### Recognition
 
 Contributors will be:
-- Listed in CONTRIBUTORS.md
+- Listed on the repository's Contributors page on GitHub
 - Acknowledged in release notes
 - Given credit in relevant documentation
 
@@ -377,7 +389,6 @@ Contributors will be:
 - Use async/await for I/O-bound operations
 - Implement caching where appropriate
 - Monitor resource usage in long-running processes
-- Use Polars over Pandas for data processing when possible
 
 ### Security Best Practices
 
@@ -396,23 +407,24 @@ Contributors will be:
 3. Add Pydantic models for data validation
 4. Include comprehensive tests
 5. Document data source and usage
+6. Add the script to `ETL_SCRIPTS` in `run_all_etl_orchestrator.py`; the ETL cycle only runs listed scripts
 
 See [ETL Development Guide](technical/ETL_DEVELOPMENT_GUIDE.md) for details.
 
 ### Adding New Watchers
 
 1. Inherit from `BaseWatcher`
-2. Implement `get_current_value()` and `check_for_changes()`
+2. Implement `extract_value()` and `has_changed()`, its two abstract methods
 3. Include error handling and logging
 4. Add tests for change detection
 5. Document watcher purpose and configuration
 
-See [Watchers Guide](technical/WATCHERS_GUIDE.md) for details.
+The contract is defined in `src/watchers/base_watcher.py`; the existing watchers in `src/watchers/` are working examples. See the [Watchers Guide](technical/WATCHERS_GUIDE.md) for background.
 
 ### Dashboard Components
 
 1. Follow Dash component patterns
-2. Implement data managers for complex data
+2. Load data with the helpers in `src/services/data_loader.py`, or with a `BaseRepository` subclass when the tab needs caching (see `docs/REPOSITORY_PATTERN.md`)
 3. Use single-callback pattern
 4. Include error boundaries
 5. Ensure mobile responsiveness
@@ -421,12 +433,12 @@ See [Dashboard Development Guide](technical/DASHBOARD_DEVELOPMENT_GUIDE.md) for 
 
 ## License
 
-By contributing to Watchtower, you agree that your contributions will be licensed under the MIT License.
+By contributing to Watchtower, you agree that your contributions will be licensed under the MIT License declared in `pyproject.toml`.
 
 ## Questions?
 
 Don't hesitate to ask questions! We're here to help:
-- Open a [GitHub Discussion](https://github.com/yourusername/watchtower/discussions)
+- Open a [GitHub Discussion](https://github.com/josmerod/watchtower/discussions)
 - Comment on relevant issues
 - Reach out to maintainers
 

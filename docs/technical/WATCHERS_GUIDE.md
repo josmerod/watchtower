@@ -68,91 +68,118 @@ class BaseWatcher(ABC):
     - Error handling and resilience
     """
 
-    def __init__(self, name: str, check_interval: int = 3600):
+    def __init__(
+        self,
+        name: str,
+        url: str,
+        check_interval: int = 3600,
+        max_retries: int = 3,
+        retry_delay: int = 5,
+    ):
         """
-        Initialize watcher with name and check interval.
+        Initialize the base watcher.
 
         Args:
-            name: Unique identifier for this watcher
-            check_interval: Seconds between checks (default: 3600 = 1 hour)
+            name: Unique name for this watcher
+            url: URL to watch for changes
+            check_interval: Time in seconds between checks (default: 1 hour)
+            max_retries: Maximum number of retry attempts for network operations
+            retry_delay: Initial delay in seconds between retries (exponential backoff)
         """
         self.name = name
+        self.url = url
         self.check_interval = check_interval
-        self.state_dir = Path(f"data/watchers/{name}")
-        self.events_dir = self.state_dir / "events"
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        self.logger = get_logger(f"Watcher_{name}")
 
-        # Create directories
-        self.state_dir.mkdir(parents=True, exist_ok=True)
-        self.events_dir.mkdir(parents=True, exist_ok=True)
+        self.project_root = Path(get_project_root())
+        self.data_dir = self.project_root / "data" / "watchers" / self.name
+        ensure_directories([f"data/watchers/{self.name}"])
+
+        # Path to store the state file
+        self.state_file = self.data_dir / "state.json"
+
+        # Path to store events
+        self.events_dir = self.data_dir / "events"
+        ensure_directories([f"data/watchers/{self.name}/events"])
+
+        self.proxy_manager = ProxyManager()
+
+        # Load previous state if exists
+        self.previous_state = self._load_state()
 ```
 
 ### Required Methods
 
-Every watcher must implement these abstract methods:
+Every watcher must implement these two abstract methods. `check()` drives them in order: it fetches the page with `fetch_page()`, passes the HTML to `extract_value()`, and from the second run on compares the result with the stored value through `has_changed()`. When `has_changed()` returns `True`, `check()` calls `trigger_alarm(old_value, new_value)`, which logs a warning and records a `change_detected` event. On the first run `check()` only stores the extracted value, so `has_changed()` is not called and no event is recorded.
 
-#### 1. get_current_value()
+#### 1. extract_value()
 
-Extract the current value to monitor from the source.
+Extract the current value to monitor from the fetched page.
 
 ```python
 @abstractmethod
-def get_current_value(self) -> Any:
+def extract_value(self, html_content: str) -> Any:
     """
-    Fetch and extract the current value to monitor.
+    Extract the value to watch from the HTML content.
+
+    Args:
+        html_content: HTML content of the page
 
     Returns:
-        The extracted value (can be any JSON-serializable type)
-
-    Raises:
-        Exception: If extraction fails (will be logged and handled)
+        The extracted value
     """
     pass
 ```
 
-#### 2. check_for_changes()
+#### 2. has_changed()
 
 Determine if a significant change has occurred.
 
 ```python
 @abstractmethod
-def check_for_changes(self, old_value: Any, new_value: Any) -> bool:
+def has_changed(self, old_value: Any, new_value: Any) -> bool:
     """
-    Compare old and new values to determine if change is significant.
+    Determine if the value has changed enough to trigger an alarm.
 
     Args:
-        old_value: Previously stored value (None on first run)
-        new_value: Newly extracted value
+        old_value: Previously extracted value
+        new_value: Current extracted value
 
     Returns:
-        True if change should be logged, False otherwise
+        True if the change should trigger an alarm, False otherwise
     """
     pass
 ```
 
 ### State Management
 
-The watcher automatically manages state in JSON format:
+The watcher automatically manages state in JSON format, in `data/watchers/{name}/state.json`:
 
 ```json
 {
-  "last_check": "2025-01-10T15:30:00Z",
+  "last_check": "2025-01-10T15:30:00.123456",
   "last_value": "monitored_value",
-  "check_count": 42,
-  "change_count": 5
+  "first_seen": "2025-01-10T14:30:00.123456"
 }
 ```
 
+`last_value` is the value returned by the last `extract_value()` call, `last_check` the time of that check and `first_seen` the time the state was created.
+
 ### Event Logging
 
-Change events are logged with full context:
+Change events are logged with full context, one JSON file per event in `data/watchers/{name}/events/`:
 
 ```json
 {
-  "timestamp": "2025-01-10T15:30:00Z",
-  "watcher": "arxiv_watcher",
+  "id": "20250110153000_change_detected",
+  "type": "change_detected",
+  "timestamp": "2025-01-10T15:30:00.123456",
+  "watcher": "simple_content_watcher",
+  "url": "https://example.com/updates",
   "old_value": "previous_value",
   "new_value": "current_value",
-  "change_type": "content_update",
   "details": {
     "additional": "context"
   }
@@ -166,7 +193,6 @@ Change events are logged with full context:
 Monitor a web page for text changes:
 
 ```python
-import requests
 from bs4 import BeautifulSoup
 from src.watchers.base_watcher import BaseWatcher
 
@@ -174,16 +200,12 @@ class SimpleContentWatcher(BaseWatcher):
     """Watch a web page for content changes."""
 
     def __init__(self, url: str, selector: str):
-        super().__init__(name="simple_content_watcher")
-        self.url = url
+        super().__init__(name="simple_content_watcher", url=url)
         self.selector = selector
 
-    def get_current_value(self) -> str:
+    def extract_value(self, html_content: str) -> str:
         """Extract text content from CSS selector."""
-        response = requests.get(self.url, timeout=30)
-        response.raise_for_status()
-
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(html_content, 'html.parser')
         element = soup.select_one(self.selector)
 
         if not element:
@@ -191,11 +213,8 @@ class SimpleContentWatcher(BaseWatcher):
 
         return element.get_text(strip=True)
 
-    def check_for_changes(self, old_value: str, new_value: str) -> bool:
+    def has_changed(self, old_value: str, new_value: str) -> bool:
         """Detect any text content change."""
-        if old_value is None:
-            return False  # Don't log on first run
-
         return old_value != new_value
 
 # Usage
@@ -211,47 +230,51 @@ watcher.run()
 Track additions and removals in a list:
 
 ```python
-from typing import List, Dict, Any
+from typing import Any
 from src.watchers.base_watcher import BaseWatcher
 
 class ListMonitorWatcher(BaseWatcher):
     """Monitor a list of items for additions and removals."""
 
-    def __init__(self, name: str, fetch_function):
-        super().__init__(name=name)
+    def __init__(self, name: str, url: str, fetch_function):
+        super().__init__(name=name, url=url)
         self.fetch_function = fetch_function
 
-    def get_current_value(self) -> List[str]:
+    def extract_value(self, html_content: str) -> list[str]:
         """Fetch current list of items."""
         items = self.fetch_function()
         return sorted(items)  # Sort for consistent comparison
 
-    def check_for_changes(
+    def has_changed(
         self,
-        old_value: List[str],
-        new_value: List[str]
+        old_value: list[str],
+        new_value: list[str]
     ) -> bool:
         """Detect additions or removals."""
-        if old_value is None:
-            return False
-
         old_set = set(old_value)
         new_set = set(new_value)
 
         added = new_set - old_set
         removed = old_set - new_set
 
-        if added or removed:
-            # Log detailed change information
-            self.log_event({
-                "added": list(added),
-                "removed": list(removed),
+        return bool(added or removed)
+
+    def trigger_alarm(self, old_value: Any, new_value: Any) -> None:
+        """Record what was added and removed with the change event."""
+        added = sorted(set(new_value) - set(old_value))
+        removed = sorted(set(old_value) - set(new_value))
+
+        super()._record_event(
+            event_type="change_detected",
+            old_value=old_value,
+            new_value=new_value,
+            details={
+                "added": added,
+                "removed": removed,
                 "added_count": len(added),
                 "removed_count": len(removed)
-            })
-            return True
-
-        return False
+            }
+        )
 ```
 
 ### Threshold-Based Watcher
@@ -262,36 +285,40 @@ Only alert when changes exceed a threshold:
 class ThresholdWatcher(BaseWatcher):
     """Alert only when value changes exceed threshold."""
 
-    def __init__(self, name: str, threshold: float = 0.1):
-        super().__init__(name=name)
+    def __init__(self, name: str, url: str, threshold: float = 0.1):
+        super().__init__(name=name, url=url)
         self.threshold = threshold
 
-    def get_current_value(self) -> float:
-        """Fetch numeric value to monitor."""
-        # Implementation to fetch value
+    def extract_value(self, html_content: str) -> float:
+        """Extract numeric value to monitor."""
+        # Implementation to parse the value out of html_content
         pass
 
-    def check_for_changes(
+    def has_changed(
         self,
         old_value: float,
         new_value: float
     ) -> bool:
         """Alert only if change exceeds threshold percentage."""
-        if old_value is None or old_value == 0:
+        if not old_value:
             return False
 
         change_percent = abs((new_value - old_value) / old_value)
+        return change_percent >= self.threshold
 
-        if change_percent >= self.threshold:
-            self.log_event({
-                "old_value": old_value,
-                "new_value": new_value,
+    def trigger_alarm(self, old_value: float, new_value: float) -> None:
+        """Record the size of the change with the change event."""
+        change_percent = abs((new_value - old_value) / old_value)
+
+        super()._record_event(
+            event_type="change_detected",
+            old_value=old_value,
+            new_value=new_value,
+            details={
                 "change_percent": change_percent,
                 "threshold": self.threshold
-            })
-            return True
-
-        return False
+            }
+        )
 ```
 
 ## Advanced Watcher Patterns
@@ -299,30 +326,26 @@ class ThresholdWatcher(BaseWatcher):
 ### Enhanced Watcher with Notifications
 
 ```python
-from src.watchers.enhanced_watcher import EnhancedWatcher
+from typing import Any
+from src.watchers.base_watcher import BaseWatcher
 
-class NotifyingWatcher(EnhancedWatcher):
+class NotifyingWatcher(BaseWatcher):
     """Watcher with email notifications on changes."""
 
-    def __init__(self, name: str, email_config: Dict[str, Any]):
-        super().__init__(name=name)
+    def __init__(self, name: str, url: str, email_config: dict[str, Any]):
+        super().__init__(name=name, url=url)
         self.email_config = email_config
 
-    def on_change_detected(
-        self,
-        old_value: Any,
-        new_value: Any,
-        event_data: Dict[str, Any]
-    ):
-        """Send notification when change is detected."""
+    def trigger_alarm(self, old_value: Any, new_value: Any) -> None:
+        """Record the event, then send a notification when a change is detected."""
+        super().trigger_alarm(old_value, new_value)
+
         subject = f"Change Detected: {self.name}"
         body = f"""
         Change detected in {self.name}
 
         Previous value: {old_value}
         New value: {new_value}
-
-        Details: {event_data}
         """
 
         self.send_email(subject, body)
@@ -336,14 +359,17 @@ class NotifyingWatcher(EnhancedWatcher):
 ### Multi-Source Aggregation Watcher
 
 ```python
+from collections.abc import Callable
+from typing import Any
+
 class AggregationWatcher(BaseWatcher):
     """Monitor multiple sources and aggregate results."""
 
-    def __init__(self, name: str, sources: List[callable]):
-        super().__init__(name=name)
+    def __init__(self, name: str, url: str, sources: list[Callable[[], Any]]):
+        super().__init__(name=name, url=url)
         self.sources = sources
 
-    def get_current_value(self) -> Dict[str, Any]:
+    def extract_value(self, html_content: str) -> dict[str, Any]:
         """Aggregate data from multiple sources."""
         results = {}
 
@@ -356,25 +382,31 @@ class AggregationWatcher(BaseWatcher):
 
         return results
 
-    def check_for_changes(
+    def has_changed(
         self,
-        old_value: Dict[str, Any],
-        new_value: Dict[str, Any]
+        old_value: dict[str, Any],
+        new_value: dict[str, Any]
     ) -> bool:
         """Check if any source has changed."""
-        if old_value is None:
-            return False
-
         for key in new_value:
             if old_value.get(key) != new_value.get(key):
-                self.log_event({
-                    "changed_source": key,
-                    "old_value": old_value.get(key),
-                    "new_value": new_value.get(key)
-                })
                 return True
 
         return False
+
+    def trigger_alarm(self, old_value: Any, new_value: Any) -> None:
+        """Record which sources changed with the change event."""
+        changed_sources = [
+            key for key in new_value
+            if old_value.get(key) != new_value.get(key)
+        ]
+
+        super()._record_event(
+            event_type="change_detected",
+            old_value=old_value,
+            new_value=new_value,
+            details={"changed_sources": changed_sources}
+        )
 ```
 
 ## Deployment and Scheduling
@@ -385,17 +417,17 @@ class AggregationWatcher(BaseWatcher):
 
 ```bash
 # With UV (recommended)
-uv run python src/watchers/run_watcher.py arxiv_watcher --once
+uv run python src/watchers/run_watcher.py ms_applied_skills --once
 
 # Traditional method
-python src/watchers/run_watcher.py arxiv_watcher --once
+python src/watchers/run_watcher.py ms_applied_skills --once
 ```
 
 #### Continuous Monitoring
 
 ```bash
 # Run continuously with automatic interval management
-uv run python src/watchers/run_watcher.py arxiv_watcher
+uv run python src/watchers/run_watcher.py ms_applied_skills
 
 # Run all registered watchers
 uv run python src/watchers/run_watcher.py
@@ -406,6 +438,10 @@ uv run python src/watchers/run_watcher.py
 ```bash
 uv run python src/watchers/run_watcher.py --list
 ```
+
+`run_watcher.py` is the manual runner. `list_available_watchers()` returns only `ms_applied_skills`, so that is the only watcher it can launch; `--interval` sets the seconds between checks (default: 3600) and `--num-runs` limits a continuous run.
+
+The runner is not how the repository's watchers run in production. There is no watchers service: `deployment/supervisord.conf` starts three programs, `dashboard`, `api` and `etl_scheduler`, and the scheduler (`deployment/etl_scheduler.py`) runs `./run_all_etl.sh` when it starts and then every 2 hours. That cycle is the list `ETL_SCRIPTS` in `run_all_etl_orchestrator.py`, which includes `src/watchers/ms_skills_watcher.py`, `src/watchers/courses_watcher.py` and `src/watchers/data_freshness_watcher.py`: `MSAppliedSkillsWatcher`, `CoursesWatcher` and `DataFreshnessWatcher` each run once per invocation and exit. `ArxivWatcher` is not run on its own; `src/etl/arxiv/arxiv_etl.py` creates it and calls `watcher.run(continuous=False, max_runs=1)`.
 
 ### Systemd Service (Linux)
 
@@ -439,13 +475,13 @@ sudo systemctl start watchtower-watchers
 
 ### Windows Task Scheduler
 
-Use the provided batch script with Task Scheduler:
+Use the command-line runner with Task Scheduler:
 
 1. Open Task Scheduler
 2. Create Basic Task
 3. Trigger: Daily or On startup
 4. Action: Start a program
-5. Program: `C:\path\to\watchtower\run_watcher.bat`
+5. Program: `uv`, with the arguments `run python src/watchers/run_watcher.py --once` and *Start in* set to the repository root
 
 ### Docker Deployment
 
@@ -454,12 +490,10 @@ Use the provided batch script with Task Scheduler:
 services:
   watchers:
     build: .
-    command: ["uv", "run", "python", "src/watchers/run_watcher.py"]
+    command: ["uv", "run", "python", "src/watchers/run_watcher.py", "--interval", "3600"]
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-    environment:
-      - CHECK_INTERVAL=3600
     restart: unless-stopped
 ```
 
@@ -467,22 +501,19 @@ services:
 
 ### 1. Error Handling
 
-Always implement robust error handling:
+Always implement robust error handling. `fetch_page()` already retries the request (`max_retries` attempts with exponential backoff) and raises when all of them fail, so the parsing of the fetched page is what belongs in `extract_value()`:
 
 ```python
-def get_current_value(self) -> Any:
-    """Fetch current value with proper error handling."""
+def extract_value(self, html_content: str) -> Any:
+    """Extract the value with proper error handling."""
     try:
-        response = requests.get(self.url, timeout=30)
-        response.raise_for_status()
-        return self.parse_response(response)
-    except requests.RequestException as e:
-        self.logger.error(f"Network error: {e}")
-        raise
+        return self.parse_response(html_content)
     except ValueError as e:
         self.logger.error(f"Parsing error: {e}")
         raise
 ```
+
+`check()` catches the exception, logs it and leaves the stored value untouched, so the next run compares against the last good value.
 
 ### 2. Rate Limiting
 
@@ -513,9 +544,9 @@ def rate_limit(calls_per_minute: int):
 
 class RateLimitedWatcher(BaseWatcher):
     @rate_limit(calls_per_minute=10)
-    def get_current_value(self) -> Any:
-        """Fetch with automatic rate limiting."""
-        return self.fetch_data()
+    def fetch_page(self) -> str:
+        """Fetch the page with automatic rate limiting."""
+        return super().fetch_page()
 ```
 
 ### 3. Caching
@@ -527,13 +558,13 @@ from functools import lru_cache
 from datetime import datetime, timedelta
 
 class CachedWatcher(BaseWatcher):
-    def __init__(self, name: str, cache_duration: int = 300):
-        super().__init__(name=name)
+    def __init__(self, name: str, url: str, cache_duration: int = 300):
+        super().__init__(name=name, url=url)
         self.cache_duration = cache_duration
         self._cache = None
         self._cache_time = None
 
-    def get_current_value(self) -> Any:
+    def extract_value(self, html_content: str) -> Any:
         """Get value with caching."""
         now = datetime.utcnow()
 
@@ -542,7 +573,7 @@ class CachedWatcher(BaseWatcher):
             now - self._cache_time < timedelta(seconds=self.cache_duration)):
             return self._cache
 
-        value = self.fetch_fresh_data()
+        value = self.parse_response(html_content)
         self._cache = value
         self._cache_time = now
         return value
@@ -553,37 +584,34 @@ class CachedWatcher(BaseWatcher):
 Write comprehensive tests for your watchers:
 
 ```python
-# tests/watchers/test_my_watcher.py
+# Tests/unit/test_my_watcher.py
 import pytest
-from unittest.mock import Mock, patch
 from src.watchers.my_watcher import MyWatcher
 
 class TestMyWatcher:
     @pytest.fixture
-    def watcher(self, tmp_path):
+    def watcher(self, tmp_path, monkeypatch):
         """Create watcher with temporary directory."""
-        watcher = MyWatcher(name="test_watcher")
-        watcher.state_dir = tmp_path / "state"
+        monkeypatch.setattr("src.watchers.base_watcher.get_project_root", lambda: str(tmp_path))
+        monkeypatch.setattr("src.watchers.base_watcher.ensure_directories", lambda dirs: None)
+        watcher = MyWatcher(name="test_watcher", url="https://example.com")
+        watcher.data_dir = tmp_path / "state"
         watcher.events_dir = tmp_path / "events"
-        watcher.state_dir.mkdir(parents=True)
+        watcher.state_file = watcher.data_dir / "state.json"
+        watcher.data_dir.mkdir(parents=True)
         watcher.events_dir.mkdir(parents=True)
+        watcher.previous_state = watcher._load_state()
         return watcher
 
-    @patch('requests.get')
-    def test_get_current_value(self, mock_get, watcher):
+    def test_extract_value(self, watcher):
         """Test value extraction."""
-        mock_response = Mock()
-        mock_response.text = '<html><body>Test</body></html>'
-        mock_get.return_value = mock_response
-
-        value = watcher.get_current_value()
+        value = watcher.extract_value('<html><body>Test</body></html>')
         assert value == "Test"
 
-    def test_check_for_changes(self, watcher):
+    def test_has_changed(self, watcher):
         """Test change detection."""
-        assert watcher.check_for_changes("old", "new") == True
-        assert watcher.check_for_changes("same", "same") == False
-        assert watcher.check_for_changes(None, "first") == False
+        assert watcher.has_changed("old", "new") == True
+        assert watcher.has_changed("same", "same") == False
 ```
 
 ### 5. Logging
@@ -594,12 +622,12 @@ Use structured logging with appropriate levels:
 import logging
 
 class ProperlyLoggedWatcher(BaseWatcher):
-    def get_current_value(self) -> Any:
-        """Fetch with comprehensive logging."""
+    def extract_value(self, html_content: str) -> Any:
+        """Extract with comprehensive logging."""
         self.logger.info(f"Fetching data from {self.url}")
 
         try:
-            data = self.fetch_data()
+            data = self.parse_response(html_content)
             self.logger.info(f"Successfully fetched {len(data)} items")
             return data
         except Exception as e:
@@ -638,7 +666,7 @@ class WellDocumentedWatcher(BaseWatcher):
     def __init__(
         self,
         source_url: str,
-        filter_criteria: Optional[Dict[str, Any]] = None
+        filter_criteria: dict[str, Any] | None = None
     ):
         """
         Initialize watcher with source configuration.
@@ -647,7 +675,7 @@ class WellDocumentedWatcher(BaseWatcher):
             source_url: URL to monitor for changes
             filter_criteria: Optional filtering parameters
         """
-        super().__init__(name="well_documented_watcher")
+        super().__init__(name="well_documented_watcher", url=source_url)
         self.source_url = source_url
         self.filter_criteria = filter_criteria or {}
 ```
@@ -655,10 +683,11 @@ class WellDocumentedWatcher(BaseWatcher):
 ## Additional Resources
 
 - **Base Watcher Source**: `src/watchers/base_watcher.py`
-- **Example Watchers**: `src/watchers/example_enhanced_watcher.py`
 - **ArXiv Watcher**: `src/watchers/arxiv_watcher.py`
-- **Enhanced Watcher**: `src/watchers/enhanced_watcher.py`
 - **MS Skills Watcher**: `src/watchers/ms_skills_watcher.py`
+- **Courses Watcher**: `src/watchers/courses_watcher.py`
+- **Data Freshness Watcher**: `src/watchers/data_freshness_watcher.py`
+- **Runner**: `src/watchers/run_watcher.py`
 
 ## Troubleshooting
 

@@ -1,3 +1,4 @@
+> Archived 2026-11-24 — describes code that was removed, or a snapshot that is no longer current. Kept for reference; see AGENTS.md and CODEBASE_SUMMARY.md for the present state.
 # ETL Factory Pattern Implementation
 
 ## Overview

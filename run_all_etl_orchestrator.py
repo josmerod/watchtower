@@ -48,7 +48,8 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_azure_blog.py",  # Azure blog feed — Radar "☁️ Azure Blog" (T-082)
     "src/etl/analytics/trends_etl.py",  # Cross-source trend analysis — feeds 🔥 badges (News/ArXiv). Local files only; must run after news ETLs
     "src/etl/analytics/weekly_digest_etl.py",  # Weekly digest (T-054) — compiles trends/radar/markets/watchers into data/insights/. Local files only; feeds 📅 Digest tab
-    "src/watchers/data_freshness_watcher.py",  # MUST BE LAST — flags sources that failed to refresh this run (feeds Metrics card)
+    # data_freshness_watcher.py moved out of the pool (T-111): it flags sources
+    # that failed to refresh THIS run, so it runs after the pool in main().
     "src/etl/news/valencia_events_etl.py",  # Feeds dashboard Valencia Events tab
     "src/etl/news/news_get_spanish_tech.py",  # Xataka, Hipertextual, Genbeta
     "src/etl/news/news_get_cloud_updates.py",  # AWS, GCP, CNCF, GitHub Blog
@@ -85,6 +86,9 @@ ETL_SCRIPTS = [
     # Youtube
     "src/etl/youtube_shorts_ocr_etl.py",
     # Courses
+    # linkedin_learning_etl.py is deliberately NOT listed: nothing reads its
+    # output yet (no loader in courses_tab.py, no freshness entry), so running
+    # it would only hit Class Central to write a file nobody shows (T-124).
     "src/etl/courses/udemy_spreadsheet_etl.py",
     "src/etl/courses/hf_learn_etl.py",  # Hugging Face Learn catalog — feeds Learning tab
     "src/etl/courses/ms_applied_skills_etl.py",
@@ -109,8 +113,9 @@ ETL_SCRIPTS = [
     "src/etl/games/games_get_metacritic_rss.py",
     # Entertainment
     # cinema_ecartelera_etl.py removed — file missing, only _improved version exists
-    # Ecommerce
-    "src/etl/ecommerce/shoppy_etl.py",
+    # Ecommerce: shoppy_etl.py removed (T-110) — it was a mock stub with no
+    # __main__ that registered fake "Placeholder" data every cycle. The
+    # shoppy.gg product models live on in src/models/ecommerce.py.
     # Spanish Public Aid
     "src/etl/spanish_public_aid/spanish_public_aid_etl.py",
     "src/etl/spanish_public_aid/bdns_convocatorias_etl.py",  # BDNS API: fechas/cuantías reales (T-076)
@@ -144,6 +149,36 @@ ETL_SCRIPTS = [
     "src/etl/trendshift/trendshift_etl.py",
     "src/etl/rss_feeds/rss_feed_etl.py",
 ]
+
+
+def kill_process_tree(process: subprocess.Popen) -> None:
+    """Kill a timed-out script process and its whole child tree.
+
+    ``process.kill()`` only takes out the parent ``uv`` wrapper; the python
+    child survives as an orphan (verified 2026-09-15 with openalex_etl: pid
+    stuck at 0% CPU for 37min after TIMEOUT). ``pkill -9 -P`` covers POSIX
+    (verified in the prod container); Windows has no pkill, so use
+    ``taskkill /T /F`` — the local failover used to leave hung children alive
+    (T-112).
+    """
+    try:
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/T", "/F", "/PID", str(process.pid)],
+                capture_output=True,
+                timeout=15,
+                check=False,
+            )
+        else:
+            subprocess.run(
+                ["pkill", "-9", "-P", str(process.pid)],
+                capture_output=True,
+                timeout=15,
+                check=False,
+            )
+    except Exception:
+        pass
+    process.kill()
 
 
 def run_script(script_path):
@@ -182,23 +217,39 @@ def run_script(script_path):
             return False, script_path, duration
 
     except subprocess.TimeoutExpired:
-        # process.kill() only kills the parent `uv` wrapper; the python child
-        # survives as an orphan (verified 2026-09-15 with openalex_etl: pid
-        # stuck at 0% CPU for 37min after TIMEOUT). Kill the whole tree.
-        try:
-            subprocess.run(
-                ["pkill", "-9", "-P", str(process.pid)],
-                capture_output=True, timeout=15,
-            )
-        except Exception:
-            pass
-        process.kill()
+        kill_process_tree(process)
         duration = time.time() - start_time
         print(f"[{datetime.now()}] TIMEOUT: {script_path} took longer than the per-script limit.")
         return False, script_path, duration
     except Exception as e:
         print(f"[{datetime.now()}] EXCEPTION running {script_path}: {e}")
         return False, script_path, 0.0
+
+
+def _is_excluded(script_path: str, exclude: list[str]) -> bool:
+    """Whether ``--exclude`` names this script: by basename or by path substring."""
+    return any(exc and (exc in script_path or exc == os.path.basename(script_path)) for exc in exclude)
+
+
+def run_freshness_watcher(exclude: list[str]) -> bool | None:
+    """Run the data-freshness watcher once the pool is done; ``None`` when it did not run.
+
+    T-111: the watcher flags sources that failed to refresh THIS run, so it
+    must judge only after every ETL has finished writing. It used to compete
+    inside the 4-worker pool and could evaluate freshness while sources were
+    still running. It also runs BEFORE snapshot retention, so it never reads a
+    pruned tree.
+    """
+    freshness_script = "src/watchers/data_freshness_watcher.py"
+    if not os.path.exists(freshness_script) or _is_excluded(freshness_script, exclude):
+        return None
+    print(f"[{datetime.now()}] Running data freshness watcher (after the pool)...")
+    success, _path, _duration = run_script(freshness_script)
+    if success:
+        print(f"[{datetime.now()}] Data freshness watcher completed successfully.")
+    else:
+        print(f"[{datetime.now()}] Data freshness watcher failed. Check logs/data_freshness_watcher.log.")
+    return success
 
 
 def main():
@@ -210,7 +261,7 @@ def main():
     os.makedirs("logs", exist_ok=True)
 
     print(f"Starting ETL Orchestrator with {args.workers} workers at {datetime.now()}")
-    print(f"Found {len(ETL_SCRIPTS)} ETL scripts to run.")
+    print(f"Found {len(ETL_SCRIPTS)} ETL scripts to run, plus the data-freshness watcher after the pool.")
 
     start_time = time.time()
     success_count = 0
@@ -219,7 +270,7 @@ def main():
     excluded = []
     scripts = []
     for script in ETL_SCRIPTS:
-        if any(exc and (exc in script or exc == os.path.basename(script)) for exc in args.exclude):
+        if _is_excluded(script, args.exclude):
             excluded.append(script)
             continue
         scripts.append(script)
@@ -237,6 +288,15 @@ def main():
                 success_count += 1
             else:
                 fail_count += 1
+
+    # The watcher counts in the summary: "Successful: N" is every script of the
+    # cycle, not only the ones that ran in the pool.
+    freshness_ok = run_freshness_watcher(args.exclude)
+    if freshness_ok is not None:
+        if freshness_ok:
+            success_count += 1
+        else:
+            fail_count += 1
 
     total_duration = time.time() - start_time
     print("\n" + "=" * 50)

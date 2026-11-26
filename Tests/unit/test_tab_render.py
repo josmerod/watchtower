@@ -25,9 +25,12 @@ RENDERERS = [
     ("deals_tab", "render_deals_tab", []),
     ("benchmarks_tab", "render_benchmarks_tab", []),
     ("tech_radar_tab", "render_tech_radar_tab", ["tech-radar-plot"]),
+    ("markets_tab", "render_markets_tab", ["markets-portfolio-toggle", "markets-portfolio-table"]),
+    ("security_tab", "render_security_tab", []),
     ("games_tab", "render_games_tab", ["games-sub-tabs"]),
     ("notifications_tab", "render_notifications_tab", []),
     ("metrics_tab", "render_metrics_tab", ["metrics-table-container", "metrics-update-interval"]),
+    ("digest_tab", "render_digest_tab", ["digest-content"]),
 ]
 
 
@@ -56,3 +59,13 @@ def test_tab_renders(module_name, function_name, expected_fragments):
         pytest.skip("no local data for this component — empty state rendered")
     for fragment in expected_fragments:
         assert fragment in rendered, f"{module_name}.{function_name} missing '{fragment}'"
+
+
+def test_every_registered_tab_has_a_render_row():
+    """A tab wired in ``app.py`` without a row here would ship without this guard."""
+    from src.web.dashboard import app as dashboard_app
+
+    wired = {renderer.__name__ for renderer in dashboard_app._TAB_RENDERERS.values()}
+    covered = {function_name for _, function_name, _ in RENDERERS}
+
+    assert sorted(wired - covered) == [], "add these tabs to RENDERERS"

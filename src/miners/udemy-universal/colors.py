@@ -3,13 +3,33 @@
 This module initializes colorama and provides convenient shorthand
 variables for foreground, background, and style codes to be used
 for coloring terminal output.
+
+colorama is optional: in uv.lock it is only a Windows dependency, so on
+Linux (the CI runner, the production image) it is not installed. Without it
+every shorthand below is an empty string and the output is simply uncolored.
 """
 
 # TODO: Standardize the code with the other projects. Current code has been migrated from other project.
 
-from colorama import Back, Fore, Style, init
+# Optional dependency: colored terminal output.
+try:
+    from colorama import Back, Fore, Style, init
 
-init(autoreset=True)
+    init(autoreset=True)
+    HAS_COLORAMA = True
+except ImportError:
+    HAS_COLORAMA = False
+
+
+class _Plain:
+    """Stand-in for a colorama class: every attribute is an empty string."""
+
+    def __getattr__(self, name: str) -> str:
+        return ""
+
+
+if not HAS_COLORAMA:
+    Fore = Back = Style = _Plain()
 # colors foreground text:
 fc = Fore.CYAN
 fg = Fore.GREEN

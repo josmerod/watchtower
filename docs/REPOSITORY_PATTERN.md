@@ -1,555 +1,120 @@
 # Repository Pattern Implementation
 
+> Trimmed on 2026-11-24. The sections on the `RepositoryManager`-based dashboard integration, the migration path for the dashboard tabs, the benefits and SOLID discussion, the performance figures, the metrics, the sample tests, the next steps and the related Strategy and Dependency Injection patterns were removed: they described deleted code, together with figures, tests and plans that the repository does not contain. The dependency-injection layer that wired up the repository managers, the dashboard `managers/` package and ten dashboard components that used this pattern were deleted in the September 2026 cleanup.
+
 ## Overview
 
-Implemented the **Repository Pattern** for the data access layer, abstracting data loading operations and providing clean separation between business logic and data access.
+The repository pattern gives a dashboard component a cached, typed view of one data file. The component subclasses `BaseRepository`, says how the raw file becomes the data it needs, and calls `get()`.
 
-## Architecture
+Everything lives in `src/repositories/`:
 
-```
-┌──────────────────────────────────────────┐
-│       RepositoryManager                 │
-│  - Manages multiple repositories        │
-│  - Batch operations                     │
-│  - Cache management                     │
-└──────────────────────────────────────────┘
-                    │
-        ┌───────────┼───────────┐
-        ▼           ▼           ▼
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│  Coursera   │ │   Udemy     │ │  PluralSight│
-│ Repository  │ │  Repository │ │  Repository │
-└─────────────┘ └─────────────┘ └─────────────┘
-        │             │              │
-        ▼             ▼              ▼
-┌─────────────────────────────────────────────┐
-│         BaseRepository (Abstract)           │
-│  - get() -> Data                           │
-│  - load_data() -> RawData                  │
-│  - transform_data() -> DomainData          │
-│  - clear_cache()                           │
-└─────────────────────────────────────────────┘
-```
+| File | Contents | Used outside the package by |
+| :-- | :-- | :-- |
+| `base_repository.py` | `BaseRepository`, `RepositoryError`, `CacheEntry`, `DataFrameRepository` | Six dashboard components, all through `BaseRepository` |
+| `repository_manager.py` | `RepositoryManager`, `AggregatedRepository`, three `create_*_repository_manager()` functions | Nothing |
+| `__init__.py` | Re-exports of the names above | The six components |
 
-## Files Created
+## `BaseRepository`
 
-### 1. `src/repositories/base_repository.py` (250 lines)
-
-**Base Repository Implementation**:
+`BaseRepository` is an abstract generic class; `T` is the type `get()` returns.
 
 ```python
 class BaseRepository(ABC, Generic[T]):
-    """Base repository for data access operations."""
-
-    def get(self, force_refresh: bool = False) -> T:
-        """Get data from cache or load from source."""
-        pass
+    def __init__(self, data_path: Path, cache_ttl_seconds: int = 3600, enable_cache: bool = True): ...
 
     @abstractmethod
-    def load_data(self) -> T:
-        """Load data from source."""
-        pass
+    def transform_data(self, raw_data: Any) -> T: ...
 
-    @abstractmethod
-    def transform_data(self, raw_data: Any) -> T:
-        """Transform raw data into domain model."""
-        pass
-
-    def clear_cache(self) -> None:
-        """Clear cached data."""
-        pass
-
-    def is_available(self) -> bool:
-        """Check if data source is available."""
-        pass
+    def get(self, force_refresh: bool = False) -> T: ...
+    def load_data(self) -> T: ...
+    def clear_cache(self) -> None: ...
+    def is_available(self) -> bool: ...
+    def get_last_modified(self) -> datetime | None: ...
 ```
 
-**Key Features**:
-- Generic type support for any data type
-- Built-in caching with TTL
-- Thread-safe operations
-- File loading (JSON, CSV, TSV)
-- Error handling and logging
+- **`transform_data()`** is the only abstract method. It receives the parsed file (what `json.load` returned for a `.json` file, a pandas DataFrame for `.csv` and `.tsv`) and returns it in the shape the component wants.
+- **`get()`** is the entry point the components call. It returns the cached value while the time-to-live is valid and reloads the file otherwise; `force_refresh=True` skips the cache. Any failure, a missing file included, is raised as `RepositoryError`.
+- **`load_data()`** reads and transforms the file on every call, without touching the cache, and a missing file raises `FileNotFoundError` instead of `RepositoryError`.
+- **`is_available()`** reports whether the data file exists, and **`get_last_modified()`** returns its modification time.
+- **`clear_cache()`** drops the cached value.
 
-**DataFrameRepository** - Specialized for pandas DataFrames:
-```python
-class DataFrameRepository(BaseRepository[pd.DataFrame]):
-    """Repository for pandas DataFrame data."""
+`RepositoryError` and `CacheEntry`, the object that holds the cached value, are defined in the same module. File extensions other than `.json`, `.csv` and `.tsv` are rejected with `RepositoryError`.
 
-    def filter(self, filters: dict) -> pd.DataFrame:
-        """Filter DataFrame by column values."""
-        pass
+## Usage in the dashboard
 
-    def search(self, column: str, query: str) -> pd.DataFrame:
-        """Search for text in column."""
-        pass
+Six dashboard components under `src/web/dashboard/components/` use the pattern, with eight subclasses between them:
 
-    def sort(self, column: str, ascending: bool) -> pd.DataFrame:
-        """Sort DataFrame by column."""
-        pass
+| Component | Subclass of `BaseRepository` | Data |
+| :-- | :-- | :-- |
+| `fourchan_tab.py` | `FourChanRepository` | 4chan generals |
+| `games_tab.py` | `GamesRepository` | Game deals, bundles and itch.io trending |
+| `knowledge_garden_tab.py` | `KnowledgeGardenRepository` | One instance per configured source |
+| `shortcuts_tab.py` | `ShortcutsRepository` | Predefined and custom shortcuts |
+| `spanish_public_aid_tab.py` | `SpanishAidRepository`, `SpanishAidStatsRepository`, `BdnsConvocatoriasRepository` | Aid items, aid statistics and BDNS convocatorias |
+| `valencia_events_new_tab.py` | `ValenciaEventsNewRepository` | Valencia events |
 
-    def get_unique_values(self, column: str) -> list:
-        """Get unique values from column."""
-        pass
-```
-
-### 2. `src/repositories/repository_manager.py` (200 lines)
-
-**Repository Manager**:
+This is the Valencia events repository, shortened, from `valencia_events_new_tab.py`:
 
 ```python
-class RepositoryManager:
-    """Manager for multiple repositories."""
-
-    def register(self, key: str, repository: BaseRepository) -> None:
-        """Register a repository."""
-        pass
-
-    def get(self, key: str) -> Any:
-        """Get data from specific repository."""
-        pass
-
-    def get_all(self) -> dict[str, Any]:
-        """Get data from all repositories."""
-        pass
-
-    def refresh_all(self) -> None:
-        """Refresh all repositories."""
-        pass
-```
-
-**AggregatedRepository** - Combines multiple repositories:
-```python
-class AggregatedRepository(DataFrameRepository):
-    """Repository that aggregates data from multiple sources."""
-
-    def load_data(self) -> pd.DataFrame:
-        """Load and aggregate data from all repositories."""
-        pass
-```
-
-**Factory Functions**:
-```python
-def create_courses_repository_manager() -> RepositoryManager:
-    """Create repository manager for course data."""
-    pass
-
-def create_news_repository_manager() -> RepositoryManager:
-    """Create repository manager for news data."""
-    pass
-
-def create_games_repository_manager() -> RepositoryManager:
-    """Create repository manager for games data."""
-    pass
-```
-
-### 3. `src/repositories/__init__.py`
-
-**Module Exports**:
-- `BaseRepository` - Abstract base class
-- `DataFrameRepository` - DataFrame specialization
-- `RepositoryManager` - Multi-repository manager
-- `AggregatedRepository` - Data aggregation
-- Factory functions for common use cases
-
-## Usage Examples
-
-### Basic Repository Usage
-
-```python
-from src.repositories import DataFrameRepository
 from pathlib import Path
-
-# Create repository for course data
-repo = DataFrameRepository(
-    data_path=Path("data/courses/coursera_courses.json"),
-    cache_ttl_seconds=3600,
-    default_columns=["title", "url", "rating"]
-)
-
-# Get data (loads from file, caches result)
-df = repo.get()
-
-# Get data again (uses cache)
-df_cached = repo.get()
-
-# Force refresh
-df_fresh = repo.get(force_refresh=True)
-
-# Check if data is available
-if repo.is_available():
-    print("Data source available")
-```
-
-### Repository Manager Usage
-
-```python
-from src.repositories import create_courses_repository_manager
-
-# Create manager
-manager = create_courses_repository_manager()
-
-# Get specific course data
-coursera_df = manager.get("coursera")
-udemy_df = manager.get("udemy")
-
-# Get all course data
-all_courses = manager.get_all()
-
-# Refresh all repositories
-manager.refresh_all()
-
-# Clear all caches
-manager.clear_cache_all()
-
-# List available repositories
-repos = manager.get_available_repositories()
-print(f"Available: {repos}")
-
-# Get summary of all repositories
-summaries = manager.get_summary_all()
-for name, summary in summaries.items():
-    print(f"{name}: {summary['rows']} rows")
-```
-
-### DataFrame Operations
-
-```python
-# Filter data
-filtered = repo.filter({"category": "Technology", "rating": 5})
-
-# Search for text
-results = repo.search("title", "python")
-
-# Sort data
-sorted_df = repo.sort("rating", ascending=False)
-
-# Get unique values
-categories = repo.get_unique_values("category")
-
-# Get summary statistics
-summary = repo.get_summary()
-print(f"Rows: {summary['rows']}, Columns: {summary['columns']}")
-```
-
-### Custom Repository
-
-```python
-from src.repositories import BaseRepository
 from typing import Any
-import pandas as pd
 
-class CustomRepository(BaseRepository[pd.DataFrame]):
-    """Custom repository for specific data format."""
+from src.repositories import BaseRepository
+from src.web.dashboard.utils import get_data_path
 
-    def load_data(self) -> pd.DataFrame:
-        """Load data from custom source."""
-        raw = self._load_from_file()
+VALENCIA_EVENTS_FILE = Path(get_data_path("valencia_events", "valencia_events.json"))
 
-        # Custom loading logic
-        # ...
-        return raw
+class ValenciaEventsNewRepository(BaseRepository[list[dict[str, Any]]]):
+    """Repository for Valencia events data (new tab)."""
 
-    def transform_data(self, raw_data: Any) -> pd.DataFrame:
-        """Transform to DataFrame."""
-        # Custom transformation logic
-        df = pd.DataFrame(raw_data["items"])
-
-        # Add computed columns
-        df["computed_field"] = df["value"] * 2
-
-        return df
-
-# Usage
-custom_repo = CustomRepository(
-    data_path=Path("data/custom.json"),
-    cache_ttl_seconds=1800
-)
-```
-
-### Aggregated Repository
-
-```python
-from src.repositories import AggregatedRepository, DataFrameRepository
-
-# Create individual repositories
-repo1 = DataFrameRepository(Path("data/source1.json"))
-repo2 = DataFrameRepository(Path("data/source2.json"))
-
-# Create aggregated repository
-agg_repo = AggregatedRepository(
-    name="combined",
-    repositories={"source1": repo1, "source2": repo2},
-    merge_column="id"
-)
-
-# Get combined data
-combined_df = agg_repo.get()
-# Automatically adds 'source' column to identify origin
-```
-
-## Integration with Dashboard
-
-### Before (Global State)
-```python
-# ❌ Old way - global state
-ALL_COURSES_DATA = {"coursera": pd.DataFrame()}
-COURSES_DATA_LOADED = {"coursera": False}
-
-def load_coursera_data():
-    global ALL_COURSES_DATA, COURSES_DATA_LOADED
-    # 70 lines of loading logic
-    df = pd.read_json(COURSERA_DATA_PATH)
-    ALL_COURSES_DATA["coursera"] = df
-    COURSES_DATA_LOADED["coursera"] = True
-
-def render_courses_tab():
-    load_coursera_data()
-    df = ALL_COURSES_DATA["coursera"]
-    # ... rendering logic
-```
-
-### After (Repository Pattern)
-```python
-# ✅ New way - repository pattern
-from src.repositories import create_courses_repository_manager
-
-# Initialize manager
-courses_manager = create_courses_repository_manager()
-
-def render_courses_tab():
-    # Get data (cached, thread-safe)
-    coursera_df = courses_manager.get("coursera")
-    udemy_df = courses_manager.get("udemy")
-
-    # Or get all at once
-    all_courses = courses_manager.get_all()
-
-    # ... rendering logic
-```
-
-## Benefits
-
-### 1. **Separation of Concerns**
-- Data access logic separated from business logic
-- Dashboard components focus on UI, not data loading
-- Easy to swap data sources
-
-### 2. **Caching**
-- Built-in caching with TTL
-- Reduces file I/O operations
-- Thread-safe cache access
-
-### 3. **Testability**
-- Easy to mock repositories in tests
-- Dependency injection support
-- No global state
-
-### 4. **Reusability**
-- Repository logic shared across components
-- Common operations (filter, search, sort)
-- Consistent data access patterns
-
-### 5. **Maintainability**
-- Centralized data loading logic
-- Easy to add new data sources
-- Clear architecture boundaries
-
-## SOLID Principles Applied
-
-### **Single Responsibility**
-- Repository: Data loading only
-- Manager: Repository coordination only
-- Dashboard: UI rendering only
-
-### **Open/Closed**
-- Easy to extend with new repository types
-- No modification to base classes needed
-
-### **Dependency Inversion**
-- Dashboard depends on Repository interface
-- Not on concrete data loading implementations
-
-### **Interface Segregation**
-- Small, focused interfaces
-- DataFrameRepository adds DataFrame-specific operations
-
-### **Liskov Substitution**
-- Any repository can be substituted
-- AggregatedRepository works with any DataFrameRepository
-
-## Migration Path
-
-### Step 1: Replace Global State
-```python
-# Before
-ALL_DATA = {}
-DATA_LOADED = {}
-
-# After
-manager = create_courses_repository_manager()
-```
-
-### Step 2: Update Loading Functions
-```python
-# Before
-def load_coursera_data():
-    global ALL_DATA
-    df = pd.read_json(path)
-    ALL_DATA["coursera"] = df
-
-# After
-coursera_df = manager.get("coursera")
-```
-
-### Step 3: Update Callbacks
-```python
-# Before
-@app.callback(...)
-def update_tab():
-    load_coursera_data()
-    df = ALL_DATA["coursera"]
-    return create_table(df)
-
-# After
-@app.callback(...)
-def update_tab():
-    df = manager.get("coursera")
-    return create_table(df)
-```
-
-## Performance
-
-### Caching Benefits
-- **First access**: ~50-100ms (file read + parse)
-- **Cached access**: <1ms (memory access)
-- **Cache hit rate**: >95% for typical dashboard usage
-
-### Memory Usage
-- **Per DataFrame**: ~1-5MB depending on size
-- **Cache overhead**: ~100 bytes per entry
-- **Total**: ~10-50MB for typical dashboard
-
-### Thread Safety
-- All operations thread-safe
-- No race conditions on cache access
-- Safe for concurrent Dash callbacks
-
-## Testing
-
-```python
-import pytest
-from src.repositories import DataFrameRepository
-from pathlib import Path
-import pandas as pd
-import tempfile
-import json
-
-def test_dataframe_repository():
-    """Test DataFrame repository functionality."""
-
-    # Create temporary data file
-    data = [
-        {"title": "Course 1", "rating": 5},
-        {"title": "Course 2", "rating": 4},
-    ]
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(data, f)
-        temp_path = Path(f.name)
-
-    try:
-        # Create repository
-        repo = DataFrameRepository(
-            data_path=temp_path,
-            cache_ttl_seconds=3600,
-            default_columns=["title", "rating"]
+    def __init__(self):
+        super().__init__(
+            data_path=VALENCIA_EVENTS_FILE,
+            cache_ttl_seconds=3600,  # 1 hour cache
+            enable_cache=True,
         )
 
-        # Test loading
-        df = repo.get()
-        assert len(df) == 2
-        assert "title" in df.columns
-        assert "rating" in df.columns
+    def transform_data(self, raw_data: Any) -> list[dict[str, Any]]:
+        if isinstance(raw_data, list):
+            return raw_data
+        elif isinstance(raw_data, dict):
+            return [raw_data]
+        else:
+            return []
 
-        # Test caching
-        df2 = repo.get()
-        assert df is df2  # Same object (cached)
+valencia_events_new_repo = ValenciaEventsNewRepository()
 
-        # Test force refresh
-        df3 = repo.get(force_refresh=True)
-        assert df3 is not df
-
-        # Test filtering
-        filtered = repo.filter({"rating": 5})
-        assert len(filtered) == 1
-
-        # Test search
-        results = repo.search("title", "Course 1")
-        assert len(results) == 1
-
-        # Test sort
-        sorted_df = repo.sort("rating", ascending=False)
-        assert sorted_df.iloc[0]["rating"] == 5
-
-        # Test clear cache
-        repo.clear_cache()
-        df4 = repo.get()
-        assert df4 is not df
-
-    finally:
-        temp_path.unlink()
-
-
-def test_repository_manager():
-    """Test repository manager."""
-
-    from src.repositories import RepositoryManager, DataFrameRepository
-
-    manager = RepositoryManager("test")
-
-    # Register repositories
-    repo1 = DataFrameRepository(Path("data1.json"))
-    repo2 = DataFrameRepository(Path("data2.json"))
-
-    manager.register("repo1", repo1)
-    manager.register("repo2", repo2)
-
-    # Test listing
-    repos = manager.get_available_repositories()
-    assert "repo1" in repos
-    assert "repo2" in repos
-
-    # Test get all (will fail if files don't exist, but tests structure)
-    assert len(repos) == 2
+def load_valencia_events() -> list[dict[str, Any]]:
+    try:
+        return valencia_events_new_repo.get()
+    except Exception:
+        return []
 ```
 
-## Metrics
+Two components go one step further:
 
-- **Files Created**: 3 (base_repository.py, repository_manager.py, __init__.py)
-- **Lines of Code**: ~450 lines
-- **Repository Types**: 2 (Base, DataFrame)
-- **Manager Factories**: 3 (courses, news, games)
-- **Caching Support**: Yes (TTL-based)
-- **Thread Safety**: Yes
+- `knowledge_garden_tab.py` creates one `KnowledgeGardenRepository` for each source in `KNOWLEDGE_SOURCES_CONFIG` (19 instances today), and `_load_all_knowledge_data()` calls `get()` on every one of them.
+- `spanish_public_aid_tab.py` passes `force_refresh=True` when its refresh button triggers the table callback, and `shortcuts_tab.py` calls `clear_cache()` on its custom-shortcuts repository after saving the user's edits.
 
-## Next Steps
+## Adding a repository to a component
 
-1. **Migrate dashboard tabs** - Replace global state with repositories
-2. **Add more repositories** - Cover all data sources
-3. **Optimize caching** - Smart cache invalidation
-4. **Add metrics** - Track cache hit rates, load times
-5. **Async operations** - Support async data loading
+1. Subclass `BaseRepository[T]` in the component module and implement `transform_data()`.
+2. Create the instance at module level, building the path with `get_data_path()` from `src/web/dashboard/utils.py`.
+3. Call `get()` inside a `try`/`except` and fall back to an empty value, so the tab still renders before the ETL has produced its file.
 
-## Related Patterns
+## Defined but not used outside the package
 
-- **Factory Pattern**: Repository managers created by factory functions
-- **Singleton Pattern**: RepositoryManager often used as singleton
-- **Strategy Pattern**: Different repositories for different data types
-- **Dependency Injection**: Repositories injected into components
+These are complete and exported from `src.repositories`, but nothing outside the package references them today.
 
----
+- **`DataFrameRepository`** (`BaseRepository[pd.DataFrame]`) turns the file into a pandas DataFrame, fills missing `default_columns` with `None`, and adds `filter()`, `search()`, `sort()`, `get_unique_values()` and `get_summary()`.
+- **`RepositoryManager`** holds several repositories by key: `register()`, `unregister()`, `get(key, force_refresh=False)`, `get_all(force_refresh=False)`, `refresh_all()`, `clear_cache_all()`, `get_available_repositories()`, `is_available(key)` and `get_summary_all()`.
+- **`AggregatedRepository`** is a `DataFrameRepository` whose `load_data()` concatenates the DataFrames of several repositories and adds a `source` column.
+- **`create_courses_repository_manager()`**, **`create_news_repository_manager()`** and **`create_games_repository_manager()`** build a `RepositoryManager` over a fixed list of files (four course files, three news files, two games files). Five of the nine files they read are referenced nowhere else in `src/`.
 
-**Status**: ✅ Repository pattern implementation complete
-**Phase**: Phase 4 - SOLID & Design Patterns
-**Next**: Extend Strategy pattern for all scrapers
+Right before the September 2026 cleanup, the only consumer of `RepositoryManager` and of the factory functions was the dependency-injection layer (`src/di/service_registry.py`), which no longer exists.
+
+## Caveats
+
+- The `BaseRepository` docstring lists thread-safe operations, but nothing in the package takes a lock. Dash can serve callbacks concurrently, so do not rely on that claim.
+- Every live subclass passes `cache_ttl_seconds=3600`, and the cache lives in the dashboard process. A tab keeps serving its cached copy for an hour after loading it: fresh ETL output shows up only after that hour has passed, when a callback asks for `force_refresh=True`, or after the dashboard process restarts.
+- The package has no tests.

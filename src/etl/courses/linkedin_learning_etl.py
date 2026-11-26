@@ -193,6 +193,7 @@ class LinkedInLearningETL(BaseETL[dict[str, Any], LinkedInLearningCourseModel]):
                 await page.wait_for_timeout(3000)
 
                 # Scrape the LinkedIn Learning provider page
+                assert self.max_pages is not None  # set by _determine_max_pages
                 for page_num in range(1, self.max_pages + 1):
                     url = f"{self.base_url}?sort=created-down&page={page_num}"
                     self.logger.info("Fetching page %d: %s", page_num, url)

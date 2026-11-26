@@ -31,10 +31,13 @@ RUN uv sync --frozen --no-dev
 FROM python:3.11-slim
 
 # Install runtime dependencies, including browser libraries required by Playwright-backed ETLs.
+# libatomic1: the node binary bundled with Playwright (>= 1.65) needs it, and
+# the slim base image does not ship it — `playwright install` cannot even start
 RUN apt-get update && apt-get install -y \
     bash \
     curl \
     supervisor \
+    libatomic1 \
     libglib2.0-0 \
     libnss3 \
     libnspr4 \

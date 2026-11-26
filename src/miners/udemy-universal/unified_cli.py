@@ -12,21 +12,18 @@ import os
 import sys
 import time
 
-# Add the current directory to Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 # Import enhanced modules
 try:
     # Import original modules
-    from base import VERSION, Scraper, Udemy, scraper_dict
-    from cli import create_scraping_thread, main_extract
-    from config_validator import ConfigValidator, load_and_validate_config
-    from cookie_manager import CookieManager, detect_browsers
-    from enhanced_filtering import EnhancedFilter
-    from enroll import display_results, handle_login, main_enroll
-    from logger import create_metrics_logger, get_logger, setup_structured_logging
-    from statistics_reporter import StatisticsReporter, end_session, start_session
-    from update_checker import UpdateChecker, display_update_notification
+    from .base import VERSION, Scraper, Udemy, scraper_dict
+    from .cli import create_scraping_thread, main_extract
+    from .config_validator import ConfigValidator, load_and_validate_config
+    from .cookie_manager import CookieManager, detect_browsers
+    from .enhanced_filtering import EnhancedFilter
+    from .enroll import display_results, handle_login, main_enroll
+    from .logger import create_metrics_logger, get_logger, setup_structured_logging
+    from .statistics_reporter import StatisticsReporter, end_session, start_session
+    from .update_checker import UpdateChecker, display_update_notification
 
     ENHANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
@@ -34,10 +31,10 @@ except ImportError as e:
     ENHANCED_FEATURES_AVAILABLE = False
 
     # Import basic modules
-    from base import VERSION, Scraper, Udemy, scraper_dict
-    from cli import create_scraping_thread
-    from enroll import display_results, handle_login
-    from logger import get_logger
+    from .base import VERSION, Scraper, Udemy, scraper_dict
+    from .cli import create_scraping_thread
+    from .enroll import display_results, handle_login
+    from .logger import get_logger
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -419,7 +416,7 @@ Enhanced Features: {"Available" if self.enhanced_features else "Limited"}
                     successful_data[site] = data
                     if self.enhanced_features:
                         # Record site activity
-                        from statistics_reporter import record_site_activity
+                        from .statistics_reporter import record_site_activity
 
                         record_site_activity(site, len(data), 0.0, 0)
 

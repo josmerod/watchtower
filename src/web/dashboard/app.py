@@ -428,7 +428,7 @@ curl -s "https://watchtower-api.josmerod.es/api/v1/news?limit=1"
 curl -s https://watchtower-api.josmerod.es/api/v1/sources
 
 # Filter one category by source
-curl -s "https://watchtower-api.josmerod.es/api/v1/ecommerce?source=gumroad_scraper&amp;limit=5"</code></pre>
+curl -s "https://watchtower-api.josmerod.es/api/v1/news?source=hackernews&amp;limit=5"</code></pre>
     </section>
 
     <section>
@@ -740,4 +740,4 @@ if __name__ == "__main__":
     # If this script (app.py) is run directly, ensure CWD allows components to find their data.
     # Typically, one would run `run_watchtower_dashboard.py` from the project root.
 
-    app.run(debug=False, port=8050)  # Default Dash port for direct app run
+    app.run(debug=False, port=7780)  # same default as run_watchtower_dashboard.py

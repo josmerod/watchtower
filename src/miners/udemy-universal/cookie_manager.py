@@ -13,28 +13,29 @@ import tempfile
 from datetime import datetime
 from typing import Any
 
+# Optional dependencies: each feature degrades gracefully when a lib is missing.
 try:
     import keyring
 
-    KEYRING_AVAILABLE = True
+    HAS_KEYRING = True
 except ImportError:
-    KEYRING_AVAILABLE = False
+    HAS_KEYRING = False
 
 try:
     import browser_cookie3
 
-    BROWSER_COOKIE3_AVAILABLE = True
+    HAS_BROWSER_COOKIE3 = True
 except ImportError:
-    BROWSER_COOKIE3_AVAILABLE = False
+    HAS_BROWSER_COOKIE3 = False
 
 try:
     import browserforge
 
-    BROWSERFORGE_AVAILABLE = True
+    HAS_BROWSERFORGE = True
 except ImportError:
-    BROWSERFORGE_AVAILABLE = False
+    HAS_BROWSERFORGE = False
 
-from logger import get_logger
+from .logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -201,7 +202,7 @@ class CookieManager:
         Returns:
             Dictionary of cookies or None if failed
         """
-        if not BROWSER_COOKIE3_AVAILABLE:
+        if not HAS_BROWSER_COOKIE3:
             self.logger.warning("browser_cookie3 not available")
             return None
 
@@ -536,8 +537,8 @@ class CookieManager:
             "detected_browsers": detected,
             "preferred_browser": self.preferred_browser,
             "system": self.system,
-            "browser_cookie3_available": BROWSER_COOKIE3_AVAILABLE,
-            "keyring_available": KEYRING_AVAILABLE,
+            "browser_cookie3_available": HAS_BROWSER_COOKIE3,
+            "keyring_available": HAS_KEYRING,
             "browser_paths": self.browser_paths,
         }
 

@@ -12,14 +12,16 @@ link-aggregator), Phoronix (Linux/hardware), and the Unraid community forums
 source), ServeTheHome (server hardware) and Xataka (Spanish tech media),
 and the T-082 additions: Lemmy communities (federated self-hosting pulse),
 Product Hunt (product launches) and the Azure blog (cloud). The GCP blog
-was probed too but all of its feed URLs now serve HTML, not RSS.
+was probed too but all of its feed URLs now serve HTML, not RSS. The T-048
+TR-F2 momentum panel tracks weekly mention momentum per technology from the
+M5 snapshot history (spec 13).
 """
 
 import json
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 import dash
@@ -465,6 +467,10 @@ TECH_DICTIONARY: dict[str, str] = {
 _QUADRANT_ORDER = ["Techniques", "Tools", "Platforms", "Languages & Frameworks"]
 _RING_ORDER = ["Adopt", "Trial", "Assess", "Hold"]
 
+# Precompiled word-boundary matchers for the curated dictionary — shared by the
+# TR-F1 radar extraction and the TR-F2 momentum scan (single source of truth).
+_TECH_MATCHERS: dict[str, re.Pattern[str]] = {tech: re.compile(rf"\b{re.escape(tech)}\b") for tech in TECH_DICTIONARY}
+
 
 def _extract_tech_mentions(all_data: dict[str, list[dict[str, Any]]] | None = None) -> list[dict[str, Any]]:
     """Scan every radar source for dictionary-tech mentions.
@@ -480,7 +486,7 @@ def _extract_tech_mentions(all_data: dict[str, list[dict[str, Any]]] | None = No
             article = _normalize_article(raw)
             text = f"{article.get('title', '')} {article.get('summary', '')}".lower()
             for tech, quadrant in TECH_DICTIONARY.items():
-                if re.search(rf"\b{re.escape(tech)}\b", text):
+                if _TECH_MATCHERS[tech].search(text):
                     entry = combined.setdefault(
                         tech,
                         {"tech": tech, "quadrant": quadrant, "mentions": 0, "sources": set(), "examples": []},
@@ -568,6 +574,278 @@ def _render_radar_plot() -> dbc.Card:
             ),
         ],
         className="mb-3",
+    )
+
+
+# ---------------------------------------------------------------------------
+# TR-F2 momentum (spec 13, T-048): weekly mentions per technology vs the
+# 4-week moving average, from the M5 snapshot history. Each timestamped
+# snapshot ({prefix}_{YYYYMMDD}_{HHMMSS}.json) is one observation; snapshots
+# within a week are de-duplicated by article link so a story repeated across
+# daily ETL runs counts once per week. "This week" = the week of the newest
+# snapshot found (local data may lag the wall clock).
+# ---------------------------------------------------------------------------
+
+# Mean of the previous N weekly slots (spec: media móvil de 4 semanas).
+MOMENTUM_BASELINE_WEEKS = 4
+# |delta| in % below this counts as flat (noise band).
+MOMENTUM_DELTA_THRESHOLD_PCT = 20.0
+# Minimum baseline mentions/week before a % delta is judged at all —
+# 1 → 3 mentions (+200%) is noise, not momentum.
+MOMENTUM_MIN_BASELINE = 2.0
+# Noise floor over the whole window: techs with fewer total mentions are skipped.
+MOMENTUM_MIN_MENTIONS = 3
+# Weeks with snapshot coverage needed before momentum is shown at all.
+MOMENTUM_MIN_HISTORY_WEEKS = 2
+# Window read from disk: current week + the previous 4 (older snapshots are
+# skipped by filename timestamp, so stale history costs nothing).
+MOMENTUM_WINDOW_WEEKS = MOMENTUM_BASELINE_WEEKS + 1
+# Entries shown per list (Subiendo 🔺 / Bajando 🔻).
+MOMENTUM_TOP_N = 5
+
+# The snapshot scan is heavier than the latest-file load (up to ~5 weeks x
+# every source), so it gets its own longer cache; the refresh button bypasses it.
+_MOMENTUM_CACHE = TTLDataCache(ttl_seconds=1800)
+
+_MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def _week_start(moment: datetime) -> str:
+    """ISO date (YYYY-MM-DD) of the Monday of ``moment``'s week (bucket key)."""
+    monday = moment - timedelta(days=moment.weekday())
+    return monday.strftime("%Y-%m-%d")
+
+
+def _week_label(week_key: str) -> str:
+    """Compact Spanish label for a week-start ISO date, e.g. '2026-08-24' -> '24 ago'."""
+    try:
+        moment = datetime.strptime(week_key, "%Y-%m-%d")
+    except ValueError:
+        return week_key
+    return f"{moment.day} {_MESES[moment.month - 1]}"
+
+
+def _momentum_snapshot_targets() -> list[tuple[str, str]]:
+    """(dir, prefix) pairs whose timestamped snapshots feed the momentum scan.
+
+    Derived from the RADAR_SOURCES data files (``news/google_ai_blog_latest.json``
+    -> ``("news", "google_ai_blog")``; the KDNuggets live file ``kdnuggets/kdnuggets.json``
+    -> ``("kdnuggets", "kdnuggets")``).
+    """
+    targets: list[tuple[str, str]] = []
+    for source in RADAR_SOURCES:
+        for file_rel in _source_files(source):
+            if not file_rel:
+                continue
+            dir_rel, name = os.path.split(file_rel)
+            prefix = os.path.splitext(name)[0]
+            if prefix.endswith("_latest"):
+                prefix = prefix[: -len("_latest")]
+            targets.append((dir_rel, prefix))
+    return list(dict.fromkeys(targets))  # de-dup, order preserved
+
+
+def _scan_snapshot_mentions() -> dict[str, Any]:
+    """Count dictionary-tech mentions per weekly bucket across radar snapshots.
+
+    Only snapshots inside the last ``MOMENTUM_WINDOW_WEEKS`` weeks (relative to
+    the newest snapshot found) are read — filename timestamps gate the reads.
+    Articles are de-duplicated per (source prefix, week) by link/title so daily
+    re-runs don't inflate counts. Returns the week keys (Mondays, ascending),
+    per-tech weekly counts and per-week coverage (any snapshot in that week).
+    """
+    empty: dict[str, Any] = {"weeks": [], "counts": {}, "coverage": [], "weeks_with_data": 0}
+    snapshots: list[tuple[datetime, str, str]] = []  # (ts, rel file path, prefix)
+    root_data = os.path.join(get_project_root(), "data")
+    for dir_rel, prefix in _momentum_snapshot_targets():
+        folder = os.path.join(root_data, dir_rel)
+        if not os.path.isdir(folder):
+            continue
+        for name in os.listdir(folder):
+            match = re.fullmatch(rf"{re.escape(prefix)}_(\d{{8}})_(\d{{6}})\.json", name)
+            if not match:
+                continue
+            ts = datetime.strptime(match.group(1) + match.group(2), "%Y%m%d%H%M%S")
+            snapshots.append((ts, f"{dir_rel}/{name}" if dir_rel else name, prefix))
+    if not snapshots:
+        return empty
+    snapshots.sort(key=lambda s: s[0])
+    ref_date = datetime.strptime(_week_start(snapshots[-1][0]), "%Y-%m-%d")
+    weeks = [(ref_date - timedelta(days=7 * i)).strftime("%Y-%m-%d") for i in range(MOMENTUM_WINDOW_WEEKS - 1, -1, -1)]
+    slot_index = {week: i for i, week in enumerate(weeks)}
+    cutoff = ref_date - timedelta(days=7 * (MOMENTUM_WINDOW_WEEKS - 1))
+    coverage = [False] * MOMENTUM_WINDOW_WEEKS
+    counts: dict[str, list[int]] = {}
+    seen: set[tuple[str, str, str]] = set()  # (prefix, week, article key)
+    for ts, file_rel, prefix in snapshots:
+        if ts < cutoff:
+            continue  # older than the window — never read
+        idx = slot_index[_week_start(ts)]
+        coverage[idx] = True
+        for raw in _read_file(file_rel):
+            article = _normalize_article(raw)
+            key = article.get("link") or article.get("url") or article.get("title", "")
+            dedup = (prefix, weeks[idx], str(key))
+            if not key or dedup in seen:
+                continue
+            seen.add(dedup)
+            text = f"{article.get('title', '')} {article.get('summary', '')}".lower()
+            for tech, matcher in _TECH_MATCHERS.items():
+                if matcher.search(text):
+                    counts.setdefault(tech, [0] * MOMENTUM_WINDOW_WEEKS)[idx] += 1
+    return {"weeks": weeks, "counts": counts, "coverage": coverage, "weeks_with_data": sum(coverage)}
+
+
+def _load_momentum_series(force_refresh: bool = False) -> dict[str, Any]:
+    """Load (and cache) the weekly mention series backing the momentum panel."""
+    return _MOMENTUM_CACHE.get(_scan_snapshot_mentions, force_refresh=force_refresh)
+
+
+def compute_momentum(
+    weeks: list[str],
+    counts: dict[str, list[int]],
+    coverage: list[bool] | None = None,
+    baseline_weeks: int = MOMENTUM_BASELINE_WEEKS,
+    delta_threshold_pct: float = MOMENTUM_DELTA_THRESHOLD_PCT,
+    min_baseline: float = MOMENTUM_MIN_BASELINE,
+    min_mentions: int = MOMENTUM_MIN_MENTIONS,
+) -> list[dict[str, Any]]:
+    """Pure TR-F2 core: current-week mentions vs the 4-week moving average.
+
+    Args:
+        weeks: Week bucket keys (Monday ISO dates), oldest first; the last one
+            is "this week" (the newest week with snapshot data).
+        counts: ``{tech: weekly mentions}`` aligned with ``weeks`` — shorter
+            lists are zero-padded on the left, longer ones truncated.
+        coverage: Which week slots actually have snapshot data. Slots without
+            any snapshot are excluded from the baseline mean instead of being
+            read as zero, so retention gaps don't deflate every baseline;
+            ``None`` treats every slot as covered.
+        baseline_weeks: Size of the moving-average window.
+        delta_threshold_pct: |delta| % above which a tech rises/falls.
+        min_baseline: Minimum baseline mentions/week to judge a % delta.
+        min_mentions: Total-window mention floor (noise filter).
+
+    Returns:
+        One record per qualifying technology: ``current``, ``baseline``,
+        ``delta_pct`` (None for "new" — zero baseline), ``direction``
+        (rising/falling/flat/new), ``baseline_weeks`` (covered slots behind the
+        mean) and ``window_total``.
+    """
+    total = len(weeks)
+    if total == 0:
+        return []
+    cov = list(coverage) if coverage is not None and len(coverage) == total else [True] * total
+    first_baseline = max(0, total - 1 - baseline_weeks)
+    records: list[dict[str, Any]] = []
+    for tech, series in counts.items():
+        padded = ([0] * (total - len(series)) + list(series))[-total:]
+        current = padded[-1]
+        baseline_slots = [padded[i] for i in range(first_baseline, total - 1) if cov[i]]
+        window_total = sum(padded)
+        if window_total < min_mentions:
+            continue
+        baseline = sum(baseline_slots) / len(baseline_slots) if baseline_slots else 0.0
+        if baseline == 0 and current == 0:
+            continue
+        if baseline == 0:
+            direction, delta_pct = "new", None
+        else:
+            delta_pct = round((current - baseline) / baseline * 100, 1)
+            if baseline < min_baseline:
+                direction = "flat"  # low-signal baseline: % deltas would be noise
+            elif delta_pct >= delta_threshold_pct:
+                direction = "rising"
+            elif delta_pct <= -delta_threshold_pct:
+                direction = "falling"
+            else:
+                direction = "flat"
+        records.append(
+            {
+                "tech": tech,
+                "current": current,
+                "baseline": round(baseline, 1),
+                "baseline_weeks": len(baseline_slots),
+                "delta_pct": delta_pct,
+                "direction": direction,
+                "window_total": window_total,
+            }
+        )
+    records.sort(key=lambda r: (-r["current"], -r["window_total"], r["tech"]))
+    return records
+
+
+def _momentum_lists(records: list[dict[str, Any]], top_n: int = MOMENTUM_TOP_N) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Split momentum records into the ranked Subiendo/Bajando shortlists.
+
+    Risers: brand-new entries first (by current mentions), then biggest % jump.
+    Fallers: steepest % drop first.
+    """
+    risers = [r for r in records if r["direction"] in ("rising", "new")]
+    risers.sort(key=lambda r: (0 if r["direction"] == "new" else 1, -(r["delta_pct"] or 0.0), -r["current"]))
+    fallers = [r for r in records if r["direction"] == "falling"]
+    fallers.sort(key=lambda r: (r["delta_pct"], -r["current"]))
+    return risers[:top_n], fallers[:top_n]
+
+
+def _momentum_row(record: dict[str, Any]) -> html.Li:
+    """One momentum row: tech · current vs baseline avg · delta badge."""
+    direction = record["direction"]
+    if direction == "new":
+        delta = dbc.Badge("nuevo", color="info", pill=True, className="ms-2")
+    elif direction == "rising":
+        delta = dbc.Badge(f"+{record['delta_pct']:.0f}%", color="success", pill=True, className="ms-2")
+    else:  # falling — only fallers reach this badge shape
+        delta = dbc.Badge(f"{record['delta_pct']:.0f}%", color="danger", pill=True, className="ms-2")
+    return html.Li(
+        [
+            html.Strong(str(record["tech"])),
+            html.Small(f" · {record['current']} vs {record['baseline']:.1f} media/sem", className="text-muted"),
+            delta,
+        ],
+        className="mb-1 small",
+    )
+
+
+def _render_momentum_panel(force_refresh: bool = False) -> dbc.Card:
+    """Momentum card (spec 13 TR-F2): Subiendo 🔺 / Bajando 🔻 under the radar."""
+    series = _load_momentum_series(force_refresh=force_refresh)
+    weeks = list(series["weeks"])
+    weeks_with_data = int(series["weeks_with_data"])
+    if len(weeks) == 0 or weeks_with_data < MOMENTUM_MIN_HISTORY_WEEKS:
+        body: list[Any] = [
+            dbc.Alert(
+                f"Sin historia suficiente: {weeks_with_data} semana(s) de snapshots. El momentum necesita al menos {MOMENTUM_MIN_HISTORY_WEEKS} semanas de histórico (M5).",
+                color="light",
+                className="small mb-0",
+            )
+        ]
+        footer = "Los snapshots timestamped de los ETLs del radar alimentan las medias semanales."
+    else:
+        records = compute_momentum(weeks, series["counts"], series["coverage"])
+        risers, fallers = _momentum_lists(records)
+        rising_rows: list[Any] = [_momentum_row(r) for r in risers] if risers else [html.Small("Sin subidas destacadas.", className="text-muted")]
+        falling_rows: list[Any] = [_momentum_row(r) for r in fallers] if fallers else [html.Small("Sin bajadas destacadas.", className="text-muted")]
+        body = [
+            dbc.Row(
+                [
+                    dbc.Col([html.H6("🔺 Subiendo", className="mb-2 text-success"), *rising_rows], width=12, md=6, className="mb-2 mb-md-0"),
+                    dbc.Col([html.H6("🔻 Bajando", className="mb-2 text-danger"), *falling_rows], width=12, md=6),
+                ],
+                className="g-3",
+            )
+        ]
+        footer = (
+            f"Semana del {_week_label(weeks[-1])} vs media móvil de {MOMENTUM_BASELINE_WEEKS} semanas · umbral "
+            f"±{MOMENTUM_DELTA_THRESHOLD_PCT:.0f}% · {weeks_with_data} de {MOMENTUM_WINDOW_WEEKS} semanas con snapshots."
+        )
+    return dbc.Card(
+        [
+            dbc.CardHeader(html.H6("📈 Momentum por tecnología — menciones esta semana vs media 4 semanas", className="mb-0")),
+            dbc.CardBody(body),
+            dbc.CardFooter(html.Small(footer, className="text-muted")),
+        ],
+        className="shadow-sm",
     )
 
 
@@ -693,6 +971,8 @@ def render_tech_radar_tab() -> html.Div:
                     dbc.Tab(
                         [
                             _render_radar_plot(),
+                            # TR-F2 (spec 13): momentum lists sit right under the radar plot.
+                            html.Div(id="tech-radar-momentum", children=_render_momentum_panel()),
                             dbc.Row(
                                 [
                                     dbc.Col(dcc.Dropdown(id="tech-radar-source-filter", options=_unified_source_options(), value="all", clearable=False, placeholder="Fuente…"), width=12, md=4),
@@ -736,7 +1016,8 @@ def register_tech_radar_callbacks(app):
     """Register callbacks for the Technology Radar tab."""
 
     @app.callback(
-        [Output(f"tech-radar-col-{source['key']}", "children") for source in RADAR_SOURCES] + [Output("tech-radar-plot", "figure"), Output("tech-radar-unified-feed", "children")],
+        [Output(f"tech-radar-col-{source['key']}", "children") for source in RADAR_SOURCES]
+        + [Output("tech-radar-plot", "figure"), Output("tech-radar-unified-feed", "children"), Output("tech-radar-momentum", "children")],
         [
             Input("tech-radar-search", "value"),
             Input({"type": "tech-radar-refresh", "tab": ALL}, "n_clicks"),
@@ -749,8 +1030,9 @@ def register_tech_radar_callbacks(app):
         """Single controller (spec 15 pattern) for search, filters and refresh.
 
         Search filters the per-source columns; the source/category dropdowns
-        drive the TR-F3 unified feed; a refresh click bypasses the TTL cache
-        and re-renders everything.
+        drive the TR-F3 unified feed; the TR-F2 momentum panel sits under the
+        radar plot; a refresh click bypasses the TTL caches and re-renders
+        everything.
         """
         try:
             is_refresh = dash.callback_context.triggered_id and getattr(dash.callback_context.triggered_id, "get", lambda _k: None)("type") == "tech-radar-refresh"
@@ -764,10 +1046,11 @@ def register_tech_radar_callbacks(app):
                 category_filter=category_filter or "all",
                 all_data=all_data,
             )
-            return sections + [figure, feed]
+            momentum = _render_momentum_panel(force_refresh=bool(is_refresh))
+            return sections + [figure, feed, momentum]
         except Exception as e:
             logger.error(f"Error in tech radar update: {e}")
-            return [[dbc.Alert(f"Error searching: {e}", color="danger")] for _ in RADAR_SOURCES] + [dash.no_update, dash.no_update]
+            return [[dbc.Alert(f"Error searching: {e}", color="danger")] for _ in RADAR_SOURCES] + [dash.no_update, dash.no_update, dash.no_update]
 
     @app.callback(
         Output("tech-radar-search", "value", allow_duplicate=True),

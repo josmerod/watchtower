@@ -10,8 +10,8 @@ Python 3.10+ with UV. Data persists as timestamped JSON under `data/` (gitignore
 | [Quickstart](QUICKSTART.md) | Install and run in 10 minutes |
 | [FAQ](FAQ.md) | Frequently asked questions |
 | [Contributing](CONTRIBUTING.md) | How to contribute |
-| [architecture.md](architecture.md) | System architecture (3 layers) |
-| [project-overview.md](project-overview.md) | What the platform does |
+| [Architecture Overview](technical/ARCHITECTURE_OVERVIEW.md) | System architecture (3 layers) |
+| [CODEBASE_SUMMARY.md](../CODEBASE_SUMMARY.md) | What the platform is made of: layers, entry points, deployment |
 | [PRD.md](PRD.md) | Product requirements |
 | [ROADMAP.md](ROADMAP.md) | **Horizonte priorizado**: valor entregado, gaps, backlog y anti-backlog |
 | [TASK_BOARD.md](TASK_BOARD.md) | **Single source of truth for actionable work** (solo tareas abiertas) |
@@ -34,10 +34,7 @@ Python 3.10+ with UV. Data persists as timestamped JSON under `data/` (gitignore
 
 | Doc | Pattern |
 | :-- | :-- |
-| [ETL Factory Pattern](ETL_FACTORY_PATTERN.md) | ETL registration and factory |
 | [Repository Pattern](REPOSITORY_PATTERN.md) | Data repositories |
-| [Dependency Injection](DEPENDENCY_INJECTION.md) | DI conventions |
-| [Scraping Strategy](SCRAPING_STRATEGY_PATTERN.md) | Scraping strategies |
 | [Data Models](data-models-main.md) | Pydantic model reference |
 
 ## Source research
@@ -53,11 +50,12 @@ Python 3.10+ with UV. Data persists as timestamped JSON under `data/` (gitignore
 | :-- | :-- |
 | [README](../README.md) | Project overview and install |
 | [AGENTS.md](../AGENTS.md) | AI-agent workspace instructions |
-| [CODEBASE_SUMMARY](../CODEBASE_SUMMARY.md) | Architectural deep-dive |
+| [CODEBASE_SUMMARY](../CODEBASE_SUMMARY.md) | Map of the codebase as it is today |
 | [API_DOCS](../API_DOCS.md) | REST API reference |
 
 ## Archive
 
-Historical reports and completed plans live in [archive/](archive/) —
-phase reports, refactoring guides, BMM/epic planning docs, validation
-reports. Kept for reference; not maintained.
+Historical material lives in [archive/](archive/) — phase reports, refactoring
+guides, BMM/epic planning docs, validation reports, and superseded design
+documents. Kept for reference; not maintained. Files moved there carry an
+"Archived" note on their first line.

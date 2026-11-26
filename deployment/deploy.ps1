@@ -1,5 +1,11 @@
-# Deploy Watchtower to Unraid (Remote Build)
-# Usage: ./deployment/deploy.ps1
+# DEPRECATED — do not deploy with this script. It is stale:
+#   - its archive omits run_all_etl_orchestrator.py and README.md, so the ETL
+#     scheduler has nothing to run and the project install inside the image fails;
+#   - it publishes the dashboard as 7777:7777 (Dash listens on 7780) and does not
+#     publish the API port 45714;
+#   - it never checks the container's health and cannot roll back.
+# Use the maintained path instead (works from any shell):
+#   uv run --with paramiko python deployment/deploy.py
 
 $ServerIP = $env:UNRAID_HOST
 if (-not $ServerIP) { Write-Error "UNRAID_HOST env var must be set"; exit 1 }

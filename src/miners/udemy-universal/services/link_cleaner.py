@@ -7,7 +7,7 @@ handling various redirector services.
 import re
 from urllib.parse import parse_qs, unquote, urlparse
 
-from .utils.http import follow_redirect
+from ..utils.http import follow_redirect
 
 
 class LinkCleaner:

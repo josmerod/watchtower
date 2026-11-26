@@ -5,31 +5,51 @@ description: Iterate on the Watchtower task board — pick up the next task, do 
 
 # Task Board
 
-`docs/TASK_BOARD.md` is the single source of truth for actionable work. This
-skill drives one iteration of the loop: **read → pick → claim → do → verify →
-close → commit**. It also covers adding new tasks and reprioritizing.
+Four documents divide the work. This skill drives one iteration of the loop:
+**read → pick → claim → do → verify → close → commit**. It also covers adding
+tasks, triaging feedback and reprioritizing.
+
+| Document | Role |
+| :--- | :--- |
+| `docs/TASK_BOARD.md` | Open work only: one `## Board` table plus a short `## Changelog`. The single source of truth for what is actionable. |
+| `docs/TASK_BOARD_ARCHIVE.md` | What is finished: closed rows under `## Tareas cerradas`, plus the historical changelog. |
+| `docs/ROADMAP.md` | The prioritized horizon: value delivered, gaps and opportunities, what was evaluated and rejected. It cites task IDs and points to the board for execution. |
+| `docs/FEEDBACK.md` | The user's raw notes (`## Entradas`) and what triaging turned them into (`## Triajeado (archivo histórico)`). |
 
 ## The board file
 
-- Path: `docs/TASK_BOARD.md` (always — never copy it elsewhere).
-- Format: one markdown table under `## Board` with columns, in order:
+- One markdown table under `## Board`, columns in order:
 
   `| ID | Status | Priority | Title | Area | Notes |`
 
 - **Status:** `todo` · `in-progress` · `blocked` · `done`.
 - **Priority:** `P0` · `P1` · `P2` · `P3`.
 - **Area:** `etl` · `dashboard` · `api` · `infra` · `quality` · `docs` · `sec`.
-- **ID:** `T-NNN` (zero-padded, never reused). Next free ID = highest existing +1.
-- Sort order: `in-progress` → `todo` (by priority asc, then oldest) → `blocked` →
-  `done` (newest first).
+- **Sort:** `in-progress` first, then `todo` (by priority, oldest first), then
+  `blocked`. No `done` row stays here — closing moves it to the archive.
+- **ID:** `T-NNN` (zero-padded, never reused). Next free ID = the highest ID in
+  the board **and** the archive, +1. Closed rows live in the archive, so the
+  board alone undercounts:
+  ```bash
+  grep -ohE 'T-[0-9]{3,}' docs/TASK_BOARD.md docs/TASK_BOARD_ARCHIVE.md | sort -u -t- -k2,2n | tail -n 1
+  ```
+- **`## Changelog`** is newest first: a new line goes directly under the
+  heading, as `- YYYY-MM-DD — **T-NNN …**`.
+- Keep the row shape exact: the SessionStart hook parses `## Board` rows and
+  the first dated changelog line with a regex.
 
 ## Iteration loop — "work on the next task"
 
 Run these steps in order. Do not skip verification.
 
-1. **Read** `docs/TASK_BOARD.md`. If a row is already `in-progress`, resume it
-   (ask the user whether to continue or roll it back to `todo`) rather than
-   starting something new — **one task in-progress at a time**.
+1. **Read** `docs/TASK_BOARD.md`. The SessionStart hook
+   (`.zcode/hooks/session_context.py`, wired in `.zcode/config.json`) has
+   already printed a digest — the `in-progress` row, the open `todo`/`blocked`
+   counts, the last changelog date, the untriaged `FEEDBACK.md` entries — but
+   it is a summary: read the board before editing. If a row is already
+   `in-progress`, resume it (ask whether to continue or roll it back to
+   `todo`) rather than starting something new — **one task in-progress at a
+   time**.
 
 2. **Pick** the next task: first `in-progress`; else the highest-priority `todo`
    (P0 beats P1…); on ties, the one with the lower ID (oldest). State which task
@@ -42,50 +62,64 @@ Run these steps in order. Do not skip verification.
    (`etl-pipeline`, `dashboard-tab`, `unraid-deploy`). Branch off `main` first if
    the change is non-trivial (per AGENTS.md).
 
-5. **Verify before claiming done.** This is mandatory — see
-   `superpowers:verification-before-completion`. Run the actual commands and cite
-   the output. At minimum:
+5. **Verify before claiming done.** Mandatory — see
+   `superpowers:verification-before-completion`. Run the actual commands and
+   cite the output:
    - `uv run ruff check .` and `uv run ruff format --check .` → clean.
    - `uv run pytest -q` → green (or document exactly what failed and why it's
      pre-existing).
-   - `uv run pre-commit run --all-files` → green (mypy is advisory; do not block
-     on it, but report its count if relevant to the task).
+   - `uv run pre-commit run --all-files` → green (mypy is advisory; report its
+     count if relevant).
    - Any task-specific check (e.g. a deploy health check for infra tasks).
 
-6. **Close** it: set Status to `done`, move the row below all open tasks, and add
-   a one-line result to `Notes` (what changed, the verifying command). Append a
-   dated line to the `## Changelog` section.
+   The **pre-push hook** runs the full pytest suite (`pytest-check` in
+   `.pre-commit-config.yaml`), so a red suite blocks every push. A fresh clone
+   has no hooks — the digest warns; install both stages with
+   `uv run pre-commit install --hook-type pre-commit --hook-type pre-push`.
 
-7. **Commit** the code change **and** the board edit together (the board update
-   and the work it records belong in one focused commit). Only commit when the
-   user asks or when continuing an established commit-as-you-go workflow.
+6. **Close** it: set Status to `done`, add a one-line result to `Notes` (what
+   changed, the verifying command), move the **whole row** to the top of
+   `## Tareas cerradas` in `docs/TASK_BOARD_ARCHIVE.md`, and add the changelog
+   line. The board keeps no `done` row.
 
-## Adding a task ("add a task")
+7. **Commit** the code change **and** the board edit together (the work and the
+   row that records it belong in one focused commit). Only commit when the user
+   asks or in an established commit-as-you-go workflow.
 
-1. Find the next free `T-NNN`.
-2. Insert a row with Status `todo`, a sensible Priority (default `P2`), the right
-   Area, a short Title, and enough Notes that the next reader can start.
-3. Place it among the `todo` rows in priority/ID order.
-4. Append a dated changelog line. No code change → commit the board alone.
+## Triaging `docs/FEEDBACK.md`
 
-## Closing/reprioritizing
+Each unchecked `- [ ]` line under `## Entradas` is a note not triaged yet (the
+SessionStart hook counts them). Turn it into a board row with a new `T-NNN` —
+bug → `P1`/`P2` task, idea → proposal, missing source → research task — then
+record it: tick the line, move it under `## Triajeado (archivo histórico)` and
+append the outcome.
 
-- **Close (`close T-NNN`):** run the verify step above, then flip to `done` +
-  re-sort + changelog. If verification fails, leave it `in-progress` or `blocked`
+```markdown
+- [x] YYYY-MM-DD — <the note> → **T-NNN** (<one-line outcome>)
+```
+
+## Adding, blocking, reprioritizing
+
+- **Add**: next free `T-NNN` (command above) → a `todo` row (default `P2`, the
+  right Area, Notes enough to start) among the `todo` rows in priority order,
+  plus a changelog line.
+- **Block**: Status `blocked`, the blocker in Notes, below the `todo` rows.
+- **Reprioritize**: change the Priority cell and re-sort; add a changelog line.
+- **Close before verification passes**: leave it `in-progress` or `blocked`
   and explain — never mark `done` on an unverified change.
-- **Reprioritize:** change the Priority cell and re-sort; add a changelog line.
-- **Block:** set Status `blocked`, put the blocker in Notes, move under `todo`.
 
 ## Editing rules
 
-- Edit the table **in place** with the `Edit` tool — preserve column alignment
-  (the table is pipe-delimited; keep the header separators intact).
-- Never delete a `done` row — it's the history. Never reuse an ID.
-- Keep `Notes` terse; link to a `docs/` design file or a commit for detail.
+- Edit the table **in place** with the `Edit` tool; keep the pipe alignment and
+  the header separators intact.
+- Never delete or rewrite an archived row. Never reuse an ID.
+- Keep `Notes` terse; long design goes in a `docs/` file or a commit.
 
 ## Don't
 
 - Don't mark a task `done` without running a verifying command and showing output.
 - Don't have two rows `in-progress` at once.
+- Don't leave a `done` row on the board or add one at the bottom of the archive.
 - Don't move the board file or split it into per-task files.
-- Don't commit secrets (the board is tracked — see AGENTS.md).
+- Don't commit secrets or private addresses (these documents are tracked — see
+  AGENTS.md).

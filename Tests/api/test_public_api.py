@@ -6,6 +6,7 @@ the network are never touched.
 """
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -276,19 +277,25 @@ def test_security_kev_missing(data_dir: Path):
 # GET /api/v1/valencia/events (T-084)
 # ---------------------------------------------------------------------------
 
-VALENCIA = {
-    "events": [
-        {"title": "Past conference", "start_date": "2026-08-01T10:00:00+00:00"},
-        {"title": "Soon meetup", "start_date": "2026-09-12T20:00:00+00:00"},
-        {"title": "Next month gig", "start_date": "2026-10-15T21:00:00+00:00"},
-        {"title": "Undated thing"},
-    ]
-}
+def _valencia_payload() -> dict:
+    """Valencia events with dates relative to now — hardcoded dates rot (this is the second time)."""
+
+    def _iso(days: int, hour: int) -> str:
+        return (datetime.now(timezone.utc) + timedelta(days=days)).replace(hour=hour, minute=0, second=0, microsecond=0).isoformat()
+
+    return {
+        "events": [
+            {"title": "Past conference", "start_date": _iso(-30, 10)},
+            {"title": "Soon meetup", "start_date": _iso(3, 20)},
+            {"title": "Next month gig", "start_date": _iso(35, 21)},
+            {"title": "Undated thing"},
+        ]
+    }
 
 
 def test_valencia_events_all(data_dir: Path):
     """200, full list as stored (undated events included when unfiltered)."""
-    _write(data_dir, "valencia_events/valencia_events.json", VALENCIA)
+    _write(data_dir, "valencia_events/valencia_events.json", _valencia_payload())
     response = client.get("/api/v1/valencia/events")
     assert response.status_code == 200
     body = response.json()
@@ -298,7 +305,7 @@ def test_valencia_events_all(data_dir: Path):
 
 def test_valencia_events_days_filter(data_dir: Path):
     """?days=N keeps only events starting inside [now, now+N] — past and undated excluded."""
-    _write(data_dir, "valencia_events/valencia_events.json", VALENCIA)
+    _write(data_dir, "valencia_events/valencia_events.json", _valencia_payload())
     response = client.get("/api/v1/valencia/events?days=30")
     assert response.status_code == 200
     assert [e["title"] for e in response.json()["items"]] == ["Soon meetup"]

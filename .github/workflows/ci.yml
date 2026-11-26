@@ -5,9 +5,20 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    # Pinned on purpose: ubuntu-latest is 26.04 and the Playwright locked at
+    # the time (1.60, 2026-10) ships no chromium for it, so `playwright
+    # install` fails there. Move the pin with the lock, not before it.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
 
@@ -32,7 +43,8 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Syntax check
-        run: python -m py_compile src/api/main.py src/etl/base.py
+        # Every shipped file, including the ones no test imports.
+        run: uv run python -m compileall -q src deployment run_all_etl_orchestrator.py run_watchtower_dashboard.py
 
       - name: Run tests
         run: uv run pytest Tests/ -v
@@ -40,5 +52,8 @@ jobs:
         # run for real: chromium is installed above; the conftest still guards
         # environments where the binary is missing (skip, not fail).
 
-      - name: Validate Dockerfile
-        run: docker build -f deployment/Dockerfile --check . 2>/dev/null || docker build -f deployment/Dockerfile --quiet . 2>&1 | head -5
+      - name: Deploy script against real paramiko
+        # The deploy tests fake the SSH layer; this one pins the fake to the
+        # library. It needs `python -m pytest`: a bare `pytest` entry point does
+        # not see uv's ephemeral --with environment and would skip the test.
+        run: uv run --with paramiko python -m pytest Tests/unit/test_deploy.py -k paramiko -v

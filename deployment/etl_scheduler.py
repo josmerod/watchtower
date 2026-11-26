@@ -33,7 +33,7 @@ def run_etls():
             print(f"Warning: ETL script returned non-zero exit code: {result.returncode}")
 
         # Restart only the API server to pick up fresh ETL data from disk.
-        # The dashboard reads from the API, so it auto-refreshes.
+        # The dashboard reads the same data files directly, so it needs no restart.
         # Do NOT restart the dashboard itself — that disrupts active users.
         try:
             subprocess.run(["supervisorctl", "restart", "api"], capture_output=True, text=True, timeout=30)
@@ -45,8 +45,26 @@ def run_etls():
         print(f"Error running ETL script: {e}")
 
 
+def get_interval() -> int:
+    """Return the ETL cycle interval in seconds.
+
+    ``WATCHTOWER_ETL_INTERVAL`` is documented in
+    docs/technical/ADVANCED_DEPLOYMENT_GUIDE.md and set by ``src/launcher/cli.py``,
+    but the sleep here used to be hardcoded to 2 h, so the variable had no
+    effect in the container (T-114). The default keeps today's effective
+    cadence; invalid values fall back to it.
+    """
+    raw = os.getenv("WATCHTOWER_ETL_INTERVAL", "7200")
+    try:
+        return int(raw)
+    except ValueError:
+        print(f"Warning: WATCHTOWER_ETL_INTERVAL={raw!r} is not an int; using 7200 s.")
+        return 7200
+
+
 def main():
-    print(f"[{datetime.datetime.now()}] ETL Scheduler started. Interval: 2 hours.")
+    interval_s = get_interval()
+    print(f"[{datetime.datetime.now()}] ETL Scheduler started. Interval: {interval_s} s.")
 
     # Run immediately on start?
     # Maybe wait a bit to let dashboard start, or just run.
@@ -54,8 +72,7 @@ def main():
     run_etls()
 
     while True:
-        # Sleep for 2 hours (2 * 3600 seconds)
-        time.sleep(2 * 3600)
+        time.sleep(interval_s)
         run_etls()
 
 

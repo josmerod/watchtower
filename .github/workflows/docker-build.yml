@@ -1,17 +1,64 @@
 name: Docker Build
 
+# Builds the production image the way deployment/deploy.py ships it: from the
+# archive the deploy script uploads, not from the repository checkout. A file
+# missing from deploy.INCLUDE_PATHS fails here, before it fails in production.
+#
+# Only the API is booted for the smoke test. The normal entrypoint starts
+# supervisor, whose ETL scheduler launches a 108-script cycle against live
+# sources on every start.
+
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Build the deploy archive
+        # python-dotenv is the only dependency of the deploy script; the project
+        # itself does not need to be installed to pack a tarball.
+        run: uv run --no-project --python 3.11 --with python-dotenv python -c "from deployment import deploy; deploy.create_archive('watchtower_src.tar.gz')"
+
+      - name: Unpack it as the build context
+        run: mkdir context && tar -xzf watchtower_src.tar.gz -C context
+
       - name: Build Docker image
+        run: docker build -f context/deployment/Dockerfile -t watchtower:${{ github.sha }} -t watchtower:latest context
+
+      - name: Boot the API and wait for /health
         run: |
-          docker build -f deployment/Dockerfile \
-            -t watchtower:${{ github.sha }} \
-            -t watchtower:latest \
-            .
+          docker inspect watchtower:latest --format 'healthcheck: {{json .Config.Healthcheck.Test}}'
+          docker run -d --name watchtower-smoke -p 45714:45714 --entrypoint uv watchtower:latest \
+            run uvicorn src.api.main:app --host 0.0.0.0 --port 45714
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:45714/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::The API did not answer /health within 60s"
+          docker logs watchtower-smoke
+          exit 1
+
+      - name: Remove the smoke container
+        if: always()
+        run: docker rm -f watchtower-smoke

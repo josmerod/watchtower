@@ -5,135 +5,183 @@ description: Build a new Watchtower ETL pipeline the standard way, or wire an ex
 
 # ETL Pipeline
 
-Every Watchtower ETL follows the same Template Method contract and gets wired
-into one orchestrator. This skill keeps new pipelines consistent and — the most
-common gap — actually *registered* so they run in production.
+Two styles of ETL run in production — a `BaseETL` subclass or a plain script —
+and both are wired the same way. Three obligations; skip one and the pipeline
+is half-built.
 
-## The 3 obligations of a new ETL
-
-If you skip any of these, the pipeline is half-built. All three are required.
-
-1. **Implement the pipeline** as a `BaseETL` subclass with `extract/transform/load`.
-2. **Register it** in `run_all_etl_orchestrator.py` → `ETL_SCRIPTS`.
-3. **Add a model** in `src/models/` if the data has new shape (otherwise reuse).
+1. **Implement** the script: extract → transform → load, runnable on its own.
+2. **Register** it in `ETL_SCRIPTS` in `run_all_etl_orchestrator.py`.
+3. **Wire a consumer** — an output nobody reads is invisible.
 
 ## Obligation 1 — the pipeline
 
-Subclass `BaseETL[I, O]` (see `src/etl/base.py`). The base gives you metrics,
-checkpointing, a tenacity-based retry wrapper, the circuit breaker
-(`src/etl/circuit_breaker.py`), and proxy rotation (`src/etl/proxy_manager.py`)
-for free. Do **not** hand-roll retries or HTTP error handling.
+| | `BaseETL` subclass | Plain module |
+| :--- | :--- | :--- |
+| Registered scripts | 31 (29 direct, 2 via `SimpleETL`) | 74 (the 3 watchers and 1 miner in the list are plain scripts too) |
+| Real model | `src/etl/rss_feeds/rss_feed_etl.py` | `src/etl/markets/coingecko_etl.py` |
+| You write | `__init__` passing `name`; `extract`, `transform`, `load` | functions and `main()` |
+| You get | stage retries, circuit breaker, checkpointing, dedup, run metrics | nothing you did not write |
+| Output | `data/<name>/output/` (`self.output_dir`); file names vary | `data/<domain>/<name>_latest.json` + timestamped snapshot |
+| Failure | a stage raises `ETLError` after its retries → exit 1 | whatever `main()` does — often exit 0 |
+| Fits when | the source is flaky or heavy and you want that machinery | fetch → normalize → write the two JSON files tabs and the API read; no hidden state, you pick the path |
+
+### `BaseETL` — a complete file, then its registration
 
 ```python
-"""<source_name> ETL — one-line purpose."""
-from __future__ import annotations
+"""My source ETL — one-line purpose."""
 
+import json
+import logging
+from datetime import datetime
 from typing import Any
 
 from src.etl.base import BaseETL
-from src.models.base import TimestampedModel   # only if you add a model
 
 
 class MySourceETL(BaseETL[dict[str, Any], dict[str, Any]]):
-    """Fetch <thing> from <source>, normalize, persist under data/<name>/."""
+    """Fetch <thing> from <source> and persist it under data/my_source/output/."""
+
+    def __init__(self) -> None:
+        super().__init__(name="my_source")
 
     def extract(self) -> list[dict[str, Any]]:
-        """Pull raw records. Use the circuit breaker + retry from BaseETL."""
-        ...
+        """Pull raw records. fetch_json() retries transient network errors."""
+        payload = self.fetch_json("https://example.com/feed.json")
+        return payload["items"]
 
     def transform(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Validate with a Pydantic model, then return plain dicts for load."""
-        ...
+        """Normalize raw records into the output shape."""
+        return [{"title": item["title"], "url": item["url"]} for item in data]
 
     def load(self, data: list[dict[str, Any]]) -> None:
-        """Write data/<name>/output/<name>_{timestamp}.json + _latest.json
-        and a run_summary_latest.json. BaseETL helpers exist for this."""
-        ...
+        """Write the snapshot and the _latest copy — run() never writes data itself."""
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        for file_name in (f"my_source_{stamp}.json", "my_source_latest.json"):
+            (self.output_dir / file_name).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":
-    MySourceETL().run()
+    logging.basicConfig(level=logging.INFO)
+    metrics = MySourceETL().run()
+    if any(error["type"] == "CircuitBreakerOpen" for error in metrics.errors_detail):
+        raise SystemExit(1)
 ```
 
-Conventions (match the surrounding ETLs — look at a sibling like
-`src/etl/news/news_get_techcrunch.py` before writing):
-
-- **File naming**: lowercase snake_case, verb-aware. News domain uses
-  `news_get_<source>.py`; RSS feeds use `<source>_etl.py`. Pick the dominant
-  convention of the target subpackage under `src/etl/`.
-- **Subpackage**: place in the right domain folder (`news/`, `games/`,
-  `intelligence/`, `goldigging/`, `expanded/`, …). Create the folder + an
-  `__init__.py` only if a new domain is genuinely needed.
-- **HTTP**: prefer `requests` for APIs and `feedparser` for RSS. Use Playwright
-  (`src/etl/` has examples) only when the page is JS-rendered — it's heavy.
-- **Output shape**: persist to `data/<name>/output/<name>_{timestamp}.json` plus a
-  `<name>_latest.json`. The dashboard reads the `_latest.json` files. See
-  `AGENTS.md` → "Data storage layout".
-- **Validate with Pydantic** before load — extract → model → dict, never dump raw
-  scraped dicts. Reuse a model from `src/models/` if one fits; only add a new one
-  if the data has a novel shape.
-- **`if __name__ == "__main__":` block is mandatory** — the orchestrator invokes
-  each script as `uv run python <script>` (see below), so the entrypoint must run.
-
-## Obligation 2 — register it (THIS is what people forget)
-
-The orchestrator (`run_all_etl_orchestrator.py`) has a top-level list,
-`ETL_SCRIPTS`, of script paths. **If your script isn't in that list, it never
-runs in production** — no error, just silence. This is the #1 cause of "my new
-ETL isn't producing data."
-
-Add your path as a new string in the appropriate domain comment-section:
+Then register it — an excerpt of `ETL_SCRIPTS` in `run_all_etl_orchestrator.py`:
 
 ```python
 ETL_SCRIPTS = [
-    ...
-    # News ETL
-    ...
-    "src/etl/news/news_get_my_source.py",   # <- add here, with a short comment
-    ...
+    # Deals
+    "src/etl/deals/lifetimo_etl.py",
+    "src/etl/my_domain/my_source_etl.py",  # feeds <tab / API route>
 ]
 ```
 
-How the orchestrator runs each entry (`run_script` in that file, for reference):
+An unregistered script never runs in production — no error, just silence.
 
-```python
-cmd = ["uv", "run", "python", script_path]        # so uv env is guaranteed
-# stdout+stderr -> logs/<basename>.log, per-script
-# timeout = 1800s (30 min) per script
-# run in a ThreadPoolExecutor, default --workers 4
-```
+What `run()` does (`src/etl/base.py`):
 
-So a correct entry is a path to a **runnable script** that does its work under
-`if __name__ == "__main__":`. An importable class alone is not enough.
+- `name` is required: it derives `data/<name>/`, its `output/` and
+  `checkpoints/` subfolders and `circuit_breaker.json`, and creates the folders
+  on construction.
+- `extract` → `transform` → dedup → `load`, each stage attempted up to 4 times
+  (5, 10, 20 s apart). Empty output from `extract` or `transform` ends the run
+  without loading.
+- A stage that still fails records a breaker failure and raises `ETLError` —
+  the script exits non-zero. Failed or not, the run leaves
+  `run_summary_latest.json` in `output_dir` and merges into
+  `data/metrics/etl_runs_latest.json`.
+- An **open** breaker (5 failures, 30-minute recovery) is different: `run()`
+  logs a warning, returns metrics holding one `CircuitBreakerOpen` error and
+  writes nothing — not even a run summary. Without the check in the guard the
+  script exits 0, and the orchestrator prints SUCCESS while the data goes stale.
+- Pydantic is a convention, not enforced: `run()` never validates what the
+  stages return. Validate yourself with `self.validate_data(items, MyModel)` —
+  invalid items are dropped and counted in `records_failed`. Only
+  `TimestampedModel` instances are deduplicated; plain dicts pass through.
 
-Run the whole orchestrator locally to confirm registration:
-`uv run python run_all_etl_orchestrator.py --workers 4`.
+### Plain module — `fetch_*` → `save_*` → `main()` under a `__main__` guard
 
-## Obligation 3 — model (only if new shape)
+- **Fetch**: `requests` with a timeout, sending `SCRAPER_DEFAULT_USER_AGENT`
+  (`src/constants/etl.py`), or `feedparser` for RSS. Retry with `@with_retry`
+  or `fetch_with_retry(url, timeout=...)` from `src/utils/retry.py` — 4
+  attempts, ~1/2/4 s backoff on network errors.
+- **Save**: resolve the folder with `get_project_root()` and
+  `ensure_directories([...])` from `src/utils/file_system.py` — never a
+  hardcoded absolute path. Write `data/<domain>/<name>_YYYYMMDD_HHMMSS.json`
+  and `data/<domain>/<name>_latest.json`. Keep both name parts: consumers open
+  the `_latest` file, and `src/utils/snapshot_retention.py` prunes by the
+  timestamp. `write_json_file(path, data, indent=...)` lives in the same
+  module; no registered script uses it yet — they `json.dump` by hand.
+- **Fail loudly**: this is where plain modules are weak. Most catch the network
+  error inside the fetch and return what they have — `coingecko_etl.py` and
+  `news_get_techcrunch.py` then exit 0, and the orchestrator prints SUCCESS
+  although nothing was written. When the fetch fails entirely, log and `raise`.
+- **Pydantic**: plain modules emit dicts. Validate with a `src/models/` model
+  when the shape is new.
 
-If the source's records don't fit an existing model, add one to `src/models/`
-inheriting from `TimestampedModel` / `StatusModel` as appropriate, with full type
-hints and a Google-style docstring. Register/export it the same way sibling
-models are. If an existing model fits (e.g. `NewsArticleModel`), reuse it — don't
-fork.
+### Conventions
+
+- **File name**: lowercase snake_case under `src/etl/<domain>/`. `<source>_etl.py`
+  is the default (54 registered scripts); `news/` uses `news_get_<source>.py`
+  (41) and `games/` `games_get_<source>.py` (6). The suffix does not indicate
+  the style.
+- **Subpackage**: 23 domain folders under `src/etl/` hold code. Add one (with
+  an `__init__.py`) only for a genuinely new domain.
+- **HTTP**: `requests` for APIs, `feedparser` for RSS, Playwright only for
+  JS-rendered pages — it is heavy.
+- **`if __name__ == "__main__":` is mandatory**: the orchestrator runs each
+  entry as `uv run python <script>` from the repo root.
+
+## Obligation 2 — register it; what the orchestrator then does
+
+`run_script` in `run_all_etl_orchestrator.py`:
+
+| Fact | Value |
+| :--- | :--- |
+| Command | `uv run python <script>` from the repo root; stdout + stderr go to `logs/<name>.log` (`coingecko_etl.py` → `logs/coingecko_etl.log`), overwritten each run. No flag runs a single entry — run the script directly |
+| Concurrency | `--workers N`, default 4 (`run_all_etl.sh` passes 4). List order is only the start order: scripts wait for nothing |
+| `--exclude NAME` | repeatable; matches the basename or any substring of the path — `--exclude news` skips all of `news/` |
+| Timeout | 1800 s per script; 4500 s for `reddit_unified_etl.py` and `goldigging_youtube_posts.py`. On timeout the process tree is killed, `TIMEOUT:` is printed and the script counts as failed |
+| Result lines | `SUCCESS:` · `ERROR: ... failed with code N` · `Warning: Script ... does not exist. Skipping.` (a missing file counts as failed) |
+| Exit code | always 0 — read the `Successful:` and `Failed:` counts in its output |
+| After the pool | `src.utils.snapshot_retention --keep-last 30 --apply` keeps the newest 30 timestamped `.json`/`.csv` files per name and never touches `*latest*`, state files or `data/watchers/`. Then `run_backup.py` — only if the file exists, and it is not shipped, so production runs no backup |
+
+## Obligation 3 — wire a consumer
+
+A new `_latest.json` is invisible until something reads it. Update what applies:
+
+- **`src/services/data_loader.py`** — add the source to its `*_SOURCES_CONFIG`
+  dict (`NEWS_SOURCES_CONFIG`, `GAMES_SOURCES_CONFIG`,
+  `BENCHMARKS_SOURCES_CONFIG`, …) as
+  `"<key>": {"path": get_data_path("<domain>", "<file>"), "name": "<Label>"}`.
+  The dashboard tabs **and** the API (`src/api/routers.py`) read these dicts.
+- **Tab-local lists**, for sources outside those dicts — among others
+  `RADAR_SOURCES` in `tech_radar_tab.py` and `DATA_FILE` in
+  `security_tab.py`, `markets_tab.py`, `digest_tab.py`, `fourchan_tab.py`.
+- **`src/watchers/data_freshness_watcher.py`** — a `SOURCE_FILES` entry
+  `{"key", "label", "path" (relative to `data/`), "warn_hours", "critical_hours"}`
+  puts the source on the stale-data watch (the Metrics card).
+- **`src/services/content_search.py`** — `ARTICLE_COLLECTIONS` and the
+  `RELEASES_FILE`, `MARKETS_FILE`, `PAPERS_FILE`, `VIDEOS_GLOB` constants feed
+  the search API (`src/api/search.py`).
 
 ## Definition of done
 
-Before declaring the ETL done, verify each:
+- [ ] `uv run python src/etl/<domain>/<my_etl>.py` runs from the repo root and
+      writes `<name>_latest.json` where the consumer looks for it.
+- [ ] A forced failure exits non-zero — and so does an open circuit breaker.
+- [ ] The path is in `ETL_SCRIPTS`; a consumer reads the file; `SOURCE_FILES`
+      lists it.
+- [ ] `uv run ruff check` is clean on the new file; if a model was added,
+      `uv run mypy` is clean on it.
+- [ ] Any new dependency is in `pyproject.toml` and `uv.lock`.
 
-- [ ] `uv run python src/etl/<domain>/<my_etl>.py` runs standalone and writes a
-      `_latest.json` under `data/<name>/output/`.
-- [ ] Path is added to `ETL_SCRIPTS` in `run_all_etl_orchestrator.py`.
-- [ ] `uv run ruff check src/etl/<domain>/<my_etl>.py` is clean.
-- [ ] If a model was added: `uv run mypy src/models/<my_model>.py` is clean.
-- [ ] No new dependency was silently added; if one was needed, it's in
-      `pyproject.toml` and `uv lock` was updated.
+## When an ETL "isn't running" or its data is stale
 
-## When fixing an existing ETL that "isn't running"
-
-Almost always one of:
-1. Not in `ETL_SCRIPTS` → add it (Obligation 2).
-2. In the list but the script file path is wrong / file was renamed → fix the path
-   (the orchestrator logs `Warning: Script ... does not exist. Skipping.`).
-3. Script runs but throws → check `logs/<basename>.log` locally, or
-   `/mnt/user/appdata/watchtower/logs/` on Unraid (see `unraid-deploy` skill).
+1. Not in `ETL_SCRIPTS` → add it.
+2. `Warning: Script ... does not exist. Skipping.` → wrong or renamed path.
+3. `SUCCESS:` but no new file → a swallowed exception (plain module) or an open
+   circuit breaker (`data/<name>/circuit_breaker.json`).
+4. `ERROR:` or `TIMEOUT:` → the detail is in `logs/<name>.log`
+   (`/mnt/user/appdata/watchtower/logs/` on the server — `unraid-deploy` skill).

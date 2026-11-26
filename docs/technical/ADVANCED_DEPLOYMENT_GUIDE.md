@@ -1,5 +1,7 @@
 # Watchtower Advanced Deployment Guide
 
+> **What this guide covers:** the launcher CLI, `uv run python src/launcher/cli.py`, which runs Watchtower on a developer machine or on a plain host with Podman or a systemd service. Production on Unraid is deployed with `deployment/deploy.py` instead — see `docs/technical/DEPLOYMENT_GUIDE.md` and the `unraid-deploy` skill.
+
 This guide covers the new unified deployment system that provides system-independent, auto-starting, and robust execution of the Watchtower intelligence platform.
 
 ## 🚀 Quick Start
@@ -8,43 +10,54 @@ This guide covers the new unified deployment system that provides system-indepen
 
 ```bash
 # Development mode with hot reload
-python watchtower.py dev
+uv run python src/launcher/cli.py dev
 
 # Production mode
-python watchtower.py prod
+uv run python src/launcher/cli.py prod
 
 # ETL only mode
-python watchtower.py etl
+uv run python src/launcher/cli.py etl
 
 # Dashboard only mode
-python watchtower.py dashboard
+uv run python src/launcher/cli.py dashboard
 ```
 
 ### Option 2: Podman Compose (Recommended for Production)
 
 ```bash
 # Development deployment
-python watchtower.py podman-dev --build
+uv run python src/launcher/cli.py podman-dev --build
 
 # Production deployment
-python watchtower.py podman-prod --build
+uv run python src/launcher/cli.py podman-prod --build
 
 # Stop containers
-python watchtower.py podman-stop
+uv run python src/launcher/cli.py podman-stop
 ```
 
 ### Option 3: System Service (For Production Servers)
 
 ```bash
 # Install as system service
-python watchtower.py service install
+uv run python src/launcher/cli.py service install
 
 # Start the service
-python watchtower.py service start
+uv run python src/launcher/cli.py service start
 
 # Check status
-python watchtower.py service status
+uv run python src/launcher/cli.py service status
 ```
+
+The deployment the repository maintains for its server is `deployment/deploy.py`, run from the project root:
+
+```bash
+# Connection settings come from .env: UNRAID_HOST, UNRAID_USER and UNRAID_PASSWORD, or the SSH key ~/.ssh/id_ed25519
+uv run --with paramiko python deployment/deploy.py
+```
+
+`deployment/deploy.py` archives the working tree (only the paths in its `INCLUDE_PATHS` list; uncommitted changes are deployed too), uploads the archive over SSH and builds `deployment/Dockerfile` on the server, after tagging the running image as `watchtower:previous`. It then swaps the container for the new image, polls the container health every 5 seconds for up to 240 seconds (the `HEALTHCHECK` in `deployment/Dockerfile` calls the API's `/health` on port 45714) and, if the new container does not become healthy, puts `watchtower:previous` back when there is one. It exits with 0 only when the container is healthy. `deployment/deploy.ps1` is deprecated; its header says not to deploy with it.
+
+In the container, `deployment/supervisord.conf` starts three programs with `autorestart`: `dashboard` (`uv run python run_watchtower_dashboard.py`, port 7780), `api` (`uv run uvicorn src.api.main:app --port 45714`, listening on all interfaces) and `etl_scheduler` (`uv run python deployment/etl_scheduler.py`). The scheduler runs `./run_all_etl.sh` when it starts and then every 2 hours, and restarts the API after each cycle.
 
 ## 📋 Deployment Options Overview
 
@@ -59,7 +72,7 @@ python watchtower.py service status
 ### Prerequisites
 
 1. **Python 3.10+** with UV package manager
-2. **Dependencies installed**: `uv sync --all-extras`
+2. **Dependencies installed**: `uv sync`
 3. **Optional**: Podman and podman-compose for containerized deployment
 
 ### CLI Deployment (Development)
@@ -68,13 +81,13 @@ The CLI deployment is perfect for development with hot reload capabilities:
 
 ```bash
 # Start in development mode
-python watchtower.py dev
+uv run python src/launcher/cli.py dev
 
 # Start in background (for servers)
-python watchtower.py dev --background
+uv run python src/launcher/cli.py dev --background
 
 # Check status
-python watchtower.py status
+uv run python src/launcher/cli.py status
 ```
 
 **Features:**
@@ -92,7 +105,7 @@ For production deployments, Podman Compose provides containerized, isolated exec
 
 ```bash
 # Build and start development containers
-python watchtower.py podman-dev --build
+uv run python src/launcher/cli.py podman-dev --build
 
 # Access dashboard at http://localhost:7780
 # View logs: podman-compose -f docker-compose.dev.yml logs -f
@@ -102,7 +115,7 @@ python watchtower.py podman-dev --build
 
 ```bash
 # Build and start production containers
-python watchtower.py podman-prod --build
+uv run python src/launcher/cli.py podman-prod --build
 
 # Dashboard available at http://localhost:7780
 # Check container status: podman-compose ps
@@ -124,13 +137,13 @@ For production servers, install Watchtower as a system service:
 
 ```bash
 # Install service
-sudo python watchtower.py service install
+sudo uv run python src/launcher/cli.py service install
 
 # Start service
-sudo python watchtower.py service start
+sudo uv run python src/launcher/cli.py service start
 
 # Check status
-sudo python watchtower.py service status
+sudo uv run python src/launcher/cli.py service status
 
 # View logs
 sudo journalctl -u watchtower -f
@@ -140,13 +153,13 @@ sudo journalctl -u watchtower -f
 
 ```bash
 # Install service
-python watchtower.py service install
+uv run python src/launcher/cli.py service install
 
 # Start service
-python watchtower.py service start
+uv run python src/launcher/cli.py service start
 
 # Check status
-python watchtower.py service status
+uv run python src/launcher/cli.py service status
 
 # View logs
 tail -f ~/Library/LaunchAgents/com.watchtower.platform.plist logs
@@ -156,13 +169,13 @@ tail -f ~/Library/LaunchAgents/com.watchtower.platform.plist logs
 
 ```powershell
 # Install service (requires NSSM or administrator privileges)
-python watchtower.py service install
+uv run python src/launcher/cli.py service install
 
 # Start service
-python watchtower.py service start
+uv run python src/launcher/cli.py service start
 
 # Check status
-python watchtower.py service status
+uv run python src/launcher/cli.py service status
 
 # View logs
 Get-EventLog -LogName Application -Source WatchtowerPlatform
@@ -186,13 +199,13 @@ You can override any configuration by setting environment variables:
 
 ```bash
 # Custom ETL interval (30 minutes)
-WATCHTOWER_ETL_INTERVAL=1800 python watchtower.py prod
+WATCHTOWER_ETL_INTERVAL=1800 uv run python src/launcher/cli.py prod
 
 # Debug logging
-WATCHTOWER_LOG_LEVEL=DEBUG python watchtower.py dev
+WATCHTOWER_LOG_LEVEL=DEBUG uv run python src/launcher/cli.py dev
 
 # Custom dashboard port
-WATCHTOWER_DASHBOARD_PORT=8080 python watchtower.py dashboard
+WATCHTOWER_DASHBOARD_PORT=8080 uv run python src/launcher/cli.py dashboard
 ```
 
 ## 🔍 Monitoring and Health Checks
@@ -220,7 +233,7 @@ When health issues are detected, the system automatically:
 
 ```bash
 # Check overall status
-python watchtower.py status
+uv run python src/launcher/cli.py status
 
 # View health metrics (JSON format)
 curl http://localhost:7780/health
@@ -237,13 +250,13 @@ docker-compose ps
 
 ```bash
 # Check logs for errors
-python watchtower.py service status
+uv run python src/launcher/cli.py service status
 
 # View detailed logs
 tail -f logs/launcher.log
 
 # Check system resources
-python watchtower.py status
+uv run python src/launcher/cli.py status
 ```
 
 #### 2. Podman Issues
@@ -256,14 +269,14 @@ podman-compose ps
 podman-compose logs
 
 # Rebuild containers
-python watchtower.py podman-prod --build
+uv run python src/launcher/cli.py podman-prod --build
 ```
 
 #### 3. High Resource Usage
 
 ```bash
 # Check system resources
-python watchtower.py status
+uv run python src/launcher/cli.py status
 
 # The system will automatically clean up old files
 # Manual cleanup if needed
@@ -274,13 +287,13 @@ find data -type f -mtime +30 -delete
 
 ```bash
 # Check which processes are running
-python watchtower.py status
+uv run python src/launcher/cli.py status
 
 # View ETL logs
 tail -f logs/etl_*.log
 
 # Restart ETL processes
-python watchtower.py etl
+uv run python src/launcher/cli.py etl
 ```
 
 ### Log Files
@@ -296,7 +309,7 @@ python watchtower.py etl
 
 1. **Stop existing processes**: Close any running batch files or scheduled tasks
 2. **Install new system**: Choose Docker or Service deployment method
-3. **Verify functionality**: Check status with `python watchtower.py status`
+3. **Verify functionality**: Check status with `uv run python src/launcher/cli.py status`
 4. **Remove old files**: Delete old `.bat` files and scheduled tasks
 
 ### Environment Migration
@@ -339,7 +352,7 @@ The new deployment system provides significant improvements over the old batch f
 
 ```bash
 # Run ETL every 30 minutes
-WATCHTOWER_ETL_INTERVAL=1800 python watchtower.py prod
+WATCHTOWER_ETL_INTERVAL=1800 uv run python src/launcher/cli.py prod
 
 # Run only specific ETL categories
 # (Configure in src/launcher/main.py ETLScheduler.etl_categories)
@@ -349,21 +362,21 @@ WATCHTOWER_ETL_INTERVAL=1800 python watchtower.py prod
 
 ```bash
 # Run dashboard on different port
-WATCHTOWER_DASHBOARD_PORT=7780 python watchtower.py dashboard
+WATCHTOWER_DASHBOARD_PORT=7780 uv run python src/launcher/cli.py dashboard
 
 # Run ETL with different intervals
-WATCHTOWER_ETL_INTERVAL=7200 python watchtower.py etl
+WATCHTOWER_ETL_INTERVAL=7200 uv run python src/launcher/cli.py etl
 ```
 
 ### Development Workflow
 
 ```bash
 # Start development environment
-python watchtower.py dev
+uv run python src/launcher/cli.py dev
 
 # Make code changes - automatic hot reload
 # Check status
-python watchtower.py status
+uv run python src/launcher/cli.py status
 
 # View logs
 tail -f logs/launcher.log

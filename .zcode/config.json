@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "enabled": true,
+    "events": {
+      "SessionStart": [
+        {
+          "hooks": [
+            {
+              "type": "process",
+              "command": "uv",
+              "args": [
+                "run",
+                "--no-project",
+                "python",
+                "${ZCODE_PROJECT_DIR}/.zcode/hooks/session_context.py",
+                "${ZCODE_PROJECT_DIR}"
+              ],
+              "timeoutMs": 8000
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
