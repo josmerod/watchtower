@@ -15,8 +15,6 @@ logger = get_logger("KagiRSSETL")
 
 # Kagi RSS feed URLs by category
 KAGI_RSS_FEEDS: dict[str, str] = {
-    "world": "https://kite.kagi.com/world.xml",
-    "usa": "https://kite.kagi.com/usa.xml",
     "business": "https://kite.kagi.com/business.xml",
     "science": "https://kite.kagi.com/science.xml",
     "gaming": "https://kite.kagi.com/gaming.xml",

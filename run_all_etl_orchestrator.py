@@ -7,7 +7,6 @@ from datetime import datetime
 
 ETL_SCRIPTS = [
     # News ETL
-    "src/etl/news/news_get_freecodecamp.py",
     "src/etl/news/news_get_google_ai_blog.py",
     "src/etl/news/news_get_lobsters.py",
     "src/etl/news/news_get_arstechnica.py",

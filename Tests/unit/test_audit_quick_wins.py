@@ -49,8 +49,9 @@ class TestNewsSearchIds:
     """Every tab definition must yield exactly one wired search input ID."""
 
     def test_definitions_exist(self):
-        # 20 desde T-044 (Google AI/KDNuggets/Cloud Updates viven solo en Tech Radar)
-        assert len(NEWS_TAB_DEFINITIONS) >= 20
+        # 17 tras quitar freeCodeCamp, Kagi USA y Kagi World (T-126, 2026-11-26); Lobsters
+        # se muda a Knowledge Garden en T-130
+        assert len(NEWS_TAB_DEFINITIONS) >= 17
 
     def test_search_id_for_single_source(self):
         tab = {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"}

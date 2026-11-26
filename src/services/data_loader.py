@@ -23,10 +23,6 @@ NEWS_SOURCES_CONFIG = {
         "path": get_data_path("news", "venturebeat_latest.json"),
         "name": "VentureBeat",
     },
-    "freecodecamp": {
-        "path": get_data_path("news", "freecodecamp_latest.json"),
-        "name": "freeCodeCamp",
-    },
     "google_ai_blog": {
         "path": get_data_path("news", "google_ai_blog_latest.json"),
         "name": "Google AI Blog",
@@ -70,14 +66,6 @@ NEWS_SOURCES_CONFIG = {
     "indiehackers": {
         "path": get_data_path("indie_hackers", "posts.json"),
         "name": "Indie Hackers",
-    },
-    "kagi_world": {
-        "path": get_data_path("kagi_world", "kagi_world.json"),
-        "name": "Kagi World",
-    },
-    "kagi_usa": {
-        "path": get_data_path("kagi_usa", "kagi_usa.json"),
-        "name": "Kagi USA",
     },
     "kagi_business": {
         "path": get_data_path("kagi_business", "kagi_business.json"),
