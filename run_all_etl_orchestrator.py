@@ -86,8 +86,10 @@ ETL_SCRIPTS = [
     # Youtube
     "src/etl/youtube_shorts_ocr_etl.py",
     # Courses
+    # linkedin_learning_etl.py is deliberately NOT listed: nothing reads its
+    # output yet (no loader in courses_tab.py, no freshness entry), so running
+    # it would only hit Class Central to write a file nobody shows (T-124).
     "src/etl/courses/udemy_spreadsheet_etl.py",
-    "src/etl/courses/linkedin_learning_etl.py",  # Class Central provider scrape (keyless, Playwright) — feeds Learning tab (T-110)
     "src/etl/courses/hf_learn_etl.py",  # Hugging Face Learn catalog — feeds Learning tab
     "src/etl/courses/ms_applied_skills_etl.py",
     "src/etl/courses/aws_skill_builder_etl.py",
@@ -224,6 +226,32 @@ def run_script(script_path):
         return False, script_path, 0.0
 
 
+def _is_excluded(script_path: str, exclude: list[str]) -> bool:
+    """Whether ``--exclude`` names this script: by basename or by path substring."""
+    return any(exc and (exc in script_path or exc == os.path.basename(script_path)) for exc in exclude)
+
+
+def run_freshness_watcher(exclude: list[str]) -> bool | None:
+    """Run the data-freshness watcher once the pool is done; ``None`` when it did not run.
+
+    T-111: the watcher flags sources that failed to refresh THIS run, so it
+    must judge only after every ETL has finished writing. It used to compete
+    inside the 4-worker pool and could evaluate freshness while sources were
+    still running. It also runs BEFORE snapshot retention, so it never reads a
+    pruned tree.
+    """
+    freshness_script = "src/watchers/data_freshness_watcher.py"
+    if not os.path.exists(freshness_script) or _is_excluded(freshness_script, exclude):
+        return None
+    print(f"[{datetime.now()}] Running data freshness watcher (after the pool)...")
+    success, _path, _duration = run_script(freshness_script)
+    if success:
+        print(f"[{datetime.now()}] Data freshness watcher completed successfully.")
+    else:
+        print(f"[{datetime.now()}] Data freshness watcher failed. Check logs/data_freshness_watcher.log.")
+    return success
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run ETL scripts using a thread pool.")
     parser.add_argument("--workers", type=int, default=4, help="Maximum number of concurrent ETL processes to run.")
@@ -233,7 +261,7 @@ def main():
     os.makedirs("logs", exist_ok=True)
 
     print(f"Starting ETL Orchestrator with {args.workers} workers at {datetime.now()}")
-    print(f"Found {len(ETL_SCRIPTS)} ETL scripts to run.")
+    print(f"Found {len(ETL_SCRIPTS)} ETL scripts to run, plus the data-freshness watcher after the pool.")
 
     start_time = time.time()
     success_count = 0
@@ -242,7 +270,7 @@ def main():
     excluded = []
     scripts = []
     for script in ETL_SCRIPTS:
-        if any(exc and (exc in script or exc == os.path.basename(script)) for exc in args.exclude):
+        if _is_excluded(script, args.exclude):
             excluded.append(script)
             continue
         scripts.append(script)
@@ -261,20 +289,14 @@ def main():
             else:
                 fail_count += 1
 
-    # T-111: the freshness watcher flags sources that failed to refresh THIS
-    # run, so it must judge only after every ETL has finished writing. It used
-    # to compete inside the 4-worker pool and could evaluate freshness while
-    # sources were still running. It also runs BEFORE snapshot retention so it
-    # never reads a pruned tree.
-    freshness_script = "src/watchers/data_freshness_watcher.py"
-    freshness_excluded = any(exc and (exc in freshness_script or exc == os.path.basename(freshness_script)) for exc in args.exclude)
-    if os.path.exists(freshness_script) and not freshness_excluded:
-        print(f"[{datetime.now()}] Running data freshness watcher (after the pool)...")
-        ok, _path, _duration = run_script(freshness_script)
-        if ok:
-            print(f"[{datetime.now()}] Data freshness watcher completed successfully.")
+    # The watcher counts in the summary: "Successful: N" is every script of the
+    # cycle, not only the ones that ran in the pool.
+    freshness_ok = run_freshness_watcher(args.exclude)
+    if freshness_ok is not None:
+        if freshness_ok:
+            success_count += 1
         else:
-            print(f"[{datetime.now()}] Data freshness watcher failed. Check logs/data_freshness_watcher.log.")
+            fail_count += 1
 
     total_duration = time.time() - start_time
     print("\n" + "=" * 50)

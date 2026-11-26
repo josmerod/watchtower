@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -39,16 +41,42 @@ def test_shoppy_mock_is_gone() -> None:
     assert not (REPO_ROOT / "src/etl/ecommerce/shoppy_etl.py").exists()
 
 
-def test_linkedin_learning_is_registered() -> None:
-    """The keyless Class Central scrape ships in the cycle (T-110)."""
-    assert "src/etl/courses/linkedin_learning_etl.py" in orch.ETL_SCRIPTS
+def test_linkedin_learning_is_not_registered_without_a_consumer() -> None:
+    """It was listed by mistake on 2026-11-25: nothing reads its output (T-124).
+
+    Flip this test together with a consumer — a loader in courses_tab.py and
+    an entry in ``SOURCE_FILES`` of data_freshness_watcher.py — not before.
+    """
+    assert "src/etl/courses/linkedin_learning_etl.py" not in orch.ETL_SCRIPTS
 
 
 def test_freshness_watcher_not_in_pool() -> None:
     """The MUST BE LAST watcher must not compete inside the pool (T-111)."""
     assert "src/watchers/data_freshness_watcher.py" not in orch.ETL_SCRIPTS
     main_src = (REPO_ROOT / "run_all_etl_orchestrator.py").read_text(encoding="utf-8")
-    assert main_src.index("as_completed(futures)") < main_src.index('freshness_script = "src/watchers/'), "post-pool freshness step must come after the pool block"
+    assert main_src.index("as_completed(futures)") < main_src.index("freshness_ok = run_freshness_watcher("), "post-pool freshness step must come after the pool block"
+
+
+def test_freshness_watcher_runs_after_the_pool_and_reports_its_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    """T-111: it runs on its own after the pool and its outcome reaches the cycle summary."""
+    ran: list[str] = []
+    monkeypatch.setattr(orch, "run_script", lambda script: (ran.append(script) or True, script, 1.0))
+
+    assert orch.run_freshness_watcher([]) is True
+    assert ran == ["src/watchers/data_freshness_watcher.py"]
+
+    monkeypatch.setattr(orch, "run_script", lambda script: (False, script, 1.0))
+    assert orch.run_freshness_watcher([]) is False  # a failing watcher is a failed step, not silence
+
+
+def test_freshness_watcher_honors_exclude(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``--exclude data_freshness_watcher.py`` skips it: nothing runs, nothing counts."""
+    ran: list[str] = []
+    monkeypatch.setattr(orch, "run_script", lambda script: (ran.append(script) or True, script, 1.0))
+
+    assert orch.run_freshness_watcher(["data_freshness_watcher.py"]) is None
+    assert orch.run_freshness_watcher(["src/watchers/"]) is None
+    assert ran == []
 
 
 def test_kill_process_tree_kills_live_child() -> None:
