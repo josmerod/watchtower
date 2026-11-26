@@ -111,7 +111,7 @@ trendshift.io, skills y agentes de Watchtower (T-132…T-152, P2/P3).
 | Papers With Code | API muerta (302 → HF); sustituido por HF Daily Papers (T-040) |
 | Reddit OAuth | RSS + pacing adaptativo cubre la necesidad; OAuth añade complejidad sin beneficio |
 | Twitter/X, LinkedIn, APIs financieras premium, Semantic Scholar, Ticketmaster | Requieren API key — contra la restricción keyless del usuario |
-| DeepLearning.AI scrape con Playwright | Implementado vía sitemap estático (T-069), sin navegador |
+| DeepLearning.AI scrape con Playwright | Implementado vía sitemap estático (T-069), sin navegador; toda la fuente se retiró de Learning el 2026-11-26 (T-128) |
 | Epic free games | Endpoint comunitario muerto (NXDOMAIN global) |
 | BridgeBench scrape estático | Migró a client-side rendering; solo queda la vía browserless (T-047) |
 | Artificial Analysis sin clave | La API v2 responde 401 sin una clave de pago; bloqueado hasta que el usuario aporte una (T-038) |

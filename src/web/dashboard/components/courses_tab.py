@@ -24,9 +24,6 @@ UDEMY_DATA_PATH = get_data_path("udemy", "udemy_courses.json")
 MS_APPLIED_SKILLS_DATA_PATH = get_data_path("courses", "ms_applied_skills.json")
 AWS_SKILL_BUILDER_DATA_PATH = get_data_path("courses", "aws_skill_builder.json")
 GCP_SKILLS_BOOST_DATA_PATH = get_data_path("courses", "gcp_skills_boost.json")
-FREECODECAMP_DATA_PATH = get_data_path("news", "freecodecamp_latest.json")
-HF_LEARN_DATA_PATH = get_data_path("courses", "hf_learn.json")
-DEEPLEARNING_AI_DATA_PATH = get_data_path("courses", "deeplearning_ai_latest.json")
 
 ALL_COURSES_DATA = {
     "coursera": pd.DataFrame(),
@@ -706,68 +703,6 @@ def render_gcp_skills_courses_sub_tab(df):
     )
 
 
-def render_articles_sub_tab(data_path, source_label):
-    """Render a list of articles/courses as cards (freeCodeCamp, HF Learn…)."""
-    import json
-
-    if not file_exists(data_path):
-        return dbc.Alert(f"No {source_label} data available. Run the ETL to populate.", color="info", className="mt-3")
-
-    try:
-        with open(data_path, encoding="utf-8") as f:
-            articles = json.load(f)
-    except (OSError, ValueError):
-        return dbc.Alert(f"Failed to load {source_label} data.", color="danger", className="mt-3")
-
-    if not articles:
-        return html.P(f"No {source_label} items found.", className="text-muted mt-3")
-
-    cards = []
-    for article in articles[:50]:
-        title = article.get("title", "Untitled")
-        link = article.get("link") or article.get("url") or "#"
-        summary = article.get("summary") or article.get("description") or ""
-        published = article.get("published") or article.get("published_at") or ""
-        source_tag = article.get("source", "")
-        cards.append(
-            dbc.Card(
-                dbc.CardBody(
-                    [
-                        html.H6(
-                            html.A(title, href=link, target="_blank", className="text-decoration-none"),
-                            className="mb-1",
-                        ),
-                        html.Small(f"{source_tag} · {published}" if published else source_tag, className="text-muted") if (source_tag or published) else None,
-                        html.P(summary[:200] + "…" if len(summary) > 200 else summary, className="small text-muted mt-1 mb-0") if summary else None,
-                    ]
-                ),
-                className="mb-2 shadow-sm",
-            )
-        )
-
-    return html.Div(
-        [
-            html.P(f"{len(articles)} {source_label} items available.", className="text-muted small mb-3"),
-            *cards,
-        ]
-    )
-
-
-def render_freecodecamp_sub_tab():
-    """Render freeCodeCamp articles as a learning resource list."""
-    return render_articles_sub_tab(FREECODECAMP_DATA_PATH, "freeCodeCamp")
-
-
-def render_hf_learn_sub_tab():
-    """Render the Hugging Face Learn catalog."""
-    return render_articles_sub_tab(HF_LEARN_DATA_PATH, "Hugging Face Learn")
-
-
-def render_deeplearning_ai_sub_tab():
-    """Render the DeepLearning.AI course catalog."""
-    return render_articles_sub_tab(DEEPLEARNING_AI_DATA_PATH, "DeepLearning.AI")
-
-
 # --- Main Layout ---
 def _normalize_course(record: dict, provider: str) -> dict:
     """Normalize one course record across providers for the unified catalog."""
@@ -795,22 +730,6 @@ def render_all_courses_sub_tab() -> html.Div:
     _collect("ms_skills", "Microsoft")
     _collect("aws_skills", "AWS")
     _collect("gcp_skills", "Google Cloud")
-
-    # HF Learn articles live in their own file
-    try:
-        hf_records = load_data_from_file(HF_LEARN_DATA_PATH) or []
-        if isinstance(hf_records, list):
-            unified.extend(_normalize_course(r, "HF Learn") for r in hf_records if isinstance(r, dict))
-    except Exception:
-        pass
-
-    # DeepLearning.AI courses live in their own file
-    try:
-        dlai_records = load_data_from_file(DEEPLEARNING_AI_DATA_PATH) or []
-        if isinstance(dlai_records, list):
-            unified.extend(_normalize_course(r, "DeepLearning.AI") for r in dlai_records if isinstance(r, dict))
-    except Exception:
-        pass
 
     unified = [c for c in unified if c["title"]]
     store_data = unified[:2000]
@@ -901,21 +820,6 @@ def render_courses_tab():
                         label="GCP Skills Boost",
                         tab_id="tab-gcp-skills",
                         children=render_gcp_skills_courses_sub_tab(ALL_COURSES_DATA["gcp_skills"]),
-                    ),
-                    dbc.Tab(
-                        label="📚 freeCodeCamp",
-                        tab_id="tab-freecodecamp",
-                        children=render_freecodecamp_sub_tab(),
-                    ),
-                    dbc.Tab(
-                        label="🤗 HF Learn",
-                        tab_id="tab-hf-learn",
-                        children=render_hf_learn_sub_tab(),
-                    ),
-                    dbc.Tab(
-                        label="🧠 DeepLearning.AI",
-                        tab_id="tab-deeplearning-ai",
-                        children=render_deeplearning_ai_sub_tab(),
                     ),
                 ],
             ),

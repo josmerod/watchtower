@@ -90,11 +90,9 @@ ETL_SCRIPTS = [
     # output yet (no loader in courses_tab.py, no freshness entry), so running
     # it would only hit Class Central to write a file nobody shows (T-124).
     "src/etl/courses/udemy_spreadsheet_etl.py",
-    "src/etl/courses/hf_learn_etl.py",  # Hugging Face Learn catalog — feeds Learning tab
     "src/etl/courses/ms_applied_skills_etl.py",
     "src/etl/courses/aws_skill_builder_etl.py",
     "src/etl/courses/gcp_skills_boost_etl.py",
-    "src/etl/courses/deeplearning_ai_etl.py",  # DeepLearning.AI catalog — feeds Learning tab (T-069)
     "src/watchers/courses_watcher.py",  # Diffs course catalogs, emits new_matching_course events (T-066); best after courses ETLs
     # Intelligence
     "src/etl/intelligence/nvd_cve_etl.py",
