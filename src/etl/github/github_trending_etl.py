@@ -3,8 +3,8 @@
 The trending page is server-rendered HTML with one ``article.Box-row`` card
 per repository carrying the repo path, description, language, total stars and
 a "N stars today" counter. There is no JSON API for the trending view (the
-api.github.com search used by news_get_gittrends.py is a different signal),
-so the cards are parsed with BeautifulSoup.
+api.github.com search is a different signal), so the cards are parsed with
+BeautifulSoup.
 
 Selectors are deliberately structure/attribute-based (``h2 a``, ``p``,
 ``[itemprop=programmingLanguage]``, ``a[href$='/stargazers']``) — the T-078

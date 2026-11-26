@@ -1,6 +1,7 @@
 # Especificación de mejora — Tab 🌱 Knowledge Garden
 
 > Fecha: 2026-08-17 · Estado: borrador para revisión · Ámbito: `src/web/dashboard/components/knowledge_garden_tab.py` + ETLs de `src/etl/{news,intelligence,opensource,substack,trendshift,rss_feeds,expanded}/`
+> **Actualización 2026-11-26 (T-127):** Reddit AI/ML, Reddit Programming, Reddit DevOps, Reddit All, Git Trends, Stack Overflow y TrendShift se retiraron del garden por baja calidad; los tres ETL propios (`news_get_gittrends.py`, `news_get_stackoverflow_trends.py`, `src/etl/trendshift/`) se eliminan. Este documento describe el estado de agosto.
 
 ## 1. Diagnóstico actual
 

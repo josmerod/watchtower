@@ -86,19 +86,12 @@ reddit_opensource_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["red
 gooddevs_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["gooddevs"]["path"])
 podcasts_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["podcasts"]["path"])
 product_hunt_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["product_hunt"]["path"])
-gittrends_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["gittrends"]["path"])
 hackernews_ask_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["hackernews_ask"]["path"])
-stackoverflow_trends_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["stackoverflow_trends"]["path"])
-reddit_unified_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_unified"]["path"])
-reddit_ai_ml_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_ai_ml"]["path"])
-reddit_programming_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_programming"]["path"])
 reddit_tech_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_tech"]["path"])
-reddit_devops_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["reddit_devops"]["path"])
 devto_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["devto"]["path"])
 hypeurls_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["hypeurls"]["path"])
 lesswrong_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["lesswrong"]["path"])
 substack_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["substack"]["path"])
-trendshift_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["trendshift"]["path"])
 rss_feeds_repo = KnowledgeGardenRepository(KNOWLEDGE_SOURCES_CONFIG["rss_feeds"]["path"])
 
 
@@ -114,19 +107,12 @@ def _load_all_knowledge_data():
         "gooddevs": gooddevs_repo,
         "podcasts": podcasts_repo,
         "product_hunt": product_hunt_repo,
-        "gittrends": gittrends_repo,
         "hackernews_ask": hackernews_ask_repo,
-        "stackoverflow_trends": stackoverflow_trends_repo,
-        "reddit_unified": reddit_unified_repo,
-        "reddit_ai_ml": reddit_ai_ml_repo,
-        "reddit_programming": reddit_programming_repo,
         "reddit_tech": reddit_tech_repo,
-        "reddit_devops": reddit_devops_repo,
         "devto": devto_repo,
         "hypeurls": hypeurls_repo,
         "lesswrong": lesswrong_repo,
         "substack": substack_repo,
-        "trendshift": trendshift_repo,
         "rss_feeds": rss_feeds_repo,
     }
 
@@ -163,25 +149,14 @@ KNOWLEDGE_TAB_DEFINITIONS = [
     {"label": "LessWrong", "keys": "lesswrong", "id": "lw"},
     {"label": "Good Devs", "keys": "gooddevs", "id": "gd"},
     {"label": "Podcasts", "keys": "podcasts", "id": "pod"},
-    {"label": "Reddit AI/ML", "keys": "reddit_ai_ml", "id": "reddit_ai_ml"},
-    {
-        "label": "Reddit Programming",
-        "keys": "reddit_programming",
-        "id": "reddit_prog",
-    },
     {"label": "Reddit Tech", "keys": "reddit_tech", "id": "reddit_tech"},
-    {"label": "Reddit DevOps", "keys": "reddit_devops", "id": "reddit_devops"},
-    {"label": "Reddit All", "keys": "reddit_unified", "id": "reddit_all"},
-    {"label": "Git Trends", "keys": "gittrends", "id": "gt"},
     {"label": "HN Ask", "keys": "hackernews_ask", "id": "hn_ask"},
-    {"label": "Stack Overflow", "keys": "stackoverflow_trends", "id": "so"},
     {"label": "Product Hunt", "keys": "product_hunt", "id": "ph"},
     # Developer community tab
     {"label": "Dev.to", "keys": "devto", "id": "devto"},
     {"label": "HypeURLs", "keys": "hypeurls", "id": "hypeurls"},
     {"label": "Open Source", "keys": ["opensource", "reddit_opensource"], "id": "opensource"},
     {"label": "Substack", "keys": "substack", "id": "substack"},
-    {"label": "TrendShift", "keys": "trendshift", "id": "trendshift"},
     {"label": "RSS Feeds", "keys": "rss_feeds", "id": "rss_feeds"},
 ]
 
