@@ -112,6 +112,25 @@ class TestSharedSavedItems:
         keys = " ".join(app.callback_map.keys())
         assert "news-save-btn" in keys and "markets-save-btn" in keys
 
+    def test_toggle_callback_ignores_the_call_dash_makes_when_a_button_is_inserted(self, clean_saved_file, monkeypatch):
+        """A pattern-matching callback runs once per button added to the page, click or not."""
+        from types import SimpleNamespace
+
+        app = dash.Dash("test-saved-inserted")
+        saved_items.register_save_toggle_callback(app, "news-save-btn")
+        key = next(k for k in app.callback_map if "news-save-btn" in k)
+        toggle = app.callback_map[key]["callback"].__wrapped__
+        h = saved_items.save_button({"url": "http://example.com/i", "title": "I"}, "news-save-btn", tab="news").id["hash"]
+        monkeypatch.setattr(dash, "ctx", SimpleNamespace(triggered_id=SimpleNamespace(hash=h)))
+
+        for no_click in (None, 0):
+            assert all(result is dash.no_update for result in toggle(no_click))
+
+        assert saved_items.load_saved() == []  # a table rendered is not a table starred
+        assert not clean_saved_file.exists()
+        assert toggle(1) == ("★", "warning", "Quitar de guardados")
+        assert toggle(2) == ("☆", "outline-secondary", "Guardar para luego")
+
 
 # --------------------------------------------------------------------------- #
 # News: "🔎 Global" results only

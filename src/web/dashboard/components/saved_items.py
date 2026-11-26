@@ -155,5 +155,10 @@ def register_save_toggle_callback(app: dash.Dash, btn_type: str) -> None:
         Input({"type": btn_type, "hash": dash.MATCH}, "n_clicks"),
         prevent_initial_call=True,
     )
-    def _toggle_saved_item(_n_clicks: int):
+    def _toggle_saved_item(n_clicks: int | None):
+        # Dash runs a pattern-matching callback for every button inserted into
+        # the page, even with prevent_initial_call=True; those calls carry no
+        # click, and toggling on them starred rows nobody clicked.
+        if not n_clicks:
+            return dash.no_update, dash.no_update, dash.no_update
         return toggle_response(dash.ctx.triggered_id.hash)
