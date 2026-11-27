@@ -6,7 +6,7 @@ has nothing to update, and says in one line what the request asked for. Fixtures
 """
 
 import logging
-
+import os
 import pytest
 
 from src.web.dashboard import app as app_module
@@ -46,6 +46,31 @@ def test_a_request_whose_outputs_came_empty_is_answered_the_same(caplog) -> None
 
     assert response.status_code == 204
     assert "digest-content" in caplog.text
+
+
+def test_a_request_short_of_the_inputs_its_callback_declares_is_answered_the_same(caplog) -> None:
+    """A tab left open across a deploy that added an Input sends the shorter list it was loaded with; Dash raised IndexError."""
+    callback = next(cb for cb in dashboard_app._callback_list if cb["output"] == "gcp-skills-table-container.children")
+    assert len(callback["inputs"]) == 2  # the search box and the language filter
+    only_the_search = [{"id": "gcp-skills-search-input", "property": "value", "value": "x"}]
+
+    with caplog.at_level(logging.WARNING, logger=LOGGER):
+        response = _post({"output": callback["output"], "outputs": {"id": "gcp-skills-table-container", "property": "children"}, "inputs": only_the_search, "changedPropIds": ["gcp-skills-search-input.value"]})
+
+    assert response.status_code == 204
+    assert "gcp-skills-table-container" in caplog.text and "reload it" in caplog.text
+
+
+def test_an_error_one_of_our_callbacks_raised_keeps_its_traceback() -> None:
+    """A KeyError in a callback of ours is a bug to see whole, not a stale tab to shrug at."""
+    frame_file = os.path.join(app_module._SRC_DIR, "web", "dashboard", "components", "some_tab.py")
+    try:
+        exec(compile("raise KeyError('a column the code expects')", frame_file, "exec"), {})
+    except KeyError as error:
+        with dashboard_app.server.test_request_context("/_dash-update-component"), pytest.raises(KeyError, match="a column the code expects"):
+            app_module.callback_request_refused(error)
+    else:
+        raise AssertionError("the snippet did not raise")
 
 
 def test_an_error_on_another_route_is_left_to_flask() -> None:
