@@ -266,6 +266,11 @@ a:not(.btn):focus {
     z-index: 30 !important;
 }
 
+/* The legacy mobile sheet (css/mobile_responsive.css) parks every tab link
+   at -9999px under 768px. The main navigation is static here, so the offsets
+   do nothing; a subtab link keeps `position: relative` from style.css for its
+   underline, and without the reset it stayed 9999px off-screen: an empty bar
+   on every tab with subtabs, on a phone. */
 .nav-tabs .nav-item,
 .nav-tabs li,
 .nav-tabs .nav-link,
@@ -275,6 +280,8 @@ a:not(.btn):focus {
     width: auto !important;
     height: auto !important;
     position: static !important;
+    left: auto !important;
+    top: auto !important;
     background: transparent !important;
 }
 
