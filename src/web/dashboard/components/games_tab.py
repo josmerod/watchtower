@@ -2,6 +2,7 @@ import os
 import re  # For parsing prices
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import dash
 import dash_bootstrap_components as dbc
@@ -197,13 +198,16 @@ def load_deals_data():
             DATA_LOADED_SUCCESSFULLY["deals"] = True
             return
 
-        # Standardize columns
+        # Standardize columns to the names the table uses. games_get_deals.py writes title, link, store, price
+        # (the current lowest price), discount ("-93%") and published; nothing writes the camel-case names (T-155).
         df.rename(
             columns={
                 "url": "link",
                 "newPrice": "price_new",
+                "price": "price_new",
                 "oldPrice": "price_old",
                 "addedDate": "published_date_str",
+                "published": "published_date_str",
                 "name": "title",
             },
             inplace=True,
@@ -225,12 +229,15 @@ def load_deals_data():
 
         df["published_date"] = df["published_date_str"].apply(lambda x: parse_date_universal(x, "Games"))
         df["price_new_numeric"] = df["price_new"].apply(parse_price)
-        df["price_old_numeric"] = df["price_old"].apply(parse_price)
 
         if "discount" in df.columns:
             df["discount_numeric"] = df["discount"].astype(str).str.extract(r"(\d+)").astype(float)
         else:
             df["discount_numeric"] = None
+
+        # No source gives the old price: the current one and the discount tell it (0.47 at -93% was 6.71).
+        # Without a usable discount it stays NaN, which the table shows as N/A.
+        df["price_old_numeric"] = (df["price_new_numeric"] / (1 - df["discount_numeric"] / 100)).where(df["discount_numeric"].between(1, 99) & df["price_new_numeric"].gt(0))
 
         df = df.sort_values(by="published_date", ascending=False, na_position="last")
 
@@ -270,12 +277,14 @@ def load_bundles_data():
                 continue
 
             # Standardize columns - adjust based on actual keys
-            # Common keys: 'title', 'url'/'link', 'price', 'game_count', 'store', 'endDate'/'expiryDate'
+            # bundles.json: title, link, published, price, games. humblebundles.json: title, link, end_date, price, games.
             df.rename(
                 columns={
                     "url": "link",
                     "endDate": "expiry_date_str",
                     "expiryDate": "expiry_date_str",  # another common name
+                    "end_date": "expiry_date_str",
+                    "published": "published_date_str",
                     "name": "title",
                     "humbleLink": "link",  # Specific to humblebundles.json
                     "humbleTitle": "title",  # Specific to humblebundles.json
@@ -297,13 +306,20 @@ def load_bundles_data():
                 "price",
                 "game_count",
                 "expiry_date_str",
+                "published_date_str",
             ]
             for col in expected_cols:
                 if col not in df.columns:
                     df[col] = None  # Add missing columns with None
 
+            # Both sources list the games of a bundle instead of counting them
+            if "games" in df.columns:
+                df["game_count"] = df["games"].apply(lambda games: len(games) if isinstance(games, (list, tuple)) else None)
+
             df["expiry_date"] = df["expiry_date_str"].apply(lambda x: parse_date_universal(x, "Games"))
-            df["price_numeric"] = df["price"].apply(parse_price)
+            price_numeric = df["price"].apply(parse_price)
+            # "Pay what you want" and "Free" state no amount: price_numeric stays empty and the table shows the words
+            df["price_numeric"] = price_numeric.where(price_numeric.gt(0) | df["price"].astype(str).str.contains(r"\d"))
 
             # 'game_count' might need extraction if it's like "10 games"
             if "game_count" in df.columns and df["game_count"].dtype == "object":
@@ -350,11 +366,13 @@ def load_bundles_data():
     else:
         combined_df = pd.DataFrame()  # Return empty DataFrame if no data
 
-    # Use 'expiry_date' for sorting if available, otherwise it will sort Nones/NaTs
-    # If bundles don't have a primary "published" date, expiry or a load date might be used.
-    # For now, sorting by expiry date, making active bundles (future expiry) appear first if sorted ascending.
-    # Or, if no reliable date, don't sort or sort by title. Let's sort by expiry_date descending for now.
-    combined_df = combined_df.sort_values(by="expiry_date", ascending=False, na_position="last")
+    # Newest first on one timeline: by expiry date where the source gives one (Humble), else by publication date.
+    if not combined_df.empty:
+        published = pd.to_datetime(combined_df["published_date_str"].apply(lambda x: parse_date_universal(x, "Games")), errors="coerce", utc=True)
+        expiry = pd.to_datetime(combined_df["expiry_date"], errors="coerce", utc=True)
+        combined_df["published_date"] = published
+        combined_df = combined_df.assign(sort_date=expiry.fillna(published))
+        combined_df = combined_df.sort_values(by="sort_date", ascending=False, na_position="last")
 
     ALL_GAMES_DATA["bundles"] = combined_df
     DATA_LOADED_SUCCESSFULLY["bundles"] = True
@@ -474,7 +492,17 @@ def load_all_games_data():
 def format_display_date(dt_obj):
     if pd.isna(dt_obj) or dt_obj is None:
         return "N/A"
+    if dt_obj.tzinfo is not None:  # the dates come in UTC; the day to show is the one in Spain
+        dt_obj = dt_obj.astimezone(ZoneInfo("Europe/Madrid"))
     return dt_obj.strftime("%Y-%m-%d")  # Simpler date format for tables
+
+
+def _bundle_price(row) -> str:
+    """An amount as "$9.99", the words of the source when it states none ("Pay what you want"), else N/A."""
+    if pd.notna(row.get("price_numeric")):
+        return f"${row['price_numeric']:.2f}"
+    words = str(row.get("price") or "").strip()
+    return words if words and words.lower() not in {"none", "nan", "n/a"} else "N/A"
 
 
 def render_bundles_sub_tab(df):
@@ -511,7 +539,7 @@ def render_bundles_sub_tab(df):
                         )
                     ),
                     html.Td(row.get("store", "N/A")),
-                    html.Td(f"${row.get('price_numeric', 0.0):.2f}" if pd.notna(row.get("price_numeric")) else "N/A"),
+                    html.Td(_bundle_price(row)),
                     html.Td(row.get("game_count_numeric", "N/A")),
                     html.Td(format_display_date(row.get("expiry_date"))),
                 ]
@@ -769,8 +797,6 @@ if __name__ == "__main__":
         load_deals_data()
     if not DATA_LOADED_SUCCESSFULLY["bundles"]:
         load_bundles_data()
-    if not DATA_LOADED_SUCCESSFULLY["giveaways"]:
-        pass  # load_giveaways_data() — removed, no longer available
     if not DATA_LOADED_SUCCESSFULLY["trending"]:
         load_trending_data()
     if not DATA_LOADED_SUCCESSFULLY["new_releases"]:
