@@ -49,3 +49,19 @@ def test_tab_links_lose_the_offsets_of_the_legacy_mobile_sheet():
     reset = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".nav-tabs .nav-link") if d.get("left") == "auto !important" and d.get("top") == "auto !important"]
     assert reset, "no rule of the final sheet brings .nav-tabs .nav-link back to left/top: auto"
     assert any(":hover" not in s and ":focus" not in s for s, _ in reset), "the reset only applies on hover or focus"
+
+
+def test_primary_buttons_outrank_the_blanket_background():
+    """The blanket rule paints every background dark with the chain's specificity.
+
+    A rule that gives .btn-primary its light accent has to carry the same
+    chain, or the dark text of the button is left on a dark background.
+    """
+    blanket = [(s, d) for s, d in rules_matching(FINAL_SHEET, "html body") if "background-color" in d and BLANKET_CHAIN in s]
+    assert blanket, "the blanket background rule moved: re-check what the buttons have to outrank"
+
+    keepers = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".btn-primary") if BLANKET_CHAIN in s and "color" in d and ("background" in d or "background-color" in d) and ":hover" not in s and ":focus" not in s]
+    assert keepers, "no rule gives .btn-primary a background and a text color with the blanket chain on its selector"
+
+    html, body = len(re.findall(r"(?<![\w-])html(?![\w-])", keepers[0][0])), len(re.findall(r"(?<![\w-])body(?![\w-])", keepers[0][0]))
+    assert html and body, "the rule does not start with `html body`: it is less specific than the blanket rule"

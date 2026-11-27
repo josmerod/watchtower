@@ -619,3 +619,20 @@ html body .Select-noresults {
     background-color: #ffffff !important;
     color: #0f172a !important;
 }
+
+/* Primary buttons keep the accent they were given. The blanket backgrounds
+   paint every element dark and left the dark text of .btn-primary on it:
+   "Open API" in the header read dark on dark. As specific as the blanket
+   rule above, plus the class. */
+html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs) {
+    color: var(--wt-accent-contrast) !important;
+    background: #c4b5fd !important;
+    border-color: #c4b5fd !important;
+}
+
+html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):hover,
+html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):focus {
+    color: var(--wt-accent-contrast) !important;
+    background: #ddd6fe !important;
+    border-color: #ddd6fe !important;
+}
