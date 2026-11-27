@@ -718,7 +718,8 @@ def register_news_search_callbacks(app):
             import csv
             import io
 
-            keys_str = dash.ctx.triggered_id.keys
+            # triggered_id is a dict: .keys would be its method, and the export never ran on a click
+            keys_str = dash.ctx.triggered_id["keys"]
             keys = [keys_str] if keys_str in _ALL_NEWS_SOURCES else keys_str.split("-")
             all_news_data = get_all_news_data()
             rows = []

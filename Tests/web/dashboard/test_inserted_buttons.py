@@ -143,6 +143,16 @@ def test_a_refresh_click_renders_the_digest(monkeypatch: pytest.MonkeyPatch) -> 
     assert "Aún no hay digest" in json.dumps(changed["digest-content"], ensure_ascii=False)
 
 
+def test_an_export_click_downloads_the_csv(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(news_tab, "get_all_news_data", lambda: {"techcrunch": [{"title": "One title", "url": "https://example.invalid/1", "published": "2026-11-27"}]})
+    app = _app(news_tab.register_news_search_callbacks)
+
+    changed = call(app, find(app, "news-export-download.data"), [[entry(EXPORT, "n_clicks", 1)]], [f"{sid(EXPORT)}.n_clicks"])
+
+    assert changed["news-export-download"]["data"]["filename"] == "watchtower_news_techcrunch.csv"
+    assert "One title" in changed["news-export-download"]["data"]["content"]
+
+
 def test_a_search_still_moves_the_top_tech_view(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(news_tab, "get_all_news_data", lambda: {})
     app = _app(news_tab.register_news_search_callbacks)
