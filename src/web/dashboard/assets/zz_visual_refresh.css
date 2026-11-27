@@ -485,19 +485,17 @@ select:focus,
     display: none !important;
 }
 
-/* Keep performance guard but don't apply it to active/open selector menus. */
-.lazy-tab-content,
-.tab-pane,
-.card,
-.table-responsive {
+/* Performance guard: an off-screen card or table is not laid out until it is
+   scrolled to. Tab containers are left out of it, and so is any card that
+   holds a dropdown. `content-visibility: auto` turns an element into the
+   containing block of its `position: fixed` descendants, and Dash draws
+   dropdown menus as fixed boxes placed in viewport coordinates: inside such
+   a container every menu landed at the trigger plus the container's own
+   offset, off-screen on every tab. */
+.card:not(:has(.dash-dropdown)),
+.table-responsive:not(:has(.dash-dropdown)) {
     content-visibility: auto;
     contain-intrinsic-size: 1px 720px;
-}
-
-.Select-menu-outer,
-.Select-menu {
-    content-visibility: visible !important;
-    contain: none !important;
 }
 
 /* Mobile readability */
