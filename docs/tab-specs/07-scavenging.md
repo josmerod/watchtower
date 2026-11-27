@@ -2,6 +2,8 @@
 
 > Fecha: 2026-08-17 · Estado: borrador para revisión · Ámbito: `src/web/dashboard/components/scavenging_tab.py` + `src/etl/goldigging/{goldigging_scavenging_etl,audible_releases_etl,gumroad_scraper_etl,viajeros_piratas_etl,humble_books_etl}.py`
 
+> **Actualización 2026-11-27 (T-149, T-150, T-171):** el corte a las 100 primeras filas ya no existe: `MAX_ITEMS_PER_TAB` es el tamaño de página, el Store guarda la fuente entera y cada subtab tiene «← Prev / Next →». Audible pide una ventana móvil de 30 días, para cuando el sitio repite la última página (nunca lista más de 10: ≈3 días de novedades en es+en) y cada novedad lleva su fecha de lanzamiento y sus columnas propias (autor, narrador, serie, duración, idioma, valoración, versión). Humble Books da un registro por libro, con su propia página como enlace y «Humble ↗» hacia el bundle; antes quedaba un libro por bundle. La insignia del tipo de oferta se leía mal (texto oscuro sobre fondo oscuro) y está arreglada en `style.css`. Pendiente: T-170 (la pestaña pinta todas las subtabs al abrir). Este documento describe el estado de agosto.
+
 ## 1. Diagnóstico actual
 
 ### 1.1 Propósito y arquitectura
