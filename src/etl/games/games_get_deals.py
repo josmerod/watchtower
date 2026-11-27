@@ -14,7 +14,7 @@ The fetched data is processed and saved into JSON and CSV files.
 # - Obtener los datos de los RSS
 #     -  https://isthereanydeal.com/feeds/ES/EUR/deals.rss
 #     -  https://isthereanydeal.com/feeds/ES/EUR/bundles.rss
-#     -  https://isthereanydeal.com/feeds/ES/EUR/giveaways.rss
+#     -  https://isthereanydeal.com/feeds/ES/giveaways.rss
 # Guardar los datos de cada RSS en un dataframe
 #
 # Generar alertas si aplica, guardarlos y triggerear notificaciones.
@@ -36,19 +36,54 @@ logger = get_logger("Games_ETL")
 
 DEALS_RSS = "https://isthereanydeal.com/feeds/ES/EUR/deals.rss"
 BUNDLES_RSS = "https://isthereanydeal.com/feeds/ES/EUR/bundles.rss"
-GIVEAWAYS_RSS = "https://isthereanydeal.com/feeds/ES/EUR/giveaways.rss"  # Limited to the last week to avoid issues with stale items
+# No currency segment: a giveaway states no price. The old /ES/EUR/ address answers 404.
+# Limited to the last week to avoid issues with stale items
+GIVEAWAYS_RSS = "https://isthereanydeal.com/feeds/ES/giveaways.rss"
+
+# The site answers 403 to the default "Python-urllib" client and serves any named one. Unnamed, the feeds went
+# unread from 2026-07-22 on while every run still ended with exit code 0.
+HEADERS = {"User-Agent": "Watchtower/1.0 (https://github.com/josmerod/watchtower)"}
+CURRENCY = "EUR"  # the feeds above are the ES/EUR ones: prices come as "10,80 €"
 
 
-def get_deals():
+def _save(frame: pd.DataFrame, name: str) -> bool:
+    """Write *frame* to data/games/<name>.json and .csv; False when a write failed.
+
+    The JSON is replaced in one step, so a failed write leaves the previous file whole for the dashboard.
+    """
+    try:
+        output_dir = os.path.join(get_project_root(), "data/games")
+        ensure_directories(["data/games"])
+        json_path = os.path.join(output_dir, f"{name}.json")
+        partial_path = f"{json_path}.partial"
+        csv_path = os.path.join(output_dir, f"{name}.csv")
+        frame.to_json(partial_path, orient="records", date_format="iso")
+        os.replace(partial_path, json_path)
+        frame.to_csv(csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
+    except OSError as e:
+        logger.error(f"Error saving {name} data: {e}", exc_info=True)
+        return False
+    except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
+        logger.error(f"An unexpected error occurred while saving {name}: {e}", exc_info=True)
+        return False
+    logger.info(f"{name.capitalize()} saved to {json_path} and {csv_path}")
+    return True
+
+
+def get_deals() -> bool:
     """Fetches game deals from IsThereAnyDeal RSS feed and saves them to CSV and JSON.
 
     Extracts title, link, publication date, price, discount, and store name for each deal.
     The deals are sorted by discount percentage.
+
+    Returns:
+        True when the feed was read and its deals saved, False when nothing was written.
     """
     logger.info("Fetching deals...")
     deals_list = []
+    fetched = True
     try:
-        deals_feed = feedparser.parse(fetch_with_retry(DEALS_RSS))
+        deals_feed = feedparser.parse(fetch_with_retry(DEALS_RSS, headers=HEADERS))
         if deals_feed.bozo:
             logger.warning(f"Deals RSS feed is malformed or could not be parsed properly. Bozo exception: {deals_feed.bozo_exception}")
         logger.debug(f"Retrieved {len(deals_feed.entries)} deals from RSS feed: {DEALS_RSS}")
@@ -78,6 +113,7 @@ def get_deals():
                         "price": lowest_price,
                         "discount": f"-{best_discount}%" if best_discount else None,
                         "store": store_name,
+                        "currency": CURRENCY,
                     }
                 )
             except (ValueError, TypeError, AttributeError) as e:
@@ -89,43 +125,25 @@ def get_deals():
 
     except Exception as e:  # broad by design: feed fetch + parse wrapper (feedparser/network)
         logger.error(f"Failed to fetch or parse deals RSS feed {DEALS_RSS}: {e}", exc_info=True)
-        # Decide if we want to return partial data or nothing
-        # For now, we'll proceed with what we have in deals_list
+        fetched = False
 
+    if not fetched:
+        return False
     if not deals_list:
         logger.warning("No deals were successfully processed.")
-        return
+        return False
 
     try:
         deals_df = pd.DataFrame(deals_list)
         logger.debug(f"Created DataFrame with {len(deals_df)} deals")
         deals_df = deals_df.sort_values(by="discount", ascending=False)
-
-        project_root = get_project_root()
-        output_dir = os.path.join(project_root, "data/games")
-        ensure_directories(["data/games"])
-
-        deals_csv_path = os.path.join(output_dir, "deals.csv")
-        deals_json_path = os.path.join(output_dir, "deals.json")
-
-        if os.path.exists(deals_csv_path):
-            os.remove(deals_csv_path)
-            logger.debug(f"Removed existing {deals_csv_path}")
-
-        deals_df.to_json(deals_json_path, orient="records", date_format="iso")
-        logger.info(f"Deals saved to {deals_json_path}")
-        deals_df.to_csv(deals_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
-        logger.info(f"Deals saved to {deals_csv_path}")
-
-    except OSError as e:
-        logger.error(f"Error saving deals data: {e}", exc_info=True)
-    except ImportError:
-        logger.error("Pandas library not found. Cannot save deals to CSV/JSON.", exc_info=True)
-    except Exception as e:  # Catch other potential errors during DataFrame ops or saving [broad by design: pandas DataFrame/CSV serialization of scraped data]
-        logger.error(f"An unexpected error occurred while saving deals: {e}", exc_info=True)
+    except Exception as e:  # broad by design: pandas DataFrame operations on scraped data
+        logger.error(f"An unexpected error occurred while preparing deals: {e}", exc_info=True)
+        return False
+    return _save(deals_df, "deals")
 
 
-def get_bundles():
+def get_bundles() -> bool:
     """Fetches game bundles from IsThereAnyDeal RSS feed and saves them to CSV.
 
     Values to extract:
@@ -134,11 +152,15 @@ def get_bundles():
     - published : date of publication, in GMT+0100
     - price : highest price of the bundle (highest tier)
     - games : list of all included games in the bundle, using a python list
+
+    Returns:
+        True when the feed was read and its bundles saved, False when nothing was written.
     """
     logger.info("Fetching bundles...")
     bundles_list = []
+    fetched = True
     try:
-        bundles_feed = feedparser.parse(fetch_with_retry(BUNDLES_RSS))
+        bundles_feed = feedparser.parse(fetch_with_retry(BUNDLES_RSS, headers=HEADERS))
         if bundles_feed.bozo:
             logger.warning(f"Bundles RSS feed is malformed. Bozo exception: {bundles_feed.bozo_exception}")
         logger.debug(f"Retrieved {len(bundles_feed.entries)} bundles from RSS feed: {BUNDLES_RSS}")
@@ -163,6 +185,7 @@ def get_bundles():
                         "published": pub_date,
                         "price": highest_price,
                         "games": games,
+                        "currency": CURRENCY,
                     }
                 )
             except (ValueError, TypeError, AttributeError) as e:
@@ -177,37 +200,25 @@ def get_bundles():
             f"Failed to fetch or parse bundles RSS feed {BUNDLES_RSS}: {e}",
             exc_info=True,
         )
+        fetched = False
 
+    if not fetched:
+        return False
     if not bundles_list:
         logger.warning("No bundles were successfully processed.")
-        return
+        return False
 
     try:
         bundles_df = pd.DataFrame(bundles_list)
         logger.debug(f"Created DataFrame with {len(bundles_df)} bundles")
         bundles_df = bundles_df.sort_values(by="published", ascending=False)
-
-        project_root = get_project_root()
-        output_dir = os.path.join(project_root, "data/games")
-        ensure_directories(["data/games"])  # Ensure_directories should ideally be called once
-
-        bundles_json_path = os.path.join(output_dir, "bundles.json")
-        bundles_csv_path = os.path.join(output_dir, "bundles.csv")
-
-        bundles_df.to_json(bundles_json_path, orient="records", date_format="iso")
-        logger.info(f"Bundles saved to {bundles_json_path}")
-        bundles_df.to_csv(bundles_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
-        logger.info(f"Bundles saved to {bundles_csv_path}")
-
-    except OSError as e:
-        logger.error(f"Error saving bundles data: {e}", exc_info=True)
-    except ImportError:
-        logger.error("Pandas library not found. Cannot save bundles to CSV/JSON.", exc_info=True)
-    except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
-        logger.error(f"An unexpected error occurred while saving bundles: {e}", exc_info=True)
+    except Exception as e:  # broad by design: pandas DataFrame operations on scraped data
+        logger.error(f"An unexpected error occurred while preparing bundles: {e}", exc_info=True)
+        return False
+    return _save(bundles_df, "bundles")
 
 
-def get_giveaways():
+def get_giveaways() -> bool:
     """Fetches game giveaways from IsThereAnyDeal RSS feed and saves them to CSV.
 
     Values to extract:
@@ -215,11 +226,15 @@ def get_giveaways():
     - link
     - published
     - expires
+
+    Returns:
+        True when the feed was read (empty files when it holds no live giveaway), False when it was not.
     """
     logger.info("Fetching giveaways...")
     giveaways_list = []
+    fetched = True
     try:
-        giveaways_feed = feedparser.parse(fetch_with_retry(GIVEAWAYS_RSS))
+        giveaways_feed = feedparser.parse(fetch_with_retry(GIVEAWAYS_RSS, headers=HEADERS))
         if giveaways_feed.bozo:
             logger.warning(f"Giveaways RSS feed is malformed. Bozo exception: {giveaways_feed.bozo_exception}")
             # Still try to process what we can
@@ -265,66 +280,42 @@ def get_giveaways():
             f"Failed to fetch or parse giveaways RSS feed {GIVEAWAYS_RSS}: {e}",
             exc_info=True,
         )
+        fetched = False
 
+    if not fetched:
+        return False
     if not giveaways_list:
+        # Empty files keep the shape of the data for whoever reads it
         logger.warning("No giveaways were successfully processed.")
-        # Create empty files to maintain consistency with data structure
-        try:
-            project_root = get_project_root()
-            output_dir = os.path.join(project_root, "data/games")
-            ensure_directories(["data/games"])
-
-            giveaways_json_path = os.path.join(output_dir, "giveaways.json")
-            giveaways_csv_path = os.path.join(output_dir, "giveaways.csv")
-
-            # Create empty JSON and CSV files
-            with open(giveaways_json_path, "w") as f:
-                f.write("[]")
-
-            with open(giveaways_csv_path, "w") as f:
-                f.write("title|link|published|expires\n")  # Header only
-
-            logger.info(f"Empty giveaways files created at {giveaways_json_path} and {giveaways_csv_path}")
-        except OSError as e:
-            logger.error(f"Error creating empty giveaways files: {e}")
-        return
+        return _save(pd.DataFrame(columns=["title", "link", "published", "expires"]), "giveaways")
 
     try:
         giveaways_df = pd.DataFrame(giveaways_list)
         logger.debug(f"Created DataFrame with {len(giveaways_df)} active giveaways")
-        if not giveaways_df.empty:
-            giveaways_df = giveaways_df.sort_values(by="published", ascending=False)
+        giveaways_df = giveaways_df.sort_values(by="published", ascending=False)
+    except Exception as e:  # broad by design: pandas DataFrame operations on scraped data
+        logger.error(f"An unexpected error occurred while preparing giveaways: {e}", exc_info=True)
+        return False
+    return _save(giveaways_df, "giveaways")
 
-        project_root = get_project_root()
-        output_dir = os.path.join(project_root, "data/games")
-        ensure_directories(["data/games"])
 
-        giveaways_json_path = os.path.join(output_dir, "giveaways.json")
-        giveaways_csv_path = os.path.join(output_dir, "giveaways.csv")
-
-        giveaways_df.to_json(giveaways_json_path, orient="records", date_format="iso")
-        logger.info(f"Giveaways saved to {giveaways_json_path}")
-        giveaways_df.to_csv(giveaways_csv_path, index=False, sep="|", date_format="%Y-%m-%dT%H:%M:%SZ")
-        logger.info(f"Giveaways saved to {giveaways_csv_path}")
-
-    except OSError as e:
-        logger.error(f"Error saving giveaways data: {e}", exc_info=True)
-    except ImportError:
-        logger.error(
-            "Pandas library not found. Cannot save giveaways to CSV/JSON.",
-            exc_info=True,
-        )
-    except Exception as e:  # broad by design: pandas DataFrame/CSV serialization of scraped data
-        logger.error(f"An unexpected error occurred while saving giveaways: {e}", exc_info=True)
+def main() -> None:
+    """Read the three feeds; the exit code tells the scheduler whether every feed was read."""
+    logger.info("Starting Games ETL process")
+    ok = True
+    for step in (get_deals, get_bundles, get_giveaways):
+        try:
+            if not step():
+                ok = False
+        except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
+            logger.error(f"Games ETL process failed in {step.__name__}: {e}", exc_info=True)
+            ok = False
+    if not ok:
+        # A feed that could not be read leaves its previous file in place: that is a failed run, not a quiet one
+        logger.error("Games ETL process finished with a feed that could not be read")
+        sys.exit(1)
+    logger.info("Games ETL process completed successfully")
 
 
 if __name__ == "__main__":
-    logger.info("Starting Games ETL process")
-    try:
-        get_deals()
-        get_bundles()
-        get_giveaways()
-        logger.info("Games ETL process completed successfully")
-    except Exception as e:  # broad by design: whole-pipeline wrapper (network fetch + parse + save)
-        logger.error(f"Games ETL process failed: {e}", exc_info=True)
-        sys.exit(1)
+    main()

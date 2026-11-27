@@ -320,6 +320,30 @@ def test_every_news_source_is_registered_with_its_content_date():
     assert len({entry["key"] for entry in SOURCE_FILES}) == len(SOURCE_FILES)  # one alert rule per source
 
 
+def test_the_game_deal_feeds_are_watched_by_the_age_of_their_items(tmp_path):
+    """deals.json and bundles.json kept July data for four months: never rewritten, and watched by nobody (T-192)."""
+    registered = {entry["key"]: entry for entry in SOURCE_FILES}
+    for key in ("games_deals", "games_bundles"):
+        assert registered[key]["content_date"] == "published"
+
+    entry = dict(registered["games_deals"], path="games/deals.json")
+    _write_items(tmp_path / "games/deals.json", [_ago(48)], field="published")  # the file is an hour old
+    assert assess_freshness([entry], data_dir=tmp_path, now=NOW)["sources"][0]["status"] == "stale"  # a week for the others
+
+    _write_items(tmp_path / "games/deals.json", [_ago(128 * 24)], field="published")  # the file as found on 2026-11-27
+    record = assess_freshness([entry], data_dir=tmp_path, now=NOW)["sources"][0]
+    assert record["status"] == "critical"
+    assert record["age_hours"] == 128 * 24  # the rule shows the age of the deals, not of the file
+
+
+def test_a_source_keeps_the_common_thresholds_unless_it_sets_its_own(tmp_path):
+    entry = {**_dated_source("games/b.json", field="published")[0], "content_warn_hours": 72, "content_critical_hours": 336}
+    _write_items(tmp_path / "games/b.json", [_ago(100)], field="published")
+
+    assert assess_freshness([entry], data_dir=tmp_path, now=NOW)["sources"][0]["status"] == "stale"
+    assert assess_freshness([{k: v for k, v in entry.items() if not k.startswith("content_") or k == "content_date"}], data_dir=tmp_path, now=NOW)["sources"][0]["status"] == "fresh"
+
+
 def test_a_source_with_old_items_gets_a_high_rule_that_names_the_date(tmp_path, monkeypatch):
     from src.watchers import data_freshness_watcher as dfw
 
