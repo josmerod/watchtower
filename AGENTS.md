@@ -65,22 +65,22 @@ ALWAYS run Python through **uv** so the locked environment is used.
 
 ## Architecture
 
-Counts were measured on 2026-11-24; re-check before quoting them.
+Counts were measured on 2026-11-27; re-check before quoting them.
 
-- **ETL** (`src/etl/`, 23 subpackages, 112 modules). Two styles coexist:
-  - **`BaseETL[I, O]`** (`src/etl/base.py`, 31 of the 104 ETL scripts). The
+- **ETL** (`src/etl/`, 22 subpackages, 105 modules). Two styles coexist:
+  - **`BaseETL[I, O]`** (`src/etl/base.py`, 30 of the 98 ETL scripts). The
     constructor requires `name`; implement `extract()`, `transform()` and
     `load()`. `run()` adds retries, checkpointing, deduplication, a circuit
     breaker and run summaries under `data/<name>/output/`. An open circuit
     breaker skips the run silently (exit code 0); any other failure raises
     `ETLError`.
-  - **Plain module with `main()`** (the other 73 ETL scripts, the majority).
+  - **Plain module with `main()`** (the other 68 ETL scripts, the majority).
     Fetch, transform, write JSON, with the path helpers in
     `src/utils/file_system.py`. Example: `src/etl/news/news_get_changelog.py`.
   - Both styles run in production only when listed in `ETL_SCRIPTS` in
-    `run_all_etl_orchestrator.py` (107 entries: 104 ETLs, 2 watchers and
+    `run_all_etl_orchestrator.py` (101 entries: 98 ETLs, 2 watchers and
     1 miner; 4 workers). The data-freshness watcher runs on its own after
-    the pool, so a cycle is 108 scripts.
+    the pool, so a cycle is 102 scripts.
 - **Data models** (`src/models/`, 19 modules): Pydantic, built on the bases
   `TimestampedModel`, `StatusModel`, `ErrorModel`, `PaginatedResponse`.
   `BaseETL.validate_data()` validates against them, but nothing forces it:
@@ -300,7 +300,7 @@ Phrases the user uses to raise or lower the bar:
   first: build the archive on the server under a throwaway tag and boot a
   disposable container. CI builds the same image on its own runner and boots
   only the API; three image defects showed up only on the server.
-- Every deploy or container restart starts a **full ETL cycle** (108 scripts,
+- Every deploy or container restart starts a **full ETL cycle** (102 scripts,
   4 workers) before the scheduler settles into its 2-hour rhythm. Do not
   restart casually, and deploy between cycles: one takes about 47 minutes and
   the next starts 2 hours after it ends.

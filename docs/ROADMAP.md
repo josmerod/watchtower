@@ -13,7 +13,7 @@
 
 | Área | Qué existe hoy | Evidencia (2026-11-24) |
 | :--- | :--- | :--- |
-| **Pipeline** | 107 entradas en el orquestador (104 ETLs, 2 watchers, 1 miner) más el watcher de frescura tras el pool: 108 scripts por ciclo, cada 2 horas, 4 workers | Primer ciclo tras el despliegue del 2026-11-26 (108 scripts): `Found 107 ETL scripts to run, plus the data-freshness watcher after the pool.`, watcher de frescura tras el pool y antes del resumen, `Successful: 108 \| Failed: 0` en 2799 s (14:44→15:30 CET), sin fallos ni avisos; su duración la marcan dos ETLs largos (`goldigging_youtube_posts` 2705 s, `reddit_unified` 2285 s). El del 2026-11-24 (109 scripts entonces) fue `109 \| 0` en 2813 s y el siguiente arrancó a las 2 h |
+| **Pipeline** | 101 entradas en el orquestador (98 ETLs, 2 watchers, 1 miner) más el watcher de frescura tras el pool: 102 scripts por ciclo desde la limpieza de fuentes del 2026-11-27 (T-126, T-127, T-128; hasta desplegar, producción sigue en 108), cada 2 horas, 4 workers | Primer ciclo tras el despliegue del 2026-11-26 (108 scripts): `Found 107 ETL scripts to run, plus the data-freshness watcher after the pool.`, watcher de frescura tras el pool y antes del resumen, `Successful: 108 \| Failed: 0` en 2799 s (14:44→15:30 CET), sin fallos ni avisos; su duración la marcan dos ETLs largos (`goldigging_youtube_posts` 2705 s, `reddit_unified` 2285 s). El del 2026-11-24 (109 scripts entonces) fue `109 \| 0` en 2813 s y el siguiente arrancó a las 2 h |
 | **Fuentes tech** | Tech Radar de 23 fuentes y feed unificado «Todas» | `/api/v1/radar` → JSON 200; `/api/v1/news` → 1087 items |
 | **Investigación** | ArXiv por categorías, HF Daily Papers con citas (OpenAlex, CrossRef de respaldo), tab de benchmarks | `/api/v1/benchmarks` → 146 modelos; BridgeBench y Artificial Analysis siguen sin datos propios (T-047, T-038) |
 | **Mercados** | Tab 📈 Markets con las 50 primeras monedas de CoinGecko y cartera local | 50 monedas; «💼 Mi cartera» abre su formulario |
@@ -58,7 +58,7 @@ cada uno de los 109 en el último ciclo. → **T-110 (P2, cerrada 2026-11-25)**.
 El watcher de frescura está marcado "MUST BE LAST" pero compite en el mismo
 pool. → **T-111 (P2, cerrada 2026-11-25)**. El minero de Udemy importa cuatro
 librerías que no están en el lock. → **T-113 (P3, cerrada 2026-11-25)**. Hay
-dos planificadores con listas distintas (44 y 108 scripts). → **T-114 (P3)**.
+dos planificadores con listas distintas (44 y 102 scripts). → **T-114 (P3)**.
 Un ETL sin consumidor no entra al ciclo: `linkedin_learning_etl.py` espera a
 que algo lea su salida. → **T-124 (P2, abierta 2026-11-26)**.
 

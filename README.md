@@ -22,7 +22,7 @@ Watchtower automates data collection from news sites, research platforms, game s
 
 Watchtower is an integrated solution for automated data acquisition, processing, and monitoring:
 
--   **Automated Data Collection**: 23 ETL domains (104 scripts in the ETL orchestrator's list) scraping data from ArXiv, GitHub, Reddit, game stores, course platforms, AI platforms, security feeds, and more.
+-   **Automated Data Collection**: 22 ETL domains (98 scripts in the ETL orchestrator's list) scraping data from ArXiv, GitHub, Reddit, game stores, course platforms, AI platforms, security feeds, and more.
 -   **Change Detection**: Event-driven watchers monitor web pages for content changes with state persistence.
 -   **Interactive Dashboard**: Modern Dash-based interface with 18 tabs, Bootstrap styling, and real-time data loading.
 -   **JSON API**: A read-only FastAPI service serving the collected feeds under `/api/v1`.
