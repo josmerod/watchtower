@@ -4,32 +4,37 @@
 > observados. La ejecución vive en `docs/TASK_BOARD.md`; el historial en
 > `docs/TASK_BOARD_ARCHIVE.md`; el feedback del usuario en `docs/FEEDBACK.md`.
 >
-> Estado al 2026-11-27 (filas Pipeline, Calidad y Despliegue actualizadas ese
-> día). Las cifras de la primera sección se midieron el 2026-11-24 contra la API
-> del contenedor recién desplegado, salvo las que llevan su propia fecha; no se
-> heredan de versiones anteriores de este documento.
+> Estado al 2026-11-27, por la noche (ese día se actualizaron las filas
+> Pipeline, Mercados, Juegos y cursos, Observabilidad, Calidad y Despliegue, y
+> los bloques A, B, E y F). Las cifras de la primera sección se midieron el
+> 2026-11-24 contra la API del contenedor recién desplegado, salvo las que
+> llevan su propia fecha; no se heredan de versiones anteriores de este
+> documento.
 
 ## 1. Dónde estamos (valor entregado, con evidencia)
 
 | Área | Qué existe hoy | Evidencia (2026-11-24) |
 | :--- | :--- | :--- |
-| **Pipeline** | 101 entradas en el orquestador (98 ETLs, 2 watchers, 1 miner) más el watcher de frescura tras el pool: **102 scripts por ciclo** desde la limpieza de fuentes del 2026-11-27 (T-126, T-127, T-128), en producción desde el despliegue de esa noche; cada 2 horas, 4 workers | Tras el despliegue del 2026-11-27 a las 01:36 CET (`b928fa1`): `Successful: 102 \| Failed: 0` en el primer ciclo y en los tres siguientes (≈47 min cada uno), y también en el primero tras el segundo despliegue del día (10:49→11:36 CET), tras el tercero (13:07:05→13:53:50 CET, `e049c40`) y tras el cuarto (14:54:35→15:41:49 CET, `defdfc3`), los dos sin un solo aviso en el log; la duración la marcan dos ETLs largos (`goldigging_youtube_posts` 2708 s, `reddit_unified` 2284 s → T-174). Los anteriores: `108 \| 0` en 2799 s (2026-11-26) y `109 \| 0` en 2813 s (2026-11-24), en ambos con el watcher de frescura tras el pool y antes del resumen |
+| **Pipeline** | 101 entradas en el orquestador (98 ETLs, 2 watchers, 1 miner) más el watcher de frescura tras el pool: **102 scripts por ciclo** desde la limpieza de fuentes del 2026-11-27 (T-126, T-127, T-128), en producción desde el despliegue de esa noche; cada 2 horas, 4 workers | Tras el despliegue del 2026-11-27 a las 01:36 CET (`b928fa1`): `Successful: 102 \| Failed: 0` en el primer ciclo y en los tres siguientes (≈47 min cada uno), y también en el primero tras el segundo despliegue del día (10:49→11:36 CET), tras el tercero (13:07:05→13:53:50 CET, `e049c40`) y tras el cuarto (14:54:35→15:41:49 CET, `defdfc3`), los dos sin un solo aviso en el log, y lo mismo tras los tres de la tarde y la noche: 16:44:23→17:31 CET (`15bcdb1`), 18:38:06→19:23:55 CET (`d81e728`) y 20:34:50→21:20:52 CET (`50e639f`), todos de ≈46 min; la duración la marca `goldigging_youtube_posts` (≈2700 s), porque `reddit_unified` (2284 s antes del corte de T-154) no recibe nada desde el 2026-11-17 y desde T-154 corta a los 188 s (→ T-174). Los anteriores: `108 \| 0` en 2799 s (2026-11-26) y `109 \| 0` en 2813 s (2026-11-24), en ambos con el watcher de frescura tras el pool y antes del resumen |
 | **Fuentes tech** | Tech Radar de 23 fuentes y feed unificado «Todas» | `/api/v1/radar` → JSON 200; `/api/v1/news` → 1087 items |
 | **Investigación** | ArXiv por categorías, HF Daily Papers con citas (OpenAlex, CrossRef de respaldo), tab de benchmarks | `/api/v1/benchmarks` → 146 modelos; BridgeBench y Artificial Analysis siguen sin datos propios (T-047, T-038) |
-| **Mercados** | Tab 📈 Markets con las 50 primeras monedas de CoinGecko y cartera local | 50 monedas; «💼 Mi cartera» abre su formulario |
+| **Mercados** | Tab 📈 Markets con las 50 primeras monedas de CoinGecko y cartera local que añade y borra posiciones (T-186) | 50 monedas; en la URL pública (2026-11-27) «💼 Mi cartera» añade una posición con su valor al precio actual y la elimina — Añadir y Eliminar no hacían nada desde el 2026-09-10 — y «BTC Dominance» sale sin signo (58.75%, T-188) |
 | **Comunidad** | Pulso reddit por RSS, Knowledge Garden | `/api/v1/knowledge-garden` → JSON 200; 789 filas con fecha, chip «21 NUEVO». Desde T-136 (cerrada 2026-11-27) la pestaña abre con 3 peticiones y 169 KiB (antes 62 peticiones) y pinta una subtab por clic |
 | **Seguridad** | CISA KEV, 3 feeds RSS, advisories OSV del propio stack y EOL del stack (endoflife.date) | 130 items (60 KEV, 70 noticias), 33 advisories OSV de severidad alta o crítica |
 | **Territorio** | Agenda de Valencia con fecha legible y orden por inicio (T-178), y ayudas públicas (BDNS, GVA, DOGV y otros) | `/api/v1/valencia/events` → 32 eventos; en la URL pública (2026-11-27) la pestaña lista 31 eventos por inicio, de «vie 27/11/2026 · 19:30» a mayo de 2027, y Ayudas cuenta 3 fuentes (T-183) |
-| **Juegos y cursos** | Ofertas, bundles y reseñas; cursos de varios proveedores | `/api/v1/games` → 206 items |
+| **Juegos y cursos** | Ofertas, paquetes y regalos de IsThereAnyDeal y paquetes de Humble con fecha y recuento reales (T-192, T-193 y T-195, cerradas 2026-11-27); cursos de varios proveedores | `/api/v1/games` → 206 items (2026-11-24). En el contenedor (2026-11-27, 20:44 CET): `deals.json` 150 ofertas del día en EUR (0,49 a 59,60 €), `bundles.json` 38, `giveaways.json` 5 y `humblebundles.json` 59 con fin (28/11 → 18/12) y número de juegos; hasta ese despliegue las ofertas eran las del 2026-07-22 |
 | **API** | FastAPI con 20 rutas GET (19 bajo `/api/v1` y `/health`), documentación in-app | Las 11 rutas que lista `/docs` devuelven JSON 200 contra el contenedor; la API pública responde en su propio hostname |
-| **Observabilidad** | DataFreshnessWatcher + card 🩺 en Metrics; retención de snapshots (`keep_last=30`) | 20 fuentes frescas, 0 obsoletas, 3 críticas |
-| **Calidad** | Suite de 1482 tests, Ruff, mypy, hooks de commit y push, CI que construye la imagen desplegada | `1475 passed, 7 skipped` en local (2026-11-27, 14:31, sobre el código de `defdfc3`); CI en Linux `1473 passed, 9 skipped` (PR #38); `Success: no issues found in 235 source files` (mypy, 2026-11-27); CI y `Docker Build` en verde sobre `main` (`defdfc3`) |
-| **Despliegue** | `deploy.py` con etiqueta `previous`, espera de salud, rollback y reenvío de claves por lista cerrada; imagen sobre `python:3.11-slim` + uv fijado; archivo normalizado a LF | Contenedor `healthy`, `latest` y `previous` disponibles, rollback probado con SSH falso. El 2026-11-27, cuatro despliegues desde `main` entre ciclos: 01:36 CET (`b928fa1`, imagen `4c2e2732e449`), 10:49 CET (`b1841c2`, imagen `60180b9cdb72`), 13:07 CET (`e049c40`, imagen `e0793730de00`) y 14:54 CET (`defdfc3`, imagen `5065b26ce8fc`), los cuatro con exit 0, `healthy`, md5 de los ficheros cambiados igual al commit y las novedades comprobadas en el navegador de la URL pública (Scavenging, ArXiv, modal de vídeo, búsqueda de News, Knowledge Garden, filtro de idioma y menús desplegables, fechas de Valencia, tarjetas de Ayudas, subtabs y botones a 480 px) |
+| **Observabilidad** | DataFreshnessWatcher + card 🩺 en Metrics; retención de snapshots (`keep_last=30`); desde el 2026-11-27 vigila también las 21 fuentes de News y los dos feeds de Games (T-176, T-192) | 38 frescas, 0 obsoletas y 5 críticas (2026-11-27, 21:20 CET): los dos ficheros de Reddit (sin respuesta desde el 17/11), FutureTools, Indie Hackers y BridgeBench. El 2026-11-24 eran 20 / 0 / 3 con una lista más corta |
+| **Calidad** | Suite de 1612 tests, Ruff, mypy, hooks de commit y push, CI que construye la imagen desplegada | `1603 passed, 9 skipped` en local (2026-11-27, 20:05, sobre el código de `4c652a4`, en 7:46) y otra vez en el hook de push; CI en Linux `1603 passed, 9 skipped` en 7:12 (PR #43); `Success: no issues found in 236 source files` (mypy, 2026-11-27); CI y `Docker Build` en verde sobre `main` (`50e639f`) |
+| **Despliegue** | `deploy.py` con etiqueta `previous`, espera de salud, rollback y reenvío de claves por lista cerrada; imagen sobre `python:3.11-slim` + uv fijado; archivo normalizado a LF; copia diaria verificada de `data/` y `logs/` en un volumen propio desde el 2026-11-27 (T-106) | Contenedor `healthy`, `latest` y `previous` disponibles, rollback probado con SSH falso. El 2026-11-27, siete despliegues desde `main` entre ciclos: 01:36 CET (`b928fa1`, imagen `4c2e2732e449`), 10:49 CET (`b1841c2`, imagen `60180b9cdb72`), 13:07 CET (`e049c40`, imagen `e0793730de00`), 14:54 CET (`defdfc3`, imagen `5065b26ce8fc`), 16:44 CET (`15bcdb1`), 18:38 CET (`d81e728`, imagen `608d2531d03b`) y 20:35 CET (`50e639f`, imagen `a4dfa9218b02`), los siete con exit 0, `healthy`, md5 de los ficheros cambiados igual al commit y las novedades comprobadas en el navegador de la URL pública (Scavenging, ArXiv, modal de vídeo, búsqueda de News, Knowledge Garden, filtro de idioma y menús desplegables, fechas de Valencia, tarjetas de Ayudas, subtabs y botones a 480 px; y por la tarde-noche «Mi cartera», la exportación a CSV de News, la hora de GCP, el aviso de fuente callada, el texto plano de Knowledge Garden, el paginador de Videos y los tres subtabs de Games) |
 
-Dos cosas de esa columna conviene no olvidarlas al leerla: no hay backups en
-producción (T-106), y ninguna clave API llega al contenedor porque ninguna está
-configurada — `deploy.py` reenvía desde el 2026-11-26 las que haya en `.env`,
-y solo esas (T-107, cerrada).
+Dos cosas de esa columna conviene no olvidarlas al leerla: las copias de
+seguridad viven en el mismo disco que `data/` — desde el 2026-11-27 sale una
+verificada al día y se conservan 7, pero no hay ninguna fuera del servidor, así
+que no protegen de un fallo del disco (T-106, cerrada con ese límite) —, y
+ninguna clave API llega al contenedor porque ninguna está configurada —
+`deploy.py` reenvía desde el 2026-11-26 las que haya en `.env`, y solo esas
+(T-107, cerrada).
 
 ## 2. Gaps y oportunidades
 
@@ -38,9 +43,12 @@ prioridad del board.
 
 ### A. Producción sin red de seguridad
 
-El despliegue funciona, pero a su alrededor quedan tres huecos verificados el
-2026-11-24. `run_backup.py` no viaja al contenedor, así que no hay backups
-desde el 2026-09-10. → **T-106 (P1)**. Ninguna clave API llega al contenedor:
+El despliegue funciona, pero a su alrededor quedan huecos. El primero, el de
+las copias, se cerró el 2026-11-27: `run_backup.py` viaja en el contenedor con
+su propio volumen y saca una copia verificada al día de `data/` y `logs/`
+(primer archivo: 793.1 MiB, 59137 archivos, a las 17:35 CET), con el límite
+dicho arriba — mismo disco que los datos, ninguna copia fuera del servidor.
+→ **T-106 (P1, cerrada 2026-11-27)**. Ninguna clave API llega al contenedor:
 los ETLs que la necesitan corren sin ella. Es una decisión, no un fallo; desde
 el 2026-11-26 `deploy.py` reenvía las claves que haya en `.env` (lista cerrada
 `CONTAINER_ENV_KEYS` + `--env-file`), y hoy no hay ninguna configurada.
@@ -61,9 +69,14 @@ librerías que no están en el lock. → **T-113 (P3, cerrada 2026-11-25)**. Hay
 dos planificadores con listas distintas (44 y 102 scripts). → **T-114 (P3)**.
 Un ETL sin consumidor no entra al ciclo: `linkedin_learning_etl.py` espera a
 que algo lea su salida. → **T-124 (P2, abierta 2026-11-26)**. Y el caso
-contrario: tres fuentes de News llevan meses sin publicar nada (Ben's Bites,
-Indie Hackers, FutureTools) y el ciclo las da por buenas porque el script sale
-con 0. → **T-176 (P1, abierta 2026-11-27)**.
+contrario: tres fuentes de News llevaban meses sin publicar nada (Ben's Bites,
+Indie Hackers, FutureTools) y el ciclo las daba por buenas porque el script
+salía con 0. → **T-176 (P1, cerrada 2026-11-27)**: Ben's Bites lee el feed de
+Substack y vuelve a publicar, el watcher de frescura juzga los 21 ficheros de
+News por la antigüedad de su entrada más nueva y la pestaña avisa de la fuente
+callada; lo que queda de cada fuente sigue en su fila (T-153, T-129). El mismo
+vicio costó en Games cuatro meses de ofertas sin leer (→ **T-192, cerrada**) y
+sigue en tres scripts registrados que no producen nada (→ **T-196 (P2)**).
 
 ### C. Calidad que se cree a sí misma
 
@@ -101,10 +114,16 @@ pública: las fuentes de baja calidad de News, Knowledge Garden y Learning
 62 (→ **T-136, cerrada**). Arregladas igualmente: los eventos de hoy en
 Valencia Events (→ **T-160**), Humble Books con sus 451 libros (→ **T-149**),
 Audible con ventana móvil, 500 novedades y paginación (→ **T-150**) y MS Learn en dos
-subtabs (→ **T-144**). Lo que sigue roto: Indie Hackers lee una API de Reddit
-que da 403 (→ **T-153 (P1)**), tres fuentes de News llevan meses sin publicar
-(→ **T-176 (P1)**), las columnas de precio de Games salen en «N/A» (T-155) y el
-ETL de ayudas no devuelve ni un registro de Burjassot (T-142). Lo que falta:
+subtabs (→ **T-144**). Lo que sigue roto: Indie Hackers no tiene fuente — la
+API de Reddit da 403 y sus feeds RSS también lo rechazan (→ **T-153 (P1)**) —
+y el ETL de ayudas no devuelve ni un registro de Burjassot (T-142). Arreglado
+el 2026-11-27 por la noche y comprobado en la URL pública: Ben's Bites y el
+aviso de fuente callada (→ **T-176, cerrada**), las columnas de Games y, detrás,
+cuatro meses de ofertas sin leer y las fechas inventadas de Humble (→ **T-155,
+T-192, T-193, T-194 y T-195, cerradas**), «Mi cartera» y la exportación a CSV
+de News, que no funcionaban (→ **T-186 y T-187, cerradas**), los resúmenes en
+texto plano (→ **T-164, cerrada**) y los callbacks que corrían sin clic (→
+**T-162, cerrada**). Lo que falta:
 una fuente viva detrás del nombre «FutureTools» (T-129), la sección de
 contenidos (T-131), cine, portales de transparencia, ofertas de videojuegos y
 gift cards, watch de precios, XTeink, trendshift.io, skills y agentes de
@@ -119,8 +138,14 @@ abre con una sola categoría (→ **T-172, cerrada**). Queda: Scavenging respond
 3,9 MB en una petición (→ **T-170 (P3)**), Learning abre con 7 peticiones, 6
 en vacío (→ **T-177 (P3)**), Tech Radar renderiza dos veces, 617 + 608 KiB
 (→ **T-179 (P3)**), dos paradas de ≈4,3 s sin causa asignada (→ **T-180
-(P3)**) y, en el ciclo, dos ETLs que marcan su duración: ≈45 y ≈38 minutos de
-≈47 (→ **T-174 (P2)**).
+(P3)**) y, en el ciclo, un ETL que marca su duración: ≈45 de los ≈46 minutos
+(`goldigging_youtube_posts`; Reddit, que lo marcaba con él, no responde desde
+el 2026-11-17 y corta a los 188 s) (→ **T-174 (P2)**). Menor, abierto el
+2026-11-27 por la noche: las estrellas mandan una petición vacía por botón
+insertado (→ **T-189 (P3)**), cuatro ETLs de News guardan aún el HTML en bruto
+(→ **T-190 (P3)**), una pestaña abierta durante un despliegue no responde
+hasta recargarla (→ **T-191 (P3)**) y la caché de una hora de los repositorios
+no mira si el fichero cambió (→ **T-197 (P3)**).
 
 ## 3. Anti-backlog (evaluado y descartado, con motivo)
 
@@ -163,23 +188,26 @@ en vacío (→ **T-177 (P3)**), Tech Radar renderiza dos veces, 617 + 608 KiB
 
 | Horizonte | Tareas |
 | :--- | :--- |
-| **Ahora (P1)** | **Libreta:** T-129 FutureTools · T-131 sección de contenidos · T-138 canales de YouTube. **Hallazgos:** T-153 Indie Hackers por RSS · T-162 callbacks sin clic · T-176 fuentes de News muertas. **Anteriores:** T-106 backups en prod |
-| **Después (P2)** | **Libreta:** T-132 · T-133 · T-134 · T-135 · T-137 · T-139 · T-140 · T-141 · T-142 · T-143 · T-145 · T-148 · T-151. **Hallazgos:** T-154 Reddit · T-155 Games · T-156 Udemy · T-164 texto plano · T-165 MS Learn retiradas · T-166 guardados de producción · T-174 duración del ciclo. **Anteriores:** T-109 receta de imagen única · T-115 CORS sin direcciones de LAN · T-120 alerts de Dependabot · T-124 LinkedIn Learning con consumidor · T-125 copia heredada y `.env` viejo en el servidor |
-| **Más adelante (P3)** | T-047 BridgeBench vía browserless · T-096 convención de logging · T-114 dos planificadores · T-117 ensayo en el repo · T-119 higiene · T-121 paleta pública · T-123 capa de Playwright · T-152 STL · T-157 Scavenging sin datos · T-158 docs caducadas · T-159 recortes de Learning · T-167 iconos · T-168 coste por respuesta de KG · T-169 restos de T-136 · T-170 Scavenging 3,9 MB · T-175 `KeyError: 'id'` · T-177 Learning 7 peticiones · T-179 Tech Radar doble render · T-180 paradas de 4 s · T-185 FIRST DETECTED en UTC |
+| **Ahora (P1)** | **Libreta:** T-129 FutureTools (Ben's Bites vuelve a publicar) · T-131 sección de contenidos · T-138 canales de YouTube. **Hallazgos:** T-153 Indie Hackers sin fuente. Cerradas el 2026-11-27 por la noche: T-162, T-176 y T-106 |
+| **Después (P2)** | **Libreta:** T-132 · T-133 · T-134 · T-135 · T-137 · T-139 · T-140 · T-141 · T-142 · T-143 · T-145 · T-148 · T-151. **Hallazgos:** T-154 Reddit · T-165 MS Learn retiradas · T-166 guardados de producción · T-174 duración del ciclo · T-196 tres scripts de Games sin datos. **Anteriores:** T-109 receta de imagen única · T-115 CORS sin direcciones de LAN · T-120 alerts de Dependabot · T-124 LinkedIn Learning con consumidor · T-125 copia heredada y `.env` viejo en el servidor |
+| **Más adelante (P3)** | T-047 BridgeBench vía browserless · T-096 convención de logging · T-114 dos planificadores · T-117 ensayo en el repo · T-119 higiene · T-121 paleta pública · T-123 capa de Playwright · T-152 STL · T-157 Scavenging sin datos · T-158 docs caducadas · T-159 recortes de Learning · T-167 iconos · T-168 coste por respuesta de KG · T-169 restos de T-136 · T-170 Scavenging 3,9 MB · T-177 Learning 7 peticiones · T-179 Tech Radar doble render · T-180 paradas de 4 s · T-189 peticiones en vacío de las estrellas · T-190 News con HTML en bruto · T-191 recargar tras un despliegue · T-197 caché de los repositorios · T-198 `__main__` de `games_tab.py` |
 | **Bloqueado** | T-038 Artificial Analysis (clave del usuario) |
 
-Cerradas entre el 2026-11-24 y el 2026-11-27: T-048, T-107, T-108, T-110,
-T-111, T-112, T-113, T-116, T-118, T-126, T-127, T-128, T-130, T-136, T-144,
-T-146, T-147, T-149, T-150, T-160, T-161, T-163, T-171, T-172, T-173, T-178,
-T-181, T-182, T-183 y T-184. Sus filas íntegras están en
+Cerradas entre el 2026-11-24 y el 2026-11-27: T-048, T-106, T-107, T-108,
+T-110, T-111, T-112, T-113, T-116, T-118, T-126, T-127, T-128, T-130, T-136,
+T-144, T-146, T-147, T-149, T-150, T-155, T-156, T-160, T-161, T-162, T-163,
+T-164, T-171, T-172, T-173, T-175, T-176, T-178, T-181, T-182, T-183, T-184,
+T-185, T-186, T-187, T-188 y T-192…T-195. Sus filas íntegras están en
 `docs/TASK_BOARD_ARCHIVE.md`.
 
 Fuera del board y pendiente del usuario: añadir a `.env` las claves que quiera
 (hoy no hay ninguna) y redesplegar para que lleguen al contenedor; decidir
-sobre T-106 (volumen de backups: el disco de appdata, una copia al día, 7
-conservadas, ninguna fuera del servidor) y T-125 (limpiar la carpeta de la app
-en el servidor); responder las dudas de la libreta que frenan T-131, T-132,
-T-135, T-138, T-145, T-148, T-149, T-150 y T-152 (dónde y cómo se llama la
-sección de contenidos, qué es «media» y los «STL», etc.); y decir qué hacer
-con los 47 registros marcados como guardados en producción sin que él los
-marcara (T-166).
+sobre T-125 (limpiar la carpeta de la app en el servidor); responder las dudas
+de la libreta que frenan T-131, T-132, T-135, T-138, T-145, T-148, T-149, T-150
+y T-152 (dónde y cómo se llama la sección de contenidos, qué es «media» y los
+«STL», etc.); y decir qué hacer con T-153 (Indie Hackers se ha quedado sin
+fuente), T-129 (Ben's Bites vuelve a publicar: ¿basta con cambiar la
+etiqueta?), T-196 (tres scripts de Games: la clave gratuita de IsThereAnyDeal,
+otra fuente, o sacarlos del ciclo), T-191 (¿recargar sola la pestaña tras un
+despliegue?) y los 47 registros marcados como guardados en producción sin que
+él los marcara (T-166).
