@@ -4,8 +4,8 @@ import json
 import re
 from collections.abc import Iterator
 from datetime import datetime
-from pathlib import Path
 from typing import Any, cast
+from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -13,6 +13,10 @@ from bs4 import BeautifulSoup, Tag
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.etl.base import BaseETL
 from src.models.base import TimestampedModel
+
+# The events happen in Valencia: a timestamp that carries a zone is read as
+# the local date before anything else.
+_MADRID = ZoneInfo("Europe/Madrid")
 
 
 def _href_str(tag: Tag) -> str:
@@ -52,12 +56,37 @@ def _has_valid_year(text: str) -> bool:
     return any(y in text for y in _VALID_YEARS)
 
 
+def _madrid_calendar_date(raw: str) -> str:
+    """Read an ISO timestamp that carries a zone as its calendar date in Valencia.
+
+    Meetup gives its start times in UTC: an evening there can already be the
+    next day in Spain, and the event belongs to that day.
+
+    Args:
+        raw: Raw timestamp; a zone-less or unparsable value is not converted.
+
+    Returns:
+        YYYY-MM-DD, or "" when the value carries no zone.
+    """
+    if "T" not in raw:
+        return ""
+    # A zone name in brackets ("+02:00[Europe/Madrid]") adds nothing to the offset before it.
+    try:
+        moment = datetime.fromisoformat(raw.split("[")[0].replace("Z", "+00:00"))
+    except ValueError:
+        return ""
+    if moment.tzinfo is None:
+        return ""
+    return moment.astimezone(_MADRID).strftime("%Y-%m-%d")
+
+
 def _to_iso_date(raw: Any) -> str:
     """Normalise a raw date value to an ISO calendar date (YYYY-MM-DD).
 
-    Accepts Spanish DD/MM/YYYY, ISO YYYY-MM-DD and full ISO timestamps;
-    timezone suffixes (``+02:00``, ``Z``) and bracketed zone names are
-    ignored, so timed events collapse to their calendar date.
+    Accepts Spanish DD/MM/YYYY, ISO YYYY-MM-DD and full ISO timestamps. A
+    timestamp that carries a zone (``+02:00``, ``Z``) is first changed to
+    Valencia local time, so the date is the one the event has there; a
+    zone-less one is read as it comes.
 
     Args:
         raw: Raw date value; non-strings are coerced, falsy values yield "".
@@ -68,6 +97,9 @@ def _to_iso_date(raw: Any) -> str:
     text = str(raw or "").strip()
     if not text:
         return ""
+    local_date = _madrid_calendar_date(text)
+    if local_date:
+        return local_date
     match = _ISO_DATE_RE.search(text)
     if match:
         year, month, day = (int(group) for group in match.groups())
@@ -310,7 +342,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             retry_delay=5,
         )
         # Override output directory to write directly to main data directory
-        self.output_dir = Path("data/valencia_events")
+        self.output_dir = self.data_dir
 
     def get_current_and_next_month(self):
         """Returns the current and next month in YYYY-MM format.
@@ -1215,8 +1247,10 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             self.logger.info("No data to load")
             return
 
-        # Convert to dictionaries
+        # Convert to dictionaries, in the order the tab shows them: by start
+        # date, the ones without a date last.
         data_dicts = [event.model_dump() for event in data]
+        data_dicts.sort(key=lambda event: (not event.get("start_date"), str(event.get("start_date"))))
 
         # Save JSON
         json_file = self.output_dir / "valencia_events.json"

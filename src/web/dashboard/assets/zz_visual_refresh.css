@@ -266,6 +266,11 @@ a:not(.btn):focus {
     z-index: 30 !important;
 }
 
+/* The legacy mobile sheet (css/mobile_responsive.css) parks every tab link
+   at -9999px under 768px. The main navigation is static here, so the offsets
+   do nothing; a subtab link keeps `position: relative` from style.css for its
+   underline, and without the reset it stayed 9999px off-screen: an empty bar
+   on every tab with subtabs, on a phone. */
 .nav-tabs .nav-item,
 .nav-tabs li,
 .nav-tabs .nav-link,
@@ -275,6 +280,8 @@ a:not(.btn):focus {
     width: auto !important;
     height: auto !important;
     position: static !important;
+    left: auto !important;
+    top: auto !important;
     background: transparent !important;
 }
 
@@ -611,4 +618,21 @@ html body .Select-option,
 html body .Select-noresults {
     background-color: #ffffff !important;
     color: #0f172a !important;
+}
+
+/* Primary buttons keep the accent they were given. The blanket backgrounds
+   paint every element dark and left the dark text of .btn-primary on it:
+   "Open API" in the header read dark on dark. As specific as the blanket
+   rule above, plus the class. */
+html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs) {
+    color: var(--wt-accent-contrast) !important;
+    background: #c4b5fd !important;
+    border-color: #c4b5fd !important;
+}
+
+html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):hover,
+html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):focus {
+    color: var(--wt-accent-contrast) !important;
+    background: #ddd6fe !important;
+    border-color: #ddd6fe !important;
 }

@@ -1,5 +1,7 @@
 """Tests for Spanish Public Aid ETL."""
 
+import json
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
@@ -14,6 +16,26 @@ from src.models.spanish_public_aid import (
     BeneficiaryType,
     SpanishPublicAidModel,
 )
+from src.utils.file_system import get_project_root
+
+
+@pytest.fixture(autouse=True)
+def _isolated_data_root(tmp_path, monkeypatch):
+    """Keep every write of a real ``run()`` out of the project's ``data/`` (T-161).
+
+    BaseETL resolves all of its paths from the cached settings singleton: its
+    directories, the circuit breaker, the run summaries and the aggregated
+    metrics. Patching ``project_root`` on that singleton sends them all to
+    tmp_path, in this module too and not only in ``test_base_etl.py``.
+    """
+    monkeypatch.setattr(get_settings(), "project_root", str(tmp_path))
+
+
+def _real_data_files() -> dict[str, tuple[int, int]]:
+    """State of the files a non-isolated ``run()`` would touch in the real ``data/``."""
+    data_dir = Path(get_project_root()) / "data"
+    paths = [data_dir / "spanish_public_aid" / "output" / "run_summary_latest.json", data_dir / "metrics" / "etl_runs_latest.json"]
+    return {str(path): (path.stat().st_mtime_ns, path.stat().st_size) for path in paths if path.exists()}
 
 
 class TestSpanishPublicAidETL:
@@ -118,10 +140,12 @@ class TestSpanishPublicAidETL:
 
         assert enhanced["scope"].municipality == "Burjassot"
 
-    def test_configured_source_allow_list_controls_sources(self, monkeypatch):
+    def test_configured_source_allow_list_controls_sources(self, monkeypatch, tmp_path):
         """Test enabled_sources makes source coverage configurable."""
         get_settings.cache_clear()
         monkeypatch.setenv("WATCHTOWER_SPANISH_PUBLIC_AID__ENABLED_SOURCES", '["bdns", "burjassot"]')
+        # The cleared cache builds a new settings object: isolate that one too.
+        monkeypatch.setattr(get_settings(), "project_root", str(tmp_path))
 
         try:
             etl = SpanishPublicAidETL()
@@ -256,9 +280,26 @@ class TestSpanishPublicAidETL:
 
         etl_instance.load(data)
 
-        # Verify files were written
-        assert mock_open.call_count >= 2  # Main file and stats file
-        assert mock_json_dump.call_count >= 2
+        # Verify files were written: main, latest, and the stats twice
+        written = [str(call.args[0]) for call in mock_open.call_args_list]
+        assert len(written) == 4
+        assert any(path.endswith("spanish_public_aid_latest.json") for path in written)
+        assert any(path.endswith("spanish_public_aid_stats_latest.json") for path in written)
+        assert mock_json_dump.call_count == 4
+
+    def test_load_writes_the_latest_stats_file_for_the_dashboard(self, etl_instance, sample_raw_data, tmp_path, monkeypatch):
+        """The dashboard reads one fixed-name stats file: load() has to write it."""
+        monkeypatch.setattr(etl_instance, "output_dir", tmp_path)
+        raw_aids = [{**sample_raw_data, "source_name": source, "organizing_entity": source, "source_url": f"https://www.gva.es/ayuda-{index}"} for index, source in enumerate(("Generalitat Valenciana", "LABORA", "LABORA"))]
+
+        etl_instance.load(etl_instance.transform(raw_aids))
+
+        per_run = list(tmp_path.glob("spanish_public_aid_stats_[0-9]*.json"))
+        assert len(per_run) == 1, "one timestamped statistics file per run"
+        stats = json.loads((tmp_path / "spanish_public_aid_stats_latest.json").read_text(encoding="utf-8"))
+        assert stats == json.loads(per_run[0].read_text(encoding="utf-8")), "the fixed-name copy carries the same statistics"
+        assert stats["total_aids"] == 3
+        assert stats["sources"] == {"Generalitat Valenciana": {"count": 1, "active": 1}, "LABORA": {"count": 2, "active": 2}}
 
     def test_load_empty_data(self, etl_instance):
         """Test loading empty data."""
@@ -324,8 +365,10 @@ class TestSpanishPublicAidETLIntegration:
         enabled_sources = sum(1 for s in etl_instance.sources.values() if s.get("enabled", True))
         assert mock_extract_source.call_count == enabled_sources
 
-    def test_full_etl_pipeline_mock(self, etl_instance):
+    def test_full_etl_pipeline_mock(self, etl_instance, tmp_path):
         """Test full ETL pipeline with mocked data."""
+        real_data_before = _real_data_files()
+
         # Mock the extract method to return test data
         test_data = [
             {
@@ -346,6 +389,12 @@ class TestSpanishPublicAidETLIntegration:
                 # Verify the pipeline ran successfully
                 assert metrics.records_extracted > 0
                 assert mock_load.called
+
+        # A real run() closes by writing its run summary and the aggregated
+        # metrics: they belong to the temporary root, not to the real data/.
+        assert (tmp_path / "data" / "spanish_public_aid" / "output" / "run_summary_latest.json").exists()
+        assert (tmp_path / "data" / "metrics" / "etl_runs_latest.json").exists()
+        assert _real_data_files() == real_data_before
 
     def test_configuration_loading(self, etl_instance):
         """Test that configuration is properly loaded."""

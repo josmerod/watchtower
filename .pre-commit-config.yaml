@@ -54,7 +54,7 @@ repos:
     hooks:
     -   id: codespell
         exclude: ^(src/miners/|\.bmad/|logs\.txt|.*\.log|docs/|data/)
-        args: [-L, "assertIn,hace,anual,indien,als,alle,wil,lokale,cursos,clases,traker,componentes,intelectual,optimice,potencial,braket,ehr,ser,funcional,re-use,searchin,sesion,carrer,calle,momento,skool,extensiones,valide,avance,controles,halp,desig,thi,architec,whethe,ond,inthe,learnin,onw,proffes,brin,bein,profies,fron,sence,vrsion,vesion,meu,cliente,Cliente,clientes,Clientes,varios,Comandos,comandos,medias,Oficial,oficial,Autor,autor,htts,THN,relevante,Relevante,crate,crates,fases,Fases,Serie,serie"]
+        args: [-L, "assertIn,hace,anual,indien,als,alle,wil,lokale,cursos,clases,traker,componentes,intelectual,optimice,potencial,braket,ehr,ser,funcional,re-use,searchin,sesion,carrer,calle,momento,skool,extensiones,valide,avance,controles,halp,desig,thi,architec,whethe,ond,inthe,learnin,onw,proffes,brin,bein,profies,fron,sence,vrsion,vesion,meu,cliente,Cliente,clientes,Clientes,varios,Comandos,comandos,medias,Oficial,oficial,Autor,autor,htts,THN,relevante,Relevante,crate,crates,fases,Fases,Serie,serie,vie"]
         additional_dependencies:
           - tomli
 
