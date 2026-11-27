@@ -92,12 +92,35 @@ SOURCE_FILES: list[dict[str, Any]] = [
     # Games
     {"key": "humblebundles", "label": "Humble bundles", "path": "games/humblebundles.json", "warn_hours": 72, "critical_hours": 336},
     {"key": "itchio_trending", "label": "Itch.io trending", "path": "games/itchio_trending.json", "warn_hours": 72, "critical_hours": 336},
+    # IsThereAnyDeal. Both files stayed untouched from 2026-07-22 on (the feeds answered 403 and the ETL exited 0)
+    # while nothing watched them. The deals feed holds the current day only, so a day without items is already news.
+    {
+        "key": "games_deals",
+        "label": "Game deals (IsThereAnyDeal)",
+        "path": "games/deals.json",
+        "warn_hours": 26,
+        "critical_hours": 168,
+        "content_date": "published",
+        "content_warn_hours": 26,
+        "content_critical_hours": 168,
+    },
+    {
+        "key": "games_bundles",
+        "label": "Game bundles (IsThereAnyDeal)",
+        "path": "games/bundles.json",
+        "warn_hours": 26,
+        "critical_hours": 168,
+        "content_date": "published",
+        "content_warn_hours": 72,
+        "content_critical_hours": 336,
+    },
 ]
 
 
 # The newest item of a source registered with "content_date" is judged with its own
 # thresholds: a week is long enough for a weekday newsletter or a digest that
-# publishes twice a week.
+# publishes twice a week. A source that publishes every day can set tighter ones
+# with "content_warn_hours" and "content_critical_hours".
 CONTENT_WARN_HOURS = 168
 CONTENT_CRITICAL_HOURS = 720
 
@@ -187,7 +210,7 @@ def assess_freshness(source_files: list[dict[str, Any]] | None = None, data_dir:
             if newest is not None:
                 content_age_hours = max(0.0, (now - newest) / 3600)
                 record["content_age_hours"] = round(content_age_hours, 1)
-                content_status = _level(content_age_hours, CONTENT_WARN_HOURS, CONTENT_CRITICAL_HOURS)
+                content_status = _level(content_age_hours, src.get("content_warn_hours", CONTENT_WARN_HOURS), src.get("content_critical_hours", CONTENT_CRITICAL_HOURS))
                 if _LEVEL_RANK[content_status] > _LEVEL_RANK[record["status"]]:
                     # The alert rule built from this record reads age_hours: hand it the age that decided
                     record["status"] = content_status
