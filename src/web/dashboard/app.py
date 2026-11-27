@@ -1,9 +1,11 @@
+import logging
 from datetime import datetime
 
 import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, dcc, html
-from flask import jsonify, redirect, render_template_string
+from dash.exceptions import CallbackException
+from flask import jsonify, redirect, render_template_string, request
 
 from src.web.dashboard.components.arxiv_research_tab import (
     register_arxiv_callbacks,
@@ -319,6 +321,8 @@ app.layout = dbc.Container(
 # Expose enhanced health/metrics endpoints
 server = app.server
 
+logger = logging.getLogger(__name__)
+
 # Initialize health monitor
 health_monitor = HealthMonitor()
 
@@ -487,6 +491,28 @@ for item in items:
 def docs():
     """Public human-readable Watchtower documentation."""
     return render_template_string(WATCHTOWER_DOCS_HTML)
+
+
+@server.errorhandler(CallbackException)
+@server.errorhandler(KeyError)
+def callback_request_refused(error: Exception):
+    """Answer 204 with one line when Dash refuses a callback request before any callback runs (T-175).
+
+    Production logged these as tracebacks: three on 2026-11-26 22:49 with ``KeyError: 'id'`` (a request whose
+    outputs came empty; cause not found) and one on 2026-11-27 11:09, twenty minutes after a deploy, with
+    ``Inputs do not match callback definition``: a tab left open across the deploy asks for the callbacks it was
+    loaded with. Either way the page gets from a 204 what it got from a 500, nothing, and the line says what the
+    request asked for. Elsewhere the error is not ours to answer and goes back to Flask.
+    """
+    if request.path != "/_dash-update-component":
+        raise error
+    asked = request.get_json(silent=True) or {}
+    logger.warning(
+        "Dash refused a callback request: %s. The page that sent it may date from before the last deploy, which asks for callbacks that changed: reload it. It asked for %s.",
+        error,
+        {name: asked.get(name) for name in ("output", "outputs")},
+    )
+    return "", 204
 
 
 @server.route("/api-docs")
