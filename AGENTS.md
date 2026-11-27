@@ -310,8 +310,10 @@ Phrases the user uses to raise or lower the bar:
   against the container or its own hostname, and check a deployed feature in
   the browser before calling it done.
 - Production `data/` lives in a Docker volume; a deploy never touches it.
-  `run_backup.py` is not shipped, so production backups are not running (open
-  task on the board).
+  After each cycle `run_backup.py` makes a verified archive of `data/` and
+  `logs/` — at most one a day — in the `backups` volume next to it, and
+  keeps 7. Same disk as the data: there is no off-site copy. The
+  `unraid-deploy` skill says how to check it and how to restore.
 
 ## Skills and reference docs
 

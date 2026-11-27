@@ -45,7 +45,7 @@ Watchtower collects data from public web sources, normalizes it into JSON files 
 | `uv run python src/watchers/run_watcher.py` | Watcher runner (`--list`, `--once`); today it can only launch `ms_applied_skills` |
 | `uv run --with paramiko python deployment/deploy.py` | Deploys to the Unraid server |
 
-The orchestrator runs the 101 entries of `ETL_SCRIPTS` (98 ETLs, 2 watchers, 1 miner), each as `uv run python <script>` in a pool of 4 workers, with one log per script under `logs/`. After the pool it runs `src/watchers/data_freshness_watcher.py` on its own, then `src/utils/snapshot_retention.py` and, when the file exists, `run_backup.py`.
+The orchestrator runs the 101 entries of `ETL_SCRIPTS` (98 ETLs, 2 watchers, 1 miner), each as `uv run python <script>` in a pool of 4 workers, with one log per script under `logs/`. After the pool it runs `src/watchers/data_freshness_watcher.py` on its own, then `src/utils/snapshot_retention.py`, then `run_backup.py` — a verified archive of `data/` and `logs/` in `backups/`, made only when the newest one is more than 20 hours old.
 
 ## Contracts to build on
 
