@@ -16,6 +16,7 @@ from src.services.data_loader import (
 from src.services.data_loader import (
     format_article_date as format_article_date_shared,
 )
+from src.utils.text import plain_excerpt
 from src.web.dashboard.components import saved_items
 from src.web.dashboard.components.duplicate_filter import create_duplicate_toggle
 from src.web.dashboard.components.shared.table import paginate, render_items_table, title_cell
@@ -733,7 +734,8 @@ def register_news_search_callbacks(app):
                             "url": article.get("url") or article.get("link") or "",
                             "source": article.get("source", _ALL_NEWS_SOURCES.get(key, {}).get("name", key)),
                             "date": str(article.get("published") or article.get("published_at") or article.get("date") or ""),
-                            "summary": (article.get("summary") or "")[:300],
+                            # Indie Hackers, the Kagi feeds and Microsiervos keep their text under description
+                            "summary": plain_excerpt(article.get("summary") or article.get("description"), 300),
                         }
                     )
             if not rows:

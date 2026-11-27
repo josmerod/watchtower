@@ -144,13 +144,23 @@ def test_a_refresh_click_renders_the_digest(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def test_an_export_click_downloads_the_csv(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(news_tab, "get_all_news_data", lambda: {"techcrunch": [{"title": "One title", "url": "https://example.invalid/1", "published": "2026-11-27"}]})
+    import csv
+    import io
+
+    described = "<p>Fresh &amp; long " + "word " * 100 + "</p>"
+    articles = {"techcrunch": [{"title": "One title", "url": "https://example.invalid/1", "published": "2026-11-27"}, {"title": "Described", "url": "https://example.invalid/2", "description": described}]}
+    monkeypatch.setattr(news_tab, "get_all_news_data", lambda: articles)
     app = _app(news_tab.register_news_search_callbacks)
 
     changed = call(app, find(app, "news-export-download.data"), [[entry(EXPORT, "n_clicks", 1)]], [f"{sid(EXPORT)}.n_clicks"])
 
+    content = changed["news-export-download"]["data"]["content"]
     assert changed["news-export-download"]["data"]["filename"] == "watchtower_news_techcrunch.csv"
-    assert "One title" in changed["news-export-download"]["data"]["content"]
+    one, described_row = list(csv.DictReader(io.StringIO(content)))
+    assert one["title"] == "One title" and one["summary"] == ""
+    assert described_row["title"] == "Described"
+    summary = described_row["summary"]
+    assert summary.startswith("Fresh & long word") and len(summary) == 300 and summary.endswith("…")  # description too, as plain text
 
 
 def test_a_search_still_moves_the_top_tech_view(monkeypatch: pytest.MonkeyPatch) -> None:
