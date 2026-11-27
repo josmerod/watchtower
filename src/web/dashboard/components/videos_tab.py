@@ -181,7 +181,7 @@ def _build_video_modal_content(video: dict) -> tuple:
             title=f"YouTube embed: {title}",
             # "fullscreen" replaces the allowFullScreen attribute (dash 4.x
             # html.Iframe only exposes the standard allow= permission string)
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen",
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen",
             style={"position": "absolute", "top": 0, "left": 0, "width": "100%", "height": "100%", "border": 0},
         ),
         style={"position": "relative", "width": "100%", "paddingBottom": "56.25%", "height": 0},
@@ -195,6 +195,32 @@ def _build_video_modal_content(video: dict) -> tuple:
         className="d-flex w-100",
     )
     return title, body, footer
+
+
+def _video_modal_update() -> tuple:
+    """Open the embed modal for the card whose ▶ was clicked, close it on its Cerrar button, leave it alone otherwise.
+
+    The callback's first Input is pattern-matching, so it receives one n_clicks per card on screen and cannot tell
+    which one changed: the click that set it running is in ``dash.ctx.triggered``, and only for the prop that did
+    change. Every page change re-renders the cards and runs the callback with all of them listed there, none
+    clicked yet; the modal must not move then.
+    """
+    untouched = (dash.no_update, dash.no_update, dash.no_update, dash.no_update)
+    try:
+        triggered_id = dash.ctx.triggered_id
+        clicked = next((changed["value"] for changed in dash.ctx.triggered if isinstance(changed.get("value"), int) and changed["value"] >= 1), None)
+        if not clicked:
+            return untouched
+        if triggered_id == "wt-video-modal-close":
+            return False, *untouched[1:]
+        video_hash = triggered_id.get("index") if isinstance(triggered_id, dict) else None
+        video = _video_registry.get(video_hash) if isinstance(video_hash, str) else None
+        if video:
+            title, body, footer = _build_video_modal_content(video)
+            return True, title, body, footer
+    except Exception as e:
+        logger.error(f"Error toggling video preview modal: {e}")
+    return untouched
 
 
 class VideoManager:
@@ -1166,32 +1192,9 @@ def register_video_callbacks(app):
     )
     def toggle_video_preview_modal(preview_clicks, close_clicks):
         """Open the embed modal for the clicked card, or close it."""
-        untouched = (dash.no_update, dash.no_update, dash.no_update, dash.no_update)
-        try:
-            import dash as _dash
-
-            # ctx.triggered_id is the id object for a real pattern-matching
-            # click, the literal id string for the close button, and None (or
-            # the wildcard token) when cards are merely (re)rendered — the
-            # only cases that must change the modal. Lazily-rendered cards
-            # ALSO fire this callback with their concrete id (component-added
-            # fire), so a real click additionally requires n_clicks >= 1.
-            triggered_id = _dash.ctx.triggered_id
-
-            if triggered_id == "wt-video-modal-close" and (close_clicks or 0) >= 1:
-                return False, dash.no_update, dash.no_update, dash.no_update
-
-            if isinstance(triggered_id, dict) and triggered_id.get("type") == "wt-video-preview-btn" and (preview_clicks or 0) >= 1:
-                video = _video_registry.get(triggered_id.get("index"))
-                if not video:
-                    return untouched
-                title, body, footer = _build_video_modal_content(video)
-                return True, title, body, footer
-
-            return untouched
-        except Exception as e:
-            logger.error(f"Error toggling video preview modal: {e}")
-            return untouched
+        # The arguments are not read: the first one is the list of every card's
+        # n_clicks, which does not say which card was clicked.
+        return _video_modal_update()
 
     # Register client-side callback for items-per-page preference saving
     register_items_per_page_callback("videos")
