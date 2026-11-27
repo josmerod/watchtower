@@ -9,7 +9,9 @@ toolbar slot and the modal the script/callbacks use.
 
 import re
 from pathlib import Path
+from types import SimpleNamespace
 
+import dash
 import pandas as pd
 import pytest
 
@@ -17,8 +19,10 @@ from src.web.dashboard.components.videos_tab import (
     _build_video_modal_content,
     _extract_youtube_id,
     _video_modal_layout,
+    _video_modal_update,
     _video_registry,
     create_video_card,
+    register_video_callbacks,
 )
 
 _VIDEO = {"url": "https://youtu.be/abc", "title": "Test video", "channel": "Chan", "length": 120, "views": 10}
@@ -148,6 +152,105 @@ def test_modal_in_layout_when_data_present():
     assert "wt-video-modal-title" in layout
     assert "wt-video-modal-body" in layout
     assert "wt-video-modal-footer" in layout
+
+
+# ---------------------------------------------------------------------------
+# Embed-preview modal controller: only a click may change the modal
+#
+# The callback's first Input is pattern-matching, so it receives one n_clicks per
+# card on screen and cannot tell which one changed: the click that set it running
+# is in dash.ctx.triggered. Cards that were only (re)rendered are listed there as
+# well, with no click on them yet.
+# ---------------------------------------------------------------------------
+
+_PREVIEW_ID = {"type": "wt-video-preview-btn", "index": None}
+UNTOUCHED = (dash.no_update, dash.no_update, dash.no_update, dash.no_update)
+
+
+def _two_cards():
+    """Render two cards and return their (hash, video) pairs as the registry knows them."""
+    pairs = []
+    for video in (_VIDEO_YT, {**_VIDEO_YT, "title": "Second", "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw"}):
+        video_hash = _card_hash(str(create_video_card(video)))
+        pairs.append((video_hash, video))
+    return pairs
+
+
+def _preview_entry(video_hash, value):
+    prop_id = f'{{"index":"{video_hash}","type":"wt-video-preview-btn"}}.n_clicks'
+    return {"prop_id": prop_id, "value": value}
+
+
+def _as_dash(monkeypatch, triggered, triggered_id):
+    monkeypatch.setattr(dash, "ctx", SimpleNamespace(triggered=triggered, triggered_id=triggered_id))
+
+
+def test_click_on_a_card_opens_its_video(monkeypatch):
+    (first, _), (second, video) = _two_cards()
+    _as_dash(monkeypatch, [_preview_entry(second, 1)], {**_PREVIEW_ID, "index": second})
+
+    is_open, title, body, footer = _video_modal_update()
+
+    assert is_open is True and title == video["title"] == "Second"  # the clicked card, not the first one
+    assert "https://www.youtube-nocookie.com/embed/jNQXAC9IVRw" in str(body)
+    assert "https://www.youtube.com/watch?v=jNQXAC9IVRw" in str(footer)
+    assert first != second
+
+
+def test_rendered_cards_alone_leave_the_modal_alone(monkeypatch):
+    """Every page change re-renders the cards: the callback runs, and must change nothing."""
+    (first, _), (second, _) = _two_cards()
+    _as_dash(monkeypatch, [_preview_entry(first, None), _preview_entry(second, None)], {**_PREVIEW_ID, "index": first})
+
+    assert _video_modal_update() == UNTOUCHED
+
+
+def test_close_button_closes_the_modal(monkeypatch):
+    _as_dash(monkeypatch, [{"prop_id": "wt-video-modal-close.n_clicks", "value": 1}], "wt-video-modal-close")
+
+    assert _video_modal_update() == (False, *UNTOUCHED[1:])
+
+
+def test_click_on_a_card_the_registry_does_not_know_opens_nothing(monkeypatch):
+    _as_dash(monkeypatch, [_preview_entry("0" * 32, 1)], {**_PREVIEW_ID, "index": "0" * 32})
+
+    assert _video_modal_update() == UNTOUCHED
+
+
+def test_controller_survives_a_context_it_cannot_read(monkeypatch):
+    _as_dash(monkeypatch, None, None)
+
+    assert _video_modal_update() == UNTOUCHED
+
+
+def test_modal_callback_reads_the_click_from_the_context_not_from_the_input_list(monkeypatch):
+    """The ALL input is a list: comparing it with a number raised, and the modal never opened."""
+    app = dash.Dash("test-video-modal")
+    register_video_callbacks(app)
+    key = next(k for k in app.callback_map if k.startswith("..wt-video-modal.is_open"))
+    controller = app.callback_map[key]["callback"].__wrapped__
+    (clicked, _), (other, _) = _two_cards()
+
+    # The cards were rendered: the list has no click, and neither has the context
+    _as_dash(monkeypatch, [_preview_entry(clicked, None), _preview_entry(other, None)], {**_PREVIEW_ID, "index": clicked})
+    assert controller([None, None], None) == UNTOUCHED
+
+    # A click on the second card: the list still carries the untouched first one
+    _as_dash(monkeypatch, [_preview_entry(other, 1)], {**_PREVIEW_ID, "index": other})
+    is_open, title, _, _ = controller([None, 1], None)
+    assert is_open is True and title == "Second"
+
+
+def test_modal_callback_wiring():
+    app = dash.Dash("test-video-modal-wiring")
+    register_video_callbacks(app)
+
+    (entry,) = [e for e in app._callback_list if "wt-video-modal.is_open" in e["output"]]
+    assert {"id": '{"index":["ALL"],"type":"wt-video-preview-btn"}', "property": "n_clicks"} in entry["inputs"]  # every card's ▶
+    assert {"id": "wt-video-modal-close", "property": "n_clicks"} in entry["inputs"]
+    assert entry["prevent_initial_call"] is True
+    for slot in ("wt-video-modal.is_open", "wt-video-modal-title.children", "wt-video-modal-body.children", "wt-video-modal-footer.children"):
+        assert slot in entry["output"]
 
 
 # ---------------------------------------------------------------------------
