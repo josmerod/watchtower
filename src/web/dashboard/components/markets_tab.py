@@ -87,6 +87,16 @@ def _fmt_pct(value: Any) -> str:
         return "—"
 
 
+def _fmt_share(value: Any) -> str:
+    """Format a share of a whole in percent, without the sign a change would carry (None → em dash)."""
+    if value is None:
+        return "—"
+    try:
+        return f"{float(value):.2f}%"
+    except (TypeError, ValueError):
+        return "—"
+
+
 def _fmt_amount(value: Any) -> str:
     """Format a coin amount, trimming trailing zeros (0.50000000 → 0.5)."""
     if value is None:
@@ -156,7 +166,7 @@ def _render_summary_cards(coins: list[dict[str, Any]]) -> dbc.Row:
     return dbc.Row(
         [
             card(_fmt_usd(total_cap), "Market Cap (top 50)"),
-            card(_fmt_pct(btc_dominance), "BTC Dominance"),
+            card(_fmt_share(btc_dominance), "BTC Dominance"),
             card(
                 f"{best['symbol']} {_fmt_pct(best['change_24h_pct'])}" if best else "—",
                 "Mejor 24h",
