@@ -16,9 +16,11 @@ from typing import Any
 import dash_bootstrap_components as dbc
 from dash import ALL, Dash, Input, Output, html
 from dash.development.base_component import Component
+from dash.exceptions import PreventUpdate
 
 from src.utils.file_system import get_project_root
 from src.web.dashboard.components.shared.table import create_refresh_button
+from src.web.dashboard.utils import only_inserted
 
 logger = logging.getLogger(__name__)
 
@@ -283,6 +285,8 @@ def register_digest_callbacks(app: Dash) -> None:
     )
     def _refresh_digest(_n_clicks) -> list[Any]:
         """Re-read the digest snapshot and re-render the content block."""
+        if only_inserted():  # the refresh buttons as the tab renders them, none clicked
+            raise PreventUpdate
         try:
             return _render_content(_load_digest())
         except Exception as e:  # surface errors in the UI

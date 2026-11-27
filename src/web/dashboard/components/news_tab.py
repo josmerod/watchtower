@@ -26,6 +26,7 @@ from src.web.dashboard.deduplication_utils import (
     get_duplicate_summary,
 )
 from src.web.dashboard.trend_utils import get_trending_items_map, match_item_trend, render_trend_badge
+from src.web.dashboard.utils import only_inserted
 
 # Merge the extra source configs so the news tab can render them as subtabs
 _ALL_NEWS_SOURCES = {
@@ -554,6 +555,8 @@ def register_news_search_callbacks(app):
     )
     def update_top_tech_view(search_term, items_per_page, show_duplicates_value, _page_btn_clicks, current_page):
         """Render Top Tech with visible dedup + pagination, fetching fresh data."""
+        if only_inserted():  # the pager buttons as the results render them, none clicked
+            return dash.no_update, dash.no_update
         try:
             articles = _aggregate_source_articles(_TOP_TECH_DEF["keys"], get_all_news_data())
             if not articles:
@@ -708,6 +711,8 @@ def register_news_search_callbacks(app):
     )
     def export_news_subtab(_n_clicks):
         """Download the clicked subtab's dataset as CSV."""
+        if only_inserted():  # the export buttons as the subtab renders them, none clicked
+            return dash.no_update
         try:
             import csv
             import io

@@ -20,7 +20,7 @@ from dash import ALL, Input, Output, State, dcc, html
 from src.repositories import BaseRepository
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path
+from src.web.dashboard.utils import get_data_path, only_inserted
 
 logger = logging.getLogger(__name__)
 
@@ -327,6 +327,8 @@ def register_shortcuts_callbacks(app):
         context,
     ):
         no_change = dash.no_update
+        if only_inserted():  # the cards' buttons as the tab renders them, none clicked: no modal opens
+            return (no_change,) * 10
 
         def re_render(term=None):
             return render_shortcuts_tab_layout(get_shortcuts_data(), term or search_value or "", custom_data=_load_custom_raw())

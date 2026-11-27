@@ -413,7 +413,9 @@ def register_arxiv_callbacks(app):
         prevent_initial_call=True,
     )
     def toggle_arxiv_paper_detail(n_clicks):
-        """Toggle the paper's collapsed detail row (odd clicks open)."""
+        """Toggle the paper's collapsed detail row (odd clicks open); an expander as it arrives has no click yet."""
+        if not n_clicks:
+            return dash.no_update
         return bool(n_clicks % 2)
 
 
