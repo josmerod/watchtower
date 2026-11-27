@@ -48,6 +48,7 @@ INCLUDE_PATHS = [
     "run_all_etl.sh",
     "run_watchtower_dashboard.py",
     "run_all_etl_orchestrator.py",
+    "run_backup.py",  # the backup the orchestrator runs after each cycle (T-106)
     "README.md",  # readme = "README.md" is required to build the project
     "GEMINI.md",
     "changelog.json",  # the dashboard's 🆕 Novedades modal reads it at layout time
@@ -67,6 +68,10 @@ CONTAINER_PORT = "7780"
 API_PORT = 45714
 DATA_VOLUME = "/mnt/user/appdata/watchtower/data"
 LOGS_VOLUME = "/mnt/user/appdata/watchtower/logs"
+# The backup archives ``run_backup.py`` makes after a cycle. Next to the other
+# two, so a deploy never removes them and they never land in the container's
+# own layer. Same disk as the data: a copy against mistakes, not an off-site one.
+BACKUP_VOLUME = "/mnt/user/appdata/watchtower/backups"
 HEALTH_TIMEOUT_SECONDS = 240
 HEALTH_POLL_SECONDS = 5
 # "none" means the image has no HEALTHCHECK; the Dockerfile is tested to declare one.
@@ -236,13 +241,13 @@ def upload_env_file(ssh: Any, variables: dict[str, str]) -> None:
 
 
 def docker_run_command(image: str, browserless_endpoint: str, env_file: str | None = None) -> str:
-    """``docker run`` for the given image tag: both published ports, the ``data`` and ``logs`` volumes, ``TZ`` and, with ``env_file``, the forwarded variables."""
+    """``docker run`` for the given image tag: both published ports, the ``data``, ``logs`` and ``backups`` volumes, ``TZ`` and, with ``env_file``, the forwarded variables."""
     forwarded = f"--env-file {env_file} " if env_file else ""
     return (
         f"docker run -d --name {DOCKER_IMAGE} --restart unless-stopped "
         f"{forwarded}"
         f"-p {HOST_PORT}:{CONTAINER_PORT} -p {API_PORT}:{API_PORT} "
-        f"-v {DATA_VOLUME}:/app/data -v {LOGS_VOLUME}:/app/logs "
+        f"-v {DATA_VOLUME}:/app/data -v {LOGS_VOLUME}:/app/logs -v {BACKUP_VOLUME}:/app/backups "
         f"-e TZ=Europe/Madrid -e BROWSERLESS_ENDPOINT={browserless_endpoint} {image}"
     )
 
@@ -259,8 +264,8 @@ def build_command() -> str:
             f"rm -rf {REMOTE_DIR}",
             f"mkdir -p {REMOTE_DIR}",
             f"tar -xzf /tmp/{TAR_FILENAME} -C {REMOTE_DIR}",
-            # Populate data volume if needed (no-clobber to preserve existing data)
-            f"mkdir -p {DATA_VOLUME}",
+            # Populate data volume if needed (no-clobber to preserve existing data). The backups folder is created empty: nothing seeds it.
+            f"mkdir -p {DATA_VOLUME} {BACKUP_VOLUME}",
             f"if [ -d {REMOTE_DIR}/data ]; then echo 'Seeding data volume...'; cp -rn {REMOTE_DIR}/data/* {DATA_VOLUME}/ || true; fi",
             f"cd {REMOTE_DIR}",
             f"{{ docker tag {DOCKER_IMAGE}:{LATEST_TAG} {DOCKER_IMAGE}:{PREVIOUS_TAG} || true; }}",

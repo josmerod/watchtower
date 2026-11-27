@@ -15,6 +15,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
+      - ./backups:/app/backups
       - ./secrets:/app/secrets:ro
     ports:
       - "7777:7777"    # dashboard / external tunnel

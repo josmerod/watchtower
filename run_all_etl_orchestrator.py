@@ -1,9 +1,11 @@
 import argparse
+import json
 import os
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from pathlib import Path
 
 ETL_SCRIPTS = [
     # News ETL
@@ -246,6 +248,77 @@ def run_freshness_watcher(exclude: list[str]) -> bool | None:
     return success
 
 
+# The backup runs after every cycle, but only makes an archive when the newest
+# verified one is this old. Cycles start about every 2 h 47 min (47 min of
+# ETLs, then a 2 h pause), so 20 h lands on one archive a day.
+BACKUP_MAX_AGE_HOURS = 20
+BACKUP_SCRIPT = "run_backup.py"
+BACKUP_LOG = Path("logs/backup_process.log")
+# The backup script ends with this line. The scheduler log only moves when a
+# cycle ends, so it is what makes created / skipped / failed visible there.
+BACKUP_RESULT_PREFIX = "BACKUP_RESULT "
+
+
+def backup_outcome(log_path: Path, returncode: int) -> str:
+    """What the backup script reported, in one line for the cycle log.
+
+    Args:
+        log_path: Where the script's output went.
+        returncode: Its exit code, for when it printed no result.
+
+    Returns:
+        The outcome of the run (created, skipped or failed) with its details.
+    """
+    result: dict = {}
+    try:
+        lines = [line for line in log_path.read_text(encoding="utf-8", errors="replace").splitlines() if line.startswith(BACKUP_RESULT_PREFIX)]
+        if lines:
+            result = json.loads(lines[-1][len(BACKUP_RESULT_PREFIX) :])
+    except (OSError, ValueError):
+        result = {}
+
+    status = result.get("status")
+    if status == "skipped":
+        return f"skipped: {result.get('reason', '')}"
+    if status == "created":
+        return f"created {result.get('archive')} ({result.get('size_mib')} MiB, {result.get('files')} files, verified)"
+    if status == "failed":
+        return "failed: " + "; ".join(part for part in [result.get("reason"), *result.get("errors", [])] if part)
+    return f"exit code {returncode}, no result line"
+
+
+def run_backup(log_path: Path | None = None) -> bool | None:
+    """Back up ``data/`` and ``logs/`` after the cycle; ``None`` when there is no script to run.
+
+    T-106: the script runs after every cycle and decides by itself whether an
+    archive is due (``--max-age-hours``), so the cadence lives in one place.
+    The scheduler log only moves when a cycle ends: its outcome is repeated
+    here, or a backup that had stopped running would go unnoticed again.
+
+    Args:
+        log_path: Where the script's output goes (default ``logs/backup_process.log``).
+
+    Returns:
+        True when an archive was created or the run was skipped, False when
+        it failed, None when the script is not there.
+    """
+    if not os.path.exists(BACKUP_SCRIPT):
+        print(f"[{datetime.now()}] Backup script {BACKUP_SCRIPT} not found: no backup this cycle.")
+        return None
+    print(f"[{datetime.now()}] Running backup (a new archive only when the newest verified one is {BACKUP_MAX_AGE_HOURS} h old)...")
+    log_path = BACKUP_LOG if log_path is None else log_path
+    cmd = ["uv", "run", "python", BACKUP_SCRIPT, "--max-age-hours", str(BACKUP_MAX_AGE_HOURS)]
+    with open(log_path, "w", encoding="utf-8") as f:
+        result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
+
+    outcome = backup_outcome(log_path, result.returncode)
+    if result.returncode == 0:
+        print(f"[{datetime.now()}] Backup {outcome}.")
+        return True
+    print(f"[{datetime.now()}] Backup {outcome}. Check logs/backup_process.log.")
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run ETL scripts using a thread pool.")
     parser.add_argument("--workers", type=int, default=4, help="Maximum number of concurrent ETL processes to run.")
@@ -312,16 +385,7 @@ def main():
         else:
             print(f"[{datetime.now()}] Snapshot retention failed. Check logs/snapshot_retention.log.")
 
-    backup_script = "run_backup.py"
-    if os.path.exists(backup_script):
-        print(f"[{datetime.now()}] Starting backup process...")
-        cmd = ["uv", "run", "python", backup_script]
-        with open("logs/backup_process.log", "w", encoding="utf-8") as f:
-            result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
-            if result.returncode == 0:
-                print(f"[{datetime.now()}] Backup process completed successfully.")
-            else:
-                print(f"[{datetime.now()}] Backup process failed. Check logs/backup_process.log.")
+    run_backup()
 
 
 if __name__ == "__main__":

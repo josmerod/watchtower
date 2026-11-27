@@ -4,21 +4,18 @@ import os
 import zipfile
 from pathlib import Path
 
-# Ensure PyDrive2 is installed. If not, this will fail at runtime.
-# It should be in requirements.txt
+# PyDrive2 is an optional dependency: without it the module still imports and the
+# local backup works; only the Google Drive upload is unavailable.
 try:
     from pydrive2.auth import GoogleAuth  # type: ignore[import-not-found]  # optional dependency
     from pydrive2.drive import GoogleDrive  # type: ignore[import-not-found]  # optional dependency
     from pydrive2.files import GoogleDriveFile  # type: ignore[import-not-found]  # optional dependency  # For type hinting
 except ImportError:
-    # This allows the module to be imported and potentially used for other things
-    # if pydrive2 is missing, but gdrive functions will fail.
-    # A better approach is to ensure dependencies are met.
+    # run_backup.py checks these and says so when an upload is asked for (T-106): printing an
+    # error at import put a false "ERROR" in the backup log of every cycle
     GoogleAuth = None
     GoogleDrive = None
     GoogleDriveFile = None
-    print("ERROR: PyDrive2 library is not installed. Google Drive functionality will not work.")
-    print("Please install it using: pip install PyDrive2")
 
 
 # Assuming Settings can be imported like this.
@@ -63,7 +60,12 @@ def add_folder_to_zip(zipf: zipfile.ZipFile, folder_path: Path, project_root: Pa
         for file in files:
             file_abs_path = Path(root) / file
             arcname = file_abs_path.relative_to(project_root)
-            zipf.write(file_abs_path, arcname)
+            try:
+                zipf.write(file_abs_path, arcname)
+            except FileNotFoundError:
+                # Listed by the walk and gone before it was read: the temp file of a running process.
+                module_logger.warning(f"Skipped {file_abs_path}: removed while the backup ran.")
+                continue
             added += 1
     return added
 

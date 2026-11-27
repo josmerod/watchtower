@@ -4,7 +4,8 @@ T-110: a script registered in ``ETL_SCRIPTS`` without an ``if __name__ ==``
 guard exits 0 doing nothing — the orchestrator reports fake SUCCESS while no
 data is written. T-111: the data-freshness watcher must run after the pool, not
 inside it. T-112: the timeout path must kill the whole child tree on every
-platform. No network: the kill test spawns a local sleep-only Python child.
+platform. T-106: the backup after the cycle reports what it did. No network:
+the kill test spawns a local sleep-only Python child.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
+from typing import IO
 
 import pytest
 
@@ -91,3 +93,68 @@ def test_kill_process_tree_kills_live_child() -> None:
             child.kill()
             child.wait(timeout=15)
     assert child.returncode is not None
+
+
+# ---------------------------------------------------------------------------
+# Backup after the cycle (T-106)
+# ---------------------------------------------------------------------------
+
+
+def _ship_backup_script(root: Path) -> None:
+    """Make ``run_backup.py`` exist where the orchestrator looks for it."""
+    (root / "run_backup.py").write_text("", encoding="utf-8")
+
+
+def test_backup_runs_after_retention() -> None:
+    """The archive is taken from the pruned tree, never from a half-written one."""
+    main_src = (REPO_ROOT / "run_all_etl_orchestrator.py").read_text(encoding="utf-8")
+    assert main_src.index("as_completed(futures)") < main_src.index("Snapshot retention failed") < main_src.index("run_backup()")
+
+
+def test_backup_without_the_script_says_so(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """T-106: the backups had stopped silently when the script stopped shipping."""
+    monkeypatch.chdir(tmp_path)
+
+    assert orch.run_backup(tmp_path / "backup.log") is None
+    assert "not found: no backup this cycle" in capsys.readouterr().out
+
+
+def test_backup_asks_for_an_archive_a_day_and_repeats_the_outcome(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """The script decides by ``--max-age-hours``; its result line is what the cycle log shows."""
+    monkeypatch.chdir(tmp_path)
+    _ship_backup_script(tmp_path)
+    calls: list[list[str]] = []
+
+    def run(cmd: list[str], stdout: IO[str], stderr: int) -> subprocess.CompletedProcess:
+        calls.append(cmd)
+        stdout.write('log\nBACKUP_RESULT {"status": "skipped", "reason": "the newest verified archive is 2.8 h old (limit 20 h)"}\n')
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(orch.subprocess, "run", run)
+
+    assert orch.run_backup(tmp_path / "backup.log") is True
+    assert calls == [["uv", "run", "python", "run_backup.py", "--max-age-hours", str(orch.BACKUP_MAX_AGE_HOURS)]]
+    assert "Backup skipped: the newest verified archive is 2.8 h old (limit 20 h)." in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("result_line", "returncode", "expected", "ok"),
+    [
+        ('BACKUP_RESULT {"status": "created", "archive": "backup_data_logs_20261127_135350.zip", "size_mib": 512.3, "files": 59129, "verified": true}', 0, "Backup created backup_data_logs_20261127_135350.zip (512.3 MiB, 59129 files, verified).", True),
+        ('BACKUP_RESULT {"status": "failed", "archive": "backup_data_logs_20261127_135350.zip", "errors": ["CRC check failed on data/x.json"]}', 2, "Backup failed: CRC check failed on data/x.json. Check logs/backup_process.log.", False),
+        ("", 1, "Backup exit code 1, no result line. Check logs/backup_process.log.", False),
+    ],
+)
+def test_backup_outcome_reaches_the_cycle_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], result_line: str, returncode: int, expected: str, ok: bool) -> None:
+    """Created, failed, or dead without a result: each one reads differently in the cycle log."""
+    monkeypatch.chdir(tmp_path)
+    _ship_backup_script(tmp_path)
+
+    def run(cmd: list[str], stdout: IO[str], stderr: int) -> subprocess.CompletedProcess:
+        stdout.write(f"log line\n{result_line}\n")
+        return subprocess.CompletedProcess(cmd, returncode)
+
+    monkeypatch.setattr(orch.subprocess, "run", run)
+
+    assert orch.run_backup(tmp_path / "backup.log") is ok
+    assert expected in capsys.readouterr().out

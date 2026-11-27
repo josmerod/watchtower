@@ -29,10 +29,10 @@ if str(REPO_ROOT) not in sys.path:
 from deployment import deploy
 
 # Scripts the orchestrator looks for after each cycle that are deliberately kept
-# out of the archive. run_backup.py zips data/ into the container's own layer:
-# production holds ~3 GB there, so it must not ship until it is redesigned
-# together with a persistent backups volume (see docs/TASK_BOARD.md).
-DELIBERATELY_NOT_SHIPPED = {"run_backup.py"}
+# out of the archive. Empty since T-106 (2026-11-27): run_backup.py ships, and
+# writes to the backups volume that docker_run_command() mounts. Before that it
+# would have zipped the ~3 GB of data/ into the container's own layer.
+DELIBERATELY_NOT_SHIPPED: set[str] = set()
 
 # Repo-root files the code names but the container must or need not have.
 # .env: deploy.py loads it here for the Unraid credentials. The file never
@@ -100,8 +100,9 @@ def _boot_files() -> list[str]:
 
 
 def _root_files_the_code_names() -> list[str]:
-    """Repo-root files whose name the shipped code quotes: the ones it reads by name at runtime."""
-    root_files = [path.name for path in REPO_ROOT.iterdir() if path.is_file()]
+    """Repo-root files whose name the code quotes: the ones it reads by name at runtime."""
+    # .git is a file inside a worktree (it points at the main checkout): git's, not the repo's.
+    root_files = [path.name for path in REPO_ROOT.iterdir() if path.is_file() and path.name != ".git"]
     named: set[str] = set()
     for folder in ("src", "deployment"):
         for source in (REPO_ROOT / folder).rglob("*.py"):
@@ -216,9 +217,10 @@ def _run_in_sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, command: Ca
         script.write_text(FAKE_DOCKER if name == "docker" else "#!/usr/bin/env bash\n", encoding="utf-8", newline="\n")
         script.chmod(0o755)
     calls_log = tmp_path / "docker.log"
-    # Point the commands at the sandbox: these three are read when they are built.
+    # Point the commands at the sandbox: these four are read when they are built.
     monkeypatch.setattr(deploy, "REMOTE_DIR", (tmp_path / "remote").as_posix())
     monkeypatch.setattr(deploy, "DATA_VOLUME", (tmp_path / "data").as_posix())
+    monkeypatch.setattr(deploy, "BACKUP_VOLUME", (tmp_path / "backups").as_posix())
     monkeypatch.setattr(deploy, "TAR_FILENAME", "watchtower-test-only.tar.gz")
     # The command goes in through a file: as a command-line argument MSYS would
     # rewrite the `host:/container` bits of the mounts.
@@ -263,6 +265,36 @@ def test_build_seeds_data_without_clobbering_it():
     text = deploy.build_command()
     assert f"cp -rn {deploy.REMOTE_DIR}/data/* {deploy.DATA_VOLUME}/ || true" in text
     assert "cp -r " not in text  # an unguarded copy would overwrite the historical data volume
+
+
+def test_build_creates_the_backups_folder(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """The folder exists before the first container mounts it, created empty: nothing seeds it."""
+    code, _calls = _run_in_sandbox(monkeypatch, tmp_path, deploy.build_command)
+    assert code == 0
+    assert (tmp_path / "backups").is_dir()
+    assert list((tmp_path / "backups").iterdir()) == []
+    # Only the data volume is ever seeded; the archives folder starts empty.
+    seeding = [step for step in deploy.build_command().split(" && ") if step.startswith("if [ -d")]
+    assert len(seeding) == 1 and deploy.BACKUP_VOLUME not in seeding[0]
+
+
+def test_container_gets_a_backups_volume_for_the_backup_script():
+    """T-106: run_backup.py ships, so its archives need a place a deploy never removes.
+
+    Written to the container's own layer they would be lost at every deploy.
+    The volume sits next to ``data`` and ``logs``, and is the folder the script writes to.
+    """
+    from run_backup import BACKUP_DIR_NAME  # under the project root, /app in the container
+
+    assert "run_backup.py" in deploy.INCLUDE_PATHS
+    assert Path(deploy.BACKUP_VOLUME).parent == Path(deploy.DATA_VOLUME).parent == Path(deploy.LOGS_VOLUME).parent
+    run = deploy.docker_run_command("watchtower", SETTINGS.browserless_endpoint)
+    assert f"-v {deploy.BACKUP_VOLUME}:/app/{BACKUP_DIR_NAME} " in run
+    # A rollback is the same swap: the previous image gets the volume too.
+    assert f"-v {deploy.BACKUP_VOLUME}:/app/{BACKUP_DIR_NAME} " in deploy.docker_run_command("watchtower:previous", SETTINGS.browserless_endpoint)
+    # The compose path (a developer's machine) mounts the same folder.
+    compose = (REPO_ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "- ./backups:/app/backups" in compose
 
 
 def test_swap_replaces_the_container(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
