@@ -3,6 +3,7 @@
 import json
 import os
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -186,3 +187,156 @@ def test_manual_rules_are_preserved(tmp_path, monkeypatch):
     _touch(data_dir / "news" / "x_latest.json", 1, now=NOW)  # recover
     watcher.check_freshness(data_dir=data_dir, now=NOW, rules_file=rules_file)
     assert json.loads(rules_file.read_text(encoding="utf-8")) == [manual]
+
+
+# --- The age of the content (T-176): a file rewritten every cycle can hold years-old items ---
+
+
+def _dated_source(path_rel, field="published_at"):
+    return [{"key": "t", "label": "Test", "path": path_rel, "warn_hours": 26, "critical_hours": 168, "content_date": field}]
+
+
+def _ago(hours, form="iso"):
+    """A date ``hours`` before NOW, in the form a feed writes it."""
+    moment = datetime.fromtimestamp(NOW - hours * 3600, tz=timezone.utc)
+    if form == "rfc":
+        return moment.strftime("%a, %d %b %Y %H:%M:%S +0000")
+    if form == "naive":
+        return moment.strftime("%Y-%m-%dT%H:%M:%S")
+    return moment.isoformat()
+
+
+def _write_items(path, dates, age_hours=1, field="published_at"):
+    """A file rewritten ``age_hours`` ago whose items carry the given dates."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps([{"title": f"item {i}", field: date} for i, date in enumerate(dates)]), encoding="utf-8")
+    stamp = NOW - age_hours * 3600
+    os.utime(path, (stamp, stamp))
+
+
+def test_a_file_rewritten_every_cycle_with_old_items_is_critical(tmp_path):
+    """FutureTools in 2026: written every 2 h, newest item from 2024-05."""
+    rel = "futuretools/news.json"
+    newest = datetime(2024, 5, 1, 16, 7, 36, tzinfo=timezone.utc)
+    _write_items(tmp_path / rel, ["2024-04-28T18:12:13+00:00", newest.isoformat(), "2024-03-11T17:32:49Z"])
+
+    record = assess_freshness(_dated_source(rel), data_dir=tmp_path, now=NOW)["sources"][0]
+
+    expected = round((NOW - newest.timestamp()) / 3600, 1)
+    assert record["status"] == "critical"
+    assert record["content_age_hours"] == expected
+    assert record["age_hours"] == expected  # the age that decided is the one the alert shows
+
+
+def test_nothing_new_for_a_week_is_stale(tmp_path):
+    rel = "tldr/news.json"
+    _write_items(tmp_path / rel, [_ago(400), _ago(200)])
+
+    record = assess_freshness(_dated_source(rel), data_dir=tmp_path, now=NOW)["sources"][0]
+
+    assert record["status"] == "stale"
+    assert record["content_age_hours"] == 200.0
+    assert record["age_hours"] == 200.0
+
+
+def test_a_digest_that_publishes_twice_a_week_stays_fresh(tmp_path):
+    rel = "bensbites/news.json"
+    _write_items(tmp_path / rel, [_ago(500), _ago(60)])
+
+    record = assess_freshness(_dated_source(rel), data_dir=tmp_path, now=NOW)["sources"][0]
+
+    assert record["status"] == "fresh"
+    assert record["content_age_hours"] == 60.0
+    assert record["age_hours"] == 1.0  # the file is what was written an hour ago
+
+
+def test_the_age_of_the_file_still_decides_when_its_items_are_new(tmp_path):
+    rel = "hackernews/news.json"
+    _write_items(tmp_path / rel, [_ago(1)], age_hours=200)
+
+    record = assess_freshness(_dated_source(rel), data_dir=tmp_path, now=NOW)["sources"][0]
+
+    assert record["status"] == "critical"
+    assert record["age_hours"] == 200.0
+    assert record["content_age_hours"] == 1.0
+
+
+def test_dates_are_read_in_the_forms_the_feeds_write_them(tmp_path):
+    rel = "news/mixed.json"
+    _write_items(tmp_path / rel, [_ago(100), _ago(50, "naive"), _ago(30, "rfc")], field="published")
+
+    record = assess_freshness(_dated_source(rel, field="published"), data_dir=tmp_path, now=NOW)["sources"][0]
+
+    assert record["content_age_hours"] == 30.0
+
+
+def test_items_without_a_readable_date_are_not_judged(tmp_path):
+    rel = "news/undated.json"
+    _write_items(tmp_path / rel, ["", "yesterday", None])
+
+    record = assess_freshness(_dated_source(rel), data_dir=tmp_path, now=NOW)["sources"][0]
+
+    assert record["status"] == "fresh"
+    assert "content_age_hours" not in record
+
+
+def test_a_file_that_is_not_json_is_judged_by_its_age_only(tmp_path):
+    rel = "news/broken.json"
+    path = tmp_path / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text('["cut in the middle of', encoding="utf-8")
+    os.utime(path, (NOW - 3600, NOW - 3600))
+
+    record = assess_freshness(_dated_source(rel), data_dir=tmp_path, now=NOW)["sources"][0]
+
+    assert record["status"] == "fresh"  # by the file's own age (written an hour ago)
+    assert "content_age_hours" not in record
+
+
+def test_an_object_holding_one_list_of_items_is_read(tmp_path):
+    rel = "news/wrapped.json"
+    path = tmp_path / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"fetched_at": _ago(1), "articles": [{"title": "a", "published_at": _ago(300)}]}), encoding="utf-8")
+    os.utime(path, (NOW - 3600, NOW - 3600))
+
+    record = assess_freshness(_dated_source(rel), data_dir=tmp_path, now=NOW)["sources"][0]
+
+    assert record["status"] == "stale"
+    assert record["content_age_hours"] == 300.0
+
+
+def test_every_news_source_is_registered_with_its_content_date():
+    """No file of the News tab may sit outside the registry: three dead ones went unnoticed for months."""
+    from src.services.data_loader import NEWS_SOURCES_CONFIG
+
+    registered = {entry["path"]: entry for entry in SOURCE_FILES}
+    missing = []
+    for key, config in NEWS_SOURCES_CONFIG.items():
+        rel = Path(config["path"]).as_posix().split("/data/")[-1]
+        if rel not in registered or not registered[rel].get("content_date"):
+            missing.append(key)
+    assert not missing, f"without a dated entry in SOURCE_FILES: {missing}"
+    assert len({entry["key"] for entry in SOURCE_FILES}) == len(SOURCE_FILES)  # one alert rule per source
+
+
+def test_a_source_with_old_items_gets_a_high_rule_that_names_the_date(tmp_path, monkeypatch):
+    from src.watchers import data_freshness_watcher as dfw
+
+    rel = "futuretools/news.json"
+    monkeypatch.setattr(dfw, "SOURCE_FILES", _dated_source(rel))
+    newest = datetime(2024, 5, 1, 16, 7, 36, tzinfo=timezone.utc)
+    _write_items(tmp_path / "data" / rel, [newest.isoformat()])
+    rules_file = tmp_path / "alerts" / "rules.json"
+    watcher = _hermetic_watcher(tmp_path)
+    watcher.check_freshness(data_dir=tmp_path / "data", now=NOW, rules_file=rules_file)
+    rules = json.loads(rules_file.read_text(encoding="utf-8"))
+
+    age = round((NOW - newest.timestamp()) / 3600, 1)
+    # the rule dates the source from the age it is given, rounded to a tenth of an hour
+    since = datetime.fromtimestamp(NOW - age * 3600, tz=timezone.utc)
+    assert [(rule["id"], rule["severity"]) for rule in rules] == [("data_freshness_t", "high")]
+    assert rules[0]["description"] == f"Fuente Test sin datos desde {since:%Y-%m-%d %H:%M} UTC ({age:g}h)"
+    assert age > 23_000  # the date in the message is the item's, not the file's (written an hour ago)
+    event = json.loads(next(watcher.events_dir.glob("*_freshness_initial_alert.json")).read_text(encoding="utf-8"))
+    assert event["details"]["content_age_hours"] == age
