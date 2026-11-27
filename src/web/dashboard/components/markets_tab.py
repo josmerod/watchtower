@@ -23,6 +23,7 @@ from dash import Input, Output, State, dcc, html
 from src.utils.file_system import get_project_root
 from src.web.dashboard.components import portfolio, saved_items
 from src.web.dashboard.components.shared.table import render_items_table
+from src.web.dashboard.utils import clicked_prop
 
 logger = logging.getLogger(__name__)
 
@@ -481,10 +482,12 @@ def register_markets_callbacks(app: dash.Dash) -> None:
         """
         no_change = (dash.no_update,) * 5
         try:
-            triggered = dash.ctx.triggered_id
-            clicks = next((entry.get("value") for entry in dash.ctx.triggered if entry.get("id") == triggered), None)
-            if triggered is None or not clicks:
+            # The click is in ctx.triggered, whose entries carry prop_id and value only. A call without one is
+            # the delete buttons the table just rendered: it must not write.
+            clicked = clicked_prop()
+            if clicked is None:
                 return no_change
+            triggered = dash.ctx.triggered_prop_ids.get(clicked)
 
             holdings = portfolio.normalize_holdings(store_data)
 
