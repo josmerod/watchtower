@@ -86,3 +86,18 @@ def test_the_note_survives_a_search(serve):
     (warning,) = _alerts(results, "warning")
     assert "FutureTools" in _texts(warning)[0]
     assert _texts(results.children[1])[0].startswith("📰 Found 1 articles")
+
+
+def test_top_tech_names_a_stale_source_too(serve):
+    """Top Tech aggregates four sources through its own renderer: the note goes above its table as well."""
+    keys = tab._TOP_TECH_DEF["keys"]
+    items = {key: [_issue(key, 1)] for key in keys}
+    items[keys[2]] = [_issue(keys[2], tab.STALE_SOURCE_DAYS + 2)]
+    serve(**items)
+
+    children, _ = tab._render_top_tech_view(tab._aggregate_source_articles(keys, tab.get_all_news_data()))
+
+    (warning,) = _alerts(tab.html.Div(children), "warning")
+    assert children[0] is warning
+    stale_name = tab._ALL_NEWS_SOURCES[keys[2]]["name"]
+    assert _texts(warning)[0].startswith(f"⚠️ {stale_name} lleva sin publicar")

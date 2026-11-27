@@ -242,7 +242,7 @@ def _render_top_tech_view(
     per_page: int = TOP_TECH_DEFAULT_PER_PAGE,
     page: int = 1,
 ) -> tuple[list[Any], int]:
-    """Render the Top Tech results: dedup summary + one page + pager (spec 01 M4/M5).
+    """Render the Top Tech results: stale-source notes + dedup summary + one page + pager (spec 01 M4/M5).
 
     Single renderer shared by the static layout and the controller callback so
     both views are identical (spec 01 N6): annotate cross-source duplicate
@@ -258,7 +258,7 @@ def _render_top_tech_view(
     # Shared pagination helper: slice one page and clamp it into range
     page_items, total_pages, page = paginate(visible, page, per_page)
 
-    children: list[Any] = []
+    children: list[Any] = _stale_source_alerts(_TOP_TECH_DEF["keys"])
     if not show_duplicates and summary["duplicate_items"] > 0:
         children.append(
             html.Span(
@@ -318,6 +318,11 @@ def _stale_source_notes(source_keys: list[str]) -> list[str]:
         if dates and now - max(dates) >= timedelta(days=STALE_SOURCE_DAYS):
             notes.append(f"⚠️ {_ALL_NEWS_SOURCES[key]['name']} lleva sin publicar nada nuevo desde el {max(dates):%d/%m/%Y}.")
     return notes
+
+
+def _stale_source_alerts(source_keys: list[str]) -> list[dbc.Alert]:
+    """The notes of ``_stale_source_notes``, one warning alert each, to put above a table."""
+    return [dbc.Alert(note, color="warning", className="mb-3 py-2") for note in _stale_source_notes(source_keys)]
 
 
 def _render_news_results(source_keys: list[str], search_term: str | None = None):
@@ -387,9 +392,8 @@ def _render_news_results(source_keys: list[str], search_term: str | None = None)
 
     # The count alert only shows while a search term is active
     alert = dbc.Alert(f"📰 Found {len(shown)} articles matching '{search_term}'", color="success", className="mb-3") if search_term else None
-    notices = [dbc.Alert(note, color="warning", className="mb-3 py-2") for note in _stale_source_notes(source_keys)]
     return html.Div(
-        [*notices, *([alert] if alert else []), table],
+        [*_stale_source_alerts(source_keys), *([alert] if alert else []), table],
         style={
             "maxHeight": "800px",
             "overflowY": "auto",
