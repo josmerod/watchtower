@@ -11,6 +11,7 @@ from datetime import datetime
 import feedparser
 
 from src.etl.base import BaseETL
+from src.utils.text import html_to_text, plain_excerpt
 
 # Default feeds — add more as needed
 DEFAULT_FEEDS: list[dict[str, str]] = [
@@ -102,9 +103,10 @@ class RSSFeedETL(BaseETL):
 
         for entry in data:
             try:
-                title = entry.get("title", "Untitled")
+                title = html_to_text(entry.get("title")) or "Untitled"
                 link = entry.get("link", "")
-                summary = entry.get("summary", entry.get("description", ""))
+                # Plain text, cut for a short description
+                description = plain_excerpt(entry.get("summary", entry.get("description", "")), 500)
 
                 # Parse date — feedparser gives 'published_parsed' as time.struct_time
                 published_parsed = entry.get("published_parsed") or entry.get("updated_parsed")
@@ -119,7 +121,7 @@ class RSSFeedETL(BaseETL):
                     {
                         "title": title,
                         "url": link,
-                        "description": summary[:500] if summary else "",
+                        "description": description,
                         "published_at": str(published_at),
                         "source": f"RSS ({feed_name})",
                         "author": entry.get("author", feed_name),

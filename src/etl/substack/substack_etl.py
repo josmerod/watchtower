@@ -12,6 +12,7 @@ from datetime import datetime
 import feedparser
 
 from src.etl.base import BaseETL
+from src.utils.text import html_to_text, plain_excerpt
 
 # Newsletter slugs to scrape — add more as needed
 DEFAULT_NEWSLETTERS: list[str] = [
@@ -93,9 +94,10 @@ class SubstackETL(BaseETL):
 
         for entry in data:
             try:
-                title = entry.get("title", "Untitled")
+                title = html_to_text(entry.get("title")) or "Untitled"
                 link = entry.get("link", "")
-                summary = entry.get("summary", entry.get("description", ""))
+                # Plain text, cut for a short description
+                summary = plain_excerpt(entry.get("summary", entry.get("description", "")), 300)
                 newsletter_slug = entry.get("_newsletter_slug", "unknown")
 
                 # Parse date
@@ -107,10 +109,6 @@ class SubstackETL(BaseETL):
 
                 # Author — Substack feeds often include this
                 author = entry.get("author", newsletter_slug)
-
-                # Clean summary (strip HTML tags for a short description)
-                if summary and len(summary) > 300:
-                    summary = summary[:300] + "…"
 
                 transformed.append(
                     {

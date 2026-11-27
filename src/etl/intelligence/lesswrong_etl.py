@@ -16,6 +16,7 @@ import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.text import html_to_text, plain_excerpt
 
 logger = get_logger("LessWrongETL")
 
@@ -101,10 +102,10 @@ def fetch_lesswrong() -> list[dict[str, Any]]:
 
             entry = {
                 "source": "lesswrong",
-                "title": post.get("title", ""),
+                "title": html_to_text(post.get("title", "")),
                 "link": link,
                 "published": published,
-                "summary": post.get("htmlBody", "")[:2000] + "..." if post.get("htmlBody") else "",  # Truncate summary for file size
+                "summary": plain_excerpt(post.get("htmlBody"), 2000),  # plain text, cut for file size
                 "author": author,
                 "guid": post.get("_id", link),
                 "fetched_at": datetime.now(timezone.utc).isoformat(),

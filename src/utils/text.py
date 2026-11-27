@@ -24,3 +24,19 @@ def html_to_text(value: str | None) -> str:
         return ""
     text = _TAG_OR_COMMENT.sub(" ", value) if "<" in value else value
     return re.sub(r"\s+", " ", unescape(text)).strip()
+
+
+def plain_excerpt(value: str | None, limit: int) -> str:
+    """``html_to_text`` as an excerpt of at most ``limit`` characters, ending in an ellipsis when something was cut.
+
+    The cut comes after the markup is gone: inside a tag it would leave half of it, inside an entity a bare ``&``.
+
+    Args:
+        value: The HTML snippet, or anything falsy (``None``, empty).
+        limit: The most characters the excerpt may have, ellipsis included.
+
+    Returns:
+        The excerpt; an empty string for an empty input.
+    """
+    text = html_to_text(value)
+    return f"{text[: limit - 1].rstrip()}…" if len(text) > limit else text

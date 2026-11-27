@@ -26,6 +26,7 @@ from urllib3.util.retry import Retry
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.text import html_to_text
 
 # Initialize logger for this module
 logger = get_logger("HackerNewsAskETL")
@@ -102,9 +103,9 @@ def fetch_ask_hn_posts(session: requests.Session, max_posts: int = 100) -> list[
                 if title.startswith("ask hn:"):
                     processed_post = {
                         "id": story_data.get("id"),
-                        "title": story_data.get("title"),
+                        "title": html_to_text(story_data.get("title")),
                         "url": f"https://news.ycombinator.com/item?id={story_data.get('id')}",
-                        "text": story_data.get("text", ""),
+                        "text": html_to_text(story_data.get("text", "")),
                         "author": story_data.get("by"),
                         "score": story_data.get("score", 0),
                         "comments_count": story_data.get("descendants", 0),

@@ -12,6 +12,7 @@ from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.text import html_to_text
 
 logger = get_logger("PodcastsETL")
 
@@ -113,7 +114,7 @@ def process_podcast_episodes(
     processed: list[dict[str, Any]] = []
     for ep in episodes:
         processed_ep: dict[str, Any] = {
-            "title": ep.get("title", ""),
+            "title": html_to_text(ep.get("title", "")),  # feeds double-escape some titles: "Cat &amp;amp; Dog"
             "url": ep.get("url", ""),
             "source": ep.get("source", ""),
             "published_at": ep.get("published_at", ""),
