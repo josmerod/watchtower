@@ -20,12 +20,18 @@ from src.utils.logging import get_logger
 
 logger = get_logger("RedditUnifiedETL")
 STATE_FILE = os.path.join(get_project_root(), "data/reddit_unified/etl_state.json")
+# A run gives up on the remaining feeds after this many empty ones in a row.
+# When Reddit refuses an address every feed answers the same way (a 429, then
+# a 404 with an empty feed), and a minute of back-off after each of the 39
+# cost 38 minutes per cycle for no posts (server, 2026-11-17 to 2026-11-27).
+EMPTY_FEEDS_BEFORE_STOPPING = 3
 
 
 # Extended list of relevant subreddits for tech/AI/ML/programming content.
 # All RSS since 2026-08-27: reddit's non-OAuth JSON API (hot.json) started
-# returning 403 from both the home and Unraid server IPs; the RSS feeds work
-# from both. The JSON fetcher is kept for a future OAuth migration.
+# returning 403 from both the home and Unraid server IPs; the RSS feeds worked
+# from both until 2026-11-17, when they started being refused from the server
+# too. The JSON fetcher is kept for a future OAuth migration.
 class _SubredditConfig(TypedDict, total=False):
     """Per-subreddit feed wiring (rss vs json + dashboard category).
 
@@ -253,12 +259,18 @@ def fetch_subreddit_json(subreddit: str, limit: int = 25, use_pagination: bool =
 
 
 def fetch_all_subreddits() -> dict[str, list[dict[str, Any]]]:
-    """Fetch posts from all configured subreddits."""
+    """Fetch posts from all configured subreddits.
+
+    A run stops early when ``EMPTY_FEEDS_BEFORE_STOPPING`` feeds in a row give
+    nothing: the rest would only wait on Reddit for the same answer. The
+    caller keeps the previous files either way (see ``save_reddit_data``).
+    """
     all_posts = {}
     state = load_state()
     # Adaptive pacing state shared with fetch_subreddit_rss via the stats dict
     feed_delay = 3.0
     feed_stats: dict[str, Any] = {"rate_limited": False}
+    empty_in_a_row = 0
 
     for subreddit, config in SUBREDDITS_CONFIG.items():
         try:
@@ -288,6 +300,12 @@ def fetch_all_subreddits() -> dict[str, list[dict[str, Any]]]:
                 post["category"] = config["category"]
 
             all_posts[subreddit] = posts
+
+            empty_in_a_row = empty_in_a_row + 1 if not posts else 0
+            if empty_in_a_row >= EMPTY_FEEDS_BEFORE_STOPPING:
+                remaining = len(SUBREDDITS_CONFIG) - len(all_posts)
+                logger.warning(f"{empty_in_a_row} feeds in a row gave nothing: Reddit is refusing this address, the other {remaining} are not tried in this run")
+                break
 
             # Rate limiting — adaptive pacing: reddit RSS 429s sustained bursts;
             # slow down permanently after every rate-limit hit (3s -> 8s cap)

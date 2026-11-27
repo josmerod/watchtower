@@ -13,6 +13,12 @@ Stale/critical sources are also mirrored into the shared alert-rule store
 surface in the Notifications tab; recovery to fresh resolves the rule. See
 :mod:`src.alerts.rules_store`.
 
+The age of a file only says whether its ETL ran. A news ETL rewrites its file
+every cycle even when its source stopped publishing (FutureTools: a file written
+every 2 h whose newest item is from 2024-05), so the sources registered with
+``content_date`` are also judged by the age of their newest item: a week without
+anything new is stale, a month is critical.
+
 Usage:
     uv run python -m src.watchers.data_freshness_watcher
 """
@@ -20,6 +26,7 @@ Usage:
 import json
 import time
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
@@ -36,9 +43,9 @@ logger = get_logger("DataFreshnessWatcher")
 # thresholds.
 SOURCE_FILES: list[dict[str, Any]] = [
     # Tech Radar (12 columns)
-    {"key": "google_ai", "label": "Google AI Blog", "path": "news/google_ai_blog_latest.json", "warn_hours": 26, "critical_hours": 168},
+    {"key": "google_ai", "label": "Google AI Blog", "path": "news/google_ai_blog_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published"},
     {"key": "verge_ai", "label": "The Verge AI", "path": "news/verge_ai_latest.json", "warn_hours": 26, "critical_hours": 168},
-    {"key": "kdnuggets", "label": "KDnuggets", "path": "kdnuggets/kdnuggets.json", "warn_hours": 26, "critical_hours": 168},
+    {"key": "kdnuggets", "label": "KDnuggets", "path": "kdnuggets/kdnuggets.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
     {"key": "cloud_updates", "label": "Cloud Updates", "path": "cloud_updates/cloud_updates_latest.json", "warn_hours": 26, "critical_hours": 168},
     {"key": "selfhosted", "label": "Self-Hosted (selfh.st + LS.io)", "path": "selfhosted/selfhosted_latest.json", "warn_hours": 26, "critical_hours": 168},
     {"key": "reddit_pulse", "label": "Reddit pulse (r/SelfHosted)", "path": "reddit_unified/SelfHosted_latest.json", "warn_hours": 26, "critical_hours": 168},
@@ -49,7 +56,28 @@ SOURCE_FILES: list[dict[str, Any]] = [
     {"key": "wired", "label": "Wired", "path": "news/wired_latest.json", "warn_hours": 26, "critical_hours": 168},
     {"key": "mit_techreview", "label": "MIT Tech Review", "path": "news/mit_techreview_latest.json", "warn_hours": 26, "critical_hours": 168},
     # News + research
-    {"key": "techcrunch", "label": "TechCrunch", "path": "news/techcrunch_latest.json", "warn_hours": 26, "critical_hours": 168},
+    {"key": "techcrunch", "label": "TechCrunch", "path": "news/techcrunch_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published"},
+    # News tab (T-176). Its 21 files are rewritten every cycle, so their age only
+    # tells that the ETL ran; "content_date" names the field that dates each item.
+    {"key": "venturebeat", "label": "VentureBeat", "path": "news/venturebeat_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published"},
+    {"key": "arstechnica", "label": "Ars Technica", "path": "news/arstechnica_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published"},
+    {"key": "futuretools", "label": "FutureTools (News)", "path": "futuretools/futuretoolsnews.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published"},
+    {"key": "bensbites", "label": "Ben's Bites", "path": "bensbites/bensbites_news.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "hackernews", "label": "Hacker News", "path": "hackernews/hackernews.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "medium_genai", "label": "Medium GenAI", "path": "medium_genai/medium_genai.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "meneame_general", "label": "Meneame General", "path": "meneame/meneame_general_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "meneame_tecnologia", "label": "Meneame Tech", "path": "meneame/meneame_tecnologia_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "indiehackers", "label": "Indie Hackers", "path": "indie_hackers/posts.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "kagi_business", "label": "Kagi Business", "path": "kagi_business/kagi_business.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "kagi_science", "label": "Kagi Science", "path": "kagi_science/kagi_science.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "kagi_gaming", "label": "Kagi Gaming", "path": "kagi_gaming/kagi_gaming.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "kagi_ai", "label": "Kagi AI (News)", "path": "kagi_ai/kagi_ai.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "kagi_europe", "label": "Kagi Europe", "path": "kagi_europe/kagi_europe.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "kagi_spain", "label": "Kagi Spain", "path": "kagi_spain/kagi_spain.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "microsiervos", "label": "Microsiervos", "path": "microsiervos/output/microsiervos_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    {"key": "spanish_tech", "label": "Spanish Tech (Xataka, Hipertextual, Genbeta)", "path": "news/spanish_tech_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published"},
+    {"key": "tldr", "label": "tldr.tech (Tech/AI/Data)", "path": "tldr/tldr_news.json", "warn_hours": 26, "critical_hours": 168, "content_date": "published_at"},
+    # Research
     {"key": "arxiv", "label": "ArXiv papers", "path": "arxiv/arxiv_papers_latest.json", "warn_hours": 26, "critical_hours": 168},
     {"key": "hf_trending", "label": "HF Trending papers", "path": "arxiv/hf_daily_papers_latest.json", "warn_hours": 30, "critical_hours": 168},
     {"key": "reddit_unified", "label": "Reddit unified", "path": "reddit_unified/reddit_unified_latest.json", "warn_hours": 26, "critical_hours": 168},
@@ -67,8 +95,70 @@ SOURCE_FILES: list[dict[str, Any]] = [
 ]
 
 
+# The newest item of a source registered with "content_date" is judged with its own
+# thresholds: a week is long enough for a weekday newsletter or a digest that
+# publishes twice a week.
+CONTENT_WARN_HOURS = 168
+CONTENT_CRITICAL_HOURS = 720
+
+_LEVEL_RANK = {"fresh": 0, "stale": 1, "critical": 2}
+
+
+def _level(age_hours: float, warn_hours: float, critical_hours: float) -> str:
+    """Fresh, stale or critical for an age and its two thresholds."""
+    if age_hours >= critical_hours:
+        return "critical"
+    if age_hours >= warn_hours:
+        return "stale"
+    return "fresh"
+
+
+def _date_epoch(value: Any) -> float | None:
+    """Epoch of a date in ISO-8601 or RFC-2822 form; a date without a zone is taken as UTC."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        try:
+            parsed = parsedate_to_datetime(text)
+        except (TypeError, ValueError):
+            return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()
+
+
+def newest_item_epoch(path: Path, field: str) -> float | None:
+    """Epoch of the newest ``field`` among the items of a JSON file.
+
+    The file holds a list of records, or an object with one list among its
+    values. Returns ``None`` when the file cannot be read, holds no item or no
+    date is understood.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        logger.warning(f"Could not read {path.name} to date its content")
+        return None
+    if isinstance(data, list):
+        items = data
+    elif isinstance(data, dict):
+        items = next((value for value in data.values() if isinstance(value, list)), [])
+    else:
+        items = []
+    epochs = [epoch for item in items if isinstance(item, dict) for epoch in (_date_epoch(item.get(field)),) if epoch is not None]
+    return max(epochs) if epochs else None
+
+
 def assess_freshness(source_files: list[dict[str, Any]] | None = None, data_dir: Path | None = None, now: float | None = None) -> dict[str, Any]:
     """Assess every registered source file's staleness.
+
+    The age of the file is checked against the entry's thresholds. An entry with
+    ``content_date`` is also judged by the age of its newest item (see
+    ``CONTENT_WARN_HOURS``), and the worse of the two verdicts wins; ``age_hours``
+    then holds the age that decided and ``content_age_hours`` the item's.
 
     Pure function (seam for tests): paths resolve under ``data_dir`` (defaults
     to the project's ``data/``), and ``now`` defaults to the current epoch.
@@ -81,7 +171,7 @@ def assess_freshness(source_files: list[dict[str, Any]] | None = None, data_dir:
     records: list[dict[str, Any]] = []
     for src in source_files or SOURCE_FILES:
         path = root / src["path"]
-        record = {
+        record: dict[str, Any] = {
             "key": src["key"],
             "label": src["label"],
             "path": src["path"],
@@ -90,14 +180,18 @@ def assess_freshness(source_files: list[dict[str, Any]] | None = None, data_dir:
             "status": "critical",  # a missing file is critical by definition
         }
         if path.exists():
-            age_hours = max(0.0, (now - path.stat().st_mtime) / 3600)
-            record["age_hours"] = round(age_hours, 1)
-            if age_hours >= src["critical_hours"]:
-                record["status"] = "critical"
-            elif age_hours >= src["warn_hours"]:
-                record["status"] = "stale"
-            else:
-                record["status"] = "fresh"
+            file_age_hours = max(0.0, (now - path.stat().st_mtime) / 3600)
+            record["age_hours"] = round(file_age_hours, 1)
+            record["status"] = _level(file_age_hours, src["warn_hours"], src["critical_hours"])
+            newest = newest_item_epoch(path, src["content_date"]) if src.get("content_date") else None
+            if newest is not None:
+                content_age_hours = max(0.0, (now - newest) / 3600)
+                record["content_age_hours"] = round(content_age_hours, 1)
+                content_status = _level(content_age_hours, CONTENT_WARN_HOURS, CONTENT_CRITICAL_HOURS)
+                if _LEVEL_RANK[content_status] > _LEVEL_RANK[record["status"]]:
+                    # The alert rule built from this record reads age_hours: hand it the age that decided
+                    record["status"] = content_status
+                    record["age_hours"] = round(content_age_hours, 1)
         records.append(record)
 
     by_status = {s: [r for r in records if r["status"] == s] for s in ("fresh", "stale", "critical")}
@@ -140,20 +234,11 @@ class DataFreshnessWatcher(BaseWatcher):
 
         for record in summary["sources"]:
             prev = previous_statuses.get(record["key"])
+            details = {"label": record["label"], "age_hours": record["age_hours"], "content_age_hours": record.get("content_age_hours"), "exists": record["exists"]}
             if prev and prev != record["status"]:
-                self._record_event(
-                    f"freshness_{prev}_to_{record['status']}",
-                    old_value=prev,
-                    new_value=record["status"],
-                    details={"label": record["label"], "age_hours": record["age_hours"], "exists": record["exists"]},
-                )
+                self._record_event(f"freshness_{prev}_to_{record['status']}", old_value=prev, new_value=record["status"], details=details)
             elif not prev and record["status"] != "fresh":
-                self._record_event(
-                    "freshness_initial_alert",
-                    old_value=None,
-                    new_value=record["status"],
-                    details={"label": record["label"], "age_hours": record["age_hours"], "exists": record["exists"]},
-                )
+                self._record_event("freshness_initial_alert", old_value=None, new_value=record["status"], details=details)
 
         self.output_file.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
         new_state = {
