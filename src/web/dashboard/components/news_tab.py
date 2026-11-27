@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any, TypedDict
 
 import dash
@@ -81,6 +82,11 @@ MAX_ARTICLES_PER_SOURCE = 50  # Limit number of articles displayed per source in
 # One request per pause in typing, not per keystroke: every answer is the
 # subtab's table rendered again (same value as the Knowledge Garden search).
 NEWS_SEARCH_DEBOUNCE_MS = 400
+
+# A source whose newest item is this old has stopped publishing, whatever the age
+# of its file: every News ETL rewrites its file each cycle (T-176). The subtab says so.
+STALE_SOURCE_DAYS = 7
+_NO_DATE = datetime.min.replace(tzinfo=timezone.utc)  # what get_sortable_date returns for an undated item
 
 # Top Tech subtab (spec 01 M4/M5): items-per-page selector (no more blind
 # 50-cap / 800px scroll) + visible cross-source dedup. IDs are namespaced
@@ -303,11 +309,23 @@ def format_article_date(article):
 # Removed create_article_card function as it's no longer needed for table view
 
 
+def _stale_source_notes(source_keys: list[str]) -> list[str]:
+    """One line for each source of a subtab whose newest item is ``STALE_SOURCE_DAYS`` old or more."""
+    notes = []
+    now = datetime.now(timezone.utc)
+    for key in source_keys:
+        dates = [date for date in map(get_sortable_date, get_all_news_data().get(key, [])) if date != _NO_DATE]
+        if dates and now - max(dates) >= timedelta(days=STALE_SOURCE_DAYS):
+            notes.append(f"⚠️ {_ALL_NEWS_SOURCES[key]['name']} lleva sin publicar nada nuevo desde el {max(dates):%d/%m/%Y}.")
+    return notes
+
+
 def _render_news_results(source_keys: list[str], search_term: str | None = None):
     """The content of a subtab's results container: the table of its articles, filtered by the search term.
 
     The layout and the subtab's search controller both call this, so the table the page is born
-    with is the table the controller would build for an empty search.
+    with is the table the controller would build for an empty search. A source that stopped
+    publishing is named above the table.
 
     Args:
         source_keys: The subtab's sources.
@@ -369,8 +387,9 @@ def _render_news_results(source_keys: list[str], search_term: str | None = None)
 
     # The count alert only shows while a search term is active
     alert = dbc.Alert(f"📰 Found {len(shown)} articles matching '{search_term}'", color="success", className="mb-3") if search_term else None
+    notices = [dbc.Alert(note, color="warning", className="mb-3 py-2") for note in _stale_source_notes(source_keys)]
     return html.Div(
-        [alert, table],
+        [*notices, *([alert] if alert else []), table],
         style={
             "maxHeight": "800px",
             "overflowY": "auto",
