@@ -3,6 +3,7 @@
 The layout renders the table of every subtab. The fifteen generic controllers
 used to run once more when the tab was inserted and rebuild the same tables:
 sixteen requests to open News, sixteen tables replaced a moment after landing.
+The search boxes also wait for a pause in typing.
 Fixtures only: the tab's data loader is replaced, no file is read.
 """
 
@@ -86,6 +87,15 @@ def test_layout_shows_what_the_controller_shows_for_an_empty_term(one_source):
 
     assert _as_json(container.children) == _as_json(_controller(app, search_id)(""))
     assert _as_json(container.children) == _as_json(_controller(app, search_id)(None))
+
+
+def test_search_waits_for_a_pause_in_typing():
+    """Every subtab's search box, Top Tech's included, asks once per pause and not once per keystroke."""
+    for tab_def in tab.NEWS_TAB_DEFINITIONS:
+        layout = tab.create_news_source_tab_content(tab_def["keys"], combined_name=tab_def["label"], with_pagination=bool(tab_def.get("paginated")))
+        (box,) = [n for n in _walk(layout) if getattr(n, "id", None) == tab._search_id_for_tab(tab_def)]
+
+        assert box.debounce == tab.NEWS_SEARCH_DEBOUNCE_MS, tab_def["label"]
 
 
 def test_table_lists_the_newest_articles_up_to_the_limit(one_source):

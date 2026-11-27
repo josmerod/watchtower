@@ -78,6 +78,10 @@ def get_all_news_data():
 
 MAX_ARTICLES_PER_SOURCE = 50  # Limit number of articles displayed per source initially
 
+# One request per pause in typing, not per keystroke: every answer is the
+# subtab's table rendered again (same value as the Knowledge Garden search).
+NEWS_SEARCH_DEBOUNCE_MS = 400
+
 # Top Tech subtab (spec 01 M4/M5): items-per-page selector (no more blind
 # 50-cap / 800px scroll) + visible cross-source dedup. IDs are namespaced
 # under TOP_TECH_COMPONENT_ID to avoid colliding with the per-source subtabs.
@@ -402,6 +406,7 @@ def create_news_source_tab_content(source_keys, combined_name=None, with_paginat
                     input_id=tab_search_id,
                     placeholder=f"Filter {source_display_name} by term...",
                     clear_button=True,
+                    debounce=NEWS_SEARCH_DEBOUNCE_MS,
                 ),
                 width=True,
             ),
