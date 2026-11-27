@@ -7,6 +7,7 @@ strings built here in the page's shape, and the scraper's files go to tmp_path, 
 
 import asyncio
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -67,6 +68,16 @@ class _FakePage:
 
     async def evaluate(self, script):
         return self._scripts.pop(0) if self._scripts else []
+
+
+def _run(coroutine):
+    """Run a scraper coroutine to completion in a thread of its own.
+
+    The browser tests (Tests/e2e) keep Playwright's sync API started for the whole session, which leaves asyncio's
+    "running loop" marker set in pytest's thread: asyncio.run() refuses to start there from then on.
+    """
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coroutine).result()
 
 
 @pytest.fixture
@@ -140,7 +151,7 @@ def test_a_listing_page_is_read_from_its_embedded_data(scraper) -> None:
     page = _FakePage(_page(_line(_bundle("from-data", ["A", "B"], items_count=2))))
 
     bundles: list[dict] = []
-    asyncio.run(scraper._process_single_bundle_url(page, f"{HUMBLE}/games", "games", bundles))
+    _run(scraper._process_single_bundle_url(page, f"{HUMBLE}/games", "games", bundles))
 
     assert [(b["title"], b["end_date"], b["items_count"]) for b in bundles] == [("From Data", "2026-12-08T05:00:00+00:00", 2)]
 
@@ -149,7 +160,7 @@ def test_a_page_that_embeds_nothing_falls_back_to_its_markup_and_states_no_date(
     page = _FakePage('<html><body><div class="tile"><a href="/games/other-bundle">Other Bundle</a></div></body></html>')
 
     bundles: list[dict] = []
-    asyncio.run(scraper._process_single_bundle_url(page, f"{HUMBLE}/games", "games", bundles))
+    _run(scraper._process_single_bundle_url(page, f"{HUMBLE}/games", "games", bundles))
 
     # the markup fallback titles a bundle from its URL ("Other Bundle" minus the word Bundle), as it always did
     assert [(b["title"], b["link"], b["end_date"], b["games"]) for b in bundles] == [("Other", f"{HUMBLE}/games/other-bundle", None, [])]
@@ -167,6 +178,6 @@ def test_the_link_fallback_states_no_date_either(scraper) -> None:
     page = _FakePage("", scripts=[[{"source": "bundleUrls", "data": [{"url": f"{HUMBLE}/games/x-bundle", "title": "X Bundle"}]}]])
 
     bundles: list[dict] = []
-    asyncio.run(scraper._extract_bundles_from_js(page, "all", bundles))
+    _run(scraper._extract_bundles_from_js(page, "all", bundles))
 
     assert [(b["title"], b["end_date"], b["type"]) for b in bundles] == [("X Bundle", None, "games")]
