@@ -63,7 +63,12 @@ def add_folder_to_zip(zipf: zipfile.ZipFile, folder_path: Path, project_root: Pa
         for file in files:
             file_abs_path = Path(root) / file
             arcname = file_abs_path.relative_to(project_root)
-            zipf.write(file_abs_path, arcname)
+            try:
+                zipf.write(file_abs_path, arcname)
+            except FileNotFoundError:
+                # Listed by the walk and gone before it was read: the temp file of a running process.
+                module_logger.warning(f"Skipped {file_abs_path}: removed while the backup ran.")
+                continue
             added += 1
     return added
 
