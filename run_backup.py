@@ -237,6 +237,12 @@ def upload_to_gdrive_best_effort(project_root: Path) -> bool:
             logger.info("GDrive upload skipped (no backup_folder_id or credentials file)")
             return False
 
+        from src.utils import backup_utils
+
+        if backup_utils.GoogleAuth is None:
+            logger.warning("GDrive upload skipped: PyDrive2 is not installed here")
+            return False
+
         manager = BackupManager(settings)
         return bool(manager.run_backup_process(list(DEFAULT_FOLDERS)))
     except Exception as exc:  # upload must never fail the local backup

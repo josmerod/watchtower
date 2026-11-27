@@ -7,6 +7,7 @@ and requires live credentials); everything local is pure filesystem logic.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 import zipfile
@@ -295,3 +296,44 @@ def test_a_file_removed_while_the_backup_runs_is_skipped(project: Path, monkeypa
         names = zipf.namelist()
     assert "data/news/output/news_20260910_000000.json" not in names
     assert any(name.endswith("news_latest.json") for name in names)
+
+
+# ---------------------------------------------------------------------------
+# The optional Google Drive upload: quiet when it is not there
+# ---------------------------------------------------------------------------
+
+
+def test_importing_backup_utils_without_pydrive2_prints_nothing(capsys: pytest.CaptureFixture[str]) -> None:
+    """The backup log used to open with a false "ERROR: PyDrive2 library is not installed" on every run."""
+    import builtins
+    import importlib
+    from unittest import mock
+
+    from src.utils import backup_utils
+
+    real_import = builtins.__import__
+
+    def without_pydrive2(name: str, *args: object, **kwargs: object):
+        if name.startswith("pydrive2"):
+            raise ImportError(name)
+        return real_import(name, *args, **kwargs)
+
+    with mock.patch("builtins.__import__", without_pydrive2):
+        module = importlib.reload(backup_utils)
+
+    assert module.GoogleAuth is None
+    assert capsys.readouterr().out == ""
+
+
+def test_the_gdrive_upload_says_why_it_does_not_run_without_pydrive2(project: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    from src.utils import backup_utils
+
+    (project / "creds.json").write_text("{}", encoding="utf-8")
+    settings = SimpleNamespace(google_drive=SimpleNamespace(backup_folder_id="a-folder", credentials_file="creds.json"))
+    monkeypatch.setattr("src.config.settings.get_settings", lambda: settings)
+    monkeypatch.setattr(backup_utils, "GoogleAuth", None)
+
+    with caplog.at_level(logging.WARNING, logger="RunBackup"):
+        assert run_backup.upload_to_gdrive_best_effort(project) is False
+
+    assert "PyDrive2 is not installed" in caplog.text
