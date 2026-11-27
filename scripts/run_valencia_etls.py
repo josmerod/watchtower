@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Run both Valencia Events and Cinema ETL processes.
+"""Run the Valencia Events ETL on its own (the orchestrator runs it every cycle).
 
-This script demonstrates the refactored Valencia ETLs:
-1. Valencia Events ETL - Extracts events from visitvalencia.com
+1. Valencia Events ETL - Extracts events from visitvalencia.com, meetup.com and
+   eventbrite.es and writes data/valencia_events/valencia_events.json
 
 Usage:
     python run_valencia_etls.py
@@ -36,7 +36,7 @@ def run_valencia_events_etl():
         logger.info("✅ Valencia Events ETL completed successfully!")
         logger.info(f"📊 Results: {metrics.records_extracted} extracted → {metrics.records_transformed} transformed → {metrics.records_loaded} loaded")
         logger.info(f"⏱️  Duration: {metrics.duration_seconds:.1f} seconds")
-        logger.info("📄 Data saved to: data/valencia_events/output/")
+        logger.info("📄 Data saved to: data/valencia_events/valencia_events.json")
 
         return True
 
@@ -46,9 +46,8 @@ def run_valencia_events_etl():
 
 
 def main():
-    """Run both Valencia ETL processes."""
+    """Run the Valencia Events ETL."""
     logger.info("🚀 Starting Valencia ETL Suite")
-    logger.info("This will run both Valencia Events and Cinema ETL processes")
     logger.info("")
 
     results = {}
@@ -57,8 +56,6 @@ def main():
     results["valencia_events"] = run_valencia_events_etl()
 
     logger.info("")
-
-    # Run Cinema ETL
 
     # Final summary
     logger.info("=" * 60)
@@ -69,14 +66,14 @@ def main():
 
     if all(results.values()):
         logger.info("🎉 All ETL processes completed successfully!")
-        logger.info("🌐 You can now view the data in the dashboard at: http://localhost:7777")
-        logger.info("📂 Navigate to the 'Valencia Events' tab to see both Events and Cinema subtabs")
+        logger.info("🌐 You can now view the data in the dashboard at: http://localhost:7780")
+        logger.info("📂 Navigate to the 'Valencia Events' tab to see the events")
     else:
         logger.info("⚠️  Some ETL processes failed. Check the logs above for details.")
 
     logger.info("")
     logger.info("📊 Data Locations:")
-    logger.info("  • Valencia Events: data/valencia_events/output/valencia_events.json")
+    logger.info("  • Valencia Events: data/valencia_events/valencia_events.json")
     logger.info("")
 
 

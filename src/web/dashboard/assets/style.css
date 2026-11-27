@@ -850,7 +850,8 @@ a:hover, .btn-link:hover {
 }
 
 /* Override any remaining background utilities */
-.bg-primary {
+/* As specific as the blanket dark background at the top of this file: with less, the blanket paints over the accent and the dark text of .bg-primary is left on a dark badge. */
+:not(.table):not(.alert):not(.card):not(.nav-tabs).bg-primary {
     background-color: #A37FFF !important;
     color: #1E1E2E !important;
 }

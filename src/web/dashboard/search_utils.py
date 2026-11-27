@@ -163,36 +163,37 @@ def highlight_segments(text: Any, query: str) -> list:
         return [clean]
 
 
-def create_search_input(input_id: str, placeholder: str = "Search...", clear_button: bool = True):
+def create_search_input(input_id: str, placeholder: str = "Search...", clear_button: bool = True, debounce: bool | int = False):
     """Create a search input component with Bootstrap styling.
 
     Args:
         input_id: Dash component ID
         placeholder: Placeholder text
         clear_button: Whether to include a clear button
+        debounce: False fires on every keystroke; a number of milliseconds waits
+            for a pause in typing, True waits for Enter or blur
 
     Returns:
         Dash Bootstrap Components input group
     """
     import dash_bootstrap_components as dbc
-    from dash import html
 
-    input_component = dbc.Input(
-        id=input_id,
-        placeholder=placeholder,
-        type="text",
-        className="mb-3",
-    )
+    # Only set when asked, so the other tabs' serialized search boxes do not change.
+    debounce_props = {"debounce": debounce} if debounce else {}
+    input_kwargs: dict[str, Any] = {"id": input_id, "placeholder": placeholder, "type": "text"}
+    if not clear_button:
+        input_kwargs["className"] = "mb-3"  # alone on its row it needs the margin; inside the group it would make the group taller than the input
+    input_kwargs.update(debounce_props)
+    input_component = dbc.Input(**input_kwargs)
 
     if clear_button:
         return dbc.InputGroup(
             [
                 input_component,
-                dbc.InputGroupText(
-                    html.I(className="fas fa-times"),
-                    id=f"{input_id}-clear",
-                    style={"cursor": "pointer"},
-                ),
+                # A Button, not InputGroupText: only a Button reports n_clicks,
+                # so until here the clear callbacks of every tab never ran. A
+                # text glyph because no icon font is loaded.
+                dbc.Button("×", id=f"{input_id}-clear", color="secondary", outline=True, className="border-0", style={"cursor": "pointer"}, title="Limpiar búsqueda"),
             ],
             className="mb-3",
         )

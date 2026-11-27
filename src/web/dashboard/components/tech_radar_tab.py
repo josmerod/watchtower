@@ -89,7 +89,7 @@ RADAR_SOURCES: list[dict[str, Any]] = [
     {"key": "producthunt", "label": "🚀 Product Hunt", "file": "news/producthunt_radar_latest.json", "category": "Products"},
     {"key": "hn_frontpage", "label": "🗞️ Hacker News", "file": "news/hn_frontpage_latest.json", "category": "Discussion"},
     # T-070: Lobsters — dev link-aggregator (existing ETL hardened to the Wired
-    # pattern): src/etl/news/news_get_lobsters.py. Also feeds the News tab.
+    # pattern): src/etl/news/news_get_lobsters.py. Also feeds the Knowledge Garden tab.
     {"key": "lobsters", "label": "🦞 Lobsters", "file": "news/lobsters_latest.json", "category": "Engineering"},
     {"key": "wired", "label": "🔗 Wired", "file": "news/wired_latest.json", "category": "Tech Media"},
     {"key": "mit_techreview", "label": "🔬 MIT Tech Review", "file": "news/mit_techreview_latest.json", "category": "Emerging Tech"},

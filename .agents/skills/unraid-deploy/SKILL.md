@@ -113,7 +113,7 @@ run no health check.
 
 Every container start — `deploy.py`, `force_restart.py`, a manual
 `docker restart` — launches a **full ETL cycle** immediately:
-`deployment/etl_scheduler.py` runs `./run_all_etl.sh` on start (108 scripts,
+`deployment/etl_scheduler.py` runs `./run_all_etl.sh` on start (102 scripts,
 4 workers), again 2 hours after each cycle, and restarts `api` after each. So
 a restart kills a cycle in flight, hits every live source again and takes the
 dashboard and API down meanwhile. Avoid it while a cycle is running or a
@@ -146,8 +146,9 @@ Then, before closing anything on the board:
 - `docker image ls watchtower`: `latest` is the new image, `previous` the one
   before it.
 - The first ETL cycle, at the end of `scheduler.out.log`: `ETL Workflow
-  finished in …` followed by `Successful: N | Failed: N` (108 scripts since
-  2026-11-26; it was 109 before the mock shoppy entry left the list). The
+  finished in …` followed by `Successful: N | Failed: N` (102 scripts since
+  the 2026-11-27 cleanup of low-quality sources; 108 before it, and 109
+  before the mock shoppy entry left the list). The
   line `Running data freshness watcher (after the pool)` sits between the
   last ETL and that summary, and the scheduler's own start line reads
   `ETL Scheduler started. Interval: 7200 s.`

@@ -16,7 +16,7 @@ import src.etl.goldigging.epic_free_games_etl as epic_etl
 import src.etl.goldigging.goldigging_scavenging_etl as rss_etl
 from src.etl.goldigging.audible_releases_etl import AudibleReleasesETL
 from src.etl.goldigging.gumroad_scraper_etl import GumroadScraperETL
-from src.etl.goldigging.humble_books_etl import HumbleBook, HumbleBooksETL
+from src.etl.goldigging.humble_books_etl import HumbleBook, HumbleBooksETL, HumbleOffer
 from src.etl.goldigging.viajeros_piratas_etl import ViajerosPrivatasETL
 from src.models.ecommerce import GumroadProduct, TravelDeal
 
@@ -41,7 +41,11 @@ def fake_root(tmp_path, monkeypatch):
 
 def test_humble_books_writes_canonical_only(fake_root):
     etl = HumbleBooksETL()
-    books = [HumbleBook(title="Book A", bundle_name="Bundle", url="https://humble.dadand.dev/bundles/1", fetched_at=datetime(2026, 8, 28, 10, 0))]
+    starts = datetime(2026, 11, 10, 21, 0)
+    books = [
+        HumbleBook(title="Book A", url="https://humble.dadand.dev/books/1", authors="Author A", rating=None, rating_count=0, formats=["ebook"], offers=[HumbleOffer(bundle="Bundle", humble_url="https://www.humblebundle.com/books/bundle", starts_at=starts, ends_at=None)]),
+        HumbleBook(title="Book B", url="https://humble.dadand.dev/books/2", authors="Author B", rating=4.5, rating_count=9, formats=["ebook"], offers=[HumbleOffer(bundle="Bundle", humble_url="https://www.humblebundle.com/books/bundle", starts_at=starts, ends_at=None)]),
+    ]
 
     etl.load(books)
 

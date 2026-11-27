@@ -25,6 +25,7 @@ from src.services.data_loader import (
     load_data_from_file,
 )
 from src.web.dashboard.components.shared.table import (
+    pagination_controls,
     render_items_table,
     text_cell,
     title_cell,
@@ -223,7 +224,8 @@ def get_scavenging_data(category_key: str) -> list[dict[str, Any]]:
 
 # --- Layout Generation ---
 
-MAX_ITEMS_PER_TAB = 100
+MAX_ITEMS_PER_TAB = 100  # rows per page: the rest is reached with Prev / Next
+SEARCHABLE_FIELDS = ["title", "summary", "source", "seller", "deal_type", "category"]
 
 
 def create_scavenging_table(items, search_term: str = ""):
@@ -243,16 +245,28 @@ def create_scavenging_table(items, search_term: str = ""):
                 subtitle=f"Source: {item['source']}" if item.get("source") else None,
             ),
         },
-        {
-            "header": "Details",
-            "cell": lambda item: text_cell(
-                item.get("summary") if isinstance(item.get("summary"), str) else str(item.get("summary", "")), search_term, className="small", style={"maxWidth": "400px", "whiteSpace": "normal"}
-            ),
-        },
+        {"header": "Details", "cell": lambda item: _details_cell(item, search_term)},
         {"header": "Price/Type", "cell": _scavenging_price_badges},
-        {"header": "Date Added", "cell": lambda item: str(format_article_date_shared(item)), "td_kwargs": {"className": "text-nowrap font-monospace small"}},
+        # The date of the entry: when an Audible release or a bundle launched, not the day it was read.
+        {"header": "Date", "cell": lambda item: str(format_article_date_shared(item)), "td_kwargs": {"className": "text-nowrap font-monospace small"}},
     ]
     return render_items_table(items, columns, empty_message="No entries found matching your criteria.", wrap_scroll=False)
+
+
+def _details_cell(item: dict[str, Any], search_term: str) -> html.Div:
+    """The summary, and the shop links a record carries.
+
+    Humble books name one per bundle they are in; the title links to the
+    book's page on the index site, which is what keeps one row per book.
+    """
+    summary = item.get("summary") if isinstance(item.get("summary"), str) else str(item.get("summary", ""))
+    links = item.get("humble_urls") or []
+    return html.Div(
+        [
+            text_cell(summary, search_term, className="small", style={"maxWidth": "400px", "whiteSpace": "normal"}),
+            *[html.A("Humble ↗" if len(links) == 1 else f"Humble {n} ↗", href=url, target="_blank", rel="noopener noreferrer", className="small ms-2") for n, url in enumerate(links, 1)],
+        ]
+    )
 
 
 def _scavenging_price_badges(item):
@@ -265,6 +279,32 @@ def _scavenging_price_badges(item):
     if deal_type:
         badges.append(dbc.Badge(str(deal_type).upper(), color="primary", className="me-1"))
     return html.Div(badges)
+
+
+def _total_pages(total: int) -> int:
+    return max(1, -(-total // MAX_ITEMS_PER_TAB))
+
+
+def _pager(search_id: str, page: int, total: int) -> Any:
+    """Prev / Next bar of one subtab, empty while everything fits on one page."""
+    total_pages = _total_pages(total)
+    if total_pages == 1:
+        return ""
+    showing = min(MAX_ITEMS_PER_TAB, total - (page - 1) * MAX_ITEMS_PER_TAB)
+    return pagination_controls(search_id, page=page, total_pages=total_pages, showing=showing, total=total, id_prefix=search_id)
+
+
+def _target_page(triggered_id: Any, search_id: str, current_page: int | None, total_pages: int) -> int:
+    """The page to show after a trigger: a new search starts over, Prev and Next move one page."""
+    if triggered_id in (search_id, f"{search_id}-clear"):
+        page = 1
+    else:
+        page = int(current_page or 1)
+        if triggered_id == f"{search_id}-prev":
+            page -= 1
+        elif triggered_id == f"{search_id}-next":
+            page += 1
+    return min(max(page, 1), total_pages)
 
 
 def render_scavenging_tab() -> html.Div:
@@ -301,9 +341,11 @@ def render_scavenging_tab() -> html.Div:
                     ],
                     className="mb-3 mt-3",
                 ),
-                # Full dataset in the Store so search reaches history beyond
-                # the display cap; the cap is applied at render time only.
+                # Full dataset in the Store so search and paging reach every
+                # record; the page shown is cut from it at render time.
                 dcc.Store(id=f"{tab_search_id}-data", data=initial_data),
+                dcc.Store(id=f"{tab_search_id}-page", data=1),
+                html.Div(_pager(tab_search_id, 1, len(initial_data)), id=f"{tab_search_id}-pager"),
                 html.Div(create_scavenging_table(initial_data[:MAX_ITEMS_PER_TAB]), id=f"{tab_search_id}-results", style={"maxHeight": "800px", "overflowY": "auto"}),
             ],
             className="p-3",
@@ -322,34 +364,33 @@ def render_scavenging_tab() -> html.Div:
 
 
 def register_scavenging_callbacks(app):
-    """Register search and filter callbacks for Scavenging."""
-    # We discover categories again to register callbacks for all of them
-    categories_map = discover_categories()
+    """Register search, paging and the clear button for every configured source.
 
-    for category in categories_map:
-        search_id = f"scavenging-search-{category}"
+    One controller per source, registered whether or not its file exists yet:
+    a subtab whose data shows up after startup would otherwise have no search.
+    """
+    for source in SCAVENGING_SOURCES:
+        search_id = f"scavenging-search-{source['key']}"
 
         @app.callback(
             Output(f"{search_id}-results", "children"),
-            [Input(search_id, "value")],
+            Output(f"{search_id}-pager", "children"),
+            Output(f"{search_id}-page", "data"),
+            Input(search_id, "value"),
+            Input(f"{search_id}-prev", "n_clicks"),
+            Input(f"{search_id}-next", "n_clicks"),
             State(f"{search_id}-data", "data"),
+            State(f"{search_id}-page", "data"),
+            # The first page is rendered with the layout; the clear button
+            # empties the search box, and that change arrives as a new term.
+            prevent_initial_call=True,
         )
-        def update_scavenging_search(search_term, cached_data, current_search_id=search_id):
-            if not cached_data:
-                return dbc.Alert("No data loaded.", color="info")
-
-            if search_term:
-                searchable_fields = ["title", "summary", "source", "seller", "deal_type", "category"]
-                filtered_items = filter_content(search_term, cached_data, searchable_fields)
-                table = create_scavenging_table(filtered_items, search_term=search_term)
-                return html.Div(
-                    [
-                        dbc.Alert(f"⛏️ Found {len(filtered_items)} items matching '{search_term}'", color="success", className="mb-3"),
-                        table,
-                    ]
-                )
-
-            return create_scavenging_table(cached_data[:MAX_ITEMS_PER_TAB])
+        def update_scavenging_page(search_term, _prev, _next, cached_data, current_page, current_search_id=search_id):
+            try:
+                return _scavenging_page(cached_data, search_term, dash.ctx.triggered_id, current_page, current_search_id)
+            except Exception as e:  # broad by design: the page must answer even when a record cannot be rendered
+                logger.error(f"Error updating scavenging results for {current_search_id}: {e}")
+                return dbc.Alert(f"Error updating results: {e}", color="danger"), dash.no_update, dash.no_update
 
         @app.callback(
             Output(search_id, "value", allow_duplicate=True),
@@ -360,3 +401,20 @@ def register_scavenging_callbacks(app):
             if n_clicks:
                 return ""
             return dash.no_update
+
+
+def _scavenging_page(cached_data: list[dict[str, Any]] | None, search_term: str | None, triggered_id: Any, current_page: int | None, search_id: str) -> tuple[Any, Any, Any]:
+    """What one subtab shows after a trigger: the page of rows, its pager and the page number."""
+    if not cached_data:
+        return dbc.Alert("No data loaded.", color="info"), dash.no_update, dash.no_update
+
+    term = (search_term or "").strip()
+    shown = filter_content(term, cached_data, SEARCHABLE_FIELDS) if term else cached_data
+    total_pages = _total_pages(len(shown))
+    page = _target_page(triggered_id, search_id, current_page, total_pages)
+    page_items = shown[(page - 1) * MAX_ITEMS_PER_TAB : page * MAX_ITEMS_PER_TAB]
+
+    body = create_scavenging_table(page_items, search_term=term)
+    if term:
+        body = html.Div([dbc.Alert(f"⛏️ Found {len(shown)} items matching '{term}'", color="success", className="mb-3"), body])
+    return body, _pager(search_id, page, len(shown)), page

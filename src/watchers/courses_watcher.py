@@ -1,7 +1,7 @@
 """Courses Watcher — detects newly published courses that match interest keywords.
 
-The five course ETLs (AWS Skill Builder, GCP Skills Boost, Hugging Face Learn,
-Microsoft Applied Skills and the Udemy spreadsheet) refresh their catalogs
+The four course ETLs (AWS Skill Builder, GCP Skills Boost, Microsoft Applied
+Skills and the Udemy spreadsheet) refresh their catalogs
 under ``data/`` on every orchestrator run. This watcher diffs each provider
 catalog against the previous snapshot (persisted as
 ``data/watchers/courses/previous_catalogs.json``) and records one
@@ -34,13 +34,12 @@ logger = get_logger("CoursesWatcher")
 KEYWORDS: tuple[str, ...] = ("llm", "rag", "agent", "docker", "kubernetes", "python", "data", "mcp", "ai")
 
 # Registry of provider catalogs, mirroring the output paths of src/etl/courses/*. Note
-# that none of these ETLs uses the *_latest.json convention: four write fixed-name
+# that none of these ETLs uses the *_latest.json convention: three write fixed-name
 # files under data/courses/ and the Udemy spreadsheet persists to
 # data/udemy/udemy_courses.json for the dashboard.
 COURSE_SOURCES: dict[str, dict[str, str]] = {
     "aws_skill_builder": {"label": "AWS Skill Builder", "path": "courses/aws_skill_builder.json"},
     "gcp_skills_boost": {"label": "GCP Skills Boost", "path": "courses/gcp_skills_boost.json"},
-    "hf_learn": {"label": "Hugging Face", "path": "courses/hf_learn.json"},
     "ms_applied_skills": {"label": "Microsoft Learn", "path": "courses/ms_applied_skills.json"},
     "udemy": {"label": "Udemy", "path": "udemy/udemy_courses.json"},
 }
@@ -49,7 +48,7 @@ COURSE_SOURCES: dict[str, dict[str, str]] = {
 def _course_key(course: dict[str, Any]) -> str:
     """Compute the stable identity key for one course record.
 
-    The URL is the primary identity: all five ETLs emit one for every item, three
+    The URL is the primary identity: all four ETLs emit one for every item, three
     of them (AWS, GCP, MS) already key their own ``first_detected_at`` bookkeeping
     on it, and Udemy derives its URLs deterministically from the Course ID (or the
     title), so URLs are stable across runs. Titles can be re-worded by a source

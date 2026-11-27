@@ -1,7 +1,7 @@
 """Valencia Local Feeds ETL.
 
 Fetches local news and transport updates for Valencia/Burjassot area.
-Outputs to data/valencia_local/ for the Valencia Events tab enrichment.
+Outputs to data/valencia_local/; the News tab's "Valencia Local" subtab reads it.
 
 Sources: 20minutos Comunidad Valenciana, Metro Valencia service alerts
 """

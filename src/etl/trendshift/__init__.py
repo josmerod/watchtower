@@ -1,1 +1,0 @@
-# TrendShift ETL package

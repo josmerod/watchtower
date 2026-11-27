@@ -1,6 +1,8 @@
 # Especificación de mejora — Tab 🌱 Knowledge Garden
 
 > Fecha: 2026-08-17 · Estado: borrador para revisión · Ámbito: `src/web/dashboard/components/knowledge_garden_tab.py` + ETLs de `src/etl/{news,intelligence,opensource,substack,trendshift,rss_feeds,expanded}/`
+> **Actualización 2026-11-26 (T-127):** Reddit AI/ML, Reddit Programming, Reddit DevOps, Reddit All, Git Trends, Stack Overflow y TrendShift se retiraron del garden por baja calidad; Lobsters se muda aquí desde News (T-130, ya implementado); los tres ETL propios (`news_get_gittrends.py`, `news_get_stackoverflow_trends.py`, `src/etl/trendshift/`) se eliminan. Este documento describe el estado de agosto.
+> **Actualización 2026-11-27 (T-136, rendimiento):** la tabla de cada subtab se construye la primera vez que se abre, no al cargar la página (el `dcc.Store` de página nace vacío y el controlador solo responde a su store `-activate`). Un único dispatcher escucha la barra de subtabs y marca la subtab abierta: antes los doce controladores corrían en cada cambio y solo respondía uno. Las estrellas son botones sin callback, gestionados por `assets/js/kg_state.js`: Dash ejecuta un callback de patrón una vez por botón insertado, y construir una tabla enviaba 50 peticiones de estrella vacías; ahora el script las voltea, deja la petición en un store y aplica la respuesta del servidor. `saved_items.json` se lee una vez por render (antes 514). Medido en local con copias de datos de producción: abrir la pestaña pasa de 62 peticiones a 3, abrir una subtab cuesta 2, cero peticiones fantasma. El botón × de borrado y la estrella compartida de News, Tech Radar y Markets se corrigen en el mismo cambio.
 
 ## 1. Diagnóstico actual
 

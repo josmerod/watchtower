@@ -7,7 +7,6 @@ from datetime import datetime
 
 ETL_SCRIPTS = [
     # News ETL
-    "src/etl/news/news_get_freecodecamp.py",
     "src/etl/news/news_get_google_ai_blog.py",
     "src/etl/news/news_get_lobsters.py",
     "src/etl/news/news_get_arstechnica.py",
@@ -30,11 +29,9 @@ ETL_SCRIPTS = [
     "src/etl/news/news_get_podcasts.py",
     "src/etl/news/news_get_ycombinator.py",
     "src/etl/news/news_get_hackernews_ask.py",
-    "src/etl/news/news_get_gittrends.py",
     "src/etl/news/news_get_uneed.py",
     "src/etl/news/news_get_producthunt.py",  # Was orphan — not in ETL_SCRIPTS, causing stale Product Hunt data
     "src/etl/news/news_get_devto.py",  # Dev.to public API — feeds Knowledge Garden "Dev.to" subtab
-    "src/etl/news/news_get_stackoverflow_trends.py",  # StackExchange API — feeds Knowledge Garden "Stack Overflow" subtab
     "src/etl/news/news_get_tldr.py",  # tldr.tech newsletters (Tech/AI/Data) — feeds News tab
     "src/etl/news/news_get_infoq.py",  # InfoQ feed — feeds Tech Radar tab
     "src/etl/news/news_get_thenewstack.py",  # The New Stack feed — feeds Tech Radar tab
@@ -90,11 +87,9 @@ ETL_SCRIPTS = [
     # output yet (no loader in courses_tab.py, no freshness entry), so running
     # it would only hit Class Central to write a file nobody shows (T-124).
     "src/etl/courses/udemy_spreadsheet_etl.py",
-    "src/etl/courses/hf_learn_etl.py",  # Hugging Face Learn catalog — feeds Learning tab
     "src/etl/courses/ms_applied_skills_etl.py",
     "src/etl/courses/aws_skill_builder_etl.py",
     "src/etl/courses/gcp_skills_boost_etl.py",
-    "src/etl/courses/deeplearning_ai_etl.py",  # DeepLearning.AI catalog — feeds Learning tab (T-069)
     "src/watchers/courses_watcher.py",  # Diffs course catalogs, emits new_matching_course events (T-066); best after courses ETLs
     # Intelligence
     "src/etl/intelligence/nvd_cve_etl.py",
@@ -146,7 +141,6 @@ ETL_SCRIPTS = [
     "src/etl/benchmarks/llm_leaderboard_etl.py",
     "src/etl/benchmarks/livebench_etl.py",  # LiveBench leaderboard via browserless (T-069)
     "src/etl/benchmarks/openrouter_models_etl.py",  # OpenRouter new-models feed, keyless (T-071)
-    "src/etl/trendshift/trendshift_etl.py",
     "src/etl/rss_feeds/rss_feed_etl.py",
 ]
 

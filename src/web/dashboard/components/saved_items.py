@@ -33,6 +33,16 @@ _lock = threading.Lock()
 # hash is global, so the same item starred from two tabs is one record.
 SAVE_CANDIDATES: dict[str, dict[str, Any]] = {}
 
+# Snapshot of the saved file, kept while the file does not change. Every star
+# button calls is_saved(), so a table render used to read and parse the whole
+# file once per row (514 times for one Knowledge Garden render, T-136). The
+# stamp is the file's (path, mtime, size) plus a counter of the writes made
+# through toggle_saved(): two of them can land on the same mtime tick with the
+# same length, which stat() alone could not tell apart.
+_saved_cache: list[dict[str, Any]] = []
+_saved_stamp: tuple[str, int, int, int] | None = None
+_saved_writes = 0
+
 
 def item_hash(url: str | None, title: str | None) -> str:
     """Stable hash identifying an item across renders and tabs."""
@@ -40,18 +50,43 @@ def item_hash(url: str | None, title: str | None) -> str:
     return hashlib.md5(key.encode("utf-8")).hexdigest()
 
 
-def load_saved() -> list[dict[str, Any]]:
-    """Return the saved items list (newest first), tolerating a missing file."""
+def _file_stamp() -> tuple[str, int, int, int] | None:
+    """Identify the current content of the saved file, or None when it is not there."""
     try:
-        data = json.loads(SAVED_FILE.read_text(encoding="utf-8"))
-        return data if isinstance(data, list) else []
-    except (json.JSONDecodeError, OSError):
+        stat = SAVED_FILE.stat()
+    except OSError:
+        return None
+    return (str(SAVED_FILE), stat.st_mtime_ns, stat.st_size, _saved_writes)
+
+
+def _snapshot() -> list[dict[str, Any]]:
+    """The saved records as they are on disk right now (shared: read-only)."""
+    global _saved_stamp
+    stamp = _file_stamp()
+    if stamp is None:
         return []
+    if stamp != _saved_stamp:
+        try:
+            data = json.loads(SAVED_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return []  # not cached: a file that gets fixed is picked up
+        _saved_cache[:] = data if isinstance(data, list) else []
+        _saved_stamp = stamp
+    return _saved_cache
+
+
+def load_saved() -> list[dict[str, Any]]:
+    """Return the saved items list (newest first), tolerating a missing file.
+
+    The file is read again only when it changed; callers get their own
+    records, free to modify.
+    """
+    return [dict(record) for record in _snapshot()]
 
 
 def is_saved(h: str) -> bool:
     """Check whether an item hash is currently saved."""
-    return any(item.get("hash") == h for item in load_saved())
+    return any(item.get("hash") == h for item in _snapshot())
 
 
 def toggle_saved(item: dict[str, Any]) -> bool:
@@ -61,6 +96,7 @@ def toggle_saved(item: dict[str, Any]) -> bool:
         item: Dict with at least ``url`` or ``title``; ``source`` and ``tab``
             optional (``tab`` records the originating dashboard tab).
     """
+    global _saved_writes
     h = item_hash(item.get("url") or item.get("link"), item.get("title") or item.get("name"))
     with _lock:
         saved = load_saved()
@@ -81,6 +117,7 @@ def toggle_saved(item: dict[str, Any]) -> bool:
             new_state = False
         SAVED_FILE.parent.mkdir(parents=True, exist_ok=True)
         SAVED_FILE.write_text(json.dumps(saved, ensure_ascii=False, indent=2), encoding="utf-8")
+        _saved_writes += 1
     return new_state
 
 
@@ -95,6 +132,17 @@ def lookup_candidate(h: str) -> dict[str, Any] | None:
     if record is None:
         record = SAVE_CANDIDATES.get(h)
     return record
+
+
+def register_candidate(item: dict[str, Any], tab: str = "") -> str:
+    """Register an item for a later star toggle and return its hash.
+
+    A toggle only ever receives the hash, so the full record has to be
+    kept from the render that showed the star.
+    """
+    h = item_hash(item.get("url") or item.get("link"), item.get("title") or item.get("name"))
+    SAVE_CANDIDATES[h] = {**item, "tab": tab}
+    return h
 
 
 def save_button(item: dict[str, Any], btn_type: str, tab: str = "", class_name: str = "ms-1 p-0 border-0") -> dbc.Button:
@@ -113,8 +161,7 @@ def save_button(item: dict[str, Any], btn_type: str, tab: str = "", class_name: 
     Returns:
         The dbc.Button with the saved state rendered for load time.
     """
-    h = item_hash(item.get("url") or item.get("link"), item.get("title") or item.get("name"))
-    SAVE_CANDIDATES[h] = {**item, "tab": tab}
+    h = register_candidate(item, tab)
     saved = is_saved(h)
     return dbc.Button(
         "★" if saved else "☆",
@@ -155,5 +202,10 @@ def register_save_toggle_callback(app: dash.Dash, btn_type: str) -> None:
         Input({"type": btn_type, "hash": dash.MATCH}, "n_clicks"),
         prevent_initial_call=True,
     )
-    def _toggle_saved_item(_n_clicks: int):
+    def _toggle_saved_item(n_clicks: int | None):
+        # Dash runs a pattern-matching callback for every button inserted into
+        # the page, even with prevent_initial_call=True; those calls carry no
+        # click, and toggling on them starred rows nobody clicked.
+        if not n_clicks:
+            return dash.no_update, dash.no_update, dash.no_update
         return toggle_response(dash.ctx.triggered_id.hash)

@@ -116,10 +116,9 @@ NEWS_TAB_DEFINITIONS: list[_NewsTabDef] = [
         # M4 (paginación) + M5 (dedup visible) apply to this aggregated subtab only
         "paginated": True,
     },
-    {"label": "freeCodeCamp", "keys": "freecodecamp", "id": "fcc"},
     # Google AI Blog, KDnuggets y Cloud Updates viven SOLO en Tech Radar (spec 13 M3):
     # su contenido sigue encontrable vía "🔎 Global" y el radar los muestra con más contexto.
-    {"label": "Lobsters", "keys": "lobsters", "id": "lobsters"},
+    # Lobsters se mudó a Knowledge Garden (T-130, 2026-11-26).
     {
         "label": "FutureTools & Ben's Bites",
         "keys": ["futuretools", "bensbites"],
@@ -131,9 +130,7 @@ NEWS_TAB_DEFINITIONS: list[_NewsTabDef] = [
     {"label": "Meneame General", "keys": "meneame_general", "id": "men_gen"},
     {"label": "Meneame Tech", "keys": "meneame_tecnologia", "id": "men_tec"},
     {"label": "Indie Hackers", "keys": "indiehackers", "id": "ih"},
-    # Kagi RSS feeds as individual tabs
-    {"label": "Kagi World", "keys": "kagi_world", "id": "kagi_world"},
-    {"label": "Kagi USA", "keys": "kagi_usa", "id": "kagi_usa"},
+    # Kagi RSS feeds as individual tabs (usa and world were dropped on 2026-11-26, T-126)
     {"label": "Kagi Business", "keys": "kagi_business", "id": "kagi_business"},
     {"label": "Kagi Science", "keys": "kagi_science", "id": "kagi_science"},
     {"label": "Kagi Gaming", "keys": "kagi_gaming", "id": "kagi_gaming"},
@@ -920,7 +917,7 @@ def _build_global_search_tab() -> dbc.Tab:
                 ),
                 html.Div(
                     dbc.Alert(
-                        "Escribe un término para buscar en las 26 fuentes a la vez. Los resultados se agrupan en una sola tabla con su fuente.",
+                        f"Escribe un término para buscar en las {len(_ALL_NEWS_SOURCES)} fuentes a la vez. Los resultados se agrupan en una sola tabla con su fuente.",
                         color="secondary",
                     ),
                     id="news-global-results",

@@ -142,6 +142,7 @@ def test_js_contract_for_nuevo_badges():
     js = _JS_PATH.read_text(encoding="utf-8")
     assert "wt_kg_last_visit" in js, "localStorage last-visit key renamed"
     assert "data-kg-date" in js, "row date attribute no longer read"
+    assert "data-kg-dates" in js, "pending-dates attribute of the subtabs not rendered yet (T-136) no longer counted"
     assert "wt-kg-new-badge" in js, "badge class renamed"
     assert "NUEVO" in js, "badge label changed"
     assert "kg-new-counter" in js, "toolbar counter target changed"

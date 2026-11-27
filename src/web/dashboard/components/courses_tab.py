@@ -24,9 +24,6 @@ UDEMY_DATA_PATH = get_data_path("udemy", "udemy_courses.json")
 MS_APPLIED_SKILLS_DATA_PATH = get_data_path("courses", "ms_applied_skills.json")
 AWS_SKILL_BUILDER_DATA_PATH = get_data_path("courses", "aws_skill_builder.json")
 GCP_SKILLS_BOOST_DATA_PATH = get_data_path("courses", "gcp_skills_boost.json")
-FREECODECAMP_DATA_PATH = get_data_path("news", "freecodecamp_latest.json")
-HF_LEARN_DATA_PATH = get_data_path("courses", "hf_learn.json")
-DEEPLEARNING_AI_DATA_PATH = get_data_path("courses", "deeplearning_ai_latest.json")
 
 ALL_COURSES_DATA = {
     "coursera": pd.DataFrame(),
@@ -44,6 +41,30 @@ COURSES_DATA_LOADED = {
 }
 # Page size for tables
 PAGE_SIZE = 15
+
+# Microsoft Learn catalog (`ms_applied_skills.json`): the ETL copies the credential
+# `type` into `category`. The tab offers each kind as its own subtab (T-144).
+MS_CERT_CATEGORY = "cert"
+MS_CREDENTIAL_KINDS = {
+    "certs": {
+        "label": "MS Certificaciones",
+        "tab_id": "tab-ms-certs",
+        "search_id": "ms-certs-search-input",
+        "table_id": "ms-certs-table-container",
+        "unified_provider": "MS Certificación",
+        "placeholder": "Buscar por título o rol...",
+    },
+    "applied": {
+        "label": "MS Applied Skills",
+        "tab_id": "tab-ms-applied",
+        "search_id": "ms-applied-search-input",
+        "table_id": "ms-applied-table-container",
+        "unified_provider": "MS Applied Skill",
+        "placeholder": "Buscar por título, tema o rol...",
+    },
+}
+_MS_TITLE_PREFIXES = ("Microsoft Certified: ", "Microsoft Applied Skills: ")
+_MS_ROLE_ACRONYMS = {"ai": "AI", "devops": "DevOps", "ip": "IP"}
 
 
 # --- Data Loading Functions ---
@@ -640,26 +661,112 @@ def render_udemy_courses_sub_tab(df):
     )
 
 
-def render_ms_skills_courses_sub_tab(df):
+def split_ms_credentials(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Split the Microsoft Learn catalog into (certifications, applied skills).
+
+    A credential that carries no kind is not dropped: it stays with the applied
+    skills, which is the ETL's own fallback for it.
+    """
+    if df.empty or "category" not in df.columns:
+        return df.iloc[0:0], df
+    is_cert = df["category"].astype(str).str.lower() == MS_CERT_CATEGORY
+    return df[is_cert], df[~is_cert]
+
+
+def _search_ms_credentials(df: pd.DataFrame, search_term) -> pd.DataFrame:
+    """Keep the rows whose full title, subject or roles contain `search_term` (case-insensitive)."""
+    if not search_term:
+        return df
+
+    def column(name: str) -> pd.Series:
+        if name not in df.columns:
+            return pd.Series("", index=df.index)
+        return df[name].astype(str).str.lower()
+
+    needle = str(search_term).lower()
+    title, subject, roles = column("title"), column("subject"), column("roles")
+    return df[title.str.contains(needle, na=False) | subject.str.contains(needle, na=False) | roles.str.contains(needle, na=False)]
+
+
+def _ms_role_label(role_id: str) -> str:
+    """Turn a catalog role id into a label ("ai-edge-engineer" -> "AI Edge Engineer")."""
+    return " ".join(_MS_ROLE_ACRONYMS.get(word, word.capitalize()) for word in str(role_id).split("-"))
+
+
+def _ms_credentials_table(df: pd.DataFrame, kind: str) -> dbc.Table:
+    """Render one kind of Microsoft credential.
+
+    Certifications carry no subject, so that column is only shown for applied
+    skills; the kind prefix of a title is dropped because it repeats the subtab
+    label on every row.
+    """
+    columns = ["Title", "Subject", "Level", "Roles", "First Detected"] if kind == "applied" else ["Title", "Level", "Roles", "First Detected"]
+    header = [html.Thead(html.Tr([html.Th(name) for name in columns]))]
+    rows = []
+    for row in df.to_dict("records"):
+        roles = row.get("roles")
+        title = str(row.get("title", "N/A"))
+        for prefix in _MS_TITLE_PREFIXES:
+            if title.startswith(prefix):
+                title = title[len(prefix) :]
+                break
+        cells = [
+            html.Td(html.A(title, href=row.get("url") or "#", target="_blank")),
+            *([html.Td(row.get("subject", "N/A"))] if kind == "applied" else []),
+            html.Td(row.get("level", "N/A")),
+            # A row without roles holds "N/A" after fillna().
+            html.Td(", ".join(_ms_role_label(role) for role in roles) if isinstance(roles, list) else "N/A"),
+            html.Td(row.get("detected_str", "N/A")),
+        ]
+        rows.append(html.Tr(cells))
+    return dbc.Table(
+        header + [html.Tbody(rows)],
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive",
+    )
+
+
+def render_ms_credentials_sub_tab(kind: str, df: pd.DataFrame):
+    spec = MS_CREDENTIAL_KINDS[kind]
     if not COURSES_DATA_LOADED["ms_skills"]:
-        return dbc.Alert("MS Credentials data failed to load. Check logs.", color="danger", className="mt-3")
+        return dbc.Alert(f"{spec['label']} data failed to load. Check logs.", color="danger", className="mt-3")
     if df.empty:
-        return dbc.Alert("No MS Credentials data currently available.", color="info", className="mt-3")
+        return dbc.Alert(f"No {spec['label']} data currently available.", color="info", className="mt-3")
     return html.Div(
         [
             dbc.Row(
-                [
-                    dbc.Col(
-                        dbc.Input(id="ms-skills-search-input", placeholder="Search by title/subject/role..."),
-                        md=12,
-                        className="mb-2",
-                    )
-                ],
+                dbc.Col(
+                    dbc.Input(id=spec["search_id"], placeholder=spec["placeholder"]),
+                    md=12,
+                    className="mb-2",
+                ),
                 className="mt-3 mb-3",
             ),
-            html.Div(id="ms-skills-table-container"),
+            html.Div(id=spec["table_id"]),
         ]
     )
+
+
+def render_ms_credentials_tabs() -> list[dbc.Tab]:
+    """Return the two Microsoft Learn subtabs: certifications and applied skills."""
+    certs, applied = split_ms_credentials(ALL_COURSES_DATA["ms_skills"])
+    return [
+        dbc.Tab(
+            label=MS_CREDENTIAL_KINDS["certs"]["label"],
+            tab_id=MS_CREDENTIAL_KINDS["certs"]["tab_id"],
+            children=render_ms_credentials_sub_tab("certs", certs),
+        ),
+        dbc.Tab(
+            label=MS_CREDENTIAL_KINDS["applied"]["label"],
+            tab_id=MS_CREDENTIAL_KINDS["applied"]["tab_id"],
+            children=render_ms_credentials_sub_tab("applied", applied),
+        ),
+    ]
 
 
 def render_aws_skills_courses_sub_tab(df):
@@ -706,68 +813,6 @@ def render_gcp_skills_courses_sub_tab(df):
     )
 
 
-def render_articles_sub_tab(data_path, source_label):
-    """Render a list of articles/courses as cards (freeCodeCamp, HF Learn…)."""
-    import json
-
-    if not file_exists(data_path):
-        return dbc.Alert(f"No {source_label} data available. Run the ETL to populate.", color="info", className="mt-3")
-
-    try:
-        with open(data_path, encoding="utf-8") as f:
-            articles = json.load(f)
-    except (OSError, ValueError):
-        return dbc.Alert(f"Failed to load {source_label} data.", color="danger", className="mt-3")
-
-    if not articles:
-        return html.P(f"No {source_label} items found.", className="text-muted mt-3")
-
-    cards = []
-    for article in articles[:50]:
-        title = article.get("title", "Untitled")
-        link = article.get("link") or article.get("url") or "#"
-        summary = article.get("summary") or article.get("description") or ""
-        published = article.get("published") or article.get("published_at") or ""
-        source_tag = article.get("source", "")
-        cards.append(
-            dbc.Card(
-                dbc.CardBody(
-                    [
-                        html.H6(
-                            html.A(title, href=link, target="_blank", className="text-decoration-none"),
-                            className="mb-1",
-                        ),
-                        html.Small(f"{source_tag} · {published}" if published else source_tag, className="text-muted") if (source_tag or published) else None,
-                        html.P(summary[:200] + "…" if len(summary) > 200 else summary, className="small text-muted mt-1 mb-0") if summary else None,
-                    ]
-                ),
-                className="mb-2 shadow-sm",
-            )
-        )
-
-    return html.Div(
-        [
-            html.P(f"{len(articles)} {source_label} items available.", className="text-muted small mb-3"),
-            *cards,
-        ]
-    )
-
-
-def render_freecodecamp_sub_tab():
-    """Render freeCodeCamp articles as a learning resource list."""
-    return render_articles_sub_tab(FREECODECAMP_DATA_PATH, "freeCodeCamp")
-
-
-def render_hf_learn_sub_tab():
-    """Render the Hugging Face Learn catalog."""
-    return render_articles_sub_tab(HF_LEARN_DATA_PATH, "Hugging Face Learn")
-
-
-def render_deeplearning_ai_sub_tab():
-    """Render the DeepLearning.AI course catalog."""
-    return render_articles_sub_tab(DEEPLEARNING_AI_DATA_PATH, "DeepLearning.AI")
-
-
 # --- Main Layout ---
 def _normalize_course(record: dict, provider: str) -> dict:
     """Normalize one course record across providers for the unified catalog."""
@@ -783,34 +828,19 @@ def render_all_courses_sub_tab() -> html.Div:
     ensure_courses_data()
     unified: list[dict] = []
 
-    def _collect(key: str, provider: str):
-        data = ALL_COURSES_DATA.get(key)
+    def _collect(data, provider: str):
         if data is None:
             return
         records = data.to_dict("records") if hasattr(data, "to_dict") else (data if isinstance(data, list) else [])
         unified.extend(_normalize_course(r, provider) for r in records if isinstance(r, dict))
 
-    _collect("coursera", "Coursera")
-    _collect("udemy", "Udemy")
-    _collect("ms_skills", "Microsoft")
-    _collect("aws_skills", "AWS")
-    _collect("gcp_skills", "Google Cloud")
-
-    # HF Learn articles live in their own file
-    try:
-        hf_records = load_data_from_file(HF_LEARN_DATA_PATH) or []
-        if isinstance(hf_records, list):
-            unified.extend(_normalize_course(r, "HF Learn") for r in hf_records if isinstance(r, dict))
-    except Exception:
-        pass
-
-    # DeepLearning.AI courses live in their own file
-    try:
-        dlai_records = load_data_from_file(DEEPLEARNING_AI_DATA_PATH) or []
-        if isinstance(dlai_records, list):
-            unified.extend(_normalize_course(r, "DeepLearning.AI") for r in dlai_records if isinstance(r, dict))
-    except Exception:
-        pass
+    _collect(ALL_COURSES_DATA.get("coursera"), "Coursera")
+    _collect(ALL_COURSES_DATA.get("udemy"), "Udemy")
+    ms_certs, ms_applied = split_ms_credentials(ALL_COURSES_DATA.get("ms_skills", pd.DataFrame()))
+    _collect(ms_certs, MS_CREDENTIAL_KINDS["certs"]["unified_provider"])
+    _collect(ms_applied, MS_CREDENTIAL_KINDS["applied"]["unified_provider"])
+    _collect(ALL_COURSES_DATA.get("aws_skills"), "AWS")
+    _collect(ALL_COURSES_DATA.get("gcp_skills"), "Google Cloud")
 
     unified = [c for c in unified if c["title"]]
     store_data = unified[:2000]
@@ -887,11 +917,7 @@ def render_courses_tab():
                         tab_id="tab-udemy",
                         children=render_udemy_courses_sub_tab(ALL_COURSES_DATA["udemy"]),
                     ),
-                    dbc.Tab(
-                        label="MS Credentials",
-                        tab_id="tab-ms-skills",
-                        children=render_ms_skills_courses_sub_tab(ALL_COURSES_DATA["ms_skills"]),
-                    ),
+                    *render_ms_credentials_tabs(),
                     dbc.Tab(
                         label="AWS Skill Builder",
                         tab_id="tab-aws-skills",
@@ -901,21 +927,6 @@ def render_courses_tab():
                         label="GCP Skills Boost",
                         tab_id="tab-gcp-skills",
                         children=render_gcp_skills_courses_sub_tab(ALL_COURSES_DATA["gcp_skills"]),
-                    ),
-                    dbc.Tab(
-                        label="📚 freeCodeCamp",
-                        tab_id="tab-freecodecamp",
-                        children=render_freecodecamp_sub_tab(),
-                    ),
-                    dbc.Tab(
-                        label="🤗 HF Learn",
-                        tab_id="tab-hf-learn",
-                        children=render_hf_learn_sub_tab(),
-                    ),
-                    dbc.Tab(
-                        label="🧠 DeepLearning.AI",
-                        tab_id="tab-deeplearning-ai",
-                        children=render_deeplearning_ai_sub_tab(),
                     ),
                 ],
             ),
@@ -1256,49 +1267,33 @@ def register_courses_callbacks(app):
     def reset_udemy_pagination(_):
         return 1
 
-    @app.callback(
-        Output("ms-skills-table-container", "children"),
-        Input("ms-skills-search-input", "value"),
-        prevent_initial_call=False,
-    )
-    def update_ms_skills_table(search_term):
-        try:
-            if not COURSES_DATA_LOADED["ms_skills"]:
-                return dbc.Alert("Loading MS Credentials data...", color="info")
-            df = ALL_COURSES_DATA["ms_skills"].copy()
-            if df.empty:
-                return dbc.Alert("No data available.", color="warning")
-            if search_term:
-                s = str(search_term).lower()
-                df = df[df["title"].str.lower().str.contains(s, na=False) | df["subject"].str.lower().str.contains(s, na=False) | df["roles"].astype(str).str.lower().str.contains(s, na=False)]
+    def _register_ms_credentials_callback(kind: str):
+        # One callback per table container (Single Callback Pattern). It runs on
+        # insertion too: the subtab is rendered with an empty container.
+        spec = MS_CREDENTIAL_KINDS[kind]
 
-            header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Subject"), html.Th("Level"), html.Th("Roles"), html.Th("First Detected")]))]
-            rows = []
-            for row in df.to_dict("records"):
-                roles_str = ", ".join(row.get("roles", [])) if isinstance(row.get("roles"), list) else "N/A"
-                rows.append(
-                    html.Tr(
-                        [
-                            html.Td(html.A(row.get("title", "N/A"), href=row.get("url"), target="_blank")),
-                            html.Td(row.get("subject", "N/A")),
-                            html.Td(row.get("level", "N/A")),
-                            html.Td(roles_str),
-                            html.Td(row.get("detected_str", "N/A")),
-                        ]
-                    )
-                )
-            return dbc.Table(
-                header + [html.Tbody(rows)],
-                bordered=True,
-                hover=True,
-                responsive=True,
-                striped=True,
-                size="sm",
-                color="dark",
-                className="table-responsive",
-            )
-        except Exception as e:
-            return dbc.Alert(f"Error loading MS Applied Skills data: {e!s}", color="danger")
+        @app.callback(
+            Output(spec["table_id"], "children"),
+            Input(spec["search_id"], "value"),
+            prevent_initial_call=False,
+        )
+        def update_ms_credentials_table(search_term):
+            try:
+                if not COURSES_DATA_LOADED["ms_skills"]:
+                    return dbc.Alert(f"Loading {spec['label']} data...", color="info")
+                certs, applied = split_ms_credentials(ALL_COURSES_DATA["ms_skills"])
+                df = certs if kind == "certs" else applied
+                if df.empty:
+                    return dbc.Alert("No data available.", color="warning")
+                df = _search_ms_credentials(df, search_term)
+                if df.empty:
+                    return dbc.Alert("Sin resultados.", color="info")
+                return _ms_credentials_table(df, kind)
+            except Exception as e:
+                return dbc.Alert(f"Error loading {spec['label']} data: {e!s}", color="danger")
+
+    for _kind in MS_CREDENTIAL_KINDS:
+        _register_ms_credentials_callback(_kind)
 
     @app.callback(
         Output("aws-skills-table-container", "children"),

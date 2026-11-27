@@ -23,17 +23,9 @@ NEWS_SOURCES_CONFIG = {
         "path": get_data_path("news", "venturebeat_latest.json"),
         "name": "VentureBeat",
     },
-    "freecodecamp": {
-        "path": get_data_path("news", "freecodecamp_latest.json"),
-        "name": "freeCodeCamp",
-    },
     "google_ai_blog": {
         "path": get_data_path("news", "google_ai_blog_latest.json"),
         "name": "Google AI Blog",
-    },
-    "lobsters": {
-        "path": get_data_path("news", "lobsters_latest.json"),
-        "name": "Lobsters",
     },
     "arstechnica": {
         "path": get_data_path("news", "arstechnica_latest.json"),
@@ -70,14 +62,6 @@ NEWS_SOURCES_CONFIG = {
     "indiehackers": {
         "path": get_data_path("indie_hackers", "posts.json"),
         "name": "Indie Hackers",
-    },
-    "kagi_world": {
-        "path": get_data_path("kagi_world", "kagi_world.json"),
-        "name": "Kagi World",
-    },
-    "kagi_usa": {
-        "path": get_data_path("kagi_usa", "kagi_usa.json"),
-        "name": "Kagi USA",
     },
     "kagi_business": {
         "path": get_data_path("kagi_business", "kagi_business.json"),
@@ -173,6 +157,12 @@ ARXIV_SOURCES_CONFIG = {
 }
 
 KNOWLEDGE_SOURCES_CONFIG = {
+    # T-130 (2026-11-26): moved here from NEWS_SOURCES_CONFIG — the user reads
+    # Lobsters as a dev link-aggregator, next to HN Ask and Dev.to.
+    "lobsters": {
+        "path": get_data_path("news", "lobsters_latest.json"),
+        "name": "Lobsters",
+    },
     "opensource": {
         "path": get_data_path("open_source_intelligence", "output", "latest.json"),
         "name": "Open Source Projects",
@@ -193,37 +183,13 @@ KNOWLEDGE_SOURCES_CONFIG = {
         "path": get_data_path("product_hunt", "product_hunt_latest.json"),
         "name": "Product Hunt",
     },
-    "gittrends": {
-        "path": get_data_path("github_trends", "github_trends_latest.json"),
-        "name": "Git Trends",
-    },
     "hackernews_ask": {
         "path": get_data_path("hackernews_ask", "hackernews_ask_latest.json"),
         "name": "HN Ask",
     },
-    "stackoverflow_trends": {
-        "path": get_data_path("stackoverflow_trends", "stackoverflow_trends_latest.json"),
-        "name": "Stack Overflow",
-    },
-    "reddit_unified": {
-        "path": get_data_path("reddit_unified", "reddit_unified_latest.json"),
-        "name": "Reddit All",
-    },
-    "reddit_ai_ml": {
-        "path": get_data_path("reddit_unified", "reddit_ai_ml_latest.json"),
-        "name": "Reddit AI/ML",
-    },
-    "reddit_programming": {
-        "path": get_data_path("reddit_unified", "reddit_programming_latest.json"),
-        "name": "Reddit Programming",
-    },
     "reddit_tech": {
         "path": get_data_path("reddit_unified", "reddit_tech_latest.json"),
         "name": "Reddit Tech",
-    },
-    "reddit_devops": {
-        "path": get_data_path("reddit_unified", "reddit_devops_latest.json"),
-        "name": "Reddit DevOps",
     },
     "devto": {"path": get_data_path("devto", "devto.json"), "name": "Dev.to"},
     "hypeurls": {"path": get_data_path("reddit_unified", "reddit_news_latest.json"), "name": "HypeURLs"},
@@ -234,10 +200,6 @@ KNOWLEDGE_SOURCES_CONFIG = {
     "substack": {
         "path": get_data_path("substack", "output", "latest.json"),
         "name": "Substack",
-    },
-    "trendshift": {
-        "path": get_data_path("trendshift", "output", "latest.json"),
-        "name": "TrendShift",
     },
     "rss_feeds": {
         "path": get_data_path("rss_feeds", "output", "latest.json"),

@@ -70,6 +70,13 @@ class TestSharedSavedItems:
         assert saved_items.SAVE_CANDIDATES[h]["tab"] == "news"
         assert btn.children == "☆" and btn.color == "outline-secondary"
 
+    def test_register_candidate_keeps_the_full_item_for_a_later_toggle(self, clean_saved_file):
+        item = {"url": "http://example.com/c", "title": "C", "source": "src"}
+        h = saved_items.register_candidate(item, tab="knowledge_garden")
+        assert h == saved_items.item_hash("http://example.com/c", "C")
+        assert saved_items.SAVE_CANDIDATES[h] == {**item, "tab": "knowledge_garden"}
+        assert saved_items.lookup_candidate(h) == {**item, "tab": "knowledge_garden"}  # a toggle only receives the hash
+
     def test_toggle_payload_shape_includes_tab(self, clean_saved_file):
         item = {"url": "http://example.com/a", "title": "A", "source": "TechCrunch", "tab": "news"}
         saved_items.toggle_saved(item)
@@ -111,6 +118,25 @@ class TestSharedSavedItems:
         saved_items.register_save_toggle_callback(app, "markets-save-btn")
         keys = " ".join(app.callback_map.keys())
         assert "news-save-btn" in keys and "markets-save-btn" in keys
+
+    def test_toggle_callback_ignores_the_call_dash_makes_when_a_button_is_inserted(self, clean_saved_file, monkeypatch):
+        """A pattern-matching callback runs once per button added to the page, click or not."""
+        from types import SimpleNamespace
+
+        app = dash.Dash("test-saved-inserted")
+        saved_items.register_save_toggle_callback(app, "news-save-btn")
+        key = next(k for k in app.callback_map if "news-save-btn" in k)
+        toggle = app.callback_map[key]["callback"].__wrapped__
+        h = saved_items.save_button({"url": "http://example.com/i", "title": "I"}, "news-save-btn", tab="news").id["hash"]
+        monkeypatch.setattr(dash, "ctx", SimpleNamespace(triggered_id=SimpleNamespace(hash=h)))
+
+        for no_click in (None, 0):
+            assert all(result is dash.no_update for result in toggle(no_click))
+
+        assert saved_items.load_saved() == []  # a table rendered is not a table starred
+        assert not clean_saved_file.exists()
+        assert toggle(1) == ("★", "warning", "Quitar de guardados")
+        assert toggle(2) == ("☆", "outline-secondary", "Guardar para luego")
 
 
 # --------------------------------------------------------------------------- #
@@ -210,18 +236,19 @@ class TestMarketsSave:
 
 
 # --------------------------------------------------------------------------- #
-# Knowledge Garden: delegation stays intact
+# Knowledge Garden: stars through the shared registry
 # --------------------------------------------------------------------------- #
 
 
 class TestKnowledgeGardenDelegation:
-    def test_kg_save_button_delegates_to_shared_builder(self, clean_saved_file):
+    def test_kg_save_button_registers_the_item_with_the_shared_registry(self, clean_saved_file):
         article = {"url": "http://example.com/kg", "title": "KG item", "source": "LessWrong"}
         btn = kg_save_button(article)
         h = saved_items.item_hash("http://example.com/kg", "KG item")
-        assert btn.id == {"type": "kg-save-btn", "hash": h}
         assert saved_items.SAVE_CANDIDATES[h]["tab"] == "knowledge_garden"
-        assert btn.children == "☆" and btn.color == "outline-secondary"
+        assert btn.children == "☆" and "btn-outline-secondary" in btn.className
+        # A plain button the garden's script flips: not an input of any callback (T-136)
+        assert not hasattr(btn, "id") and getattr(btn, "data-kg-hash") == h and getattr(btn, "data-kg-saved") == "0"
 
     def test_saved_subtab_shows_origin_tab_badge(self, clean_saved_file):
         record = {
