@@ -27,7 +27,7 @@ HUMBLE = [
     {"title": "Humble choice", "link": "https://example.invalid/h1", "price": "Pay what you want", "end_date": "2026-12-11T14:05:39.862597+00:00", "games": ["A", "B", "C"], "type": "bundle"},
     {"title": "Humble ended", "link": "https://example.invalid/h2", "price": "Pay what you want", "end_date": "2026-07-01T17:00:00+00:00", "games": ["A", "B"], "type": "bundle"},
 ]
-KEYS = ["deals", "bundles", "new_releases", "metacritic", "trending"]
+KEYS = ["deals", "giveaways", "bundles", "new_releases", "metacritic", "trending"]
 NOW = pd.Timestamp("2026-11-27 19:00", tz="UTC")
 
 
@@ -176,6 +176,39 @@ def test_a_hundred_bundles_fit_in_the_table(fresh_games_data) -> None:
 
     assert "Bundle 95" in rows
     assert len([text for text in rows if text.startswith("Bundle ")]) == 96
+
+
+# --- Giveaways: the ETL keeps the live ones in giveaways.json and nothing read them ---
+
+
+GIVEAWAYS = [
+    {"title": "Dead Age 2 on GOG", "link": "https://example.invalid/g2", "published": "2026-11-27T16:39:24.000Z", "expires": "2026-11-30T14:00:23Z"},
+    {"title": "Vertical Drop Heroes HD on Fanatical", "link": "https://example.invalid/g1", "published": "2026-11-27T16:45:12.000Z", "expires": "2026-11-28T23:59:00Z"},
+]
+
+
+def test_giveaways_list_the_soonest_to_end_first(monkeypatch: pytest.MonkeyPatch, fresh_games_data) -> None:
+    monkeypatch.setattr(games_tab, "giveaways_repo", SimpleNamespace(get=lambda: {"results": GIVEAWAYS}))
+
+    games_tab.load_giveaways_data()
+
+    assert _texts(games_tab.render_giveaways_sub_tab(games_tab.ALL_GAMES_DATA["giveaways"])) == [
+        "Game",
+        "Expires",
+        "Vertical Drop Heroes HD on Fanatical",
+        "2026-11-29",  # 23:59 UTC is already the next day in Spain
+        "Dead Age 2 on GOG",
+        "2026-11-30",
+    ]
+
+
+def test_no_giveaway_is_a_quiet_state_not_an_error(monkeypatch: pytest.MonkeyPatch, fresh_games_data) -> None:
+    monkeypatch.setattr(games_tab, "giveaways_repo", SimpleNamespace(get=lambda: {"results": []}))
+
+    games_tab.load_giveaways_data()
+
+    assert games_tab.DATA_LOADED_SUCCESSFULLY["giveaways"] is True
+    assert "No free game to claim right now." in _texts(games_tab.render_giveaways_sub_tab(games_tab.ALL_GAMES_DATA["giveaways"]))
 
 
 # --- A source that went quiet says so (the July deals shown as current for four months) ---

@@ -54,10 +54,12 @@ class GamesRepository(BaseRepository[dict[str, Any]]):
 
 # Create singleton instances for each games data source
 deals_repo = GamesRepository(get_data_path("games", "deals.json"))
+giveaways_repo = GamesRepository(get_data_path("games", "giveaways.json"))
 bundles_repo = GamesRepository(get_data_path("games", "bundles.json"))
 trending_repo = GamesRepository(get_data_path("games", "itchio_trending.json"))
 ALL_GAMES_DATA = {
     "deals": pd.DataFrame(),
+    "giveaways": pd.DataFrame(),
     "bundles": pd.DataFrame(),
     "new_releases": pd.DataFrame(),
     "metacritic": pd.DataFrame(),
@@ -459,12 +461,43 @@ def load_trending_data():
     print(f"Info (Trending): Loaded {len(df)} trending Itch.io games.")
 
 
+def load_giveaways_data():
+    """Load the live giveaways games_get_deals.py keeps in giveaways.json: title, link, published, expires."""
+    global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
+
+    try:
+        data = giveaways_repo.get()
+        if isinstance(data, dict) and "results" in data:
+            df = pd.json_normalize(data, "results")
+        elif isinstance(data, list):
+            df = pd.DataFrame(data)
+        else:
+            df = pd.DataFrame([data] if data else [])
+
+        for col in ("title", "link", "expires"):
+            if col not in df.columns:
+                df[col] = None
+        if not df.empty:
+            # Soonest first: a giveaway lasts hours or days
+            df["expiry_date"] = pd.to_datetime(df["expires"].apply(lambda x: parse_date_universal(x, "Games")), errors="coerce", utc=True)
+            df = df.sort_values(by="expiry_date", ascending=True, na_position="last")
+
+        ALL_GAMES_DATA["giveaways"] = df
+        DATA_LOADED_SUCCESSFULLY["giveaways"] = True
+        print(f"Info (Giveaways): Loaded {len(df)} giveaways.")
+
+    except Exception as e:
+        print(f"Error (Giveaways): {e}")
+        ALL_GAMES_DATA["giveaways"] = pd.DataFrame()
+        DATA_LOADED_SUCCESSFULLY["giveaways"] = False
+
+
 def load_all_games_data():
     # This will call the individual loaders
     load_deals_data()
+    load_giveaways_data()
     load_bundles_data()
     load_trending_data()
-    # load_giveaways_data() # Removed
     # load_new_releases_data() # Removed
     # Optional: Metacritic reviews from RSS
     try:
@@ -667,6 +700,33 @@ def render_deals_sub_tab(df, now=None):
     return [note, table] if note is not None else table
 
 
+def render_giveaways_sub_tab(df):
+    if not DATA_LOADED_SUCCESSFULLY.get("giveaways", False):
+        return dbc.Alert("Could not read the giveaways.", color="info", className="mt-3 alert-info")
+    if df.empty:
+        return dbc.Alert("No free game to claim right now.", color="info", className="mt-3 alert-info")
+
+    rows = [
+        html.Tr(
+            [
+                html.Td(html.A(row.get("title", "N/A"), href=row.get("link"), target="_blank")),
+                html.Td(format_display_date(row.get("expiry_date"))),
+            ]
+        )
+        for row in df.head(50).to_dict("records")
+    ]
+    return dbc.Table(
+        [html.Thead(html.Tr([html.Th("Game"), html.Th("Expires")])), html.Tbody(rows)],
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive mt-3",
+    )
+
+
 def render_trending_sub_tab(df):
     if not DATA_LOADED_SUCCESSFULLY.get("trending", False) or df.empty:
         return dbc.Alert(
@@ -820,6 +880,11 @@ def render_games_tab():
                         label="💰 Deals",
                         tab_id="subtab-deals",
                         children=render_deals_sub_tab(ALL_GAMES_DATA["deals"]),
+                    ),
+                    dbc.Tab(
+                        label="🎁 Giveaways",
+                        tab_id="subtab-giveaways",
+                        children=render_giveaways_sub_tab(ALL_GAMES_DATA["giveaways"]),
                     ),
                     dbc.Tab(
                         label="📦 Bundles",
