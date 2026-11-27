@@ -1150,12 +1150,12 @@ class SpanishPublicAidETL(BaseETL[dict[str, Any], SpanishPublicAidModel]):
         with open(latest_file, "w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=2, default=str)
 
-        # Save summary statistics
+        # Save summary statistics: one file per run, and the same content under
+        # a fixed name, which is the only one the dashboard reads.
         stats = self._generate_statistics(data)
-        stats_file = self.output_dir / f"spanish_public_aid_stats_{timestamp}.json"
-
-        with open(stats_file, "w", encoding="utf-8") as f:
-            json.dump(stats, f, ensure_ascii=False, indent=2, default=str)
+        for stats_file in (self.output_dir / f"spanish_public_aid_stats_{timestamp}.json", self.output_dir / "spanish_public_aid_stats_latest.json"):
+            with open(stats_file, "w", encoding="utf-8") as f:
+                json.dump(stats, f, ensure_ascii=False, indent=2, default=str)
 
         self.logger.info(f"Saved statistics to {stats_file}")
 
@@ -1171,6 +1171,9 @@ class SpanishPublicAidETL(BaseETL[dict[str, Any], SpanishPublicAidModel]):
             "by_scope": {},
             "by_status": {},
             "by_beneficiary_type": {},
+            # Per source: {"<source name>": {"count": n, "active": m}}. The
+            # dashboard counts the sources with a count as "ETL Sources".
+            "sources": {},
             "closing_soon": sum(1 for aid in data if aid.is_urgent),
             "last_updated": datetime.utcnow().isoformat(),
         }
@@ -1188,6 +1191,10 @@ class SpanishPublicAidETL(BaseETL[dict[str, Any], SpanishPublicAidModel]):
 
             beneficiary_key = aid.beneficiary_type.value if hasattr(aid.beneficiary_type, "value") else str(aid.beneficiary_type)
             stats["by_beneficiary_type"][beneficiary_key] = stats["by_beneficiary_type"].get(beneficiary_key, 0) + 1
+
+            source = stats["sources"].setdefault(str(aid.source_name or "unknown"), {"count": 0, "active": 0})
+            source["count"] += 1
+            source["active"] += int(aid.is_active)
 
         return stats
 

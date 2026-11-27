@@ -1,5 +1,6 @@
 """Tests for Spanish Public Aid ETL."""
 
+import json
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -279,9 +280,26 @@ class TestSpanishPublicAidETL:
 
         etl_instance.load(data)
 
-        # Verify files were written
-        assert mock_open.call_count >= 2  # Main file and stats file
-        assert mock_json_dump.call_count >= 2
+        # Verify files were written: main, latest, and the stats twice
+        written = [str(call.args[0]) for call in mock_open.call_args_list]
+        assert len(written) == 4
+        assert any(path.endswith("spanish_public_aid_latest.json") for path in written)
+        assert any(path.endswith("spanish_public_aid_stats_latest.json") for path in written)
+        assert mock_json_dump.call_count == 4
+
+    def test_load_writes_the_latest_stats_file_for_the_dashboard(self, etl_instance, sample_raw_data, tmp_path, monkeypatch):
+        """The dashboard reads one fixed-name stats file: load() has to write it."""
+        monkeypatch.setattr(etl_instance, "output_dir", tmp_path)
+        raw_aids = [{**sample_raw_data, "source_name": source, "organizing_entity": source, "source_url": f"https://www.gva.es/ayuda-{index}"} for index, source in enumerate(("Generalitat Valenciana", "LABORA", "LABORA"))]
+
+        etl_instance.load(etl_instance.transform(raw_aids))
+
+        per_run = list(tmp_path.glob("spanish_public_aid_stats_[0-9]*.json"))
+        assert len(per_run) == 1, "one timestamped statistics file per run"
+        stats = json.loads((tmp_path / "spanish_public_aid_stats_latest.json").read_text(encoding="utf-8"))
+        assert stats == json.loads(per_run[0].read_text(encoding="utf-8")), "the fixed-name copy carries the same statistics"
+        assert stats["total_aids"] == 3
+        assert stats["sources"] == {"Generalitat Valenciana": {"count": 1, "active": 1}, "LABORA": {"count": 2, "active": 2}}
 
     def test_load_empty_data(self, etl_instance):
         """Test loading empty data."""
