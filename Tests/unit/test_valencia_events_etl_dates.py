@@ -186,6 +186,17 @@ def test_to_iso_date_normalizes_all_source_formats():
     assert _to_iso_date("") == ""
 
 
+def test_to_iso_date_reads_a_zoned_timestamp_in_valencia_time():
+    """A timestamp with a zone is the day it happens in Spain, not the day of its digits."""
+    assert _to_iso_date("2026-11-27T19:30:00.000Z") == "2026-11-27"  # 20:30 in November (UTC+1)
+    assert _to_iso_date("2026-11-27T23:30:00.000Z") == "2026-11-28"  # already the next day in Spain
+    assert _to_iso_date("2026-08-28T18:30:00.000Z") == "2026-08-28"  # 20:30 in August (UTC+2)
+    assert _to_iso_date("2026-08-27T23:30:00+00:00") == "2026-08-28"
+    assert _to_iso_date("2026-08-27T23:30:00+00:00[Europe/Madrid]") == "2026-08-28"  # bracketed zone name
+    # Without a zone the time is local already: read as it comes
+    assert _to_iso_date("2026-11-27T23:30:00") == "2026-11-27"
+
+
 def test_to_iso_date_rejects_garbage_and_invalid_dates():
     assert _to_iso_date("Cada dos semanas") == ""
     assert _to_iso_date("2026") == ""
@@ -575,3 +586,31 @@ def test_remove_duplicates_merges_venue_and_price():
     assert merged[0]["venue"] == "Feria de València"
     assert merged[0]["price_info"] == "Gratis"
     assert merged[0]["is_free"] is True
+
+
+# ---------------------------------------------------------------------------
+# output file (T-178): by start date
+# ---------------------------------------------------------------------------
+
+
+def test_load_sorts_the_file_by_start_date(tmp_path, monkeypatch):
+    """The saved file goes by start date; events without a date keep their order at the end."""
+    etl = ValenciaEventsETL()
+    monkeypatch.setattr(etl, "output_dir", tmp_path)
+
+    etl.load(
+        etl.transform(
+            [
+                {"title": "Más tarde", "url": "https://example.com/3", "source": "eventbrite.com", "start_date": "2026-12-07"},
+                {"title": "Sin fecha", "url": "https://example.com/4", "source": "visitvalencia.com"},
+                {"title": "Sin fecha tampoco", "url": "https://example.com/5", "source": "visitvalencia.com"},
+                {"title": "Esta noche", "url": "https://example.com/6", "source": "meetup.com", "date_text": "2026-11-27T19:30:00.000Z"},
+                {"title": "Todo el fin de semana", "url": "https://example.com/7", "source": "visitvalencia.com", "date_text": "27/11/2026 - 29/11/2026"},
+            ]
+        )
+    )
+
+    saved = json.loads((tmp_path / "valencia_events.json").read_text(encoding="utf-8"))
+    assert [event["title"] for event in saved] == ["Esta noche", "Todo el fin de semana", "Más tarde", "Sin fecha", "Sin fecha tampoco"]
+    assert saved[0]["start_date"] == "2026-11-27"  # the timestamp became an ISO date
+    assert (saved[1]["start_date"], saved[1]["end_date"]) == ("2026-11-27", "2026-11-29")

@@ -2,9 +2,10 @@
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import dash_bootstrap_components as dbc
 from dash import html
@@ -64,21 +65,89 @@ def load_valencia_events() -> list[dict[str, Any]]:
         return []
 
 
+# Events are shown in the local time of the city. Meetup prints its start
+# times in UTC ("2026-11-27T19:30:00.000Z"); visitvalencia and Eventbrite
+# give calendar dates, which need no conversion.
+_MADRID = ZoneInfo("Europe/Madrid")
+_WEEKDAYS = ("lun", "mar", "mié", "jue", "vie", "sáb", "dom")
+
+
+def _parse_event_moment(raw: Any) -> datetime | None:
+    """Parse a timestamp that carries a time of day; anything else gives None.
+
+    Args:
+        raw: ISO timestamp with or without a zone ("...T19:30:00.000Z",
+            "...T19:00:00+02:00", "...T19:30:00").
+
+    Returns:
+        The datetime, aware when the text carries a zone, or None.
+    """
+    text = str(raw or "").strip()
+    if "T" not in text:
+        return None
+    # A zone name in brackets ("+02:00[Europe/Madrid]") adds nothing to the offset before it.
+    try:
+        return datetime.fromisoformat(text.split("[")[0].replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _event_start(event: dict[str, Any]) -> datetime | None:
+    """Return when an event starts, as a Madrid wall-clock datetime.
+
+    A source that gives a time of day keeps it; a bare date starts at
+    midnight. A UTC evening that is already the next day in Spain starts
+    on that next day.
+
+    Args:
+        event: Raw event dictionary from the repository.
+
+    Returns:
+        Naive datetime in Madrid time, or None when the event has no date.
+    """
+    for raw in (event.get("date_text"), event.get("start_date")):
+        moment = _parse_event_moment(raw)
+        if moment is not None:
+            # A timestamp without a zone is taken as local time.
+            return moment.astimezone(_MADRID).replace(tzinfo=None) if moment.tzinfo else moment
+    return _parse_event_date(str(event.get("start_date") or ""))
+
+
+def sort_events_by_start(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Order events by start; the ones without a date keep their order at the end."""
+    return sorted(events, key=lambda event: _event_start(event) or datetime.max)
+
+
+def _format_event_date(event: dict[str, Any]) -> str:
+    """Build the date shown for an event, the same way for every source.
+
+    A calendar date prints as the weekday and DD/MM/YYYY ("vie 27/11/2026"),
+    a timed start adds its Madrid hour ("sáb 28/11/2026, 15:00") and the end
+    date follows when it differs from the start. Without a parseable date the
+    text of the source is kept, or "N/A" when there is none.
+    """
+    start = _event_start(event)
+    if start is None:
+        raw = str(event.get("date_text") or "").strip()
+        return raw.replace("Del ", "").replace(" al ", " – ") if raw else "N/A"
+    text = f"{_WEEKDAYS[start.weekday()]} {start.strftime('%d/%m/%Y')}"
+    if start.time() != time(0, 0):
+        text += f" · {start.strftime('%H:%M')}"
+    end = _parse_event_date(str(event.get("end_date") or ""))
+    if end and end > start:
+        text += f" – {end.strftime('%d/%m/%Y')}"
+    return text
+
+
 def create_event_card(event: dict[str, Any]) -> dbc.Card:
     """Create a card component for a single event"""
     try:
         title = event.get("title", "Untitled")
         description = event.get("description", "No description available")
         category = event.get("category", "General")
-        start_date = event.get("start_date", "")
-        end_date = event.get("end_date", "")
-        date_text = event.get("date_text", "")
+        date_display = _format_event_date(event)
         url = event.get("url", "")
         source = event.get("source", "Valencia")
-
-        # Format dates — shorten bulky prefixes
-        raw_date = date_text if date_text else (f"{start_date} - {end_date}" if start_date and end_date else start_date if start_date else "Date TBC")
-        date_display = raw_date.replace("Del ", "").replace(" al ", " – ")
 
         # Determine event type badge color
         badge_color = "primary"
@@ -169,9 +238,7 @@ def create_events_table(events: list[dict[str, Any]]) -> dbc.Table:
             title = event.get("title", "Untitled")
             description = event.get("description", "")
             category = event.get("category", "General")
-            raw_date = event.get("date_text") or event.get("start_date", "N/A")
-            # Shorten bulky date prefixes
-            date_text_short = raw_date.replace("Del ", "").replace(" al ", " – ") if isinstance(raw_date, str) else raw_date
+            date_text_short = _format_event_date(event)
             source = event.get("source", "Valencia")
             url = event.get("url", "#")
 
@@ -252,7 +319,8 @@ def create_events_table(events: list[dict[str, Any]]) -> dbc.Table:
 def render_valencia_events_tab() -> html.Div:
     """Render the Valencia events tab with subtabs"""
     try:
-        events_data = load_valencia_events()
+        # The sources list in their own order: the tab goes by start date.
+        events_data = sort_events_by_start(load_valencia_events())
 
         if not events_data:
             return html.Div(
