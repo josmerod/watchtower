@@ -24,6 +24,17 @@ Ejemplos:
 - [ ] 2026-08-27 — El tab Y tarda mucho en cargar.
 -->
 
+## 2026-11-27 (tarde) — Cursos en español e inglés, fechas de Valencia y tres arreglos visuales en producción
+
+> Notas del agente para tu revisión. Cada punto ya está triajeado (tarea en el board), por eso van marcados.
+
+- [x] **Desplegado dos veces más, entre ciclos y con exit 0:** `main` `e049c40` a las 13:07 CET (PR #37) y `main` `defdfc3` a las 14:54 CET (PR #38). El ciclo tras el segundo (14:54 → 15:41) terminó con `Successful: 102 \| Failed: 0`, sin un solo aviso en el log; lo mismo el del primero (13:07 → 13:53).
+- [x] **Lo que se usa ya en producción:** AWS Skill Builder y GCP Skills Boost con filtro de idioma Español / English (T-146, T-147): 55 cursos de AWS (30 en español, 25 en inglés) y 715 de GCP (137 con versión en español). Valencia Events con una fecha legible para cada fuente («vie 27/11/2026 · 19:30») y ordenada por inicio (T-178). La tarjeta **ETL Sources** de Ayudas pasa de «—» a 3 (T-183): su ETL nunca había escrito el fichero de estadísticas que lee la pestaña.
+- [x] **Tres fallos que no estaban en la libreta, vistos al validar en el navegador, ya arreglados:** (1) **todos los menús desplegables del dashboard abrían fuera de pantalla**, en Learning, Videos, Ayudas, Tech Radar y News, y la página se desplazaba sola ~450 px al abrir uno (T-181); (2) **en el móvil la barra de subpestañas salía vacía** en News, Knowledge Garden, Learning, ArXiv, Tech Radar, Games, Scavenging y Valencia Events: no se podía cambiar de subtab desde un teléfono (T-182); (3) **los botones primarios eran ilegibles**, oscuro sobre oscuro: «Open API» de la cabecera, «Create Alert Rule» y «Search» de Ayudas (T-184). El (2) solo pasa por debajo de 768 px de ancho.
+- [x] **Dos efectos previstos del filtro de idioma:** GCP Skills Boost marcó **529 cursos como nuevos una sola vez** (sus URLs cambiaron al quitarles un parámetro de ranking) y **los 15 cursos en coreano de AWS desaparecieron** del catálogo.
+- [x] **Un test ya no escribe en tu `data/` local** (T-161). Los 25 resúmenes que dejaron ejecuciones antiguas en `data/spanish_public_aid/output/` de tu máquina siguen ahí; no he tocado nada de `data/`. Se pueden borrar a mano si quieres.
+- [x] **Sigue en marcha sin esperar respuesta:** backups en producción (T-106, en ensayo en el servidor), Indie Hackers por RSS (T-153), las fuentes de News muertas (T-176), los callbacks sin clic (T-162), columnas de Games (T-155), enlaces de Udemy (T-156), texto plano en los resúmenes (T-164) y una nueva: la columna FIRST DETECTED de GCP enseña la hora en UTC (T-185).
+
 ## 2026-11-27 — Libreta: primera oleada en producción, segunda en marcha
 
 > Notas del agente para tu revisión. Cada punto ya está triajeado (tarea en el board), por eso van marcados.
