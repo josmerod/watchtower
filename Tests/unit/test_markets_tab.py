@@ -59,6 +59,31 @@ def test_fmt_pct_signed():
     assert markets_tab._fmt_pct(None) == "—"
 
 
+def test_fmt_share_has_no_sign():
+    assert markets_tab._fmt_share(67.364) == "67.36%"
+    assert markets_tab._fmt_share(None) == "—"
+
+
+def _texts(node):
+    """Every string and number a Dash component tree shows, in document order."""
+    if isinstance(node, str):
+        return [node]
+    if isinstance(node, (int, float)):
+        return [str(node)]
+    if isinstance(node, (list, tuple)):
+        return [text for child in node for text in _texts(child)]
+    children = getattr(node, "children", None)
+    return _texts(children) if children is not None else []
+
+
+def test_summary_cards_give_the_dominance_no_sign():
+    coins = [dict(_COIN, market_cap_usd=60), dict(_COIN, id="ethereum", symbol="ETH", name="Ethereum", market_cap_usd=40)]
+
+    texts = _texts(markets_tab._render_summary_cards(coins))
+
+    assert texts[:4] == ["$100.00", "Market Cap (top 50)", "60.00%", "BTC Dominance"]  # a share, not a rise of 60%
+
+
 def test_tab_renders_with_data(tmp_path, monkeypatch):
     import json
 

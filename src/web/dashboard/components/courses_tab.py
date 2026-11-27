@@ -206,6 +206,31 @@ def load_udemy_data():
     print(f"Info (Udemy): Loaded {len(df)} courses.")
 
 
+def _sort_by_first_detected(df: pd.DataFrame, with_time: bool = False) -> pd.DataFrame:
+    """Sort a catalog by FIRST DETECTED, newest first, and add the ``detected_str`` the tables show.
+
+    The ETLs stamp ``first_detected_at`` in UTC. The hour is moved to Madrid before the zone is dropped (T-185):
+    a course found at 13:20 CET used to read 12:20, and one found after 23:00 CET got the day before.
+
+    Args:
+        df: Catalog with, optionally, a ``first_detected_at`` column.
+        with_time: GCP Skills Boost shows the hour too; the other two show the day.
+
+    Returns:
+        The sorted frame with ``detected_str`` added ("N/A" when there is no stamp to show).
+    """
+    if "first_detected_at" not in df.columns:
+        df["detected_str"] = "N/A"
+        return df
+    detected = pd.to_datetime(df["first_detected_at"])
+    if detected.dt.tz is None:  # a stamp without a zone was written as UTC too
+        detected = detected.dt.tz_localize("UTC")
+    df["first_detected_at"] = detected.dt.tz_convert("Europe/Madrid").dt.tz_localize(None)
+    df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
+    df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d %H:%M" if with_time else "%Y-%m-%d")
+    return df
+
+
 def load_ms_applied_skills_data():
     global ALL_COURSES_DATA, COURSES_DATA_LOADED
     file_path = MS_APPLIED_SKILLS_DATA_PATH
@@ -226,12 +251,7 @@ def load_ms_applied_skills_data():
         COURSES_DATA_LOADED["ms_skills"] = True
         return
 
-    if "first_detected_at" in df.columns:
-        df["first_detected_at"] = pd.to_datetime(df["first_detected_at"]).dt.tz_convert(None)
-        df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
-        df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d")
-    else:
-        df["detected_str"] = "N/A"
+    df = _sort_by_first_detected(df)
 
     df = df.fillna("N/A")
     ALL_COURSES_DATA["ms_skills"] = df
@@ -259,12 +279,7 @@ def load_aws_skill_builder_data():
         COURSES_DATA_LOADED["aws_skills"] = True
         return
 
-    if "first_detected_at" in df.columns:
-        df["first_detected_at"] = pd.to_datetime(df["first_detected_at"]).dt.tz_convert(None)
-        df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
-        df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d")
-    else:
-        df["detected_str"] = "N/A"
+    df = _sort_by_first_detected(df)
 
     df = df.fillna("N/A")
     ALL_COURSES_DATA["aws_skills"] = df
@@ -292,12 +307,7 @@ def load_gcp_skills_boost_data():
         COURSES_DATA_LOADED["gcp_skills"] = True
         return
 
-    if "first_detected_at" in df.columns:
-        df["first_detected_at"] = pd.to_datetime(df["first_detected_at"]).dt.tz_convert(None)
-        df = df.sort_values(by="first_detected_at", ascending=False, na_position="last")
-        df["detected_str"] = df["first_detected_at"].dt.strftime("%Y-%m-%d %H:%M")
-    else:
-        df["detected_str"] = "N/A"
+    df = _sort_by_first_detected(df, with_time=True)
 
     df = df.fillna("N/A")
     ALL_COURSES_DATA["gcp_skills"] = df

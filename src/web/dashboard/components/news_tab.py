@@ -16,6 +16,7 @@ from src.services.data_loader import (
 from src.services.data_loader import (
     format_article_date as format_article_date_shared,
 )
+from src.utils.text import plain_excerpt
 from src.web.dashboard.components import saved_items
 from src.web.dashboard.components.duplicate_filter import create_duplicate_toggle
 from src.web.dashboard.components.shared.table import paginate, render_items_table, title_cell
@@ -26,6 +27,7 @@ from src.web.dashboard.deduplication_utils import (
     get_duplicate_summary,
 )
 from src.web.dashboard.trend_utils import get_trending_items_map, match_item_trend, render_trend_badge
+from src.web.dashboard.utils import only_inserted
 
 # Merge the extra source configs so the news tab can render them as subtabs
 _ALL_NEWS_SOURCES = {
@@ -309,18 +311,19 @@ def format_article_date(article):
 # Removed create_article_card function as it's no longer needed for table view
 
 
-def _stale_source_notes(source_keys: list[str]) -> list[str]:
+def _stale_source_notes(source_keys: str | list[str]) -> list[str]:
     """One line for each source of a subtab whose newest item is ``STALE_SOURCE_DAYS`` old or more."""
+    keys = [source_keys] if isinstance(source_keys, str) else source_keys
     notes = []
     now = datetime.now(timezone.utc)
-    for key in source_keys:
+    for key in keys:
         dates = [date for date in map(get_sortable_date, get_all_news_data().get(key, [])) if date != _NO_DATE]
         if dates and now - max(dates) >= timedelta(days=STALE_SOURCE_DAYS):
             notes.append(f"⚠️ {_ALL_NEWS_SOURCES[key]['name']} lleva sin publicar nada nuevo desde el {max(dates):%d/%m/%Y}.")
     return notes
 
 
-def _stale_source_alerts(source_keys: list[str]) -> list[dbc.Alert]:
+def _stale_source_alerts(source_keys: str | list[str]) -> list[dbc.Alert]:
     """The notes of ``_stale_source_notes``, one warning alert each, to put above a table."""
     return [dbc.Alert(note, color="warning", className="mb-3 py-2") for note in _stale_source_notes(source_keys)]
 
@@ -554,6 +557,8 @@ def register_news_search_callbacks(app):
     )
     def update_top_tech_view(search_term, items_per_page, show_duplicates_value, _page_btn_clicks, current_page):
         """Render Top Tech with visible dedup + pagination, fetching fresh data."""
+        if only_inserted():  # the pager buttons as the results render them, none clicked
+            return dash.no_update, dash.no_update
         try:
             articles = _aggregate_source_articles(_TOP_TECH_DEF["keys"], get_all_news_data())
             if not articles:
@@ -708,11 +713,14 @@ def register_news_search_callbacks(app):
     )
     def export_news_subtab(_n_clicks):
         """Download the clicked subtab's dataset as CSV."""
+        if only_inserted():  # the export buttons as the subtab renders them, none clicked
+            return dash.no_update
         try:
             import csv
             import io
 
-            keys_str = dash.ctx.triggered_id.keys
+            # triggered_id is a dict: .keys would be its method, and the export never ran on a click
+            keys_str = dash.ctx.triggered_id["keys"]
             keys = [keys_str] if keys_str in _ALL_NEWS_SOURCES else keys_str.split("-")
             all_news_data = get_all_news_data()
             rows = []
@@ -726,7 +734,8 @@ def register_news_search_callbacks(app):
                             "url": article.get("url") or article.get("link") or "",
                             "source": article.get("source", _ALL_NEWS_SOURCES.get(key, {}).get("name", key)),
                             "date": str(article.get("published") or article.get("published_at") or article.get("date") or ""),
-                            "summary": (article.get("summary") or "")[:300],
+                            # Indie Hackers, the Kagi feeds and Microsiervos keep their text under description
+                            "summary": plain_excerpt(article.get("summary") or article.get("description"), 300),
                         }
                     )
             if not rows:

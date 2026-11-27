@@ -8,6 +8,7 @@ from playwright.async_api import async_playwright
 
 from src.etl.base import BaseETL
 from src.models.opensource_model import OpenSourceProjectItem
+from src.utils.text import html_to_text
 
 
 class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
@@ -199,9 +200,10 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
         transformed = []
         for item in data:
             try:
-                # Parse date if needed, Pydantic handles ISO strings well usually
-                title = item.get("title", "")
+                # The page double-escapes some text ("&amp;amp;", "&#8217;"): plain text, once decoded
+                title = html_to_text(item.get("title"))
                 url = item.get("url", "")
+                description = html_to_text(item.get("description"))
 
                 # Normalize published_at to naive UTC to match created_at (which is naive utcnow)
                 pub_at = item.get("published_at")
@@ -221,7 +223,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
 
                 project = OpenSourceProjectItem(
                     title=title,
-                    description=item.get("description"),
+                    description=description,
                     url=url,
                     item_url=url,  # type: ignore[call-arg]  # not a model field; pydantic's default extra='ignore' silently drops this kwarg (no-op)
                     tags=item.get("tags", []),

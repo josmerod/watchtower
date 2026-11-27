@@ -17,6 +17,7 @@ import requests
 from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.text import html_to_text
 
 logger = get_logger("RedditUnifiedETL")
 STATE_FILE = os.path.join(get_project_root(), "data/reddit_unified/etl_state.json")
@@ -150,10 +151,10 @@ def fetch_subreddit_rss(subreddit: str, stats: dict[str, Any] | None = None) -> 
         for entry in feed.entries:
             post = {
                 "subreddit": subreddit,
-                "title": entry.get("title", "No title"),
+                "title": html_to_text(entry.get("title", "No title")) or "No title",
                 "url": entry.get("link", ""),
                 "published": entry.get("published", "") or entry.get("updated", ""),
-                "summary": entry.get("summary", ""),
+                "summary": html_to_text(entry.get("summary", "")),  # Reddit wraps it in "<!-- SC_OFF --><div class='md'>"
                 "author": entry.get("author", "Anonymous"),
                 "fetch_method": "rss",
             }

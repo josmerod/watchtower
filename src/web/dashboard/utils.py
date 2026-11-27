@@ -3,6 +3,7 @@
 import os
 from datetime import datetime, timezone
 
+import dash
 import pandas as pd
 
 
@@ -114,3 +115,30 @@ def parse_date_universal(date_str, component_name="Unknown"):
     if len(date_str) > 3 and date_str not in ("N/A", "null", "None", "undefined"):
         print(f"Debug ({component_name}): Could not parse date: '{date_str[:50]}{'...' if len(date_str) > 50 else ''}'")
     return None
+
+
+def _is_click(entry: dict) -> bool:
+    prop_id = str(entry.get("prop_id", ""))
+    value = entry.get("value")
+    return prop_id.endswith(".n_clicks") and isinstance(value, int) and not isinstance(value, bool) and value >= 1
+
+
+def clicked_prop() -> str | None:
+    """The ``id.prop`` of the click that set the running callback going, ``None`` when no button was clicked.
+
+    With an ALL input the argument is the list of every button on screen and cannot tell which one changed; the
+    click is in ``dash.ctx.triggered``, whose entries carry ``prop_id`` and ``value`` and nothing else. The id that
+    clicked is ``dash.ctx.triggered_prop_ids[prop]`` (a dict for pattern ids).
+    """
+    return next((entry["prop_id"] for entry in dash.ctx.triggered if _is_click(entry)), None)
+
+
+def only_inserted() -> bool:
+    """Whether this call is Dash showing the callback its freshly inserted buttons, none of them clicked.
+
+    A pattern-matching callback runs again, ``prevent_initial_call=True`` or not, when another callback inserts
+    its buttons: ``dash.ctx.triggered`` lists each one with ``value=None``. That is not an action, and nothing
+    should change on it. Any other prop in the list, or a click, makes it one.
+    """
+    changed = dash.ctx.triggered
+    return not changed or all(entry.get("value") is None and str(entry.get("prop_id", "")).endswith(".n_clicks") for entry in changed)

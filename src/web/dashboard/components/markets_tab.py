@@ -23,6 +23,7 @@ from dash import Input, Output, State, dcc, html
 from src.utils.file_system import get_project_root
 from src.web.dashboard.components import portfolio, saved_items
 from src.web.dashboard.components.shared.table import render_items_table
+from src.web.dashboard.utils import clicked_prop
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,16 @@ def _fmt_pct(value: Any) -> str:
         return "—"
     try:
         return f"{float(value):+.2f}%"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _fmt_share(value: Any) -> str:
+    """Format a share of a whole in percent, without the sign a change would carry (None → em dash)."""
+    if value is None:
+        return "—"
+    try:
+        return f"{float(value):.2f}%"
     except (TypeError, ValueError):
         return "—"
 
@@ -155,7 +166,7 @@ def _render_summary_cards(coins: list[dict[str, Any]]) -> dbc.Row:
     return dbc.Row(
         [
             card(_fmt_usd(total_cap), "Market Cap (top 50)"),
-            card(_fmt_pct(btc_dominance), "BTC Dominance"),
+            card(_fmt_share(btc_dominance), "BTC Dominance"),
             card(
                 f"{best['symbol']} {_fmt_pct(best['change_24h_pct'])}" if best else "—",
                 "Mejor 24h",
@@ -481,10 +492,12 @@ def register_markets_callbacks(app: dash.Dash) -> None:
         """
         no_change = (dash.no_update,) * 5
         try:
-            triggered = dash.ctx.triggered_id
-            clicks = next((entry.get("value") for entry in dash.ctx.triggered if entry.get("id") == triggered), None)
-            if triggered is None or not clicks:
+            # The click is in ctx.triggered, whose entries carry prop_id and value only. A call without one is
+            # the delete buttons the table just rendered: it must not write.
+            clicked = clicked_prop()
+            if clicked is None:
                 return no_change
+            triggered = dash.ctx.triggered_prop_ids.get(clicked)
 
             holdings = portfolio.normalize_holdings(store_data)
 
