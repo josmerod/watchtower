@@ -78,6 +78,10 @@ def get_all_news_data():
 
 MAX_ARTICLES_PER_SOURCE = 50  # Limit number of articles displayed per source initially
 
+# One request per pause in typing, not per keystroke: every answer is the
+# subtab's table rendered again (same value as the Knowledge Garden search).
+NEWS_SEARCH_DEBOUNCE_MS = 400
+
 # Top Tech subtab (spec 01 M4/M5): items-per-page selector (no more blind
 # 50-cap / 800px scroll) + visible cross-source dedup. IDs are namespaced
 # under TOP_TECH_COMPONENT_ID to avoid colliding with the per-source subtabs.
@@ -299,10 +303,84 @@ def format_article_date(article):
 # Removed create_article_card function as it's no longer needed for table view
 
 
-def create_news_source_tab_content(source_keys, combined_name=None, with_pagination=False):
-    """Creates the content for a news tab as a table with search functionality, potentially combining multiple sources.
+def _render_news_results(source_keys: list[str], search_term: str | None = None):
+    """The content of a subtab's results container: the table of its articles, filtered by the search term.
 
-    Sorts articles by date before limiting.
+    The layout and the subtab's search controller both call this, so the table the page is born
+    with is the table the controller would build for an empty search.
+
+    Args:
+        source_keys: The subtab's sources.
+        search_term: When given, only the articles that match are listed, newest first, under an
+            alert with the count; otherwise the newest ``MAX_ARTICLES_PER_SOURCE``.
+
+    Returns:
+        A warning alert when the sources hold no article, else the scroll container with the table.
+    """
+    articles: list[dict[str, Any]] = []
+    for key in source_keys:
+        for article in get_all_news_data().get(key, []):
+            article["source_display_name"] = _ALL_NEWS_SOURCES[key]["name"]
+            articles.append(article)
+    if not articles:
+        return dbc.Alert("No data available (fetch returned empty)", color="warning")
+    articles.sort(key=get_sortable_date, reverse=True)
+
+    shown = filter_content(search_term, articles, get_common_searchable_fields("news")) if search_term else articles[:MAX_ARTICLES_PER_SOURCE]
+
+    # Trend data renders the badges
+    trending_map = get_trending_items_map()
+
+    table_body_rows = []
+    for article in shown:
+        # Match by id, url, source or trending term in the title
+        trend_record = match_item_trend(article, trending_map)
+
+        # Title fallbacks: common across news sources
+        title = article.get("title") or article.get("name") or article.get("full_name") or "No Title"
+        # URL fallbacks
+        url = article.get("url") or article.get("link") or article.get("html_url") or article.get("website")
+        # Real highlight components when a search term is active
+        title_children = highlight_segments(title, search_term) if search_term else title
+        title_cell: list[Any] = [html.A(title_children, href=url, target="_blank")] if url else title_children if isinstance(title_children, list) else [title_children]
+        title_cell.append(render_trend_badge(trend_record))
+        # Read/unread tracking key (see assets/js/read_state.js)
+        row_props: dict[str, Any] = {"data-item-hash": _news_item_hash(url or "", title or "")}
+
+        table_body_rows.append(
+            html.Tr(
+                [html.Td(title_cell), html.Td(article.get("source_display_name", "Unknown")), html.Td(format_article_date(article))], className="trending-item" if trend_record is not None else "", **row_props
+            )
+        )
+
+    table = dbc.Table(
+        [
+            html.Thead(html.Tr([html.Th("Title"), html.Th("Source"), html.Th("Date")])),
+            html.Tbody(table_body_rows),
+        ],
+        bordered=True,
+        hover=True,
+        responsive=True,  # Makes table scroll horizontally on small screens
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive mb-0",  # Remove default bottom margin if wrapped in Div with padding
+    )
+
+    # The count alert only shows while a search term is active
+    alert = dbc.Alert(f"📰 Found {len(shown)} articles matching '{search_term}'", color="success", className="mb-3") if search_term else None
+    return html.Div(
+        [alert, table],
+        style={
+            "maxHeight": "800px",
+            "overflowY": "auto",
+            "paddingRight": "15px",
+        },
+    )
+
+
+def create_news_source_tab_content(source_keys, combined_name=None, with_pagination=False):
+    """Creates the content for a news tab: its search row and the table of its articles, potentially combining multiple sources.
 
     Args:
         source_keys: Single source key or list of keys (combined tabs).
@@ -312,28 +390,12 @@ def create_news_source_tab_content(source_keys, combined_name=None, with_paginat
             container instead of the capped, 800px-scroll table. Used by the
             aggregated "Top Tech" subtab.
     """
-    all_articles_for_tab = []
     if isinstance(source_keys, str):  # Single source key
         source_keys = [source_keys]
         source_display_name = _ALL_NEWS_SOURCES[source_keys[0]]["name"]
-        tab_search_id = f"news-search-{source_keys[0]}"
     else:  # List of source keys (for combined tabs)
         source_display_name = combined_name or "Combined News"
-        tab_search_id = f"news-search-{'-'.join(source_keys)}"
-
-    # Load fresh data each time
-    all_news_data = get_all_news_data()
-
-    for key in source_keys:
-        articles_from_source = all_news_data.get(key, [])
-        # Add source name to each article for display in the table
-        for article in articles_from_source:
-            # Use 'source_display' to ensure we have a consistent field for the table
-            article["source_display_name"] = article.get("source", _ALL_NEWS_SOURCES[key]["name"])
-        all_articles_for_tab.extend(articles_from_source)
-
-    # Sort all articles by date (descending)
-    all_articles_for_tab.sort(key=get_sortable_date, reverse=True)
+    tab_search_id = f"news-search-{'-'.join(source_keys)}"
 
     # Search + CSV export row (shared by every subtab layout)
     search_row = dbc.Row(
@@ -344,13 +406,14 @@ def create_news_source_tab_content(source_keys, combined_name=None, with_paginat
                     input_id=tab_search_id,
                     placeholder=f"Filter {source_display_name} by term...",
                     clear_button=True,
+                    debounce=NEWS_SEARCH_DEBOUNCE_MS,
                 ),
                 width=True,
             ),
             dbc.Col(
                 dbc.Button(
                     "⬇ CSV",
-                    id={"type": "news-export", "keys": "-".join([source_keys] if isinstance(source_keys, str) else source_keys)},
+                    id={"type": "news-export", "keys": "-".join(source_keys)},
                     color="secondary",
                     size="sm",
                     title="Exportar el dataset de este subtab a CSV",
@@ -363,6 +426,17 @@ def create_news_source_tab_content(source_keys, combined_name=None, with_paginat
     )
 
     if with_pagination:
+        all_articles_for_tab = []
+        for key in source_keys:
+            # Add source name to each article for display in the table
+            for article in get_all_news_data().get(key, []):
+                # Use 'source_display' to ensure we have a consistent field for the table
+                article["source_display_name"] = article.get("source", _ALL_NEWS_SOURCES[key]["name"])
+                all_articles_for_tab.append(article)
+
+        # Sort all articles by date (descending)
+        all_articles_for_tab.sort(key=get_sortable_date, reverse=True)
+
         # Top Tech (spec 01 M4/M5): dedup + first page at the default size,
         # rendered by the same shared view the controller callback uses.
         results_children, _page = _render_top_tech_view(all_articles_for_tab)
@@ -399,96 +473,9 @@ def create_news_source_tab_content(source_keys, combined_name=None, with_paginat
         tab_children = [search_row, controls_row, results_container, dcc.Store(id=f"{TOP_TECH_COMPONENT_ID}-page", data=1)]
         return html.Div(tab_children)
 
-    # Legacy (non-paginated) table path: capped, scrollable table
-    # Create table header
-    table_header = [
-        html.Thead(
-            html.Tr(
-                [
-                    html.Th("Title"),
-                    html.Th("Source"),
-                    html.Th("Date"),
-                ]
-            )
-        )
-    ]
-
-    # Load trend data
-    trending_map = get_trending_items_map()
-
-    # Create table body with robust field fallbacks for heterogeneous sources
-    table_body_rows = []
-    for _i, article in enumerate(all_articles_for_tab[:MAX_ARTICLES_PER_SOURCE]):
-        # Match by id, url, source or trending term in the title
-        trend_record = match_item_trend(article, trending_map)
-        is_trending = trend_record is not None
-        trend_badge = render_trend_badge(trend_record)
-
-        # Title fallbacks: common across Product Hunt/GitHub Trends/others
-        title = article.get("title") or article.get("name") or article.get("full_name") or "No Title"
-        # URL fallbacks
-        url = article.get("url") or article.get("link") or article.get("html_url") or article.get("website")
-        # Use the 'source_display_name' we added earlier
-        source_for_display = article.get("source_display_name", source_display_name)
-        date_display = format_article_date(article)
-
-        # Add trending class for filtering
-        row_class = "trending-item" if is_trending else ""
-
-        table_body_rows.append(
-            html.Tr(
-                [
-                    html.Td(
-                        [
-                            html.A(title, href=url, target="_blank") if url else title,
-                            trend_badge,
-                        ]
-                    ),
-                    html.Td(source_for_display),
-                    html.Td(date_display),
-                    # Hidden cell for trend filtering
-                    html.Td(
-                        str(is_trending).lower(),
-                        style={"display": "none"},
-                        className="is-trending-data",
-                    ),
-                ],
-                className=row_class,
-                # Read/unread tracking key (see assets/js/read_state.js)
-                **{"data-item-hash": _news_item_hash(url or "", title or "")},
-            )
-        )
-
-    table_body = [html.Tbody(table_body_rows)]
-
-    # Combine header and body into a dbc.Table
-    table = dbc.Table(
-        table_header + table_body,
-        bordered=True,
-        hover=True,
-        responsive=True,  # Makes table scroll horizontally on small screens
-        striped=True,
-        size="sm",
-        color="dark",
-        className="table-responsive mb-0",  # Remove default bottom margin if wrapped in Div with padding
-    )
-
-    # Return search input and table container
-    return html.Div(
-        [
-            search_row,
-            # Container for filtered results
-            html.Div(
-                table,
-                id=f"{tab_search_id}-results",
-                style={
-                    "maxHeight": "800px",
-                    "overflowY": "auto",
-                    "paddingRight": "15px",
-                },
-            ),
-        ]
-    )
+    # The table as the search controller builds it for an empty search: the controller is then
+    # idle until the user types
+    return html.Div([search_row, html.Div(_render_news_results(list(source_keys)), id=f"{tab_search_id}-results")])
 
 
 def _build_global_results_table(results: list[dict[str, Any]], search_term: str | None = None) -> Any:
@@ -605,148 +592,15 @@ def register_news_search_callbacks(app):
         @app.callback(
             Output(f"{search_id}-results", "children"),
             [Input(search_id, "value")],
-            # prevent_initial_call=False (default), so it runs on load
+            # Idle on insertion: the layout already holds the table this builds for an empty search
+            prevent_initial_call=True,
         )
         def update_news_search(search_term, current_search_id=search_id):
-            """Update news display based on search term. Fetches fresh data on execution."""
+            """Show the subtab's articles that match the search term."""
             try:
-                # 1. Determine Source Keys from Search ID
-                # Format: news-search-{key} or news-search-{key1}-{key2}
-                id_suffix = current_search_id.replace("news-search-", "")
-                if id_suffix == "futuretools-bensbites":
-                    source_keys = ["futuretools", "bensbites"]
-                else:
-                    source_keys = id_suffix.split("-")
-
-                # 2. Fetch Fresh Data (CACHE HIT usually, unless cleared)
-                all_news_data = get_all_news_data()
-
-                # 3. Aggregate Data for this Tab
-                articles_data = []
-                for key in source_keys:
-                    # Robust key matching (try exact, then maybe underscore/dash swap if needed)
-                    # Keys in config use underscores. ID uses dashes?
-                    # Let's attempt to access direct key first, then try replace
-                    if key in all_news_data:
-                        source_articles = all_news_data[key]
-                        # Enrich with source display name
-                        for art in source_articles:
-                            art["source_display_name"] = _ALL_NEWS_SOURCES[key]["name"]
-                        articles_data.extend(source_articles)
-                    else:
-                        # Try swapping dash to underscore just in case
-                        alt_key = key.replace("-", "_")
-                        if alt_key in all_news_data:
-                            source_articles = all_news_data[alt_key]
-                            # Enrich with source display name
-                            for art in source_articles:
-                                art["source_display_name"] = _ALL_NEWS_SOURCES[alt_key]["name"]
-                            articles_data.extend(source_articles)
-
-                if not articles_data:
-                    return dbc.Alert("No data available (fetch returned empty)", color="warning")
-
-                # 4. Sort
-                articles_data.sort(key=get_sortable_date, reverse=True)
-
-                # 5. Filter (Search)
-                if search_term:
-                    searchable_fields = get_common_searchable_fields("news")
-                    filtered_articles = filter_content(search_term, articles_data, searchable_fields)
-                else:
-                    filtered_articles = articles_data[:MAX_ARTICLES_PER_SOURCE]  # Limit initial view
-
-                # Legacy filtering block removed
-
-                # Create table for filtered results
-                table_header = [
-                    html.Thead(
-                        html.Tr(
-                            [
-                                html.Th("Title"),
-                                html.Th("Source"),
-                                html.Th("Date"),
-                            ]
-                        )
-                    )
-                ]
-
-                # Load trend data for rendering badges
-                trending_map = get_trending_items_map()
-
-                table_body_rows = []
-                for _i, article in enumerate(filtered_articles):
-                    # Match by id, url, source or trending term in the title
-                    trend_record = match_item_trend(article, trending_map)
-                    is_trending = trend_record is not None
-                    trend_badge = render_trend_badge(trend_record)
-
-                    # Title fallbacks: common across news sources
-                    title = article.get("title") or article.get("name") or article.get("full_name") or "No Title"
-                    # URL fallbacks
-                    url = article.get("url") or article.get("link") or article.get("html_url") or article.get("website")
-                    # Use the 'source_display_name' if available
-                    source_for_display = article.get("source_display_name", "Unknown")
-                    date_display = format_article_date(article)
-
-                    # Real highlight components when a search term is active
-                    title_children = highlight_segments(title, search_term) if search_term else title
-
-                    # Add trending class
-                    row_class = "trending-item" if is_trending else ""
-
-                    table_body_rows.append(
-                        html.Tr(
-                            [
-                                html.Td(
-                                    [
-                                        (html.A(title_children, href=url, target="_blank") if url else title_children),
-                                        trend_badge,
-                                    ]
-                                ),
-                                html.Td(source_for_display),
-                                html.Td(date_display),
-                            ],
-                            className=row_class,
-                            **{"data-item-hash": _news_item_hash(url or "", title or "")},
-                        )
-                    )
-
-                table_body = [html.Tbody(table_body_rows)]
-
-                # Combine header and body into a dbc.Table
-                table = dbc.Table(
-                    table_header + table_body,
-                    bordered=True,
-                    hover=True,
-                    responsive=True,
-                    striped=True,
-                    size="sm",
-                    color="dark",
-                    className="table-responsive mb-0",
-                )
-
-                # Only show alert if a search term is active
-                if search_term:
-                    alert = dbc.Alert(
-                        f"📰 Found {len(filtered_articles)} articles matching '{search_term}'",
-                        color="success",
-                        className="mb-3",
-                    )
-                else:
-                    alert = None
-
-                return html.Div(
-                    [
-                        alert,
-                        table,
-                    ],
-                    style={
-                        "maxHeight": "800px",
-                        "overflowY": "auto",
-                        "paddingRight": "15px",
-                    },
-                )
+                # The search id carries the source keys: news-search-{key} or news-search-{key1}-{key2}
+                source_keys = current_search_id.replace("news-search-", "").split("-")
+                return _render_news_results(source_keys, search_term)
 
             except Exception as e:
                 logger.error(f"Error in news search callback for {current_search_id}: {e}")
