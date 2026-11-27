@@ -227,6 +227,10 @@ def load_deals_data():
             if col not in df.columns:
                 df[col] = None
 
+        # IsThereAnyDeal serves the ES/EUR feeds. A file from before the ETL wrote the currency holds euros as well.
+        if "currency" not in df.columns:
+            df["currency"] = "EUR"
+
         df["published_date"] = df["published_date_str"].apply(lambda x: parse_date_universal(x, "Games"))
         df["price_new_numeric"] = df["price_new"].apply(parse_price)
 
@@ -253,18 +257,20 @@ def load_deals_data():
 
 def load_bundles_data():
     global ALL_GAMES_DATA, DATA_LOADED_SUCCESSFULLY
+    # (file, store when the file states none, currency of its prices when the file states none)
     file_paths_with_store = [
         (
             get_data_path("games", "bundles.json"),
-            "Various/Mixed",
-        ),  # Default store if not specified in data
-        (get_data_path("games", "humblebundles.json"), "Humble Bundle"),
+            "Various/Mixed",  # Default store if not specified in data
+            "EUR",  # IsThereAnyDeal serves the ES/EUR feed
+        ),
+        (get_data_path("games", "humblebundles.json"), "Humble Bundle", "USD"),
     ]
 
     all_bundles_dfs = []
     any_file_processed_successfully = False
 
-    for file_path, store_name_default in file_paths_with_store:
+    for file_path, store_name_default, currency_default in file_paths_with_store:
         if not file_exists(file_path):
             print(f"Warning (Bundles): File not found at {file_path}")
             continue  # Skip this file
@@ -298,6 +304,9 @@ def load_bundles_data():
             else:  # Fill NaN stores with default if column exists but value is missing
                 df["store"].fillna(store_name_default, inplace=True)
 
+            if "currency" not in df.columns:
+                df["currency"] = currency_default
+
             # Ensure essential columns
             expected_cols = [
                 "title",
@@ -312,9 +321,11 @@ def load_bundles_data():
                 if col not in df.columns:
                     df[col] = None  # Add missing columns with None
 
-            # Both sources list the games of a bundle instead of counting them
-            if "games" in df.columns:
-                df["game_count"] = df["games"].apply(lambda games: len(games) if isinstance(games, (list, tuple)) else None)
+            # Both sources list the games of a bundle instead of counting them, and Humble lists only the first
+            # eleven: its own count (items_count) is the one to show, the length of the list is the fallback.
+            counted = df["items_count"] if "items_count" in df.columns else pd.Series(None, index=df.index, dtype="object")
+            listed = df["games"].apply(lambda games: len(games) if isinstance(games, (list, tuple)) else None) if "games" in df.columns else pd.Series(None, index=df.index, dtype="object")
+            df["game_count"] = counted.where(pd.to_numeric(counted, errors="coerce").notna(), listed)
 
             df["expiry_date"] = df["expiry_date_str"].apply(lambda x: parse_date_universal(x, "Games"))
             price_numeric = df["price"].apply(parse_price)
@@ -489,6 +500,23 @@ def load_all_games_data():
 
 
 # --- Layout Rendering Functions ---
+_SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£"}
+
+
+def _symbol(currency) -> str:
+    """The sign of a currency code; euros when none is given, the currency of the feeds this tab reads."""
+    if currency is None or (not isinstance(currency, str) and pd.isna(currency)):
+        return "€"
+    return _SYMBOLS.get(currency, "€")
+
+
+def _money(amount, currency=None) -> str:
+    """An amount with the sign of its currency ("€9.71"), or N/A when there is no amount."""
+    if amount is None or pd.isna(amount):
+        return "N/A"
+    return f"{_symbol(currency)}{amount:.2f}"
+
+
 def format_display_date(dt_obj):
     if pd.isna(dt_obj) or dt_obj is None:
         return "N/A"
@@ -498,14 +526,32 @@ def format_display_date(dt_obj):
 
 
 def _bundle_price(row) -> str:
-    """An amount as "$9.99", the words of the source when it states none ("Pay what you want"), else N/A."""
+    """An amount in the currency of its source, the words of the source when it states none ("Pay what you want"), else N/A."""
     if pd.notna(row.get("price_numeric")):
-        return f"${row['price_numeric']:.2f}"
+        return _money(row["price_numeric"], row.get("currency"))
     words = str(row.get("price") or "").strip()
     return words if words and words.lower() not in {"none", "nan", "n/a"} else "N/A"
 
 
-def render_bundles_sub_tab(df):
+def _quiet_source_note(frame, date_col: str, what: str, now=None):
+    """A line for above a table when the source's newest item is two days old or more.
+
+    The deals of July 2026 were shown as current for four months: every row carried its own date, nothing said
+    that the source had gone quiet. ``None`` while the newest item is recent or no item is dated.
+    """
+    if frame.empty or date_col not in frame.columns:
+        return None
+    newest = pd.to_datetime(frame[date_col], errors="coerce", utc=True).max()
+    if pd.isna(newest):
+        return None
+    age_days = ((pd.Timestamp.now(tz="UTC") if now is None else pd.Timestamp(now)) - newest).days
+    if age_days < 2:
+        return None
+    shown = newest.tz_convert(ZoneInfo("Europe/Madrid")).strftime("%Y-%m-%d")
+    return html.Div(f"⚠ Newest {what} is from {shown} ({age_days} days ago): the source has gone quiet.", className="text-warning small mt-3 mb-0")
+
+
+def render_bundles_sub_tab(df, now=None):
     if not DATA_LOADED_SUCCESSFULLY.get("bundles", False) or df.empty:
         return dbc.Alert(
             "No game bundles data currently available or failed to load.",
@@ -546,7 +592,7 @@ def render_bundles_sub_tab(df):
             )
         )
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(
+    table = dbc.Table(
         table_header + table_body,
         bordered=True,
         hover=True,
@@ -556,9 +602,11 @@ def render_bundles_sub_tab(df):
         color="dark",
         className="table-responsive mt-3",
     )
+    note = _quiet_source_note(df[df["currency"] == "EUR"], "published_date", "bundle", now)
+    return [note, table] if note is not None else table
 
 
-def render_deals_sub_tab(df):
+def render_deals_sub_tab(df, now=None):
     if not DATA_LOADED_SUCCESSFULLY.get("deals", False) or df.empty:
         return dbc.Alert(
             "No game deals data currently available or failed to load.",
@@ -594,15 +642,15 @@ def render_deals_sub_tab(df):
                         )
                     ),
                     html.Td(row.get("store", "N/A")),
-                    html.Td(f"${row.get('price_new_numeric', 0.0):.2f}" if pd.notna(row.get("price_new_numeric")) else "N/A"),
-                    html.Td(f"${row.get('price_old_numeric', 0.0):.2f}" if pd.notna(row.get("price_old_numeric")) else "N/A"),
+                    html.Td(_money(row.get("price_new_numeric"), row.get("currency"))),
+                    html.Td(_money(row.get("price_old_numeric"), row.get("currency"))),
                     html.Td(discount_display),
                     html.Td(format_display_date(row.get("published_date"))),
                 ]
             )
         )
     table_body = [html.Tbody(table_body_rows)]
-    return dbc.Table(
+    table = dbc.Table(
         table_header + table_body,
         bordered=True,
         hover=True,
@@ -612,6 +660,8 @@ def render_deals_sub_tab(df):
         color="dark",
         className="table-responsive mt-3",
     )
+    note = _quiet_source_note(df, "published_date", "deal", now)
+    return [note, table] if note is not None else table
 
 
 def render_trending_sub_tab(df):
