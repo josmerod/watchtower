@@ -193,3 +193,80 @@ def test_ms_subtab_without_rows_says_so_instead_of_rendering_an_empty_table(monk
     html_div = courses_tab.render_ms_credentials_sub_tab("certs", pd.DataFrame())
     alert = next(component for component in _walk(html_div) if isinstance(component, dbc.Alert))
     assert "MS Certificaciones" in alert.children
+
+
+# --- Language filter of the AWS Skill Builder and GCP Skills Boost subtabs (T-146, T-147) ---------
+
+# Shaped like aws_skill_builder.json / gcp_skills_boost.json after their loaders: `language` as the ETLs write it.
+AWS_COURSES = pd.DataFrame(
+    [
+        {"title": "Introducción a AWS", "url": "https://www.classcentral.com/course/1", "language": "es", "description": "Beginner · 1 hour · Free", "detected_str": "2026-11-27"},
+        {"title": "Introduction to Blockchain", "url": "https://www.classcentral.com/course/2", "language": "en", "description": "Beginner · 1 hour · 4.8/5 (8 ratings) · Free", "detected_str": "2026-11-27"},
+    ]
+)
+GCP_COURSES = pd.DataFrame(
+    [
+        {"title": "Create a VPC using Cloud Shell", "url": "https://partner.skills.google/focuses/134707", "language": "en", "course_type": "lab", "description": "Create a VPC", "duration": "1 hour", "level": "introductory", "detected_str": "2026-11-27"},
+        {"title": "Explora y crea informes con Data Studio", "url": "https://partner.skills.google/focuses/99", "language": "en+es", "course_type": "course", "description": "Reports", "duration": "1 hour", "level": "introductory", "detected_str": "2026-11-27"},
+    ]
+)
+
+
+def _cloud_frames():
+    return {key: pd.DataFrame() for key in courses_tab.ALL_COURSES_DATA} | {"aws_skills": AWS_COURSES, "gcp_skills": GCP_COURSES}
+
+
+def _dropdown(layout, dropdown_id):
+    (dropdown,) = [component for component in _walk(layout) if getattr(component, "id", None) == dropdown_id]
+    return dropdown
+
+
+def test_aws_and_gcp_subtabs_offer_a_language_filter(monkeypatch):
+    layout = _stubbed_layout(monkeypatch, _cloud_frames())
+
+    aws = _dropdown(layout, "aws-skills-language-dropdown")
+    gcp = _dropdown(layout, "gcp-skills-language-dropdown")
+
+    assert [(option["label"], option["value"]) for option in aws.options] == [("Español", "es"), ("English", "en")]
+    assert [(option["label"], option["value"]) for option in gcp.options] == [("English", "en"), ("English + Spanish", "en+es")]
+    assert aws.placeholder == gcp.placeholder == "Filter by language"
+
+
+def test_a_catalog_written_before_the_language_existed_offers_no_filter():
+    legacy = pd.DataFrame([{"title": "AWS SimuLearn: 엣지에서의 ETL", "url": "https://www.classcentral.com/course/0", "language": "N/A"}])
+
+    assert courses_tab.language_options(legacy) == []
+    assert courses_tab.language_options(pd.DataFrame([{"title": "No language column"}])) == []
+    assert len(courses_tab.filter_by_language(legacy, "es")) == 0
+    assert len(courses_tab.filter_by_language(legacy, None)) == 1  # no language chosen: nothing is filtered
+
+
+def test_language_filter_keeps_only_the_courses_in_that_language():
+    spanish = courses_tab.filter_by_language(AWS_COURSES, "es")
+
+    assert spanish["title"].tolist() == ["Introducción a AWS"]
+    assert len(courses_tab.filter_by_language(AWS_COURSES, None)) == 2
+    assert courses_tab.filter_by_language(GCP_COURSES, "en+es")["title"].tolist() == ["Explora y crea informes con Data Studio"]
+
+
+def test_cloud_tables_render_the_rows_they_are_given():
+    header, rows = _table_texts(courses_tab._aws_skills_table(courses_tab.filter_by_language(AWS_COURSES, "en")))
+
+    assert header == ["Title", "Info", "First Detected"]
+    assert rows[0][0].children == "Introduction to Blockchain" and rows[0][0].href == "https://www.classcentral.com/course/2"
+    assert rows[0][1] == "Beginner · 1 hour · 4.8/5 (8 ratings) · Free"
+    header, rows = _table_texts(courses_tab._gcp_skills_table(courses_tab.filter_by_language(GCP_COURSES, "en")))
+    assert header == ["Title", "Type", "Description", "Duration", "Level", "First Detected"]
+    assert [row[1] for row in rows] == ["lab"]
+
+
+def test_cloud_table_callbacks_read_the_search_box_and_the_language_filter():
+    app = Dash(__name__)
+    courses_tab.register_courses_callbacks(app)
+
+    for table_id, dropdown_id in (("aws-skills-table-container", "aws-skills-language-dropdown"), ("gcp-skills-table-container", "gcp-skills-language-dropdown")):
+        owners = [key for key in app.callback_map if key.split(".")[0] == table_id]
+        assert len(owners) == 1, table_id
+        inputs = {spec["id"] for spec in app.callback_map[owners[0]]["inputs"]}
+        assert dropdown_id in inputs, table_id
+    assert not [key for key in app.callback_map if key.split(".")[0] in ("aws-skills-language-dropdown", "gcp-skills-language-dropdown")]  # the dropdown is only ever an Input

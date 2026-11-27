@@ -769,6 +769,57 @@ def render_ms_credentials_tabs() -> list[dbc.Tab]:
     ]
 
 
+LANGUAGE_LABELS = {"es": "Español", "en": "English", "en+es": "English + Spanish"}
+
+
+def language_options(df):
+    """Dropdown options for the languages a catalog carries, in the order of LANGUAGE_LABELS."""
+    if "language" not in df.columns:
+        return []
+    present = set(df["language"].dropna().unique())
+    return [{"label": label, "value": code} for code, label in LANGUAGE_LABELS.items() if code in present]
+
+
+def filter_by_language(df, language):
+    """Keep the rows of a catalog in `language`; nothing is filtered when no language is chosen."""
+    if not language or "language" not in df.columns:
+        return df
+    return df[df["language"] == language]
+
+
+def _language_dropdown(dropdown_id, df):
+    return dcc.Dropdown(id=dropdown_id, options=language_options(df), placeholder="Filter by language", clearable=True)
+
+
+def _aws_skills_table(df):
+    """The AWS Skill Builder table for the rows left in `df`."""
+    header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Info"), html.Th("First Detected")]))]
+    rows = [
+        html.Tr([html.Td(html.A(row.get("title", "N/A"), href=row.get("url"), target="_blank")), html.Td(row.get("description", "N/A")), html.Td(row.get("detected_str", "N/A"))])
+        for row in df.to_dict("records")
+    ]
+    return dbc.Table(header + [html.Tbody(rows)], bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive")
+
+
+def _gcp_skills_table(df):
+    """The GCP Skills Boost table for the rows left in `df`."""
+    header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Type"), html.Th("Description"), html.Th("Duration"), html.Th("Level"), html.Th("First Detected")]))]
+    rows = [
+        html.Tr(
+            [
+                html.Td(html.A(row.get("title", "N/A"), href=row.get("url", "#"), target="_blank")),
+                html.Td(row.get("course_type", "N/A")),
+                html.Td(row.get("description", "N/A")),
+                html.Td(row.get("duration", "N/A")),
+                html.Td(row.get("level", "N/A")),
+                html.Td(row.get("detected_str", "N/A")),
+            ]
+        )
+        for row in df.to_dict("records")
+    ]
+    return dbc.Table(header + [html.Tbody(rows)], bordered=True, hover=True, responsive=True, striped=True, size="sm", color="dark", className="table-responsive")
+
+
 def render_aws_skills_courses_sub_tab(df):
     if not COURSES_DATA_LOADED["aws_skills"]:
         return dbc.Alert("AWS Skill Builder data failed to load. Check logs.", color="danger", className="mt-3")
@@ -778,11 +829,8 @@ def render_aws_skills_courses_sub_tab(df):
         [
             dbc.Row(
                 [
-                    dbc.Col(
-                        dbc.Input(id="aws-skills-search-input", placeholder="Search by title..."),
-                        md=12,
-                        className="mb-2",
-                    )
+                    dbc.Col(dbc.Input(id="aws-skills-search-input", placeholder="Search by title..."), md=8, className="mb-2"),
+                    dbc.Col(_language_dropdown("aws-skills-language-dropdown", df), md=4, className="mb-2"),
                 ],
                 className="mt-3 mb-3",
             ),
@@ -800,11 +848,8 @@ def render_gcp_skills_courses_sub_tab(df):
         [
             dbc.Row(
                 [
-                    dbc.Col(
-                        dbc.Input(id="gcp-skills-search-input", placeholder="Search by title or description..."),
-                        md=12,
-                        className="mb-2",
-                    )
+                    dbc.Col(dbc.Input(id="gcp-skills-search-input", placeholder="Search by title or description..."), md=8, className="mb-2"),
+                    dbc.Col(_language_dropdown("gcp-skills-language-dropdown", df), md=4, className="mb-2"),
                 ],
                 className="mt-3 mb-3",
             ),
@@ -1298,9 +1343,10 @@ def register_courses_callbacks(app):
     @app.callback(
         Output("aws-skills-table-container", "children"),
         Input("aws-skills-search-input", "value"),
+        Input("aws-skills-language-dropdown", "value"),
         prevent_initial_call=False,
     )
-    def update_aws_skills_table(search_term):
+    def update_aws_skills_table(search_term, language):
         try:
             if not COURSES_DATA_LOADED["aws_skills"]:
                 return dbc.Alert("Loading AWS Skill Builder data...", color="info")
@@ -1310,38 +1356,20 @@ def register_courses_callbacks(app):
             if search_term:
                 s = str(search_term).lower()
                 df = df[df["title"].str.lower().str.contains(s, na=False)]
-
-            header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Info"), html.Th("First Detected")]))]
-            rows = []
-            for row in df.to_dict("records"):
-                rows.append(
-                    html.Tr(
-                        [
-                            html.Td(html.A(row.get("title", "N/A"), href=row.get("url"), target="_blank")),
-                            html.Td(row.get("description", "N/A")),
-                            html.Td(row.get("detected_str", "N/A")),
-                        ]
-                    )
-                )
-            return dbc.Table(
-                header + [html.Tbody(rows)],
-                bordered=True,
-                hover=True,
-                responsive=True,
-                striped=True,
-                size="sm",
-                color="dark",
-                className="table-responsive",
-            )
+            df = filter_by_language(df, language)
+            if df.empty:
+                return dbc.Alert("No AWS Skill Builder course matches.", color="info")
+            return _aws_skills_table(df)
         except Exception as e:
             return dbc.Alert(f"Error loading AWS Skill Builder data: {e!s}", color="danger")
 
     @app.callback(
         Output("gcp-skills-table-container", "children"),
         Input("gcp-skills-search-input", "value"),
+        Input("gcp-skills-language-dropdown", "value"),
         prevent_initial_call=False,
     )
-    def update_gcp_skills_table(search_term):
+    def update_gcp_skills_table(search_term, language):
         try:
             if not COURSES_DATA_LOADED["gcp_skills"]:
                 return dbc.Alert("Loading GCP Skills Boost data...", color="info")
@@ -1351,32 +1379,10 @@ def register_courses_callbacks(app):
             if search_term:
                 s = str(search_term).lower()
                 df = df[df["title"].str.lower().str.contains(s, na=False) | df["description"].str.lower().str.contains(s, na=False)]
-
-            header = [html.Thead(html.Tr([html.Th("Title"), html.Th("Type"), html.Th("Description"), html.Th("Duration"), html.Th("Level"), html.Th("First Detected")]))]
-            rows = []
-            for row in df.to_dict("records"):
-                rows.append(
-                    html.Tr(
-                        [
-                            html.Td(html.A(row.get("title", "N/A"), href=row.get("url", "#"), target="_blank")),
-                            html.Td(row.get("course_type", "N/A")),
-                            html.Td(row.get("description", "N/A")),
-                            html.Td(row.get("duration", "N/A")),
-                            html.Td(row.get("level", "N/A")),
-                            html.Td(row.get("detected_str", "N/A")),
-                        ]
-                    )
-                )
-            return dbc.Table(
-                header + [html.Tbody(rows)],
-                bordered=True,
-                hover=True,
-                responsive=True,
-                striped=True,
-                size="sm",
-                color="dark",
-                className="table-responsive",
-            )
+            df = filter_by_language(df, language)
+            if df.empty:
+                return dbc.Alert("No GCP Skills Boost course matches.", color="info")
+            return _gcp_skills_table(df)
         except Exception as e:
             return dbc.Alert(f"Error loading GCP Skills Boost data: {e!s}", color="danger")
 
