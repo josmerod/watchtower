@@ -593,6 +593,12 @@ def test_remove_duplicates_merges_venue_and_price():
 # ---------------------------------------------------------------------------
 
 
+def test_output_dir_is_the_etl_data_dir():
+    """The file lands under the project root, whatever the working directory is."""
+    etl = ValenciaEventsETL()
+    assert etl.output_dir == etl.data_dir
+
+
 def test_load_sorts_the_file_by_start_date(tmp_path, monkeypatch):
     """The saved file goes by start date; events without a date keep their order at the end."""
     etl = ValenciaEventsETL()

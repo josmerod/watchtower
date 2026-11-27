@@ -4,7 +4,6 @@ import json
 import re
 from collections.abc import Iterator
 from datetime import datetime
-from pathlib import Path
 from typing import Any, cast
 from zoneinfo import ZoneInfo
 
@@ -343,7 +342,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             retry_delay=5,
         )
         # Override output directory to write directly to main data directory
-        self.output_dir = Path("data/valencia_events")
+        self.output_dir = self.data_dir
 
     def get_current_and_next_month(self):
         """Returns the current and next month in YYYY-MM format.
