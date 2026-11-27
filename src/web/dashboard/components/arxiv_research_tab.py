@@ -134,6 +134,17 @@ def arxiv_table_header(show_citations):
 ARXIV_EXPAND_BTN_TYPE = "arxiv-expand-btn"
 ARXIV_DETAIL_COLLAPSE_TYPE = "arxiv-detail-collapse"
 
+# The tab: one category bar, one search box and one container for the table of
+# the category that is open. Only that category is in the page: every paper is
+# two pattern-matching ids (button and detail), and with all the categories
+# rendered at once the page held more than two thousand of them and froze the
+# browser (T-172).
+ARXIV_TABS_ID = "arxiv-category-tabs-main"
+ARXIV_TAB_ID_PREFIX = "arxiv-tab-"
+ARXIV_SEARCH_ID = "arxiv-search"
+ARXIV_CONTENT_ID = "arxiv-category-results"
+ARXIV_SEARCH_DEBOUNCE_MS = 400  # the table of a category weighs several hundred KiB: wait for a pause
+
 
 def _paper_hash(paper: dict) -> str:
     """Stable per-paper key for the expand/collapse pattern-matching ids."""
@@ -267,39 +278,43 @@ def _build_paper_rows(papers: list, show_citations: bool, trending_map: dict) ->
     return rows
 
 
-def create_arxiv_category_tab_content(source_key):
-    """Creates the content for a specific ArXiv category tab as a table with search functionality.
+def _match_papers(papers: list[dict], search_term: str) -> list[dict]:
+    """The papers matching ``search_term``, case-insensitively, in title, abstract or authors; all of them when it is empty."""
+    if not search_term:
+        return papers
+    needle = search_term.lower()
+    return [p for p in papers if needle in str(p.get("title", "")).lower() or needle in str(p.get("summary", "")).lower() or needle in str(p.get("authors", "")).lower()]
 
-    Sorts papers by date before limiting.
+
+def create_arxiv_category_tab_content(source_key: str, search_term: str = "") -> html.Div:
+    """Build the content of one ArXiv category as a table.
+
+    Args:
+        source_key: Key in ``ARXIV_SOURCES_CONFIG``.
+        search_term: When given, only matching papers are listed, newest first, and an alert says how
+            many matched; empty lists the newest papers.
+
+    Returns:
+        An info alert when the category has no papers (or none matches), otherwise the count alert
+        (only while searching) and the table in its scroll container.
     """
     source_display_name = ARXIV_SOURCES_CONFIG[source_key]["name"]
-    tab_search_id = f"arxiv-search-{source_key}"
-
-    # Load fresh data each time
-    all_arxiv_data = get_all_arxiv_data()
-    papers_from_source = all_arxiv_data.get(source_key, [])
-
-    if not papers_from_source:
+    # A copy: the cached list stays as the loader left it
+    papers = sorted(get_all_arxiv_data().get(source_key, []), key=get_sortable_date, reverse=True)
+    if not papers:
         return dbc.Alert(f"No papers available for {source_display_name}.", color="info", className="mt-3")
-
-    # Sort all papers by date (descending)
-    papers_from_source.sort(key=get_sortable_date, reverse=True)
+    matches = _match_papers(papers, search_term)
+    if not matches:
+        return dbc.Alert(f"No papers matching '{search_term}' in {source_display_name}.", color="info", className="mt-3")
 
     # Citations column only exists for the CrossRef-enriched HF Trending feed
     show_citations = source_key == CITATIONS_SOURCE_KEY
-    table_header = arxiv_table_header(show_citations)
-
-    # Load trend data
-    trending_map = get_trending_items_map()
 
     # Table body: one visible row + one expandable detail row per paper (spec 10 M2)
-    table_body_rows = _build_paper_rows(papers_from_source[:MAX_PAPERS_PER_TAB], show_citations, trending_map)
+    table_body_rows = _build_paper_rows(matches[:MAX_PAPERS_PER_TAB], show_citations, get_trending_items_map())
 
-    table_body = [html.Tbody(table_body_rows)]
-
-    # Combine header and body into a dbc.Table
     table = dbc.Table(
-        table_header + table_body,
+        arxiv_table_header(show_citations) + [html.Tbody(table_body_rows)],
         bordered=True,
         hover=True,
         responsive=True,
@@ -309,138 +324,85 @@ def create_arxiv_category_tab_content(source_key):
         className="table-responsive mb-0",
     )
 
-    # Return search input and table container
+    children: list[Any] = []
+    if search_term:
+        # A search never lists more than the default view: every paper is two pattern-matching ids
+        children.append(
+            dbc.Alert(
+                f"📰 Found {len(matches)} papers matching '{search_term}'" + (f" — showing the first {MAX_PAPERS_PER_TAB}" if len(matches) > MAX_PAPERS_PER_TAB else ""), color="success", className="mb-3 mt-3"
+            )
+        )
+    children.append(table)
+
     return html.Div(
-        [
-            dbc.Row(
-                [
-                    dbc.Col(
-                        # Search input
-                        create_search_input(
-                            input_id=tab_search_id,
-                            placeholder=f"Filter {source_display_name} by title, author, or abstract...",
-                            clear_button=True,
-                        ),
-                        width=True,
-                    ),
-                ],
-                className="mb-3 mt-3 align-items-center",
-            ),
-            # Container for filtered results
-            html.Div(
-                table,
-                id=f"{tab_search_id}-results",
-                style={
-                    "maxHeight": "800px",
-                    "overflowY": "auto",
-                    "paddingRight": "15px",
-                },
-            ),
-        ]
+        children,
+        style={
+            "maxHeight": "800px",
+            "overflowY": "auto",
+            "paddingRight": "15px",
+        },
     )
 
 
+def _arxiv_source_key(active_tab) -> str:
+    """The category behind a tab id of the bar; the first category when the id is not one of them."""
+    tab_id = str(active_tab or "")
+    key = tab_id[len(ARXIV_TAB_ID_PREFIX) :] if tab_id.startswith(ARXIV_TAB_ID_PREFIX) else ""
+    keys = _arxiv_source_keys()
+    return key if key in keys else keys[0]
+
+
+def _arxiv_placeholder(source_key: str) -> str:
+    """What the search box says for a category."""
+    return f"Filter {ARXIV_SOURCES_CONFIG[source_key]['name']} by title, author, or abstract..."
+
+
+def _arxiv_category_update(triggered_id, active_tab, search_term) -> tuple[Any, Any, Any]:
+    """What the controller answers: the table of the category that is open, and the search box as it must be left.
+
+    Switching category shows the new one unfiltered, empties the search box (only when it held
+    something, so the box does not trigger the controller a second time) and renames its
+    placeholder; typing leaves the box as it is.
+    """
+    source_key = _arxiv_source_key(active_tab)
+    switched = triggered_id == ARXIV_TABS_ID
+    try:
+        content = create_arxiv_category_tab_content(source_key, "" if switched else (search_term or "").strip())
+    except Exception as e:
+        logger.error(f"Error showing the ArXiv category {source_key}: {e}")
+        content = dbc.Alert(f"Error filtering papers: {e}", color="danger")
+    if switched:
+        return content, "" if search_term else dash.no_update, _arxiv_placeholder(source_key)
+    return content, dash.no_update, dash.no_update
+
+
 def register_arxiv_callbacks(app):
-    """Register search callbacks for all ArXiv tabs."""
-    # Get all unique search IDs from the source config
-    search_ids = [f"arxiv-search-{key}" for key in ARXIV_SOURCES_CONFIG]
+    """Register the category controller, its clear button and the row expander."""
 
-    for search_id in search_ids:
+    @app.callback(
+        Output(ARXIV_CONTENT_ID, "children"),
+        Output(ARXIV_SEARCH_ID, "value"),
+        Output(ARXIV_SEARCH_ID, "placeholder"),
+        Input(ARXIV_TABS_ID, "active_tab"),
+        Input(ARXIV_SEARCH_ID, "value"),
+        # Idle on insertion: the layout already carries the table of the category that is open.
+        prevent_initial_call=True,
+    )
+    def update_arxiv_category(active_tab, search_term):
+        """Show the open category, filtered by the search box."""
+        return _arxiv_category_update(dash.ctx.triggered_id, active_tab, search_term)
 
-        @app.callback(
-            Output(f"{search_id}-results", "children"),
-            [Input(search_id, "value")],
-        )
-        def update_arxiv_search(search_term, current_search_id=search_id):
-            """Update ArXiv display based on search term."""
-            try:
-                # 1. Determine Source Key from Search ID
-                source_key = current_search_id.replace("arxiv-search-", "")
-
-                # 2. Fetch Fresh Data (CACHE HIT usually)
-                all_arxiv_data = get_all_arxiv_data()
-                papers_data = all_arxiv_data.get(source_key, [])
-
-                if not papers_data:
-                    return dbc.Alert("No data available for this category.", color="warning")
-
-                # 3. Sort
-                papers_data.sort(key=get_sortable_date, reverse=True)
-
-                # 4. Filter (Search)
-                if search_term:
-                    search_lower = search_term.lower()
-                    filtered_papers = []
-                    for p in papers_data:
-                        title = str(p.get("title", "")).lower()
-                        summary = str(p.get("summary", "")).lower()
-                        authors = str(p.get("authors", "")).lower()
-                        if search_lower in title or search_lower in summary or search_lower in authors:
-                            filtered_papers.append(p)
-                else:
-                    filtered_papers = papers_data[:MAX_PAPERS_PER_TAB]  # Limit initial view
-
-                # Create table for filtered results (citations column for the HF feed)
-                show_citations = source_key == CITATIONS_SOURCE_KEY
-                table_header = arxiv_table_header(show_citations)
-
-                # Load trend data for rendering badges
-                trending_map = get_trending_items_map()
-
-                # Table body: visible row + expandable detail row per paper (spec 10 M2)
-                table_body_rows = _build_paper_rows(filtered_papers, show_citations, trending_map)
-
-                table_body = [html.Tbody(table_body_rows)]
-
-                # Combine header and body into a dbc.Table
-                table = dbc.Table(
-                    table_header + table_body,
-                    bordered=True,
-                    hover=True,
-                    responsive=True,
-                    striped=True,
-                    size="sm",
-                    color="dark",
-                    className="table-responsive mb-0",
-                )
-
-                # Only show alert if a search term is active
-                if search_term:
-                    alert = dbc.Alert(
-                        f"📰 Found {len(filtered_papers)} papers matching '{search_term}'",
-                        color="success",
-                        className="mb-3 mt-3",
-                    )
-                else:
-                    alert = None
-
-                return html.Div(
-                    [
-                        alert,
-                        table,
-                    ],
-                    style={
-                        "maxHeight": "800px",
-                        "overflowY": "auto",
-                        "paddingRight": "15px",
-                    },
-                )
-
-            except Exception as e:
-                logger.error(f"Error in ArXiv search callback for {current_search_id}: {e}")
-                return dbc.Alert(f"Error filtering papers: {e}", color="danger")
-
-        # Clear search callback
-        @app.callback(
-            Output(search_id, "value", allow_duplicate=True),
-            Input(f"{search_id}-clear", "n_clicks"),
-            prevent_initial_call=True,
-        )
-        def clear_arxiv_search(n_clicks):
-            """Clear search input."""
-            if n_clicks:
-                return ""
-            return dash.no_update
+    # Clear search callback
+    @app.callback(
+        Output(ARXIV_SEARCH_ID, "value", allow_duplicate=True),
+        Input(f"{ARXIV_SEARCH_ID}-clear", "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def clear_arxiv_search(n_clicks):
+        """Clear search input."""
+        if n_clicks:
+            return ""
+        return dash.no_update
 
     # Expandable rows (spec 10 M2): one pattern-matching callback serves every
     # paper's ▸ expander — buttons and collapses share the per-paper hash as
@@ -455,49 +417,42 @@ def register_arxiv_callbacks(app):
         return bool(n_clicks % 2)
 
 
+def _arxiv_source_keys() -> list[str]:
+    """The categories, in the order of the bar: the one of ``ARXIV_SOURCES_CONFIG`` (HF trending first, then All)."""
+    return list(ARXIV_SOURCES_CONFIG)
+
+
 # Main function to render the ArXiv tab
 def render_arxiv_research_tab():
-    """Render the complete ArXiv research tab with all category sub-tabs."""
-
-    tabs_children = []
-
-    # Order of tabs to display (HF trending first — the community-ranked feed,
-    # then All, then categories)
-    ordered_keys = [
-        "hf_trending",
-        "all_arxiv",
-        "machine_learning",
-        "computer_vision",
-        "nlp",
-        "neural_networks",
-        "robotics",
-        "reinforcement_learning",
-        "security",
-        "systems_cloud",
-        "quantum",
-        "data_engineering",
-    ]
-
-    for key in ordered_keys:
-        if key in ARXIV_SOURCES_CONFIG:
-            config = ARXIV_SOURCES_CONFIG[key]
-            tab_id = f"arxiv-tab-{key}"
-            content = create_arxiv_category_tab_content(key)
-            tabs_children.append(
-                dbc.Tab(
-                    label=config["name"],
-                    tab_id=tab_id,
-                    children=content,
-                    id=tab_id + "-container",
-                )
-            )
-
+    """Render the ArXiv tab: the category bar, the search box and the table of the category that is open."""
+    keys = _arxiv_source_keys()
+    if not keys:
+        return html.Div(
+            [
+                html.H3([html.I(className="fas fa-graduation-cap me-2 text-primary"), "ArXiv Research"], className="mb-3"),
+                dbc.Alert("No ArXiv sources are configured.", color="info"),
+            ]
+        )
+    first = keys[0]
     return html.Div(
         [
             html.H3([html.I(className="fas fa-graduation-cap me-2 text-primary"), "ArXiv Research"], className="mb-3"),
             dbc.Tabs(
-                id="arxiv-category-tabs-main",
-                children=tabs_children,
+                [dbc.Tab(label=ARXIV_SOURCES_CONFIG[key]["name"], tab_id=f"{ARXIV_TAB_ID_PREFIX}{key}") for key in keys],
+                id=ARXIV_TABS_ID,
+                # Given, the bar does not set it on mount: that update would run the controller on insertion
+                active_tab=f"{ARXIV_TAB_ID_PREFIX}{first}",
             ),
+            html.Div(
+                create_search_input(
+                    input_id=ARXIV_SEARCH_ID,
+                    placeholder=_arxiv_placeholder(first),
+                    clear_button=True,
+                    debounce=ARXIV_SEARCH_DEBOUNCE_MS,
+                ),
+                className="mt-3",
+            ),
+            # The open category's table is rendered here, so opening the tab costs no extra request
+            html.Div(id=ARXIV_CONTENT_ID, children=create_arxiv_category_tab_content(first)),
         ]
     )
