@@ -310,18 +310,19 @@ def format_article_date(article):
 # Removed create_article_card function as it's no longer needed for table view
 
 
-def _stale_source_notes(source_keys: list[str]) -> list[str]:
+def _stale_source_notes(source_keys: str | list[str]) -> list[str]:
     """One line for each source of a subtab whose newest item is ``STALE_SOURCE_DAYS`` old or more."""
+    keys = [source_keys] if isinstance(source_keys, str) else source_keys
     notes = []
     now = datetime.now(timezone.utc)
-    for key in source_keys:
+    for key in keys:
         dates = [date for date in map(get_sortable_date, get_all_news_data().get(key, [])) if date != _NO_DATE]
         if dates and now - max(dates) >= timedelta(days=STALE_SOURCE_DAYS):
             notes.append(f"⚠️ {_ALL_NEWS_SOURCES[key]['name']} lleva sin publicar nada nuevo desde el {max(dates):%d/%m/%Y}.")
     return notes
 
 
-def _stale_source_alerts(source_keys: list[str]) -> list[dbc.Alert]:
+def _stale_source_alerts(source_keys: str | list[str]) -> list[dbc.Alert]:
     """The notes of ``_stale_source_notes``, one warning alert each, to put above a table."""
     return [dbc.Alert(note, color="warning", className="mb-3 py-2") for note in _stale_source_notes(source_keys)]
 
