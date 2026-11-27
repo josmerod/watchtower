@@ -167,6 +167,17 @@ def test_without_bundle_files_the_tab_says_so(monkeypatch: pytest.MonkeyPatch, f
     assert "No game bundles data" in " ".join(_texts(games_tab.render_bundles_sub_tab(games_tab.ALL_GAMES_DATA["bundles"])))
 
 
+def test_a_hundred_bundles_fit_in_the_table(fresh_games_data) -> None:
+    """Fifty rows hid the IsThereAnyDeal bundles behind Humble's 58 dated ones."""
+    games_tab.DATA_LOADED_SUCCESSFULLY["bundles"] = True
+    frame = pd.DataFrame({"title": [f"Bundle {i}" for i in range(96)], "store": "Humble Bundle", "game_count_numeric": 1, "expiry_date": pd.NaT, "published_date": NOW})
+
+    rows = _texts(_table(games_tab.render_bundles_sub_tab(frame, now=NOW)))
+
+    assert "Bundle 95" in rows
+    assert len([text for text in rows if text.startswith("Bundle ")]) == 96
+
+
 # --- A source that went quiet says so (the July deals shown as current for four months) ---
 
 

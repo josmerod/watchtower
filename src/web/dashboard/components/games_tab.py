@@ -573,7 +573,8 @@ def render_bundles_sub_tab(df, now=None):
         )
     ]
     table_body_rows = []
-    for row in df.head(50).to_dict("records"):
+    # Both sources together are under a hundred; fifty hid the IsThereAnyDeal bundles behind Humble's dated rows
+    for row in df.head(100).to_dict("records"):
         table_body_rows.append(
             html.Tr(
                 [
@@ -602,7 +603,9 @@ def render_bundles_sub_tab(df, now=None):
         color="dark",
         className="table-responsive mt-3",
     )
-    note = _quiet_source_note(df[df["currency"] == "EUR"], "published_date", "bundle", now)
+    # IsThereAnyDeal dates its bundles by publication (Humble's rows have no such date): the note is about that source
+    euro_rows = df[df["currency"] == "EUR"] if "currency" in df.columns else df
+    note = _quiet_source_note(euro_rows, "published_date", "bundle", now)
     return [note, table] if note is not None else table
 
 

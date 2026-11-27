@@ -3,6 +3,9 @@
 This module uses Playwright to scrape active game, book, and software
 bundles from the Humble Bundle website. The scraped data is then
 processed and saved into JSON and CSV files.
+
+Each listing page embeds an object per bundle (title, URL, end date, item count, the first item titles). The
+ETL reads those; reading the tiles alone gave a title and "Pay what you want", and nothing else.
 """
 
 import asyncio
@@ -10,7 +13,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
@@ -24,6 +27,111 @@ logger = get_logger("HumbleBundleETL")
 
 # Constants
 DEBUG_DIR = "data/games/debug"
+BUNDLE_TYPES = ("games", "books", "software")
+HUMBLE = "https://www.humblebundle.com"
+
+# Next.js ships the page's data as self.__next_f.push([1, "<escaped text>"]); the capture is the JS string's content
+_FLIGHT_CHUNK = re.compile(r'self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)')
+
+
+def _objects_holding(text: str, key: str) -> list[dict[str, Any]]:
+    """Every JSON object of *text* that holds *key*, as Python data, in document order.
+
+    One pass keeps the open brackets on a stack and skips whatever lies inside strings, so a brace inside a
+    title misleads nothing: at ``"key"`` the innermost open object is the one wanted, and it is read out when
+    it closes. One that is not complete JSON is dropped: a bundle is missed, never malformed.
+    """
+    wanted = f'"{key}"'
+    objects: list[dict[str, Any]] = []
+    stack: list[list] = []  # [bracket, where it opened, holds the key]
+    quoted = escaped = False
+    for index, char in enumerate(text):
+        if quoted:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                quoted = False
+        elif char == '"':
+            if text.startswith(wanted, index):
+                for bracket in reversed(stack):
+                    if bracket[0] == "{":
+                        bracket[2] = True
+                        break
+            quoted = True
+        elif char in "{[":
+            stack.append([char, index, False])
+        elif char in "}]" and stack:
+            bracket = stack.pop()
+            if bracket[0] == "{" and bracket[2]:
+                try:
+                    objects.append(json.loads(text[bracket[1] : index + 1]))
+                except ValueError:
+                    pass
+    return objects
+
+
+def _iso_utc(value: Any) -> str | None:
+    """A date the page states, as ISO in UTC; ``None`` when it states none or in a form not understood."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value.strip().replace("Z", "+00:00")).astimezone(timezone.utc).isoformat()
+    except ValueError:
+        return None
+
+
+def _count(value: Any) -> int | None:
+    """A whole number the page states (as text or as a number); ``None`` for anything else."""
+    return int(value) if isinstance(value, int) or (isinstance(value, str) and value.isdigit()) else None
+
+
+def embedded_bundles(content: str) -> list[dict[str, Any]]:
+    """The records for the bundles a listing page embeds for its tiles, one per URL, in page order."""
+    chunks = []
+    for chunk in _FLIGHT_CHUNK.findall(content):
+        try:
+            chunks.append(json.loads(f'"{chunk}"'))
+        except ValueError:
+            continue
+    records: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for obj in _objects_holding("".join(chunks), "productType"):
+        if not isinstance(obj, dict) or obj.get("productType") != "humble-bundle":
+            continue
+        url, titles = obj.get("url"), obj.get("includedItemTitles")
+        if not isinstance(url, str) or not url.startswith("/") or not isinstance(titles, list):
+            continue
+        link = HUMBLE + url
+        if link in seen:
+            continue
+        seen.add(link)
+        category = obj.get("category")
+        stated = obj.get("title")
+        title = stated.strip() if isinstance(stated, str) else ""
+        records.append(
+            {
+                "title": title or urlparse(url).path.strip("/").rsplit("/", 1)[-1].replace("-", " ").title(),
+                "link": link,
+                # The date the page states, or none. It used to be "now + 14 days" for every bundle.
+                "end_date": _iso_utc(obj.get("endDate")),
+                "price": "Pay what you want",  # how every tile opens
+                # The page lists the first items only (eleven at most); the count is the bundle's own
+                "games": [t.strip() for t in titles if isinstance(t, str) and t.strip()],
+                "items_count": _count(obj.get("itemsCount")),
+                "type": category if category in BUNDLE_TYPES else _type_of(link),
+            }
+        )
+    return records
+
+
+def _type_of(link: str) -> str:
+    """The bundle type a Humble URL names."""
+    for bundle_type in BUNDLE_TYPES:
+        if f"/{bundle_type}/" in link:
+            return bundle_type
+    return "unknown"
 
 
 class HumbleBundleScraper:
@@ -198,7 +306,7 @@ class HumbleBundleScraper:
                                     "price": price,
                                     "games": [],
                                     "type": detected_type,
-                                    "end_date": (datetime.now(timezone.utc) + timedelta(days=14)).isoformat(),
+                                    "end_date": None,  # a link states no date
                                 }
                             )
                 elif isinstance(data, list):
@@ -223,6 +331,14 @@ class HumbleBundleScraper:
 
         try:
             content = await self._navigate_and_debug_page(page, url, bundle_type)
+            embedded = [b for b in embedded_bundles(content) if not any(known["link"] == b["link"] for known in all_bundles)]
+            all_bundles.extend(embedded)
+            if embedded:
+                logger.info(f"Read {len(embedded)} new bundle(s) from the data embedded in the {bundle_type} page")
+                return
+
+            # No embedded data: the page changed shape. Read its markup instead, which states much less.
+            logger.warning(f"The {bundle_type} page embeds no bundle data; falling back to its markup")
             soup = BeautifulSoup(content, "html.parser")
 
             bundles_found_bs = self._extract_bundles_with_bs(soup, bundle_type, all_bundles)
@@ -484,9 +600,9 @@ class HumbleBundleScraper:
                 if price_text:
                     price = price_text
 
-            # End date is rarely available in HTML
-            # Use a default end date 2 weeks from now
-            end_date = (datetime.now(timezone.utc) + timedelta(days=14)).isoformat()
+            # The tile states no end date. It used to be set to two weeks ahead for every bundle; a date the
+            # page did not give stays empty.
+            end_date = None
 
             # We'd need to visit individual bundle pages for the game list
             # which is resource-intensive
@@ -605,9 +721,6 @@ class HumbleBundleScraper:
                         break
                     except (ValueError, TypeError):
                         pass
-
-            if not end_date:
-                end_date = (datetime.now(timezone.utc) + timedelta(days=14)).isoformat()
 
             # Extract price
             price = "Pay what you want"
