@@ -26,7 +26,10 @@ SID = "scavenging-search-audible"
 
 
 def _items(count: int) -> list[dict]:
-    return [{"title": f"Item {n:03d}", "link": f"https://example.com/{n:03d}", "published": f"2026-11-{1 + n % 27:02d}T{n % 24:02d}:00:00", "summary": f"summary {n:03d}", "category": "audible", "source": "audible"} for n in range(count)]
+    return [
+        {"title": f"Item {n:03d}", "link": f"https://example.com/{n:03d}", "published": f"2026-11-{1 + n % 27:02d}T{n % 24:02d}:00:00", "summary": f"summary {n:03d}", "category": "audible", "source": "audible"}
+        for n in range(count)
+    ]
 
 
 def _walk(node):
@@ -77,9 +80,16 @@ def test_target_page(triggered, current, expected):
 # ---------------------------------------------------------------------------
 
 
-def test_pager_is_empty_while_everything_fits_on_one_page():
-    assert _pager(SID, 1, 0) == ""
-    assert _pager(SID, 1, tab.MAX_ITEMS_PER_TAB) == ""
+def _hidden_bar(pager) -> bool:
+    """Whether ``pager`` is the one-page bar: hidden, and still holding both buttons."""
+    ids = {node.id for node in _walk(pager) if getattr(node, "id", None)}
+    return isinstance(pager, html.Div) and pager.hidden is True and {f"{SID}-prev", f"{SID}-next"} <= ids
+
+
+def test_the_pager_of_a_single_page_is_hidden_but_keeps_both_buttons():
+    # Dash never runs a callback whose Input is not in the page: without the buttons, a source of 100 records or fewer had no search.
+    assert _hidden_bar(_pager(SID, 1, 0))
+    assert _hidden_bar(_pager(SID, 1, tab.MAX_ITEMS_PER_TAB))
 
 
 def test_pager_names_the_page_and_disables_what_cannot_move():
@@ -107,15 +117,15 @@ def test_a_new_search_starts_on_the_first_page_with_only_the_matches():
     assert page == 1
     assert _rows(body) == 1
     assert "⛏️ Found 1 items matching 'rust'" in _texts(body)
-    assert pager == ""
+    assert _hidden_bar(pager)  # the search can be refined: the buttons are still in the page
 
 
-def test_a_search_with_more_matches_than_one_page_gets_a_pager():
+def test_a_search_of_exactly_one_page_hides_the_pager():
     body, pager, page = _scavenging_page(_items(250), "Item 1", SID, None, SID)
 
     assert page == 1  # Item 100 to Item 199: 100 matches, one page
     assert _rows(body) == 100
-    assert pager == ""
+    assert _hidden_bar(pager)
 
 
 def test_a_search_without_matches_says_so():
@@ -123,14 +133,14 @@ def test_a_search_without_matches_says_so():
 
     assert "⛏️ Found 0 items matching 'nothing-like-this'" in _texts(body)
     assert _rows(body) == 0
-    assert (pager, page) == ("", 1)
+    assert _hidden_bar(pager) and page == 1
 
 
 def test_a_source_without_data_answers_an_alert():
     body, pager, page = _scavenging_page(None, "", SID, 1, SID)
 
     assert isinstance(body, dbc.Alert) and body.children == "No data loaded."
-    assert (pager, page) == (dash.no_update, dash.no_update)
+    assert _hidden_bar(pager) and page == 1  # the quiet state still keeps the buttons the controller listens to
 
 
 # ---------------------------------------------------------------------------
@@ -146,25 +156,18 @@ def _source(tmp_path, monkeypatch, key: str, records: list[dict]) -> None:
     monkeypatch.setattr(tab, "SCAVENGING_SOURCES", [{"key": key, "label": key.capitalize(), "category": key, "paths": [str(path)]}])
 
 
-def test_layout_shows_the_first_page_with_its_pager(tmp_path, monkeypatch):
+def test_layout_holds_an_empty_shell_until_the_subtab_is_built(tmp_path, monkeypatch):
+    # T-170. The first page of every source used to travel with the layout, and the whole file in a store: 3.9 MB in
+    # production for one subtab in view. What goes through the endpoint is covered in test_scavenging_lazy.py.
     _source(tmp_path, monkeypatch, "audible", _items(250))
 
     layout = render_scavenging_tab()
     search_id = "scavenging-search-audible"
 
-    assert _by_id(layout, f"{search_id}-page")[0].data == 1
-    assert len(_by_id(layout, f"{search_id}-data")[0].data) == 250  # the whole source stays reachable for search and paging
-    assert _rows(_by_id(layout, f"{search_id}-results")[0]) == tab.MAX_ITEMS_PER_TAB
-    assert _texts(_by_id(layout, f"{search_id}-pager")[0]) == "← Prev Showing 100 of 250 · Page 1 of 3 Next →"
-
-
-def test_a_source_that_fits_on_one_page_shows_no_pager(tmp_path, monkeypatch):
-    _source(tmp_path, monkeypatch, "audible", _items(5))
-
-    layout = render_scavenging_tab()
-
-    assert _rows(_by_id(layout, "scavenging-search-audible-results")[0]) == 5
-    assert _by_id(layout, "scavenging-search-audible-pager")[0].children == ""
+    assert _by_id(layout, f"{search_id}-data") == []
+    assert _by_id(layout, f"{search_id}-page")[0].data is None
+    assert _texts(_by_id(layout, f"{search_id}-results")[0]) == tab.LOADING
+    assert _hidden_bar(_by_id(layout, f"{search_id}-pager")[0].children) and "Item 000" not in _texts(layout)
 
 
 def test_every_configured_source_gets_its_controller(tmp_path, monkeypatch):
@@ -177,8 +180,9 @@ def test_every_configured_source_gets_its_controller(tmp_path, monkeypatch):
     outputs = str(controller["output"])
     assert "scavenging-search-audible-pager.children" in outputs and "scavenging-search-audible-page.data" in outputs
     inputs = {(str(i["id"]), i["property"]) for i in controller["inputs"]}
-    assert inputs == {("scavenging-search-audible", "value"), ("scavenging-search-audible-prev", "n_clicks"), ("scavenging-search-audible-next", "n_clicks")}
-    assert controller["prevent_initial_call"] is True  # the first page is rendered with the layout
+    assert inputs == {("scavenging-search-audible", "value"), ("scavenging-search-audible-prev", "n_clicks"), ("scavenging-search-audible-next", "n_clicks"), ("scavenging-search-audible-activate", "data")}
+    assert {(str(i["id"]), i["property"]) for i in controller["state"]} == {("scavenging-search-audible-page", "data")}
+    assert controller["prevent_initial_call"] is True  # idle until the dispatcher marks the subtab
     # The clear button still empties the search box.
     assert any("scavenging-search-audible.value" in str(entry["output"]) and entry["prevent_initial_call"] for entry in app._callback_list)
 
@@ -189,7 +193,13 @@ def test_every_configured_source_gets_its_controller(tmp_path, monkeypatch):
 
 
 def test_humble_books_link_to_their_bundle_from_the_details_cell():
-    one = {"title": "Conquer the command line", "link": "https://humble.dadand.dev/books/10156", "summary": "Authors: Richard Smedley", "category": "humble_books", "humble_urls": ["https://www.humblebundle.com/books/tech-a"]}
+    one = {
+        "title": "Conquer the command line",
+        "link": "https://humble.dadand.dev/books/10156",
+        "summary": "Authors: Richard Smedley",
+        "category": "humble_books",
+        "humble_urls": ["https://www.humblebundle.com/books/tech-a"],
+    }
     two = {**one, "title": "Shared book", "humble_urls": ["https://www.humblebundle.com/books/tech-a", "https://www.humblebundle.com/books/tech-b"]}
     plain = {"title": "Any other record", "link": "https://example.com/x", "summary": "s", "category": "audible"}
 
@@ -200,6 +210,6 @@ def test_humble_books_link_to_their_bundle_from_the_details_cell():
     assert ("https://humble.dadand.dev/books/10156", "Conquer the command line") in links
     assert ("https://humble.dadand.dev/books/10156", "Shared book") in links
     assert ("https://example.com/x", "Any other record") in links
-    assert [text for href, text in links if "humblebundle.com/books/tech-a" == href.removeprefix("https://www.")] == ["Humble ↗", "Humble 1 ↗"]
+    assert [text for href, text in links if href.removeprefix("https://www.") == "humblebundle.com/books/tech-a"] == ["Humble ↗", "Humble 1 ↗"]
     assert [text for href, text in links if href == "https://www.humblebundle.com/books/tech-b"] == ["Humble 2 ↗"]
     assert len([1 for href, _ in links if "humblebundle.com" in str(href)]) == 3  # nothing for the record that carries none

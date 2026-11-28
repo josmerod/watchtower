@@ -5,7 +5,15 @@ Sources are config-driven via SCAVENGING_SOURCES (mirroring the News tab
 pattern): each entry declares the canonical output file written by its
 goldigging ETL, plus a deprecated legacy fallback under data/scavenging/ so
 historical server data keeps rendering until each ETL's next run refreshes
-the canonical file.
+the canonical file. An entry that carries a ``paused`` note keeps its subtab
+and shows the note instead of records (T-157).
+
+The layout is a shell per source and each subtab is built when it is opened
+(T-170). The layout used to carry the first page of every source and every
+file whole in a store: 3.9 MB in one response in production, for the one
+subtab in view. Now a dispatcher on the subtab bar marks the subtab opened,
+the controller of that subtab reads its file and builds its page, and nothing
+is sent again when it is opened a second time.
 """
 
 import logging
@@ -165,6 +173,8 @@ SCAVENGING_SOURCES: list[dict[str, Any]] = [
         "key": "epic_free",
         "label": "Epic free",
         "category": "epic_free",
+        # Its ETL left the orchestrator on 2026-08-19, so what it collected only gets older (T-157).
+        "paused": "Paused since 2026-08-19: the free-games ETL that fed this subtab no longer runs, so its last records are not shown.",
         "paths": [
             get_data_path("epic_free_games", "output", "epic_free_games_latest.json"),
             get_data_path("scavenging", "epic_free_games.json"),  # deprecated fallback
@@ -173,6 +183,16 @@ SCAVENGING_SOURCES: list[dict[str, Any]] = [
 ]
 
 # --- Data Loading ---
+
+
+def _live_sources() -> list[dict[str, Any]]:
+    """The configured sources that are not paused."""
+    return [source for source in SCAVENGING_SOURCES if not source.get("paused")]
+
+
+def _paused_sources() -> list[dict[str, Any]]:
+    """The configured sources that are paused, each with the note its subtab shows."""
+    return [source for source in SCAVENGING_SOURCES if source.get("paused")]
 
 
 def _resolve_source_file(source: dict[str, Any]) -> Path | None:
@@ -185,10 +205,10 @@ def _resolve_source_file(source: dict[str, Any]) -> Path | None:
 
 
 def discover_categories() -> dict[str, Path]:
-    """Return a mapping of category key -> resolved JSON path."""
+    """Return a mapping of category key -> resolved JSON path, for the sources that are not paused."""
     try:
         categories: dict[str, Path] = {}
-        for source in SCAVENGING_SOURCES:
+        for source in _live_sources():
             resolved = _resolve_source_file(source)
             if resolved is not None:
                 categories[source["key"]] = resolved
@@ -201,8 +221,8 @@ def discover_categories() -> dict[str, Path]:
 
 
 def get_scavenging_data(category_key: str) -> list[dict[str, Any]]:
-    """Load data for a specific category, normalized for display."""
-    source = next((s for s in SCAVENGING_SOURCES if s["key"] == category_key), None)
+    """Load data for a specific category, normalized for display; a paused source has none."""
+    source = next((s for s in _live_sources() if s["key"] == category_key), None)
     if source is None:
         return []
 
@@ -226,6 +246,18 @@ def get_scavenging_data(category_key: str) -> list[dict[str, Any]]:
 
 MAX_ITEMS_PER_TAB = 100  # rows per page: the rest is reached with Prev / Next
 SEARCHABLE_FIELDS = ["title", "summary", "source", "seller", "deal_type", "category"]
+SCAVENGING_SEARCH_DEBOUNCE_MS = 400  # the search runs on the server now: wait for a pause in typing
+TABS_ID = "scavenging-main-tabs"
+LOADING = "Loading…"
+RESULTS_STYLE = {"maxHeight": "800px", "overflowY": "auto"}
+
+
+def _search_id(key: str) -> str:
+    return f"scavenging-search-{key}"
+
+
+def _tab_id(key: str) -> str:
+    return f"tab-scavenging-{key}"
 
 
 def create_scavenging_table(items, search_term: str = ""):
@@ -286,12 +318,15 @@ def _total_pages(total: int) -> int:
 
 
 def _pager(search_id: str, page: int, total: int) -> Any:
-    """Prev / Next bar of one subtab, empty while everything fits on one page."""
+    """Prev / Next bar of one subtab, hidden while everything fits on one page.
+
+    Hidden, not absent: the controller of the subtab listens to both buttons, and Dash never runs a callback whose
+    Input is not in the page. With an empty pager, a source of 100 records or fewer had no search at all.
+    """
     total_pages = _total_pages(total)
-    if total_pages == 1:
-        return ""
     showing = min(MAX_ITEMS_PER_TAB, total - (page - 1) * MAX_ITEMS_PER_TAB)
-    return pagination_controls(search_id, page=page, total_pages=total_pages, showing=showing, total=total, id_prefix=search_id)
+    bar = pagination_controls(search_id, page=page, total_pages=total_pages, showing=showing, total=total, id_prefix=search_id)
+    return html.Div(bar, hidden=True) if total_pages == 1 else bar
 
 
 def _target_page(triggered_id: Any, search_id: str, current_page: int | None, total_pages: int) -> int:
@@ -307,70 +342,122 @@ def _target_page(triggered_id: Any, search_id: str, current_page: int | None, to
     return min(max(page, 1), total_pages)
 
 
-def render_scavenging_tab() -> html.Div:
-    """Render the main Scavenging tab layout."""
-    categories_map = discover_categories()
+def _shell(source: dict[str, Any]) -> html.Div:
+    """What a subtab holds until it is opened: its search box, its pager and an empty results container.
 
-    if not categories_map:
+    Every id the controller takes is here from the start, and the pager keeps its two buttons even where they will
+    not be shown: Dash never runs a callback whose Input is not in the page. The activate store is the exception:
+    it lives in ``_activate_stores``, with those of the sources that have no subtab yet.
+    """
+    search_id = _search_id(source["key"])
+    return html.Div(
+        [
+            dbc.Row(
+                dbc.Col(
+                    create_search_input(input_id=search_id, placeholder=f"Search in {source['label']}...", clear_button=True, debounce=SCAVENGING_SEARCH_DEBOUNCE_MS),
+                    width=True,
+                ),
+                className="mb-3 mt-3",
+            ),
+            html.Div(_pager(search_id, 1, 0), id=f"{search_id}-pager"),
+            html.Div(LOADING, id=f"{search_id}-results", style=RESULTS_STYLE),
+            dcc.Store(id=f"{search_id}-page", data=None),  # empty until the page is first built
+        ],
+        className="p-3",
+    )
+
+
+def _activate_stores() -> html.Div:
+    """The store the dispatcher marks, for every live source whether or not its subtab is on the page.
+
+    Dash refuses to run a callback while any of its Outputs is missing from the page. With only the stores of the
+    subtabs rendered, the dispatcher never ran where a source had no file yet, and no subtab was built at all.
+    """
+    return html.Div([dcc.Store(id=f"{_search_id(source['key'])}-activate", data=0) for source in _live_sources()], hidden=True)
+
+
+def render_scavenging_tab() -> html.Div:
+    """Render the main Scavenging tab layout: one shell per source, in key order, the first one open."""
+    live = {source["key"]: source for source in _live_sources() if _resolve_source_file(source) is not None}
+    if not live:
         return dbc.Alert("No scavenging data found. Please run the ETL processes.", color="warning", className="m-4")
 
-    labels = {source["key"]: source["label"] for source in SCAVENGING_SOURCES}
-    category_tabs = []
-    for category in sorted(categories_map.keys()):
-        source_display_name = labels.get(category, category.replace("_", " ").capitalize())
-        tab_search_id = f"scavenging-search-{category}"
-
-        # Initial data for store
-        initial_data = get_scavenging_data(category)
-        initial_data.sort(key=get_sortable_date, reverse=True)
-
-        tab_content = html.Div(
-            [
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                create_search_input(
-                                    input_id=tab_search_id,
-                                    placeholder=f"Search in {source_display_name}...",
-                                    clear_button=True,
-                                )
-                            ],
-                            width=True,
-                        )
-                    ],
-                    className="mb-3 mt-3",
-                ),
-                # Full dataset in the Store so search and paging reach every
-                # record; the page shown is cut from it at render time.
-                dcc.Store(id=f"{tab_search_id}-data", data=initial_data),
-                dcc.Store(id=f"{tab_search_id}-page", data=1),
-                html.Div(_pager(tab_search_id, 1, len(initial_data)), id=f"{tab_search_id}-pager"),
-                html.Div(create_scavenging_table(initial_data[:MAX_ITEMS_PER_TAB]), id=f"{tab_search_id}-results", style={"maxHeight": "800px", "overflowY": "auto"}),
-            ],
-            className="p-3",
-        )
-
-        category_tabs.append(dbc.Tab(label=source_display_name, tab_id=f"tab-scavenging-{category}", children=tab_content))
+    entries = {**live, **{source["key"]: source for source in _paused_sources()}}
+    subtabs = []
+    for key in sorted(entries):
+        source = entries[key]
+        note = source.get("paused")
+        content = dbc.Alert(note, color="secondary", className="m-3") if note else _shell(source)
+        subtabs.append(dbc.Tab(label=source["label"], tab_id=_tab_id(key), children=content))
 
     return html.Div(
         [
             html.H3("⛏️ Project Scavenging", className="mb-4"),
             html.P("Automated monitoring of free resources, audiobooks, and deal alerts.", className="text-muted"),
-            dbc.Tabs(id="scavenging-main-tabs", children=category_tabs, active_tab=f"tab-scavenging-{sorted(categories_map.keys())[0]}"),
+            dbc.Tabs(id=TABS_ID, children=subtabs, active_tab=subtabs[0].tab_id),
+            _activate_stores(),
         ],
         className="p-4",
     )
 
 
-def register_scavenging_callbacks(app):
-    """Register search, paging and the clear button for every configured source.
+IDLE = (dash.no_update, dash.no_update, dash.no_update)  # what a controller answers when it has nothing to build
 
-    One controller per source, registered whether or not its file exists yet:
-    a subtab whose data shows up after startup would otherwise have no search.
+
+def _scavenging_activation(active_tab: Any, marked: tuple[Any, ...] = ()) -> tuple[Any, ...]:
+    """What the dispatcher writes to the activate stores: 1 for the subtab just opened, no_update for the others.
+
+    ``marked`` holds what those stores hold already, in the order of the live sources. A subtab opened again is
+    left alone, so its controller is not woken for a page it already built.
     """
-    for source in SCAVENGING_SOURCES:
-        search_id = f"scavenging-search-{source['key']}"
+    activation = []
+    for position, source in enumerate(_live_sources()):
+        opening = _tab_id(source["key"]) == active_tab
+        already = position < len(marked) and bool(marked[position])
+        activation.append(1 if opening and not already else dash.no_update)
+    return tuple(activation)
+
+
+def _scavenging_trigger(triggered_id: Any, activated: Any, current_page: int | None, search_id: str) -> Any:
+    """The id ``_scavenging_page`` takes as its trigger, or None when the controller has nothing to build.
+
+    A subtab is built when the dispatcher first marks it and its page store is still empty. Afterwards only its
+    own controls count, and being marked again changes nothing.
+    """
+    if not activated:
+        return None
+    if triggered_id == f"{search_id}-activate":
+        return search_id if not current_page else None  # the first build starts at page 1
+    if current_page and triggered_id in (search_id, f"{search_id}-clear", f"{search_id}-prev", f"{search_id}-next"):
+        return triggered_id
+    return None
+
+
+def register_scavenging_callbacks(app) -> None:
+    """Register the subtab dispatcher, one controller per live source, and the clear buttons.
+
+    One controller per live source, registered whether or not its file exists yet: a subtab whose data shows up
+    after startup would otherwise have no search. A paused source gets none: its subtab only shows its note.
+    """
+    live = _live_sources()
+    if not live:
+        return
+    stores = [f"{_search_id(source['key'])}-activate" for source in live]
+
+    @app.callback(
+        [Output(store, "data") for store in stores],
+        Input(TABS_ID, "active_tab"),
+        [State(store, "data") for store in stores],
+        # It also runs when the tab first renders: the subtab in view then is the one to build.
+        prevent_initial_call=False,
+    )
+    def open_subtab(active_tab, *marked):
+        """Mark the subtab the bar now shows, unless its store is marked already."""
+        return _scavenging_activation(active_tab, marked)
+
+    for source in live:
+        key = source["key"]
+        search_id = _search_id(key)
 
         @app.callback(
             Output(f"{search_id}-results", "children"),
@@ -379,17 +466,23 @@ def register_scavenging_callbacks(app):
             Input(search_id, "value"),
             Input(f"{search_id}-prev", "n_clicks"),
             Input(f"{search_id}-next", "n_clicks"),
-            State(f"{search_id}-data", "data"),
+            Input(f"{search_id}-activate", "data"),
             State(f"{search_id}-page", "data"),
-            # The first page is rendered with the layout; the clear button
+            # Idle until the dispatcher marks the subtab; the clear button
             # empties the search box, and that change arrives as a new term.
             prevent_initial_call=True,
         )
-        def update_scavenging_page(search_term, _prev, _next, cached_data, current_page, current_search_id=search_id):
+        def update_scavenging_page(search_term, _prev, _next, activated, current_page, key=key, search_id=search_id):
+            """Build a page of the subtab when its first opening or one of its controls asks for it."""
             try:
-                return _scavenging_page(cached_data, search_term, dash.ctx.triggered_id, current_page, current_search_id)
+                trigger = _scavenging_trigger(dash.ctx.triggered_id, activated, current_page, search_id)
+                if trigger is None:
+                    return IDLE
+                records = get_scavenging_data(key)
+                records.sort(key=get_sortable_date, reverse=True)
+                return _scavenging_page(records, search_term, trigger, current_page, search_id)
             except Exception as e:  # broad by design: the page must answer even when a record cannot be rendered
-                logger.error(f"Error updating scavenging results for {current_search_id}: {e}")
+                logger.error(f"Error updating scavenging results for {search_id}: {e}")
                 return dbc.Alert(f"Error updating results: {e}", color="danger"), dash.no_update, dash.no_update
 
         @app.callback(
@@ -403,13 +496,13 @@ def register_scavenging_callbacks(app):
             return dash.no_update
 
 
-def _scavenging_page(cached_data: list[dict[str, Any]] | None, search_term: str | None, triggered_id: Any, current_page: int | None, search_id: str) -> tuple[Any, Any, Any]:
+def _scavenging_page(records: list[dict[str, Any]] | None, search_term: str | None, triggered_id: Any, current_page: int | None, search_id: str) -> tuple[Any, Any, Any]:
     """What one subtab shows after a trigger: the page of rows, its pager and the page number."""
-    if not cached_data:
-        return dbc.Alert("No data loaded.", color="info"), dash.no_update, dash.no_update
+    if not records:
+        return dbc.Alert("No data loaded.", color="info"), _pager(search_id, 1, 0), 1
 
     term = (search_term or "").strip()
-    shown = filter_content(term, cached_data, SEARCHABLE_FIELDS) if term else cached_data
+    shown = filter_content(term, records, SEARCHABLE_FIELDS) if term else records
     total_pages = _total_pages(len(shown))
     page = _target_page(triggered_id, search_id, current_page, total_pages)
     page_items = shown[(page - 1) * MAX_ITEMS_PER_TAB : page * MAX_ITEMS_PER_TAB]
