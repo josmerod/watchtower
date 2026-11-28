@@ -2,13 +2,28 @@
 
 Fixture-based — swaps the module-level VideoManager's in-memory data with
 hand-built DataFrames; no data/ files and no network.
+
+A theme is a key of ``src/etl/goldigging/channels.json`` (T-138): the theme
+keys are pinned here to the name the fixture uses as a directory.
 """
 
 import dash
 import pandas as pd
 import pytest
 
+from src.etl.goldigging import channel_topics
 from src.web.dashboard.components import videos_tab as tab
+
+
+@pytest.fixture(autouse=True)
+def fixture_theme_keys(monkeypatch):
+    """Answer every theme lookup from the fixture's directory name instead of the real channels.json."""
+    topics = {"aa-gen-ai": {"description": "Generative AI", "channels": []}}
+    monkeypatch.setattr(channel_topics, "load_channel_topics", lambda: topics)
+    # The helper caches the file per process: drop the cache before and after
+    channel_topics._read_topics.cache_clear()
+    yield topics
+    channel_topics._read_topics.cache_clear()
 
 
 def _frame(rows):
@@ -78,7 +93,7 @@ def test_get_channel_stats_folds_variant_dirs(fixture_channels):
     assert "MatthewBerman-videos" not in by_channel  # variant dir folded away
     assert by_channel["aa-gen-ai"]["count"] == 3
     assert by_channel["aa-gen-ai"]["last_seen"] == "2026-08-26"
-    assert by_channel["aa-gen-ai"]["is_theme"] is True  # aa-*/zz-* buckets are themes
+    assert by_channel["aa-gen-ai"]["is_theme"] is True  # a key of channels.json is a theme
     assert by_channel["MatthewBerman"]["is_theme"] is False
     # Sorted by count desc
     assert stats[0]["count"] >= stats[-1]["count"]

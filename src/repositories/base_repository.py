@@ -23,21 +23,41 @@ class RepositoryError(Exception):
 
 
 class CacheEntry(Generic[T]):
-    """Cache entry with TTL support."""
+    """Cache entry with TTL support.
 
-    def __init__(self, data: T, ttl_seconds: int = 3600):
+    ``source_stamp`` names the version of the file ``data`` was read from, so the
+    cache can end before its time when the file is rewritten (T-197).
+    """
+
+    def __init__(self, data: T, ttl_seconds: int = 3600, source_stamp: tuple[int, int] | None = None):
         self.data = data
         self.created_at = datetime.utcnow()
         self.ttl = timedelta(seconds=ttl_seconds)
+        self.source_stamp = source_stamp
 
-    def is_expired(self) -> bool:
-        """Check if cache entry has expired."""
-        return datetime.utcnow() - self.created_at > self.ttl
+    def is_expired(self, source_stamp: tuple[int, int] | None = None) -> bool:
+        """Check if the cache entry has expired.
 
-    def refresh(self, data: T) -> None:
+        Args:
+            source_stamp: What the file is now, as the repository reads it. A
+                stamp other than the one the entry was filled with means the file
+                changed. ``None`` on either side means it cannot be told, so only
+                the time counts.
+
+        Returns:
+            True if the TTL is over or the file changed since the entry was filled
+        """
+        if datetime.utcnow() - self.created_at > self.ttl:
+            return True
+        if source_stamp is not None and self.source_stamp is not None:
+            return source_stamp != self.source_stamp
+        return False
+
+    def refresh(self, data: T, source_stamp: tuple[int, int] | None = None) -> None:
         """Refresh cached data."""
         self.data = data
         self.created_at = datetime.utcnow()
+        self.source_stamp = source_stamp
 
 
 class BaseRepository(ABC, Generic[T]):
@@ -45,7 +65,7 @@ class BaseRepository(ABC, Generic[T]):
 
     Provides:
     - File-based data loading
-    - In-memory caching with TTL
+    - In-memory caching with TTL, ended early when the file changes
     - Thread-safe operations
     - Error handling and logging
     """
@@ -114,12 +134,14 @@ class BaseRepository(ABC, Generic[T]):
         # Load from source
         self._logger.info(f"Loading data from {self.data_path}")
         try:
+            # Stamped before it is read: a file rewritten in between is read again next time, not trusted
+            source_stamp = self._source_stamp()
             raw_data = self._load_from_file()
             transformed_data = self.transform_data(raw_data)
 
             # Update cache
             if self.enable_cache:
-                self._cache = CacheEntry(transformed_data, self.cache_ttl)
+                self._cache = CacheEntry(transformed_data, self.cache_ttl, source_stamp)
 
             return transformed_data
 
@@ -166,16 +188,35 @@ class BaseRepository(ABC, Generic[T]):
         separator = "\t" if self.data_path.suffix == ".tsv" else ","
         return pd.read_csv(self.data_path, sep=separator)
 
+    def _source_stamp(self) -> tuple[int, int] | None:
+        """Tell the file on disk apart from an earlier version of itself.
+
+        Returns:
+            (modification time in nanoseconds, size in bytes), or None when the
+            file cannot be stat'ed. The size is in it for the file systems that
+            keep the same time when a file is rewritten within one tick.
+        """
+        try:
+            stat = self.data_path.stat()
+        except OSError:
+            return None
+        return stat.st_mtime_ns, stat.st_size
+
     def _is_cached(self) -> bool:
         """Check if cached data is valid.
 
+        The TTL is the upper bound. The cache also ends when the file changed
+        since it was read, so the data a cycle just wrote shows at the next
+        request instead of an hour later (T-197). A file that is gone keeps the
+        cache until the TTL.
+
         Returns:
-            True if cache exists and is not expired
+            True if cache exists, is not expired and was read from the file as it is now
         """
         if not self.enable_cache or self._cache is None:
             return False
 
-        return not self._cache.is_expired()
+        return not self._cache.is_expired(self._source_stamp())
 
     def clear_cache(self) -> None:
         """Clear cached data."""

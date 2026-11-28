@@ -10,6 +10,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import ALL, Input, Output, State, dcc, html
 
+from src.etl.goldigging import channel_topics
 from src.web.dashboard.components.items_per_page_selector import (
     create_items_per_page_selector,
     load_initial_preference,
@@ -44,16 +45,30 @@ def _canonical_channel(name: str) -> str:
     return canonical.replace("_", "-").strip("-")
 
 
-# Theme buckets are channel directories parked under the reserved aa-*/zz-*
-# prefixes (T-074 counts them in the 📡 Canales admin view; T-088 filters by
-# them in the 📺 Videos tab).
+# Theme buckets are the directories goldigging_youtube_posts.py writes, one
+# per key of src/etl/goldigging/channels.json (T-074 counts them in the 📡
+# Canales admin view; T-088 filters by them in the 📺 Videos tab). The helper
+# next to that file holds the definition and the ETL uses the same one. The
+# prefix test it replaces knew only ``aa-`` and ``zz-``, so the ``z-`` themes
+# never reached the Tema dropdown (T-138).
 _THEME_ALL_VALUE = "all"
 _THEME_DEFAULT_LABEL = "Todos los temas"
 
 
 def _is_theme_channel(channel: str) -> bool:
-    """Whether a channel directory is a theme bucket (``aa-*`` / ``zz-*``)."""
-    return channel.startswith(("aa-", "zz-"))
+    """Whether a channel directory is a theme bucket: a key of ``channels.json``."""
+    return channel_topics.is_theme(channel)
+
+
+def _theme_label(theme: str) -> str:
+    """What the Tema dropdown shows for a theme: its description from ``channels.json`` and its key.
+
+    The key alone (``zz-food_reviews``) is a directory name. The description
+    is shown first because it is what the theme is about, and the key is kept
+    because it is what orders the themes and what the info line names.
+    """
+    description = channel_topics.theme_description(theme)
+    return f"{description} ({theme})" if description and description != theme else theme
 
 
 def _extract_theme_options(channels: list[str]) -> list[dict]:
@@ -64,12 +79,12 @@ def _extract_theme_options(channels: list[str]) -> list[dict]:
 
     Returns:
         Dropdown options: the ``Todos los temas`` default first, then one
-        option per theme bucket, sorted. When no theme buckets exist only the
+        option per theme bucket, sorted by key. When no theme buckets exist only the
         default option is returned.
     """
     themes = sorted({ch for ch in channels if _is_theme_channel(ch)})
     options = [{"label": _THEME_DEFAULT_LABEL, "value": _THEME_ALL_VALUE}]
-    options.extend({"label": ch, "value": ch} for ch in themes)
+    options.extend({"label": _theme_label(ch), "value": ch} for ch in themes)
     return options
 
 
@@ -329,7 +344,7 @@ class VideoManager:
         Groups variant directory names under their canonical channel (same
         fold as ``get_channels``) and returns one row per channel with its
         stored video count, the newest publish date seen and whether the
-        directory is a theme bucket (``aa-*`` / ``zz-*``).
+        directory is a theme bucket (a key of ``channels.json``).
 
         Returns:
             Rows sorted by video count (desc), each with keys
@@ -375,9 +390,10 @@ class VideoManager:
                 description and channel.
             days_filter: ``"all"`` or a day-count string for the date cutoff.
             limit: Max videos to return; ``None`` returns everything.
-            theme_filter: Theme bucket (``aa-*``/``zz-*`` channel) or
-                ``"all"``. Composes with ``channel`` as an intersection: only
-                channels matching both selectors contribute videos.
+            theme_filter: Theme bucket (a key of ``channels.json``, the
+                directory the ETL writes for it) or ``"all"``. Composes with
+                ``channel`` as an intersection: only channels matching both
+                selectors contribute videos.
         """
         self.ensure_loaded()
 
@@ -807,7 +823,7 @@ def _channels_admin_section(stats: list[dict]) -> dbc.Card:
                 html.Span(
                     [
                         f"{len(stats)} canales · {total_videos:,} vídeos · ",
-                        html.Span(f"{theme_count} temas (aa-*/zz-*)", className="text-muted small"),
+                        html.Span(f"{theme_count} temas", className="text-muted small"),
                     ],
                     className="small",
                 )
@@ -816,6 +832,15 @@ def _channels_admin_section(stats: list[dict]) -> dbc.Card:
         ],
         className="mb-3",
     )
+
+
+# The ETL behind this tab and how production runs it. The empty state names
+# both: it used to send the user to youtube_shorts_etl, which no longer exists,
+# and the orchestrator derives the log name from the script's name.
+_YOUTUBE_ETL_SCRIPT = "src/etl/goldigging/goldigging_youtube_posts.py"
+_YOUTUBE_ETL_LOG = f"logs/{Path(_YOUTUBE_ETL_SCRIPT).stem}.log"
+_YOUTUBE_OUTPUT_PATH = "data/youtube/<theme>/youtube_videos.json"
+_ORCHESTRATOR_SCRIPT = "run_all_etl_orchestrator.py"
 
 
 def render_videos_tab():
@@ -837,9 +862,11 @@ def render_videos_tab():
                             html.H5("No video data found", className="text-center mb-2"),
                             html.P(
                                 [
-                                    "Run the YouTube ETL to populate the Videos tab. ",
+                                    f"This tab shows what {Path(_YOUTUBE_ETL_SCRIPT).name} writes under {_YOUTUBE_OUTPUT_PATH}. ",
+                                    f"In production the orchestrator ({_ORCHESTRATOR_SCRIPT}) runs it in every ETL cycle, so the tab fills itself after the next one; its log is {_YOUTUBE_ETL_LOG}. ",
+                                    "To run it by hand from the project root, add --topics <theme> for a single theme:",
                                     html.Br(),
-                                    html.Code("uv run python -m src.etl.youtube_shorts.youtube_shorts_etl", className="small"),
+                                    html.Code(f"uv run python {_YOUTUBE_ETL_SCRIPT}", className="small"),
                                 ],
                                 className="text-muted text-center mb-0",
                             ),
@@ -1036,6 +1063,49 @@ def render_videos_tab():
     )
 
 
+def _preset_name(channel: str | None, theme: str | None, date_filter: str | None, sort_by: str | None) -> str:
+    """The name a preset is saved under: its filters, each default spelled ``all``.
+
+    The date window alone used to read ``alld``. A theme is part of the name
+    only when one is chosen, so presets saved before themes were stored keep
+    theirs.
+
+    Args:
+        channel: The Channel dropdown's value.
+        theme: The Tema dropdown's value (a key of ``channels.json`` or ``all``).
+        date_filter: The date window, in days, or ``all``.
+        sort_by: The sort order.
+
+    Returns:
+        The preset's name in the ``videos-presets`` store.
+    """
+    parts = [channel or "all"]
+    if theme and theme != _THEME_ALL_VALUE:
+        parts.append(theme)
+    parts.append(f"{date_filter}d" if date_filter and date_filter != "all" else "all")
+    parts.append(sort_by or "date_desc")
+    return " · ".join(parts)
+
+
+def _preset_page_size(preset: dict) -> int | None:
+    """The page size a saved preset stores, or None when it stores no usable one.
+
+    Presets have always saved ``per_page`` from the page-size selector's own
+    options. One without a positive integer there (hand-edited, or written by
+    another layout) leaves the selector as it is instead of guessing.
+
+    Args:
+        preset: One entry of the ``videos-presets`` store.
+
+    Returns:
+        The stored page size, or None to leave the selector untouched.
+    """
+    per_page = preset.get("per_page")
+    if isinstance(per_page, int) and not isinstance(per_page, bool) and per_page > 0:
+        return per_page
+    return None
+
+
 def register_video_callbacks(app):
     """Register video callbacks for filtering and pagination."""
 
@@ -1141,7 +1211,7 @@ def register_video_callbacks(app):
             channel_display = "all channels" if selected_channel == "all" else f"'{selected_channel}'"
             filters_text = []
             if selected_theme and selected_theme != _THEME_ALL_VALUE:
-                filters_text.append(f"tema '{selected_theme}'")
+                filters_text.append(f"tema '{_theme_label(selected_theme)}'")
             if search_term:
                 filters_text.append(f"matching '{search_term}'")
             if date_filter and date_filter != "all":
@@ -1216,26 +1286,30 @@ def register_video_callbacks(app):
     )
 
     # Filter presets (spec 15 M3): save current filters, apply — persisted
-    # in localStorage via the videos-presets Store.
+    # in localStorage via the videos-presets Store. The theme is one of the
+    # filters (T-138): applied without it, a preset saved with one would show
+    # other videos than it was saved for.
     @app.callback(
         [Output("videos-presets", "data"), Output("videos-preset-selector", "options"), Output("videos-preset-selector", "value")],
         Input("videos-preset-save", "n_clicks"),
         [
             State("videos-presets", "data"),
             State("video-channel-dropdown-new", "value"),
+            State("videos-theme-dropdown", "value"),
             State("video-date-filter-new", "value"),
             State("videos-sort-by", "value"),
             State("videos-items-per-page-select", "value"),
         ],
         prevent_initial_call=True,
     )
-    def save_videos_preset(save_clicks, presets, channel, date_filter, sort_by, per_page):
+    def save_videos_preset(save_clicks, presets, channel, theme, date_filter, sort_by, per_page):
         """Persist the current filter combo as a named preset."""
         try:
             presets = presets or {}
-            name = f"{channel or 'all'} · {date_filter or 'all'}d · {sort_by or 'date_desc'}"
+            name = _preset_name(channel, theme, date_filter, sort_by)
             presets[name] = {
                 "channel": channel or "all",
+                "theme": theme or _THEME_ALL_VALUE,
                 "date": date_filter or "all",
                 "sort": sort_by or "date_desc",
                 "per_page": per_page or 48,
@@ -1247,23 +1321,49 @@ def register_video_callbacks(app):
             return dash.no_update, dash.no_update, dash.no_update
 
     @app.callback(
-        [Output("video-channel-dropdown-new", "value"), Output("video-date-filter-new", "value"), Output("videos-sort-by", "value")],
+        [
+            Output("video-channel-dropdown-new", "value"),
+            Output("videos-theme-dropdown", "value"),
+            Output("video-date-filter-new", "value"),
+            Output("videos-sort-by", "value"),
+            # The page size is the selector's value, which the clientside
+            # callback registered by register_items_per_page_callback also
+            # writes (it echoes the value to persist it): a second writer, so
+            # it opts in as a duplicate.
+            Output("videos-items-per-page-select", "value", allow_duplicate=True),
+        ],
         Input("videos-preset-selector", "value"),
         State("videos-presets", "data"),
         prevent_initial_call=True,
     )
     def apply_videos_preset(selected_preset, presets):
-        """Apply the selected preset's filter values (fires the main controller)."""
+        """Apply the selected preset's filters and page size (fires the main controller).
+
+        Every output is an Input of the combined controller, which the
+        renderer therefore runs once for the whole preset. The page size it
+        writes is the selector's value, so it is persisted like a manual
+        choice. A preset saved before the theme was stored leaves the theme
+        dropdown as it is.
+        """
         try:
+            untouched = (dash.no_update,) * 5
             if not selected_preset or not presets:
-                return dash.no_update, dash.no_update, dash.no_update
+                return untouched
             preset = presets.get(selected_preset)
             if not preset:
-                return dash.no_update, dash.no_update, dash.no_update
-            return preset.get("channel", "all"), preset.get("date", "all"), preset.get("sort", "date_desc")
+                return untouched
+            per_page = _preset_page_size(preset)
+            theme = preset.get("theme")
+            return (
+                preset.get("channel", "all"),
+                theme if isinstance(theme, str) and theme else dash.no_update,
+                preset.get("date", "all"),
+                preset.get("sort", "date_desc"),
+                per_page if per_page is not None else dash.no_update,
+            )
         except Exception as e:
             logger.error(f"Error applying videos preset: {e}")
-            return dash.no_update, dash.no_update, dash.no_update
+            return (dash.no_update,) * 5
 
 
 # Load data when module is imported

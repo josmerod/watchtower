@@ -488,4 +488,4 @@ if __name__ == "__main__":
     )
     register_shortcuts_callbacks(app_test)
     print("Running standalone test for shortcuts_tab.py on port 8051...")
-    app_test.run_server(debug=True, port=8051)
+    app_test.run(debug=True, port=8051)

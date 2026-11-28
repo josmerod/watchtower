@@ -525,8 +525,6 @@ def load_all_games_data():
     # GiantBomb games/reviews removed
     print("Attempted to load all games data.")
 
-    print("Attempted to load all games data.")
-
 
 # Load data dynamically instead of at import time
 # load_all_games_data()
@@ -907,35 +905,32 @@ def render_games_tab():
     )
 
 
-if __name__ == "__main__":
-    # For testing, call load_all_games_data directly.
-    # This ensures data is loaded before app runs for standalone test.
-    # In actual app, this will be called at import or by main app.
-    if not DATA_LOADED_SUCCESSFULLY["deals"]:
-        load_deals_data()
-    if not DATA_LOADED_SUCCESSFULLY["bundles"]:
-        load_bundles_data()
-    if not DATA_LOADED_SUCCESSFULLY["trending"]:
-        load_trending_data()
-    if not DATA_LOADED_SUCCESSFULLY["new_releases"]:
-        pass  # load_new_releases_data() — removed, no longer available
+def build_test_app() -> dash.Dash:
+    """A stand-alone app with this tab alone, for ``python -m src.web.dashboard.components.games_tab``.
 
-    app_test = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app_test.layout = dbc.Container(render_games_tab(), fluid=True, className="py-4")
+    Loads every source first and prints what it found: the tab renders the
+    module-level frames.
+    """
+    load_all_games_data()
 
-    # Summary of loaded data for testing
+    files = {
+        "deals": "deals.json",
+        "giveaways": "giveaways.json",
+        "bundles": "bundles.json and humblebundles.json",
+        "trending": "itchio_trending.json",
+        "metacritic": "metacritic_latest.json",
+    }
     for key, df in ALL_GAMES_DATA.items():
         status = "loaded" if DATA_LOADED_SUCCESSFULLY[key] else "not loaded or empty"
         print(f"Games Test: Data for '{key}' {status} - {len(df)} records.")
-        if not DATA_LOADED_SUCCESSFULLY[key] and df.empty:
-            # More specific path based on how individual loaders will be implemented
-            filename_map = {
-                "deals": "deals.json",
-                "bundles": "bundles.json/humblebundles.json",
-                "giveaways": "giveaways.json",
-                "trending": "itchio_trending.json",
-                "new_releases": "new_releases.json",
-            }
-            print(f"  Check if {DATA_BASE_PATH}{filename_map.get(key, key + '.json')} exists and is valid.")
+        if key in files and not DATA_LOADED_SUCCESSFULLY[key] and df.empty:
+            print(f"  Check if {DATA_BASE_PATH}{files[key]} exists and is valid.")
 
-    app_test.run_server(debug=True, port=8057)
+    app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+    app.layout = dbc.Container(render_games_tab(), fluid=True, className="py-4")
+    return app
+
+
+if __name__ == "__main__":
+    # Standalone test: the data is loaded before the server starts
+    build_test_app().run(debug=True, port=8057)

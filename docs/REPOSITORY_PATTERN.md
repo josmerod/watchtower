@@ -33,7 +33,7 @@ class BaseRepository(ABC, Generic[T]):
 ```
 
 - **`transform_data()`** is the only abstract method. It receives the parsed file (what `json.load` returned for a `.json` file, a pandas DataFrame for `.csv` and `.tsv`) and returns it in the shape the component wants.
-- **`get()`** is the entry point the components call. It returns the cached value while the time-to-live is valid and reloads the file otherwise; `force_refresh=True` skips the cache. Any failure, a missing file included, is raised as `RepositoryError`.
+- **`get()`** is the entry point the components call. It returns the cached value while the time-to-live is valid and the file has not changed since it was read, and reloads the file otherwise; `force_refresh=True` skips the cache. Any failure, a missing file included, is raised as `RepositoryError`.
 - **`load_data()`** reads and transforms the file on every call, without touching the cache, and a missing file raises `FileNotFoundError` instead of `RepositoryError`.
 - **`is_available()`** reports whether the data file exists, and **`get_last_modified()`** returns its modification time.
 - **`clear_cache()`** drops the cached value.
@@ -116,5 +116,5 @@ Right before the September 2026 cleanup, the only consumer of `RepositoryManager
 ## Caveats
 
 - The `BaseRepository` docstring lists thread-safe operations, but nothing in the package takes a lock. Dash can serve callbacks concurrently, so do not rely on that claim.
-- Every live subclass passes `cache_ttl_seconds=3600`, and the cache lives in the dashboard process. A tab keeps serving its cached copy for an hour after loading it: fresh ETL output shows up only after that hour has passed, when a callback asks for `force_refresh=True`, or after the dashboard process restarts.
-- The package has no tests.
+- Every live subclass passes `cache_ttl_seconds=3600`, and the cache lives in the dashboard process. The hour is the upper bound: since 2026-11-27 (T-197) the cache also ends when the file on disk is not the one that was read (it keeps the modification time in nanoseconds and the size), so fresh ETL output shows at the next request instead of an hour later. A file that is gone keeps the last copy until the hour is over. `knowledge_garden_tab.py` keeps a second, time-only cache on top of its repositories (`TTLDataCache`, 60 seconds), which is how long a change can take to show there. `tech_radar_tab.py` does not use the pattern: it reads its files with `json.load` under its own `TTLDataCache` (300 seconds).
+- `Tests/unit/test_repository_cache.py` covers `get()` and the cache through `BaseRepository` and `DataFrameRepository`. The operations of `DataFrameRepository` (`filter()`, `search()`, `sort()`, `get_unique_values()`, `get_summary()`) and `RepositoryManager` have no tests.

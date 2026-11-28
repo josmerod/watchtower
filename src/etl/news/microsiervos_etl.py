@@ -4,6 +4,7 @@ import feedparser
 
 from src.etl.base import SimpleETL
 from src.utils.logging import get_logger
+from src.utils.text import html_to_text, plain_excerpt
 
 logger = get_logger("MicrosiervosETL")
 
@@ -67,10 +68,11 @@ class MicrosiervosETL(SimpleETL):
                 item = {
                     "source": SOURCE_NAME,
                     "id": entry.get("id", entry.get("link")),
-                    "title": entry.get("title"),
+                    "title": html_to_text(entry.get("title")),
                     "url": entry.get("link"),
                     "published_at": published,
-                    "description": entry.get("summary", ""),
+                    # The summary is the article with its images and styles: plain text, cut like the RSS feeds (T-190)
+                    "description": plain_excerpt(entry.get("summary"), 500),
                     "author": entry.get("author", "Microsiervos"),
                     "tags": [tag.term for tag in entry.get("tags", [])] if "tags" in entry else [],
                 }

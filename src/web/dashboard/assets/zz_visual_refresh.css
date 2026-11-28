@@ -266,6 +266,35 @@ a:not(.btn):focus {
     z-index: 30 !important;
 }
 
+/* The main bar holds 18 tabs, about 2100 px of them: on one line it always
+   scrolled and hid eight of them at 1280 px (T-169). From 1200 px up it wraps
+   instead, so every tab is in view; on narrower screens it stops being sticky,
+   because a bar four rows tall would cover half the page; on a phone it is one
+   scrollable row again, without its scrollbar. */
+#dashboard-tabs.desktop-nav-tabs {
+    flex-wrap: wrap !important;
+    overflow-x: hidden !important;
+}
+
+@media (max-width: 1199.98px) {
+    #dashboard-tabs.desktop-nav-tabs {
+        position: static !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #dashboard-tabs.desktop-nav-tabs {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        position: sticky !important;
+        scrollbar-width: none !important;
+    }
+}
+
+#dashboard-tabs.desktop-nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
 /* The legacy mobile sheet (css/mobile_responsive.css) parks every tab link
    at -9999px under 768px. The main navigation is static here, so the offsets
    do nothing; a subtab link keeps `position: relative` from style.css for its
@@ -357,8 +386,11 @@ a:not(.btn):focus {
     color: var(--wt-text) !important;
 }
 
-/* Inputs / dropdowns / selectors: force readable open menus. */
-input,
+/* Inputs / dropdowns / selectors: force readable open menus. A checkbox and a
+   radio are left out: Bootstrap draws their mark as a background image and
+   rounds a radio, and this rule erased both, so every box in the dashboard
+   looked unchecked. */
+input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select,
 .form-control,
@@ -384,7 +416,7 @@ textarea::placeholder,
     color: var(--wt-muted-2) !important;
 }
 
-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
 textarea:focus,
 select:focus,
 .form-control:focus,
@@ -635,4 +667,14 @@ html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):focus {
     color: var(--wt-accent-contrast) !important;
     background: #ddd6fe !important;
     border-color: #ddd6fe !important;
+}
+
+/* A Plotly graph stacks three layer svgs: the plot, the labels and the legend,
+   and the hover layer. The legacy sheet paints every `.main-svg` one flat
+   colour, so the two upper layers covered the plot and every graph of the
+   dashboard was an empty rectangle (the Tech Radar card). The paper keeps the
+   legacy fill through its own `.bg` rule. As specific as the blanket rule
+   above, plus the two classes. */
+html body .js-plotly-plot .plotly .main-svg:not(.table):not(.alert):not(.card):not(.nav-tabs) {
+    background-color: transparent !important;
 }

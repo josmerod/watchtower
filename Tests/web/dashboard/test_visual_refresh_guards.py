@@ -13,11 +13,14 @@ from src.utils.file_system import get_project_root
 
 ASSETS = Path(get_project_root()) / "src" / "web" / "dashboard" / "assets"
 FINAL_SHEET = ASSETS / "zz_visual_refresh.css"
+LEGACY_SHEET = ASSETS / "style.css"
 LEGACY_MOBILE_SHEET = ASSETS / "css" / "mobile_responsive.css"
 
 RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
 # The chain that gives a selector the specificity of the blanket background rule.
 BLANKET_CHAIN = ":not(.table):not(.alert):not(.card):not(.nav-tabs)"
+# What counts one class towards specificity: a class, or a pseudo-class with or without its argument.
+CLASS_LEVEL = re.compile(r"\.[\w-]+|:[\w-]+(?:\([^)]*\))?")
 
 
 def rules_of(stylesheet: Path) -> list[tuple[list[str], dict[str, str]]]:
@@ -60,8 +63,50 @@ def test_primary_buttons_outrank_the_blanket_background():
     blanket = [(s, d) for s, d in rules_matching(FINAL_SHEET, "html body") if "background-color" in d and BLANKET_CHAIN in s]
     assert blanket, "the blanket background rule moved: re-check what the buttons have to outrank"
 
-    keepers = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".btn-primary") if BLANKET_CHAIN in s and "color" in d and ("background" in d or "background-color" in d) and ":hover" not in s and ":focus" not in s]
+    keepers = [
+        (s, d) for s, d in rules_matching(FINAL_SHEET, ".btn-primary") if BLANKET_CHAIN in s and "color" in d and ("background" in d or "background-color" in d) and ":hover" not in s and ":focus" not in s
+    ]
     assert keepers, "no rule gives .btn-primary a background and a text color with the blanket chain on its selector"
 
     html, body = len(re.findall(r"(?<![\w-])html(?![\w-])", keepers[0][0])), len(re.findall(r"(?<![\w-])body(?![\w-])", keepers[0][0]))
     assert html and body, "the rule does not start with `html body`: it is less specific than the blanket rule"
+
+
+def test_main_bar_wraps_instead_of_scrolling():
+    """The tablist rule forces one non-wrapping, scrollable line.
+
+    The main bar holds 18 tabs: on one line it scrolled and hid eight of them at 1280 px (T-169). The override has to carry both the id and the class: with one of them it is less specific than `#dashboard-tabs` in the tablist rule.
+    """
+    wrapping = [(s, d) for s, d in rules_matching(FINAL_SHEET, "#dashboard-tabs.desktop-nav-tabs") if d.get("flex-wrap") == "wrap !important" and d.get("overflow-x") == "hidden !important"]
+
+    assert wrapping, "no rule makes the main bar wrap instead of scrolling"
+    assert all(":hover" not in s and ":focus" not in s for s, _ in wrapping)
+    one_line = [(s, d) for s, d in rules_matching(FINAL_SHEET, "#dashboard-tabs.desktop-nav-tabs") if d.get("flex-wrap") == "nowrap !important"]
+    assert one_line, "the rule for a phone (one scrollable row) is gone"  # it comes later in the sheet, so it wins there
+
+
+def test_checkboxes_and_radios_keep_their_mark():
+    """The input rule paints every input one flat colour with one corner radius.
+
+    A checkbox and a radio are not text fields: Bootstrap draws their mark as a background image and rounds a radio, and
+    the bare `input` selector erased both, so "Mostrar retiradas" looked unchecked while it listed the retired credentials.
+    """
+    bare_input = re.compile(r"input(?::focus)?")  # the whole selector: `.Select-input > input` is a text field and stays painted
+    painting = [(s, d) for s, d in rules_matching(FINAL_SHEET, "input") if bare_input.fullmatch(s) and {"background", "background-color", "border-radius", "border-color"} & set(d)]
+
+    assert not painting, painting
+
+
+def test_plotly_layers_do_not_cover_the_plot():
+    """The legacy sheet paints every Plotly layer svg with a background.
+
+    A graph stacks three of them (the plot, the labels and the legend, the hover layer), so the two upper ones covered the plot and every graph of the dashboard was an empty rectangle.
+    The reset has to outrank the legacy rule and the blanket rule of this sheet, the more specific of the two.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, ".main-svg") if {"background", "background-color"} & set(d)]
+    assert legacy, "the legacy rule is gone: drop the reset and this test"
+
+    reset = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".main-svg") if d.get("background-color") == "transparent !important"]
+    assert reset, "no rule of the final sheet makes the Plotly layer svgs transparent"
+    for selector, _ in reset:
+        assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector

@@ -176,16 +176,37 @@ def two_source_config(tmp_path, monkeypatch):
 
 
 def test_tab_renders_from_canonical_paths(two_source_config):
-    """Both canonical files render as subtabs with their config labels."""
+    """Both canonical files get a subtab with their config label; the rows are built when the subtab is opened (T-170)."""
     layout = render_scavenging_tab()
     rendered = str(layout)
     assert "Anime" in rendered
     assert "Gumroad free" in rendered
-    assert "Nyaa item" in rendered
-    assert "Free Ebook" in rendered
+    assert "Nyaa item" not in rendered and "Free Ebook" not in rendered
     # One search id per discovered category.
     assert "scavenging-search-anime" in rendered
     assert "scavenging-search-gumroad_free" in rendered
+
+
+def test_a_paused_source_keeps_its_subtab_and_is_not_read(tmp_path, monkeypatch):
+    """A source paused with a note (T-157) keeps its place in the bar and shows the note instead of its old records."""
+    path = _write_json(
+        tmp_path / "epic_free_games" / "output" / "epic_free_games_latest.json", [{"title": "Old game", "link": "https://epic", "published": "2026-08-01T00:00:00", "summary": "s", "category": "epic_free"}]
+    )
+    anime = _write_json(tmp_path / "goldigging_scavenging" / "output" / "anime_rss_entries.json", [RSS_RECORD])
+    note = "Paused: its ETL no longer runs."
+    _patch_sources(
+        monkeypatch,
+        [
+            {"key": "anime", "label": "Anime", "category": "anime", "paths": [anime]},
+            {"key": "epic_free", "label": "Epic free", "category": "epic_free", "paused": note, "paths": [path]},
+        ],
+    )
+
+    rendered = str(render_scavenging_tab())
+    assert "Epic free" in rendered and note in rendered
+    assert "Old game" not in rendered
+    assert discover_categories() == {"anime": Path(anime)}
+    assert get_scavenging_data("epic_free") == []
 
 
 def test_tab_empty_state_preserved(tmp_path, monkeypatch):

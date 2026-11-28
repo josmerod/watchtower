@@ -50,15 +50,15 @@ def test_a_request_whose_outputs_came_empty_is_answered_the_same(caplog) -> None
 
 def test_a_request_short_of_the_inputs_its_callback_declares_is_answered_the_same(caplog) -> None:
     """A tab left open across a deploy that added an Input sends the shorter list it was loaded with; Dash raised IndexError."""
-    callback = next(cb for cb in dashboard_app._callback_list if cb["output"] == "gcp-skills-table-container.children")
-    assert len(callback["inputs"]) == 2  # the search box and the language filter
-    only_the_search = [{"id": "gcp-skills-search-input", "property": "value", "value": "x"}]
+    callback = next(cb for cb in dashboard_app._callback_list if cb["output"] == "ms-certs-table-container.children")
+    assert len(callback["inputs"]) == 3  # the search box, the retired toggle and the activation store
+    only_the_search = [{"id": "ms-certs-search-input", "property": "value", "value": "x"}]
 
     with caplog.at_level(logging.WARNING, logger=LOGGER):
-        response = _post({"output": callback["output"], "outputs": {"id": "gcp-skills-table-container", "property": "children"}, "inputs": only_the_search, "changedPropIds": ["gcp-skills-search-input.value"]})
+        response = _post({"output": callback["output"], "outputs": {"id": "ms-certs-table-container", "property": "children"}, "inputs": only_the_search, "changedPropIds": ["ms-certs-search-input.value"]})
 
     assert response.status_code == 204
-    assert "gcp-skills-table-container" in caplog.text and "reload it" in caplog.text
+    assert "ms-certs-table-container" in caplog.text and "reload it" in caplog.text
 
 
 def test_an_error_one_of_our_callbacks_raised_keeps_its_traceback() -> None:
