@@ -114,6 +114,21 @@ SOURCE_FILES: list[dict[str, Any]] = [
         "content_warn_hours": 72,
         "content_critical_hours": 336,
     },
+    # Knowledge Garden — Open Source Projects. Its file kept April data for seven months (T-204).
+    # The site publishes one batch a day but skips two or three days every few weeks (40 such
+    # gaps in the 518 days to 2026-11-28, three longer ones), so the age of the newest post
+    # is stale after five days and critical after ten; a file nothing rewrote for three
+    # days means the ETL itself stopped writing.
+    {
+        "key": "opensource_projects",
+        "label": "Open Source Projects (Knowledge Garden)",
+        "path": "open_source_intelligence/output/latest.json",
+        "warn_hours": 72,
+        "critical_hours": 168,
+        "content_date": "published_at",
+        "content_warn_hours": 120,
+        "content_critical_hours": 240,
+    },
 ]
 
 
