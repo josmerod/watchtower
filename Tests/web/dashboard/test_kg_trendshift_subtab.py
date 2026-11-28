@@ -335,6 +335,14 @@ def test_the_date_column_shows_the_first_sighting_never_the_snapshot(app, record
     assert tab._kg_date_iso(later) == tab._kg_date_iso(first)
 
 
+def test_the_date_stays_on_one_line(app):
+    """Next to a title column 980 px wide, "2026-11-28" broke over "04:33 UTC" in every row of the table."""
+    last_cells = [_components(row, "Td")[-1] for row in _rows(_open(app)[f"{SEARCH}-results"]["children"])]
+
+    assert last_cells
+    assert all(cell["props"].get("className") == "text-nowrap" for cell in last_cells)
+
+
 def test_the_title_stays_the_first_link_of_the_row_for_the_new_badge(app):
     for row in _rows(_open(app)[f"{SEARCH}-results"]["children"]):
         links = _links(row)

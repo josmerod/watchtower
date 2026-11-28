@@ -264,7 +264,10 @@ def test_the_sale_price_is_bold_and_the_base_price_is_beside_it(root) -> None:
 
     assert _shown(table["props"]["children"][0]) == ["Title", "Platform", "Store", "Region", "Base price", "Sale price", "Discount", "Ends"]
     first = _of_type(table, "Tbody")[0]["props"]["children"][0]["props"]["children"]
-    assert [(cell["type"], _shown(cell), cell["props"].get("className")) for cell in first[4:6]] == [("Td", ["€13.00"], None), ("Td", ["€0.99"], "fw-bold")]
+    assert [(cell["type"], _shown(cell), cell["props"].get("className")) for cell in first[4:6]] == [("Td", ["€13.00"], "text-nowrap"), ("Td", ["€0.99"], "fw-bold text-nowrap")]
+    # Only the title wraps: a date or a price broke over two lines ("2026-11-" over "28") and every row was two lines tall
+    assert [cell["props"].get("className") for cell in first] == [None, "text-nowrap", "text-nowrap", "text-nowrap", "text-nowrap", "fw-bold text-nowrap", "text-nowrap", "text-nowrap"]
+    assert {cell["props"]["className"] for cell in _of_type(table, "Th")} == {"text-nowrap"}
     assert _rows(table) == [
         ["Syberia 2", "PC & Mac", "Steam", "N/A", "€13.00", "€0.99", "92%", "2026-11-28"],  # 13 -> 0.99
         ["EA Sports FC 24 - 12000 FC Points", "PC", "EA App", "N/A", "€100.00", "€15.99", "84%", "2026-11-28"],
