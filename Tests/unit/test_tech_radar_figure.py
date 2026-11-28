@@ -167,6 +167,63 @@ def test_a_bubble_grows_with_the_mentions_up_to_a_cap(mentions, expected):
     assert trace.marker.size == pytest.approx([expected])
 
 
+# --- The names take alternate sides of their bubbles (T-202) ---
+
+
+@pytest.mark.parametrize(
+    "offsets, expected",
+    [
+        ([0.0], ["bottom"]),
+        ([0.0, -0.28], ["top", "bottom"]),  # the first two seats of a row of three, in the order the slots hand them out
+        ([0.0, -0.28, 0.28], ["top", "bottom", "bottom"]),
+        ([-0.14, 0.14, -0.38, 0.38], ["top", "bottom", "bottom", "top"]),
+        ([-0.14, 0.14, -0.38], ["top", "bottom", "bottom"]),
+    ],
+)
+def test_the_side_of_a_name_follows_its_place_in_the_row_from_left_to_right(offsets, expected):
+    assert tab._label_sides(offsets) == expected
+
+
+def test_the_names_of_a_row_take_alternate_sides_of_their_bubbles():
+    """Neighbours in a row are a quarter of a column apart and their names 20 to 90 px wide: every name under its bubble, they ran into one another (T-202).
+
+    One bubble alone keeps its name under it, where it was.
+    """
+    fig = tab._build_radar_figure([*ADOPT_CROWD, {**RECORD, "tech": "alone", "mentions": 2, "ring": "Assess", "quadrant": "Tools"}])
+    platforms, tools = fig.data[1], fig.data[0]  # one trace per column, in the order of the quadrants
+    assert platforms.textposition[0] == "top center" and tuple(tools.textposition) == ("bottom center",)
+
+    rows: dict[tuple[int, float], list[tuple[float, str]]] = {}  # (column, row) -> (x, side), as the rows of a column take turns on their own
+    for column, trace in enumerate(fig.data):
+        assert set(trace.textposition) <= {"bottom center", "top center"}
+        for x, y, position in zip(trace.x, trace.y, trace.textposition, strict=True):
+            rows.setdefault((column, y), []).append((x, position))
+    for row in rows.values():
+        left_to_right = [position for _, position in sorted(row)]
+        assert left_to_right == ["bottom center" if rank % 2 == 0 else "top center" for rank in range(len(row))], row
+
+
+def _room_above(fig) -> float:
+    """Pixels between the highest bubble and the top of the plot."""
+    low, high = fig.layout.yaxis.range
+    return (high - max(y for _, y in _spots(fig))) * tab._PLOT_HEIGHT / (high - low)
+
+
+def test_the_top_of_the_axes_keeps_room_for_a_name_above_the_highest_bubble():
+    """A name above the outermost row was never there before: the 0.3 units of air above it cut such a name by up to 8 px."""
+    five = [{**RECORD, "tech": f"tech{index}", "mentions": 70 - index} for index in range(5)]  # a row of three, then two: the right one of the two is named above
+    fig = tab._build_radar_figure(five)
+
+    assert fig.data[0].textposition[4] == "top center" and fig.data[0].marker.size[4] == pytest.approx(48)  # the widest bubble, in the highest row, named above
+    assert _room_above(fig) == pytest.approx(24 + tab._NAME_ROOM, abs=1)
+
+
+def test_the_edge_keeps_the_air_it_had_when_no_name_hangs_towards_it():
+    assert tab._edge_pad(0.0, 3.8) == tab._edge_pad(11.4 + tab._NAME_ROOM, 3.8) == 0.3  # the 0.3 units already hold the name of a small bubble
+    assert tab._edge_pad(24 + tab._NAME_ROOM, 3.8) > 0.3  # a 48 px bubble needs more
+    assert tab._build_radar_figure([RECORD]).layout.yaxis.range == pytest.approx([-0.3, 2.3])  # its name is under it: the axis is the one it always was
+
+
 # --- The hover ---
 
 

@@ -22,6 +22,7 @@ import logging
 import math
 import os
 import re
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -384,6 +385,8 @@ def _render_stack_eol_section() -> list:
 
 
 # Curated technology dictionary (spec 13 TR-F1 v1): canonical name -> quadrant.
+# One entry per technology: another spelling of one is listed in TECH_ALIASES
+# below, not as an entry of its own.
 # Quadrants follow the ThoughtWorks vocabulary: Techniques / Tools / Platforms / Languages & Frameworks.
 TECH_DICTIONARY: dict[str, str] = {
     # Languages & frameworks
@@ -407,7 +410,6 @@ TECH_DICTIONARY: dict[str, str] = {
     "kotlin": "Languages & Frameworks",
     # Platforms
     "kubernetes": "Platforms",
-    "k8s": "Platforms",
     "docker": "Platforms",
     "aws": "Platforms",
     "gcp": "Platforms",
@@ -427,7 +429,6 @@ TECH_DICTIONARY: dict[str, str] = {
     "terraform": "Tools",
     "ansible": "Tools",
     "postgres": "Tools",
-    "postgresql": "Tools",
     "mysql": "Tools",
     "redis": "Tools",
     "sqlite": "Tools",
@@ -456,7 +457,6 @@ TECH_DICTIONARY: dict[str, str] = {
     "edge computing": "Techniques",
     "vector database": "Techniques",
     "agent": "Techniques",
-    "agents": "Techniques",
     # AI models treated as Tools (bubbles sized by mentions)
     "llama": "Tools",
     "gpt": "Tools",
@@ -465,6 +465,16 @@ TECH_DICTIONARY: dict[str, str] = {
     "mistral": "Tools",
     "deepseek": "Tools",
     "qwen": "Tools",
+}
+
+# How else a technology of the dictionary is written: its mentions count with
+# the canonical name and it draws no bubble of its own. Each of these used to
+# be a dictionary key, so "k8s" was a technology apart from "kubernetes", with
+# a bubble and a ring of its own on a fraction of the mentions (T-201).
+TECH_ALIASES: dict[str, tuple[str, ...]] = {
+    "kubernetes": ("k8s",),
+    "postgres": ("postgresql",),
+    "agent": ("agents",),
 }
 
 _QUADRANT_ORDER = ["Techniques", "Tools", "Platforms", "Languages & Frameworks"]
@@ -495,9 +505,45 @@ def _cell_slot(index: int) -> tuple[float, int]:
     return _THREE_SEATS[seat - 4], 2 * pair + 2
 
 
+def _label_sides(offsets: Sequence[float]) -> list[str]:
+    """The side of its bubble that the name of every seat goes to, in the order the offsets come.
+
+    Left to right, below, above, below: neighbours in a row are a quarter of a column apart and their names are
+    20 to 90 px wide, so with every name under its bubble they ran into one another (T-202). On alternate sides
+    of the bubbles, two names share a band only two seats apart.
+    """
+    sides = [""] * len(offsets)
+    for rank, seat in enumerate(sorted(range(len(offsets)), key=offsets.__getitem__)):
+        sides[seat] = "bottom" if rank % 2 == 0 else "top"
+    return sides
+
+
+# The plot is 490 px tall (the 560 px figure minus its margins), whatever the axes span: the room a name needs is
+# measured in pixels and turned into axis units from the span it is drawn on.
+_PLOT_HEIGHT = 560 - 30 - 40
+_NAME_ROOM = 22  # px from the edge of a bubble to the far side of its name: Plotly's gap, the 13 px line, and two to spare
+_EDGE_PAD = 0.3  # axis units of air around the outermost bubble when no name hangs towards that edge
+
+
+def _edge_pad(reach: float, span: float) -> float:
+    """Axis units to leave at one end of the y axis.
+
+    ``reach`` is how far in pixels the outermost bubble and the name it hangs towards that edge extend from the
+    bubble's centre; ``span`` is the distance between the outermost bubbles. Widening the axis shrinks the unit,
+    which the formula accounts for.
+    """
+    return max(_EDGE_PAD, reach * (span + _EDGE_PAD) / (_PLOT_HEIGHT - reach))
+
+
 # Precompiled word-boundary matchers for the curated dictionary — shared by the
 # TR-F1 radar extraction and the TR-F2 momentum scan (single source of truth).
-_TECH_MATCHERS: dict[str, re.Pattern[str]] = {tech: re.compile(rf"\b{re.escape(tech)}\b") for tech in TECH_DICTIONARY}
+def _tech_pattern(tech: str) -> re.Pattern[str]:
+    """One word-boundary matcher for a technology under its name and each of its aliases."""
+    names = sorted((tech, *TECH_ALIASES.get(tech, ())), key=len, reverse=True)
+    return re.compile(r"\b(?:" + "|".join(re.escape(name) for name in names) + r")\b")
+
+
+_TECH_MATCHERS: dict[str, re.Pattern[str]] = {tech: _tech_pattern(tech) for tech in TECH_DICTIONARY}
 
 
 def _extract_tech_mentions(all_data: dict[str, list[dict[str, Any]]] | None = None) -> list[dict[str, Any]]:
@@ -548,17 +594,26 @@ def _build_radar_figure(records: list[dict[str, Any]]) -> go.Figure:
         fig.update_layout(**DARK_FIGURE, xaxis={"visible": False}, yaxis={"visible": False})
         return fig
 
+    bubbles: list[tuple[float, float, str]] = []  # (y, radius in px, side its name hangs to) of every bubble
     for column, quadrant in enumerate(_QUADRANT_ORDER):
         subset = [r for r in records if r["quadrant"] == quadrant]
         if not subset:
             continue
         spots = []
+        rows: dict[float, list[int]] = {}  # the bubbles of each row of the column: their names take alternate sides
         taken: dict[str, int] = {}  # slots used per ring: a column holds one cell per ring
-        for record in subset:
+        for index, record in enumerate(subset):
             slot = taken[record["ring"]] = taken.get(record["ring"], -1) + 1
-            dx, rows = _cell_slot(slot)
+            dx, rows_away = _cell_slot(slot)
             side = -1 if record["ring"] == "Assess" else 1  # Assess is the bottom ring: its room is below it
-            spots.append((column + dx, _RING_ROW[record["ring"]] + side * rows * _ROW_STEP))
+            spots.append((column + dx, _RING_ROW[record["ring"]] + side * rows_away * _ROW_STEP))
+            rows.setdefault(spots[-1][1], []).append(index)
+        positions = ["bottom center"] * len(subset)
+        for members in rows.values():
+            for index, name_side in zip(members, _label_sides([spots[index][0] for index in members]), strict=True):
+                positions[index] = f"{name_side} center"
+        sizes = [min(48, 10 + 9 * math.sqrt(r["mentions"])) for r in subset]
+        bubbles += [(y, size / 2, position.split(" ")[0]) for (_, y), size, position in zip(spots, sizes, positions, strict=True)]
         lowest = min(lowest, min(y for _, y in spots))
         highest = max(highest, max(y for _, y in spots))
         fig.add_trace(
@@ -568,10 +623,10 @@ def _build_radar_figure(records: list[dict[str, Any]]) -> go.Figure:
                 text=[r["tech"] for r in subset],
                 customdata=[[r["mentions"], len(r["sources"]), ", ".join(r["sources"]), r["ring"], quadrant] for r in subset],
                 mode="markers+text",
-                textposition="bottom center",
+                textposition=positions,
                 textfont={"size": 11},
                 marker={
-                    "size": [min(48, 10 + 9 * math.sqrt(r["mentions"])) for r in subset],
+                    "size": sizes,
                     "sizemode": "diameter",
                     "opacity": 0.8,
                     "color": [len(r["sources"]) for r in subset],
@@ -584,13 +639,18 @@ def _build_radar_figure(records: list[dict[str, Any]]) -> go.Figure:
             )
         )
 
+    # Names above the outermost bubbles hang towards the top of the plot: each end keeps room for the widest reach.
+    span = highest - lowest
+    up = max((radius + _NAME_ROOM for y, radius, name_side in bubbles if y == highest and name_side == "top"), default=0.0)
+    down = max((radius + _NAME_ROOM for y, radius, name_side in bubbles if y == lowest and name_side == "bottom"), default=0.0)
+
     # Numeric axes under the names: a category axis has no room for a bubble beside its category.
     fig.update_layout(
         **DARK_FIGURE,
         xaxis_title="Cuadrante",
         yaxis_title="Anillo (madurez estimada por menciones)",
         xaxis={"tickvals": list(range(len(_QUADRANT_ORDER))), "ticktext": _QUADRANT_ORDER, "range": [-0.5, len(_QUADRANT_ORDER) - 0.5], "gridcolor": "rgba(204, 214, 240, 0.10)"},
-        yaxis={"tickvals": list(_RING_ROW.values()), "ticktext": list(_RING_ROW), "range": [lowest - 0.3, highest + 0.3], "gridcolor": "rgba(204, 214, 240, 0.22)"},
+        yaxis={"tickvals": list(_RING_ROW.values()), "ticktext": list(_RING_ROW), "range": [lowest - _edge_pad(down, span), highest + _edge_pad(up, span)], "gridcolor": "rgba(204, 214, 240, 0.22)"},
         height=560,
         showlegend=False,  # the colour is the number of sources, and the column already names the quadrant
         margin={"l": 60, "r": 70, "t": 30, "b": 40},

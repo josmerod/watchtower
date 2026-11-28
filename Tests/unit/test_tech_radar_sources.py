@@ -115,6 +115,55 @@ def test_radar_cache_force_refresh_rereads_disk(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# T-201: one technology, one bubble — its aliases count with it
+# ---------------------------------------------------------------------------
+
+# One story per spelling of the three pairs the dictionary used to list as six technologies.
+ALIAS_STORIES = [
+    ("kubernetes on the homelab", "https://x/1"),
+    ("k8s at the edge", "https://x/2"),
+    ("k8s again", "https://x/3"),
+    ("postgres at home", "https://x/4"),
+    ("PostgreSQL 18 is out", "https://x/5"),
+    ("an agent for the shell", "https://x/6"),
+    ("agents everywhere", "https://x/7"),
+]
+
+
+def test_the_dictionary_lists_an_alias_under_its_technology():
+    assert set(tab.TECH_ALIASES) == {"kubernetes", "postgres", "agent"}
+    for tech, aliases in tab.TECH_ALIASES.items():
+        assert tech in tab.TECH_DICTIONARY
+        assert not [alias for alias in aliases if alias in tab.TECH_DICTIONARY], "an alias is not a technology of its own"
+    assert list(tab._TECH_MATCHERS) == list(tab.TECH_DICTIONARY)  # one matcher per technology, shared by the momentum scan
+
+
+def test_mentions_of_every_alias_count_with_the_technology_and_draw_one_bubble(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_RADAR_CACHE", tab.TTLDataCache(ttl_seconds=300))
+    _write(tmp_path, "news/hn_frontpage_latest.json", [{"title": title, "url": url} for title, url in ALIAS_STORIES])
+
+    records = {record["tech"]: record for record in tab._extract_tech_mentions()}
+
+    assert sorted(records) == ["agent", "kubernetes", "postgres"]  # three technologies out of the six spellings
+    assert {tech: record["mentions"] for tech, record in records.items()} == {"agent": 2, "kubernetes": 3, "postgres": 2}
+    assert records["kubernetes"]["ring"] == "Trial"  # three mentions together: apart, neither spelling reached the floor
+    figure = tab._build_radar_figure(list(records.values())).to_plotly_json()
+    labels = [label for trace in figure["data"] for label in trace["text"]]
+    assert sorted(labels) == ["agent", "kubernetes", "postgres"]  # one bubble each, under the canonical name
+
+
+def test_the_momentum_scan_counts_an_alias_with_its_technology(tmp_path, monkeypatch):
+    monkeypatch.setattr(tab, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(tab, "_MOMENTUM_CACHE", tab.TTLDataCache(ttl_seconds=60))
+    _write(tmp_path, "news/hn_frontpage_20260831_120000.json", [{"title": title, "link": url} for title, url in ALIAS_STORIES[:3]])  # a Monday snapshot
+
+    series = tab._scan_snapshot_mentions()
+
+    assert series["counts"] == {"kubernetes": [0, 0, 0, 0, 3]}
+
+
+# ---------------------------------------------------------------------------
 # reddit_unified: atom <updated> date parsing + per-subreddit latest files
 # ---------------------------------------------------------------------------
 
