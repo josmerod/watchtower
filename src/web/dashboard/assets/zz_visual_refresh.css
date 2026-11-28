@@ -678,3 +678,26 @@ html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):focus {
 html body .js-plotly-plot .plotly .main-svg:not(.table):not(.alert):not(.card):not(.nav-tabs) {
     background-color: transparent !important;
 }
+
+/* A cell's content does not paint over its row. The blanket rule of style.css
+   paints every element the page colour, a cell's content included, so in a
+   striped table the wrappers that title_cell and text_cell put in a cell, and
+   the links, covered the stripe and the hover of their row with a dark block
+   inside a lighter frame: it read as a box behind the title. More specific
+   than that rule and than the .btn-primary rules above; an element with a
+   background of its own (bg-*, .btn, card, alert) keeps it. */
+html body .table td :is(div, span, a, small, p, code):not([class*="bg-"]):not(.btn):not(.card):not(.alert):not(.table) {
+    background-color: transparent !important;
+}
+
+/* A link in a cell stays readable under the pointer. `.table td a:hover` of
+   style.css turns its text dark for a purple pill that the blanket rule then
+   paints over, so the link vanished on hover in every table. More specific
+   than that rule: lighter text and an underline, as outside tables. */
+html body .table td a:not(.btn):hover,
+html body .table td a:not(.btn):focus {
+    color: #ddd6fe !important;
+    text-decoration: underline !important;
+    box-shadow: none !important;
+    transform: none !important;
+}

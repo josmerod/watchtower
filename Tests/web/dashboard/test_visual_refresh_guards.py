@@ -23,13 +23,31 @@ BLANKET_CHAIN = ":not(.table):not(.alert):not(.card):not(.nav-tabs)"
 CLASS_LEVEL = re.compile(r"\.[\w-]+|:[\w-]+(?:\([^)]*\))?")
 
 
+def _split_selectors(text: str) -> list[str]:
+    """The selectors of a list, split on the commas outside its parentheses.
+
+    `:is(div, span)` holds commas of its own: a plain split turns it into two selectors.
+    """
+    selectors, depth, start = [], 0, 0
+    for index, char in enumerate(text):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == "," and depth == 0:
+            selectors.append(text[start:index])
+            start = index + 1
+    selectors.append(text[start:])
+    return [selector.strip() for selector in selectors if selector.strip()]
+
+
 def rules_of(stylesheet: Path) -> list[tuple[list[str], dict[str, str]]]:
     """Every rule of a sheet as (selectors, declarations), comments stripped."""
     css = re.sub(r"/\*.*?\*/", "", stylesheet.read_text(encoding="utf-8"), flags=re.S)
     rules = []
     for selector_list, body in RULE.findall(css):
         # The first rule inside a media block carries the block's preamble in front of its selector.
-        selectors = [selector.strip() for selector in re.sub(r"@media[^{]*\{", "", selector_list).split(",") if selector.strip()]
+        selectors = _split_selectors(re.sub(r"@media[^{]*\{", "", selector_list))
         declarations = dict(part.strip().split(":", 1) for part in body.split(";") if ":" in part)
         rules.append((selectors, {name: value.strip() for name, value in declarations.items()}))
     return rules
@@ -110,3 +128,39 @@ def test_plotly_layers_do_not_cover_the_plot():
     assert reset, "no rule of the final sheet makes the Plotly layer svgs transparent"
     for selector, _ in reset:
         assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector
+
+
+def test_cell_content_does_not_paint_over_its_row():
+    """The blanket rule of style.css paints every element the page colour, the content of a cell included.
+
+    The `.table td` rule above is made transparent, but it is four classes short of the blanket one. So in a striped
+    table the wrappers that title_cell and text_cell put in a cell, and the links, covered the stripe and the hover of
+    their row: a dark block inside a lighter frame, read as a box behind the title.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, BLANKET_CHAIN) if "background-color" in d]
+    assert legacy, "the blanket rule of the legacy sheet is gone: drop the reset and this test"
+
+    reset = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".table td") if d.get("background-color") == "transparent !important" and ":hover" not in s and ":focus" not in s]
+    assert reset, "no rule of the final sheet makes the content of a cell transparent"
+    for selector, _ in reset:
+        assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector
+        assert all(re.search(rf"(?<![\w-]){part}(?![\w-])", selector) for part in ("div", "span", "a")), "the wrappers of title_cell and text_cell, and the links, are not all covered"
+        assert '[class*="bg-"]' in selector and ".btn" in selector, "an element with a background of its own has to keep it"
+
+
+def test_a_link_in_a_cell_stays_readable_under_the_pointer():
+    """`.table td a:hover` of style.css turns the text of a link dark, for a purple pill.
+
+    The blanket rule paints that pill over, so a link of any table vanished on hover: dark text on the dark page
+    colour. The hover rule of the final sheet has to outrank the legacy one.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, ".table td a") if ":hover" in s and "color" in d]
+    assert legacy, "the hover rule of the legacy sheet is gone: drop the reset and this test"
+
+    links = rules_matching(FINAL_SHEET, ".table td a")
+    hover = [(s, d) for s, d in links if ":hover" in s]
+    assert hover, "no hover rule of the final sheet covers a link in a cell"
+    assert any(":focus" in s for s, _ in links), "the keyboard focus gets no rule of its own"
+    for selector, declarations in hover:
+        assert declarations.get("color") == "#ddd6fe !important" and declarations.get("text-decoration") == "underline !important", (selector, declarations)
+        assert len(CLASS_LEVEL.findall(selector)) > max(len(CLASS_LEVEL.findall(s)) for s, _ in legacy), selector
