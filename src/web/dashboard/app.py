@@ -36,7 +36,7 @@ from src.web.dashboard.components.fourchan_tab import (
     register_fourchan_callbacks,
     render_fourchan_tab,
 )
-from src.web.dashboard.components.games_tab import render_games_tab
+from src.web.dashboard.components.games_tab import register_games_callbacks, render_games_tab
 from src.web.dashboard.components.knowledge_garden_tab import (
     register_knowledge_garden_callbacks,
     render_knowledge_garden_tab,
@@ -759,6 +759,7 @@ register_notifications_callbacks(app)
 register_metrics_callbacks(app)
 register_digest_callbacks(app)
 register_changelog_callbacks(app)
+register_games_callbacks(app)
 
 
 if __name__ == "__main__":
