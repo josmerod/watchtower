@@ -5,6 +5,10 @@ hand-built DataFrames (same pattern as test_videos_channels_admin.py); no
 data/ files and no network. Covers the pure theme helpers, the filter
 composition inside ``VideoManager.get_videos`` and the dropdown's wiring
 into the single controller callback.
+
+A theme is a key of ``src/etl/goldigging/channels.json`` (T-138): every test
+here pins those keys to the names its directories use, so the fixtures do not
+depend on what the real file lists today.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -13,12 +17,27 @@ import dash
 import pandas as pd
 import pytest
 
+from src.etl.goldigging import channel_topics
 from src.web.dashboard.components import videos_tab as tab
 from src.web.dashboard.components.videos_tab import (
     _channel_matches_theme,
     _extract_theme_options,
     _is_theme_channel,
 )
+
+# The theme keys of every fixture below, as channels.json would list them.
+THEME_KEYS = ("aa-gen-ai", "zz-python")
+
+
+@pytest.fixture(autouse=True)
+def fixture_theme_keys(monkeypatch):
+    """Answer every theme lookup from THEME_KEYS instead of the real channels.json."""
+    topics = {key: {"description": key, "channels": []} for key in THEME_KEYS}
+    monkeypatch.setattr(channel_topics, "load_channel_topics", lambda: topics)
+    # The helper caches the file per process: drop the cache before and after
+    channel_topics._read_topics.cache_clear()
+    yield THEME_KEYS
+    channel_topics._read_topics.cache_clear()
 
 
 def _frame(rows):
@@ -89,13 +108,19 @@ def _by_id(layout, wanted_id):
         ("aa-gen-ai", True),
         ("zz-python", True),
         ("MatthewBerman", False),
-        ("aa", False),  # prefix without the dash is not a theme bucket
+        ("aa", False),  # not a listed key
         ("AA-Gen", False),  # detection is case-sensitive on the raw dir name
         ("", False),
     ],
 )
 def test_is_theme_channel(channel, expected):
     assert _is_theme_channel(channel) is expected
+
+
+def test_is_theme_channel_needs_the_key_not_a_prefix():
+    """A theme-like prefix is not a theme: only what channels.json lists is (T-138)."""
+    assert _is_theme_channel("zz-unlisted") is False
+    assert _is_theme_channel("aa-unlisted-videos") is False
 
 
 def test_extract_theme_options_sorted_with_default_first():
@@ -107,6 +132,18 @@ def test_extract_theme_options_sorted_with_default_first():
 
 def test_extract_theme_options_without_themes():
     assert _extract_theme_options(["MatthewBerman", "TwoMinutePapers"]) == [{"label": "Todos los temas", "value": "all"}]
+
+
+def test_extract_theme_options_labels_a_theme_with_its_description(monkeypatch):
+    """The dropdown leads with what the theme is about; the key is kept because it is what orders the themes."""
+    monkeypatch.setattr(channel_topics, "load_channel_topics", lambda: {"zz-food": {"description": "Food Reviews", "channels": []}})
+    channel_topics._read_topics.cache_clear()
+    try:
+        options = _extract_theme_options(["zz-food"])
+    finally:
+        channel_topics._read_topics.cache_clear()
+
+    assert options[1:] == [{"label": "Food Reviews (zz-food)", "value": "zz-food"}]
 
 
 def test_extract_theme_options_empty_input():

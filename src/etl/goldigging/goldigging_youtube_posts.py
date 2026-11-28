@@ -11,6 +11,7 @@ import yt_dlp
 
 # Add project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+from src.etl.goldigging.channel_topics import load_channel_topics
 from src.utils.file_system import ensure_directories, get_project_root
 
 # Set up logging
@@ -73,18 +74,8 @@ def clear_caches() -> None:
     VIDEO_CACHE.clear()
 
 
-# Load channel topics from JSON file
-def load_channel_topics() -> dict[str, Any]:
-    """Load the channel topics configuration from the JSON file."""
-    # Get the directory this file is in
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(current_dir, "channels.json")
-
-    with open(json_path) as json_file:
-        return json.load(json_file)
-
-
-# Channel configurations by topic
+# Channel configurations by topic. channels.json is read through the helper
+# next to it, which the Videos tab also asks what a theme is.
 CHANNEL_TOPICS = load_channel_topics()
 
 
