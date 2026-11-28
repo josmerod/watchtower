@@ -125,6 +125,11 @@ directly under the heading:
 Never rewrite an archived row afterwards. A correction goes into a new
 changelog line, and the user gets it in `FEEDBACK.md` as a correction.
 
+The one exception is a repair of the row's **shape** that changes no
+content: an Area cell a row from before the column lacks, a value outside
+its list (`security` → `sec`, `P4` → `P3`). Name it in the changelog line
+of the wave that does it, so the repair is on record.
+
 **Code first, board after.** A code change is merged and deployed through its
 own PR; the rows are then closed in a docs PR, with the production evidence
 in them. A docs-only push skips the test suite, but it still goes through a
