@@ -17,13 +17,13 @@ Watchtower collects data from public web sources, normalizes it into JSON files 
 
 | Path | Contents |
 | :-- | :-- |
-| `src/etl/` | 22 domain packages; 98 of their scripts are in the ETL cycle. Shared modules: `base.py` (`BaseETL`), `circuit_breaker.py`, `proxy_manager.py` |
+| `src/etl/` | 23 domain packages; 100 of their scripts are in the ETL cycle. Shared modules: `base.py` (`BaseETL`), `circuit_breaker.py`, `proxy_manager.py` |
 | `src/models/` | 19 Pydantic modules; the bases (`TimestampedModel`, `StatusModel`, `ErrorModel`, `PaginatedResponse`) are in `base.py` |
 | `src/watchers/` | `base_watcher.py` (`BaseWatcher`), four watchers, the `run_watcher.py` runner |
-| `src/web/dashboard/` | `app.py` (layout and tab registry), `components/` (19 tab modules and shared helpers), `assets/` (CSS and JS) |
+| `src/web/dashboard/` | `app.py` (layout and tab registry), `components/` (20 tab modules and shared helpers), `assets/` (CSS and JS) |
 | `src/api/` | `main.py` (app, CORS, health), `routers.py`, `public.py`, `search.py`, `models.py`, `export_openapi.py` |
 | `src/config/` | `settings.py` (`Settings`, `get_settings()`), `models.py` (per-component config classes) |
-| `src/repositories/` | Cached file access for six dashboard components; see `docs/REPOSITORY_PATTERN.md` |
+| `src/repositories/` | Cached file access for seven dashboard components; see `docs/REPOSITORY_PATTERN.md` |
 | `src/services/` | `data_loader.py` (reads for the dashboard and the API), `content_search.py`, `watcher_events.py` |
 | `src/alerts/` | `rules_store.py`, used by the notifications tab, three ETLs and the freshness watcher |
 | `src/intelligence/` | LLM client and `enrichment.py`, used by `BaseETL` when `enable_enrichment` is on |
@@ -45,13 +45,13 @@ Watchtower collects data from public web sources, normalizes it into JSON files 
 | `uv run python src/watchers/run_watcher.py` | Watcher runner (`--list`, `--once`); today it can only launch `ms_applied_skills` |
 | `uv run --with paramiko python deployment/deploy.py` | Deploys to the Unraid server |
 
-The orchestrator runs the 101 entries of `ETL_SCRIPTS` (98 ETLs, 2 watchers, 1 miner), each as `uv run python <script>` in a pool of 4 workers, with one log per script under `logs/`. After the pool it runs `src/watchers/data_freshness_watcher.py` on its own, then `src/utils/snapshot_retention.py`, then `run_backup.py` — a verified archive of `data/` and `logs/` in `backups/`, made only when the newest one is more than 20 hours old.
+The orchestrator runs the 103 entries of `ETL_SCRIPTS` (100 ETLs, 2 watchers, 1 miner), each as `uv run python <script>` in a pool of 4 workers, with one log per script under `logs/`. After the pool it runs `src/watchers/data_freshness_watcher.py` on its own, then `src/utils/snapshot_retention.py`, then `run_backup.py` — a verified archive of `data/` and `logs/` in `backups/`, made only when the newest one is more than 20 hours old.
 
 ## Contracts to build on
 
-- **ETL**: subclass `BaseETL[I, O]` and implement `extract()`, `transform()` and `load()`. `run()` is the template method and returns `ETLMetrics`. The base class brings the circuit breaker, proxy rotation, tenacity retries, checkpointing, deduplication and optional LLM enrichment. 30 of the 98 ETL scripts use it (28 directly, 2 through `SimpleETL`); the other 68 are plain scripts.
+- **ETL**: subclass `BaseETL[I, O]` and implement `extract()`, `transform()` and `load()`. `run()` is the template method and returns `ETLMetrics`. The base class brings the circuit breaker, proxy rotation, tenacity retries, checkpointing, deduplication and optional LLM enrichment. 28 of the 100 ETL scripts use it (26 directly, 2 through `SimpleETL`); the other 72 are plain scripts.
 - **Watcher**: subclass `BaseWatcher` and implement `extract_value(html_content)` and `has_changed(old_value, new_value)`. State is written to `data/watchers/<name>/state.json` and events to `data/watchers/<name>/events/`. `MSAppliedSkillsWatcher`, `CoursesWatcher` and `DataFreshnessWatcher` are entries of the ETL cycle, and `ArxivWatcher` is a component of the ArXiv ETL.
-- **Dashboard tab**: one module under `components/` exposing a `render_*_tab()` function, registered in `_TAB_RENDERERS` in `app.py`; only the active tab is rendered. Callbacks follow the Single Callback Pattern: one callback per output component, with `prevent_initial_call=True`. 18 tabs are registered. `shortcuts_tab.py` is the 19th module; its tab is hidden, but `app.py` still calls `register_shortcuts_callbacks`.
+- **Dashboard tab**: one module under `components/` exposing a `render_*_tab()` function, registered in `_TAB_RENDERERS` in `app.py`; only the active tab is rendered. Callbacks follow the Single Callback Pattern: one callback per output component, with `prevent_initial_call=True`. 19 tabs are registered. `shortcuts_tab.py` is the 20th module; its tab is hidden, but `app.py` still calls `register_shortcuts_callbacks`.
 - **API**: three routers (`router`, `public_router`, `search_router`) mounted under `/api/v1`. GET only, with Pydantic response models.
 - **Settings**: `get_settings()` returns a cached pydantic-settings `Settings` that reads `.env` and `.env.local`. Nested variables are written `WATCHTOWER_<COMPONENT>__<SETTING>`.
 - **Output**: ETLs write `data/<component>/`; `BaseETL` also updates `data/metrics/etl_runs_latest.json`. `data/` is gitignored.
