@@ -20,6 +20,7 @@ from src.web.dashboard.components.changelog_modal import (
     register_changelog_callbacks,
     render_changelog_elements,
 )
+from src.web.dashboard.components.cinema_tab import register_cinema_callbacks, render_cinema_tab
 from src.web.dashboard.components.courses_tab import (
     register_courses_callbacks,
     render_courses_tab,
@@ -251,6 +252,10 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="Valencia Events",
                             tab_id="tab-valencia",
+                        ),
+                        dbc.Tab(
+                            label="🎬 Cine",
+                            tab_id="tab-cinema",
                         ),
                         dbc.Tab(
                             label="🏛️ Ayudas Públicas",
@@ -660,6 +665,7 @@ _TAB_RENDERERS = {
     "tab-4chan": render_fourchan_tab,
     "tab-scavenging": render_scavenging_tab,
     "tab-valencia": render_valencia_events_tab,
+    "tab-cinema": render_cinema_tab,
     "tab-spanish-aid": render_spanish_public_aid_tab,
     "tab-arxiv-research": render_arxiv_research_tab,
     "tab-deals": render_deals_tab,
@@ -750,6 +756,7 @@ register_news_search_callbacks(app)
 register_knowledge_garden_callbacks(app)
 register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
+register_cinema_callbacks(app)
 register_shortcuts_callbacks(app)
 register_deals_callbacks(app)
 register_benchmarks_callbacks(app)
