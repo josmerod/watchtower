@@ -6,7 +6,7 @@ Usage, from the main checkout (the one with ``.env``)::
     uv run --with paramiko python .agents/skills/unraid-deploy/scripts/verify_deploy.py --since <commit> --expect <commit>
     uv run --with paramiko python .agents/skills/unraid-deploy/scripts/verify_deploy.py --all --expect <commit>
 
-``--since`` names the commit production ran before the deploy; the files that changed up to ``--expect`` (default ``HEAD``) are compared, ``--all`` compares every shipped file. Only what the deploy ships is looked at (``INCLUDE_PATHS`` in ``deployment/deploy.py``), against the committed bytes: the archive is normalized to LF, so the commit is what the server should hold whatever the checkout's line endings are.
+``--since`` names the commit production ran before the deploy; the files that changed up to ``--expect`` (default ``HEAD``) are compared, ``--all`` compares every shipped file. Only what the deploy ships is looked at (``INCLUDE_PATHS`` in ``deployment/deploy.py``), against the committed bytes: the archive is normalized to LF, so the commit is what the server should hold whatever the checkout's line endings are. A file the commit no longer holds was deleted before it: it matches when the container does not hold it either, and is ``STILL IN CONTAINER`` when the image kept it.
 
 The server side is one read-only ``md5sum`` per batch of files, inside the container. Nothing is written anywhere, and the host is never printed: the connection is opened without the line ``deploy.py`` echoes.
 """
@@ -27,6 +27,8 @@ from deployment import deploy
 
 BATCH = 200
 MD5_LINE = re.compile(r"^([0-9a-f]{32}) [ *](.+)$")
+# What md5sum answers for a file that is not there; the path comes bare or between quotes, by the coreutils build.
+MISSING = re.compile(r"^md5sum: ['\"]?(.+?)['\"]?: No such file or directory$")
 ADDRESS = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b")
 
 
@@ -110,6 +112,44 @@ def container_md5(ssh: Any, paths: list[str]) -> tuple[dict[str, str], list[str]
     return digests, unparsed
 
 
+def judge(paths: list[str], expected: dict[str, str], actual: dict[str, str], unexplained: list[str]) -> tuple[list[str], int, int]:
+    """The report of one comparison: its lines, how many files do not match, and how many deleted ones are gone.
+
+    ``expected`` holds the md5 of each path as the commit has it, so a path left out was deleted before the commit: it
+    matches when the container does not hold it either. ``unexplained`` holds what ``md5sum`` wrote that was not a digest.
+    Its line for a file that is not there goes with the verdict of that file, which already says whether its absence is
+    right; any other line counts against the result.
+    """
+    lines: list[str] = []
+    failed = gone = 0
+    for path in paths:
+        if path not in expected and path not in actual:
+            gone += 1
+            lines.append(f"deleted    {path}")
+            continue
+        if path not in expected:
+            verdict = "STILL IN CONTAINER"
+        elif path not in actual:
+            verdict = "NOT IN CONTAINER"
+        elif actual[path] != expected[path]:
+            verdict = "DIFFERENT"
+        else:
+            lines.append(f"ok         {path}")
+            continue
+        failed += 1
+        lines.append(f"{verdict:<17}  {path}  (commit {expected.get(path, '-')}, container {actual.get(path, '-')})")
+    asked = set(paths)
+    for line in unexplained:
+        missing = MISSING.match(line)
+        if missing and missing[1] in asked:
+            if missing[1] in expected:
+                lines.append(f"server said: {line}")
+            continue
+        lines.append(f"server said: {line}")
+        failed += 1
+    return lines, failed, gone
+
+
 def main() -> int:
     """Compare the container with the commit; exit 1 on any difference."""
     # "server said" lines carry whatever the server wrote, and a pipe on Windows encodes it with the code page of the
@@ -139,23 +179,11 @@ def main() -> int:
         print(f"Could not read the container: {ADDRESS.sub('<ip>', str(error))}")
         return 1
 
-    failed = 0
-    for path in paths:
-        if path not in expected:
-            verdict = "NOT IN COMMIT"
-        elif path not in actual:
-            verdict = "NOT IN CONTAINER"
-        elif actual[path] != expected[path]:
-            verdict = "DIFFERENT"
-        else:
-            print(f"ok         {path}")
-            continue
-        failed += 1
-        print(f"{verdict:<10}  {path}  (commit {expected.get(path, '-')}, container {actual.get(path, '-')})")
-    for line in unexplained:
-        print(f"server said: {ADDRESS.sub('<ip>', line)}")
-        failed += 1
-    print(f"\n{len(paths) - failed} of {len(paths)} shipped file(s) match {options.expect[:12]}.")
+    lines, failed, gone = judge(paths, expected, actual, unexplained)
+    for line in lines:
+        print(ADDRESS.sub("<ip>", line))
+    deleted = f" ({gone} deleted before it, and gone from the container)" if gone else ""
+    print(f"\n{len(paths) - failed} of {len(paths)} shipped file(s) match {options.expect[:12]}{deleted}.")
     return 1 if failed else 0
 
 

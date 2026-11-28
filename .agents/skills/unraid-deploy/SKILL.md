@@ -141,8 +141,10 @@ success, and paste the real output into the report:
    ```bash
    uv run --with paramiko python .agents/skills/unraid-deploy/scripts/verify_deploy.py --since <commit production ran before>
    ```
-   `ok` for every file; `DIFFERENT` means the tree that was packed was not
-   the commit (uncommitted changes, a wrong branch).
+   `ok` for every file, and `deleted` for a file the release removed, once
+   it is gone from the container. `DIFFERENT` means the tree that was packed
+   was not the commit (uncommitted changes, a wrong branch);
+   `STILL IN CONTAINER` means the image kept a file the commit deleted.
 3. **Images.** `docker image ls watchtower`: `latest` is the new image,
    `previous` the one before it.
 4. **The first cycle**, at the end of `scheduler.out.log`: `ETL Workflow
