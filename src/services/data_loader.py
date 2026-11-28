@@ -201,6 +201,11 @@ KNOWLEDGE_SOURCES_CONFIG = {
         "path": get_data_path("substack", "output", "latest.json"),
         "name": "Substack",
     },
+    # T-134: trendshift.io daily ranking, one record per repository.
+    "trendshift": {
+        "path": get_data_path("github", "trendshift_daily_latest.json"),
+        "name": "Trendshift",
+    },
     "rss_feeds": {
         "path": get_data_path("rss_feeds", "output", "latest.json"),
         "name": "RSS Feeds",

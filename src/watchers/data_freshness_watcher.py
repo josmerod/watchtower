@@ -82,6 +82,9 @@ SOURCE_FILES: list[dict[str, Any]] = [
     {"key": "hf_trending", "label": "HF Trending papers", "path": "arxiv/hf_daily_papers_latest.json", "warn_hours": 30, "critical_hours": 168},
     {"key": "reddit_unified", "label": "Reddit unified", "path": "reddit_unified/reddit_unified_latest.json", "warn_hours": 26, "critical_hours": 168},
     {"key": "trends", "label": "Cross-source trends", "path": "analytics/trends/latest_trends.json", "warn_hours": 26, "critical_hours": 168},
+    # Knowledge Garden. The ETL keeps the last good file when trendshift.io answers nothing, so a
+    # blocked site shows up here as an aging snapshot.
+    {"key": "trendshift", "label": "Trendshift (GitHub trending)", "path": "github/trendshift_daily_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "snapshot_at"},
     # Benchmarks (BridgeBench is known-flaky: site mid-V3 migration)
     {"key": "llm_leaderboard", "label": "LLM leaderboard", "path": "benchmarks/llm_leaderboard.json", "warn_hours": 72, "critical_hours": 336},
     {"key": "bridgebench", "label": "BridgeBench Elo", "path": "benchmarks/bridgebench_overall.json", "warn_hours": 336, "critical_hours": 1440},

@@ -137,6 +137,7 @@ ETL_SCRIPTS = [
     "src/etl/github/github_trending_etl.py",  # T-078: github.com/trending repos — Radar "🐙 GH Trending"
     # Knowledge Garden
     "src/etl/substack/substack_etl.py",
+    "src/etl/github/trendshift_etl.py",  # T-134: trendshift.io daily ranking, one record per repository
     # Benchmarks
     "src/etl/benchmarks/artificial_analysis_etl.py",
     "src/etl/benchmarks/bridgebench_etl.py",
