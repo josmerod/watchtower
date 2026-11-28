@@ -114,6 +114,11 @@ SOURCE_FILES: list[dict[str, Any]] = [
         "content_warn_hours": 72,
         "content_critical_hours": 336,
     },
+    # Cinema sessions (Cine tab, T-151). Rewritten every cycle. Its "date" is a screening day that lies
+    # ahead and could never age; "first_detected_at" is when a session was first listed, and the cinemas
+    # open new days all the time, so a week without a session nobody had seen means the listings no
+    # longer change or are no longer parsed.
+    {"key": "cinema", "label": "Cinema sessions (Cine tab)", "path": "cinema/cinema_sessions_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "first_detected_at"},
 ]
 
 

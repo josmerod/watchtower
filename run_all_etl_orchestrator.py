@@ -109,7 +109,7 @@ ETL_SCRIPTS = [
     "src/etl/games/games_get_isthereanydeal_api.py",
     "src/etl/games/games_get_metacritic_rss.py",
     # Entertainment
-    # cinema_ecartelera_etl.py removed — file missing, only _improved version exists
+    "src/etl/cinema/cinema_sessions_etl.py",  # Cine Tívoli, Babel, Filmoteca, FilmAffinity — feeds dashboard Cine tab (T-151)
     # Ecommerce: shoppy_etl.py removed (T-110) — it was a mock stub with no
     # __main__ that registered fake "Placeholder" data every cycle. The
     # shoppy.gg product models live on in src/models/ecommerce.py.
