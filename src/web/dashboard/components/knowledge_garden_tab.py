@@ -352,15 +352,21 @@ def _plain_text(value: str) -> str:
     return re.sub(r"\s+", " ", unescape(text)).strip()
 
 
-# --- Repository rows (T-134) ---
-# A source that ranks repositories (Trendshift) carries numbers. No other
-# Knowledge Garden source writes ``stars``, so a row that has them is a
-# repository and gets a line with its rank, stars, trend figure, forks and
-# language, and under it its description. Every other row renders as before.
+# --- Repository rows (T-134, T-204) ---
+# A source that ranks repositories (Trendshift) carries numbers, and so does a
+# record of opensourceprojects.dev once GitHub was asked about it. A row that
+# has a star count (``stars``, or ``stars_count``) is a repository and gets a
+# line with what it carries: rank, stars, trend figure, forks, language,
+# topics. Under it comes the description; a record of opensourceprojects.dev
+# gets that line before GitHub answered too, stars or not. Every other row
+# renders as before.
 # The lines carry no link: the title stays the first link of the row, where
 # kg_state.js puts the NUEVO badge.
 _KG_PERIOD_LABELS = {"daily": "today", "weekly": "this week", "monthly": "this month", "yearly": "this year"}
 _KG_LINE_MAX_CHARS = 200
+_KG_TOPICS_SHOWN = 5
+# Sources whose every item is a repository.
+_KG_REPOSITORY_SOURCES = frozenset({"opensourceprojects.dev"})
 
 
 def _is_count(value: Any) -> bool:
@@ -368,25 +374,42 @@ def _is_count(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
+def _count(article: dict, *names: str) -> int | None:
+    """The first of the fields that holds a count; ``None`` when none does."""
+    return next((article[name] for name in names if _is_count(article.get(name))), None)
+
+
 def _is_repository(article: dict) -> bool:
-    """Whether an item is a ranked repository: it carries its star count."""
-    return _is_count(article.get("stars"))
+    """Whether an item is a repository with figures: it carries a star count."""
+    return _count(article, "stars", "stars_count") is not None
+
+
+def _topics(article: dict) -> str:
+    """The topics of a repository as one part of its line: the five first, an ellipsis when more came."""
+    names = [str(topic).strip() for topic in article.get("topics") or [] if isinstance(topic, str) and topic.strip()]
+    return ", ".join(names[:_KG_TOPICS_SHOWN]) + ("…" if len(names) > _KG_TOPICS_SHOWN else "")
 
 
 def _repo_meta(article: dict) -> str:
     """``#1 · 3,466 stars · +603 today · 116 forks · Rust``, with what the record has, in that order."""
-    if not _is_repository(article):
+    stars = _count(article, "stars", "stars_count")
+    if stars is None:
         return ""
     parts: list[str] = []
     if _is_count(article.get("rank")):
         parts.append(f"#{article['rank']}")
-    parts.append(f"{article['stars']:,} stars")
-    if _is_count(article.get("stars_gained")):
-        parts.append(f"+{article['stars_gained']:,} {_KG_PERIOD_LABELS.get(str(article.get('trend_period') or ''), 'in the period')}")
-    if _is_count(article.get("forks")):
-        parts.append(f"{article['forks']:,} forks")
+    parts.append(f"{stars:,} stars")
+    gained = _count(article, "stars_gained")
+    if gained is not None:
+        parts.append(f"+{gained:,} {_KG_PERIOD_LABELS.get(str(article.get('trend_period') or ''), 'in the period')}")
+    forks = _count(article, "forks", "forks_count")
+    if forks is not None:
+        parts.append(f"{forks:,} forks")
     if article.get("language"):
         parts.append(str(article["language"]))
+    topics = _topics(article)
+    if topics:
+        parts.append(topics)
     return " · ".join(parts)
 
 
@@ -396,14 +419,27 @@ def _muted_line(text: str, search_term: str = "") -> html.Div:
     return html.Div(highlight_segments(clipped, search_term) if search_term else clipped, className="small text-muted")
 
 
+def _description_line(article: dict, search_term: str = "") -> html.Div | None:
+    """The description under a repository's title; ``None`` without one, or when it only repeats the title."""
+    if not article.get("description"):
+        return None
+    text = _plain_text(str(article["description"]))
+    title = next((str(article.get(field)) for field in ("title", "name", "full_name") if article.get(field)), "")
+    if text.casefold() == _plain_text(title).casefold():
+        return None
+    return _muted_line(text, search_term)
+
+
 def _knowledge_title_cell(article: dict, search_term: str) -> html.Div:
     """The Title cell of a list row: the linked title, then a repository's figures and description."""
     cell = title_cell(article, search_term, title_fields=("title", "name", "full_name"), url_fields=("url", "link", "html_url", "website"))
-    meta = _repo_meta(article)
-    if meta:
-        cell.children.append(_muted_line(meta))
-        if article.get("description"):
-            cell.children.append(_muted_line(_plain_text(str(article["description"])), search_term))
+    if _is_repository(article) or article.get("source") in _KG_REPOSITORY_SOURCES:
+        meta = _repo_meta(article)
+        if meta:
+            cell.children.append(_muted_line(meta))
+        line = _description_line(article, search_term)
+        if line is not None:
+            cell.children.append(line)
     return cell
 
 

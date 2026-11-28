@@ -7,7 +7,8 @@ description. The callbacks are driven through Dash's real endpoint, as the
 browser would. Fixture-based: the data loader and the saved-items file are
 replaced, so nothing reads ``data/`` and nothing touches the network.
 
-The records here have the shape ``src/etl/github/trendshift_etl.py`` stores.
+The records here have the shape ``src/etl/github/trendshift_etl.py`` stores. The last
+section covers the rows of opensourceprojects.dev, which share the builder (T-204).
 """
 
 from pathlib import Path
@@ -434,3 +435,73 @@ def test_the_period_of_the_trend_figure_is_named(records):
 
 def test_the_record_fixture_is_what_the_model_stores(records):
     assert [TrendshiftRepoModel.model_validate(record).model_dump(mode="json") for record in records] == records
+
+
+# --- Open Source rows (T-204): the figures once GitHub answered, the opening from then on ---
+
+
+def _project(**extra) -> dict:
+    """A record as ``opensource_projects_etl`` stores it: GitHub not asked yet unless said otherwise."""
+    return {
+        "id": "id-triliumnext-trilium",
+        "created_at": "2026-11-28 04:42:56",
+        "updated_at": "2026-11-28 04:42:56",
+        "title": "Trilium Notes",
+        "description": "Build your personal knowledge base.",
+        "url": "https://github.com/triliumnext/trilium",
+        "source": "opensourceprojects.dev",
+        "tags": ["CLI"],
+        "published_at": "2026-11-28 01:50:02+00:00",
+        "post_url": "https://www.opensourceprojects.dev/post/triliumnext-trilium",
+        "topics": [],
+        "detail_fetched": True,
+        **extra,
+    }
+
+
+def _lines(cell) -> list:
+    return [child for child in cell.children if isinstance(child, html.Div)]
+
+
+def test_an_opensource_record_shows_its_figures_once_github_answered():
+    asked = _project(stars_count=3466, forks_count=116, language="JavaScript", topics=["knowledge-base", "note-taking", "self-hosted", "markdown", "notes", "electron"], github_checked_at="2026-11-28 05:47:00")
+    meta = "3,466 stars · 116 forks · JavaScript · knowledge-base, note-taking, self-hosted, markdown, notes…"
+
+    assert tab._is_repository(asked) is True and tab._repo_meta(asked) == meta
+    assert [line.children for line in _lines(tab._knowledge_title_cell(asked, ""))] == [meta, "Build your personal knowledge base."]
+    assert tab._repo_meta({**asked, "topics": []}) == "3,466 stars · 116 forks · JavaScript"
+    assert tab._repo_meta({**asked, "language": None, "forks_count": None}) == "3,466 stars · knowledge-base, note-taking, self-hosted, markdown, notes…"
+    card = _text(tab._knowledge_card(asked, ""))
+    assert meta in card and "Build your personal knowledge base." in card
+
+
+def test_an_opensource_record_shows_its_opening_before_github_answered():
+    fresh = _project()
+
+    assert tab._is_repository(fresh) is False and tab._repo_meta(fresh) == ""
+    cell = tab._knowledge_title_cell(fresh, "knowledge")
+    (line,) = _lines(cell)
+    assert "".join(_visible(_json(line))) == "Build your personal knowledge base."
+    assert ["".join(_visible(mark)) for mark in _components(_json(line), "Mark")] == ["knowledge"]
+    assert len(_links(_json(cell))) == 1  # the lines carry no link: the title stays the first one, for the NUEVO badge
+
+
+def test_an_opensource_record_whose_description_repeats_its_title_gets_no_line():
+    """The records before T-204 keep the headline as their description."""
+    legacy = _project(title="Lib & tool", description="Lib & tool", published_at="2026-04-01 07:26:03.537000")
+
+    assert _lines(tab._knowledge_title_cell(legacy, "")) == []
+    assert len(tab._knowledge_title_cell(legacy, "").children) == 1
+
+
+def test_the_sites_tags_are_not_shown_as_topics():
+    # ``tags`` is what the site's listing says of a post; ``topics`` is what GitHub says of the repository.
+    assert tab._repo_meta(_project(stars_count=10, tags=["CLI", "AI"])) == "10 stars"
+    assert tab._repo_meta(_project(stars_count=10, topics=[7, " ", "cli"])) == "10 stars · cli"
+
+
+def test_a_post_of_the_same_subtab_that_is_not_a_repository_is_unchanged():
+    post = {"title": "A post", "url": "https://www.reddit.com/r/opensource/x", "source": "reddit_opensource", "description": "The body of the post", "language": "Python", "stars_count": None}
+
+    assert _json(tab._knowledge_title_cell(post, "")) == _json(title_cell(post, ""))
+    assert tab._is_repository(post) is False
