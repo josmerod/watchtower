@@ -94,6 +94,7 @@ class FakeWeb:
         monkeypatch.setattr(etl, "_get", self.page)
         monkeypatch.setattr(etl, "_github_request", self.github_answer)
         etl.listing_delay_seconds = 0
+        etl.post_delay_seconds = 0
 
     def page(self, url: str) -> str:
         self.requests.append(url)
@@ -517,6 +518,22 @@ class TestExtractCompletion:
         assert sorted(r["url"] for r in records) == ["https://github.com/o/r5", "https://github.com/o/r6"]
         assert all(r["detail_fetched"] is True and r["description"].startswith(OPENING) and r["views_count"] == 31 for r in records)
         assert [url for url in web.requests if "/post/o-r" in url] == ["https://www.opensourceprojects.dev/post/o-r6", "https://www.opensourceprojects.dev/post/o-r5"]
+
+    def test_a_pause_separates_two_post_pages_and_nothing_else(self, etl, monkeypatch):
+        older = [repo("o", f"r{index}", f"2026-11-2{index}T02:00:00") for index in (3, 4, 5)]
+        stored(etl, *[stored_record(r["owner"], r["name"], r["date"].replace("T", " "), post_url=post_url(r), detail_fetched=False, github_checked_at=checked_now()) for r in older])
+        web = FakeWeb()
+        web.install(etl, monkeypatch)
+        web.pages[FEED_URL] = fixture("opensource_feed.xml")
+        etl.post_delay_seconds = 0.2
+        pauses: list[float] = []
+        monkeypatch.setattr(m.time, "sleep", pauses.append)
+
+        records = etl.extract()
+
+        assert etl.post_details_per_run == 150  # the default: a backlog of 1,500 waits ten cycles, not thirty-seven
+        assert all(r["detail_fetched"] for r in records if r["url"].startswith("https://github.com/o/"))
+        assert pauses == [0.2, 0.2]  # between two pages: none before the first, none after the last
 
     def test_a_stored_record_keeps_its_id_and_the_date_it_was_first_seen(self, etl, monkeypatch):
         etl.post_details_per_run = 1
