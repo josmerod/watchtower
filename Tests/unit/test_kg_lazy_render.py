@@ -583,14 +583,16 @@ def test_repository_returns_copies_sorted_newest_first_with_the_sort_date(tmp_pa
     assert json.loads(path.read_text(encoding="utf-8")) == _ITEMS  # …and the file is never rewritten
 
 
-def test_repository_caches_until_a_forced_refresh(tmp_path):
+def test_repository_caches_until_the_file_changes_or_a_forced_refresh(tmp_path):
     path = _write_source(tmp_path / "source.json", [_ITEMS[0]])
     repo = _repository(path)
 
     assert [item["title"] for item in repo.get()] == ["Post 00"]
+    assert [item["title"] for item in repo.get()] == ["Post 00"]  # the file did not change: served from the cache
     _write_source(path, [_ITEMS[0], _ITEMS[1]])
-    assert [item["title"] for item in repo.get()] == ["Post 00"]  # one-hour cache: an ETL write is not seen yet
-    assert [item["title"] for item in repo.get(force_refresh=True)] == ["Post 01", "Post 00"]  # …until Refresh is pressed
+    assert [item["title"] for item in repo.get()] == ["Post 01", "Post 00"]  # an ETL write is seen at the next request, not an hour later (T-197)
+    _write_source(path, [_ITEMS[1]])
+    assert [item["title"] for item in repo.get(force_refresh=True)] == ["Post 01"]  # and Refresh never serves the cache
 
 
 def test_repository_names_a_bare_item_after_its_source(tmp_path):
