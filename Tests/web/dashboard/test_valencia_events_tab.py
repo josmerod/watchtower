@@ -392,6 +392,20 @@ def test_the_layout_has_no_duplicate_ids() -> None:
     assert len(ids) == len(set(ids))
 
 
+def test_the_search_box_and_the_two_dates_send_their_value_after_a_pause() -> None:
+    """Every field one types in sends its value after a pause, a day picked in the calendar included.
+
+    A debounce of True sends a date only when the field loses focus or gets Enter, and the native calendar
+    leaves the focus in the field: the table kept the old list until the user clicked somewhere else, while
+    every select next to it had answered at once.
+    """
+    layout = vet.render_valencia_events_tab()
+
+    typed = {props["id"]: props["debounce"] for props in _walk(layout) if props.get("id") in (vet.SEARCH_ID, vet.FROM_ID, vet.TO_ID) and "debounce" in props}
+    assert typed == {vet.SEARCH_ID: vet.DEBOUNCE_MS, vet.FROM_ID: vet.DEBOUNCE_MS, vet.TO_ID: vet.DEBOUNCE_MS}
+    assert isinstance(vet.DEBOUNCE_MS, int) and vet.DEBOUNCE_MS > 0
+
+
 # --- the filters -------------------------------------------------------------------------------------
 
 

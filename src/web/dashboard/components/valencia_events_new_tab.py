@@ -156,6 +156,10 @@ NEW_NOTICE_LIMIT = 8
 # How long after its start an event may end and still be shown as one session (a night that ends past midnight).
 _SAME_SESSION = timedelta(hours=18)
 DESCRIPTION_LIMIT = 180
+# The search box and the two dates of a custom range send their value once the user pauses for this many
+# milliseconds. Not True for the dates: a debounce of True sends when the field loses focus or gets Enter, and
+# the native calendar leaves the focus in the field, so the table waited for a click elsewhere.
+DEBOUNCE_MS = 400
 
 # The filters as the tab opens.
 DEFAULT_CONTROLS: dict[str, Any] = {
@@ -813,7 +817,7 @@ def _select(control_id: str, label: str, options: list[dict[str, Any]], value: A
 
 
 def _date_input(control_id: str, label: str, today: date) -> html.Div:
-    return html.Div([html.Label(label, className="small text-muted mb-1", htmlFor=control_id), dbc.Input(id=control_id, type="date", min=today.isoformat(), debounce=True)])
+    return html.Div([html.Label(label, className="small text-muted mb-1", htmlFor=control_id), dbc.Input(id=control_id, type="date", min=today.isoformat(), debounce=DEBOUNCE_MS)])
 
 
 def _options_with_counts(counter: Counter, everything: str, *, last: str = "") -> list[dict[str, Any]]:
@@ -828,7 +832,7 @@ def _filters_bar(events: list[dict[str, Any]], now: datetime) -> html.Div:
     """Search, dates, order, page size, category, zone, the three switches and the clear button."""
     live = [event for event in events if not _is_past(event, now)]
     today = now.date()
-    search = create_search_input(SEARCH_ID, placeholder="Nombre, lugar, categoría… (vale sin tildes)", debounce=400)
+    search = create_search_input(SEARCH_ID, placeholder="Nombre, lugar, categoría… (vale sin tildes)", debounce=DEBOUNCE_MS)
     search.className = ""  # inside the bar the row sets the spacing, not the group
     label = "small text-muted mb-1"
     switches = [
@@ -839,10 +843,11 @@ def _filters_bar(events: list[dict[str, Any]], now: datetime) -> html.Div:
         [
             dbc.Row(
                 [
-                    dbc.Col([html.Label("Buscar", className=label, htmlFor=SEARCH_ID), search], xs=12, lg=5),
-                    dbc.Col(_select(PERIOD_ID, "Cuándo", PERIODS, DEFAULT_PERIOD), xs=6, lg=3),
-                    dbc.Col(_select(SORT_ID, "Orden", SORTS, DEFAULT_SORT), xs=6, lg=2),
-                    dbc.Col(_select(PER_PAGE_ID, "Por página", [{"label": str(number), "value": number} for number in PER_PAGE_OPTIONS], DEFAULT_PER_PAGE), xs=6, lg=2),
+                    # One row from 1200 px (4 + 3 + 4 + 1); below, two, because "Detectados hace menos tiempo" is the longest of the orders.
+                    dbc.Col([html.Label("Buscar", className=label, htmlFor=SEARCH_ID), search], xs=12, lg=6, xl=4),
+                    dbc.Col(_select(PERIOD_ID, "Cuándo", PERIODS, DEFAULT_PERIOD), xs=6, lg=6, xl=3),
+                    dbc.Col(_select(SORT_ID, "Orden", SORTS, DEFAULT_SORT), xs=6, lg=7, xl=4),
+                    dbc.Col(_select(PER_PAGE_ID, "Por página", [{"label": str(number), "value": number} for number in PER_PAGE_OPTIONS], DEFAULT_PER_PAGE), xs=6, lg=5, xl=1),
                 ],
                 className="g-3 mb-2",
             ),
