@@ -164,3 +164,20 @@ def test_a_link_in_a_cell_stays_readable_under_the_pointer():
     for selector, declarations in hover:
         assert declarations.get("color") == "#ddd6fe !important" and declarations.get("text-decoration") == "underline !important", (selector, declarations)
         assert len(CLASS_LEVEL.findall(selector)) > max(len(CLASS_LEVEL.findall(s)) for s, _ in legacy), selector
+
+
+def test_an_outline_button_shows_its_fill_under_the_pointer():
+    """`.btn-outline-primary:hover` of style.css turns the text of the button dark, for a purple fill.
+
+    The blanket rule paints that fill over, so the button read as empty under the pointer: every start time of the
+    Cine tab, and the buttons of Valencia Events and of Shortcuts. The fill has to come back from a rule more
+    specific than the blanket one; the dark text of the legacy rule is readable on it.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, ".btn-outline-primary") if ":hover" in s]
+    assert legacy and all(d.get("color") == "#1E1E2E !important" for _, d in legacy), "the legacy sheet changed: re-check what an outline-primary button needs on hover"
+
+    filled = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".btn-outline-primary") if ":hover" in s and d.get("background-color") not in (None, "transparent !important")]
+    assert filled, "no rule of the final sheet fills an outline-primary button on hover"
+    assert any(":focus" in s for s, _ in rules_matching(FINAL_SHEET, ".btn-outline-primary")), "the keyboard focus gets no rule of its own"
+    for selector, _ in filled:
+        assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector

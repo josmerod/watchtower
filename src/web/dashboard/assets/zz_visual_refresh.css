@@ -701,3 +701,14 @@ html body .table td a:not(.btn):focus {
     box-shadow: none !important;
     transform: none !important;
 }
+
+/* An outline-primary button shows its fill under the pointer. `.btn-outline-primary:hover`
+   of style.css turns its text dark for a purple fill, and the blanket rule paints that fill
+   over: the button read as empty under the pointer, in the Cine tab (every start time), in
+   Valencia Events and in Shortcuts. The fill comes back from a rule more specific than the
+   blanket one, and the dark text of the legacy rule is readable on it. */
+html body .btn-outline-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):hover,
+html body .btn-outline-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):focus {
+    background-color: #a37fff !important;
+    border-color: #a37fff !important;
+}
