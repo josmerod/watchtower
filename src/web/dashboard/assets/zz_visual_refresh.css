@@ -314,6 +314,18 @@ a:not(.btn):focus {
     background: transparent !important;
 }
 
+/* The shine that style.css sweeps across a tab under the pointer (`.nav-tabs
+   .nav-item .nav-link::before`, from left -100% to 100%, as wide as its
+   containing block) wants the link as that block. The link is static, so the
+   block was the bar itself where the bar is sticky (from 1200 px, and on a
+   phone) and the page in between: there every pass of the pointer over a tab
+   made the page twice as wide, with a horizontal scrollbar and a jump. More
+   specific than the reset above; `left` and `top` stay `auto`. */
+html body .nav-tabs .nav-item .nav-link,
+html body #dashboard-tabs .nav-item .nav-link {
+    position: relative !important;
+}
+
 .nav-tabs .nav-item .nav-link,
 #dashboard-tabs .nav-link {
     white-space: nowrap !important;

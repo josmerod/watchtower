@@ -74,6 +74,31 @@ def test_tab_links_lose_the_offsets_of_the_legacy_mobile_sheet():
     assert any(":hover" not in s and ":focus" not in s for s, _ in reset), "the reset only applies on hover or focus"
 
 
+def _specificity(selector: str) -> tuple[int, int, int]:
+    """(ids, classes and pseudo-classes, types) of a selector, as a browser counts it."""
+    types = re.findall(r"(?:^|[ >+~])([a-zA-Z][\w-]*)", selector)
+    return selector.count("#"), len(CLASS_LEVEL.findall(selector)), len(types)
+
+
+def test_the_shine_of_a_tab_under_the_pointer_stays_inside_the_bar():
+    """style.css sweeps a shine across a tab: a ::before placed against its containing block and as wide as it.
+
+    A tab link is static (the reset above), so the block was the bar itself where the bar is sticky (from 1200 px, and on a phone) and the page in between: there the pointer over any tab made the page twice as wide, with a horizontal scrollbar and a jump. The link as the block is what the rule meant: a shine one tab wide, which the bar clips.
+    """
+    shine = [(s, d) for s, d in rules_matching(LEGACY_SHEET, ".nav-link::before") if d.get("position") == "absolute !important" and d.get("width") == "100% !important"]
+    assert shine and any(d.get("left") == "-100% !important" for _, d in shine), "the legacy shine is gone: drop the rule and this test"
+    assert any(d.get("left") == "100% !important" for _, d in rules_matching(LEGACY_SHEET, ".nav-link:hover::before")), "the legacy shine no longer moves: drop the rule and this test"
+
+    block = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".nav-link") if d.get("position") == "relative !important"]
+    assert {"html body .nav-tabs .nav-item .nav-link", "html body #dashboard-tabs .nav-item .nav-link"} <= {s for s, _ in block}, "no rule of the final sheet makes a tab link the block of its shine"
+
+    # Outranked by the reset above, it would be static again.
+    static = [s for s, d in rules_matching(FINAL_SHEET, ".nav-link") if d.get("position") == "static !important"]
+    assert static, "the reset that makes tab links static is gone: re-check that the shine still needs its own rule"
+    for selector in (s for s in static if s.endswith(".nav-link")):
+        assert max(_specificity(s) for s, _ in block) > _specificity(selector), f"a tab link is made relative by nothing more specific than {selector}"
+
+
 def test_primary_buttons_outrank_the_blanket_background():
     """The blanket rule paints every background dark with the chain's specificity.
 
