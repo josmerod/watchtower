@@ -9,7 +9,7 @@ both keyless and static:
   its headline, repository, tags and date.
 
 A repository first seen in the listing gets the opening of its article from its own post
-page in a later run, a few dozen per run. Stars, forks, language and topics come from the
+page in a later run, up to 150 per run. Stars, forks, language and topics come from the
 GitHub API, anonymously (60 requests an hour) or with ``GITHUB_TOKEN`` when it is set; a
 lookup that fails leaves the record as it is.
 
@@ -335,7 +335,10 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
         self.base_url = BASE_URL
         self.max_listing_pages = 300  # the whole site is about 260 pages of twelve posts
         self.listing_delay_seconds = 0.4
-        self.post_details_per_run = 40
+        # About half a second each: 150 post pages are about a minute and a half of a
+        # cycle, and clear the backlog of a repair (about 1,500) in ten cycles.
+        self.post_details_per_run = 150
+        self.post_delay_seconds = 0.2
         self.github_lookups_per_run = 30
         # Optional: with a token GitHub answers 5,000 times an hour instead of 60.
         self.github_token = os.environ.get("GITHUB_TOKEN") or None
@@ -513,9 +516,12 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
             reverse=True,
         )
         done = 0
+        started = _utc_now()
         for record in pending:
             if done >= self.post_details_per_run:
                 break
+            if done:
+                time.sleep(self.post_delay_seconds)
             try:
                 page = parse_post_page(self._get(record["post_url"]))
             except requests.RequestException as error:
@@ -528,7 +534,7 @@ class OpenSourceProjectsETL(BaseETL[dict, OpenSourceProjectItem]):
             self._touch(work, record)
             done += 1
         if pending:
-            self.logger.info(f"Post pages: {done} read, {max(0, len(pending) - done)} waiting")
+            self.logger.info(f"Post pages: {done} read in {(_utc_now() - started).total_seconds():.0f} s, {max(0, len(pending) - done)} waiting")
         return done
 
     def _complete_github(self, stored: dict[str, dict[str, Any]], work: dict[str, dict[str, Any]], now: datetime | None = None) -> int:
