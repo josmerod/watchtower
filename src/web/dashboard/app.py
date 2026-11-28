@@ -470,7 +470,7 @@ curl -s "https://watchtower-api.josmerod.es/api/v1/news?source=hackernews&amp;li
           <tr><td><code>/api/v1/freshness</code></td><td>Data-freshness summary plus a <code>stale_sources</code> convenience list.</td><td>None</td></tr>
           <tr><td><code>/api/v1/digest</code></td><td>Compiled weekly digest: hot terms, radar picks, movers.</td><td>None</td></tr>
           <tr><td><code>/api/v1/security/kev</code></td><td>Actively-exploited CVEs (CISA KEV) plus matches against my self-hosted stack.</td><td><code>limit</code></td></tr>
-          <tr><td><code>/api/v1/valencia/events</code></td><td>Valencia events for calendar automations, optional upcoming-days filter.</td><td><code>days</code>, <code>limit</code></td></tr>
+          <tr><td><code>/api/v1/valencia/events</code></td><td>Valencia events for calendar automations: an upcoming-days window or a date range, and one category.</td><td><code>days</code>, <code>from</code>, <code>to</code>, <code>category</code>, <code>limit</code></td></tr>
           <tr><td><code>/api/v1/benchmarks</code></td><td>AI coding benchmark data.</td><td><code>source</code></td></tr>
           <tr><td><code>/api/v1/sources</code></td><td>Machine-readable list of available source keys for filtering.</td><td>None</td></tr>
         </tbody>

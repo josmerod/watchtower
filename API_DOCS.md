@@ -34,7 +34,7 @@ The nine content routes (every route from `routers.py` except `/api/v1/benchmark
 | GET | `/api/v1/freshness` | None | Data-freshness summary plus a `stale_sources` list | `src/api/public.py` |
 | GET | `/api/v1/digest` | None | The weekly digest, as stored | `src/api/public.py` |
 | GET | `/api/v1/security/kev` | `limit` (default 100, range 1–500) | `{"generated_at", "kev_count", "items", "stack_matches"}`: known exploited vulnerabilities and matches against the self-hosted stack | `src/api/public.py` |
-| GET | `/api/v1/valencia/events` | `days` (default 0, meaning all; range 0–365), `limit` (default 200, range 1–500) | `{"generated_at", "count", "items"}`: Valencia events | `src/api/public.py` |
+| GET | `/api/v1/valencia/events` | `days` (default 0, meaning all; range 0–365; ignored when `from` or `to` is given), `from` and `to` (optional, `YYYY-MM-DD`, inclusive, read in València's time), `category` (optional, as the ETL names it: `música`, `teatro`, `arte`, `tech`, `ferias`, `infantil`, `deporte`, `otro`…; case and accents do not count), `limit` (default 200, range 1–500) | `{"generated_at", "count", "items"}`: Valencia events, from thirteen public agendas | `src/api/public.py` |
 | GET | `/api/v1/search` | `q` (required), `limit` (default 25, range 1–100) | `{"query", "count", "items"}`: search results across news, releases, coins, videos and papers | `src/api/search.py` |
 
 - `/api/v1/sources` keys its mappings by `news`, `knowledge_garden`, `games`, `benchmarks`, `arxiv`, `ai_platforms`, `expanded`, `spanish_aid`, `cloud_updates` and `valencia_local`. A `source` written with `-` where the key has `_` is also accepted.
