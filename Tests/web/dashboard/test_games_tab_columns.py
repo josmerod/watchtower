@@ -8,6 +8,7 @@ Fixtures only: the loaders read files written under tmp_path, never data/.
 import json
 from types import SimpleNamespace
 
+import dash
 import pandas as pd
 import pytest
 
@@ -249,3 +250,57 @@ def test_nothing_is_said_without_a_dated_item(fresh_games_data) -> None:
 )
 def test_the_day_shown_is_the_one_in_spain(value, expected) -> None:
     assert games_tab.format_display_date(value) == expected
+
+
+# --- The stand-alone app: python -m src.web.dashboard.components.games_tab (T-198) ---
+# Its block read DATA_LOADED_SUCCESSFULLY["trending"] before that key existed (load_trending_data() adds it) and died on KeyError.
+
+
+START_KEYS = ["deals", "giveaways", "bundles", "new_releases", "metacritic"]
+TRENDING = [{"title": "Itch trending game", "link": "https://example.invalid/t", "author": "Studio", "price": 4.99}]
+METACRITIC = [{"title": "Metacritic review", "link": "https://example.invalid/m", "published": "2026-11-26T10:00:00Z", "metacritic_score": 87}]
+
+
+@pytest.fixture
+def clean_slate(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The module as a fresh import has it: nothing loaded, and "trending" in neither dict until its loader runs."""
+    monkeypatch.setattr(games_tab, "ALL_GAMES_DATA", {key: pd.DataFrame() for key in START_KEYS})
+    monkeypatch.setattr(games_tab, "DATA_LOADED_SUCCESSFULLY", dict.fromkeys(START_KEYS, False))
+
+
+def _sources_under(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    """Every source reads, or misses, its file under tmp_path: never data/."""
+    monkeypatch.setattr(games_tab, "get_data_path", lambda domain, name: str(tmp_path / name))
+    for file_name, repo in (("deals.json", "deals_repo"), ("giveaways.json", "giveaways_repo")):
+        monkeypatch.setattr(games_tab, repo, games_tab.GamesRepository(str(tmp_path / file_name)))
+
+
+def test_the_standalone_app_builds_without_a_single_file(clean_slate, monkeypatch: pytest.MonkeyPatch, tmp_path, capsys) -> None:
+    _sources_under(monkeypatch, tmp_path)
+
+    games_tab.load_all_games_data()
+    assert capsys.readouterr().out.count("Attempted to load all games data.") == 1  # load_all_games_data printed it twice
+
+    app = games_tab.build_test_app()
+
+    assert isinstance(app, dash.Dash)
+    assert set(games_tab.DATA_LOADED_SUCCESSFULLY) == set(KEYS)  # the loaders add "trending" to both dicts
+    assert not any(games_tab.DATA_LOADED_SUCCESSFULLY.values())
+    assert "All game data files are missing. Please run the corresponding ETLs." in _texts(app.layout)
+    printed = capsys.readouterr().out
+    assert "Data for 'trending' not loaded or empty - 0 records." in printed
+    assert "Check if" in printed and "itchio_trending.json" in printed
+
+
+def test_the_standalone_app_renders_every_subtab_with_its_data(clean_slate, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    _sources_under(monkeypatch, tmp_path)
+    files = (("deals.json", DEALS), ("giveaways.json", GIVEAWAYS), ("bundles.json", BUNDLES), ("humblebundles.json", HUMBLE), ("itchio_trending.json", TRENDING), ("metacritic_latest.json", METACRITIC))
+    for file_name, rows in files:
+        (tmp_path / file_name).write_text(json.dumps(rows), encoding="utf-8")
+
+    app = games_tab.build_test_app()
+
+    assert {key for key, loaded in games_tab.DATA_LOADED_SUCCESSFULLY.items() if loaded} == set(KEYS) - {"new_releases"}  # no source writes new_releases
+    texts = _texts(app.layout)
+    for title in ("Cheap at 93 percent", "Dead Age 2 on GOG", "Humble choice", "Itch trending game", "Metacritic review"):
+        assert title in texts

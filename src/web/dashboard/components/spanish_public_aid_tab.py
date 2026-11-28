@@ -1124,4 +1124,4 @@ if __name__ == "__main__":
     print("Expected data files: data/spanish_public_aid/spanish_public_aid_latest.json")
     print("Run the ETL first if no data is available.")
 
-    app_test.run_server(debug=True, port=8053)
+    app_test.run(debug=True, port=8053)
