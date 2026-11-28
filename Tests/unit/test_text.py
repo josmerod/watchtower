@@ -23,6 +23,25 @@ def test_plain_text_passes_through():
     assert html_to_text("a &lt; b") == "a < b"
 
 
+def test_a_comparison_keeps_its_signs():
+    """The pattern used to take everything between "<" and the next ">": "if a < b and b > c" came out "if a c" (T-208)."""
+    assert html_to_text("if a < b and b > c") == "if a < b and b > c"
+    assert html_to_text("<p>keep it if a < b</p>") == "keep it if a < b"  # a tag next to it still goes
+    assert plain_excerpt("<p>count if a < b</p>", 40) == "count if a < b"
+
+
+def test_text_shaped_like_a_tag_is_read_as_one():
+    """Nothing tells "x <y> z" from markup with an unknown element: a browser shows "x  z" for it, and so does this.
+
+    Sparing it would take the list of the element names HTML defines, and then a real unknown element would stay in the text.
+    """
+    assert html_to_text("x <y> z") == "x z"
+
+
+def test_declarations_go_like_comments():
+    assert html_to_text('<!DOCTYPE html><?xml version="1.0"?><p>a</p>') == "a"
+
+
 def test_empty_input_gives_empty_text():
     assert html_to_text(None) == ""
     assert html_to_text("") == ""

@@ -6,6 +6,7 @@ the fix is dropped or loses the specificity it needs, the page breaks again
 with nothing failing elsewhere.
 """
 
+import hashlib
 import re
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from src.utils.file_system import get_project_root
 
 ASSETS = Path(get_project_root()) / "src" / "web" / "dashboard" / "assets"
 FINAL_SHEET = ASSETS / "zz_visual_refresh.css"
+FINAL_SHEET_URL = "/assets/zz_visual_refresh.css"
 LEGACY_SHEET = ASSETS / "style.css"
 LEGACY_MOBILE_SHEET = ASSETS / "css" / "mobile_responsive.css"
 
@@ -181,3 +183,51 @@ def test_an_outline_button_shows_its_fill_under_the_pointer():
     assert any(":focus" in s for s, _ in rules_matching(FINAL_SHEET, ".btn-outline-primary")), "the keyboard focus gets no rule of its own"
     for selector, _ in filled:
         assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector
+
+
+# --- It is loaded once (T-205) ---
+
+
+def _served_index() -> tuple[object, list[str], str]:
+    """The app's test client, the stylesheet links of the rendered index in order, and its HTML."""
+    from src.web.dashboard import app as dashboard_app
+
+    client = dashboard_app.app.server.test_client()
+    html = client.get("/").get_data(as_text=True)
+    links = re.findall(r"<link\b([^>]*)>", html)
+    stylesheets = [href for attributes in links if 'rel="stylesheet"' in attributes for href in re.findall(r'href="([^"]+)"', attributes)]
+    return client, stylesheets, html
+
+
+def test_no_stylesheet_is_linked_twice_and_the_final_one_still_loads_last():
+    """Dash listed the sheet among the links it builds itself, and the index linked it again by hand so that it loaded after the legacy ones (T-205).
+
+    Every first visit fetched two copies of it. It now stays out of Dash's list, and the hand-written link is the only one: still the last stylesheet, since the
+    rules it carries win by order over the legacy sheets it neutralizes.
+    """
+    client, stylesheets, html = _served_index()
+    final = [href for href in stylesheets if href.startswith(FINAL_SHEET_URL)]
+
+    assert html.count("zz_visual_refresh.css") == 1, stylesheets
+    assert len(set(stylesheets)) == len(stylesheets), stylesheets
+    assert stylesheets[-1:] == final, stylesheets
+    assert any("style.css" in href for href in stylesheets[:-1]) and any("mobile_responsive" in href for href in stylesheets[:-1])  # the sheets it overrides come first
+    assert client.get(final[0]).status_code == 200, "left out of Dash's list, the sheet is still served at its path"
+
+
+def test_the_link_of_the_final_sheet_changes_with_its_content(tmp_path):
+    """A browser keeps its copy of the sheet under the URL it came from.
+
+    The URL carries a token cut from the bytes of the file, so new content means a new URL and a browser holding the old copy asks for it.
+    """
+    from src.web.dashboard import app as dashboard_app
+
+    sheet = tmp_path / "zz_visual_refresh.css"
+    sheet.write_bytes(b"a{}")
+    first = dashboard_app._asset_version(sheet)
+    assert dashboard_app._asset_version(sheet) == first
+    sheet.write_bytes(b"b{}")
+    assert dashboard_app._asset_version(sheet) != first
+
+    _, stylesheets, _ = _served_index()
+    assert stylesheets[-1] == f"{FINAL_SHEET_URL}?v={hashlib.sha256(FINAL_SHEET.read_bytes()).hexdigest()[:10]}"

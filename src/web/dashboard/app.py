@@ -1,6 +1,8 @@
+import hashlib
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 
 import dash
 import dash_bootstrap_components as dbc
@@ -112,10 +114,20 @@ app = dash.Dash(
     __name__,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
+    assets_ignore=r"zz_visual_refresh\.css$",  # the index links that sheet itself, once (T-205)
 )
 
 # Set app title for browser tab and configure metadata
 app.title = "Watchtower Dashboard"
+
+
+def _asset_version(path: Path) -> str:
+    """Token for an asset's URL that follows what the file holds (T-205).
+
+    A browser keeps its copy of a stylesheet under the URL it came from, so a token that changes with the content makes it ask again.
+    Dash puts the file's modification time on the links it lists itself; here the token is cut from the bytes, which a test can pin.
+    """
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:10]
 
 
 # Add meta tags for better branding
@@ -128,8 +140,9 @@ app.index_string = """
         <meta name="description" content="Watchtower - Real-time Intelligence & Monitoring Platform">
         <link rel="icon" type="image/svg+xml" href="/assets/watchtower_icon.svg">
         {%css%}
-        <!-- Final visual overrides: must load after Dash auto-assets and legacy mobile CSS. -->
-        <link rel="stylesheet" href="/assets/zz_visual_refresh.css?v=11">
+        <!-- Final visual overrides: must load after Dash auto-assets and legacy mobile CSS. The sheet stays out of the
+             automatic list above (assets_ignore) and this is its only link: loaded twice, the page fetched two copies. -->
+        <link rel="stylesheet" href="/assets/zz_visual_refresh.css?v={visual_refresh_version}">
     </head>
     <body>
         {%app_entry%}
@@ -140,7 +153,10 @@ app.index_string = """
         </footer>
     </body>
 </html>
-"""
+""".replace(
+    "{visual_refresh_version}",
+    _asset_version(Path(app.config.assets_folder, "zz_visual_refresh.css")),
+)
 
 # Main layout with Tabs
 app.layout = dbc.Container(

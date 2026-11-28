@@ -70,3 +70,29 @@ def test_every_registered_tab_has_a_render_row():
     covered = {function_name for _, function_name, _ in RENDERERS}
 
     assert sorted(wired - covered) == [], "add these tabs to RENDERERS"
+
+
+def _walk(node):
+    yield node
+    children = getattr(node, "children", None)
+    if children is None:
+        return
+    for child in children if isinstance(children, (list, tuple)) else [children]:
+        yield from _walk(child)
+
+
+def test_every_tab_bar_is_named_and_no_id_ends_in_tab_null():
+    """Every ``dbc.Tabs`` of every tab carries an id, and no id of a layout ends in ``-tab-null`` (T-209).
+
+    What a layout holds is as far as this test sees. The ``react-aria…-tab-null`` ids are made in the browser, by
+    dbc 2.0.4 itself: the id of a bar lands on its ``ul`` and nothing the layout sets reaches its links, which all
+    get that one id and an ``aria-controls`` that points to ``…-tabpane-null``. So this pins what the layout does
+    control (every bar is named) and would catch an id of that shape written by hand; the DOM is asserted where a
+    browser renders it, in ``Tests/e2e/test_dashboard_shell_e2e.py``, as the known failure it is.
+    """
+    import dash_bootstrap_components as dbc
+
+    for module_name, function_name, _ in RENDERERS:
+        named = [node for node in _walk(_render(module_name, function_name)) if getattr(node, "id", None) is not None]
+        assert all(bar.id for bar in named if isinstance(bar, dbc.Tabs)), f"{module_name}: a dbc.Tabs without id"
+        assert not [node.id for node in named if str(node.id).endswith("-tab-null")], module_name

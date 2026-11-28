@@ -53,6 +53,7 @@ def _canonical_channel(name: str) -> str:
 # never reached the Tema dropdown (T-138).
 _THEME_ALL_VALUE = "all"
 _THEME_DEFAULT_LABEL = "Todos los temas"
+_DEFAULT_PAGE_SIZE = 48  # what the page-size selector starts on, and what the controller reads when it holds nothing
 
 
 def _is_theme_channel(channel: str) -> bool:
@@ -699,40 +700,26 @@ def create_video_card(video):
     )
 
 
-def get_initial_video_display(limit=48):
-    """Get initial video display with all channels."""
-    try:
-        # Get videos to display from all channels with specified limit
-        videos = video_manager.get_videos(channel="all", limit=limit)
-        if not videos:
-            return [dbc.Alert("No videos found", color="warning")]
-
-        # Create video cards with error handling
-        video_cards = []
-        for video in videos:
-            try:
-                card = create_video_card(video)
-                video_cards.append(card)
-            except Exception as e:
-                # Add fallback card if video card creation fails
-                fallback_card = dbc.Col(
-                    [
-                        dbc.Card(
+def _video_cards(videos: list[dict]) -> list:
+    """A card per video; one that fails to build gets a card that says so, instead of taking the page down with it."""
+    cards = []
+    for video in videos:
+        try:
+            cards.append(create_video_card(video))
+        except Exception as e:
+            logger.error("Video card failed for %s: %s", video.get("url") or video.get("title"), e)
+            cards.append(
+                dbc.Col(
+                    dbc.Card(
+                        dbc.CardBody(
                             [
-                                dbc.CardBody(
-                                    [
-                                        html.H6("Video Load Error", className="card-title"),
-                                        html.P(
-                                            f"Failed to load: {video.get('title', 'Unknown')}",
-                                            className="card-text",
-                                        ),
-                                        html.Small(f"Error: {e}", className="text-danger"),
-                                    ]
-                                )
-                            ],
-                            className="h-100",
-                        )
-                    ],
+                                html.H6("Video Load Error", className="card-title"),
+                                html.P(f"Failed to load: {video.get('title', 'Unknown')}", className="card-text"),
+                                html.Small(f"Error: {e}", className="text-danger"),
+                            ]
+                        ),
+                        className="h-100",
+                    ),
                     xs=12,
                     sm=6,
                     md=4,
@@ -740,22 +727,80 @@ def get_initial_video_display(limit=48):
                     xl=3,
                     className="mb-3",
                 )
-                video_cards.append(fallback_card)
+            )
+    return cards
 
-        # Return content with header
-        content = [
-            dbc.Alert(
-                f"📺 Showing {len(video_cards)} videos from all channels",
-                color="success",
-                className="mb-3",
-            ),
-            html.Div(video_cards, className="row"),
-        ]
 
-        return content
+def _video_page(channel: str | None, theme: str | None, search_term: str | None, date_filter: str | None, sort_by: str | None, items_per_page: int | None, page: int = 1) -> tuple[list, html.Div | None, int]:
+    """One page of videos under the filters: (what the container shows, the pager under it, the page it is).
 
-    except Exception as e:
-        return [dbc.Alert(f"Error loading videos: {e}", color="danger")]
+    The pager is ``None`` on a single page. The layout draws the opening page with this and the controller every
+    page after a change, so the tab lands on what the controller would paint for it and nothing is left for a
+    callback to paint again (T-211).
+    """
+    channel = channel or "all"
+    theme = theme or _THEME_ALL_VALUE
+    items_per_page = items_per_page or _DEFAULT_PAGE_SIZE
+
+    # Full filtered dataset (no cap) so pagination reaches history
+    videos = video_manager.get_videos(channel=channel, search_term=search_term, days_filter=date_filter, limit=None, theme_filter=theme)
+
+    if not videos:
+        return [dbc.Alert("No videos found matching your criteria.", color="info")], None, 1
+
+    # Sort order (spec 04 F2): date desc (default, undated last), date asc, views
+    def _view_count(v: dict) -> int:
+        raw = v.get("view_count") or v.get("views") or 0
+        try:
+            return int(str(raw).replace(",", "").replace(".", "")) if raw else 0
+        except (TypeError, ValueError):
+            return 0
+
+    if sort_by == "date_asc":
+        videos.sort(key=_date_sort_key, reverse=False)
+    elif sort_by == "most_viewed":
+        videos.sort(key=lambda v: (_view_count(v), _date_sort_key(v)), reverse=True)
+    else:
+        videos.sort(key=_date_sort_key, reverse=True)
+
+    # Shared pagination helper: slice one page and clamp it into range
+    page_videos, total_pages, page = paginate(videos, page, items_per_page)
+
+    channel_display = "all channels" if channel == "all" else f"'{channel}'"
+    filters_text = []
+    if theme != _THEME_ALL_VALUE:
+        filters_text.append(f"tema '{_theme_label(theme)}'")
+    if search_term:
+        filters_text.append(f"matching '{search_term}'")
+    if date_filter and date_filter != "all":
+        filters_text.append(f"from last {date_filter} days")
+    filter_suffix = f" ({', '.join(filters_text)})" if filters_text else ""
+
+    pagination = None
+    if total_pages > 1:
+        # Pattern-matching ids: the callback uses Input({"type": ...}, ALL)
+        # because these buttons only exist once pagination renders — a
+        # literal id in the Input would dead-lock the whole callback
+        # until the buttons appear.
+        pagination = html.Div(
+            [
+                dbc.Button("« Prev", id={"type": "videos-page-btn", "dir": "prev"}, color="secondary", outline=True, size="sm", disabled=(page <= 1), className="me-2"),
+                html.Span(f"Page {page} of {total_pages} · {len(videos)} videos", className="align-self-center text-muted small me-2"),
+                dbc.Button("Next »", id={"type": "videos-page-btn", "dir": "next"}, color="secondary", outline=True, size="sm", disabled=(page >= total_pages)),
+            ],
+            className="d-flex justify-content-center",
+        )
+
+    content = [
+        dbc.Alert(
+            f"📺 Showing {len(page_videos)} of {len(videos)} videos from {channel_display}{filter_suffix}",
+            color="success",
+            className="mb-3",
+        ),
+        html.Div(_video_cards(page_videos), className="row"),
+    ]
+
+    return content, pagination, page
 
 
 def _video_modal_layout():
@@ -890,6 +935,10 @@ def render_videos_tab():
     # Tema dropdown options (T-088): one per theme bucket, default first
     theme_options = _extract_theme_options(channels)
 
+    # The opening page, drawn here as the controller draws it (T-211): when the tab lands the controller has
+    # nothing left to paint, and the pager is there from the start.
+    opening, pagination, _ = _video_page("all", _THEME_ALL_VALUE, None, "all", "date_desc", _DEFAULT_PAGE_SIZE)
+
     return html.Div(
         [
             html.H3("Videos", className="mb-3"),
@@ -976,7 +1025,7 @@ def render_videos_tab():
                         width=12,
                         md=2,
                     ),
-                    create_items_per_page_selector("videos", default_value=48),
+                    create_items_per_page_selector("videos", default_value=_DEFAULT_PAGE_SIZE),
                     dbc.Col(
                         [
                             html.Label("Preset:", className="form-label small"),
@@ -1049,10 +1098,10 @@ def render_videos_tab():
             html.Div(
                 id="videos-container",
                 className="row",
-                children=get_initial_video_display(),
+                children=opening,
             ),
             # Pagination info
-            html.Div(id="videos-pagination", className="d-flex justify-content-center mt-3"),
+            html.Div(id="videos-pagination", className="d-flex justify-content-center mt-3", children=pagination),
             # Embed-preview modal (spec 04 F3): opened by the ▶ overlay on a
             # card thumbnail; title/body/footer are rebuilt per video by
             # toggle_video_preview_modal.
@@ -1106,6 +1155,22 @@ def _preset_page_size(preset: dict) -> int | None:
     return None
 
 
+# The dropdowns the controller reads. None of them can be cleared, so a missing value is never a choice of the user's.
+_FILTER_DROPDOWNS = ("video-channel-dropdown-new", "videos-theme-dropdown", "video-date-filter-new", "videos-sort-by", "videos-items-per-page-select")
+
+
+def _tab_just_landed(triggered: list[dict]) -> bool:
+    """Whether the request carries no action of the user's: the tab landing, not a filter changing.
+
+    What the renderer reports then: no changed prop (its call as the components mount), buttons just inserted
+    (``n_clicks`` still ``None``), or a dropdown that lost its value as it mounted because the layout gave it one
+    missing from its options. None of the dropdowns can be cleared, so such a ``None`` is a reset and not a choice,
+    and the layout already shows the page the defaults paint: there is nothing to redo (T-211).
+    """
+    lost_values = {f"{ident}.value" for ident in _FILTER_DROPDOWNS}
+    return all(entry.get("value") is None and (str(entry.get("prop_id")) in lost_values or str(entry.get("prop_id")) == "." or str(entry.get("prop_id")).endswith(".n_clicks")) for entry in triggered)
+
+
 def register_video_callbacks(app):
     """Register video callbacks for filtering and pagination."""
 
@@ -1132,7 +1197,8 @@ def register_video_callbacks(app):
         Input("videos-refresh-button", "n_clicks"),
         Input({"type": "videos-page-btn", "dir": ALL}, "n_clicks"),
         State("videos-page", "data"),
-        prevent_initial_call=False,
+        # The layout draws the opening page itself: a call for it would paint the same again (T-211).
+        prevent_initial_call=True,
     )
     def update_videos_combined(
         selected_channel,
@@ -1147,102 +1213,35 @@ def register_video_callbacks(app):
     ):
         """Update videos with filters + real pagination (prev/next)."""
         try:
-            import dash as _dash
+            triggered = dash.callback_context.triggered
+            if _tab_just_landed(triggered):
+                return dash.no_update, dash.no_update, dash.no_update  # what is on screen is already the answer
 
-            ctx = _dash.callback_context
-            triggered = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else ""
+            changed = str(triggered[0]["prop_id"]).split(".")[0] if triggered else ""
             # Pattern-matching triggers arrive as JSON dicts
-            if triggered.startswith("{"):
+            if changed.startswith("{"):
                 try:
-                    payload = json.loads(triggered)
+                    payload = json.loads(changed)
                 except ValueError:
                     payload = {}
                 triggered_id = payload.get("type", "")
                 direction = payload.get("dir")
             else:
-                triggered_id = triggered
+                triggered_id = changed
                 direction = None
 
             if triggered_id == "videos-refresh-button":
                 video_manager.ensure_loaded(force_refresh=True)
 
-            if selected_channel is None:
-                selected_channel = "all"
-            if selected_theme is None:
-                selected_theme = _THEME_ALL_VALUE
-            if items_per_page is None:
-                items_per_page = 48
-            current_page = current_page or 1
-
             # Any filter change resets to page 1; prev/next move within range
             if triggered_id == "videos-page-btn" and direction == "prev":
-                page = max(1, current_page - 1)
+                page = max(1, (current_page or 1) - 1)
             elif triggered_id == "videos-page-btn" and direction == "next":
-                page = current_page + 1
+                page = (current_page or 1) + 1
             else:
                 page = 1
 
-            # Full filtered dataset (no cap) so pagination reaches history
-            videos = video_manager.get_videos(channel=selected_channel, search_term=search_term, days_filter=date_filter, limit=None, theme_filter=selected_theme)
-
-            if not videos:
-                return [dbc.Alert("No videos found matching your criteria.", color="info")], None, 1
-
-            # Sort order (spec 04 F2): date desc (default, undated last), date asc, views
-            def _view_count(v: dict) -> int:
-                raw = v.get("view_count") or v.get("views") or 0
-                try:
-                    return int(str(raw).replace(",", "").replace(".", "")) if raw else 0
-                except (TypeError, ValueError):
-                    return 0
-
-            if sort_by == "date_asc":
-                videos.sort(key=_date_sort_key, reverse=False)
-            elif sort_by == "most_viewed":
-                videos.sort(key=lambda v: (_view_count(v), _date_sort_key(v)), reverse=True)
-            else:
-                videos.sort(key=_date_sort_key, reverse=True)
-
-            # Shared pagination helper: slice one page and clamp it into range
-            page_videos, total_pages, page = paginate(videos, page, items_per_page)
-
-            video_cards = [create_video_card(video) for video in page_videos]
-
-            channel_display = "all channels" if selected_channel == "all" else f"'{selected_channel}'"
-            filters_text = []
-            if selected_theme and selected_theme != _THEME_ALL_VALUE:
-                filters_text.append(f"tema '{_theme_label(selected_theme)}'")
-            if search_term:
-                filters_text.append(f"matching '{search_term}'")
-            if date_filter and date_filter != "all":
-                filters_text.append(f"from last {date_filter} days")
-            filter_suffix = f" ({', '.join(filters_text)})" if filters_text else ""
-
-            pagination = None
-            if total_pages > 1:
-                # Pattern-matching ids: the callback uses Input({"type": ...}, ALL)
-                # because these buttons only exist once pagination renders — a
-                # literal id in the Input would dead-lock the whole callback
-                # until the buttons appear.
-                pagination = html.Div(
-                    [
-                        dbc.Button("« Prev", id={"type": "videos-page-btn", "dir": "prev"}, color="secondary", outline=True, size="sm", disabled=(page <= 1), className="me-2"),
-                        html.Span(f"Page {page} of {total_pages} · {len(videos)} videos", className="align-self-center text-muted small me-2"),
-                        dbc.Button("Next »", id={"type": "videos-page-btn", "dir": "next"}, color="secondary", outline=True, size="sm", disabled=(page >= total_pages)),
-                    ],
-                    className="d-flex justify-content-center",
-                )
-
-            content = [
-                dbc.Alert(
-                    f"📺 Showing {len(page_videos)} of {len(videos)} videos from {channel_display}{filter_suffix}",
-                    color="success",
-                    className="mb-3",
-                ),
-                html.Div(video_cards, className="row"),
-            ]
-
-            return content, pagination, page
+            return _video_page(selected_channel, selected_theme, search_term, date_filter, sort_by, items_per_page, page)
 
         except Exception as e:
             logger.error(f"Error updating videos: {e}")
@@ -1312,7 +1311,7 @@ def register_video_callbacks(app):
                 "theme": theme or _THEME_ALL_VALUE,
                 "date": date_filter or "all",
                 "sort": sort_by or "date_desc",
-                "per_page": per_page or 48,
+                "per_page": per_page or _DEFAULT_PAGE_SIZE,
             }
             options = [{"label": n, "value": n} for n in presets]
             return presets, options, name
