@@ -559,7 +559,8 @@ def _knowledge_view(source_keys, search_term: str = "", display_name: str = "Kno
                 "cell": lambda article: _knowledge_title_cell(article, search_term),
             },
             {"header": "Source", "cell": lambda article: article.get("source_display_name", display_name)},
-            {"header": "Date", "cell": lambda article: format_article_date(article)},
+            # On one line: with a title column as wide as this one, "2026-11-28" broke over "04:33 UTC"
+            {"header": "Date", "cell": lambda article: format_article_date(article), "td_kwargs": {"className": "text-nowrap"}},
         ]
         body = render_items_table(page_items, columns, empty_message=f"No knowledge items matching '{search_term}'.", wrap_scroll=False)
         _tag_rows_with_kg_dates(body, page_items)  # data-kg-date for NUEVO badges (T-085)

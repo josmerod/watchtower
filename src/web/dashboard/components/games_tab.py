@@ -940,19 +940,24 @@ def _filter_tracker(frame: pd.DataFrame, min_discount: Any, platform: Any) -> pd
 
 
 def _tracker_cell(row: dict[str, Any], column: str) -> html.Td:
-    """One cell of a tracker table: a link for the title, a price with its currency, the day for a date."""
+    """One cell of a tracker table: a link for the title, a price with its currency, the day for a date.
+
+    Only the title wraps. A date or a price broken over two lines ("2026-11-" over "28") does not read as one.
+    """
     value: Any = row.get(column)
     missing = value is None or (not isinstance(value, str) and pd.isna(value))
     if column == "title":
         title = "N/A" if missing else str(value)
         return html.Td(html.A(title, href=row.get("url"), target="_blank") if row.get("url") else title)
     if column in ("base_price", "sale_price"):
-        return html.Td(_tracker_money(value, row.get("currency")), className="fw-bold" if column == "sale_price" else None)
+        return html.Td(_tracker_money(value, row.get("currency")), className="fw-bold text-nowrap" if column == "sale_price" else "text-nowrap")
     if column == "discount_pct":
-        return html.Td("N/A" if missing else f"{int(value)}%")
-    if column == "sale_end":
-        return html.Td(format_display_date(value))
-    return html.Td("N/A" if missing else str(value))
+        text = "N/A" if missing else f"{int(value)}%"
+    elif column == "sale_end":
+        text = format_display_date(value)
+    else:
+        text = "N/A" if missing else str(value)
+    return html.Td(text, className="text-nowrap")
 
 
 def render_tracker_content(key: str, frame: pd.DataFrame, min_discount: Any = 0, platform: Any = None) -> list:
@@ -974,7 +979,7 @@ def render_tracker_content(key: str, frame: pd.DataFrame, min_discount: Any = 0,
     columns = tracker["columns"]
     table = dbc.Table(
         [
-            html.Thead(html.Tr([html.Th(heading) for _column, heading in columns])),
+            html.Thead(html.Tr([html.Th(heading, className="text-nowrap") for _column, heading in columns])),
             html.Tbody([html.Tr([_tracker_cell(row, column) for column, _heading in columns]) for row in rows.head(TRACKER_ROWS).to_dict("records")]),
         ],
         bordered=True,
