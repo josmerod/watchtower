@@ -393,3 +393,28 @@ def test_the_open_source_file_is_watched_by_the_age_of_its_items(tmp_path):
     record = assess_freshness([entry], data_dir=tmp_path, now=NOW)["sources"][0]
     assert record["status"] == "critical"
     assert record["age_hours"] == record["content_age_hours"] > 240
+
+
+def test_the_cinema_and_valencia_listings_are_watched_by_their_first_detection(tmp_path):
+    """A screening day and an event day lie ahead and never age; what ages is the day a session or an event was first listed (T-151, T-143)."""
+    entries = {entry["key"]: entry for entry in SOURCE_FILES}
+    for key, path in (("cinema", "cinema/cinema_sessions_latest.json"), ("valencia_events", "valencia_events/valencia_events.json")):
+        assert entries[key]["path"] == path
+        assert entries[key]["content_date"] == "first_detected_at"
+
+        # Something was first listed three days ago, and the file was rewritten a minute ago: the listings still change.
+        _write_items(tmp_path / path, [_ago(72)], age_hours=1 / 60, field="first_detected_at")
+        assert assess_freshness([entries[key]], data_dir=tmp_path, now=NOW)["sources"][0]["status"] == "fresh"
+
+        # Two weeks without a session or an event nobody had seen, file rewritten a minute ago: the listings
+        # no longer change, or are no longer parsed. The age that decided is the age of the listing.
+        _write_items(tmp_path / path, [_ago(14 * 24)], age_hours=1 / 60, field="first_detected_at")
+        record = assess_freshness([entries[key]], data_dir=tmp_path, now=NOW)["sources"][0]
+        assert record["status"] == "stale"
+        assert record["age_hours"] == record["content_age_hours"] > 168
+
+        # The file itself a day and a quarter old: every run failed. A Valencia run in which no source gives
+        # an event fails instead of writing a thinner file.
+        _write_items(tmp_path / path, [_ago(1)], age_hours=30, field="first_detected_at")
+        record = assess_freshness([entries[key]], data_dir=tmp_path, now=NOW)["sources"][0]
+        assert record["status"] == "stale" and record["age_hours"] == 30.0

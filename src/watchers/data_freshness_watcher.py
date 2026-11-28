@@ -169,6 +169,9 @@ SOURCE_FILES: list[dict[str, Any]] = [
     # open new days all the time, so a week without a session nobody had seen means the listings no
     # longer change or are no longer parsed.
     {"key": "cinema", "label": "Cinema sessions (Cine tab)", "path": "cinema/cinema_sessions_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "first_detected_at"},
+    # Valencia events (Valencia Events tab, T-143), on the same rule: the thirteen agendas list new
+    # events every day. A run in which no source gives an event fails and leaves the file as it was.
+    {"key": "valencia_events", "label": "Valencia events (Valencia Events tab)", "path": "valencia_events/valencia_events.json", "warn_hours": 26, "critical_hours": 168, "content_date": "first_detected_at"},
 ]
 
 
