@@ -13,11 +13,14 @@ from src.utils.file_system import get_project_root
 
 ASSETS = Path(get_project_root()) / "src" / "web" / "dashboard" / "assets"
 FINAL_SHEET = ASSETS / "zz_visual_refresh.css"
+LEGACY_SHEET = ASSETS / "style.css"
 LEGACY_MOBILE_SHEET = ASSETS / "css" / "mobile_responsive.css"
 
 RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
 # The chain that gives a selector the specificity of the blanket background rule.
 BLANKET_CHAIN = ":not(.table):not(.alert):not(.card):not(.nav-tabs)"
+# What counts one class towards specificity: a class, or a pseudo-class with or without its argument.
+CLASS_LEVEL = re.compile(r"\.[\w-]+|:[\w-]+(?:\([^)]*\))?")
 
 
 def rules_of(stylesheet: Path) -> list[tuple[list[str], dict[str, str]]]:
@@ -92,3 +95,18 @@ def test_checkboxes_and_radios_keep_their_mark():
     painting = [(s, d) for s, d in rules_matching(FINAL_SHEET, "input") if bare_input.fullmatch(s) and {"background", "background-color", "border-radius", "border-color"} & set(d)]
 
     assert not painting, painting
+
+
+def test_plotly_layers_do_not_cover_the_plot():
+    """The legacy sheet paints every Plotly layer svg with a background.
+
+    A graph stacks three of them (the plot, the labels and the legend, the hover layer), so the two upper ones covered the plot and every graph of the dashboard was an empty rectangle.
+    The reset has to outrank the legacy rule and the blanket rule of this sheet, the more specific of the two.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, ".main-svg") if {"background", "background-color"} & set(d)]
+    assert legacy, "the legacy rule is gone: drop the reset and this test"
+
+    reset = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".main-svg") if d.get("background-color") == "transparent !important"]
+    assert reset, "no rule of the final sheet makes the Plotly layer svgs transparent"
+    for selector, _ in reset:
+        assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector

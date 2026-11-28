@@ -668,3 +668,13 @@ html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):focus {
     background: #ddd6fe !important;
     border-color: #ddd6fe !important;
 }
+
+/* A Plotly graph stacks three layer svgs: the plot, the labels and the legend,
+   and the hover layer. The legacy sheet paints every `.main-svg` one flat
+   colour, so the two upper layers covered the plot and every graph of the
+   dashboard was an empty rectangle (the Tech Radar card). The paper keeps the
+   legacy fill through its own `.bg` rule. As specific as the blanket rule
+   above, plus the two classes. */
+html body .js-plotly-plot .plotly .main-svg:not(.table):not(.alert):not(.card):not(.nav-tabs) {
+    background-color: transparent !important;
+}

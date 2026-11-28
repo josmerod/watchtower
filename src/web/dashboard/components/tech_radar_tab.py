@@ -19,6 +19,7 @@ M5 snapshot history (spec 13).
 
 import json
 import logging
+import math
 import os
 import re
 from datetime import datetime, timedelta
@@ -36,6 +37,7 @@ from src.web.dashboard.components import saved_items
 from src.web.dashboard.components.shared.cache import TTLDataCache
 from src.web.dashboard.components.shared.table import create_refresh_button
 from src.web.dashboard.search_utils import create_search_input, filter_content, highlight_segments
+from src.web.dashboard.utils import DARK_FIGURE
 
 logger = logging.getLogger(__name__)
 
@@ -467,6 +469,31 @@ TECH_DICTIONARY: dict[str, str] = {
 
 _QUADRANT_ORDER = ["Techniques", "Tools", "Platforms", "Languages & Frameworks"]
 _RING_ORDER = ["Adopt", "Trial", "Assess", "Hold"]
+# The row each ring is drawn on, from the bottom. Hold is in the vocabulary, but no mention count maps to it.
+_RING_ROW = {ring: row for row, ring in enumerate(reversed(_RING_ORDER[:3]))}
+
+# Every bubble of a quadrant-and-ring cell used to sit on the cell's one point: the biggest hid the rest and
+# their names landed on one another. They now take slots in order, most mentioned first: three on the ring line,
+# then rows on the side of the cell that has room. Offsets are in axis units: one unit is a column wide or a
+# ring high.
+_ROW_STEP = 0.6  # two rows apart: with a ring one unit high, a bubble keeps room for the name under the one above it
+_THREE_SEATS = (0.0, -0.28, 0.28)
+_FOUR_SEATS = (-0.14, 0.14, -0.38, 0.38)
+
+
+def _cell_slot(index: int) -> tuple[float, int]:
+    """The slot of the ``index``-th bubble of a cell: (offset from the centre of the column, rows away from the ring line).
+
+    The rows alternate four and three seats, each offset from the one below, so that a name lands in the gap
+    between two names of the row under it.
+    """
+    if index < 3:
+        return _THREE_SEATS[index], 0
+    pair, seat = divmod(index - 3, 7)  # a pair of rows holds seven
+    if seat < 4:
+        return _FOUR_SEATS[seat], 2 * pair + 1
+    return _THREE_SEATS[seat - 4], 2 * pair + 2
+
 
 # Precompiled word-boundary matchers for the curated dictionary — shared by the
 # TR-F1 radar extraction and the TR-F2 momentum scan (single source of truth).
@@ -513,49 +540,60 @@ def _extract_tech_mentions(all_data: dict[str, list[dict[str, Any]]] | None = No
 
 
 def _build_radar_figure(records: list[dict[str, Any]]) -> go.Figure:
-    """Plotly scatter: quadrant columns x ring rows, bubble size by mentions."""
+    """Plotly scatter: a column per quadrant, a row per ring, bubble size by mentions, colour by number of sources."""
+    fig = go.Figure()
+    lowest = highest = 0.0
     if not records:
-        fig = go.Figure()
         fig.add_annotation(x=0.5, y=0.5, xref="paper", yref="paper", text="No tech mentions detected yet — run the radar ETLs", showarrow=False)
+        fig.update_layout(**DARK_FIGURE, xaxis={"visible": False}, yaxis={"visible": False})
         return fig
 
-    fig = go.Figure()
-    for quadrant in _QUADRANT_ORDER:
+    for column, quadrant in enumerate(_QUADRANT_ORDER):
         subset = [r for r in records if r["quadrant"] == quadrant]
         if not subset:
             continue
+        spots = []
+        taken: dict[str, int] = {}  # slots used per ring: a column holds one cell per ring
+        for record in subset:
+            slot = taken[record["ring"]] = taken.get(record["ring"], -1) + 1
+            dx, rows = _cell_slot(slot)
+            side = -1 if record["ring"] == "Assess" else 1  # Assess is the bottom ring: its room is below it
+            spots.append((column + dx, _RING_ROW[record["ring"]] + side * rows * _ROW_STEP))
+        lowest = min(lowest, min(y for _, y in spots))
+        highest = max(highest, max(y for _, y in spots))
         fig.add_trace(
             go.Scatter(
-                x=[quadrant] * len(subset),
-                y=[r["ring"] for r in subset],
+                x=[x for x, _ in spots],
+                y=[y for _, y in spots],
                 text=[r["tech"] for r in subset],
-                customdata=list(subset),
+                customdata=[[r["mentions"], len(r["sources"]), ", ".join(r["sources"]), r["ring"], quadrant] for r in subset],
                 mode="markers+text",
                 textposition="bottom center",
+                textfont={"size": 11},
                 marker={
-                    "size": [min(60, 10 + r["mentions"] * 4) for r in subset],
+                    "size": [min(48, 10 + 9 * math.sqrt(r["mentions"])) for r in subset],
                     "sizemode": "diameter",
-                    "opacity": 0.75,
+                    "opacity": 0.8,
                     "color": [len(r["sources"]) for r in subset],
                     "colorscale": "Viridis",
                     "showscale": quadrant == _QUADRANT_ORDER[-1],
-                    "colorbar": {"title": "Fuentes"} if quadrant == _QUADRANT_ORDER[-1] else None,
+                    "colorbar": {"title": "Fuentes", "thickness": 12, "len": 0.75} if quadrant == _QUADRANT_ORDER[-1] else None,
                 },
                 name=quadrant,
-                hovertemplate="<b>%{text}</b><br>Ring: %{y}<br>Quadrant: %{x}<br>Menciones: %{customdata[2]}<br>Fuentes: %{customdata[4]}<extra></extra>",
+                hovertemplate="<b>%{text}</b><br>%{customdata[3]} · %{customdata[4]}<br>Menciones: %{customdata[0]}<br>Fuentes (%{customdata[1]}): %{customdata[2]}<extra></extra>",
             )
         )
 
+    # Numeric axes under the names: a category axis has no room for a bubble beside its category.
     fig.update_layout(
-        title="📡 Radar tecnológico — menciones cruzadas por cuadrante y madurez",
+        **DARK_FIGURE,
         xaxis_title="Cuadrante",
         yaxis_title="Anillo (madurez estimada por menciones)",
-        xaxis={"categoryorder": "array", "categoryarray": _QUADRANT_ORDER},
-        yaxis={"categoryorder": "array", "categoryarray": list(reversed(_RING_ORDER))},
+        xaxis={"tickvals": list(range(len(_QUADRANT_ORDER))), "ticktext": _QUADRANT_ORDER, "range": [-0.5, len(_QUADRANT_ORDER) - 0.5], "gridcolor": "rgba(204, 214, 240, 0.10)"},
+        yaxis={"tickvals": list(_RING_ROW.values()), "ticktext": list(_RING_ROW), "range": [lowest - 0.3, highest + 0.3], "gridcolor": "rgba(204, 214, 240, 0.22)"},
         height=560,
-        template="plotly_white",
-        legend={"orientation": "h", "yanchor": "bottom"},
-        margin={"l": 60, "r": 30, "t": 60, "b": 40},
+        showlegend=False,  # the colour is the number of sources, and the column already names the quadrant
+        margin={"l": 60, "r": 70, "t": 30, "b": 40},
     )
     return fig
 

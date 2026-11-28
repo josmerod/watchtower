@@ -19,7 +19,7 @@ from dash.dash_table.DataTable import DataTable
 from src.repositories import BaseRepository
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path, parse_date_universal
+from src.web.dashboard.utils import DARK_FIGURE, get_data_path, parse_date_universal
 
 logger = logging.getLogger(__name__)
 
@@ -267,7 +267,7 @@ def create_aid_summary_cards(aids_data: list[dict], stats_data: dict) -> html.Di
 def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
     """Create a pie chart showing aids by category."""
     if not aids_data:
-        return dcc.Graph(figure={"data": [], "layout": {"title": "No data available"}})
+        return dcc.Graph(figure={"data": [], "layout": {"title": "No data available", **DARK_FIGURE}})
 
     # Count aids by category
     category_counts: dict[str, int] = {}
@@ -283,7 +283,7 @@ def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
     )
 
     fig.update_traces(textposition="inside", textinfo="percent+label")
-    fig.update_layout(showlegend=True, height=400, margin={"t": 50, "b": 50, "l": 50, "r": 50})
+    fig.update_layout(**DARK_FIGURE, showlegend=True, height=400, margin={"t": 50, "b": 50, "l": 50, "r": 50})
 
     return dcc.Graph(figure=fig)
 
@@ -291,7 +291,7 @@ def create_category_chart(aids_data: list[dict]) -> dcc.Graph:
 def create_scope_chart(aids_data: list[dict]) -> dcc.Graph:
     """Create a bar chart showing aids by geographic scope."""
     if not aids_data:
-        return dcc.Graph(figure={"data": [], "layout": {"title": "No data available"}})
+        return dcc.Graph(figure={"data": [], "layout": {"title": "No data available", **DARK_FIGURE}})
 
     # Count aids by scope
     scope_counts: dict[str, int] = {}
@@ -315,7 +315,7 @@ def create_scope_chart(aids_data: list[dict]) -> dcc.Graph:
         labels={"x": "Scope", "y": "Number of Aid"},
     )
 
-    fig.update_layout(height=400, margin={"t": 50, "b": 50, "l": 50, "r": 50})
+    fig.update_layout(**DARK_FIGURE, height=400, margin={"t": 50, "b": 50, "l": 50, "r": 50})
 
     return dcc.Graph(figure=fig)
 
@@ -323,7 +323,7 @@ def create_scope_chart(aids_data: list[dict]) -> dcc.Graph:
 def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
     """Create a timeline showing aids closing dates."""
     if not aids_data:
-        return dcc.Graph(figure={"data": [], "layout": {"title": "No data available"}})
+        return dcc.Graph(figure={"data": [], "layout": {"title": "No data available", **DARK_FIGURE}})
 
     # Filter aids with closing dates
     aids_with_dates = []
@@ -345,7 +345,7 @@ def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
         return dcc.Graph(
             figure={
                 "data": [],
-                "layout": {"title": "No aid with closing dates available"},
+                "layout": {"title": "No aid with closing dates available", **DARK_FIGURE},
             }
         )
 
@@ -375,6 +375,7 @@ def create_status_timeline(aids_data: list[dict]) -> dcc.Graph:
         )
 
     fig.update_layout(
+        **DARK_FIGURE,
         title="Upcoming Closing Dates",
         xaxis_title="Closing Date",
         yaxis_title="Aid",

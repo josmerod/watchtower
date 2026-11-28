@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 from dash import Input, Output, State, dash_table, dcc, html
 
 # Import shared utilities
-from src.web.dashboard.utils import get_data_path
+from src.web.dashboard.utils import DARK_FIGURE, get_data_path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -603,7 +603,7 @@ def register_metrics_callbacks(app):
         except Exception as e:
             logger.error(f"Error updating metrics data: {e}")
             # Return empty components on error
-            empty_fig = go.Figure()
+            empty_fig = go.Figure().update_layout(**DARK_FIGURE)
             return (
                 empty_fig,
                 empty_fig,
@@ -642,17 +642,17 @@ def register_metrics_callbacks(app):
             return html.Div()
 
 
+def _empty_figure(message: str) -> go.Figure:
+    """A graph with nothing to plot says so, and draws no axes around the sentence."""
+    fig = go.Figure().add_annotation(x=0.5, y=0.5, xref="paper", yref="paper", text=message, showarrow=False)
+    fig.update_layout(**DARK_FIGURE, xaxis={"visible": False}, yaxis={"visible": False})
+    return fig
+
+
 def create_time_series_chart(time_series_data):
     """Create time series chart for ETL performance trends."""
     if not time_series_data:
-        return go.Figure().add_annotation(
-            x=0.5,
-            y=0.5,
-            text="No time series data available",
-            xref="paper",
-            yref="paper",
-            showarrow=False,
-        )
+        return _empty_figure("No time series data available")
 
     # Create DataFrame for easier plotting
     df = pd.DataFrame(time_series_data)
@@ -696,10 +696,10 @@ def create_time_series_chart(time_series_data):
         yaxis_title="Runs / Errors",
         yaxis2={"title": "Avg duration (s)", "overlaying": "y", "side": "right"},
         hovermode="x unified",
-        template="plotly_white",
+        **DARK_FIGURE,
         height=400,
         barmode="group",
-        legend={"orientation": "h", "yanchor": "bottom"},
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.0, "xanchor": "right", "x": 1.0},  # over the plot, not over the dates
     )
 
     return fig
@@ -708,14 +708,7 @@ def create_time_series_chart(time_series_data):
 def create_error_chart(error_counts):
     """Create bar chart showing error counts per source."""
     if not error_counts:
-        return go.Figure().add_annotation(
-            x=0.5,
-            y=0.5,
-            text="No errors in last 24 hours",
-            xref="paper",
-            yref="paper",
-            showarrow=False,
-        )
+        return _empty_figure("No errors in last 24 hours")
 
     # Create DataFrame from error counts
     df = pd.DataFrame(list(error_counts.items()), columns=["source", "error_count"])
@@ -732,6 +725,7 @@ def create_error_chart(error_counts):
     )
 
     fig.update_layout(
+        **DARK_FIGURE,
         xaxis_title="ETL Source",
         yaxis_title="Error Count",
         height=400,

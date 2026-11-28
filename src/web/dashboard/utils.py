@@ -6,6 +6,11 @@ from datetime import datetime, timezone
 import dash
 import pandas as pd
 
+# What every graph states in its layout, as ``**DARK_FIGURE``. Plotly draws a figure for a white page unless told
+# otherwise, and the dashboard then shows dark text on a dark paper. The template brings the light text, the
+# axis lines and the legend colors; the two backgrounds stay transparent so the card shows through.
+DARK_FIGURE = {"template": "plotly_dark", "paper_bgcolor": "rgba(0, 0, 0, 0)", "plot_bgcolor": "rgba(0, 0, 0, 0)"}
+
 
 def get_project_root():
     """Get the project root directory from any component file's location.
