@@ -266,6 +266,35 @@ a:not(.btn):focus {
     z-index: 30 !important;
 }
 
+/* The main bar holds 18 tabs, about 2100 px of them: on one line it always
+   scrolled and hid eight of them at 1280 px (T-169). From 1200 px up it wraps
+   instead, so every tab is in view; on narrower screens it stops being sticky,
+   because a bar four rows tall would cover half the page; on a phone it is one
+   scrollable row again, without its scrollbar. */
+#dashboard-tabs.desktop-nav-tabs {
+    flex-wrap: wrap !important;
+    overflow-x: hidden !important;
+}
+
+@media (max-width: 1199.98px) {
+    #dashboard-tabs.desktop-nav-tabs {
+        position: static !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #dashboard-tabs.desktop-nav-tabs {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        position: sticky !important;
+        scrollbar-width: none !important;
+    }
+}
+
+#dashboard-tabs.desktop-nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
 /* The legacy mobile sheet (css/mobile_responsive.css) parks every tab link
    at -9999px under 768px. The main navigation is static here, so the offsets
    do nothing; a subtab link keeps `position: relative` from style.css for its

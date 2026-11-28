@@ -60,8 +60,23 @@ def test_primary_buttons_outrank_the_blanket_background():
     blanket = [(s, d) for s, d in rules_matching(FINAL_SHEET, "html body") if "background-color" in d and BLANKET_CHAIN in s]
     assert blanket, "the blanket background rule moved: re-check what the buttons have to outrank"
 
-    keepers = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".btn-primary") if BLANKET_CHAIN in s and "color" in d and ("background" in d or "background-color" in d) and ":hover" not in s and ":focus" not in s]
+    keepers = [
+        (s, d) for s, d in rules_matching(FINAL_SHEET, ".btn-primary") if BLANKET_CHAIN in s and "color" in d and ("background" in d or "background-color" in d) and ":hover" not in s and ":focus" not in s
+    ]
     assert keepers, "no rule gives .btn-primary a background and a text color with the blanket chain on its selector"
 
     html, body = len(re.findall(r"(?<![\w-])html(?![\w-])", keepers[0][0])), len(re.findall(r"(?<![\w-])body(?![\w-])", keepers[0][0]))
     assert html and body, "the rule does not start with `html body`: it is less specific than the blanket rule"
+
+
+def test_main_bar_wraps_instead_of_scrolling():
+    """The tablist rule forces one non-wrapping, scrollable line.
+
+    The main bar holds 18 tabs: on one line it scrolled and hid eight of them at 1280 px (T-169). The override has to carry both the id and the class: with one of them it is less specific than `#dashboard-tabs` in the tablist rule.
+    """
+    wrapping = [(s, d) for s, d in rules_matching(FINAL_SHEET, "#dashboard-tabs.desktop-nav-tabs") if d.get("flex-wrap") == "wrap !important" and d.get("overflow-x") == "hidden !important"]
+
+    assert wrapping, "no rule makes the main bar wrap instead of scrolling"
+    assert all(":hover" not in s and ":focus" not in s for s, _ in wrapping)
+    one_line = [(s, d) for s, d in rules_matching(FINAL_SHEET, "#dashboard-tabs.desktop-nav-tabs") if d.get("flex-wrap") == "nowrap !important"]
+    assert one_line, "the rule for a phone (one scrollable row) is gone"  # it comes later in the sheet, so it wins there
