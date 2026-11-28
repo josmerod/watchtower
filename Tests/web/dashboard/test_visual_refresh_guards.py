@@ -80,3 +80,15 @@ def test_main_bar_wraps_instead_of_scrolling():
     assert all(":hover" not in s and ":focus" not in s for s, _ in wrapping)
     one_line = [(s, d) for s, d in rules_matching(FINAL_SHEET, "#dashboard-tabs.desktop-nav-tabs") if d.get("flex-wrap") == "nowrap !important"]
     assert one_line, "the rule for a phone (one scrollable row) is gone"  # it comes later in the sheet, so it wins there
+
+
+def test_checkboxes_and_radios_keep_their_mark():
+    """The input rule paints every input one flat colour with one corner radius.
+
+    A checkbox and a radio are not text fields: Bootstrap draws their mark as a background image and rounds a radio, and
+    the bare `input` selector erased both, so "Mostrar retiradas" looked unchecked while it listed the retired credentials.
+    """
+    bare_input = re.compile(r"input(?::focus)?")  # the whole selector: `.Select-input > input` is a text field and stays painted
+    painting = [(s, d) for s, d in rules_matching(FINAL_SHEET, "input") if bare_input.fullmatch(s) and {"background", "background-color", "border-radius", "border-color"} & set(d)]
+
+    assert not painting, painting

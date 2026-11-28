@@ -386,8 +386,11 @@ a:not(.btn):focus {
     color: var(--wt-text) !important;
 }
 
-/* Inputs / dropdowns / selectors: force readable open menus. */
-input,
+/* Inputs / dropdowns / selectors: force readable open menus. A checkbox and a
+   radio are left out: Bootstrap draws their mark as a background image and
+   rounds a radio, and this rule erased both, so every box in the dashboard
+   looked unchecked. */
+input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select,
 .form-control,
@@ -413,7 +416,7 @@ textarea::placeholder,
     color: var(--wt-muted-2) !important;
 }
 
-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
 textarea:focus,
 select:focus,
 .form-control:focus,
