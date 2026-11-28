@@ -20,6 +20,7 @@ RENDERERS = [
     ("fourchan_tab", "render_fourchan_tab", ["4chan-global-search"]),
     ("scavenging_tab", "render_scavenging_tab", []),
     ("valencia_events_new_tab", "render_valencia_events_tab", []),
+    ("cinema_tab", "render_cinema_tab", ["cinema-results", "🎬 Cine"]),
     ("spanish_public_aid_tab", "render_spanish_public_aid_tab", []),
     ("arxiv_research_tab", "render_arxiv_research_tab", []),
     ("deals_tab", "render_deals_tab", []),
