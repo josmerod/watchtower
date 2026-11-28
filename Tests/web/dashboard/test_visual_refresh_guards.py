@@ -185,6 +185,27 @@ def test_an_outline_button_shows_its_fill_under_the_pointer():
         assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector
 
 
+# --- What the scripts insert ---
+
+
+def test_the_new_pills_keep_their_fill():
+    """The "NUEVO" pills (Knowledge Garden, Valencia Events, Videos) are inserted by a script, with their look as an inline style.
+
+    `*` and the blanket rule of style.css paint every element the page colour, `*` the text `#CDD6F4` too, and so does
+    the rule above that makes the content of a cell transparent. Each one is `!important`, and each one outranks a plain
+    inline style: the pill read as bare small text. An inline `!important` is the one declaration none of them outranks.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, "*") if {"background-color", "color"} <= set(d)]
+    assert legacy, "the legacy rule is gone: drop the !important and this test"
+
+    for script, pill_class in (("kg_state.js", "wt-kg-new-badge"), ("valencia_state.js", "wt-valencia-new-badge"), ("video_state.js", "wt-video-new-badge")):
+        js = (ASSETS / "js" / script).read_text(encoding="utf-8")
+        styles = re.findall(r'"[^"]*background:#A37FFF[^;]*;[^"]*"', js)
+        assert styles, f"{script}: the style of the {pill_class} pill changed; keep its fill !important"
+        assert all("background:#A37FFF !important" in style and "color:#fff !important" in style for style in styles), (script, styles)
+        assert pill_class in js
+
+
 # --- It is loaded once (T-205) ---
 
 

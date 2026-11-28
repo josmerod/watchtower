@@ -27,8 +27,10 @@
   var MARK_SEEN_ID = "valencia-mark-seen";
   var ROW_SEL = "[data-valencia-detected]";
   var BADGE_CLASS = "wt-valencia-new-badge";
+  // The fill and the text are !important: the blanket rules of style.css are too, and an inline
+  // style they outrank leaves the pill as bare text.
   var BADGE_CSS =
-    "display:inline-block;background:#A37FFF;color:#fff;font-size:0.62rem;" +
+    "display:inline-block;background:#A37FFF !important;color:#fff !important;font-size:0.62rem;" +
     "font-weight:700;letter-spacing:.03em;padding:1px 8px;border-radius:999px;" +
     "text-transform:uppercase;margin-right:6px;vertical-align:middle;" +
     "pointer-events:none;";
