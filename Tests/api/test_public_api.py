@@ -325,6 +325,84 @@ def test_valencia_events_missing(data_dir: Path):
     assert "error" in response.json()
 
 
+# The optional filters of T-143. Fixed dates: a window of days does not depend on today.
+
+
+def _valencia_record(title: str, start_at: str, category: str | None = "otro") -> dict:
+    """An event as the ETL stores it since T-143: the aware moment, and the calendar date next to it."""
+    return {"title": title, "category": category, "start_date": start_at[:10], "start_at": start_at}
+
+
+VALENCIA_RANGE = [
+    _valencia_record("Teatro ayer", "2026-11-27T20:00:00+01:00", "teatro"),
+    _valencia_record("Música hoy", "2026-11-28T23:00:00+01:00", "música"),
+    # Half past midnight in València, still the 28th in UTC: the day of the event is the 29th.
+    _valencia_record("Noche en UTC", "2026-11-29T00:30:00+01:00", "música"),
+    _valencia_record("Charla tech", "2026-11-29T19:00:00+01:00", "tech"),
+    _valencia_record("Feria lejana", "2026-12-20T00:00:00+01:00", "ferias"),
+    {"title": "Sin categoría", "start_date": "2026-11-28"},  # an older file: the date only
+    {"title": "Sin zona horaria", "start_date": "2026-11-28T19:30:00", "category": "teatro"},  # an older file: a bare timestamp
+    {"title": "Sin fecha", "category": "tech"},
+]
+
+
+def _valencia_titles(params: dict) -> list[str]:
+    response = client.get("/api/v1/valencia/events", params=params)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert set(body) == {"generated_at", "count", "items"} and body["count"] == len(body["items"])  # the envelope does not change
+    assert response.headers["cache-control"] == "no-store"
+    return [item["title"] for item in body["items"]]
+
+
+def test_valencia_events_category_filter(data_dir: Path):
+    """?category= keeps one category; case and accents do not count, and a record without one is "otro"."""
+    _write(data_dir, "valencia_events/valencia_events.json", VALENCIA_RANGE)
+
+    assert _valencia_titles({"category": "musica"}) == ["Música hoy", "Noche en UTC"]
+    assert _valencia_titles({"category": "  MÚSICA "}) == ["Música hoy", "Noche en UTC"]
+    assert _valencia_titles({"category": "otro"}) == ["Sin categoría"]
+    assert _valencia_titles({"category": "tech"}) == ["Charla tech", "Sin fecha"]  # no window: the undated one stays
+    assert _valencia_titles({"category": "no-existe"}) == []
+
+
+def test_valencia_events_from_and_to(data_dir: Path):
+    """?from= and ?to= bound the days an event starts on, in València's time, both ends inclusive."""
+    _write(data_dir, "valencia_events/valencia_events.json", VALENCIA_RANGE)
+
+    assert _valencia_titles({"from": "2026-11-29"}) == ["Noche en UTC", "Charla tech", "Feria lejana"]
+    assert _valencia_titles({"to": "2026-11-28"}) == ["Teatro ayer", "Música hoy", "Sin categoría", "Sin zona horaria"]
+    assert _valencia_titles({"from": "2026-11-28", "to": "2026-11-29"}) == ["Música hoy", "Noche en UTC", "Charla tech", "Sin categoría", "Sin zona horaria"]
+    assert _valencia_titles({"from": "2026-11-29", "to": "2026-11-28"}) == []  # a reversed range is empty, not swapped
+    assert "Sin fecha" not in _valencia_titles({"to": "2027-01-01"})  # a window never lists what has no date
+
+
+def test_valencia_events_filters_combine_and_from_replaces_days(data_dir: Path):
+    _write(data_dir, "valencia_events/valencia_events.json", VALENCIA_RANGE)
+
+    assert _valencia_titles({"from": "2026-11-29", "category": "tech"}) == ["Charla tech"]
+    assert _valencia_titles({"from": "2026-11-29", "category": "teatro"}) == []
+    # A range of days is the window: `days` no longer cuts it.
+    assert _valencia_titles({"days": 1, "from": "2026-12-01"}) == ["Feria lejana"]
+
+
+def test_valencia_events_a_date_that_is_not_one_is_refused(data_dir: Path):
+    _write(data_dir, "valencia_events/valencia_events.json", VALENCIA_RANGE)
+
+    for params in ({"from": "ayer"}, {"to": "2026-13-40"}, {"from": "29/11/2026"}):
+        assert client.get("/api/v1/valencia/events", params=params).status_code == 422
+
+
+def test_valencia_events_filters_keep_the_envelope_and_the_records(data_dir: Path):
+    """A filtered answer is the same envelope, with the records as stored."""
+    _write(data_dir, "valencia_events/valencia_events.json", VALENCIA_RANGE)
+
+    everything = client.get("/api/v1/valencia/events").json()
+    filtered = client.get("/api/v1/valencia/events", params={"category": "ferias"}).json()
+    assert filtered["items"] == everything["items"][4:5]
+    assert filtered["generated_at"] == everything["generated_at"]
+
+
 # ---------------------------------------------------------------------------
 # OpenAPI wiring
 # ---------------------------------------------------------------------------
