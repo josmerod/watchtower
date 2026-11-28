@@ -6,7 +6,9 @@ to show each of them raw. These tests pin the one readable local date every
 source gets, and the list in start order.
 """
 
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from dash.development.base_component import Component
 
@@ -16,6 +18,8 @@ MEETUP = {"title": "Friday Language Exchange", "source": "meetup.com", "date_tex
 VISITVALENCIA = {"title": "MotoGP", "source": "visitvalencia.com", "date_text": "27/11/2026 - 29/11/2026", "start_date": "2026-11-27", "end_date": "2026-11-29"}
 EVENTBRITE = {"title": "SG[Spain] 2026", "source": "eventbrite.com", "date_text": "2026-11-27", "start_date": "2026-11-27", "end_date": "2026-11-28"}
 UNDATED = {"title": "Sin fecha", "source": "visitvalencia.com", "date_text": "Próximamente", "start_date": "", "end_date": ""}
+# The morning before the three dated events, in Valencia: they are all still to come.
+NOW = datetime(2026, 11, 26, 9, 0, tzinfo=ZoneInfo("Europe/Madrid"))
 
 
 def test_meetup_times_show_in_valencia_time():
@@ -65,13 +69,13 @@ def test_events_sort_by_start_and_the_undated_go_last():
 
 
 def _date_cells(component: Any) -> list[str]:
-    """Collect the text of every Date cell of the layout, in document order."""
+    """Collect the text of every "Cuándo" cell of the layout, in document order."""
     out: list[str] = []
     if component is None or isinstance(component, (str, int, float, bool)) or not isinstance(component, Component):
         return out
     data = component.to_plotly_json()
     props = data.get("props", data)  # Dash 4 nests props; older Dash is flat
-    if type(component).__name__ == "Span" and props.get("className") == "text-nowrap small" and isinstance(props.get("children"), str):
+    if type(component).__name__ == "Span" and props.get("className") == "text-nowrap" and isinstance(props.get("children"), str):
         out.append(props["children"])
     for value in props.values():
         for item in value if isinstance(value, list) else [value]:
@@ -80,12 +84,17 @@ def _date_cells(component: Any) -> list[str]:
 
 
 def test_the_tab_shows_sorted_readable_dates(monkeypatch):
-    """Both tables of the layout carry the local dates, and the list goes by start."""
+    """The table of the layout carries the local dates, and the list goes by start."""
     monkeypatch.setattr(vet, "load_valencia_events", lambda: [UNDATED, MEETUP, VISITVALENCIA, EVENTBRITE])
+    monkeypatch.setattr(vet, "load_sources_status", lambda: {})
+    monkeypatch.setattr(vet, "_now", lambda: NOW)
     layout = vet.render_valencia_events_tab()
 
-    # "All Events" comes first in the layout: by start, the undated event last
-    assert _date_cells(layout)[:4] == ["vie 27/11/2026 – 29/11/2026", "vie 27/11/2026 – 28/11/2026", "vie 27/11/2026 · 20:30", "Próximamente"]
+    # Same day: all-day events first, in the order they came, then by hour
+    assert _date_cells(layout)[:3] == ["vie 27/11/2026 – 29/11/2026", "vie 27/11/2026 – 28/11/2026", "vie 27/11/2026 · 20:30"]
     assert "2026-11-27T19:30:00.000Z" not in str(layout)
-    # The card and the table format a date the same way
-    assert "vie 27/11/2026 · 20:30" in str(vet.create_event_card(MEETUP))
+    # Without a date an event fits no window: it stays out of the default view, and keeps its text
+    assert "Próximamente" not in str(layout)
+    assert vet._when_text(UNDATED) == "Próximamente"
+    # An older file is shown with the rule the table always applied
+    assert vet._when_text(MEETUP) == vet._format_event_date(MEETUP) == "vie 27/11/2026 · 20:30"

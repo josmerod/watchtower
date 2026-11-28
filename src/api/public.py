@@ -11,9 +11,11 @@ never imports Dash modules. The data root is resolved through
 
 import json
 import logging
-from datetime import datetime, timezone
+import unicodedata
+from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, cast
+from typing import Annotated, Any, cast
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
@@ -309,16 +311,48 @@ async def get_security_kev(response: Response, limit: int = Query(100, ge=1, le=
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+_VALENCIA_TZ = ZoneInfo("Europe/Madrid")
+
+
+def _fold(text: Any) -> str:
+    """Lower-case and accent-free, so that ``musica`` names the category ``música``."""
+    return "".join(ch for ch in unicodedata.normalize("NFD", str(text or "").strip().lower()) if not unicodedata.combining(ch))
+
+
+def _valencia_day(event: dict[str, Any]) -> date | None:
+    """The day an event starts, in València's time; None without a usable date.
+
+    ``start_at`` (the files of T-143 and later) is an aware ISO moment and ``start_date`` a calendar
+    date; a timestamp that carries no zone is València wall-clock time.
+    """
+    for key in ("start_at", "start_date"):
+        text = str(event.get(key) or "").strip().split("[")[0].replace("Z", "+00:00")
+        try:
+            moment = datetime.fromisoformat(text) if text else None
+        except ValueError:
+            moment = None
+        if moment is not None:
+            return (moment if moment.tzinfo else moment.replace(tzinfo=_VALENCIA_TZ)).astimezone(_VALENCIA_TZ).date()
+    return None
+
+
 @public_router.get("/valencia/events")
 async def get_valencia_events(
-    response: Response, days: int = Query(0, ge=0, le=365, description="Only events starting within N days from now (0 = all)"), limit: int = Query(200, ge=1, le=500, description="Max events to return")
+    response: Response,
+    days: int = Query(0, ge=0, le=365, description="Only events starting within N days from now (0 = all); ignored when `from` or `to` is given"),
+    limit: int = Query(200, ge=1, le=500, description="Max events to return"),
+    category: Annotated[str | None, Query(description="Only this category, as the ETL names it (música, teatro, arte, tech, ferias, infantil, deporte, otro...); case and accents do not count")] = None,
+    date_from: Annotated[date | None, Query(alias="from", description="First day of the window, YYYY-MM-DD; an event counts on its day in València's time")] = None,
+    date_to: Annotated[date | None, Query(alias="to", description="Last day of the window, YYYY-MM-DD, inclusive")] = None,
 ):
     """Get Valencia events (for calendar automations).
 
     Reads ``data/valencia_events/valencia_events.json`` and returns the events
     as-is. With ``days > 0`` only events whose ``start_date`` falls from today
     (inclusive) up to N days from now are returned (events without a date are
-    excluded from that filtered view only).
+    excluded from that filtered view only). ``from`` and ``to`` replace that
+    window by a range of days (either end may be missing), and ``category``
+    keeps one category; events without a date are excluded by any window.
     """
     path = _get_data_dir() / VALENCIA_EVENTS_FILE
     if not path.is_file():
@@ -329,12 +363,27 @@ async def get_valencia_events(
             events = events.get("events") or events.get("items") or []
         if not isinstance(events, list):
             raise ValueError(f"Unexpected Valencia events payload type: {type(events).__name__}")
-        if days > 0:
+        wanted = _fold(category) if category else ""
+        window = (date_from, date_to) if date_from or date_to else None
+        if days > 0 or window or wanted:
             # Date-only start dates land on midnight, so the window opens at the
             # start of today: an event dated today is still upcoming at 23:00 (T-160).
             today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
             horizon = datetime.now().timestamp() + days * 86400
-            events = [e for e in events if isinstance(e, dict) and today_start <= _sortable_date(e.get("start_date")) <= horizon]
+            kept = []
+            for event in events:
+                if not isinstance(event, dict):
+                    continue
+                if wanted and _fold(event.get("category") or "otro") != wanted:
+                    continue
+                if window:
+                    day = _valencia_day(event)
+                    if day is None or (date_from and day < date_from) or (date_to and day > date_to):
+                        continue
+                elif days > 0 and not today_start <= _sortable_date(event.get("start_date")) <= horizon:
+                    continue
+                kept.append(event)
+            events = kept
         response.headers["Cache-Control"] = "no-store"
         return {
             "generated_at": _file_mtime_iso(path),

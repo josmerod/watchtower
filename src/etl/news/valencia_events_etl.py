@@ -1,321 +1,75 @@
-"""Valencia Events ETL - Refactored to use BaseETL framework."""
+"""Valencia events: the composer of the ``valencia_events`` package.
+
+The sources live in :mod:`src.etl.news.valencia_events.sources`, one module
+each. This module stays the registered script and the single owner of the
+output file ``data/valencia_events/valencia_events.json``. A run:
+
+1. asks every source once (:meth:`ValenciaEventsETL.extract`); a failing or
+   blocked source leaves the others alone;
+2. merges the raw records into one per event and per session
+   (:meth:`ValenciaEventsETL.transform`), then completes each of them in one
+   place (:func:`~src.etl.news.valencia_events.normalise.normalise_record`):
+   real datetimes with a zone, the category, the zone, the price as a number
+   and the moment the event was first detected;
+3. writes the file atomically, and a small state file that remembers when each
+   event was first seen (:meth:`ValenciaEventsETL.load`).
+
+A source that gives nothing in a run — empty, failed or blocked — does not
+erase what it gave before: its events that have not ended are carried over for
+:data:`CARRY_OVER_DAYS`, flagged ``carried_over`` in their metadata. The status
+of every source is written next to the events (``sources_status.json``), so the
+tab can say which agendas answered. When not one of them gives an event, the
+run fails instead of "completing" over stale data (T-192).
+"""
 
 import json
 import re
-from collections.abc import Iterator
-from datetime import datetime
-from typing import Any, cast
-from zoneinfo import ZoneInfo
+from collections import Counter
+from datetime import date, datetime, timedelta
+from typing import Any
+from urllib.parse import urlsplit
 
+# The pages are read by the source modules, but ``requests`` is imported here too:
+# the tests patch ``requests.get`` through this module's name, as they always did.
 import requests
-from bs4 import BeautifulSoup, Tag
 
-from src.constants.etl import SCRAPER_DEFAULT_USER_AGENT
-from src.etl.base import BaseETL
+from src.etl.base import BaseETL, ETLError
+from src.etl.news.valencia_events.categories import UNKNOWN_CATEGORY, fold
+from src.etl.news.valencia_events.dates import iso, madrid_now, parse_moment
+from src.etl.news.valencia_events.dates import parse_dates_from_text as _parse_dates_from_text
+from src.etl.news.valencia_events.dates import to_iso_date as _to_iso_date
+from src.etl.news.valencia_events.http import SourceBlockedError, blocked_hosts, pause
+from src.etl.news.valencia_events.jsonld import jsonld_offers as _jsonld_offers
+from src.etl.news.valencia_events.normalise import normalise_record
+from src.etl.news.valencia_events.sources import SOURCE_BY_KEY, SOURCES, Source, eventbrite, meetup, visitvalencia
+from src.etl.news.valencia_events.stamps import STAMPS_FILE, Stamps, load_stamps, save_stamps, update_stamps
+from src.etl.news.valencia_events.storage import write_text_atomic
 from src.models.base import TimestampedModel
 
-# The events happen in Valencia: a timestamp that carries a zone is read as
-# the local date before anything else.
-_MADRID = ZoneInfo("Europe/Madrid")
+EVENTS_FILE = "valencia_events.json"
+# How every source fared in the last run, for the tab to show.
+SOURCE_STATUS_FILE = "sources_status.json"
+# How long the events of a source that stopped answering are kept.
+CARRY_OVER_DAYS = 7
 
-
-def _href_str(tag: Tag) -> str:
-    """Read a tag's href as a plain str.
-
-    bs4 types attribute values as ``str | AttributeValueList`` because
-    multi-valued attributes (e.g. ``class``) come back as lists; ``href`` is
-    never multi-valued, so the cast is typing-only and runtime-neutral.
-    """
-    return cast("str", tag.get("href", ""))
-
-
-def _is_meetup_date_text(text: str | None) -> bool:
-    """Match span text carrying a year or a Spanish month abbreviation (Meetup fallback)."""
-    return bool(text and ("202" in text or "ene" in text.lower() or "feb" in text.lower()))
-
-
-# Dynamic year matching — prevents the recurring "hardcoded year" bug.
-_NOW = datetime.now()
-_VALID_YEARS = {str(_NOW.year), str(_NOW.year + 1), str(_NOW.year - 1)}
-
-# Date normalisation helpers ---------------------------------------------------
-#
-# Each source exposes dates differently: visitvalencia cards print Spanish text
-# like "17/08/2026 - 30/08/2026", Eventbrite embeds a schema.org ItemList with
-# ISO startDate/endDate per item, and Meetup embeds a JSON-LD array of Events
-# with full ISO timestamps ("2026-08-28T18:30:00.000Z"). Everything is
-# normalised to plain ISO calendar dates (YYYY-MM-DD) — the format the
-# dashboard tab's _parse_event_date and the .ics exporter accept directly.
-
-_ISO_DATE_RE = re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})")
-_ES_DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
-
-
-def _has_valid_year(text: str) -> bool:
-    """Check if text contains a plausible event year (current, next, or prev)."""
-    return any(y in text for y in _VALID_YEARS)
-
-
-def _madrid_calendar_date(raw: str) -> str:
-    """Read an ISO timestamp that carries a zone as its calendar date in Valencia.
-
-    Meetup gives its start times in UTC: an evening there can already be the
-    next day in Spain, and the event belongs to that day.
-
-    Args:
-        raw: Raw timestamp; a zone-less or unparsable value is not converted.
-
-    Returns:
-        YYYY-MM-DD, or "" when the value carries no zone.
-    """
-    if "T" not in raw:
-        return ""
-    # A zone name in brackets ("+02:00[Europe/Madrid]") adds nothing to the offset before it.
-    try:
-        moment = datetime.fromisoformat(raw.split("[")[0].replace("Z", "+00:00"))
-    except ValueError:
-        return ""
-    if moment.tzinfo is None:
-        return ""
-    return moment.astimezone(_MADRID).strftime("%Y-%m-%d")
-
-
-def _to_iso_date(raw: Any) -> str:
-    """Normalise a raw date value to an ISO calendar date (YYYY-MM-DD).
-
-    Accepts Spanish DD/MM/YYYY, ISO YYYY-MM-DD and full ISO timestamps. A
-    timestamp that carries a zone (``+02:00``, ``Z``) is first changed to
-    Valencia local time, so the date is the one the event has there; a
-    zone-less one is read as it comes.
-
-    Args:
-        raw: Raw date value; non-strings are coerced, falsy values yield "".
-
-    Returns:
-        YYYY-MM-DD string, or "" when no plausible date can be extracted.
-    """
-    text = str(raw or "").strip()
-    if not text:
-        return ""
-    local_date = _madrid_calendar_date(text)
-    if local_date:
-        return local_date
-    match = _ISO_DATE_RE.search(text)
-    if match:
-        year, month, day = (int(group) for group in match.groups())
-    else:
-        match = _ES_DATE_RE.search(text)
-        if not match:
-            return ""
-        day, month, year = (int(group) for group in match.groups())
-    try:
-        return datetime(year, month, day).strftime("%Y-%m-%d")
-    except ValueError:
-        return ""
-
-
-def _parse_dates_from_text(text: Any) -> tuple[str, str]:
-    """Extract a (start, end) ISO date pair from free-form date text.
-
-    Handles "Del DD/MM/YYYY al DD/MM/YYYY", "DD/MM/YYYY - DD/MM/YYYY",
-    "Fecha: ..." prefixes and bare ISO/Spanish date tokens, in any
-    combination the sources print them.
-
-    Args:
-        text: Raw date text as shown on the listing.
-
-    Returns:
-        Tuple of (start_date, end_date). end_date is "" for single-day
-        events; both are "" when the text carries no date at all.
-    """
-    value = str(text or "").strip()
-    if not value:
-        return "", ""
-    tokens: list[str] = []
-    for token in re.findall(r"\d{1,2}/\d{1,2}/\d{4}|\d{4}-\d{1,2}-\d{1,2}", value):
-        iso = _to_iso_date(token)
-        if iso:
-            tokens.append(iso)
-    if not tokens:
-        return "", ""
-    # Deduplicate preserving order: a repeated identical date is a one-day
-    # event, not a range.
-    unique = list(dict.fromkeys(tokens))
-    return unique[0], unique[1] if len(unique) > 1 else ""
-
-
-def _iter_jsonld_items(soup: BeautifulSoup) -> Iterator[dict[str, Any]]:
-    """Yield every object embedded in the page's application/ld+json blocks.
-
-    Handles blocks holding a single object, an array of objects, or an object
-    with a @graph. Malformed blocks are skipped silently.
-
-    Args:
-        soup: Parsed page.
-
-    Yields:
-        Individual schema.org node dictionaries.
-    """
-    for block in soup.find_all("script", type="application/ld+json"):
-        raw = block.string or block.get_text()
-        if not raw:
-            continue
-        try:
-            data = json.loads(raw)
-        except (json.JSONDecodeError, TypeError):
-            continue
-        queue = data if isinstance(data, list) else [data]
-        for node in queue:
-            if not isinstance(node, dict):
-                continue
-            graph = node.get("@graph")
-            if isinstance(graph, list):
-                yield from (item for item in graph if isinstance(item, dict))
-            else:
-                yield node
-
-
-def _jsonld_location(node: dict[str, Any]) -> str:
-    """Best-effort human-readable location from a schema.org event node.
-
-    Args:
-        node: schema.org Event (or ItemList item) dictionary.
-
-    Returns:
-        "street, city" (or whichever parts exist), "" when no location.
-    """
-    location = node.get("location")
-    if isinstance(location, str):
-        return location
-    if not isinstance(location, dict):
-        return ""
-    address = location.get("address")
-    if isinstance(address, str):
-        return address
-    if isinstance(address, dict):
-        parts = [address.get("streetAddress"), address.get("addressLocality")]
-        return ", ".join(str(part) for part in parts if part)
-    return str(location.get("name") or "")
-
-
-def _jsonld_venue(node: dict[str, Any]) -> str:
-    """Venue name from a schema.org event node's location.
-
-    Args:
-        node: schema.org Event (or ItemList item) dictionary.
-
-    Returns:
-        The Place's ``name`` (or the location string itself when the source
-        emits a bare string), "" when the location carries no name — online
-        events with a VirtualLocation intentionally yield "".
-    """
-    location = node.get("location")
-    if isinstance(location, str):
-        return location.strip()
-    if not isinstance(location, dict):
-        return ""
-    return str(location.get("name") or "").strip()
-
-
-def _parse_amount(raw: Any) -> float | None:
-    """Parse a non-negative monetary amount from a JSON-LD price field.
-
-    Args:
-        raw: Raw value; numbers and point/comma decimal strings are accepted.
-
-    Returns:
-        The amount as float, or None when missing/negative/unparsable.
-    """
-    text = str(raw if raw is not None else "").strip().replace(",", ".")
-    if not text:
-        return None
-    try:
-        value = float(text)
-    except ValueError:
-        return None
-    return value if value >= 0 else None
-
-
-def _format_amount(value: float) -> str:
-    """Format an amount Spanish-style without currency: "12" or "12,50"."""
-    if value == int(value):
-        return str(int(value))
-    return f"{value:.2f}".replace(".", ",")
-
-
-def _price_pair(amount: float, suffix: str) -> tuple[str, bool]:
-    """(price_info, is_free) for one exact amount — exactly zero means free."""
-    if amount == 0:
-        return "Gratis", True
-    return f"{_format_amount(amount)} {suffix}", False
-
-
-def _jsonld_offers(node: dict[str, Any]) -> dict[str, Any]:
-    """Extract ticket price information from a schema.org event node's offers.
-
-    Handles the shapes seen in the wild: a single Offer (``price``), an
-    AggregateOffer (``lowPrice``/``highPrice``), a nested priceSpecification
-    (``minPrice``/``maxPrice``) and lists of those. ``is_free`` is True only
-    when the full price is exactly zero — a range starting at 0 still has
-    paid tiers and counts as paid. When several offers exist the first one
-    carrying a usable price wins.
-
-    Args:
-        node: schema.org Event (or ItemList item) dictionary.
-
-    Returns:
-        Dict that may carry ``price_info`` (str), ``is_free`` (bool),
-        ``offers_availability`` (str, short form) and ``offers_url`` (str);
-        empty when the node exposes no usable offers.
-    """
-    offers = node.get("offers")
-    if isinstance(offers, dict):
-        offer_list: list[dict[str, Any]] = [offers]
-    elif isinstance(offers, list):
-        offer_list = [entry for entry in offers if isinstance(entry, dict)]
-    else:
-        offer_list = []
-
-    result: dict[str, Any] = {}
-    for offer in offer_list:
-        spec = offer.get("priceSpecification")
-        spec = spec if isinstance(spec, dict) else {}
-        currency = str(offer.get("priceCurrency") or spec.get("priceCurrency") or "").strip().upper()
-        suffix = "€" if currency in ("", "EUR") else currency
-
-        single = _parse_amount(offer.get("price"))
-        low = _parse_amount(offer.get("lowPrice"))
-        high = _parse_amount(offer.get("highPrice"))
-        if single is None and low is None:
-            low = _parse_amount(spec.get("minPrice"))
-        if single is None and high is None:
-            high = _parse_amount(spec.get("maxPrice"))
-
-        if single is not None:
-            price_info, is_free = _price_pair(single, suffix)
-        elif low is not None and high is not None:
-            price_info, is_free = _price_pair(low, suffix) if low == high else (f"{_format_amount(low)} – {_format_amount(high)} {suffix}", False)
-        elif low is not None:
-            price_info, is_free = f"Desde {_format_amount(low)} {suffix}", False
-        elif high is not None:
-            price_info, is_free = _price_pair(high, suffix)
-        else:
-            continue  # no usable price in this offer — try the next one
-
-        result["price_info"] = price_info
-        result["is_free"] = is_free
-        availability = str(offer.get("availability") or "")
-        if availability:
-            result["offers_availability"] = availability.rsplit("/", 1)[-1]
-        url = str(offer.get("url") or "")
-        if url:
-            result["offers_url"] = url
-        break
-    return result
+# Fields a source may add to the original record shape; they are carried along untouched.
+_OPTIONAL_FIELDS = ("start_time", "end_time", "address", "city", "tags", "start_datetime", "end_datetime")
+# The fields of a raw record, as read back from a stored event.
+_RAW_FIELDS = ("title", "url", "source", "category", "description", "start_date", "end_date", "date_text", "start_time", "end_time", "venue", "address", "city", "price_info", "is_free", "tags", "metadata")
+# A category that says nothing: a specific one from another source wins over it.
+_WEAK_CATEGORIES = ("", UNKNOWN_CATEGORY, "meetup", "eventbrite")
 
 
 class ValenciaEvent(TimestampedModel):
-    """Model for Valencia events."""
+    """Model for Valencia events.
+
+    The first block of fields is the original one. The rest is filled by
+    ``normalise_record``: ``start_at``/``end_at`` are ISO 8601 with their
+    offset, ``start_local``/``end_local`` the readable Valencia form (T-178);
+    ``price`` is a number, ``0`` when free and ``None`` when the source says
+    nothing (never guessed); ``first_detected_at`` is the run that first saw
+    the event and survives every later run.
+    """
 
     title: str
     url: str = ""
@@ -329,20 +83,57 @@ class ValenciaEvent(TimestampedModel):
     price_info: str = ""
     is_free: bool | None = None
     metadata: dict[str, Any] = {}
+    # when
+    event_id: str = ""
+    start_time: str = ""
+    end_time: str = ""
+    all_day: bool = True
+    start_at: str = ""
+    end_at: str = ""
+    start_local: str = ""
+    end_local: str = ""
+    # where
+    address: str = ""
+    city: str = ""
+    zone: str = ""
+    # how much
+    price: float | None = None
+    price_max: float | None = None
+    currency: str = ""
+    # labels, and when the event was first detected
+    tags: list[str] = []
+    first_detected_at: str = ""
+    first_detected_local: str = ""
+    last_seen_at: str = ""
 
 
 class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
     """ETL for Valencia events from multiple sources."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             name="valencia_events",
-            description="Extract Valencia events from multiple sources (visitvalencia.com, meetup.com, eventbrite)",
+            description="Extract Valencia events from multiple sources (visitvalencia.com, meetup.com, eventbrite, valencia.es, ...)",
             max_retries=3,
             retry_delay=5,
+            # The generic engine merges records whose titles are 80 % alike, which would collapse the sessions of one show into a single event.
+            # Events are merged by title AND start instead (_merge_events).
+            enable_deduplication=False,
         )
         # Override output directory to write directly to main data directory
         self.output_dir = self.data_dir
+        self._source_status: dict[str, str] = {}
+        self._source_seen: dict[str, int] = {}
+        self._nothing_answered = False
+        self._carried_seen: dict[str, str] = {}
+        self._run_now: datetime | None = None
+        self._stamps: Stamps = {}
+        self._fresh_ids: list[str] = []
+
+    @property
+    def source_status(self) -> dict[str, str]:
+        """``ok``, ``empty``, ``failed`` or ``blocked`` per source key, as the last extract found it."""
+        return dict(self._source_status)
 
     def get_current_and_next_month(self):
         """Returns the current and next month in YYYY-MM format.
@@ -370,651 +161,65 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         Returns:
             List of event dictionaries
         """
-        url = f"https://www.visitvalencia.com/agenda-valencia?date={date}"
-        self.logger.info(f"Fetching events from {url}")
-
-        # Send GET request to the webpage with increased timeout
-        response = requests.get(url, headers={"User-Agent": SCRAPER_DEFAULT_USER_AGENT}, timeout=30)
-        response.raise_for_status()  # Raise exception for HTTP errors
-
-        # Parse HTML content
-        self.logger.debug("Parsing HTML content")
-        soup = BeautifulSoup(response.content, "html.parser")
-
-        # Find all event items based on the provided HTML structure
-        # The events appear to be in a list with each event having h3 headers
-        events = []
-
-        # APPROACH 0 (primary): structured listing cards. The agenda renders each
-        # event as a div.standard-card whose heading, link and date paragraph
-        # ("17/08/2026 - 30/08/2026") carry stable BEM class names, so dates can
-        # be read straight from the listing without extra requests.
-        for card in soup.select("div.standard-card"):
-            try:
-                heading = card.select_one(".standard-card__heading") or card.find(["h2", "h3"])
-                title = heading.get_text(strip=True) if heading else ""
-                if not title:
-                    continue
-
-                dates_element = card.select_one(".standard-card__dates")
-                date_text = dates_element.get_text(" ", strip=True) if dates_element else ""
-                start_date, end_date = _parse_dates_from_text(date_text)
-
-                link = card.select_one("a.standard-card__link") or card.find("a", href=True)
-                event_url = ""
-                if link is not None:
-                    href = _href_str(link)
-                    if href:
-                        event_url = href if href.startswith("http") else f"https://www.visitvalencia.com{href}"
-
-                events.append(
-                    {
-                        "title": title,
-                        "url": event_url,
-                        "date_text": date_text,
-                        "start_date": start_date,
-                        "end_date": end_date,
-                        "category": "",
-                        "description": "",
-                        "source": "visitvalencia.com",
-                    }
-                )
-            except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
-                self.logger.error(f"Error parsing standard-card event: {e!s}")
-                continue
-
-        self.logger.debug(f"Approach 0: extracted {len(events)} events from standard cards")
-
-        # APPROACH 1 (fallback): Based on the example HTML, events seem to be contained in
-        # elements with specific text in their titles
-        event_blocks = (
-            soup.find_all(
-                lambda tag: (
-                    tag.name
-                    and tag.find(["h2", "h3"])
-                    and tag.find(["h2", "h3"]).text
-                    and any(
-                        x in tag.find(["h2", "h3"]).text
-                        for x in [
-                            "Exposición",
-                            "Concierto",
-                            "Festival",
-                            "Visita",
-                            "Descubre",
-                            "Siente",
-                        ]
-                    )
-                )
-            )
-            if not events
-            else []
-        )
-
-        self.logger.debug(f"Approach 1: Found {len(event_blocks)} event blocks")
-
-        for block in event_blocks:
-            try:
-                title_element = block.find(["h2", "h3"])
-                title = title_element.text.strip() if title_element else ""
-
-                # Extract date - improved logic
-                date_text = ""
-
-                # Look for date patterns in the block
-                date_candidates = []
-
-                # Pattern 1: Look for text containing "Del" and "al"
-                for string in block.strings:
-                    text = string.strip()
-                    if "Del" in text and "al" in text and _has_valid_year(text):
-                        date_candidates.append(text)
-
-                # Pattern 2: Look for text containing "Fecha:"
-                for string in block.strings:
-                    text = string.strip()
-                    if "Fecha:" in text and _has_valid_year(text):
-                        date_candidates.append(text)
-
-                # Pattern 3: Look for standalone date patterns
-                for string in block.strings:
-                    text = string.strip()
-                    if re.search(r"\d{1,2}/\d{1,2}/\d{4}", text) and _has_valid_year(text):
-                        date_candidates.append(text)
-
-                # Use the best candidate (prefer longer, more complete date info)
-                if date_candidates:
-                    # Sort by length (longer is usually more complete)
-                    date_candidates.sort(key=len, reverse=True)
-                    date_text = date_candidates[0]
-
-                # Fallback: if no good date found, don't use title as date
-                if not date_text:
-                    date_text = ""
-
-                # Extract URL
-                link = block.find("a")
-                event_url = _href_str(link) if link else ""
-                if event_url and not event_url.startswith("http"):
-                    event_url = f"https://www.visitvalencia.com{event_url}"
-
-                # Extract category
-                category = ""
-                category_tags = block.find_all(["span", "div"], class_=True)
-                for tag in category_tags:
-                    classes = tag.get("class")
-                    if classes and isinstance(classes, list):
-                        class_text = " ".join(classes)
-                        if any(c in class_text.lower() for c in ["música", "exposición", "deporte"]):
-                            category = tag.text.strip()
-                            break
-
-                # Extract description
-                description = ""
-                desc_element = block.find("p")
-                if desc_element:
-                    description = desc_element.text.strip()
-
-                if title:
-                    events.append(
-                        {
-                            "title": title,
-                            "url": event_url,
-                            "date_text": date_text,
-                            "category": category,
-                            "description": description,
-                            "source": "visitvalencia.com",
-                        }
-                    )
-                    self.logger.debug(f"Approach 1: Extracted event: {title}")
-            except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
-                self.logger.error(f"Error in Approach 1 parsing event: {e!s}")
-                continue
-
-        # APPROACH 2: Look for specific event pattern from the example
-        if not events:
-            self.logger.debug("Trying Approach 2: Looking for specific event patterns")
-            # Based on the provided HTML, events might be listed with a specific structure
-            event_entries: list[Tag] = []
-
-            # Try finding events with the format from the example
-            potential_entries = soup.find_all(class_=lambda x: x and isinstance(x, str) and (x.startswith("###") or "event" in x.lower()))
-
-            # If that doesn't work, try a more general approach
-            if not potential_entries:
-                # Look for sections that likely contain event information
-                potential_entries = soup.find_all(lambda tag: tag.name in ["article", "div", "section"] and tag.find(["h3", "h2", "h4"]))
-
-            event_entries.extend(potential_entries)
-
-            # Also try with HTML structure seen in the example
-            event_items = soup.find_all(lambda tag: tag.name and tag.get_text() and ("exposición" in tag.get_text().lower() or "música" in tag.get_text().lower() or _has_valid_year(tag.get_text())))
-
-            event_entries.extend(event_items)
-
-            self.logger.debug(f"Approach 2: Found {len(event_entries)} potential event entries")
-
-            for entry in event_entries:
-                try:
-                    # Extract title
-                    title_element = entry.find(["h3", "h2", "h4"])
-                    if not title_element and entry.name in ["h3", "h2", "h4"]:
-                        title_element = entry
-
-                    title = title_element.text.strip() if title_element else ""
-
-                    # Extract date - look for date pattern
-                    date_text = ""
-                    date_element = entry.find(string=lambda t: t and isinstance(t, str) and ("Del" in t or "al" in t or _has_valid_year(t)))
-
-                    if date_element:
-                        date_text = date_element.strip()
-                    else:
-                        # Try looking at sibling elements
-                        next_sibling = entry.next_sibling
-                        while next_sibling and not date_text:
-                            if hasattr(next_sibling, "text") and isinstance(next_sibling.text, str):
-                                if "Del" in next_sibling.text or "al" in next_sibling.text or _has_valid_year(next_sibling.text):
-                                    date_text = next_sibling.text.strip()
-                            next_sibling = next_sibling.next_sibling
-
-                    # Extract URL
-                    event_url = ""
-                    link = entry.find("a") or (entry.parent.find("a") if entry.parent else None)
-                    if link:
-                        event_url = _href_str(link)
-                        if event_url and not event_url.startswith("http"):
-                            event_url = f"https://www.visitvalencia.com{event_url}"
-
-                    # Extract category if possible
-                    category = ""
-                    entry_classes = entry.get("class")
-                    if entry_classes:
-                        class_text = " ".join(entry_classes if isinstance(entry_classes, list) else [entry_classes])
-                        for cat in [
-                            "exposición",
-                            "música",
-                            "gastronomía",
-                            "espectáculo",
-                            "deporte",
-                            "naturaleza",
-                            "fiestas",
-                        ]:
-                            if cat in class_text.lower():
-                                category = cat
-                                break
-
-                    # If still no category, look for it in the text
-                    if not category:
-                        for cat in [
-                            "exposición",
-                            "música",
-                            "gastronomía",
-                            "espectáculo",
-                            "deporte",
-                            "naturaleza",
-                            "fiestas",
-                        ]:
-                            if cat in entry.get_text().lower():
-                                category = cat
-                                break
-
-                    # Extract description
-                    description = ""
-                    desc_element = entry.find("p")
-                    if desc_element:
-                        description = desc_element.text.strip()
-
-                    if title and title not in [e["title"] for e in events]:
-                        events.append(
-                            {
-                                "title": title,
-                                "url": event_url,
-                                "date_text": date_text,
-                                "category": category,
-                                "description": description,
-                                "source": "visitvalencia.com",
-                            }
-                        )
-                        self.logger.debug(f"Approach 2: Extracted event: {title}")
-                except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
-                    self.logger.error(f"Error in Approach 2 parsing event: {e!s}")
-                    continue
-
-        # APPROACH 3: Direct extraction from the observed pattern in the HTML source
-        if not events:
-            self.logger.debug("Trying Approach 3: Direct extraction from HTML pattern")
-            # Based on the example HTML, events might be structured with ### titles and date info below
-
-            # Find all h3 elements with titles that might be events
-            heading_elements = soup.find_all(["h3", "h2", "h4"])
-
-            for heading in heading_elements:
-                try:
-                    title = heading.text.strip()
-                    if not title or title in [e["title"] for e in events]:
-                        continue
-
-                    # Look for date information in nearby elements
-                    date_text = ""
-                    # find_all over h2/h3/h4 headings always yields nested tags (only the
-                    # soup root has no parent); if that invariant ever broke, the broad
-                    # except below still catches the AttributeError — cast is typing-only.
-                    parent = cast(Tag, heading.parent)
-
-                    # Check for date text in siblings
-                    for sibling in list(parent.children):
-                        if sibling != heading and hasattr(sibling, "text") and isinstance(sibling.text, str):
-                            sibling_text = sibling.text.strip()
-                            if "Del" in sibling_text or "al" in sibling_text or _has_valid_year(sibling_text):
-                                date_text = sibling_text
-                                break
-
-                    # If no date found, look for a date in the parent text
-                    if not date_text and hasattr(parent, "text"):
-                        parent_text = parent.text
-                        date_parts = [part for part in parent_text.split("\n") if "Del" in part or "al" in part or _has_valid_year(part)]
-                        if date_parts:
-                            date_text = date_parts[0].strip()
-
-                    # Get URL if there's a link
-                    event_url = ""
-                    link = heading.find("a") or parent.find("a")
-                    if link:
-                        event_url = _href_str(link)
-                        if event_url and not event_url.startswith("http"):
-                            event_url = f"https://www.visitvalencia.com{event_url}"
-
-                    # Try to determine category
-                    category = ""
-                    category_keywords = [
-                        "exposición",
-                        "música",
-                        "gastronomía",
-                        "espectáculo",
-                        "deporte",
-                        "naturaleza",
-                        "fiestas",
-                        "festival",
-                    ]
-
-                    for keyword in category_keywords:
-                        if keyword in parent.get_text().lower():
-                            category = keyword
-                            break
-
-                    # Extract description
-                    description = ""
-                    desc_element = parent.find("p")
-                    if desc_element:
-                        description = desc_element.text.strip()
-
-                    events.append(
-                        {
-                            "title": title,
-                            "url": event_url,
-                            "date_text": date_text,
-                            "category": category,
-                            "description": description,
-                            "source": "visitvalencia.com",
-                        }
-                    )
-                    self.logger.debug(f"Approach 3: Extracted event: {title}")
-                except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
-                    self.logger.error(f"Error in Approach 3 parsing event: {e!s}")
-                    continue
-
-        self.logger.info(f"Retrieved {len(events)} events from Valencia website for {date}")
-        return events
+        return visitvalencia.fetch_month(date, self.logger)
 
     def get_meetup_events(self) -> list[dict]:
         """Fetch events from Meetup.com for Valencia."""
-        try:
-            self.logger.info("Fetching events from Meetup.com")
-
-            # Note: Meetup.com requires API key for full access
-            # For now, we'll use web scraping approach
-            url = "https://www.meetup.com/es-ES/find/?location=es--Valencia&source=EVENTS"
-
-            headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT}
-
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-
-            soup = BeautifulSoup(response.content, "html.parser")
-
-            # Primary: Meetup embeds a JSON-LD array of schema.org Events with
-            # full ISO startDate/endDate (UTC) plus name/url/description. The
-            # interactive event cards render client-side, so the static-HTML
-            # card scraping further below only acts as a fallback.
-            jsonld_events: list[dict[str, Any]] = []
-            for node in _iter_jsonld_items(soup):
-                if node.get("@type") != "Event" or not str(node.get("name") or "").strip():
-                    continue
-                title = str(node.get("name")).strip()
-                offers = _jsonld_offers(node)
-                jsonld_events.append(
-                    {
-                        "title": title,
-                        "url": str(node.get("url") or ""),
-                        "date_text": str(node.get("startDate") or ""),
-                        "start_date": _to_iso_date(node.get("startDate")),
-                        "end_date": _to_iso_date(node.get("endDate")),
-                        "category": "meetup",
-                        "description": str(node.get("description") or "").strip(),
-                        "source": "meetup.com",
-                        "venue": _jsonld_venue(node),
-                        "price_info": str(offers.get("price_info") or ""),
-                        "is_free": offers.get("is_free"),
-                        "metadata": {
-                            "location": _jsonld_location(node),
-                            "offers_availability": str(offers.get("offers_availability") or ""),
-                            "offers_url": str(offers.get("offers_url") or ""),
-                        },
-                    }
-                )
-
-            if jsonld_events:
-                self.logger.info(f"Found {len(jsonld_events)} events from Meetup.com JSON-LD")
-                return jsonld_events[:20]
-
-            events = []
-
-            # Fallback: look for event cards in Meetup's search results
-            event_cards = soup.find_all("div", {"data-testid": "event-card"})
-
-            for card in event_cards[:20]:  # Limit to first 20 events
-                try:
-                    title_element = card.find("h3") or card.find("h2")
-                    title = title_element.text.strip() if title_element else ""
-
-                    if not title:
-                        continue
-
-                    # Extract date information
-                    date_element = card.find("time") or card.find(  # type: ignore[call-overload]  # bs4 accepts name+string together at runtime; stubs force string=None when name is given
-                        "span",
-                        string=_is_meetup_date_text,
-                    )
-                    date_text = date_element.get("datetime", "") if date_element else ""
-                    if not date_text and date_element:
-                        date_text = date_element.text.strip()
-
-                    # Extract URL
-                    link = card.find("a")
-                    event_url = ""
-                    if link and "href" in link.attrs:
-                        href = _href_str(link)
-                        if href.startswith("/"):
-                            event_url = f"https://meetup.com{href}"
-                        else:
-                            event_url = href
-
-                    # Extract description/location
-                    desc_element = card.find("p")
-                    description = desc_element.text.strip() if desc_element else ""
-
-                    # Category - try to infer from title/description
-                    category = "meetup"
-                    if any(word in title.lower() for word in ["tech", "tecnología", "programming", "desarrollo"]):
-                        category = "tecnología"
-                    elif any(word in title.lower() for word in ["música", "music", "concierto"]):
-                        category = "música"
-
-                    if title:
-                        events.append(
-                            {
-                                "title": title,
-                                "url": event_url,
-                                "date_text": date_text,
-                                "category": category,
-                                "description": description,
-                                "source": "meetup.com",
-                            }
-                        )
-
-                except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
-                    self.logger.error(f"Error parsing Meetup event: {e}")
-                    continue
-
-            self.logger.info(f"Found {len(events)} events from Meetup.com")
-            return events
-
-        except Exception as e:  # broad by design: whole source fetch wrapper (network + scraping)
-            self.logger.error(f"Error fetching Meetup events: {e}")
-            return []
+        return meetup.fetch_events(self.logger)
 
     def get_eventbrite_events(self) -> list[dict]:
         """Fetch events from Eventbrite for Valencia."""
+        return eventbrite.fetch_events(self.logger)
+
+    def _fetch_source(self, source: Source) -> tuple[list[dict], str]:
+        """Ask one source; a failure is logged and leaves the other sources alone."""
         try:
-            self.logger.info("Fetching events from Eventbrite")
-
-            # Eventbrite API would require API key, so we'll use web scraping
-            url = "https://www.eventbrite.es/d/spain--valencia/all-events/"
-
-            headers = {"User-Agent": SCRAPER_DEFAULT_USER_AGENT}
-
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-
-            soup = BeautifulSoup(response.content, "html.parser")
-
-            # Primary: Eventbrite embeds a schema.org ItemList in JSON-LD whose
-            # ListItem entries carry ISO startDate/endDate, name, url and
-            # location per event — far more reliable than the JS-rendered cards.
-            jsonld_events: list[dict[str, Any]] = []
-            for node in _iter_jsonld_items(soup):
-                if node.get("@type") != "ItemList":
-                    continue
-                for list_item in node.get("itemListElement") or []:
-                    if not isinstance(list_item, dict):
-                        continue
-                    item = list_item.get("item")
-                    if not isinstance(item, dict):
-                        continue
-                    title = str(item.get("name") or "").strip()
-                    if not title:
-                        continue
-                    category = "eventbrite"
-                    if any(word in title.lower() for word in ["tech", "tecnología", "startup"]):
-                        category = "tecnología"
-                    elif any(word in title.lower() for word in ["música", "concierto", "festival"]):
-                        category = "música"
-                    offers = _jsonld_offers(item)
-                    jsonld_events.append(
-                        {
-                            "title": title,
-                            "url": str(item.get("url") or ""),
-                            "date_text": str(item.get("startDate") or ""),
-                            "start_date": _to_iso_date(item.get("startDate")),
-                            "end_date": _to_iso_date(item.get("endDate")),
-                            "category": category,
-                            "description": str(item.get("description") or "").strip(),
-                            "source": "eventbrite.com",
-                            "venue": _jsonld_venue(item),
-                            "price_info": str(offers.get("price_info") or ""),
-                            "is_free": offers.get("is_free"),
-                            "metadata": {
-                                "location": _jsonld_location(item),
-                                "offers_availability": str(offers.get("offers_availability") or ""),
-                                "offers_url": str(offers.get("offers_url") or ""),
-                            },
-                        }
-                    )
-                if jsonld_events:
-                    break  # only the first ItemList matters
-
-            if jsonld_events:
-                self.logger.info(f"Found {len(jsonld_events)} events from Eventbrite JSON-LD")
-                return jsonld_events[:15]
-
-            events = []
-
-            # Look for event cards
-            event_cards = soup.find_all("div", class_=lambda x: x and "event-card" in x.lower())
-
-            # If that doesn't work, look for event listings
-            if not event_cards:
-                event_cards = soup.find_all(
-                    "div",
-                    class_=lambda x: x and any(term in x.lower() for term in ["event", "card", "listing"]),
-                )
-
-            for card in event_cards[:15]:  # Limit to first 15 events
-                try:
-                    title_element = card.find("h3") or card.find("h2") or card.find("h4")
-                    title = title_element.text.strip() if title_element else ""
-
-                    if not title:
-                        continue
-
-                    # Extract date
-                    date_element = card.find("p", class_=lambda x: x and "date" in x.lower())
-                    date_text = date_element.text.strip() if date_element else ""
-
-                    # Extract URL
-                    link = card.find("a")
-                    event_url = ""
-                    if link and "href" in link.attrs:
-                        href = _href_str(link)
-                        if href.startswith("/"):
-                            event_url = f"https://eventbrite.com{href}"
-                        else:
-                            event_url = href
-
-                    # Extract description
-                    desc_element = card.find("p", class_=lambda x: x and "description" in x.lower())
-                    description = desc_element.text.strip() if desc_element else ""
-
-                    # Category
-                    category = "eventbrite"
-                    if any(word in title.lower() for word in ["tech", "tecnología", "startup"]):
-                        category = "tecnología"
-                    elif any(word in title.lower() for word in ["música", "concierto", "festival"]):
-                        category = "música"
-
-                    if title:
-                        events.append(
-                            {
-                                "title": title,
-                                "url": event_url,
-                                "date_text": date_text,
-                                "category": category,
-                                "description": description,
-                                "source": "eventbrite.com",
-                            }
-                        )
-
-                except Exception as e:  # broad by design: BeautifulSoup DOM extraction from messy external HTML
-                    self.logger.error(f"Error parsing Eventbrite event: {e}")
-                    continue
-
-            self.logger.info(f"Found {len(events)} events from Eventbrite")
-            return events
-
-        except Exception as e:  # broad by design: whole source fetch wrapper (network + scraping)
-            self.logger.error(f"Error fetching Eventbrite events: {e}")
-            return []
+            records = source.fetch(logger=self.logger)
+        except SourceBlockedError as error:
+            self.logger.error(f"{source.label}: {error}. The host is not asked again in this run.")
+            return [], "blocked"
+        except Exception as e:  # broad by design: per-source fetch wrapper (network + scraping)
+            self.logger.error(f"Failed to fetch {source.label}: {e}")
+            return [], "failed"
+        if not records:
+            # The legacy sources swallow the error of a refused host: the block list still knows it.
+            if any(urlsplit(url).netloc in blocked_hosts() for url in source.urls):
+                return [], "blocked"
+            self.logger.warning(f"{source.label} answered but gave no event (the page changed?)")
+            return [], "empty"
+        return list(records), "ok"
 
     def extract(self) -> list[dict]:
         """Extract events from multiple sources for Valencia."""
         self.logger.info("Starting multi-source Valencia events extraction")
+        if self._nothing_answered:
+            # A retry of a run that already heard nothing from anybody asks nobody again.
+            raise ETLError("No Valencia events source gave an event in this run (see the lines above).")
 
         all_events = []
+        self._source_status = {}
+        self._source_seen = {}
 
-        # 1. Get events from visitvalencia.com (current and next month)
-        try:
-            current_month, next_month = self.get_current_and_next_month()
-            self.logger.info(f"Fetching events for {current_month} and {next_month}")
+        for index, source in enumerate(SOURCES):
+            if index:
+                pause()
+            records, status = self._fetch_source(source)
+            self._source_status[source.key] = status
+            self._source_seen[source.key] = len(records)
+            all_events.extend(records)
+            self.logger.info(f"{source.label}: {status}, {len(records)} events")
 
-            # Get events for current month
-            current_month_events = self.get_valencia_events(current_month)
-            all_events.extend(current_month_events)
-
-            # Get events for next month
-            next_month_events = self.get_valencia_events(next_month)
-            all_events.extend(next_month_events)
-
-            self.logger.info(f"Retrieved {len(current_month_events) + len(next_month_events)} events from visitvalencia.com")
-        except Exception as e:  # broad by design: per-source fetch wrapper (network + scraping)
-            self.logger.error(f"Failed to fetch visitvalencia.com events: {e}")
-
-        # 2. Get events from Meetup.com
-        try:
-            meetup_events = self.get_meetup_events()
-            all_events.extend(meetup_events)
-            self.logger.info(f"Retrieved {len(meetup_events)} events from meetup.com")
-        except Exception as e:  # broad by design: per-source fetch wrapper (network + scraping)
-            self.logger.error(f"Failed to fetch meetup.com events: {e}")
-
-        # 3. Get events from Eventbrite
-        try:
-            eventbrite_events = self.get_eventbrite_events()
-            all_events.extend(eventbrite_events)
-            self.logger.info(f"Retrieved {len(eventbrite_events)} events from eventbrite.com")
-        except Exception as e:  # broad by design: per-source fetch wrapper (network + scraping)
-            self.logger.error(f"Failed to fetch eventbrite.com events: {e}")
-
+        if blocked_hosts():
+            self.logger.warning(f"Answered 403/429 and not asked again: {', '.join(sorted(blocked_hosts()))}")
         self.logger.info(f"Total events collected from all sources: {len(all_events)}")
+        if not any(status == "ok" for status in self._source_status.values()):
+            # Every source failed, was refused or gave nothing. The stored events are kept as they
+            # are, and the run is reported as the failure it is: a run that "completed" here would
+            # count as a success while the file goes stale (T-192).
+            self._nothing_answered = True
+            silent = ", ".join(f"{source.label}: {self._source_status[source.key]}" for source in SOURCES)
+            self.logger.error(f"No Valencia events source gave an event ({silent}). The stored events are kept.")
+            raise ETLError(f"No Valencia events source gave an event ({silent}). The stored events are kept.")
         return all_events
 
     def process_valencia_events(self, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1054,6 +259,9 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
 
                 # Enhanced category and description extraction
                 category = event.get("category", "").strip()
+                # A description is kept only when the source wrote one. The former
+                # fallback — a slice of the title, or the title itself — only
+                # repeated the title under itself.
                 description = event.get("description", "").strip()
                 title = event.get("title", "").strip()
 
@@ -1088,7 +296,7 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 if not category:
                     lower_title = title.lower()
                     for keyword, cat in category_keywords.items():
-                        if keyword in lower_title:
+                        if re.search(rf"\b{keyword}\b", lower_title):
                             category = cat
                             break
 
@@ -1096,26 +304,9 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                 if not category and description:
                     lower_desc = description.lower()
                     for keyword, cat in category_keywords.items():
-                        if keyword in lower_desc:
+                        if re.search(rf"\b{keyword}\b", lower_desc):
                             category = cat
                             break
-
-                # Enhanced description extraction - if description is empty, use title context
-                if not description and title:
-                    # Extract meaningful description from title if it's long enough
-                    if len(title) > 30:
-                        # Look for descriptive parts after common prefixes
-                        desc_parts = title.split(":")
-                        if len(desc_parts) > 1:
-                            description = desc_parts[1].strip()
-                        else:
-                            desc_parts = title.split("-")
-                            if len(desc_parts) > 1:
-                                description = desc_parts[1].strip()
-
-                # Final fallback - ensure we have some description
-                if not description:
-                    description = title
 
                 # Metadata: scraper defaults plus whatever the extractor carried
                 # (e.g. location from JSON-LD sources) — the dashboard .ics
@@ -1142,6 +333,10 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
                     "is_free": is_free,
                     "metadata": metadata,
                 }
+                # What the newer sources add (clock, address, tags...) passes through untouched.
+                for field in _OPTIONAL_FIELDS:
+                    if event.get(field):
+                        processed_event[field] = event[field]
                 processed_events.append(processed_event)
                 self.logger.debug(f"Processed event: {processed_event['title']}")
 
@@ -1219,26 +414,149 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         self.logger.info(f"Removed {len(events) - len(unique_events)} duplicate events")
         return unique_events
 
+    def _carry_over(self, processed: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
+        """Add the stored events of the sources that gave nothing in this run.
+
+        An event is carried over when it has not ended, when the source last
+        saw it less than :data:`CARRY_OVER_DAYS` ago and when no record of
+        this run describes it. Its ``last_seen_at`` is kept: the days count
+        from the last run that really saw it, not from the runs that repeat it.
+
+        Args:
+            processed: The records of this run, after ``process_valencia_events``.
+            now: The moment of the run, aware.
+
+        Returns:
+            ``processed`` followed by the carried records, flagged ``carried_over``.
+        """
+        silent = {key for key, status in self._source_status.items() if status != "ok"}
+        self._carried_seen = {}
+        if not silent:
+            return processed
+        horizon = now - timedelta(days=CARRY_OVER_DAYS)
+        fresh_dates: dict[str, list[str]] = {}
+        for event in processed:
+            fresh_dates.setdefault(_title_key(event), []).append(str(event.get("start_date") or ""))
+
+        kept = []
+        for stored in self._previous_events():
+            if stored.get("source") not in silent:
+                continue
+            seen = parse_moment(stored.get("last_seen_at"))
+            if seen is None or seen < horizon or _has_ended(stored, now):
+                continue
+            start_date = str(stored.get("start_date") or "")
+            dates = fresh_dates.get(_title_key(stored), [])
+            if not start_date or "" in dates or start_date in dates:
+                continue  # a record of this run already describes it
+            record = {field: stored[field] for field in _RAW_FIELDS if field in stored}
+            record["metadata"] = {**(stored.get("metadata") or {}), "carried_over": True}
+            kept.append(record)
+            self._carried_seen[str(stored.get("event_id") or "")] = str(stored.get("last_seen_at") or "")
+        if kept:
+            self.logger.warning(f"Carried over {len(kept)} stored events of the sources that gave nothing: {', '.join(sorted(silent))}")
+        return processed + kept
+
+    def _previous_events(self) -> list[dict[str, Any]]:
+        """The events of the file as it is stored, [] when it cannot be read."""
+        try:
+            stored = json.loads((self.output_dir / EVENTS_FILE).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+        return [event for event in stored if isinstance(event, dict)] if isinstance(stored, list) else []
+
+    def _merge_events(self, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """One record per event and per session: same title, same start day and same clock.
+
+        Two sources that print the same event are merged into its most complete
+        record. A title on two days, or twice on one day at two clocks, is two
+        sessions and stays two records. A record without a date joins the
+        first dated one of its title: it is the same event, listed by a source
+        that prints no date.
+        """
+        by_day: dict[tuple[str, str], list[dict[str, Any]]] = {}
+        for event in events:
+            title, start_date = _session_key(event)
+            by_day.setdefault((title, start_date), []).append(event)
+
+        groups: list[list[dict[str, Any]]] = []
+        first_session: dict[str, tuple[str, list[dict[str, Any]]]] = {}
+        for (title, start_date), records in by_day.items():
+            if not start_date:
+                continue
+            sessions = _split_sessions(records)
+            groups.extend(sessions)
+            if title not in first_session or start_date < first_session[title][0]:
+                first_session[title] = (start_date, sessions[0])
+        for (title, start_date), records in by_day.items():
+            if start_date:
+                continue
+            target = first_session.get(title)
+            if target is not None:
+                target[1].extend(records)
+            else:
+                groups.append(records)
+        return [self._merge_group(group) for group in groups]
+
+    def _merge_group(self, group: list[dict[str, Any]]) -> dict[str, Any]:
+        """The most complete record of one event, completed from the others."""
+        if len(group) == 1:
+            return group[0]
+        # A dated record leads: its dates are the ones the event keeps.
+        ordered = sorted(group, key=lambda event: not event.get("start_date"))
+        merged = dict(ordered[0])
+        for event in ordered[1:]:
+            for field in ("url", "description", "venue", "price_info", "start_time", "end_time", "address", "city", "start_datetime", "end_datetime"):
+                if not merged.get(field) and event.get(field):
+                    merged[field] = event[field]
+            if merged.get("category") in _WEAK_CATEGORIES and event.get("category"):
+                merged["category"] = event["category"]
+            if merged.get("is_free") is None and event.get("is_free") is not None:
+                merged["is_free"] = event["is_free"]
+            if not merged.get("start_date") and event.get("start_date"):
+                merged["start_date"], merged["end_date"], merged["date_text"] = event.get("start_date", ""), event.get("end_date", ""), event.get("date_text", "")
+            elif not merged.get("end_date") and event.get("end_date"):
+                merged["end_date"] = event["end_date"]
+            if not merged.get("tags") and event.get("tags"):
+                merged["tags"] = event["tags"]
+            metadata = dict(merged.get("metadata") or {})
+            for key, value in (event.get("metadata") or {}).items():
+                if value and key not in metadata:
+                    metadata[key] = value
+            merged["metadata"] = metadata
+        return merged
+
     def transform(self, data: list[dict]) -> list[ValenciaEvent]:
         """Transform raw events into structured models."""
         if not data:
             return []
 
+        now = madrid_now()
+        stamps = load_stamps(self.output_dir / STAMPS_FILE)
+
         # Process events
         processed_events = self.process_valencia_events(data)
+        processed_events = self._carry_over(processed_events, now)
 
-        # Remove duplicates
-        unique_events = self.remove_duplicates(processed_events)
+        # One record per event and per session
+        unique_events = self._merge_events(processed_events)
 
-        # Convert to models
+        # Complete and convert to models
         models = []
         for event in unique_events:
+            source = SOURCE_BY_KEY.get(str(event.get("source") or ""))
             try:
-                models.append(ValenciaEvent(**event))
+                fields = normalise_record(event, now=now, stamps=stamps, source_label=source.label if source else "")
+                if event.get("metadata", {}).get("carried_over"):
+                    fields["last_seen_at"] = self._carried_seen.get(fields["event_id"], fields["last_seen_at"])
+                models.append(ValenciaEvent(**fields))
             except (ValueError, TypeError) as e:
                 self.logger.error(f"Failed to create model for event: {e}")
                 continue
 
+        self._run_now = now
+        self._stamps = stamps
+        self._fresh_ids = [model.event_id for model in models if not model.metadata.get("carried_over")]
         return models
 
     def load(self, data: list[ValenciaEvent]) -> None:
@@ -1252,13 +570,16 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
         data_dicts = [event.model_dump() for event in data]
         data_dicts.sort(key=lambda event: (not event.get("start_date"), str(event.get("start_date"))))
 
-        # Save JSON
-        json_file = self.output_dir / "valencia_events.json"
-        json_file.write_text(
-            json.dumps(data_dicts, indent=2, ensure_ascii=False, default=str),
-            encoding="utf-8",
-        )
+        # Save JSON, atomically: the tab and the API read it while the ETL runs
+        json_file = self.output_dir / EVENTS_FILE
+        write_text_atomic(json_file, json.dumps(data_dicts, indent=2, ensure_ascii=False, default=str))
         self.logger.info(f"Saved {len(data_dicts)} events to {json_file}")
+
+        # Remember when each event was first detected (the first detection is never moved)
+        if self._run_now is not None:
+            save_stamps(self.output_dir / STAMPS_FILE, update_stamps(self._stamps, self._fresh_ids, self._run_now), self._run_now)
+            self._write_source_status(data_dicts)
+            self._log_totals(data_dicts)
 
         # Save CSV
         try:
@@ -1269,6 +590,75 @@ class ValenciaEventsETL(BaseETL[dict, ValenciaEvent]):
             self.logger.info(f"Saved CSV to {csv_file}")
         except ImportError:
             self.logger.warning("Pandas not available, skipping CSV export")
+
+    def _write_source_status(self, data_dicts: list[dict[str, Any]]) -> None:
+        """Write how every source fared, with the events of the file that come from it."""
+        in_file = Counter(str(event.get("source") or "") for event in data_dicts)
+        sources = [
+            {"key": source.key, "label": source.label, "status": self._source_status.get(source.key, ""), "read": self._source_seen.get(source.key, 0), "events": in_file.get(source.key, 0)}
+            for source in SOURCES
+        ]
+        payload = {"updated_at": iso(self._run_now) if self._run_now else "", "events": len(data_dicts), "sources": sources}
+        write_text_atomic(self.output_dir / SOURCE_STATUS_FILE, json.dumps(payload, indent=2, ensure_ascii=False))
+
+    def _log_totals(self, data_dicts: list[dict[str, Any]]) -> None:
+        """Log what the run produced: events per source, prices, and what starts today and tomorrow."""
+        in_file = Counter(str(event.get("source") or "") for event in data_dicts)
+        for source in SOURCES:
+            self.logger.info(f"  {source.label}: {self._source_status.get(source.key, '?')} - {self._source_seen.get(source.key, 0)} read, {in_file.get(source.key, 0)} in the file")
+        priced = [event for event in data_dicts if event.get("price") is not None]
+        today = self._run_now.date() if self._run_now else date.today()
+
+        def _starts(day: date) -> int:
+            return sum(1 for event in data_dicts if str(event.get("start_date") or "") == day.isoformat())
+
+        free = sum(1 for event in priced if event.get("price") == 0)
+        self.logger.info(f"Saved {len(data_dicts)} events: {len(priced)} with a price ({free} free); starting today {today:%d/%m/%Y}: {_starts(today)}, tomorrow: {_starts(today + timedelta(days=1))}")
+
+
+def _title_key(event: dict[str, Any]) -> str:
+    """A title as one key: accent-free, lower-case, single spaces."""
+    return fold(" ".join(str(event.get("title") or "").split()))
+
+
+def _session_key(event: dict[str, Any]) -> tuple[str, str]:
+    """The title and the start day of a record: what a session is grouped by first."""
+    return (_title_key(event), str(event.get("start_date") or ""))
+
+
+def _clock_of(event: dict[str, Any]) -> str:
+    """The clock a record carries: ``start_time``, else the time of a full timestamp in ``date_text``."""
+    stated = str(event.get("start_time") or "")
+    if stated:
+        return stated
+    moment = parse_moment(event.get("date_text"))
+    return moment.strftime("%H:%M") if moment else ""
+
+
+def _split_sessions(records: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    """The sessions of one title on one day: one per clock; a record without a clock joins the first."""
+    timed: dict[str, list[dict[str, Any]]] = {}
+    untimed: list[dict[str, Any]] = []
+    for record in records:
+        clock = _clock_of(record)
+        if clock:
+            timed.setdefault(clock, []).append(record)
+        else:
+            untimed.append(record)
+    groups = list(timed.values())
+    if not groups:
+        return [untimed]
+    groups[0].extend(untimed)
+    return groups
+
+
+def _has_ended(event: dict[str, Any], now: datetime) -> bool:
+    """Whether a stored event is over at ``now``; an event without dates is never over."""
+    end = parse_moment(event.get("end_at"))
+    if end is not None:
+        return end <= now
+    start = parse_moment(event.get("start_at"))
+    return start is not None and start < now
 
 
 def main():
