@@ -167,8 +167,10 @@ def test_ms_search_matches_the_full_title_subject_and_roles(monkeypatch):
 
 
 def test_unified_catalog_badges_each_ms_credential_by_its_kind(monkeypatch):
-    layout = _stubbed_layout(monkeypatch, _ms_frames())
-    badges = [component.children for component in _walk(layout) if isinstance(component, dbc.Badge)]
+    """The unified table is painted by its controller (T-177), so the badges are read from a built page."""
+    _stubbed_layout(monkeypatch, _ms_frames())
+    page = courses_tab._unified_view(None, False, 1)
+    badges = [component.children for component in _walk(page["content"]) if isinstance(component, dbc.Badge)]
 
     assert badges.count("MS Certificación") == 2
     assert badges.count("MS Applied Skill") == 2
@@ -260,13 +262,23 @@ def test_cloud_tables_render_the_rows_they_are_given():
     assert [row[1] for row in rows] == ["lab"]
 
 
+def _writes_to(key: str, component_id: str) -> bool:
+    """Whether the callback whose output the app lists as ``key`` writes to ``component_id``.
+
+    A controller that writes several components is listed as one ``..a.x...b.y..`` key, so the id cannot be read
+    in front of the first dot.
+    """
+    parts = key[2:-2].split("...") if key.startswith("..") else [key]
+    return any(part.split(".")[0] == component_id for part in parts)
+
+
 def test_cloud_table_callbacks_read_the_search_box_and_the_language_filter():
     app = Dash(__name__)
     courses_tab.register_courses_callbacks(app)
 
     for table_id, dropdown_id in (("aws-skills-table-container", "aws-skills-language-dropdown"), ("gcp-skills-table-container", "gcp-skills-language-dropdown")):
-        owners = [key for key in app.callback_map if key.split(".")[0] == table_id]
+        owners = [key for key in app.callback_map if _writes_to(key, table_id)]
         assert len(owners) == 1, table_id
         inputs = {spec["id"] for spec in app.callback_map[owners[0]]["inputs"]}
         assert dropdown_id in inputs, table_id
-    assert not [key for key in app.callback_map if key.split(".")[0] in ("aws-skills-language-dropdown", "gcp-skills-language-dropdown")]  # the dropdown is only ever an Input
+    assert not [key for key in app.callback_map if _writes_to(key, "aws-skills-language-dropdown") or _writes_to(key, "gcp-skills-language-dropdown")]  # the dropdown is only ever an Input
