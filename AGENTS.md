@@ -319,6 +319,11 @@ Phrases the user uses to raise or lower the bar:
 
 - Skills in `.agents/skills/`: `etl-pipeline`, `dashboard-tab`,
   `unraid-deploy`, `task-board`. Invoke the one that matches the task.
+- Agents in `.zcode/agents/`: `watchtower-dev` (ETLs, repositories,
+  dashboard tabs), `watchtower-deployer` (production, the only role that
+  touches it) and `watchtower-board` (the task documents). Each loads its
+  skill before planning. A skill's `scripts/` hold the helpers its text
+  runs by path; its `references/`, the long form of a topic.
 - `CODEBASE_SUMMARY.md` — map of the codebase as it is today.
 - `README.md`, `docs/QUICKSTART.md`, `docs/CONTRIBUTING.md`, `docs/INDEX.md`.
 - `docs/archive/` — historical material kept for reference, not maintained.

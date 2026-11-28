@@ -69,7 +69,8 @@ verify_published_at.py
 backups/
 
 # ZCode workspace: plans and screenshots stay local; the versioned workspace
-# config and hooks are re-included below.
+# config, hooks and agent definitions are re-included below.
 .zcode/*
 !.zcode/config.json
 !.zcode/hooks/
+!.zcode/agents/
