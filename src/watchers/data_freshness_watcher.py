@@ -114,6 +114,38 @@ SOURCE_FILES: list[dict[str, Any]] = [
         "content_warn_hours": 72,
         "content_critical_hours": 336,
     },
+    # Game price trackers (T-139, T-140). A tracker keeps its previous file when its source answers nothing, and
+    # a file restored from a backup is new on disk with old items: "last_seen_at" says when its items were seen.
+    {
+        "key": "games_eshop_jp_deals",
+        "label": "eShop JP sales (My Nintendo Store JP)",
+        "path": "games/eshop_jp_deals.json",
+        "warn_hours": 26,
+        "critical_hours": 168,
+        "content_date": "last_seen_at",
+        "content_warn_hours": 26,
+        "content_critical_hours": 168,
+    },
+    {
+        "key": "games_key_shop_deals",
+        "label": "Key shop deals (Instant Gaming)",
+        "path": "games/key_shop_deals.json",
+        "warn_hours": 26,
+        "critical_hours": 168,
+        "content_date": "last_seen_at",
+        "content_warn_hours": 26,
+        "content_critical_hours": 168,
+    },
+    {
+        "key": "games_gift_card_deals",
+        "label": "Gift card deals (Eneba, Instant Gaming)",
+        "path": "games/gift_card_deals.json",
+        "warn_hours": 26,
+        "critical_hours": 168,
+        "content_date": "last_seen_at",
+        "content_warn_hours": 26,
+        "content_critical_hours": 168,
+    },
 ]
 
 

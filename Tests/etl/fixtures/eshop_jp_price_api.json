@@ -1,0 +1,79 @@
+{
+ "personalized": false,
+ "country": "JP",
+ "prices": [
+  {
+   "title_id": 70010000102604,
+   "sales_status": "preorder",
+   "is_download_ready": true,
+   "regular_price": {
+    "amount": "4,990円",
+    "currency": "JPY",
+    "raw_value": "4990"
+   },
+   "discount_price": {
+    "amount": "3,742円",
+    "currency": "JPY",
+    "raw_value": "3742",
+    "start_datetime": "2026-09-09T15:00:00Z",
+    "end_datetime": "2027-01-07T14:59:59Z"
+   },
+   "gold_point": {
+    "basic_gift_gp": "0",
+    "basic_gift_rate": "0",
+    "consume_gp": "0",
+    "extra_gold_points": [],
+    "gift_gp": "0",
+    "gift_rate": "0"
+   }
+  },
+  {
+   "title_id": 70010000038868,
+   "sales_status": "onsale",
+   "regular_price": {
+    "amount": "4,100円",
+    "currency": "JPY",
+    "raw_value": "4100"
+   },
+   "discount_price": {
+    "amount": "1,230円",
+    "currency": "JPY",
+    "raw_value": "1230",
+    "start_datetime": "2026-11-05T15:00:00Z",
+    "end_datetime": "2026-12-02T14:59:59Z"
+   },
+   "gold_point": {
+    "basic_gift_gp": "0",
+    "basic_gift_rate": "0",
+    "consume_gp": "0",
+    "extra_gold_points": [],
+    "gift_gp": "0",
+    "gift_rate": "0"
+   }
+  },
+  {
+   "title_id": 70010000113450,
+   "sales_status": "onsale",
+   "regular_price": {
+    "amount": "3,300円",
+    "currency": "JPY",
+    "raw_value": "3300"
+   },
+   "discount_price": {
+    "amount": "2,640円",
+    "currency": "JPY",
+    "raw_value": "2640",
+    "start_datetime": "2026-11-16T15:00:00Z",
+    "end_datetime": "2026-12-06T14:59:59Z"
+   },
+   "gold_point": {
+    "basic_gift_gp": "0",
+    "basic_gift_rate": "0",
+    "consume_gp": "0",
+    "extra_gold_points": [],
+    "gift_gp": "0",
+    "gift_rate": "0"
+   }
+  }
+ ]
+}

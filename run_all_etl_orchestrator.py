@@ -108,6 +108,9 @@ ETL_SCRIPTS = [
     "src/etl/games/games_get_gog_rss.py",
     "src/etl/games/games_get_isthereanydeal_api.py",
     "src/etl/games/games_get_metacritic_rss.py",
+    "src/etl/games/games_get_eshop_jp.py",
+    "src/etl/games/games_get_key_shops.py",
+    "src/etl/games/games_get_gift_cards.py",
     # Entertainment
     # cinema_ecartelera_etl.py removed — file missing, only _improved version exists
     # Ecommerce: shoppy_etl.py removed (T-110) — it was a mock stub with no
