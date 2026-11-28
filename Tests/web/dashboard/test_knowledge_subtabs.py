@@ -8,12 +8,16 @@ Guards on `KNOWLEDGE_TAB_DEFINITIONS`:
   health dots list the whole config, so a config entry without a subtab would
   be an invisible source;
 - sources the user removed on purpose stay out of the garden.
+
+`Trendshift` left with T-127 (it stored a name, a link and "now" as the date)
+and came back with T-134: one record per repository with its description,
+language, stars and trend figure.
 """
 
 from src.services.data_loader import KNOWLEDGE_SOURCES_CONFIG
 from src.web.dashboard.components.knowledge_garden_tab import KNOWLEDGE_TAB_DEFINITIONS
 
-REMOVED_FROM_GARDEN = ("gittrends", "stackoverflow_trends", "reddit_unified", "reddit_ai_ml", "reddit_programming", "reddit_devops", "trendshift")
+REMOVED_FROM_GARDEN = ("gittrends", "stackoverflow_trends", "reddit_unified", "reddit_ai_ml", "reddit_programming", "reddit_devops")
 
 
 def _subtab_keys():
