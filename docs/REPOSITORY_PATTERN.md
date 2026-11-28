@@ -10,9 +10,9 @@ Everything lives in `src/repositories/`:
 
 | File | Contents | Used outside the package by |
 | :-- | :-- | :-- |
-| `base_repository.py` | `BaseRepository`, `RepositoryError`, `CacheEntry`, `DataFrameRepository` | Six dashboard components, all through `BaseRepository` |
+| `base_repository.py` | `BaseRepository`, `RepositoryError`, `CacheEntry`, `DataFrameRepository` | Seven dashboard components, all through `BaseRepository` |
 | `repository_manager.py` | `RepositoryManager`, `AggregatedRepository`, three `create_*_repository_manager()` functions | Nothing |
-| `__init__.py` | Re-exports of the names above | The six components |
+| `__init__.py` | Re-exports of the names above | The seven components |
 
 ## `BaseRepository`
 
@@ -42,10 +42,11 @@ class BaseRepository(ABC, Generic[T]):
 
 ## Usage in the dashboard
 
-Six dashboard components under `src/web/dashboard/components/` use the pattern, with eight subclasses between them:
+Seven dashboard components under `src/web/dashboard/components/` use the pattern, with ten subclasses between them:
 
 | Component | Subclass of `BaseRepository` | Data |
 | :-- | :-- | :-- |
+| `cinema_tab.py` | `CinemaSessionsRepository`, `CinemaStatusRepository` | Cinema sessions (one record per screening) and the status of the last run |
 | `fourchan_tab.py` | `FourChanRepository` | 4chan generals |
 | `games_tab.py` | `GamesRepository` | Game deals, bundles and itch.io trending |
 | `knowledge_garden_tab.py` | `KnowledgeGardenRepository` | One instance per configured source |
@@ -93,7 +94,7 @@ def load_valencia_events() -> list[dict[str, Any]]:
 
 Two components go one step further:
 
-- `knowledge_garden_tab.py` creates one `KnowledgeGardenRepository` for each source in `KNOWLEDGE_SOURCES_CONFIG` (19 instances today), and `_load_all_knowledge_data()` calls `get()` on every one of them.
+- `knowledge_garden_tab.py` creates one `KnowledgeGardenRepository` for each source in `KNOWLEDGE_SOURCES_CONFIG` (14 instances today), and `_load_all_knowledge_data()` calls `get()` on every one of them.
 - `spanish_public_aid_tab.py` passes `force_refresh=True` when its refresh button triggers the table callback, and `shortcuts_tab.py` calls `clear_cache()` on its custom-shortcuts repository after saving the user's edits.
 
 ## Adding a repository to a component
