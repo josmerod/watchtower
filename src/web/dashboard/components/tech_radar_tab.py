@@ -28,6 +28,7 @@ import dash
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash import ALL, Input, Output, dcc, html
+from dash.exceptions import PreventUpdate
 
 from src.etl.github.stack_eol_etl import eol_badge
 from src.utils.file_system import get_project_root
@@ -928,9 +929,13 @@ def _unified_source_options() -> list[dict[str, str]]:
 
 
 def _unified_category_options() -> list[dict[str, str]]:
-    """Dropdown options for the TR-F3 category filter (distinct RADAR_SOURCES categories)."""
+    """Dropdown options for the TR-F3 category filter (distinct RADAR_SOURCES categories).
+
+    ``all`` comes first, as in the source filter: the layout starts the dropdown on it, and since the dropdown
+    cannot be cleared it is also the only way back to the whole feed.
+    """
     categories = sorted({s["category"] for s in RADAR_SOURCES})
-    return [{"label": f"🏷️ {c}", "value": c} for c in categories]
+    return [{"label": "🏷️ Todas las categorías", "value": "all"}, *[{"label": f"🏷️ {c}", "value": c} for c in categories]]
 
 
 def render_tech_radar_tab() -> html.Div:
@@ -976,6 +981,8 @@ def render_tech_radar_tab() -> html.Div:
                             dbc.Row(
                                 [
                                     dbc.Col(dcc.Dropdown(id="tech-radar-source-filter", options=_unified_source_options(), value="all", clearable=False, placeholder="Fuente…"), width=12, md=4),
+                                    # The value must be one of the options: a dropdown resets any other value
+                                    # right after mounting, and that runs the controller a second time (T-179).
                                     dbc.Col(dcc.Dropdown(id="tech-radar-category-filter", options=_unified_category_options(), value="all", clearable=False, placeholder="Categoría…"), width=12, md=4),
                                 ],
                                 className="mb-1 mt-2",
@@ -1012,6 +1019,21 @@ def render_tech_radar_tab() -> html.Div:
     )
 
 
+# The props that carry the value of the controller's two filter dropdowns.
+_FILTER_PROPS = frozenset({"tech-radar-source-filter.value", "tech-radar-category-filter.value"})
+
+
+def _filters_reset_on_mount(triggered: list[dict[str, Any]]) -> bool:
+    """Whether all that changed is filter dropdowns that lost their value as they mounted.
+
+    Neither dropdown can be cleared, so ``None`` is never a choice of the user's: it is a dropdown resetting
+    itself right after mounting because the layout gave it a value missing from its options. That is a prop
+    update like any other, which ``prevent_initial_call`` does not cover, and the layout on screen already
+    shows the unfiltered feed, so there is nothing to repaint (T-179).
+    """
+    return bool(triggered) and all(str(entry.get("prop_id")) in _FILTER_PROPS and entry.get("value") is None for entry in triggered)
+
+
 def register_tech_radar_callbacks(app):
     """Register callbacks for the Technology Radar tab."""
 
@@ -1032,8 +1054,12 @@ def register_tech_radar_callbacks(app):
         Search filters the per-source columns; the source/category dropdowns
         drive the TR-F3 unified feed; the TR-F2 momentum panel sits under the
         radar plot; a refresh click bypasses the TTL caches and re-renders
-        everything.
+        everything. The layout already draws all of it for the default view,
+        which is why a call that only shows a filter losing its value paints
+        nothing.
         """
+        if _filters_reset_on_mount(dash.ctx.triggered):
+            raise PreventUpdate
         try:
             is_refresh = dash.callback_context.triggered_id and getattr(dash.callback_context.triggered_id, "get", lambda _k: None)("type") == "tech-radar-refresh"
             all_data = _load_all_source_data(force_refresh=bool(is_refresh))
