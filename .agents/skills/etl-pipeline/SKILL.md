@@ -24,7 +24,7 @@ reads is invisible, and an untested one rots.
 | A news site or feed that gets its own subtab in News | `src/etl/news/news_get_<source>.py`, a plain module | Steps 1–5 plus two News-specific edits |
 | Anything else: an API, a page, a site that needs Playwright | A new script under `src/etl/<domain>/`, in either style | Steps 1–5 |
 
-Counts were measured on 2026-11-27; re-count before quoting them:
+Counts were measured on 2026-11-28; re-count before quoting them:
 
 ```bash
 grep -vE '^\s*#' run_all_etl_orchestrator.py | sed -n '/^ETL_SCRIPTS = \[/,/^\]/p' | grep -cE '"[^"]+\.py"'
@@ -85,10 +85,10 @@ Steps 1–5, plus:
 | Failure | a stage raises `ETLError` after its retries, so the script exits 1 | whatever `main()` does — often exit 0 |
 | Fits when | the source is flaky or heavy and you want that machinery | fetch → normalize → write the files a tab reads |
 
-Of the 101 entries on 2026-11-27 — two watchers and one miner among them —
-30 were in the `BaseETL` family and 71 plain. Copy a sibling of the subpackage
-you are editing: its style, output path and file name are the convention
-there.
+Of the 103 entries on 2026-11-28 — two watchers and one miner among them —
+the 100 ETLs split into 28 in the `BaseETL` family and 72 plain. Copy a
+sibling of the subpackage you are editing: its style, output path and file
+name are the convention there.
 
 ### `BaseETL` — a complete file, then its registration
 

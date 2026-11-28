@@ -1,6 +1,8 @@
+import hashlib
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 
 import dash
 import dash_bootstrap_components as dbc
@@ -20,6 +22,7 @@ from src.web.dashboard.components.changelog_modal import (
     register_changelog_callbacks,
     render_changelog_elements,
 )
+from src.web.dashboard.components.cinema_tab import register_cinema_callbacks, render_cinema_tab
 from src.web.dashboard.components.courses_tab import (
     register_courses_callbacks,
     render_courses_tab,
@@ -36,7 +39,7 @@ from src.web.dashboard.components.fourchan_tab import (
     register_fourchan_callbacks,
     render_fourchan_tab,
 )
-from src.web.dashboard.components.games_tab import render_games_tab
+from src.web.dashboard.components.games_tab import register_games_callbacks, render_games_tab
 from src.web.dashboard.components.knowledge_garden_tab import (
     register_knowledge_garden_callbacks,
     render_knowledge_garden_tab,
@@ -111,10 +114,20 @@ app = dash.Dash(
     __name__,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
+    assets_ignore=r"zz_visual_refresh\.css$",  # the index links that sheet itself, once (T-205)
 )
 
 # Set app title for browser tab and configure metadata
 app.title = "Watchtower Dashboard"
+
+
+def _asset_version(path: Path) -> str:
+    """Token for an asset's URL that follows what the file holds (T-205).
+
+    A browser keeps its copy of a stylesheet under the URL it came from, so a token that changes with the content makes it ask again.
+    Dash puts the file's modification time on the links it lists itself; here the token is cut from the bytes, which a test can pin.
+    """
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:10]
 
 
 # Add meta tags for better branding
@@ -127,8 +140,9 @@ app.index_string = """
         <meta name="description" content="Watchtower - Real-time Intelligence & Monitoring Platform">
         <link rel="icon" type="image/svg+xml" href="/assets/watchtower_icon.svg">
         {%css%}
-        <!-- Final visual overrides: must load after Dash auto-assets and legacy mobile CSS. -->
-        <link rel="stylesheet" href="/assets/zz_visual_refresh.css?v=10">
+        <!-- Final visual overrides: must load after Dash auto-assets and legacy mobile CSS. The sheet stays out of the
+             automatic list above (assets_ignore) and this is its only link: loaded twice, the page fetched two copies. -->
+        <link rel="stylesheet" href="/assets/zz_visual_refresh.css?v={visual_refresh_version}">
     </head>
     <body>
         {%app_entry%}
@@ -139,7 +153,10 @@ app.index_string = """
         </footer>
     </body>
 </html>
-"""
+""".replace(
+    "{visual_refresh_version}",
+    _asset_version(Path(app.config.assets_folder, "zz_visual_refresh.css")),
+)
 
 # Main layout with Tabs
 app.layout = dbc.Container(
@@ -251,6 +268,10 @@ app.layout = dbc.Container(
                         dbc.Tab(
                             label="Valencia Events",
                             tab_id="tab-valencia",
+                        ),
+                        dbc.Tab(
+                            label="🎬 Cine",
+                            tab_id="tab-cinema",
                         ),
                         dbc.Tab(
                             label="🏛️ Ayudas Públicas",
@@ -449,7 +470,7 @@ curl -s "https://watchtower-api.josmerod.es/api/v1/news?source=hackernews&amp;li
           <tr><td><code>/api/v1/freshness</code></td><td>Data-freshness summary plus a <code>stale_sources</code> convenience list.</td><td>None</td></tr>
           <tr><td><code>/api/v1/digest</code></td><td>Compiled weekly digest: hot terms, radar picks, movers.</td><td>None</td></tr>
           <tr><td><code>/api/v1/security/kev</code></td><td>Actively-exploited CVEs (CISA KEV) plus matches against my self-hosted stack.</td><td><code>limit</code></td></tr>
-          <tr><td><code>/api/v1/valencia/events</code></td><td>Valencia events for calendar automations, optional upcoming-days filter.</td><td><code>days</code>, <code>limit</code></td></tr>
+          <tr><td><code>/api/v1/valencia/events</code></td><td>Valencia events for calendar automations: an upcoming-days window or a date range, and one category.</td><td><code>days</code>, <code>from</code>, <code>to</code>, <code>category</code>, <code>limit</code></td></tr>
           <tr><td><code>/api/v1/benchmarks</code></td><td>AI coding benchmark data.</td><td><code>source</code></td></tr>
           <tr><td><code>/api/v1/sources</code></td><td>Machine-readable list of available source keys for filtering.</td><td>None</td></tr>
         </tbody>
@@ -660,6 +681,7 @@ _TAB_RENDERERS = {
     "tab-4chan": render_fourchan_tab,
     "tab-scavenging": render_scavenging_tab,
     "tab-valencia": render_valencia_events_tab,
+    "tab-cinema": render_cinema_tab,
     "tab-spanish-aid": render_spanish_public_aid_tab,
     "tab-arxiv-research": render_arxiv_research_tab,
     "tab-deals": render_deals_tab,
@@ -750,6 +772,7 @@ register_news_search_callbacks(app)
 register_knowledge_garden_callbacks(app)
 register_scavenging_callbacks(app)
 register_valencia_events_callbacks(app)
+register_cinema_callbacks(app)
 register_shortcuts_callbacks(app)
 register_deals_callbacks(app)
 register_benchmarks_callbacks(app)
@@ -759,6 +782,7 @@ register_notifications_callbacks(app)
 register_metrics_callbacks(app)
 register_digest_callbacks(app)
 register_changelog_callbacks(app)
+register_games_callbacks(app)
 
 
 if __name__ == "__main__":

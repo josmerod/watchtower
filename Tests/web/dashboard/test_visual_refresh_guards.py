@@ -6,6 +6,7 @@ the fix is dropped or loses the specificity it needs, the page breaks again
 with nothing failing elsewhere.
 """
 
+import hashlib
 import re
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from src.utils.file_system import get_project_root
 
 ASSETS = Path(get_project_root()) / "src" / "web" / "dashboard" / "assets"
 FINAL_SHEET = ASSETS / "zz_visual_refresh.css"
+FINAL_SHEET_URL = "/assets/zz_visual_refresh.css"
 LEGACY_SHEET = ASSETS / "style.css"
 LEGACY_MOBILE_SHEET = ASSETS / "css" / "mobile_responsive.css"
 
@@ -23,13 +25,31 @@ BLANKET_CHAIN = ":not(.table):not(.alert):not(.card):not(.nav-tabs)"
 CLASS_LEVEL = re.compile(r"\.[\w-]+|:[\w-]+(?:\([^)]*\))?")
 
 
+def _split_selectors(text: str) -> list[str]:
+    """The selectors of a list, split on the commas outside its parentheses.
+
+    `:is(div, span)` holds commas of its own: a plain split turns it into two selectors.
+    """
+    selectors, depth, start = [], 0, 0
+    for index, char in enumerate(text):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == "," and depth == 0:
+            selectors.append(text[start:index])
+            start = index + 1
+    selectors.append(text[start:])
+    return [selector.strip() for selector in selectors if selector.strip()]
+
+
 def rules_of(stylesheet: Path) -> list[tuple[list[str], dict[str, str]]]:
     """Every rule of a sheet as (selectors, declarations), comments stripped."""
     css = re.sub(r"/\*.*?\*/", "", stylesheet.read_text(encoding="utf-8"), flags=re.S)
     rules = []
     for selector_list, body in RULE.findall(css):
         # The first rule inside a media block carries the block's preamble in front of its selector.
-        selectors = [selector.strip() for selector in re.sub(r"@media[^{]*\{", "", selector_list).split(",") if selector.strip()]
+        selectors = _split_selectors(re.sub(r"@media[^{]*\{", "", selector_list))
         declarations = dict(part.strip().split(":", 1) for part in body.split(";") if ":" in part)
         rules.append((selectors, {name: value.strip() for name, value in declarations.items()}))
     return rules
@@ -52,6 +72,31 @@ def test_tab_links_lose_the_offsets_of_the_legacy_mobile_sheet():
     reset = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".nav-tabs .nav-link") if d.get("left") == "auto !important" and d.get("top") == "auto !important"]
     assert reset, "no rule of the final sheet brings .nav-tabs .nav-link back to left/top: auto"
     assert any(":hover" not in s and ":focus" not in s for s, _ in reset), "the reset only applies on hover or focus"
+
+
+def _specificity(selector: str) -> tuple[int, int, int]:
+    """(ids, classes and pseudo-classes, types) of a selector, as a browser counts it."""
+    types = re.findall(r"(?:^|[ >+~])([a-zA-Z][\w-]*)", selector)
+    return selector.count("#"), len(CLASS_LEVEL.findall(selector)), len(types)
+
+
+def test_the_shine_of_a_tab_under_the_pointer_stays_inside_the_bar():
+    """style.css sweeps a shine across a tab: a ::before placed against its containing block and as wide as it.
+
+    A tab link is static (the reset above), so the block was the bar itself where the bar is sticky (from 1200 px, and on a phone) and the page in between: there the pointer over any tab made the page twice as wide, with a horizontal scrollbar and a jump. The link as the block is what the rule meant: a shine one tab wide, which the bar clips.
+    """
+    shine = [(s, d) for s, d in rules_matching(LEGACY_SHEET, ".nav-link::before") if d.get("position") == "absolute !important" and d.get("width") == "100% !important"]
+    assert shine and any(d.get("left") == "-100% !important" for _, d in shine), "the legacy shine is gone: drop the rule and this test"
+    assert any(d.get("left") == "100% !important" for _, d in rules_matching(LEGACY_SHEET, ".nav-link:hover::before")), "the legacy shine no longer moves: drop the rule and this test"
+
+    block = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".nav-link") if d.get("position") == "relative !important"]
+    assert {"html body .nav-tabs .nav-item .nav-link", "html body #dashboard-tabs .nav-item .nav-link"} <= {s for s, _ in block}, "no rule of the final sheet makes a tab link the block of its shine"
+
+    # Outranked by the reset above, it would be static again.
+    static = [s for s, d in rules_matching(FINAL_SHEET, ".nav-link") if d.get("position") == "static !important"]
+    assert static, "the reset that makes tab links static is gone: re-check that the shine still needs its own rule"
+    for selector in (s for s in static if s.endswith(".nav-link")):
+        assert max(_specificity(s) for s, _ in block) > _specificity(selector), f"a tab link is made relative by nothing more specific than {selector}"
 
 
 def test_primary_buttons_outrank_the_blanket_background():
@@ -110,3 +155,125 @@ def test_plotly_layers_do_not_cover_the_plot():
     assert reset, "no rule of the final sheet makes the Plotly layer svgs transparent"
     for selector, _ in reset:
         assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector
+
+
+def test_cell_content_does_not_paint_over_its_row():
+    """The blanket rule of style.css paints every element the page colour, the content of a cell included.
+
+    The `.table td` rule above is made transparent, but it is four classes short of the blanket one. So in a striped
+    table the wrappers that title_cell and text_cell put in a cell, and the links, covered the stripe and the hover of
+    their row: a dark block inside a lighter frame, read as a box behind the title.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, BLANKET_CHAIN) if "background-color" in d]
+    assert legacy, "the blanket rule of the legacy sheet is gone: drop the reset and this test"
+
+    reset = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".table td") if d.get("background-color") == "transparent !important" and ":hover" not in s and ":focus" not in s]
+    assert reset, "no rule of the final sheet makes the content of a cell transparent"
+    for selector, _ in reset:
+        assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector
+        assert all(re.search(rf"(?<![\w-]){part}(?![\w-])", selector) for part in ("div", "span", "a")), "the wrappers of title_cell and text_cell, and the links, are not all covered"
+        assert '[class*="bg-"]' in selector and ".btn" in selector, "an element with a background of its own has to keep it"
+
+
+def test_a_link_in_a_cell_stays_readable_under_the_pointer():
+    """`.table td a:hover` of style.css turns the text of a link dark, for a purple pill.
+
+    The blanket rule paints that pill over, so a link of any table vanished on hover: dark text on the dark page
+    colour. The hover rule of the final sheet has to outrank the legacy one.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, ".table td a") if ":hover" in s and "color" in d]
+    assert legacy, "the hover rule of the legacy sheet is gone: drop the reset and this test"
+
+    links = rules_matching(FINAL_SHEET, ".table td a")
+    hover = [(s, d) for s, d in links if ":hover" in s]
+    assert hover, "no hover rule of the final sheet covers a link in a cell"
+    assert any(":focus" in s for s, _ in links), "the keyboard focus gets no rule of its own"
+    for selector, declarations in hover:
+        assert declarations.get("color") == "#ddd6fe !important" and declarations.get("text-decoration") == "underline !important", (selector, declarations)
+        assert len(CLASS_LEVEL.findall(selector)) > max(len(CLASS_LEVEL.findall(s)) for s, _ in legacy), selector
+
+
+def test_an_outline_button_shows_its_fill_under_the_pointer():
+    """`.btn-outline-primary:hover` of style.css turns the text of the button dark, for a purple fill.
+
+    The blanket rule paints that fill over, so the button read as empty under the pointer: every start time of the
+    Cine tab, and the buttons of Valencia Events and of Shortcuts. The fill has to come back from a rule more
+    specific than the blanket one; the dark text of the legacy rule is readable on it.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, ".btn-outline-primary") if ":hover" in s]
+    assert legacy and all(d.get("color") == "#1E1E2E !important" for _, d in legacy), "the legacy sheet changed: re-check what an outline-primary button needs on hover"
+
+    filled = [(s, d) for s, d in rules_matching(FINAL_SHEET, ".btn-outline-primary") if ":hover" in s and d.get("background-color") not in (None, "transparent !important")]
+    assert filled, "no rule of the final sheet fills an outline-primary button on hover"
+    assert any(":focus" in s for s, _ in rules_matching(FINAL_SHEET, ".btn-outline-primary")), "the keyboard focus gets no rule of its own"
+    for selector, _ in filled:
+        assert len(CLASS_LEVEL.findall(selector)) > len(CLASS_LEVEL.findall(BLANKET_CHAIN)), selector
+
+
+# --- What the scripts insert ---
+
+
+def test_the_new_pills_keep_their_fill():
+    """The "NUEVO" pills (Knowledge Garden, Valencia Events, Videos) are inserted by a script, with their look as an inline style.
+
+    `*` and the blanket rule of style.css paint every element the page colour, `*` the text `#CDD6F4` too, and so does
+    the rule above that makes the content of a cell transparent. Each one is `!important`, and each one outranks a plain
+    inline style: the pill read as bare small text. An inline `!important` is the one declaration none of them outranks.
+    """
+    legacy = [(s, d) for s, d in rules_matching(LEGACY_SHEET, "*") if {"background-color", "color"} <= set(d)]
+    assert legacy, "the legacy rule is gone: drop the !important and this test"
+
+    for script, pill_class in (("kg_state.js", "wt-kg-new-badge"), ("valencia_state.js", "wt-valencia-new-badge"), ("video_state.js", "wt-video-new-badge")):
+        js = (ASSETS / "js" / script).read_text(encoding="utf-8")
+        styles = re.findall(r'"[^"]*background:#A37FFF[^;]*;[^"]*"', js)
+        assert styles, f"{script}: the style of the {pill_class} pill changed; keep its fill !important"
+        assert all("background:#A37FFF !important" in style and "color:#fff !important" in style for style in styles), (script, styles)
+        assert pill_class in js
+
+
+# --- It is loaded once (T-205) ---
+
+
+def _served_index() -> tuple[object, list[str], str]:
+    """The app's test client, the stylesheet links of the rendered index in order, and its HTML."""
+    from src.web.dashboard import app as dashboard_app
+
+    client = dashboard_app.app.server.test_client()
+    html = client.get("/").get_data(as_text=True)
+    links = re.findall(r"<link\b([^>]*)>", html)
+    stylesheets = [href for attributes in links if 'rel="stylesheet"' in attributes for href in re.findall(r'href="([^"]+)"', attributes)]
+    return client, stylesheets, html
+
+
+def test_no_stylesheet_is_linked_twice_and_the_final_one_still_loads_last():
+    """Dash listed the sheet among the links it builds itself, and the index linked it again by hand so that it loaded after the legacy ones (T-205).
+
+    Every first visit fetched two copies of it. It now stays out of Dash's list, and the hand-written link is the only one: still the last stylesheet, since the
+    rules it carries win by order over the legacy sheets it neutralizes.
+    """
+    client, stylesheets, html = _served_index()
+    final = [href for href in stylesheets if href.startswith(FINAL_SHEET_URL)]
+
+    assert html.count("zz_visual_refresh.css") == 1, stylesheets
+    assert len(set(stylesheets)) == len(stylesheets), stylesheets
+    assert stylesheets[-1:] == final, stylesheets
+    assert any("style.css" in href for href in stylesheets[:-1]) and any("mobile_responsive" in href for href in stylesheets[:-1])  # the sheets it overrides come first
+    assert client.get(final[0]).status_code == 200, "left out of Dash's list, the sheet is still served at its path"
+
+
+def test_the_link_of_the_final_sheet_changes_with_its_content(tmp_path):
+    """A browser keeps its copy of the sheet under the URL it came from.
+
+    The URL carries a token cut from the bytes of the file, so new content means a new URL and a browser holding the old copy asks for it.
+    """
+    from src.web.dashboard import app as dashboard_app
+
+    sheet = tmp_path / "zz_visual_refresh.css"
+    sheet.write_bytes(b"a{}")
+    first = dashboard_app._asset_version(sheet)
+    assert dashboard_app._asset_version(sheet) == first
+    sheet.write_bytes(b"b{}")
+    assert dashboard_app._asset_version(sheet) != first
+
+    _, stylesheets, _ = _served_index()
+    assert stylesheets[-1] == f"{FINAL_SHEET_URL}?v={hashlib.sha256(FINAL_SHEET.read_bytes()).hexdigest()[:10]}"

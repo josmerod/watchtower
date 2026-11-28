@@ -73,6 +73,11 @@ def _by_id(layout, wanted_id) -> list:
     return [node for node in _walk(layout) if getattr(node, "id", None) == wanted_id]
 
 
+def _opening_page() -> list[str]:
+    """What the tab shows as it lands: the first page for the filters it starts on."""
+    return _texts(tab._video_page("all", tab._THEME_ALL_VALUE, None, "all", "date_desc", tab._DEFAULT_PAGE_SIZE)[0])
+
+
 def _theme_values() -> list[str]:
     return [option["value"] for option in tab._extract_theme_options(tab.video_manager.get_channels())]
 
@@ -254,7 +259,7 @@ def test_a_channel_listed_under_several_themes_stays_under_each_of_its_themes(re
 def test_the_first_page_shows_a_channel_listed_under_several_themes_once(repeated_channel_frames, fixture_videos):
     fixture_videos(repeated_channel_frames)
 
-    assert "📺 Showing 7 videos from all channels" in _texts(tab.get_initial_video_display(limit=48))
+    assert "📺 Showing 7 of 7 videos from all channels" in _opening_page()
 
 
 def test_a_channel_listed_twice_in_one_theme_shows_once(fixture_videos):
@@ -271,4 +276,4 @@ def test_a_channel_listed_twice_in_one_theme_shows_once(fixture_videos):
     assert _titles(tab.video_manager.get_videos(channel="z-soundtowork")) == in_theme
     assert _titles(tab.video_manager.get_videos(channel="all", theme_filter="z-soundtowork")) == in_theme
     assert _titles(tab.video_manager.get_videos(channel="all")) == [*in_theme, "mb one"]
-    assert "📺 Showing 4 videos from all channels" in _texts(tab.get_initial_video_display(limit=48))
+    assert "📺 Showing 4 of 4 videos from all channels" in _opening_page()

@@ -13,6 +13,9 @@ Covers the three merged sources with fixture HTML/JSON and monkeypatched
 import json
 from datetime import datetime
 
+import pytest
+
+from src.config.settings import get_settings
 from src.etl.news.valencia_events_etl import (
     ValenciaEvent,
     ValenciaEventsETL,
@@ -20,6 +23,12 @@ from src.etl.news.valencia_events_etl import (
     _parse_dates_from_text,
     _to_iso_date,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolated_data_root(tmp_path, monkeypatch):
+    """The folders BaseETL creates when it starts go to tmp_path, never to the data/ of the checkout."""
+    monkeypatch.setattr(get_settings(), "project_root", str(tmp_path))
 
 
 class _BytesResponse:

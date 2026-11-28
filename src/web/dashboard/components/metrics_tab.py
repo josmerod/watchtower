@@ -507,7 +507,14 @@ def render_metrics_tab():
                         [
                             dbc.Card(
                                 [
-                                    dbc.CardHeader([html.H5("Error Distribution", className="mb-0")]),
+                                    # What the chart shows is said here, in the dashboard's type (T-203): a title inside the figure
+                                    # came out in Plotly's own font and colour.
+                                    dbc.CardHeader(
+                                        [
+                                            html.H5("Error Distribution", className="mb-1"),
+                                            html.Small("Error count by source, last 24 hours", className="text-muted"),
+                                        ]
+                                    ),
                                     dbc.CardBody(
                                         [
                                             dcc.Graph(
@@ -691,7 +698,6 @@ def create_time_series_chart(time_series_data):
     )
 
     fig.update_layout(
-        title="ETL Performance Trends (Last 7 Days)",
         xaxis_title="Date",
         yaxis_title="Runs / Errors",
         yaxis2={"title": "Avg duration (s)", "overlaying": "y", "side": "right"},
@@ -713,12 +719,11 @@ def create_error_chart(error_counts):
     # Create DataFrame from error counts
     df = pd.DataFrame(list(error_counts.items()), columns=["source", "error_count"])
 
-    # Create bar chart
+    # The card header names the chart (T-203): no title inside the figure.
     fig = px.bar(
         df,
         x="source",
         y="error_count",
-        title="Error Count by Source (Last 24 Hours)",
         labels={"error_count": "Error Count", "source": "ETL Source"},
         color="error_count",
         color_continuous_scale="Reds",

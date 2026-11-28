@@ -314,6 +314,18 @@ a:not(.btn):focus {
     background: transparent !important;
 }
 
+/* The shine that style.css sweeps across a tab under the pointer (`.nav-tabs
+   .nav-item .nav-link::before`, from left -100% to 100%, as wide as its
+   containing block) wants the link as that block. The link is static, so the
+   block was the bar itself where the bar is sticky (from 1200 px, and on a
+   phone) and the page in between: there every pass of the pointer over a tab
+   made the page twice as wide, with a horizontal scrollbar and a jump. More
+   specific than the reset above; `left` and `top` stay `auto`. */
+html body .nav-tabs .nav-item .nav-link,
+html body #dashboard-tabs .nav-item .nav-link {
+    position: relative !important;
+}
+
 .nav-tabs .nav-item .nav-link,
 #dashboard-tabs .nav-link {
     white-space: nowrap !important;
@@ -677,4 +689,59 @@ html body .btn-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):focus {
    above, plus the two classes. */
 html body .js-plotly-plot .plotly .main-svg:not(.table):not(.alert):not(.card):not(.nav-tabs) {
     background-color: transparent !important;
+}
+
+/* A cell's content does not paint over its row. The blanket rule of style.css
+   paints every element the page colour, a cell's content included, so in a
+   striped table the wrappers that title_cell and text_cell put in a cell, and
+   the links, covered the stripe and the hover of their row with a dark block
+   inside a lighter frame: it read as a box behind the title. More specific
+   than that rule and than the .btn-primary rules above; an element with a
+   background of its own (bg-*, .btn, card, alert) keeps it. */
+html body .table td :is(div, span, a, small, p, code):not([class*="bg-"]):not(.btn):not(.card):not(.alert):not(.table) {
+    background-color: transparent !important;
+}
+
+/* A link in a cell stays readable under the pointer. `.table td a:hover` of
+   style.css turns its text dark for a purple pill that the blanket rule then
+   paints over, so the link vanished on hover in every table. More specific
+   than that rule: lighter text and an underline, as outside tables. */
+html body .table td a:not(.btn):hover,
+html body .table td a:not(.btn):focus {
+    color: #ddd6fe !important;
+    text-decoration: underline !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* An outline-primary button shows its fill under the pointer. `.btn-outline-primary:hover`
+   of style.css turns its text dark for a purple fill, and the blanket rule paints that fill
+   over: the button read as empty under the pointer, in the Cine tab (every start time), in
+   Valencia Events and in Shortcuts. The fill comes back from a rule more specific than the
+   blanket one, and the dark text of the legacy rule is readable on it. */
+html body .btn-outline-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):hover,
+html body .btn-outline-primary:not(.table):not(.alert):not(.card):not(.nav-tabs):focus {
+    background-color: #a37fff !important;
+    border-color: #a37fff !important;
+}
+
+/* Cine tab: the sessions of a film, one line per cinema. The name holds a
+   column so the start times line up; on a phone they start on the next line.
+   The chips are smaller than the .btn rule above makes them: a row of them
+   is read at a glance. */
+.cinema-card .cinema-name {
+    flex: 0 0 16rem;
+    padding-right: 0.5rem;
+}
+
+.cinema-card .cinema-sessions .cinema-session-chip.btn-sm {
+    padding: 2px 10px !important;
+    font-weight: 500 !important;
+}
+
+@media (max-width: 767.98px) {
+    .cinema-card .cinema-name {
+        flex-basis: 100%;
+        padding-bottom: 2px;
+    }
 }

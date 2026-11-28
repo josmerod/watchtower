@@ -166,6 +166,14 @@ class TestNewsGlobalSave:
         table = news_tab._build_news_table([dict(_NEWS_ARTICLE_FRESH)], None)
         assert _buttons_by_type(table, "news-save-btn") == []
 
+    def test_the_date_cell_stays_on_one_line(self, clean_saved_file):
+        """Next to a long title the date broke over two lines: the cell carries Bootstrap's ``text-nowrap``, as Scavenging does."""
+        tables = [news_tab._build_global_results_table([dict(_NEWS_ARTICLE_FRESH)], ""), news_tab._build_news_table([dict(_NEWS_ARTICLE_FRESH)], None)]
+
+        for table in tables:
+            row = table.children[1].children[0]
+            assert row.children[-1].className == "text-nowrap"
+
 
 # --------------------------------------------------------------------------- #
 # Tech Radar: unified "🔄 Todos" feed rows only

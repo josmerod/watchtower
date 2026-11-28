@@ -10,12 +10,14 @@ everything it needs (well-formed JSON with the expected fields).
 import json
 from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from dash.development.base_component import Component
 
 from src.web.dashboard.components import valencia_events_new_tab as vet
 
 NOW = datetime.now().replace(microsecond=0)
+MADRID_NOW = NOW.replace(tzinfo=ZoneInfo("Europe/Madrid"))
 
 
 def _event(title: str, start_date: str, **extra: Any) -> dict[str, Any]:
@@ -119,14 +121,14 @@ def _collect_components(component: Any) -> list[tuple[str, dict[str, Any]]]:
 
 def test_events_table_renders_venue_and_price_cells():
     """Venue column plus honest price cells: green Gratis badge / muted price / dash."""
-    table = vet.create_events_table(VENUE_PRICE_EVENTS)
+    table = vet.build_events_table(VENUE_PRICE_EVENTS, now=MADRID_NOW)
     rendered = str(table)
 
-    assert "Venue" in rendered and "Price" in rendered  # new table headers
+    assert "Dónde" in rendered and "Precio" in rendered  # the table headers
     assert "Book Lovers Valencia" in rendered
     assert "Teatro El Musical" in rendered
     assert "12,50 €" in rendered
-    assert rendered.count("Gratis") == 1  # badge only — not duplicated as plain text
+    assert rendered.count("Gratis") == 1  # badge only — the "Gratis" the source prints is not repeated as text
 
     badges = [props for name, props in _collect_components(table) if name == "Badge"]
     gratis = [b for b in badges if b.get("children") == "Gratis"]
@@ -141,26 +143,35 @@ def test_events_table_renders_venue_and_price_cells():
 
 
 def test_render_tab_shows_venue_and_price(monkeypatch):
-    """The full tab layout carries venue names and prices into both tables."""
+    """The tab layout carries the venue names and the prices into the table."""
     rendered = str(_render_with(monkeypatch, VENUE_PRICE_EVENTS))
 
     assert "Book Lovers Valencia" in rendered
+    assert "Teatro El Musical" in rendered
     assert "12,50 €" in rendered
-    assert "Free Events" in rendered
+
+
+def _stat_cards(layout: Any) -> list[tuple[str, str]]:
+    """(value, label) of the stat cards, in order."""
+    values = [props["children"] for name, props in _collect_components(layout) if name == "H4" and props.get("className") == "card-title mb-0"]
+    labels = [props["children"] for name, props in _collect_components(layout) if name == "P" and props.get("className") == "card-text text-muted small mb-0"]
+    return list(zip(values, labels, strict=True))
 
 
 def test_render_stats_count_real_free_events(monkeypatch):
-    """The free-events stat counts real is_free values, stays N/D without data."""
-    rendered = str(_render_with(monkeypatch, VENUE_PRICE_EVENTS))
-    assert "Free Events" in rendered  # 1 of 4 events is really free
+    """The "Gratis" card counts the events that are really free, and says so when nothing states a price."""
+    cards = _stat_cards(_render_with(monkeypatch, VENUE_PRICE_EVENTS))
+    assert cards[:2] == [("4", "Eventos próximos"), ("1", "Gratis")]  # 1 of 4 events is really free
 
-    # No is_free anywhere (older data / sources without offers) → honest N/D
-    no_price = str(_render_with(monkeypatch, FIXTURE_EVENTS))
-    assert "N/D" in no_price
+    # No price anywhere (older data / sources without offers) → honest: a dash, and the label says why
+    assert _stat_cards(_render_with(monkeypatch, FIXTURE_EVENTS))[1] == ("—", "Gratis (sin datos de precio)")
 
 
 def _render_with(monkeypatch, events):
+    """The tab for ``events``, at the moment they were dated."""
     monkeypatch.setattr(vet, "load_valencia_events", lambda: events)
+    monkeypatch.setattr(vet, "load_sources_status", lambda: {})
+    monkeypatch.setattr(vet, "_now", lambda: MADRID_NOW)
     return vet.render_valencia_events_tab()
 
 
@@ -204,7 +215,7 @@ def test_render_empty_data_has_no_export(monkeypatch):
 
 
 def test_existing_ids_stay_stable(monkeypatch):
-    """Tab element ids that other tests/components rely on are untouched."""
+    """Tab element ids that the .ics export and valencia_state.js rely on are untouched."""
     layout = _render_with(monkeypatch, FIXTURE_EVENTS)
-    for comp_id in ("valencia-events-subtabs", "all-table-container", "upcoming-table-container"):
+    for comp_id in ("valencia-ics-events", "valencia-ics-export-btn", "valencia-results", "valencia-pager", "valencia-search", "valencia-new-box"):
         assert _find_by_id(layout, comp_id), f"missing stable id '{comp_id}'"

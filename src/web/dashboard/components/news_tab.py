@@ -214,7 +214,7 @@ def _build_news_table(articles: list[dict[str, Any]], search_term: str | None = 
                         ]
                     ),
                     html.Td(source_for_display),
-                    html.Td(date_display),
+                    html.Td(date_display, className="text-nowrap"),
                 ],
                 className="trending-item" if trend_record is not None else "",
                 # data-* wildcard props are valid at runtime but absent from Dash's generated stubs
@@ -375,7 +375,9 @@ def _render_news_results(source_keys: list[str], search_term: str | None = None)
 
         table_body_rows.append(
             html.Tr(
-                [html.Td(title_cell), html.Td(article.get("source_display_name", "Unknown")), html.Td(format_article_date(article))], className="trending-item" if trend_record is not None else "", **row_props
+                [html.Td(title_cell), html.Td(article.get("source_display_name", "Unknown")), html.Td(format_article_date(article), className="text-nowrap")],
+                className="trending-item" if trend_record is not None else "",
+                **row_props,
             )
         )
 
@@ -527,7 +529,7 @@ def _build_global_results_table(results: list[dict[str, Any]], search_term: str 
             ),
         },
         {"header": "Fuente", "cell": lambda a: a.get("source_display_name", "?")},
-        {"header": "Date", "cell": lambda a: format_article_date(a)},
+        {"header": "Date", "cell": lambda a: format_article_date(a), "td_kwargs": {"className": "text-nowrap"}},
     ]
     return render_items_table(results, columns, empty_message="Sin resultados.", wrap_scroll=False)
 

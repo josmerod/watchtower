@@ -2,6 +2,8 @@
 
 > Fecha: 2026-08-17 · Estado: borrador para revisión · Ámbito: `src/web/dashboard/components/valencia_events_new_tab.py` + `src/etl/news/valencia_events_etl.py`
 
+> **Estado al 2026-11-28 (T-143).** Hechos: VE1 (la tarjeta «Gratis» cuenta el precio 0 solo cuando alguna fuente declara un precio, y muestra «—» si ninguna lo hace), VE2, VE3, VE4 y VE5 en su parte de búsqueda, filtros, orden y paginación (VA3, sin el desplegable de fuente). El registro trae recinto, dirección, zona y precio (M1, sin coordenadas), la ruta es absoluta (M4) y la exportación `.ics` es clientside (VA2, un botón por evento). El ETL pregunta trece fuentes —las tres originales y diez nuevas, ninguna con clave de API— y guarda un registro por evento y sesión (`src/etl/news/valencia_events/`). Quedan abiertos: la vista calendario (VA1), el mapa (VA4), «este fin de semana» con el clima (VA5; el filtro de fin de semana ya existe), las coordenadas, la profundidad de Meetup y Eventbrite (M5: Eventbrite sigue dando una muestra de 15 que cambia en cada petición) y las fuentes que piden clave o no responden (Ticketmaster, fallas.com, Las Naves, La Nau). Lo que sigue se conserva como se escribió.
+
 ## 1. Diagnóstico actual
 
 ### 1.1 Propósito y arquitectura

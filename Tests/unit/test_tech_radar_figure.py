@@ -7,8 +7,11 @@ dark paper and a hover that indexed records as if they were lists.
 """
 
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 
+import dash_bootstrap_components as dbc
 import pytest
+from dash import dcc
 
 from src.web.dashboard.components import metrics_tab, spanish_public_aid_tab
 from src.web.dashboard.components import tech_radar_tab as tab
@@ -16,6 +19,26 @@ from src.web.dashboard.utils import DARK_FIGURE
 
 RECORD = {"tech": "docker", "quadrant": "Platforms", "mentions": 9, "sources": ["Hacker News"], "examples": [], "ring": "Adopt"}
 ADOPT_CROWD = [{**RECORD, "tech": f"tech{index}", "mentions": 70 - index} for index in range(10)]  # Platforms x Adopt: ten technologies, as in the real data
+
+
+def _walk(node):
+    yield node
+    children = getattr(node, "children", None)
+    if children is None:
+        return
+    for child in children if isinstance(children, (list, tuple)) else [children]:
+        yield from _walk(child)
+
+
+def _texts(value) -> list[str]:
+    """Every string a component tree shows."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, (list, tuple)):
+        return [text for child in value for text in _texts(child)]
+    if hasattr(value, "children"):
+        return _texts(value.children)
+    return []
 
 
 def _spots(fig):
@@ -167,6 +190,63 @@ def test_a_bubble_grows_with_the_mentions_up_to_a_cap(mentions, expected):
     assert trace.marker.size == pytest.approx([expected])
 
 
+# --- The names take alternate sides of their bubbles (T-202) ---
+
+
+@pytest.mark.parametrize(
+    "offsets, expected",
+    [
+        ([0.0], ["bottom"]),
+        ([0.0, -0.28], ["top", "bottom"]),  # the first two seats of a row of three, in the order the slots hand them out
+        ([0.0, -0.28, 0.28], ["top", "bottom", "bottom"]),
+        ([-0.14, 0.14, -0.38, 0.38], ["top", "bottom", "bottom", "top"]),
+        ([-0.14, 0.14, -0.38], ["top", "bottom", "bottom"]),
+    ],
+)
+def test_the_side_of_a_name_follows_its_place_in_the_row_from_left_to_right(offsets, expected):
+    assert tab._label_sides(offsets) == expected
+
+
+def test_the_names_of_a_row_take_alternate_sides_of_their_bubbles():
+    """Neighbours in a row are a quarter of a column apart and their names 20 to 90 px wide: every name under its bubble, they ran into one another (T-202).
+
+    One bubble alone keeps its name under it, where it was.
+    """
+    fig = tab._build_radar_figure([*ADOPT_CROWD, {**RECORD, "tech": "alone", "mentions": 2, "ring": "Assess", "quadrant": "Tools"}])
+    platforms, tools = fig.data[1], fig.data[0]  # one trace per column, in the order of the quadrants
+    assert platforms.textposition[0] == "top center" and tuple(tools.textposition) == ("bottom center",)
+
+    rows: dict[tuple[int, float], list[tuple[float, str]]] = {}  # (column, row) -> (x, side), as the rows of a column take turns on their own
+    for column, trace in enumerate(fig.data):
+        assert set(trace.textposition) <= {"bottom center", "top center"}
+        for x, y, position in zip(trace.x, trace.y, trace.textposition, strict=True):
+            rows.setdefault((column, y), []).append((x, position))
+    for row in rows.values():
+        left_to_right = [position for _, position in sorted(row)]
+        assert left_to_right == ["bottom center" if rank % 2 == 0 else "top center" for rank in range(len(row))], row
+
+
+def _room_above(fig) -> float:
+    """Pixels between the highest bubble and the top of the plot."""
+    low, high = fig.layout.yaxis.range
+    return (high - max(y for _, y in _spots(fig))) * tab._PLOT_HEIGHT / (high - low)
+
+
+def test_the_top_of_the_axes_keeps_room_for_a_name_above_the_highest_bubble():
+    """A name above the outermost row was never there before: the 0.3 units of air above it cut such a name by up to 8 px."""
+    five = [{**RECORD, "tech": f"tech{index}", "mentions": 70 - index} for index in range(5)]  # a row of three, then two: the right one of the two is named above
+    fig = tab._build_radar_figure(five)
+
+    assert fig.data[0].textposition[4] == "top center" and fig.data[0].marker.size[4] == pytest.approx(48)  # the widest bubble, in the highest row, named above
+    assert _room_above(fig) == pytest.approx(24 + tab._NAME_ROOM, abs=1)
+
+
+def test_the_edge_keeps_the_air_it_had_when_no_name_hangs_towards_it():
+    assert tab._edge_pad(0.0, 3.8) == tab._edge_pad(11.4 + tab._NAME_ROOM, 3.8) == 0.3  # the 0.3 units already hold the name of a small bubble
+    assert tab._edge_pad(24 + tab._NAME_ROOM, 3.8) > 0.3  # a 48 px bubble needs more
+    assert tab._build_radar_figure([RECORD]).layout.yaxis.range == pytest.approx([-0.3, 2.3])  # its name is under it: the axis is the one it always was
+
+
 # --- The hover ---
 
 
@@ -177,3 +257,44 @@ def test_the_hover_reads_the_record():
     assert [list(row) for row in trace.customdata] == [[9, 2, "Hacker News, InfoQ", "Adopt", "Platforms"]]
     assert all(f"%{{customdata[{index}]}}" in trace.hovertemplate for index in range(5))
     assert "%{x}" not in trace.hovertemplate and "%{y}" not in trace.hovertemplate  # both are numbers now
+
+
+# --- The Metrics charts are named by their card (T-203) ---
+
+RUN = {"timestamp": datetime.now(), "name": "news_get_devto", "error_count": 0, "duration": 12.5}
+
+
+def test_the_metric_figures_carry_no_title():
+    """A title inside the figure came out in Plotly's own font and colour (T-203): the card header names the chart."""
+    built = {
+        "errors": metrics_tab.create_error_chart({"news_get_devto": 2}),
+        "no errors": metrics_tab.create_error_chart({}),
+        "time series": metrics_tab.create_time_series_chart([RUN]),
+        "no time series": metrics_tab.create_time_series_chart([]),
+    }
+
+    for name, figure in built.items():
+        assert not figure.layout.title.text, name
+    assert built["errors"].layout.xaxis.title.text == "ETL Source" and built["errors"].layout.yaxis.title.text == "Error Count"  # the axes stay in the figure
+    assert built["time series"].layout.xaxis.title.text == "Date" and built["time series"].layout.yaxis.title.text == "Runs / Errors"
+
+
+def test_each_metric_chart_is_named_and_described_by_its_card_header(monkeypatch):
+    summary = {"total_sources": 1, "avg_success_rate": 100.0, "total_items_processed": 10, "total_errors": 0, "last_24h_errors": 1, "last_updated": None}
+    manager = SimpleNamespace(
+        load_data=lambda force_refresh=False: None, get_metrics_summary=lambda: summary, get_time_series_data=lambda days=7: [RUN], get_error_counts=lambda: {"news_get_devto": 1}, metrics_data=[]
+    )
+    monkeypatch.setattr(metrics_tab, "metrics_manager", manager)
+    monkeypatch.setattr(metrics_tab, "_load_freshness_summary", lambda: None)
+    layout = metrics_tab.render_metrics_tab()
+
+    for graph_id, title, description in (
+        ("metrics-time-series-chart", "ETL Performance Trends (Last 7 Days)", None),
+        ("metrics-error-chart", "Error Distribution", "Error count by source, last 24 hours"),
+    ):
+        (graph,) = [node for node in _walk(layout) if isinstance(node, dcc.Graph) and node.id == graph_id]
+        (card,) = [node for node in _walk(layout) if isinstance(node, dbc.Card) and any(child is graph for child in _walk(node))]
+        shown = _texts(card.children[0])  # the header, above the body that holds the graph
+        assert title in shown, graph_id
+        assert (description in shown) if description else True, graph_id
+        assert not graph.figure.layout.title.text, graph_id  # and the figure repeats none of it

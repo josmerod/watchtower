@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import Field, field_validator
 
@@ -392,3 +392,47 @@ class GitHubTrendingFeed(BaseModel):
         """Get standardized output filename for this feed."""
         lang_part = self.language.replace("-", "_")
         return f"github_trending_{self.period}_{lang_part}.json"
+
+
+# Rankings trendshift.io publishes: one page each.
+TrendshiftPeriod = Literal["daily", "weekly", "monthly", "yearly"]
+
+
+class TrendshiftRepoModel(BaseModel):
+    """One repository of a trendshift.io ranking, as the Trendshift ETL stores it (T-134).
+
+    Every field is what the ranking says about the repository, except the two
+    Watchtower dates: ``snapshot_at`` is when the page was read, and
+    ``first_seen`` is the first run that saw the repository on a trendshift
+    list (kept from the previous file; named as the date chains of the
+    dashboard read it). A ranking has no publication date, so the model has
+    none and nothing is stamped with "now" as one.
+
+    Built on ``BaseModel``, not ``TimestampedModel``: the automatic
+    ``created_at`` of the latter is a date Knowledge Garden reads as the date
+    of the item.
+    """
+
+    source: str = Field(default="Trendshift", description="Name the dashboard shows for the source")
+    title: str = Field(description="owner/repo: what Knowledge Garden titles, saves and searches")
+    full_name: str = Field(description="owner/repo, as the source names it")
+    url: str = Field(description="Repository page on GitHub")
+    description: str = Field(default="", description="Repository description; empty when it has none")
+    language: str = Field(default="", description="Primary programming language; empty when the source gives none")
+    stars: int | None = Field(default=None, description="Total stars")
+    forks: int | None = Field(default=None, description="Total forks")
+    stars_gained: int | None = Field(default=None, description="Stars gained in the period: the trend figure")
+    forks_gained: int | None = Field(default=None, description="Forks gained in the period")
+    rank: int | None = Field(default=None, ge=1, description="Position in the ranking; empty when the source gives none")
+    score: int | None = Field(default=None, description="Ranking score of the source")
+    trend_period: TrendshiftPeriod = Field(description="Ranking the repository is on")
+    period_starts_at: datetime | None = Field(default=None, description="First day of the period, as the source dates it; empty when it gives none")
+    tags: list[str] = Field(default_factory=list, description="Topic tags of the source")
+    social_mention_platforms: list[str] = Field(default_factory=list, description="Platforms the repository was mentioned on")
+    repo_created_at: datetime | None = Field(default=None, description="When the repository was created on GitHub")
+    trendshift_id: int | None = Field(default=None, description="Repository id at the source")
+    trendshift_url: str = Field(default="", description="Repository page on trendshift.io; empty without an id")
+    snapshot_at: datetime = Field(description="When Watchtower read the ranking")
+    first_seen: datetime = Field(description="First run that saw the repository on a trendshift list")
+    platform: str = Field(default="github", description="Platform of the repositories")
+    content_type: str = Field(default="trending_repo", description="Kind of item, named as the GitHub Trending source of the Tech Radar names it")

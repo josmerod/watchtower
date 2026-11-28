@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import html
+from dash import Input, Output, State, dcc, html
 
 # Import repository pattern (NEW)
 from src.repositories import BaseRepository
@@ -65,6 +65,50 @@ ALL_GAMES_DATA = {
     "metacritic": pd.DataFrame(),
 }
 DATA_LOADED_SUCCESSFULLY = dict.fromkeys(ALL_GAMES_DATA, False)
+
+# --- Price trackers (T-139 and T-140) ---
+# Three subtabs that read nothing when the tab opens: each is a shell with two filters, and its controller
+# (register_games_callbacks) builds its table when the subtab is opened or a filter changes. Their state is not
+# in ALL_GAMES_DATA: that holds the subtabs the tab renders eagerly.
+TRACKER_ROWS = 100  # the best discounts first
+GAME_TRACKERS: dict[str, dict[str, Any]] = {
+    "eshop_jp": {
+        "file": "eshop_jp_deals.json",
+        "name": "eShop JP",
+        "what": "titles on sale",
+        "empty": "No title is on sale at the Japanese eShop right now.",
+        "note": "Prices in yen (¥) as the Japanese store lists them, not converted. A sale ends at midnight in Japan.",
+        "columns": (("title", "Title"), ("platform", "Platform"), ("base_price", "Base price"), ("sale_price", "Sale price"), ("discount_pct", "Discount"), ("sale_end", "Ends")),
+    },
+    "key_shops": {
+        "file": "key_shop_deals.json",
+        "name": "key shop",
+        "what": "deals of the day",
+        "empty": "No game of the daily selection is at a discount right now.",
+        "note": "Instant Gaming, the selection of the day. The discount is computed from the regular price and the price of the day.",
+        "columns": (
+            ("title", "Title"),
+            ("platform", "Platform"),
+            ("store", "Store"),
+            ("region", "Region"),
+            ("base_price", "Base price"),
+            ("sale_price", "Sale price"),
+            ("discount_pct", "Discount"),
+            ("sale_end", "Ends"),
+        ),
+    },
+    "gift_cards": {
+        "file": "gift_card_deals.json",
+        "name": "gift card",
+        "what": "gift cards under their face value",
+        "empty": "No gift card is under its face value right now.",
+        "note": "The base price of a gift card is what it is worth. Check that the region of a card matches your account before buying it.",
+        "columns": (("title", "Card"), ("shop", "Shop"), ("platform", "Platform"), ("region", "Region"), ("base_price", "Face value"), ("sale_price", "Price"), ("discount_pct", "Discount")),
+    },
+}
+for _key, _tracker in GAME_TRACKERS.items():
+    _tracker["repo"] = GamesRepository(get_data_path("games", _tracker["file"]))  # a repository on the file its ETL writes
+    _tracker["tab_id"] = f"subtab-{_key.replace('_', '-')}"
 
 
 # --- Price Parsing Utility ---
@@ -531,7 +575,8 @@ def load_all_games_data():
 
 
 # --- Layout Rendering Functions ---
-_SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£"}
+_SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "JPY": "¥"}
+_TRACKER_DISCOUNTS = (10, 25, 50, 75, 90)  # the steps of the minimum-discount filter
 
 
 def _symbol(currency) -> str:
@@ -546,6 +591,15 @@ def _money(amount, currency=None) -> str:
     if amount is None or pd.isna(amount):
         return "N/A"
     return f"{_symbol(currency)}{amount:.2f}"
+
+
+def _tracker_money(amount, currency=None) -> str:
+    """A price of a tracker: whole yen ("¥1,230"), two decimals in every other currency ("€45.39")."""
+    if amount is None or pd.isna(amount):
+        return "N/A"
+    if currency == "JPY":
+        return f"{_SYMBOLS['JPY']}{int(amount):,}"
+    return _money(amount, currency)
 
 
 def format_display_date(dt_obj):
@@ -822,6 +876,161 @@ def render_metacritic_sub_tab(df):
     )
 
 
+# --- Price trackers: a shell per subtab, filled by its controller ---
+def _tracker_id(key: str) -> str:
+    """The id prefix of the components of a tracker subtab ("games-eshop-jp")."""
+    return f"games-{key.replace('_', '-')}"
+
+
+def render_tracker_sub_tab(key: str) -> list:
+    """The shell of a tracker subtab: its two filters and an empty container its controller fills."""
+    ident = _tracker_id(key)
+    return [
+        dbc.Row(
+            [
+                dbc.Col(
+                    dcc.Dropdown(
+                        id=f"{ident}-min-discount",
+                        options=[{"label": "Any discount", "value": 0}] + [{"label": f"{percent}% off or more", "value": percent} for percent in _TRACKER_DISCOUNTS],
+                        value=0,
+                        clearable=False,
+                    ),
+                    md=3,
+                    className="mb-2",
+                ),
+                dbc.Col(dcc.Dropdown(id=f"{ident}-platform", options=[], placeholder="Every platform", clearable=True), md=3, className="mb-2"),
+            ],
+            className="mt-3 mb-3",
+        ),
+        html.Div(id=f"{ident}-content", children=html.P("Loading…", className="text-muted mt-3 mb-0")),
+        # Set by the controller: it tells a later visit that the table on screen is the one the filters ask for
+        dcc.Store(id=f"{ident}-rendered", data=False),
+    ]
+
+
+def _tracker_frame(key: str) -> pd.DataFrame | None:
+    """The records of a tracker as a frame, the best discount first; None when its file could not be read."""
+    tracker = GAME_TRACKERS[key]
+    try:
+        data = tracker["repo"].get()
+    except Exception as e:  # broad by design: a file the dashboard cannot read is shown as missing
+        print(f"Error ({tracker['name']} tracker): {e}")
+        return None
+    results = data.get("results") if isinstance(data, dict) else None
+    frame = pd.json_normalize([row for row in results if isinstance(row, dict)]) if isinstance(results, list) else pd.DataFrame()
+    if frame.empty or "discount_pct" not in frame.columns:
+        return frame
+    frame["discount_pct"] = pd.to_numeric(frame["discount_pct"], errors="coerce")
+    if "sale_end" in frame.columns:
+        frame["sale_end"] = pd.to_datetime(frame["sale_end"], errors="coerce", utc=True)
+    # The best discount first; among equals, the sale that ends first. A row without a date or a discount goes last.
+    order = ["discount_pct"] + (["sale_end"] if "sale_end" in frame.columns else [])
+    return frame.sort_values(order, ascending=[False] + [True] * (len(order) - 1), na_position="last", kind="stable").reset_index(drop=True)
+
+
+def _filter_tracker(frame: pd.DataFrame, min_discount: Any, platform: Any) -> pd.DataFrame:
+    """The rows at ``min_discount`` percent off or more, on ``platform`` when one is chosen."""
+    if frame.empty:
+        return frame
+    if min_discount:
+        frame = frame[frame["discount_pct"] >= int(min_discount)]
+    if platform:
+        frame = frame[frame["platform"].astype(str) == platform]
+    return frame
+
+
+def _tracker_cell(row: dict[str, Any], column: str) -> html.Td:
+    """One cell of a tracker table: a link for the title, a price with its currency, the day for a date.
+
+    Only the title wraps. A date or a price broken over two lines ("2026-11-" over "28") does not read as one.
+    """
+    value: Any = row.get(column)
+    missing = value is None or (not isinstance(value, str) and pd.isna(value))
+    if column == "title":
+        title = "N/A" if missing else str(value)
+        return html.Td(html.A(title, href=row.get("url"), target="_blank") if row.get("url") else title)
+    if column in ("base_price", "sale_price"):
+        return html.Td(_tracker_money(value, row.get("currency")), className="fw-bold text-nowrap" if column == "sale_price" else "text-nowrap")
+    if column == "discount_pct":
+        text = "N/A" if missing else f"{int(value)}%"
+    elif column == "sale_end":
+        text = format_display_date(value)
+    else:
+        text = "N/A" if missing else str(value)
+    return html.Td(text, className="text-nowrap")
+
+
+def render_tracker_content(key: str, frame: pd.DataFrame, min_discount: Any = 0, platform: Any = None) -> list:
+    """What a tracker subtab shows once its file was read: a line of context, the table or the reason there is none."""
+    tracker = GAME_TRACKERS[key]
+    note = html.P(tracker["note"], className="text-muted small mt-2 mb-0")
+    if frame.empty:
+        return [dbc.Alert(tracker["empty"], color="info", className="mt-3 alert-info"), note]
+    rows = _filter_tracker(frame, min_discount, platform)
+    context = [f"{len(rows)} of {len(frame)} {tracker['what']}" if len(rows) != len(frame) else f"{len(frame)} {tracker['what']}"]
+    if min_discount:
+        context.append(f"at {int(min_discount)}% off or more")
+    if platform:
+        context.append(f"on {platform}")
+    context.append("best discount first" + (f", showing {TRACKER_ROWS}" if len(rows) > TRACKER_ROWS else ""))
+    line = html.P(" · ".join(context), className="text-muted small mt-3 mb-0")
+    if rows.empty:
+        return [line, dbc.Alert("No row matches these filters.", color="info", className="mt-3 alert-info"), note]
+    columns = tracker["columns"]
+    table = dbc.Table(
+        [
+            html.Thead(html.Tr([html.Th(heading, className="text-nowrap") for _column, heading in columns])),
+            html.Tbody([html.Tr([_tracker_cell(row, column) for column, _heading in columns]) for row in rows.head(TRACKER_ROWS).to_dict("records")]),
+        ],
+        bordered=True,
+        hover=True,
+        responsive=True,
+        striped=True,
+        size="sm",
+        color="dark",
+        className="table-responsive mt-3",
+    )
+    return [line, table, note]
+
+
+def _tracker_controller(key: str):
+    """The callback of one tracker subtab; built per subtab so that it closes over its own key."""
+
+    def update_tracker(active_tab: str, min_discount: Any, platform: Any, rendered: bool) -> tuple[Any, Any, Any]:
+        """The table of the subtab, for the request that opened it or changed one of its filters."""
+        tracker = GAME_TRACKERS[key]
+        idle = (dash.no_update, dash.no_update, dash.no_update)
+        if active_tab != tracker["tab_id"]:
+            return idle  # another subtab was opened
+        if rendered and list(dash.ctx.triggered_prop_ids) == ["games-sub-tabs.active_tab"]:
+            return idle  # back on a subtab whose table is still on screen
+        frame = _tracker_frame(key)
+        if frame is None:
+            # Not marked as rendered: the next visit asks again, and shows the table once the file is there
+            return dbc.Alert(f"No {tracker['name']} data currently available or failed to load.", color="info", className="mt-3 alert-info"), dash.no_update, False
+        platforms = frame["platform"].value_counts().index.tolist() if "platform" in frame.columns else []
+        options = [{"label": str(name), "value": str(name)} for name in platforms]  # the most frequent first
+        return render_tracker_content(key, frame, min_discount, platform), options, True
+
+    return update_tracker
+
+
+def register_games_callbacks(app: dash.Dash) -> None:
+    """Wire the three tracker subtabs: nothing of them is read before one is opened or one of its filters changes."""
+    for key in GAME_TRACKERS:
+        ident = _tracker_id(key)
+        app.callback(
+            Output(f"{ident}-content", "children"),
+            Output(f"{ident}-platform", "options"),
+            Output(f"{ident}-rendered", "data"),
+            Input("games-sub-tabs", "active_tab"),
+            Input(f"{ident}-min-discount", "value"),
+            Input(f"{ident}-platform", "value"),
+            State(f"{ident}-rendered", "data"),
+            prevent_initial_call=True,
+        )(_tracker_controller(key))
+
+
 def render_games_tab():
     # Load fresh data each time
     load_all_games_data()
@@ -845,18 +1054,21 @@ def render_games_tab():
             if file_exists(file_path):  # A bit simplified, assumes direct mapping for check
                 all_files_missing = False
                 break
-        if all_files_missing:
-            return html.Div(
-                [
-                    html.H3("Games", className="mb-3"),
-                    dbc.Alert(
-                        "All game data files are missing. Please run the corresponding ETLs.",
-                        color="danger",
-                        className="alert-danger",
-                    ),
-                ]
-            )
-        else:
+        # The trackers load on their own (register_games_callbacks): with a file of theirs present the tab shows
+        # its subtabs, and each says for itself what it could load.
+        tracker_files = [get_data_path("games", GAME_TRACKERS[name]["file"]) for name in GAME_TRACKERS]
+        if not any(file_exists(path) for path in tracker_files):
+            if all_files_missing:
+                return html.Div(
+                    [
+                        html.H3("Games", className="mb-3"),
+                        dbc.Alert(
+                            "All game data files are missing. Please run the corresponding ETLs.",
+                            color="danger",
+                            className="alert-danger",
+                        ),
+                    ]
+                )
             return html.Div(
                 [
                     html.H3("Games", className="mb-3"),
@@ -873,6 +1085,8 @@ def render_games_tab():
             html.H3("Games", className="mb-3"),
             dbc.Tabs(
                 id="games-sub-tabs",
+                # Without it the bar sets its active tab on mount, and that alone would call the tracker controllers
+                active_tab="subtab-deals",
                 children=[
                     dbc.Tab(
                         label="💰 Deals",
@@ -899,6 +1113,10 @@ def render_games_tab():
                         tab_id="subtab-metacritic",
                         children=render_metacritic_sub_tab(ALL_GAMES_DATA["metacritic"]),
                     ),
+                    # The trackers are shells here; register_games_callbacks fills them when they are opened
+                    dbc.Tab(label="Nintendo eShop JP", tab_id="subtab-eshop-jp", children=render_tracker_sub_tab("eshop_jp")),
+                    dbc.Tab(label="Key Shops", tab_id="subtab-key-shops", children=render_tracker_sub_tab("key_shops")),
+                    dbc.Tab(label="Gift Cards", tab_id="subtab-gift-cards", children=render_tracker_sub_tab("gift_cards")),
                 ],
             ),
         ]
@@ -928,6 +1146,7 @@ def build_test_app() -> dash.Dash:
 
     app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     app.layout = dbc.Container(render_games_tab(), fluid=True, className="py-4")
+    register_games_callbacks(app)
     return app
 
 

@@ -166,6 +166,7 @@ KNOWLEDGE_TAB_DEFINITIONS: list[dict[str, Any]] = [
     {"label": "HypeURLs", "keys": "hypeurls", "id": "hypeurls"},
     {"label": "Open Source", "keys": ["opensource", "reddit_opensource"], "id": "opensource"},
     {"label": "Substack", "keys": "substack", "id": "substack"},
+    {"label": "Trendshift", "keys": "trendshift", "id": "trendshift"},
     {"label": "RSS Feeds", "keys": "rss_feeds", "id": "rss_feeds"},
 ]
 
@@ -351,6 +352,97 @@ def _plain_text(value: str) -> str:
     return re.sub(r"\s+", " ", unescape(text)).strip()
 
 
+# --- Repository rows (T-134, T-204) ---
+# A source that ranks repositories (Trendshift) carries numbers, and so does a
+# record of opensourceprojects.dev once GitHub was asked about it. A row that
+# has a star count (``stars``, or ``stars_count``) is a repository and gets a
+# line with what it carries: rank, stars, trend figure, forks, language,
+# topics. Under it comes the description; a record of opensourceprojects.dev
+# gets that line before GitHub answered too, stars or not. Every other row
+# renders as before.
+# The lines carry no link: the title stays the first link of the row, where
+# kg_state.js puts the NUEVO badge.
+_KG_PERIOD_LABELS = {"daily": "today", "weekly": "this week", "monthly": "this month", "yearly": "this year"}
+_KG_LINE_MAX_CHARS = 200
+_KG_TOPICS_SHOWN = 5
+# Sources whose every item is a repository.
+_KG_REPOSITORY_SOURCES = frozenset({"opensourceprojects.dev"})
+
+
+def _is_count(value: Any) -> bool:
+    """An integer that is not a boolean: what a count in a record looks like."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _count(article: dict, *names: str) -> int | None:
+    """The first of the fields that holds a count; ``None`` when none does."""
+    return next((article[name] for name in names if _is_count(article.get(name))), None)
+
+
+def _is_repository(article: dict) -> bool:
+    """Whether an item is a repository with figures: it carries a star count."""
+    return _count(article, "stars", "stars_count") is not None
+
+
+def _topics(article: dict) -> str:
+    """The topics of a repository as one part of its line: the five first, an ellipsis when more came."""
+    names = [str(topic).strip() for topic in article.get("topics") or [] if isinstance(topic, str) and topic.strip()]
+    return ", ".join(names[:_KG_TOPICS_SHOWN]) + ("…" if len(names) > _KG_TOPICS_SHOWN else "")
+
+
+def _repo_meta(article: dict) -> str:
+    """``#1 · 3,466 stars · +603 today · 116 forks · Rust``, with what the record has, in that order."""
+    stars = _count(article, "stars", "stars_count")
+    if stars is None:
+        return ""
+    parts: list[str] = []
+    if _is_count(article.get("rank")):
+        parts.append(f"#{article['rank']}")
+    parts.append(f"{stars:,} stars")
+    gained = _count(article, "stars_gained")
+    if gained is not None:
+        parts.append(f"+{gained:,} {_KG_PERIOD_LABELS.get(str(article.get('trend_period') or ''), 'in the period')}")
+    forks = _count(article, "forks", "forks_count")
+    if forks is not None:
+        parts.append(f"{forks:,} forks")
+    if article.get("language"):
+        parts.append(str(article["language"]))
+    topics = _topics(article)
+    if topics:
+        parts.append(topics)
+    return " · ".join(parts)
+
+
+def _muted_line(text: str, search_term: str = "") -> html.Div:
+    """One small muted line: cut after 200 characters, highlighted when there is a search."""
+    clipped = text[:_KG_LINE_MAX_CHARS] + ("…" if len(text) > _KG_LINE_MAX_CHARS else "")
+    return html.Div(highlight_segments(clipped, search_term) if search_term else clipped, className="small text-muted")
+
+
+def _description_line(article: dict, search_term: str = "") -> html.Div | None:
+    """The description under a repository's title; ``None`` without one, or when it only repeats the title."""
+    if not article.get("description"):
+        return None
+    text = _plain_text(str(article["description"]))
+    title = next((str(article.get(field)) for field in ("title", "name", "full_name") if article.get(field)), "")
+    if text.casefold() == _plain_text(title).casefold():
+        return None
+    return _muted_line(text, search_term)
+
+
+def _knowledge_title_cell(article: dict, search_term: str) -> html.Div:
+    """The Title cell of a list row: the linked title, then a repository's figures and description."""
+    cell = title_cell(article, search_term, title_fields=("title", "name", "full_name"), url_fields=("url", "link", "html_url", "website"))
+    if _is_repository(article) or article.get("source") in _KG_REPOSITORY_SOURCES:
+        meta = _repo_meta(article)
+        if meta:
+            cell.children.append(_muted_line(meta))
+        line = _description_line(article, search_term)
+        if line is not None:
+            cell.children.append(line)
+    return cell
+
+
 def _knowledge_card(article: dict, search_term: str = "") -> dbc.Col:
     """Build one minimalist result card (title, source, snippet, link + star).
 
@@ -360,6 +452,7 @@ def _knowledge_card(article: dict, search_term: str = "") -> dbc.Col:
     title = next((str(article.get(f)) for f in ("title", "name", "full_name") if article.get(f)), "No Title")
     url = next((article.get(f) for f in ("url", "link", "html_url", "website") if article.get(f)), None)
     snippet = next((_plain_text(str(article.get(f))) for f in _KG_SNIPPET_FIELDS if article.get(f)), "")
+    meta = _repo_meta(article)
 
     title_children = highlight_segments(title, search_term) if search_term else title
     snippet_children = highlight_segments(snippet, search_term) if (search_term and snippet) else snippet
@@ -380,6 +473,8 @@ def _knowledge_card(article: dict, search_term: str = "") -> dbc.Col:
             style={"fontSize": "0.9rem", "overflow": "hidden", "textOverflow": "ellipsis", "display": "-webkit-box", "-webkitLineClamp": "2", "-webkitBoxOrient": "vertical", "minHeight": "2.5em"},
         ),
     ]
+    if meta:
+        body.append(html.P(meta, className="card-text text-muted mb-1", style={"fontSize": "0.75rem"}))
     if snippet:
         body.append(
             html.P(
@@ -461,10 +556,11 @@ def _knowledge_view(source_keys, search_term: str = "", display_name: str = "Kno
             },
             {
                 "header": "Title",
-                "cell": lambda article: title_cell(article, search_term, title_fields=("title", "name", "full_name"), url_fields=("url", "link", "html_url", "website")),
+                "cell": lambda article: _knowledge_title_cell(article, search_term),
             },
             {"header": "Source", "cell": lambda article: article.get("source_display_name", display_name)},
-            {"header": "Date", "cell": lambda article: format_article_date(article)},
+            # On one line: with a title column as wide as this one, "2026-11-28" broke over "04:33 UTC"
+            {"header": "Date", "cell": lambda article: format_article_date(article), "td_kwargs": {"className": "text-nowrap"}},
         ]
         body = render_items_table(page_items, columns, empty_message=f"No knowledge items matching '{search_term}'.", wrap_scroll=False)
         _tag_rows_with_kg_dates(body, page_items)  # data-kg-date for NUEVO badges (T-085)
@@ -771,7 +867,7 @@ def register_knowledge_garden_callbacks(app):
                             render_items_table(
                                 matches[:15],
                                 [
-                                    {"header": "Title", "cell": lambda a: title_cell(a, term)},
+                                    {"header": "Title", "cell": lambda a: _knowledge_title_cell(a, term)},
                                     {"header": "Date", "cell": lambda a: format_article_date(a)},
                                 ],
                                 empty_message="Sin resultados.",

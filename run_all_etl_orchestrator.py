@@ -108,8 +108,11 @@ ETL_SCRIPTS = [
     "src/etl/games/games_get_gog_rss.py",
     "src/etl/games/games_get_isthereanydeal_api.py",
     "src/etl/games/games_get_metacritic_rss.py",
+    "src/etl/games/games_get_eshop_jp.py",
+    "src/etl/games/games_get_key_shops.py",
+    "src/etl/games/games_get_gift_cards.py",
     # Entertainment
-    # cinema_ecartelera_etl.py removed — file missing, only _improved version exists
+    "src/etl/cinema/cinema_sessions_etl.py",  # Cine Tívoli, Babel, Filmoteca, FilmAffinity — feeds dashboard Cine tab (T-151)
     # Ecommerce: shoppy_etl.py removed (T-110) — it was a mock stub with no
     # __main__ that registered fake "Placeholder" data every cycle. The
     # shoppy.gg product models live on in src/models/ecommerce.py.
@@ -135,6 +138,7 @@ ETL_SCRIPTS = [
     "src/etl/github/github_trending_etl.py",  # T-078: github.com/trending repos — Radar "🐙 GH Trending"
     # Knowledge Garden
     "src/etl/substack/substack_etl.py",
+    "src/etl/github/trendshift_etl.py",  # T-134: trendshift.io daily ranking, one record per repository
     # Benchmarks
     "src/etl/benchmarks/artificial_analysis_etl.py",
     "src/etl/benchmarks/bridgebench_etl.py",

@@ -63,3 +63,16 @@ def test_switching_to_metrics_renders_summary(dashboard_page):
     """Clicking Metrics mounts the collapsible system-state area (T-063)."""
     dashboard_page.get_by_role("tab", name="📊 Metrics").click()
     dashboard_page.wait_for_selector("#metrics-table-container", timeout=15_000)
+
+
+@pytest.mark.xfail(strict=True, raises=AssertionError, reason="dbc 2.0.4 gives every tab link of a dbc.Tabs the id react-aria<useId>-tab-null: the id of the bar lands on its ul and nothing the layout sets reaches the links (T-209)")
+def test_no_tab_link_id_ends_in_tab_null(dashboard_page):
+    """No element of the page carries an id that ends in ``-tab-null`` (T-209).
+
+    Today every link of a tab bar comes out as ``react-aria…-tab-null``, one id for all of them, with an
+    ``aria-controls`` that names ``…-tabpane-null``, which does not exist. Every ``dbc.Tabs`` of the app has an id
+    already (Tests/unit/test_tab_render.py): the ids are made by dbc itself, so this fails until dbc changes or the
+    bars stop being ``dbc.Tabs``. It is strict on purpose: the day it passes, drop the marker and keep the assertion.
+    """
+    dashboard_page.wait_for_selector("#dashboard-tabs [role=tab]", timeout=15_000)
+    assert dashboard_page.locator('[id$="-tab-null"]').count() == 0

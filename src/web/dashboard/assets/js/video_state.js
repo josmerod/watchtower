@@ -69,8 +69,10 @@
       var pill = document.createElement("span");
       pill.className = "wt-video-new-badge";
       pill.textContent = "NUEVO";
+      // The fill and the text are !important: the blanket rules of style.css are too, and an
+      // inline style they outrank leaves the pill as bare text.
       pill.style.cssText =
-        "position:absolute;top:8px;left:8px;z-index:6;background:#A37FFF;color:#fff;" +
+        "position:absolute;top:8px;left:8px;z-index:6;background:#A37FFF !important;color:#fff !important;" +
         "font-size:0.62rem;font-weight:700;letter-spacing:.03em;padding:1px 8px;" +
         "border-radius:999px;text-transform:uppercase;box-shadow:0 1px 4px rgba(0,0,0,.35);";
       card.insertBefore(pill, card.firstChild);

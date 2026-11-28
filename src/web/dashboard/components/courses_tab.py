@@ -83,7 +83,14 @@ MS_CREDENTIAL_KINDS = {
         "placeholder": "Buscar por título, tema o rol...",
     },
 }
-_MS_TITLE_PREFIXES = ("Microsoft Certified: ", "Microsoft Applied Skills: ")
+# What the catalog puts in front of a title when it names the kind of credential
+# ("Microsoft Certified: ", "Microsoft 365 Certified: ", "Microsoft Applied
+# Skills: "). It repeats the subtab label on every row, so the table drops it.
+# The other families keep what is in front of theirs ("MTA: ", "MCSA: ",
+# "MCSE: ", "MCSD: ", "GitHub Certified: ", "Microsoft Office Specialist: "):
+# there the bare title does not say what the credential is, as "Expert (Office
+# 2019)" does not (T-210).
+_MS_TITLE_PREFIX = re.compile(r"^Microsoft (?:\w+ )?Certified: |^Microsoft Applied Skills: ")
 _MS_ROLE_ACRONYMS = {"ai": "AI", "devops": "DevOps", "ip": "IP"}
 
 # The subtab bar. Its active_tab is read by one dispatcher that marks the open
@@ -636,10 +643,18 @@ def _credentials_in_view(df: pd.DataFrame, show_retired: bool) -> pd.DataFrame:
     return pd.concat([df[~retired], df[retired]]) if show_retired else df[~retired]
 
 
-def _retirement_cell(row: dict) -> str:
-    """What the Retirada column says: the date when the catalog gave one."""
+def _retirement_cell(row: dict, retired: bool = False) -> str:
+    """What the Retirada column says.
+
+    The date whenever the catalog gave one, on a current row too: a credential
+    announced for retirement keeps that date while ``retired`` is still false.
+    Without a date, a retired row reads ``Sí, sin fecha`` and a current one an
+    em dash (T-212): ``Sí`` on every row made the current ones look retired.
+    """
     date = str(row.get("retirement_date") or "")
-    return date if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date) else "Sí"
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
+        return date
+    return "Sí, sin fecha" if retired else "—"
 
 
 def _ms_credentials_table(df: pd.DataFrame, kind: str, with_retired: bool = False) -> dbc.Table:
@@ -658,11 +673,7 @@ def _ms_credentials_table(df: pd.DataFrame, kind: str, with_retired: bool = Fals
     rows = []
     for row, retired in zip(df.to_dict("records"), retired_rows, strict=True):
         roles = row.get("roles")
-        title = str(row.get("title", "N/A"))
-        for prefix in _MS_TITLE_PREFIXES:
-            if title.startswith(prefix):
-                title = title[len(prefix) :]
-                break
+        title = _MS_TITLE_PREFIX.sub("", str(row.get("title", "N/A")), count=1)
         cells = [
             html.Td(html.A(title, href=row.get("url") or "#", target="_blank")),
             *([html.Td(row.get("subject", "N/A"))] if kind == "applied" else []),
@@ -672,7 +683,7 @@ def _ms_credentials_table(df: pd.DataFrame, kind: str, with_retired: bool = Fals
             html.Td(row.get("detected_str", "N/A")),
         ]
         if with_retired:
-            cells.append(html.Td(_retirement_cell(row)))
+            cells.append(html.Td(_retirement_cell(row, retired)))
         rows.append(html.Tr(cells, className="text-muted" if with_retired and retired else None))
     return dbc.Table(
         header + [html.Tbody(rows)],

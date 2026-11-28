@@ -12,6 +12,7 @@ import time
 
 import dash_bootstrap_components as dbc
 import pandas as pd
+import pytest
 from dash import Dash, html
 
 from src.web.dashboard.components import courses_tab
@@ -166,6 +167,74 @@ def test_ms_search_matches_the_full_title_subject_and_roles(monkeypatch):
     assert len(titles(None)) == 2
 
 
+# Every "Microsoft 365 Certified: " title of the public catalog (learn.microsoft.com/api/catalog) on 2026-11-28.
+# The board counted nine in production: the prefix is dropped wherever it is.
+M365_CERTIFIED = [
+    "Microsoft 365 Certified: Messaging Administrator Associate",
+    "Microsoft 365 Certified: Teams Voice Engineer Expert",
+    "Microsoft 365 Certified: Security Administrator Associate",
+    "Microsoft 365 Certified: Teams Application Developer Associate",
+    "Microsoft 365 Certified: Teams Support Engineer Specialty",
+    "Microsoft 365 Certified: Teams Administrator Associate",
+    "Microsoft 365 Certified: Fundamentals",
+    "Microsoft 365 Certified: Endpoint Administrator Associate",
+    "Microsoft 365 Certified: Exchange Online Support Engineer Specialty",
+    "Microsoft 365 Certified: Microsoft 365 and AI Services Administrator Associate",
+    "Microsoft 365 Certified: Administrator Expert",
+    "Microsoft 365 Certified: Collaboration Communications Systems Engineer Associate",
+    "Microsoft 365 Certified: Copilot and Agent Administration Fundamentals",
+    "Microsoft 365 Certified: Teamwork Administrator Associate",
+]
+
+
+def _certification_rows(*titles):
+    return pd.DataFrame([{"title": title, "category": "cert", "level": "N/A", "roles": "N/A", "url": f"https://learn.microsoft.com/{index}", "detected_str": "2026-11-28"} for index, title in enumerate(titles)])
+
+
+def test_ms_table_drops_the_microsoft_365_certified_prefix():
+    """The prefix only repeats the subtab label (T-210): nine certifications kept it in front of their title."""
+    _, rows = _table_texts(courses_tab._ms_credentials_table(_certification_rows(*M365_CERTIFIED), "certs"))
+
+    assert [row[0].children for row in rows] == [title.removeprefix("Microsoft 365 Certified: ") for title in M365_CERTIFIED]
+    assert [row[0].href for row in rows] == [f"https://learn.microsoft.com/{index}" for index in range(len(M365_CERTIFIED))]  # the link is the catalog's
+
+
+@pytest.mark.parametrize(
+    "title,shown",
+    [
+        ("Microsoft Certified: Azure Administrator Associate", "Azure Administrator Associate"),
+        ("Microsoft Applied Skills: Develop AI agents on Azure", "Develop AI agents on Azure"),
+        ("Microsoft 365 Certified: Administrator Expert", "Administrator Expert"),
+        ("Microsoft Azure Certified: Fabric Analytics Engineer Associate", "Fabric Analytics Engineer Associate"),  # the next family of the same shape
+        ("Microsoft Certified: Dynamics 365: Finance and Operations Apps Developer Associate", "Dynamics 365: Finance and Operations Apps Developer Associate"),  # only what is in front goes
+    ],
+)
+def test_ms_table_drops_the_kind_prefix(title, shown):
+    _, rows = _table_texts(courses_tab._ms_credentials_table(_certification_rows(title), "certs"))
+
+    assert rows[0][0].children == shown
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "MTA: Introduction to Programming Using Python",
+        "MCSA: Web Applications",
+        "MCSE: Core Infrastructure",
+        "MCSD: App Builder",
+        "GitHub Certified: Agentic AI Developer",
+        "Microsoft Office Specialist: Expert (Office 2019)",  # without its family the title says nothing about Office
+        "Microsoft Office Specialist 2013 Master",  # no kind in front
+        "Microsoft Certified Educator",
+        "Unlabelled credential",
+    ],
+)
+def test_ms_table_keeps_what_the_other_families_have_in_front_of_their_titles(title):
+    _, rows = _table_texts(courses_tab._ms_credentials_table(_certification_rows(title), "certs"))
+
+    assert rows[0][0].children == title
+
+
 def test_unified_catalog_badges_each_ms_credential_by_its_kind(monkeypatch):
     """The unified table is painted by its controller (T-177), so the badges are read from a built page."""
     _stubbed_layout(monkeypatch, _ms_frames())
@@ -175,6 +244,31 @@ def test_unified_catalog_badges_each_ms_credential_by_its_kind(monkeypatch):
     assert badges.count("MS Certificación") == 2
     assert badges.count("MS Applied Skill") == 2
     assert "Microsoft" not in badges
+
+
+def test_the_retirada_column_tells_a_current_row_from_a_retired_one():
+    """One row of each kind the catalog holds (T-212): "Sí" on every row read as if all were retired."""
+    # Shaped like ms_applied_skills.json after load_ms_applied_skills_data(): the loader fills a missing date with "N/A".
+    retired_on = {"category": "cert", "subject": "N/A", "level": "Intermediate", "roles": "N/A", "url": "https://learn.microsoft.com/", "detected_str": "2026-11-28"}
+    certs = pd.DataFrame(
+        [
+            retired_on | {"title": "Current certification", "retired": False, "retirement_date": "N/A"},
+            retired_on | {"title": "Retired with a date", "retired": True, "retirement_date": "2026-06-30"},
+            retired_on | {"title": "Retired without a date", "retired": True, "retirement_date": None},
+            retired_on | {"title": "Current until it is retired", "retired": False, "retirement_date": "2027-02-01"},
+        ]
+    )
+
+    header, rows = _table_texts(courses_tab._ms_credentials_table(certs, "certs", with_retired=True))
+
+    assert header[-1] == "Retirada"
+    retirada = {row[0].children: row[-1] for row in rows}  # by title: the order is the one the controller hands over
+    assert retirada == {
+        "Current certification": "—",
+        "Retired with a date": "2026-06-30",
+        "Retired without a date": "Sí, sin fecha",
+        "Current until it is retired": "2027-02-01",
+    }
 
 
 def test_each_ms_subtab_owns_exactly_one_table_callback():

@@ -82,6 +82,9 @@ SOURCE_FILES: list[dict[str, Any]] = [
     {"key": "hf_trending", "label": "HF Trending papers", "path": "arxiv/hf_daily_papers_latest.json", "warn_hours": 30, "critical_hours": 168},
     {"key": "reddit_unified", "label": "Reddit unified", "path": "reddit_unified/reddit_unified_latest.json", "warn_hours": 26, "critical_hours": 168},
     {"key": "trends", "label": "Cross-source trends", "path": "analytics/trends/latest_trends.json", "warn_hours": 26, "critical_hours": 168},
+    # Knowledge Garden. The ETL keeps the last good file when trendshift.io answers nothing, so a
+    # blocked site shows up here as an aging snapshot.
+    {"key": "trendshift", "label": "Trendshift (GitHub trending)", "path": "github/trendshift_daily_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "snapshot_at"},
     # Benchmarks (BridgeBench is known-flaky: site mid-V3 migration)
     {"key": "llm_leaderboard", "label": "LLM leaderboard", "path": "benchmarks/llm_leaderboard.json", "warn_hours": 72, "critical_hours": 336},
     {"key": "bridgebench", "label": "BridgeBench Elo", "path": "benchmarks/bridgebench_overall.json", "warn_hours": 336, "critical_hours": 1440},
@@ -114,6 +117,38 @@ SOURCE_FILES: list[dict[str, Any]] = [
         "content_warn_hours": 72,
         "content_critical_hours": 336,
     },
+    # Game price trackers (T-139, T-140). A tracker keeps its previous file when its source answers nothing, and
+    # a file restored from a backup is new on disk with old items: "last_seen_at" says when its items were seen.
+    {
+        "key": "games_eshop_jp_deals",
+        "label": "eShop JP sales (My Nintendo Store JP)",
+        "path": "games/eshop_jp_deals.json",
+        "warn_hours": 26,
+        "critical_hours": 168,
+        "content_date": "last_seen_at",
+        "content_warn_hours": 26,
+        "content_critical_hours": 168,
+    },
+    {
+        "key": "games_key_shop_deals",
+        "label": "Key shop deals (Instant Gaming)",
+        "path": "games/key_shop_deals.json",
+        "warn_hours": 26,
+        "critical_hours": 168,
+        "content_date": "last_seen_at",
+        "content_warn_hours": 26,
+        "content_critical_hours": 168,
+    },
+    {
+        "key": "games_gift_card_deals",
+        "label": "Gift card deals (Eneba, Instant Gaming)",
+        "path": "games/gift_card_deals.json",
+        "warn_hours": 26,
+        "critical_hours": 168,
+        "content_date": "last_seen_at",
+        "content_warn_hours": 26,
+        "content_critical_hours": 168,
+    },
     # Knowledge Garden — Open Source Projects. Its file kept April data for seven months (T-204).
     # The site publishes one batch a day but skips two or three days every few weeks (40 such
     # gaps in the 518 days to 2026-11-28, three longer ones), so the age of the newest post
@@ -129,6 +164,14 @@ SOURCE_FILES: list[dict[str, Any]] = [
         "content_warn_hours": 120,
         "content_critical_hours": 240,
     },
+    # Cinema sessions (Cine tab, T-151). Rewritten every cycle. Its "date" is a screening day that lies
+    # ahead and could never age; "first_detected_at" is when a session was first listed, and the cinemas
+    # open new days all the time, so a week without a session nobody had seen means the listings no
+    # longer change or are no longer parsed.
+    {"key": "cinema", "label": "Cinema sessions (Cine tab)", "path": "cinema/cinema_sessions_latest.json", "warn_hours": 26, "critical_hours": 168, "content_date": "first_detected_at"},
+    # Valencia events (Valencia Events tab, T-143), on the same rule: the thirteen agendas list new
+    # events every day. A run in which no source gives an event fails and leaves the file as it was.
+    {"key": "valencia_events", "label": "Valencia events (Valencia Events tab)", "path": "valencia_events/valencia_events.json", "warn_hours": 26, "critical_hours": 168, "content_date": "first_detected_at"},
 ]
 
 

@@ -3,7 +3,9 @@
 import re
 from html import unescape
 
-_TAG_OR_COMMENT = re.compile(r"<!--.*?-->|<[^>]+>", re.DOTALL)
+# What goes out as markup: a comment, a declaration, or a tag, which starts with "<" or "</" and a letter. Anything
+# else that starts with "<" is text, as the signs of "if a < b and b > c": taking everything up to the next ">" ate them (T-208).
+_TAG_OR_COMMENT = re.compile(r"<!--.*?-->|<!DOCTYPE[^>]*>|<\?[^>]*\?>|</?[A-Za-z][^>]*>", re.DOTALL | re.IGNORECASE)
 
 
 def html_to_text(value: str | None) -> str:
@@ -13,6 +15,10 @@ def html_to_text(value: str | None) -> str:
     collapse into one space. The result is stripped. Nothing is unescaped
     twice: ``&lt;b&gt;`` is text the author wanted to be read, so it stays
     once decoded.
+
+    Only markup shaped like markup goes out, so a comparison keeps its signs.
+    The limit is a comparison that is shaped like a tag: ``x <y> z`` comes
+    out ``x z``, as a browser would read it, an unknown element around a word.
 
     Args:
         value: The HTML snippet, or anything falsy (``None``, empty).
