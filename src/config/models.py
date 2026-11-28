@@ -96,7 +96,6 @@ class APIConfig(BaseModel):
     )
     cors_methods: list[str] = Field(default=["GET"], description="CORS allowed methods")
     news_api_key: str | None = Field(default=None, description="API key for NewsAPI")
-    rapidapi_key: str | None = Field(default=None, description="API key for RapidAPI (rapidapi_etl)")
     stackexchange_key: str | None = Field(default=None, description="API key for the Stack Exchange API (stackexchange_etl)")
 
 

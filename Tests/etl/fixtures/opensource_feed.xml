@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Open Source Projects - Latest Discoveries</title>
+  <link href="https://www.opensourceprojects.dev"/>
+  <link rel="self" href="https://www.opensourceprojects.dev/feed.xml"/>
+  <updated>2026-11-28T01:50:02.108Z</updated>
+  <id>https://www.opensourceprojects.dev/</id>
+  <subtitle>Discover the best open-source projects from GitHub. Curated collection of trending repositories, hidden gems, and amazing developer tools.</subtitle>
+  <generator uri="https://www.opensourceprojects.dev" version="1.0">Open Source Projects</generator>
+  <rights>© 2026 Open Source Projects</rights>
+  <icon>https://www.opensourceprojects.dev/images/open-source-projects-favicon.png</icon>
+  <logo>https://www.opensourceprojects.dev/images/open-source-logo-830x460.jpg</logo>
+  <entry>
+    <title>A hierarchical note-taking app for building large personal knowledge bases</title>
+    <link href="https://www.opensourceprojects.dev/post/trilium"/>
+    <id>https://www.opensourceprojects.dev/post/d7e0c211-64d0-417c-8ce4-1fdd27b11704</id>
+    <updated>2026-11-28T01:50:02.108Z</updated>
+    <author>
+      <name>githubprojects</name>
+      <email>githubprojects@opensourceprojects.dev</email>
+    </author>
+    <summary type="text">You&apos;ve probably tried to build a personal knowledge base before. Maybe it was a folder full of markdown files, a wiki you abandoned after a week, or a note app that buckled once you hit a few thousand entries. The hard part usually isn&apos;t capturing notes—it&apos;s organizing them at scale without the stru...</summary>
+    <content type="html"><![CDATA[You&apos;ve probably tried to build a personal knowledge base before. Maybe it was a folder full of markdown files, a wiki you abandoned after a week, or a note app that buckled once you hit a few thousand entries. The hard part usually isn&apos;t capturing notes—it&apos;s organizing them at scale without the stru...
+
+GitHub Repository: https://github.com/triliumnext/trilium]]></content>
+    <link rel="related" href="https://github.com/triliumnext/trilium" title="GitHub Repository"/>
+  </entry>
+<entry>
+    <title>Desktop apps in Go with native UI or web frontend</title>
+    <link href="https://www.opensourceprojects.dev/post/mygo"/>
+    <id>https://www.opensourceprojects.dev/post/35754f97-a08f-45d4-a1cc-8cf82d6de1b3</id>
+    <updated>2026-11-28T01:49:39.427Z</updated>
+    <author>
+      <name>githubprojects</name>
+      <email>githubprojects@opensourceprojects.dev</email>
+    </author>
+    <summary type="text">You want to build a desktop app. You also want to stay in Go, the language you actually like. But the usual paths push you into cgo, heavy runtimes, or a webview that makes you wonder if you&apos;re shipping an app or a browser. MyGo is a project that takes a different angle: desktop apps written in Go, ...</summary>
+    <content type="html"><![CDATA[You want to build a desktop app. You also want to stay in Go, the language you actually like. But the usual paths push you into cgo, heavy runtimes, or a webview that makes you wonder if you&apos;re shipping an app or a browser. MyGo is a project that takes a different angle: desktop apps written in Go, ...
+
+GitHub Repository: https://github.com/egoist/mygo]]></content>
+    <link rel="related" href="https://github.com/egoist/mygo" title="GitHub Repository"/>
+  </entry>
+</feed>

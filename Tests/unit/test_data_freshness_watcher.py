@@ -364,3 +364,32 @@ def test_a_source_with_old_items_gets_a_high_rule_that_names_the_date(tmp_path, 
     assert age > 23_000  # the date in the message is the item's, not the file's (written an hour ago)
     event = json.loads(next(watcher.events_dir.glob("*_freshness_initial_alert.json")).read_text(encoding="utf-8"))
     assert event["details"]["content_age_hours"] == age
+
+
+def test_the_open_source_file_is_watched_by_the_age_of_its_items(tmp_path):
+    """latest.json kept a post from 2026-04-29 for seven months while its ETL ended every cycle at zero (T-204)."""
+    entry = {entry["key"]: entry for entry in SOURCE_FILES}["opensource_projects"]
+    assert entry["path"] == "open_source_intelligence/output/latest.json"
+    assert entry["content_date"] == "published_at"
+
+    # The site skips two or three days between batches every few weeks: four days are still fresh.
+    _write_items(tmp_path / entry["path"], [_ago(96, "naive")], age_hours=1)
+    assert assess_freshness([entry], data_dir=tmp_path, now=NOW)["sources"][0]["status"] == "fresh"
+
+    # A quiet weekend: nothing new to write, so the file itself is two days old too.
+    _write_items(tmp_path / entry["path"], [_ago(48, "naive")], age_hours=48)
+    assert assess_freshness([entry], data_dir=tmp_path, now=NOW)["sources"][0]["status"] == "fresh"
+
+    # Six days without a post happened once in seventeen months: stale, not critical.
+    _write_items(tmp_path / entry["path"], [_ago(6 * 24, "naive")], age_hours=1)
+    assert assess_freshness([entry], data_dir=tmp_path, now=NOW)["sources"][0]["status"] == "stale"
+
+    # The ETL keeps rewriting the file while GitHub answers: three days without a write are stale.
+    _write_items(tmp_path / entry["path"], [_ago(2, "naive")], age_hours=72)
+    assert assess_freshness([entry], data_dir=tmp_path, now=NOW)["sources"][0]["status"] == "stale"
+
+    # The file as found on 2026-11-28, rewritten by the cycle a minute earlier: the rule shows the age of the post.
+    _write_items(tmp_path / entry["path"], ["2026-04-29 07:26:03.537000"], age_hours=1 / 60)
+    record = assess_freshness([entry], data_dir=tmp_path, now=NOW)["sources"][0]
+    assert record["status"] == "critical"
+    assert record["age_hours"] == record["content_age_hours"] > 240

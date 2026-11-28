@@ -118,10 +118,8 @@ ETL_SCRIPTS = [
     "src/etl/spanish_public_aid/bdns_convocatorias_etl.py",  # BDNS API: fechas/cuantías reales (T-076)
     # 4chan
     "src/etl/fourchan/fourchan_generals_etl.py",
-    # Expanded Phase 1
-    "src/etl/expanded/newsapi_etl.py",
-    "src/etl/expanded/rapidapi_etl.py",
-    "src/etl/expanded/hashnode_etl.py",
+    # Expanded Phase 1. newsapi_etl.py and hashnode_etl.py are left out: neither
+    # produces data (no key; the GraphQL API needs a paid plan) and nothing reads them.
     "src/etl/expanded/github_analytics_etl.py",
     "src/etl/expanded/package_registry_etl.py",
     # Expanded Phase 2

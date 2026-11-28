@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Open Source Projects - Latest Discoveries</title>
+    <description>Discover the best open-source projects from GitHub. Curated collection of trending repositories, hidden gems, and amazing developer tools.</description>
+    <link>https://www.opensourceprojects.dev</link>
+    <atom:link href="https://www.opensourceprojects.dev/rss" rel="self" type="application/rss+xml" />
+    <language>en-US</language>
+    <lastBuildDate>Sat, 28 Nov 2026 03:48:57 GMT</lastBuildDate>
+    <managingEditor>hello@opensourceprojects.dev (Open Source Projects)</managingEditor>
+    <webMaster>hello@opensourceprojects.dev (Open Source Projects)</webMaster>
+    <generator>Open Source Projects RSS Generator</generator>
+    <docs>https://www.rssboard.org/rss-specification</docs>
+    <cloud domain="opensourceprojects.dev" port="80" path="/rss" registerProcedure="" protocol="soap"/>
+    <ttl>300</ttl>
+    <image>
+      <url>https://www.opensourceprojects.dev/images/open-source-logo-830x460.jpg</url>
+      <title>Open Source Projects - Latest Discoveries</title>
+      <link>https://www.opensourceprojects.dev</link>
+      <width>144</width>
+      <height>144</height>
+      <description>Discover the best open-source projects from GitHub. Curated collection of trending repositories, hidden gems, and amazing developer tools.</description>
+    </image>
+  <item>
+    <title>A hierarchical note-taking app for building large personal knowledge bases</title>
+    <description><![CDATA[You&apos;ve probably tried to build a personal knowledge base before. Maybe it was a folder full of markdown files, a wiki you abandoned after a week, or a note app that buckled once you hit a few thousand entries. The hard part usually isn&apos;t capturing notes—it&apos;s organizing them at scale without the stru...
+
+GitHub Repository: https://github.com/triliumnext/trilium]]></description>
+    <link>https://www.opensourceprojects.dev/post/trilium</link>
+    <guid isPermaLink="true">https://www.opensourceprojects.dev/post/trilium</guid>
+    <pubDate>Sat, 28 Nov 2026 01:50:02 GMT</pubDate>
+    <author>githubprojects@opensourceprojects.dev (githubprojects)</author>
+    <source url="https://www.opensourceprojects.dev/rss">Open Source Projects</source>
+    <enclosure url="https://opengraph.githubassets.com/1/triliumnext/trilium" type="image/png" />
+  </item>
+<item>
+    <title>Desktop apps in Go with native UI or web frontend</title>
+    <description><![CDATA[You want to build a desktop app. You also want to stay in Go, the language you actually like. But the usual paths push you into cgo, heavy runtimes, or a webview that makes you wonder if you&apos;re shipping an app or a browser. MyGo is a project that takes a different angle: desktop apps written in Go, ...
+
+GitHub Repository: https://github.com/egoist/mygo]]></description>
+    <link>https://www.opensourceprojects.dev/post/mygo</link>
+    <guid isPermaLink="true">https://www.opensourceprojects.dev/post/mygo</guid>
+    <pubDate>Sat, 28 Nov 2026 01:49:39 GMT</pubDate>
+    <author>githubprojects@opensourceprojects.dev (githubprojects)</author>
+    <source url="https://www.opensourceprojects.dev/rss">Open Source Projects</source>
+    <enclosure url="https://opengraph.githubassets.com/1/egoist/mygo" type="image/png" />
+  </item>
+</channel></rss>

@@ -48,7 +48,6 @@ class TestConfigurationModels(unittest.TestCase):
         config = APIConfig()
 
         self.assertIsNone(config.news_api_key)
-        self.assertIsNone(config.rapidapi_key)
         self.assertIsNone(config.stackexchange_key)
 
     def test_llm_config_defaults(self):
@@ -215,7 +214,6 @@ class TestConfigurationIntegration(unittest.TestCase):
             "WATCHTOWER_LOGGING__LEVEL": "WARNING",
             "WATCHTOWER_LLM__OPENAI_API_KEY": "sk-test123",  # pragma: allowlist secret
             "WATCHTOWER_API__NEWS_API_KEY": "news-key-123",  # pragma: allowlist secret
-            "WATCHTOWER_API__RAPIDAPI_KEY": "rapid-key-123",  # pragma: allowlist secret
         }
 
         with patch.dict("os.environ", env_vars, clear=True):
@@ -235,7 +233,6 @@ class TestConfigurationIntegration(unittest.TestCase):
         # API keys / LLM
         self.assertEqual(settings.llm.openai_api_key, "sk-test123")
         self.assertEqual(settings.api.news_api_key, "news-key-123")
-        self.assertEqual(settings.api.rapidapi_key, "rapid-key-123")
 
     def test_configuration_serialization(self):
         """Test configuration can be serialized and deserialized."""

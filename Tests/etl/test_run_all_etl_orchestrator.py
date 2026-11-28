@@ -26,7 +26,7 @@ import run_all_etl_orchestrator as orch
 
 def test_every_registered_script_exists() -> None:
     """No dead entries: every path in ETL_SCRIPTS must exist on disk."""
-    assert len(orch.ETL_SCRIPTS) > 100
+    assert len(orch.ETL_SCRIPTS) >= 95  # 98 after the RapidAPI mock went and two dead scripts were left out (T-204)
     missing = [s for s in orch.ETL_SCRIPTS if not (REPO_ROOT / s).exists()]
     assert missing == [], f"registered but missing on disk: {missing}"
 
@@ -50,6 +50,21 @@ def test_linkedin_learning_is_not_registered_without_a_consumer() -> None:
     an entry in ``SOURCE_FILES`` of data_freshness_watcher.py — not before.
     """
     assert "src/etl/courses/linkedin_learning_etl.py" not in orch.ETL_SCRIPTS
+
+
+def test_rapidapi_mock_is_gone() -> None:
+    """rapidapi_etl.py answered a fake "Sample API 1/2" every cycle and nothing read it (T-204)."""
+    assert not any("rapidapi" in s for s in orch.ETL_SCRIPTS)
+    assert not (REPO_ROOT / "src/etl/expanded/rapidapi_etl.py").exists()
+    assert not (REPO_ROOT / "src/models/rapidapi.py").exists()
+
+
+def test_scripts_that_produce_nothing_are_not_registered() -> None:
+    """NewsAPI answers nothing without a key and Hashnode's GraphQL API needs a paid plan since 2026-05-13; nothing reads either output (T-204).
+
+    Relist one together with what makes it produce data and a consumer of it.
+    """
+    assert not {"src/etl/expanded/newsapi_etl.py", "src/etl/expanded/hashnode_etl.py"} & set(orch.ETL_SCRIPTS)
 
 
 def test_freshness_watcher_not_in_pool() -> None:
