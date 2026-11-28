@@ -712,3 +712,24 @@ html body .btn-outline-primary:not(.table):not(.alert):not(.card):not(.nav-tabs)
     background-color: #a37fff !important;
     border-color: #a37fff !important;
 }
+
+/* Cine tab: the sessions of a film, one line per cinema. The name holds a
+   column so the start times line up; on a phone they start on the next line.
+   The chips are smaller than the .btn rule above makes them: a row of them
+   is read at a glance. */
+.cinema-card .cinema-name {
+    flex: 0 0 16rem;
+    padding-right: 0.5rem;
+}
+
+.cinema-card .cinema-sessions .cinema-session-chip.btn-sm {
+    padding: 2px 10px !important;
+    font-weight: 500 !important;
+}
+
+@media (max-width: 767.98px) {
+    .cinema-card .cinema-name {
+        flex-basis: 100%;
+        padding-bottom: 2px;
+    }
+}

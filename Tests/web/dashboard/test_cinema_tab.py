@@ -206,13 +206,24 @@ class TestLayout:
         assert "2026 · 152 min · Denis Villeneuve" in texts(dune)
         assert cinemas_of(dune) == ["Kinépolis Valencia"]
         assert [(chip.children, chip.href, chip.disabled) for chip in chips_of(dune)] == [("15:00 · IMAX", "https://tickets.test/Kinépolis Valencia/2026-11-28/15:00", False), ("19:20 · VOSE", "https://tickets.test/Kinépolis Valencia/2026-11-28/19:20", False)]
+        assert all(getattr(chip, "target", None) == "_blank" and getattr(chip, "rel", None) == "noopener noreferrer" for chip in chips_of(dune)), "the ticket page opens in a new tab: the list stays where it is"
         assert title_link_of(cards[0]) is None and texts(cards[0]) == "El director 115 min Cines Babel 12:00"
 
         # a session without a ticket page is still listed, as a chip that goes nowhere
         view = cinema_tab.results_view(SESSIONS, "2026-12-22", TODAY)
         (chip,) = chips_of(cards_of(view)[0])
-        assert (chip.children, chip.href, chip.disabled) == ("18:00 · DOB", None, True)
+        assert (chip.children, chip.href, chip.disabled, getattr(chip, "target", None)) == ("18:00 · DOB", None, True, None)
         assert "martes 22 de diciembre · 1 película · 1 sesión · 1 cine" in texts(view)
+
+    def test_a_film_lists_one_line_per_cinema_its_name_in_front_of_its_times(self, data_dir):
+        """Not a Bootstrap row: the legacy sheets give every .row a 24 px bottom margin, and a film on in nine cinemas took a screen and a half."""
+        sessions = [record("Dune: Parte Tres", "Kinépolis Valencia", TODAY_ISO, "19:20", version="VOSE"), record("Dune: Parte Tres", "Cines Babel", TODAY_ISO, "16:00"), record("Dune: Parte Tres", "Cines Babel", TODAY_ISO, "21:00")]
+        (card,) = cards_of(cinema_tab.results_view(sessions, TODAY_ISO, TODAY))
+
+        assert "cinema-card" in card.className and not [node for node in walk(card) if isinstance(node, (dbc.Row, dbc.Col))]
+        lines = [node for node in walk(card) if "cinema-sessions" in (getattr(node, "className", None) or "")]
+        assert [(line.children[0].children, [chip.children for chip in line.children[1:]]) for line in lines] == [("Kinépolis Valencia", ["19:20 · VOSE"]), ("Cines Babel", ["16:00", "21:00"])]
+        assert all("cinema-name" in line.children[0].className and "d-flex" in line.className for line in lines), "the sheet keeps the names in a column through these two classes"
 
     def test_every_published_day_is_on_the_bar_even_a_month_of_them(self, bare_dir):
         month = [record("Película", "Cine Tívoli", (TODAY + timedelta(days=offset)).isoformat(), "17:00") for offset in range(40)]

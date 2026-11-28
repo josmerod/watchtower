@@ -242,11 +242,12 @@ def _session_chip(record: dict[str, Any]) -> dbc.Button:
     return dbc.Button(
         label,
         href=ticket_url or None,
-        external_link=bool(ticket_url),
         disabled=not ticket_url,
+        # In a new tab, so the list stays where it is. dbc 2.0 no longer opens an external_link button in one.
+        **({"target": "_blank", "rel": "noopener noreferrer"} if ticket_url else {}),
         color="outline-primary",
         size="sm",
-        className="me-1 mb-1",
+        className="cinema-session-chip me-1 mb-1",
         title=" · ".join(part for part in (record["cinema"], record.get("room") or "", record.get("language") or "") if part),
     )
 
@@ -261,10 +262,12 @@ def film_card(title: str, records: list[dict[str, Any]]) -> dbc.Card:
     by_cinema: dict[str, list[dict[str, Any]]] = {}
     for record in records:
         by_cinema.setdefault(record["cinema"], []).append(record)
+    # One line per cinema, its name in front of its start times. Not a Bootstrap row: the legacy sheets give
+    # every .row a 24 px bottom margin, and a film on in nine cinemas took a screen and a half. The rules that
+    # keep the names in a column and the chips small are in zz_visual_refresh.css, under .cinema-card.
     rows = [
-        dbc.Row(
-            [dbc.Col(html.Span(cinema, className="fw-semibold small text-muted"), xs=12, md=3), dbc.Col([_session_chip(record) for record in cinema_records], xs=12, md=9, className="d-flex flex-wrap")],
-            className="g-0 mb-1",
+        html.Div(
+            [html.Span(cinema, className="fw-semibold small text-muted cinema-name"), *[_session_chip(record) for record in cinema_records]], className="cinema-sessions d-flex flex-wrap align-items-center"
         )
         for cinema, cinema_records in by_cinema.items()
     ]
@@ -278,7 +281,7 @@ def film_card(title: str, records: list[dict[str, Any]]) -> dbc.Card:
             ],
             className="py-2",
         ),
-        className="mb-2",
+        className="cinema-card mb-2",
     )
 
 
