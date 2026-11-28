@@ -2,7 +2,6 @@
 
 This package contains enhanced ETL implementations for:
 - NewsAPI.org (150K+ global news sources)
-- RapidAPI Marketplace (40K+ APIs)
 - Hashnode (developer blogs via GraphQL)
 - GitHub Analytics platforms (Trendshift, Ossinsight, LibHunt)
 - Package registries (npm, PyPI, crates.io)
