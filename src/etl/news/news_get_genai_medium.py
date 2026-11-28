@@ -17,6 +17,7 @@ import feedparser
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.text import html_to_text, plain_excerpt
 
 # Initialize logger for this module
 logger = get_logger("MediumGenAIETL")
@@ -137,18 +138,22 @@ def process_medium_articles(
 
     for article in articles:
         try:
+            # The feed's summary is HTML around the cover image: plain text, cut like the RSS feeds (T-190)
+            summary = plain_excerpt(article.get("summary", ""), 500)
             processed_article = {
-                "title": article.get("title", ""),
+                "title": html_to_text(article.get("title", "")),
                 "url": article.get("url", ""),
                 "source": article.get("source", "medium.com"),
                 "published_at": article.get("published_at", ""),
+                # The News tab reads the text at the top level; under metadata nothing did
+                "summary": summary,
                 "metadata": {
                     "api_source": "medium_rss",
                     "processed_at": datetime.now().isoformat(),
                     "medium_id": article.get("medium_id", ""),
                     "author": article.get("author", ""),
                     "tags": article.get("tags", []),
-                    "summary": article.get("summary", ""),
+                    "summary": summary,
                     "feed_source": article.get("feed_source", ""),
                 },
             }

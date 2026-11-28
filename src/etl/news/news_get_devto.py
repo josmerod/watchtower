@@ -22,6 +22,7 @@ import requests
 
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.text import html_to_text
 
 logger = get_logger("DevtoETL")
 
@@ -63,7 +64,7 @@ def get_devto_articles(per_page: int = 50, max_retries: int = 3, retry_delay: in
         try:
             articles.append(
                 {
-                    "title": item.get("title", ""),
+                    "title": html_to_text(item.get("title", "")),
                     "url": item.get("url", ""),
                     "source": SOURCE_NAME,
                     "published_at": item.get("published_at", ""),
@@ -71,7 +72,8 @@ def get_devto_articles(per_page: int = 50, max_retries: int = 3, retry_delay: in
                     "score": item.get("positive_reactions_count", 0),
                     "num_comments": item.get("comments_count", 0),
                     "tags": item.get("tag_list", []),
-                    "summary": item.get("description", ""),
+                    # The API's blurb is plain text with the odd entity left in ("Welcome&nbsp;!") (T-190)
+                    "summary": html_to_text(item.get("description", "")),
                     "metadata": {
                         "api_source": "devto_public_api",
                         "processed_at": datetime.now().isoformat(),

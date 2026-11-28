@@ -9,6 +9,7 @@ import feedparser
 # Add the project root to the path to ensure imports work correctly
 from src.utils.file_system import ensure_directories, get_project_root
 from src.utils.logging import get_logger
+from src.utils.text import html_to_text, plain_excerpt
 
 # Initialize logger for this module
 logger = get_logger("KagiRSSETL")
@@ -138,12 +139,13 @@ def process_kagi_articles(
         for article in articles:
             try:
                 processed_article = {
-                    "title": article.get("title", ""),
+                    "title": html_to_text(article.get("title", "")),
                     "url": article.get("url", ""),
                     "source": article.get("source", f"kagi_{category}"),
                     "published_at": article.get("published_at", ""),
                     "category": article.get("category", category),
-                    "description": article.get("description", ""),
+                    # Kite's descriptions are whole articles in HTML: plain text, cut like the RSS feeds (T-190)
+                    "description": plain_excerpt(article.get("description", ""), 500),
                     "metadata": {
                         "api_source": "kagi_rss",
                         "processed_at": datetime.now().isoformat(),
