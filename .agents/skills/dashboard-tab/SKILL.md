@@ -157,9 +157,11 @@ Rules that bite:
   `pagination_controls(tab_slug, ...)` and `create_refresh_button(tab_slug)`
   already do.
 - **Premium, minimalist UI**: Bootstrap components, responsive rows/cols, the
-  shared styles in `src/web/dashboard/assets/`. A change to a CSS or JS asset
-  that browsers cached needs its `?v=N` bumped where `app.py` links it
-  (`zz_visual_refresh.css?v=9`).
+  shared styles in `src/web/dashboard/assets/`. `zz_visual_refresh.css` is
+  linked once by `app.py` with a token cut from the bytes of the file
+  (`?v={visual_refresh_version}`): edit the sheet and its URL changes with it,
+  nothing to bump by hand. Any other asset a browser may have cached still
+  needs its `?v=N` bumped where it is linked.
 
 ## Reading data
 
@@ -221,6 +223,7 @@ needs its own callback — a second writer of the search box `value`, hence
 | A tab as a whole: layout, subtab list, callbacks through the endpoint | `Tests/web/dashboard/test_<tab>_<what>.py` — the convention since 2026-11-27 | `test_news_subtabs.py`, `test_inserted_buttons.py` |
 | Every top-level tab renders | `RENDERERS` in `Tests/unit/test_tab_render.py` | add one row |
 | A guard or helper shared by tabs | `Tests/unit/test_<subject>.py` | `test_repository_cache.py`, `test_saved_items_tabs.py` |
+| A fix in the final stylesheet (`zz_visual_refresh.css`) | `Tests/web/dashboard/test_visual_refresh_guards.py` | one test per fix, on the rule's declarations |
 
 Older tab tests sit in `Tests/unit/` (`test_kg_lazy_render.py`,
 `test_markets_tab.py`, `test_videos_theme_filter.py`) and in `Tests/dashboard/`
@@ -252,6 +255,9 @@ row in `RENDERERS`.
       `uv run ruff format --check` are clean on the new files.
 - [ ] The ETL behind the tab's data is registered (`etl-pipeline` skill).
 - [ ] On a mobile width (below 768 px) the subtab bar still shows its tabs.
+- [ ] Under the pointer: a link in a table and an outline button keep a
+      readable text on their fill (check the computed style; see 7 under
+      "When something isn't showing up").
 - [ ] After the deploy, the tab is checked in the browser on the public
       dashboard (`unraid-deploy` skill).
 
@@ -269,3 +275,14 @@ row in `RENDERERS`.
    writes, or the ETL is not registered.
 6. Too many requests, or slow to open — `references/callbacks.md`: count
    pattern ids and unguarded controllers.
+7. In the DOM but invisible, or without its colour — the blanket rules of
+   `style.css` paint every element the page colour with `!important`
+   (`*:not(.table):not(.alert):not(.card):not(.nav-tabs)`), and they beat a
+   less specific `!important` rule: a badge without its fill, a link or an
+   outline button that vanishes under the pointer, a block behind a title in
+   a striped table. Read the computed style; the fixes live in
+   `zz_visual_refresh.css` (loaded last, more specific than the blanket), and
+   `Tests/web/dashboard/test_visual_refresh_guards.py` pins each one — run it
+   after touching that sheet.
+8. A card off-screen measures 721 px or has an empty `innerText` —
+   `content-visibility: auto` on the cards. Scroll it into view first.
