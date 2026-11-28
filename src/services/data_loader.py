@@ -225,6 +225,19 @@ GAMES_SOURCES_CONFIG = {
         "path": get_data_path("games", "itchio_trending.json"),
         "name": "Trending Games",
     },
+    # Price trackers (T-139, T-140)
+    "eshop_jp": {
+        "path": get_data_path("games", "eshop_jp_deals.json"),
+        "name": "eShop JP Sales",
+    },
+    "key_shops": {
+        "path": get_data_path("games", "key_shop_deals.json"),
+        "name": "Key Shop Deals",
+    },
+    "gift_cards": {
+        "path": get_data_path("games", "gift_card_deals.json"),
+        "name": "Gift Card Deals",
+    },
 }
 
 BENCHMARKS_SOURCES_CONFIG = {
